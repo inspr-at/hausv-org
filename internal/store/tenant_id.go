@@ -110,7 +110,7 @@ var ErrTenantIDMissing = errors.New("store: tenant-bound rows without a tenant_i
 // tenant_slug tables. Reaching this error takes a hand-edited or imported row.
 var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot be canonicalised")
 
-// healOrphanReason is the Unscoped reason for the handful of writes that can
+// HealOrphanReason is the Unscoped reason for the handful of writes that can
 // land on a row LEFT BEHIND BY THE PREVIOUS RELEASE — one whose tenant_id is
 // still NULL because it was written before the column existed.
 //
@@ -128,11 +128,34 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 //	ERROR: new row violates row-level security policy (USING expression)
 //	       for table "unit_payment_status" (SQLSTATE 42501)
 //
-// measured on the three tables whose rows are addressable by a NATURAL key
-// (unit_payment_status, announcement_reads, units) — those are the only ones a
-// new write can collide with an orphan on. The other tenant-bound tables key on
-// a random id, so no write ever lands on a legacy row there and their upserts
-// stay on the tenant lane.
+// measured on unit_payment_status, and true of every table whose upsert
+// conflicts on a NATURAL key — a key a new write can arrive with, so it can
+// collide with a row the previous release wrote. The tenant-bound tables are
+// read from the schema by TestEveryOrphanAdoptingUpsertNamesTheMaintenanceLane,
+// which demands this lane for every DO UPDATE upsert on them unless the table
+// carries a stated exemption; the natural-key class that is left is EIGHT
+// tables, not the three this comment first claimed:
+//
+//	unit_payment_status     (tenant_slug, unit_id)
+//	announcement_reads      (tenant_slug, email)
+//	units                   (tenant_slug, id)           — ids are chosen, not minted
+//	home_connectors         (slug)
+//	home_connector_readings (slug, entity_id)
+//	home_portals            (slug)
+//	house_memberships       (person_id, tenant_slug)
+//	integration_imports     (tenant_slug, format, file_digest) — written from internal/server
+//
+// Two of them (home_portals, and house_memberships on three of its four paths)
+// reach the maintenance lane under a different reason: they run in transactions
+// that are cross-tenant by nature and stay so after the flip. The rest name this
+// constant. The eight tenant-bound tables that key on a random id minted by the
+// store or its caller (announcements, attachments, ballots, contacts, documents,
+// events, handovers, issues) stay on the tenant lane: a new row cannot collide
+// with a legacy one, and an edit addresses a row the same lane just read. The
+// one exception is handovers.ConfirmByToken, which addresses a row by its
+// confirmation token on the maintenance lane for a structural reason. That test
+// holds the list and fails when a table changes class or a new upsert appears
+// undecided.
 //
 // So the adoption runs on the declared cross-tenant lane, where the policy's
 // first branch applies and the row can be reached. The statement itself still
@@ -140,10 +163,13 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 // changes is which lane is allowed to touch a row that belongs to no lane.
 //
 // This is time-boxed by the rollback window. When tenant_id becomes NOT NULL
-// there are no orphans left, the heal is dead code, and these three sites go
-// back to For(tenant). Until then, removing this is what re-opens HAUSV-145's
-// "wrote a row it cannot see".
-const healOrphanReason = "adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL"
+// there are no orphans left, the heal is dead code, and every site naming this
+// constant goes back to For(tenant). Until then, removing this is what re-opens
+// HAUSV-145's "wrote a row it cannot see".
+//
+// Exported because the import ledger in internal/server is one of the eight and
+// names its lane with the same words; the golden inventory records both.
+const HealOrphanReason = "adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL"
 
 // tenantIDQuerier is the subset of *sql.DB and *sql.Tx the resolver needs, so
 // the same code works inside and outside a transaction.

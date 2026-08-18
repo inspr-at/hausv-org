@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
-	"github.com/inspr-at/hausv-org/internal/tenantid"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 const (
@@ -93,7 +93,7 @@ func (a *app) paymentImportPage(w http.ResponseWriter, r *http.Request, ac authC
 	var previewView *paymentImportPreviewView
 	if token := strings.TrimSpace(r.URL.Query().Get("preview")); token != "" {
 		if preview, found := a.paymentImportPreview(token, tenant.Slug); found {
-			view := a.paymentImportPreviewView(token, preview, candidates)
+			view := a.paymentImportPreviewView(ac.tenantRef, token, preview, candidates)
 			previewView = &view
 		} else if resultMessage == "" {
 			resultMessage = "Diese Vorschau ist abgelaufen. Bitte die Datei erneut auswählen."
@@ -212,7 +212,7 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	targetID := paymentImportTargetID(preview.FileDigest)
-	if a.paymentImportAlreadyApplied(tenant.Slug, preview.FileDigest) {
+	if a.paymentImportAlreadyApplied(ac.tenantRef, preview.FileDigest) {
 		delete(a.paymentImportPreviews, token)
 		a.redirectPaymentImport(w, r, preview.Period, "", "already")
 		return
@@ -247,7 +247,7 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 		a.redirectPaymentImport(w, r, preview.Period, token, "error")
 		return
 	}
-	if err := a.recordPaymentImportLedger(tenant.Slug, actorEmail, preview, report); err != nil {
+	if err := a.recordPaymentImportLedger(ac.tenantRef, actorEmail, preview, report); err != nil {
 		logError("payment import ledger failed", err, "tenant", tenant.Slug)
 		a.redirectPaymentImport(w, r, preview.Period, token, "error")
 		return
@@ -264,7 +264,7 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 	http.Redirect(w, r, "/app/settings/payments/import?"+query.Encode(), http.StatusSeeOther)
 }
 
-func (a *app) paymentImportPreviewView(token string, preview camtImportPreview, candidates []unitPaymentReferenceCandidate) paymentImportPreviewView {
+func (a *app) paymentImportPreviewView(tenant store.TenantRef, token string, preview camtImportPreview, candidates []unitPaymentReferenceCandidate) paymentImportPreviewView {
 	report := reconcileImportedPaymentsWithUnitStatus(preview.Payments, candidates)
 	fingerprint := paymentImportFingerprint(preview.TenantSlug, preview.Period, preview.FileDigest, report, preview.ParserErrors)
 	view := paymentImportPreviewView{
@@ -277,7 +277,7 @@ func (a *app) paymentImportPreviewView(token string, preview camtImportPreview, 
 		Rejected:      report.Rejected + len(preview.ParserErrors),
 		Changed:       fingerprint != preview.RowFingerprint,
 	}
-	view.AlreadyApplied = a.paymentImportAlreadyApplied(preview.TenantSlug, preview.FileDigest)
+	view.AlreadyApplied = a.paymentImportAlreadyApplied(tenant, preview.FileDigest)
 	for _, row := range report.Rows {
 		view.Rows = append(view.Rows, paymentImportRowViewFrom(row))
 	}
@@ -381,43 +381,55 @@ func paymentImportTargetID(fileDigest string) string {
 	return string(integrations.FormatCAMT053) + ":" + strings.TrimSpace(fileDigest)
 }
 
-func (a *app) paymentImportAlreadyApplied(tenantSlug, fileDigest string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+// paymentImportAlreadyApplied is the dedup read before a file is applied. It
+// runs on the TENANT lane: the ledger is keyed by tenant_id and the caller
+// holds the tenant's reference, so this is an ordinary scoped read.
+//
+// The read filters on tenant_id while the table's uniqueness constraint is
+// (tenant_slug, format, file_digest). The two agree on every row that carries
+// its identity; the one row where they disagree is a legacy row the previous
+// release wrote with a NULL tenant_id, which this read cannot see and which
+// recordPaymentImportLedger adopts on the maintenance lane. Before this ran on
+// a lane it also skipped the read whenever the slug had no identity yet; a
+// TenantRef is only ever handed out for a minted identity, so that branch no
+// longer exists.
+func (a *app) paymentImportAlreadyApplied(tenant store.TenantRef, fileDigest string) bool {
 	fileDigest = strings.TrimSpace(fileDigest)
-	if a != nil && a.db != nil && tenantSlug != "" && fileDigest != "" {
-		// No identity means no rows can reference it, so an unknown slug is a
-		// clean "not imported" rather than a lookup that silently matches on a
-		// label the tenant may since have renamed.
-		tenantID, known := tenantid.Lookup(a.db, tenantSlug)
-		var exists int
-		var err error
-		if known {
-			err = a.db.QueryRow(
-				`SELECT EXISTS(
-					SELECT 1 FROM integration_imports
-					WHERE tenant_id = ? AND format = ? AND file_digest = ?
-				)`,
-				tenantID, string(integrations.FormatCAMT053), fileDigest,
-			).Scan(&exists)
-		}
-		if err == nil && exists == 1 {
+	if a != nil && a.tenantDB != nil && tenant.Valid() && fileDigest != "" {
+		var exists bool
+		err := a.tenantDB.For(tenant).QueryRow(
+			`SELECT EXISTS(
+				SELECT 1 FROM integration_imports
+				WHERE tenant_id = $1 AND format = $2 AND file_digest = $3
+			)`,
+			tenant.ID, string(integrations.FormatCAMT053), fileDigest,
+		).Scan(&exists)
+		if err == nil && exists {
 			return true
 		}
 		if err != nil {
-			logError("payment import ledger lookup failed", err, "tenant", tenantSlug)
+			logError("payment import ledger lookup failed", err, "tenant", tenant.Slug)
 		}
 	}
 	targetID := paymentImportTargetID(fileDigest)
-	return a != nil && a.auditStore != nil && a.auditStore.HasTarget(tenantSlug, auditActionIntegrationImport, targetID)
+	return a != nil && a.auditStore != nil && a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, targetID)
 }
 
-func (a *app) recordPaymentImportLedger(tenantSlug, actorEmail string, preview camtImportPreview, report unitPaymentImportReport) error {
-	if a == nil || a.db == nil {
+// recordPaymentImportLedger writes the ledger row. It runs on the MAINTENANCE
+// lane under store.HealOrphanReason, for the same reason its siblings in the
+// store do: the conflict target is a natural key, (tenant_slug, format,
+// file_digest), so this INSERT can land on a row the previous release wrote
+// without a tenant_id, and migration 0003 makes such a row unreachable from
+// every tenant lane — the upsert would be refused outright (SQLSTATE 42501)
+// instead of adopting it. The statement still writes tenant_id=$1 and the
+// caller still holds the tenant, so nothing widens; the lane is what changes.
+// When tenant_id goes NOT NULL this reverts to For(tenant) with the rest.
+func (a *app) recordPaymentImportLedger(tenant store.TenantRef, actorEmail string, preview camtImportPreview, report unitPaymentImportReport) error {
+	if a == nil || a.tenantDB == nil {
 		return nil
 	}
-	tenantID, err := tenantid.Ensure(a.db, tenantSlug)
-	if err != nil {
-		return err
+	if !tenant.Valid() {
+		return fmt.Errorf("payment import ledger: tenant reference is not usable")
 	}
 	// DO NOTHING on everything EXCEPT tenant_id. The ledger records when a file
 	// was FIRST applied, so a re-upload must not rewrite applied_at, applied_by
@@ -426,15 +438,15 @@ func (a *app) recordPaymentImportLedger(tenantSlug, actorEmail string, preview c
 	// means the ledger can never see its own row and every re-upload is applied
 	// again. coalesce keeps an owned row untouched, which is also the only shape
 	// PostgreSQL's tenant_id_immutable trigger accepts.
-	_, err = a.db.Exec(
+	_, err := a.tenantDB.Unscoped(store.HealOrphanReason).Exec(
 		`INSERT INTO integration_imports(
 			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
 			assigned, changed, unclear, rejected
-		) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
 		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
-		tenantID,
-		normalizeSlug(tenantSlug),
+		tenant.ID,
+		tenant.Slug,
 		string(integrations.FormatCAMT053),
 		strings.TrimSpace(preview.FileDigest),
 		strings.TrimSpace(preview.SourceVersion),

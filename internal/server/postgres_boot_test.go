@@ -81,11 +81,11 @@ func TestBootsOnPostgres(t *testing.T) {
 		t.Fatal("PostgreSQL boot returned a nil app")
 	}
 	t.Cleanup(a.closeMagicLinkDelivery)
-	if a.db == nil || a.energyStore == nil {
+	if a.pool == nil || a.energyStore == nil {
 		t.Fatal("PostgreSQL boot returned an app without its database-backed energy store")
 	}
 	var appSchema string
-	if err := a.db.QueryRow(`SELECT current_schema()`).Scan(&appSchema); err != nil {
+	if err := testPool(t, a).QueryRow(`SELECT current_schema()`).Scan(&appSchema); err != nil {
 		t.Fatalf("query through booted app database: %v", err)
 	}
 	if appSchema != schema {

@@ -27,7 +27,9 @@ import (
 //
 //   - It reads only THIS package. internal/energy still takes the pool and is
 //     the one unconverted SQL surface; this test says nothing about it, and
-//     will not notice a new package that takes pools either.
+//     will not notice a new package that takes pools either. internal/server
+//     has its own sibling, TestServerReachesTheDatabaseOnlyThroughTheTenantSeam,
+//     which additionally traces every statement call there to a lane.
 //   - It checks struct FIELDS only. A function parameter, a return value, a
 //     package-level var or a local that carries a *sql.DB is invisible to it,
 //     and two such functions exist on purpose: BackfillTenantIDs and

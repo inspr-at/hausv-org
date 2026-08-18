@@ -9,12 +9,9 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-
-	appdb "github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
@@ -205,31 +202,26 @@ func TestEBInterfacePreviewIsTenantBoundAndExpires(t *testing.T) {
 }
 
 func TestEBInterfaceImportLedgerIsDurableAndTenantBound(t *testing.T) {
-	database, err := appdb.Open(filepath.Join(t.TempDir(), "hausv.db"))
-	if err != nil {
-		t.Fatalf("open database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
+	a, database, refs := ledgerTestApp(t, "demo", "other-house")
 	data := []byte("synthetic ebInterface invoice")
 	digestBytes := sha256.Sum256(data)
 	digest := hex.EncodeToString(digestBytes[:])
-	a := &app{db: database}
 	preview := ebInterfaceImportPreview{FileDigest: digest, SourceVersion: "6.0"}
-	if err := a.recordEBInterfaceImportLedger("demo", "manager@example.com", preview); err != nil {
+	if err := a.recordEBInterfaceImportLedger(refs["demo"], "manager@example.com", preview); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
-	if !a.ebInterfaceImportAlreadyStored("demo", digest) {
+	if !a.ebInterfaceImportAlreadyStored(refs["demo"], digest) {
 		t.Fatal("same tenant and digest not found in durable ledger")
 	}
-	if a.ebInterfaceImportAlreadyStored("other-house", digest) {
+	if a.ebInterfaceImportAlreadyStored(refs["other-house"], digest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordEBInterfaceImportLedger("demo", "manager@example.com", preview); err != nil {
+	if err := a.recordEBInterfaceImportLedger(refs["demo"], "manager@example.com", preview); err != nil {
 		t.Fatalf("repeat ledger: %v", err)
 	}
 	var rows int
 	if err := database.QueryRow(
-		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = ? AND format = ? AND file_digest = ?`,
+		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = $1 AND format = $2 AND file_digest = $3`,
 		"demo", "ebinterface", digest,
 	).Scan(&rows); err != nil {
 		t.Fatalf("count ledger: %v", err)

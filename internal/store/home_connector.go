@@ -164,7 +164,7 @@ func (s *SQLHomeConnectorStore) StartPairing(slug string, pairingHash []byte, ex
 	if err != nil {
 		return HomeConnector{}, err
 	}
-	unscoped := s.db.Unscoped(healOrphanReason)
+	unscoped := s.db.Unscoped(HealOrphanReason)
 	_, err = unscoped.Exec(`INSERT INTO home_connectors
 		(tenant_id,slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)

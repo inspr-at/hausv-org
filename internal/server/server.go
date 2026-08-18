@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"database/sql"
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
@@ -761,7 +760,6 @@ type app struct {
 	authLimiterMu           sync.Mutex
 	authLimiter             *authRateLimiter
 	templates               *template.Template
-	db                      *sql.DB
 	dataDir                 string
 	announcementStore       announcementStorage
 	announcementReadStore   announcementReadStorage
@@ -845,6 +843,24 @@ type app struct {
 	// close them on shutdown: TenantDB deliberately has no Close, because its
 	// method set is what stops a store from reaching the database unscoped.
 	scopedDB *db.Scoped
+	// pool is what the app keeps of the process connection pool: its LIFECYCLE
+	// and nothing else. It is typed as the two methods the app calls — PingContext
+	// for the health probe, Close for shutdown — and not as *sql.DB, so no request
+	// handler can run a statement on it. Four ledger statements used to hide here
+	// as a.db.QueryRow / a.db.Exec: outside every lane, and under a fail-closed
+	// policy they would have seen and written nothing. They now go through
+	// tenantDB like every store, and this type is what stops the next one from
+	// taking the same shortcut. Boot-time maintenance (EnsureTenantIdentities,
+	// the energy store) still takes the pool as a local in newApp; it never
+	// reaches the app struct.
+	pool processPool
+}
+
+// processPool is the lifecycle surface of the process connection pool: what
+// app.pool may do with it, and all it may do with it.
+type processPool interface {
+	PingContext(context.Context) error
+	Close() error
 }
 
 type parkingTelemetry struct {
@@ -1571,9 +1587,9 @@ func newApp() (*app, error) {
 	if dbPath == "" {
 		dbPath = filepath.Join(filepath.Dir(parkingDataPath), "hausv.db")
 	}
-	// Backend selection lives here and nowhere else: stores take a *sql.DB and do
-	// not know which engine served it. DB_BACKEND unset keeps SQLite, so an
-	// existing deployment is unchanged by this being wired at all.
+	// Backend selection lives here and nowhere else: stores take a lane from the
+	// scoped seam and do not know which engine served it. DB_BACKEND unset keeps
+	// SQLite, so an existing deployment is unchanged by this being wired at all.
 	backend := db.Backend(strings.ToLower(strings.TrimSpace(env("DB_BACKEND", ""))))
 	dbDSN := dbPath
 	if backend == db.BackendPostgres {
@@ -1786,7 +1802,7 @@ func newApp() (*app, error) {
 		mailer:                   mailTransport,
 		trustedProxies:           trustedProxies,
 		templates:                tmpl,
-		db:                       database,
+		pool:                     database,
 		tenantDB:                 tenantDB,
 		scopedDB:                 scoped,
 		dataDir:                  filepath.Dir(dbPath),
@@ -1857,7 +1873,7 @@ func (a *app) health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
-	if a == nil || a.db == nil || a.db.PingContext(ctx) != nil || probeWritableDir(a.dataDir) != nil || a.retentionFailure.Load() {
+	if a == nil || a.pool == nil || a.pool.PingContext(ctx) != nil || probeWritableDir(a.dataDir) != nil || a.retentionFailure.Load() {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = io.WriteString(w, `{"service":"hausv-org","status":"unhealthy"}`)
 		return
@@ -7124,8 +7140,8 @@ func (a *app) Close() error {
 	if a.scopedDB != nil {
 		firstErr = a.scopedDB.Close()
 	}
-	if a.db != nil {
-		if err := a.db.Close(); err != nil && firstErr == nil {
+	if a.pool != nil {
+		if err := a.pool.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

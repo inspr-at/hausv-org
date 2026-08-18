@@ -361,7 +361,7 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Unscoped(healOrphanReason).Begin()
+	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
 	if err != nil {
 		return HouseMembership{}, err
 	}

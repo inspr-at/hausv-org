@@ -18,7 +18,7 @@ func TestHealthChecksDatabaseAndWritableDataDir(t *testing.T) {
 	}
 	defer database.Close()
 
-	a := &app{db: database, dataDir: dir}
+	a := &app{pool: database, dataDir: dir}
 	rr := httptest.NewRecorder()
 	a.health(rr, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if rr.Code != http.StatusOK || rr.Body.String() != `{"service":"hausv-org","status":"ok"}` {
@@ -29,7 +29,7 @@ func TestHealthChecksDatabaseAndWritableDataDir(t *testing.T) {
 func TestHealthRejectsMissingDependency(t *testing.T) {
 	for name, a := range map[string]*app{
 		"database": {dataDir: t.TempDir()},
-		"data-dir": {db: mustTestDB(t)},
+		"data-dir": {pool: mustTestDB(t)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
@@ -42,7 +42,7 @@ func TestHealthRejectsMissingDependency(t *testing.T) {
 }
 
 func TestHealthRejectsFailedRetentionSweep(t *testing.T) {
-	a := &app{db: mustTestDB(t), dataDir: t.TempDir()}
+	a := &app{pool: mustTestDB(t), dataDir: t.TempDir()}
 	a.retentionFailure.Store(true)
 	rr := httptest.NewRecorder()
 	a.health(rr, httptest.NewRequest(http.MethodGet, "/healthz", nil))

@@ -50,7 +50,7 @@ func newSQLTestApp(t *testing.T, tenants []sqlTestTenant, profiles ...userProfil
 	}
 	a := newTestPortalApp(t, profiles[0])
 	database, dbCfg := dbtest.OpenWithConfig(t)
-	a.db = database
+	a.pool = database
 	// The stores below reach the database only through this seam, and on
 	// PostgreSQL every handle it hands out is a real lane dialled from this
 	// test schema's DSN. That is the only reason this oracle can see a scoping
@@ -216,7 +216,7 @@ func TestTwoTenantsCannotSeeEachOtherThroughTheHandlerChain(t *testing.T) {
 
 	// And the rows really do carry distinct identities — a page that renders
 	// nothing would satisfy the assertion above without proving anything.
-	assertOneRowPerTenant(t, a.db, "announcements", refs["haus-a"].ID, refs["haus-b"].ID)
+	assertOneRowPerTenant(t, testPool(t, a), "announcements", refs["haus-a"].ID, refs["haus-b"].ID)
 }
 
 // TestSessionOfOneTenantCannotDriveAnotherTenantsPath pins the other half: the
@@ -246,6 +246,20 @@ func TestSessionOfOneTenantCannotDriveAnotherTenantsPath(t *testing.T) {
 	if crossed.Code != http.StatusSeeOther {
 		t.Fatalf("cross-tenant path status = %d, want a redirect away", crossed.Code)
 	}
+}
+
+// testPool is the process pool behind an app, for fixtures and assertions that
+// must read OUTSIDE every lane. The app itself only holds the pool's lifecycle
+// surface — that narrowing is what keeps handlers off it — so a test that needs
+// the statement surface says so here, in one place, by asserting the concrete
+// type.
+func testPool(t *testing.T, a *app) *sql.DB {
+	t.Helper()
+	pool, ok := a.pool.(*sql.DB)
+	if !ok {
+		t.Fatalf("app.pool is %T, not the *sql.DB the fixture needs", a.pool)
+	}
+	return pool
 }
 
 func assertOneRowPerTenant(t *testing.T, database *sql.DB, table string, tenantIDs ...string) {
@@ -280,7 +294,7 @@ func TestBootConstructsTheScopedTenantSeam(t *testing.T) {
 	}
 	// On SQLite every accessor is the one process pool, which is what keeps this
 	// batch behaviour-neutral.
-	if a.tenantDB.Unscoped("boot check") != a.db {
+	if a.tenantDB.Unscoped("boot check") != testPool(t, a) {
 		t.Fatal("the seam must hand back the process pool on SQLite")
 	}
 	// And the lanes are owned: shutdown closes them, not just the process pool.

@@ -7,12 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-
-	appdb "github.com/inspr-at/hausv-org/internal/db"
 )
 
 func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
@@ -152,33 +149,28 @@ func TestCAMT053PortalShowsUnsupportedProfileWithoutApply(t *testing.T) {
 }
 
 func TestCAMT053ImportLedgerIsDurableAndTenantBound(t *testing.T) {
-	database, err := appdb.Open(filepath.Join(t.TempDir(), "hausv.db"))
-	if err != nil {
-		t.Fatalf("open database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
-	a := &app{db: database}
+	a, database, refs := ledgerTestApp(t, "demo", "other-house")
 	preview := camtImportPreview{
 		FileDigest:    strings.Repeat("a", 64),
 		SourceVersion: "2019/camt.053.001.08",
 	}
 	report := unitPaymentImportReport{Assigned: 2, Changed: 1, Unclear: 1}
 
-	if err := a.recordPaymentImportLedger("demo", "manager@example.com", preview, report); err != nil {
+	if err := a.recordPaymentImportLedger(refs["demo"], "manager@example.com", preview, report); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
-	if !a.paymentImportAlreadyApplied("demo", preview.FileDigest) {
+	if !a.paymentImportAlreadyApplied(refs["demo"], preview.FileDigest) {
 		t.Fatal("same tenant and digest not found in durable ledger")
 	}
-	if a.paymentImportAlreadyApplied("other-house", preview.FileDigest) {
+	if a.paymentImportAlreadyApplied(refs["other-house"], preview.FileDigest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordPaymentImportLedger("demo", "manager@example.com", preview, report); err != nil {
+	if err := a.recordPaymentImportLedger(refs["demo"], "manager@example.com", preview, report); err != nil {
 		t.Fatalf("repeat record ledger: %v", err)
 	}
 	var rows int
 	if err := database.QueryRow(
-		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = ? AND format = ? AND file_digest = ?`,
+		`SELECT COUNT(*) FROM integration_imports WHERE tenant_slug = $1 AND format = $2 AND file_digest = $3`,
 		"demo", "camt.053", preview.FileDigest,
 	).Scan(&rows); err != nil {
 		t.Fatalf("count ledger: %v", err)

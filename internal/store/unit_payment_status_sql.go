@@ -83,7 +83,7 @@ func (s *SQLUnitPaymentStatusStore) set(tenant TenantRef, item UnitPaymentStatus
 		return UnitPaymentStatus{}, err
 	}
 	item.UpdatedAt = time.Now().UTC().Truncate(time.Second)
-	if _, err := s.db.Unscoped(healOrphanReason).Exec(
+	if _, err := s.db.Unscoped(HealOrphanReason).Exec(
 		`INSERT INTO unit_payment_status(tenant_id, tenant_slug, unit_id, status, updated_at, updated_by)
 		 VALUES($1, $2, $3, $4, $5, $6)
 		 ON CONFLICT(tenant_slug, unit_id) DO UPDATE SET

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
-	"github.com/inspr-at/hausv-org/internal/tenantid"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 const (
@@ -60,7 +60,7 @@ func (a *app) ebInterfaceImportPage(w http.ResponseWriter, r *http.Request, ac a
 	var previewView *ebInterfaceImportPreviewView
 	if token := strings.TrimSpace(r.URL.Query().Get("preview")); token != "" {
 		if preview, found := a.ebInterfaceImportPreview(token, ac.tenant.Slug); found {
-			view := a.ebInterfaceImportPreviewView(token, preview)
+			view := a.ebInterfaceImportPreviewView(ac.tenantRef, token, preview)
 			previewView = &view
 		} else if resultMessage == "" {
 			resultMessage = "Diese Vorschau ist abgelaufen. Bitte die XML-Datei erneut auswählen."
@@ -154,7 +154,7 @@ func (a *app) storeEBInterfaceImport(w http.ResponseWriter, r *http.Request, ac 
 		a.redirectEBInterfaceImport(w, r, "", "expired")
 		return
 	}
-	if a.ebInterfaceImportAlreadyStored(ac.tenant.Slug, preview.FileDigest) {
+	if a.ebInterfaceImportAlreadyStored(ac.tenantRef, preview.FileDigest) {
 		delete(a.ebInterfaceImportPreviews, token)
 		a.redirectEBInterfaceImport(w, r, "", "already")
 		return
@@ -191,7 +191,7 @@ func (a *app) storeEBInterfaceImport(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 
-	ledgerErr := a.recordEBInterfaceImportLedger(ac.tenant.Slug, ac.email, verified)
+	ledgerErr := a.recordEBInterfaceImportLedger(ac.tenantRef, ac.email, verified)
 	auditErr := a.appendEBInterfaceImportAudit(ac, verified, created)
 	delete(a.ebInterfaceImportPreviews, token)
 	if ledgerErr != nil || auditErr != nil {
@@ -202,7 +202,7 @@ func (a *app) storeEBInterfaceImport(w http.ResponseWriter, r *http.Request, ac 
 	http.Redirect(w, r, "/app/dokumente?doc=invoice-imported#document-"+url.PathEscape(created.ID), http.StatusSeeOther)
 }
 
-func (a *app) ebInterfaceImportPreviewView(token string, preview ebInterfaceImportPreview) ebInterfaceImportPreviewView {
+func (a *app) ebInterfaceImportPreviewView(tenant store.TenantRef, token string, preview ebInterfaceImportPreview) ebInterfaceImportPreviewView {
 	invoice := preview.Invoice
 	view := ebInterfaceImportPreviewView{
 		Token:         token,
@@ -217,7 +217,7 @@ func (a *app) ebInterfaceImportPreviewView(token string, preview ebInterfaceImpo
 		DueDate:       ebInterfaceDateLabel(invoice.DueDate),
 		ServicePeriod: ebInterfaceServicePeriodLabel(invoice.ServicePeriodStart, invoice.ServicePeriodEnd),
 		ErrorLabels:   ebInterfaceErrorLabels(preview.Errors),
-		AlreadyStored: a.ebInterfaceImportAlreadyStored(preview.TenantSlug, preview.FileDigest),
+		AlreadyStored: a.ebInterfaceImportAlreadyStored(tenant, preview.FileDigest),
 	}
 	view.CanStore = len(view.ErrorLabels) == 0 && !view.AlreadyStored && invoice.InvoiceNumber != "" && invoice.Amount.Cents > 0 && !invoice.IssueDate.IsZero()
 	return view
@@ -287,58 +287,57 @@ func ebInterfaceImportTargetID(fileDigest string) string {
 	return string(integrations.FormatEBInterface) + ":" + strings.TrimSpace(fileDigest)
 }
 
-func (a *app) ebInterfaceImportAlreadyStored(tenantSlug, fileDigest string) bool {
-	tenantSlug = normalizeSlug(tenantSlug)
+// ebInterfaceImportAlreadyStored is the dedup read on the TENANT lane; see
+// paymentImportAlreadyApplied for why the read keys on tenant_id while the
+// constraint keys on tenant_slug, and what happens to the one row where the two
+// disagree.
+func (a *app) ebInterfaceImportAlreadyStored(tenant store.TenantRef, fileDigest string) bool {
 	fileDigest = strings.TrimSpace(fileDigest)
-	if a != nil && a.db != nil && tenantSlug != "" && fileDigest != "" {
-		// No identity means no rows can reference it, so an unknown slug is a
-		// clean "not imported" rather than a lookup that silently matches on a
-		// label the tenant may since have renamed.
-		tenantID, known := tenantid.Lookup(a.db, tenantSlug)
-		var exists int
-		var err error
-		if known {
-			err = a.db.QueryRow(
-				`SELECT EXISTS(
-					SELECT 1 FROM integration_imports
-					WHERE tenant_id = ? AND format = ? AND file_digest = ?
-				)`,
-				tenantID, string(integrations.FormatEBInterface), fileDigest,
-			).Scan(&exists)
-		}
-		if err == nil && exists == 1 {
+	if a != nil && a.tenantDB != nil && tenant.Valid() && fileDigest != "" {
+		var exists bool
+		err := a.tenantDB.For(tenant).QueryRow(
+			`SELECT EXISTS(
+				SELECT 1 FROM integration_imports
+				WHERE tenant_id = $1 AND format = $2 AND file_digest = $3
+			)`,
+			tenant.ID, string(integrations.FormatEBInterface), fileDigest,
+		).Scan(&exists)
+		if err == nil && exists {
 			return true
 		}
 		if err != nil {
-			logError("ebInterface import ledger lookup failed", err, "tenant", tenantSlug)
+			logError("ebInterface import ledger lookup failed", err, "tenant", tenant.Slug)
 		}
 	}
 	return a != nil && a.auditStore != nil &&
-		a.auditStore.HasTarget(tenantSlug, auditActionIntegrationImport, ebInterfaceImportTargetID(fileDigest))
+		a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, ebInterfaceImportTargetID(fileDigest))
 }
 
-func (a *app) recordEBInterfaceImportLedger(tenantSlug, actorEmail string, preview ebInterfaceImportPreview) error {
-	if a == nil || a.db == nil {
+// recordEBInterfaceImportLedger writes the ledger row on the MAINTENANCE lane
+// under store.HealOrphanReason, for the reason spelled out on the camt.053
+// ledger: the natural conflict key can land on a row the previous release left
+// without a tenant_id, and only the maintenance lane can reach that row.
+func (a *app) recordEBInterfaceImportLedger(tenant store.TenantRef, actorEmail string, preview ebInterfaceImportPreview) error {
+	if a == nil || a.tenantDB == nil {
 		return nil
 	}
-	tenantID, err := tenantid.Ensure(a.db, tenantSlug)
-	if err != nil {
-		return err
+	if !tenant.Valid() {
+		return fmt.Errorf("ebInterface import ledger: tenant reference is not usable")
 	}
 	// DO NOTHING on everything EXCEPT tenant_id, for the reason spelled out on
 	// the camt.053 ledger: the first application's timestamp and actor must
 	// survive a re-upload, but a row left without an identity is a row the
 	// tenant_id lookup above can never find, so the ledger would keep storing
 	// the same invoice for ever.
-	_, err = a.db.Exec(
+	_, err := a.tenantDB.Unscoped(store.HealOrphanReason).Exec(
 		`INSERT INTO integration_imports(
 			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
 			assigned, changed, unclear, rejected
-		) VALUES(?, ?, ?, ?, ?, ?, ?, 1, 1, 0, 0)
+		) VALUES($1, $2, $3, $4, $5, $6, $7, 1, 1, 0, 0)
 		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
 		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
-		tenantID,
-		normalizeSlug(tenantSlug),
+		tenant.ID,
+		tenant.Slug,
 		string(integrations.FormatEBInterface),
 		strings.TrimSpace(preview.FileDigest),
 		strings.TrimSpace(preview.SourceVersion),
