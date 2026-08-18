@@ -9,6 +9,7 @@ package dbtest
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/inspr-at/hausv-org/internal/db"
@@ -154,4 +156,86 @@ func sanitise(name string) string {
 		}
 	}
 	return b.String()
+}
+
+// MaintenanceView returns the *sql.DB a package's fixtures and assertions read
+// and write through: the maintenance lane, taken from the same seam the stores
+// under test hold.
+//
+// Until PostgreSQL migration 0006 that role was played by the process pool. An
+// unscoped session saw everything, so a fixture could seed any row and an
+// assertion could count any table without going through the lane it was
+// checking. 0006 made the unscoped session see NOTHING and write NOTHING — that
+// is the whole point of it — so the pool can no longer play that role on the
+// one engine that has row-level security. The maintenance lane can: it declares
+// hausv.cross_tenant=on in its startup packet, the policy lets it see across
+// every tenant, and it is still deliberately NOT the tenant lane a store writes
+// on, so an assertion that reads through it can still tell "the row is scoped
+// correctly" from "the lane hid a row that is scoped wrong".
+//
+// On SQLite there are no lanes and no policy; every accessor of the seam is the
+// one process pool, and that is what comes back.
+//
+// The concrete type is asserted, not wrapped: a lane IS a *sql.DB (stdlib.OpenDB
+// returns one), and fixtures use the context-taking methods db.Handle does not
+// carry.
+func MaintenanceView(t *testing.T, scoped *db.Scoped) *sql.DB {
+	t.Helper()
+	view, ok := scoped.Unscoped("test fixtures and assertions read and write outside every tenant lane").(*sql.DB)
+	if !ok {
+		t.Fatal("the maintenance lane is not a *sql.DB; fixtures cannot use it")
+	}
+	return view
+}
+
+// RollbackWindowClosed reports whether this engine refuses the row the
+// rollback-window tests reproduce: a tenant-bound row carrying a tenant_slug and
+// NO tenant_id — the shape the previous release wrote, and the shape the
+// boot-time backfill and the HealOrphanReason upserts exist to repair.
+//
+// It measures instead of reading configuration. It attempts exactly that
+// insert, inside a transaction it rolls back, and demands the engine's
+// contractual answer:
+//
+//   - SQLite must ACCEPT it and this returns false. Production runs there, the
+//     window is real, and the repair paths are live code; the caller goes on to
+//     prove them.
+//   - PostgreSQL must REFUSE it with SQLSTATE 23502 and this returns true:
+//     migration 0006 made tenant_id NOT NULL on every governed table, so the
+//     scenario cannot be constructed, and the caller returns — its remaining
+//     assertions have no subject, and the refusal IS the property on this
+//     engine. The attempt is made on the maintenance lane, declared with SET
+//     LOCAL hausv.cross_tenant='on', so the row-level policy is out of the way
+//     and only the column constraint answers; from an undeclared session the
+//     policy would refuse first (42501) and say nothing about NOT NULL.
+//
+// Any other outcome is fatal and names the engine, so the two cannot drift apart
+// silently: under the 0003 posture PostgreSQL accepts the row and this fails.
+func RollbackWindowClosed(t *testing.T, database *sql.DB) bool {
+	t.Helper()
+	tx, err := database.BeginTx(t.Context(), nil)
+	if err != nil {
+		t.Fatalf("begin rollback-window probe: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if Backend() == db.BackendPostgres {
+		if _, err := tx.ExecContext(t.Context(), `SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
+			t.Fatalf("declare the maintenance lane for the probe: %v", err)
+		}
+	}
+	_, err = tx.ExecContext(t.Context(),
+		`INSERT INTO announcements(tenant_slug, id, data) VALUES('rollback-window-probe', 'probe', '{}')`)
+	switch Backend() {
+	case db.BackendPostgres:
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "23502" {
+			t.Fatalf("PostgreSQL must refuse a tenant-bound row without an identity with SQLSTATE 23502 (migration 0006 made tenant_id NOT NULL); got %v", err)
+		}
+		return true
+	default:
+		if err != nil {
+			t.Fatalf("SQLite must accept a tenant-bound row without an identity — the rollback window is real there; got %v", err)
+		}
+		return false
+	}
 }

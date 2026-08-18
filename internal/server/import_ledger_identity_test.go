@@ -3,8 +3,11 @@ package server
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
 
 	appdb "github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
@@ -47,6 +50,14 @@ func TestImportLedgerHealsRowsLeftWithoutAnIdentity(t *testing.T) {
 	t.Run("camt053", func(t *testing.T) {
 		a, database, refs := ledgerTestApp(t, "demo")
 		demo := refs["demo"]
+		// On PostgreSQL the row this reproduces cannot exist since migration
+		// 0006 made tenant_id NOT NULL; the helper proves that refusal, and
+		// with it there is nothing left here to assert on that engine. On
+		// SQLite — production, and the open rollback window — it proves the
+		// row IS accepted and carries on.
+		if dbtest.RollbackWindowClosed(t, database) {
+			return
+		}
 		seedLegacyLedgerRow(t, database, "demo", string(integrations.FormatCAMT053), digest)
 
 		if a.paymentImportAlreadyApplied(demo, digest) {
@@ -70,6 +81,9 @@ func TestImportLedgerHealsRowsLeftWithoutAnIdentity(t *testing.T) {
 	t.Run("ebinterface", func(t *testing.T) {
 		a, database, refs := ledgerTestApp(t, "demo")
 		demo := refs["demo"]
+		if dbtest.RollbackWindowClosed(t, database) {
+			return
+		}
 		seedLegacyLedgerRow(t, database, "demo", string(integrations.FormatEBInterface), digest)
 
 		if a.ebInterfaceImportAlreadyStored(demo, digest) {
@@ -88,55 +102,75 @@ func TestImportLedgerHealsRowsLeftWithoutAnIdentity(t *testing.T) {
 	})
 }
 
-// TestImportLedgerHealRequiresTheMaintenanceLane is why the ledger write is on
-// Unscoped(store.HealOrphanReason) and not on For(tenant): the same upsert, on
-// the tenant lane, is refused by the row-level policy the moment it lands on a
-// row without an identity. Pinned as behaviour so that moving the write back
-// onto the tenant lane — which is what the flip will eventually do, once no
-// orphan can exist — is a decision made against a failing test rather than a
-// silent regression on the engine that has RLS.
-func TestImportLedgerHealRequiresTheMaintenanceLane(t *testing.T) {
+// TestImportLedgerOrphanCannotExistOnPostgres is what became of the test that
+// pinned WHY the ledger write sits on Unscoped(store.HealOrphanReason): under
+// migration 0003 the same upsert on the tenant lane was refused by the policy
+// the moment it landed on a row without an identity, and that refusal was
+// measured here. Migration 0006 removed the row itself — tenant_id is NOT NULL
+// on integration_imports, so the legacy ledger row cannot be seeded from ANY
+// lane, and there is no orphan left for the maintenance lane to be required
+// for.
+//
+// So this now pins the stronger property, and with it the fact that the ledger
+// write CAN go back to For(tenant): the seed is refused by the column (SQLSTATE
+// 23502) even on the maintenance lane, and the tenant lane's own upsert onto a
+// row it wrote itself succeeds. Moving the write is a follow-up made against
+// this test, not part of the flip.
+func TestImportLedgerOrphanCannotExistOnPostgres(t *testing.T) {
 	if dbtest.Backend() != appdb.BackendPostgres {
-		t.Skip("row-level security exists only on PostgreSQL; SQLite has one pool and no policy")
+		t.Skip("row-level security and the NOT NULL flip exist only on PostgreSQL; SQLite has one pool, no policy, and an open rollback window")
 	}
 	digest := strings.Repeat("e", 64)
 	a, database, refs := ledgerTestApp(t, "demo")
 	demo := refs["demo"]
-	seedLegacyLedgerRow(t, database, "demo", string(integrations.FormatCAMT053), digest)
 
-	_, err := a.tenantDB.For(demo).Exec(
-		`INSERT INTO integration_imports(
+	// database is the maintenance lane, the one handle the policy lets through:
+	// what refuses this is the column, not the policy.
+	_, err := database.Exec(
+		`INSERT INTO integration_imports(tenant_slug, format, file_digest, source_version, applied_at, applied_by,
+			assigned, changed, unclear, rejected)
+		 VALUES($1, $2, $3, 'v1', '2026-01-01T00:00:00Z', 'old@example.com', 0, 0, 0, 0)`,
+		"demo", string(integrations.FormatCAMT053), digest)
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23502" {
+		t.Fatalf("a legacy ledger row without an identity was accepted (err=%v); migration 0006 says it cannot exist", err)
+	}
+
+	// And the tenant lane can do the ledger's own write, twice, on its own row.
+	upsert := `INSERT INTO integration_imports(
 			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
 			assigned, changed, unclear, rejected
 		) VALUES($1, $2, $3, $4, 'v2', '2026-02-01T00:00:00Z', 'new@example.com', 1, 0, 0, 0)
 		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
-		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
-		demo.ID, demo.Slug, string(integrations.FormatCAMT053), digest)
-	if err == nil {
-		t.Fatal("the tenant lane adopted an orphan ledger row; if migration 0003 now lets a tenant lane reach a NULL tenant_id row, the ledger write can go back to For(tenant)")
+		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`
+	for attempt := 1; attempt <= 2; attempt++ {
+		if _, err := a.tenantDB.For(demo).Exec(upsert, demo.ID, demo.Slug, string(integrations.FormatCAMT053), digest); err != nil {
+			t.Fatalf("attempt %d: the tenant lane cannot write its own ledger row: %v", attempt, err)
+		}
 	}
-	if !strings.Contains(err.Error(), "row-level security") {
-		t.Fatalf("the tenant lane failed for a different reason than the policy: %v", err)
-	}
+	assertLedgerRowOwned(t, database, string(integrations.FormatCAMT053), digest, demo.ID)
 }
 
 // ledgerTestApp returns an app whose ledger runs on real lanes over the dbtest
-// engine, the pool for fixtures and assertions (deliberately outside every lane,
-// so an assertion cannot be fooled by the lane it is checking), and the tenant
-// references the database minted for the given slugs.
+// engine, the maintenance view for fixtures and assertions (deliberately
+// outside every TENANT lane, so an assertion cannot be fooled by the lane it is
+// checking; see dbtest.MaintenanceView for why it is no longer the pool), and
+// the tenant references the database minted for the given slugs.
 func ledgerTestApp(t *testing.T, slugs ...string) (*app, *sql.DB, map[string]storepkg.TenantRef) {
 	t.Helper()
-	database, cfg := dbtest.OpenWithConfig(t)
-	scoped, err := appdb.NewScoped(cfg, database)
+	pool, cfg := dbtest.OpenWithConfig(t)
+	scoped, err := appdb.NewScoped(cfg, pool)
 	if err != nil {
 		t.Fatalf("open scoped test lanes: %v", err)
 	}
 	t.Cleanup(func() { _ = scoped.Close() })
+	database := dbtest.MaintenanceView(t, scoped)
 	configured := make([]storepkg.TenantIdentity, 0, len(slugs))
 	for _, slug := range slugs {
 		configured = append(configured, storepkg.TenantIdentity{Slug: slug, Name: slug})
 	}
-	identities, err := storepkg.EnsureTenantIdentities(context.Background(), database, configured)
+	// The boot path runs on the pool, exactly as newApp does.
+	identities, err := storepkg.EnsureTenantIdentities(context.Background(), pool, configured)
 	if err != nil {
 		t.Fatalf("ensure tenant identities: %v", err)
 	}

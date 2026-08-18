@@ -56,13 +56,17 @@ func testDB(t *testing.T) *sql.DB {
 	return database
 }
 
-// testLanes returns the fixture pool AND the scoped seam over it, which is what
-// a store now takes.
+// testLanes returns the fixture handle AND the scoped seam over the same
+// database, which is what a store now takes.
 //
-// The pool is still handed back because fixtures and assertions write and read
-// directly, deliberately outside the store's lane: an assertion that ran through
-// the same lane as the write could not tell "the row is scoped correctly" from
-// "the lane hid a row that is scoped wrong".
+// The fixture handle is the MAINTENANCE VIEW (dbtest.MaintenanceView): fixtures
+// and assertions write and read directly through it, deliberately outside the
+// store's tenant lane, so an assertion that ran through the same lane as the
+// write could not tell "the row is scoped correctly" from "the lane hid a row
+// that is scoped wrong". It used to be the process pool; PostgreSQL migration
+// 0006 made an undeclared session see and write nothing, so on that engine the
+// pool can no longer seed or count a governed table, and the maintenance lane —
+// declared cross-tenant in its startup packet — is the handle that can.
 //
 // On PostgreSQL the seam is built from the DSN of this test's isolated schema,
 // so every handle a store takes here is a REAL lane — a pool of its own, born
@@ -72,8 +76,11 @@ func testDB(t *testing.T) *sql.DB {
 func testLanes(t *testing.T) (*sql.DB, *TenantDB) {
 	t.Helper()
 	database, cfg := dbtest.OpenWithConfig(t)
+	// The tenant registry is not governed by the policy, so it is seeded on the
+	// pool exactly as the boot path writes it.
 	seedFixtureTenants(t, database)
-	return database, lanesOver(t, database, cfg)
+	lanes := lanesOver(t, database, cfg)
+	return dbtest.MaintenanceView(t, lanes.scoped), lanes
 }
 
 // testStoreDB is testLanes for the tests that never touch the pool directly.

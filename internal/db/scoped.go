@@ -33,8 +33,10 @@ const (
 	crossTenantOn = "on"
 	// tenantSentinel is what an unusable tenant id becomes. A malformed or empty
 	// id must not error at the call site — there are 130-odd of them — and it must
-	// not silently become "no scope", which under the maintenance-view policy is
-	// the whole database. A value no row can ever carry fails closed instead.
+	// not silently become "no scope": under migration 0003 that was the whole
+	// database, and since 0006 it is nothing, which reads as fail-closed but for
+	// the wrong reason. A value no row can ever carry fails closed instead, and
+	// keeps doing so whichever way the policy is written.
 	tenantSentinel = "-"
 )
 
@@ -115,7 +117,8 @@ func (s *Scoped) For(tenantID string) Handle {
 }
 
 // Unscoped returns the declared maintenance lane: a handle that can see across
-// tenants once the policy recognises the declaration.
+// tenants. Since PostgreSQL migration 0006 this declaration is the ONLY way a
+// session sees more than one tenant — an undeclared session sees nothing.
 //
 // reason is not read here and is not meant to be. It exists so that crossing
 // tenants cannot be done without writing down why, in the call itself, where

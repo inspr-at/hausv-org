@@ -106,6 +106,16 @@ func TestMigrateDataEndToEnd(t *testing.T) {
 	}
 
 	pg, cfg := dbtest.OpenWithConfig(t)
+	// Since migration 0006 the policy is fail-closed: a plain session — which is what
+	// pg is — sees NOTHING in a governed table. Reading the moved rows back has to
+	// happen through the declared maintenance lane, exactly as an operator's
+	// --verify-only does. pg is kept for the one assertion where seeing nothing IS the
+	// point.
+	scoped, err := db.NewScoped(cfg, pg)
+	if err != nil {
+		t.Fatalf("scoped: %v", err)
+	}
+	maint := scoped.Unscoped("test readback of moved rows: the plain pool is fail-closed since 0006")
 	getenv := func(key string) string {
 		if key == "DATABASE_URL" {
 			return cfg.DSN
@@ -127,7 +137,7 @@ func TestMigrateDataEndToEnd(t *testing.T) {
 		t.Fatalf("dry run: err=%v\n%s", err, out)
 	}
 	var contacts int
-	if err := pg.QueryRow(`SELECT count(*) FROM contacts`).Scan(&contacts); err != nil || contacts != 0 {
+	if err := maint.QueryRow(`SELECT count(*) FROM contacts`).Scan(&contacts); err != nil || contacts != 0 {
 		t.Fatalf("dry run left rows: %d err=%v", contacts, err)
 	}
 
@@ -138,8 +148,13 @@ func TestMigrateDataEndToEnd(t *testing.T) {
 	if !strings.Contains(out, "contacts.active: integer -> boolean") {
 		t.Fatalf("report does not name the boolean conversion:\n%s", out)
 	}
-	if err := pg.QueryRow(`SELECT count(*) FROM contacts WHERE active`).Scan(&contacts); err != nil || contacts != 2 {
+	if err := maint.QueryRow(`SELECT count(*) FROM contacts WHERE active`).Scan(&contacts); err != nil || contacts != 2 {
 		t.Fatalf("moved contacts: %d err=%v", contacts, err)
+	}
+	// And the property the flip exists for: the undeclared pool sees none of them.
+	var plain int
+	if err := pg.QueryRow(`SELECT count(*) FROM contacts`).Scan(&plain); err != nil || plain != 0 {
+		t.Fatalf("plain pool sees %d moved contacts, want 0 (fail-closed) err=%v", plain, err)
 	}
 
 	out, err = run("--from", sourcePath, "--verify-only")

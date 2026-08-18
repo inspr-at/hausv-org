@@ -52,6 +52,14 @@ func TestBootRepairsRowsWhoseStoredSlugIsNotCanonical(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.stored, func(t *testing.T) {
 			database := dbtest.Open(t)
+			// On PostgreSQL the row this reproduces cannot exist since
+			// migration 0006 made tenant_id NOT NULL; the helper proves that
+			// refusal, and with it there is nothing left here to assert on
+			// that engine. On SQLite — production, and the open rollback
+			// window — it proves the row IS accepted and carries on.
+			if dbtest.RollbackWindowClosed(t, database) {
+				return
+			}
 			seedSlugOnlyRow(t, database, "announcements", tc.stored, "a1")
 			configured := []TenantIdentity{{Slug: "demo", Name: "Demo"}}
 
@@ -134,6 +142,9 @@ func assertTenantSlugs(t *testing.T, database *sql.DB, wanted map[string]bool) {
 // the row.
 func TestTenantIDMissingErrorNamesTheOffendingSlugs(t *testing.T) {
 	database := dbtest.Open(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	// Whitespace-only and empty slugs canonicalise to nothing, so no identity
 	// can be minted for them. They are the genuinely unrepairable case, and the
 	// only one that should still refuse the boot.
@@ -176,6 +187,9 @@ func TestTenantIDMissingErrorNamesTheOffendingSlugs(t *testing.T) {
 // remaining statements as SQL text rather than behaviour.
 func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
 	database, lanes := testLanes(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC().Truncate(time.Second)
 
