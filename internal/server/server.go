@@ -850,9 +850,9 @@ type app struct {
 	// as a.db.QueryRow / a.db.Exec: outside every lane, and under a fail-closed
 	// policy they would have seen and written nothing. They now go through
 	// tenantDB like every store, and this type is what stops the next one from
-	// taking the same shortcut. Boot-time maintenance (EnsureTenantIdentities,
-	// the energy store) still takes the pool as a local in newApp; it never
-	// reaches the app struct.
+	// taking the same shortcut. Boot-time maintenance (EnsureTenantIdentities)
+	// still takes the pool as a local in newApp; it never reaches the app
+	// struct.
 	pool processPool
 }
 
@@ -1664,7 +1664,7 @@ func newApp() (*app, error) {
 	sqlVotes := newSQLVoteStore(tenantDB)
 	sqlIssues := newSQLIssueStore(tenantDB, issueAttachmentDir)
 	identity := newSQLIdentityStore(tenantDB)
-	energyBackend := energy.NewSQLStore(database)
+	energyBackend := energy.NewSQLStore(tenantDB)
 	homeReservationBackend := store.NewSQLHomeReservationStore(tenantDB)
 	homePortalBackend := store.NewSQLHomePortalStore(tenantDB)
 	homeConnectorBackend := store.NewSQLHomeConnectorStore(tenantDB)

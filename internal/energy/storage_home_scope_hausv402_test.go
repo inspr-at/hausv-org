@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -12,7 +11,7 @@ func TestHomeScopedStoresIsolateHomesWithinTenant(t *testing.T) {
 	stores := map[string]func(*testing.T) energy.Storage{
 		"memory": func(*testing.T) energy.Storage { return energy.NewMemoryStore() },
 		"sql": func(t *testing.T) energy.Storage {
-			return energy.NewSQLStore(dbtest.Open(t))
+			return openEnergyStore(t)
 		},
 	}
 

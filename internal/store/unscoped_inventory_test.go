@@ -19,10 +19,10 @@ import (
 // to take CASUALLY. Unscoped("...") compiles just as readily as For(tenant), and
 // the reason string is not read by anything at runtime.
 //
-// So the cross-tenant surface is written down here, whole, as a golden file: 67
-// declared cross-tenant call sites (65 in the stores, 2 in the import ledger in
-// internal/server) plus the seam's own forwarder, each with the reason its
-// author typed. The value is in the diff.
+// So the cross-tenant surface is written down here, whole, as a golden file: 77
+// declared cross-tenant call sites (65 in the stores, 10 in internal/energy, 2
+// in the import ledger in internal/server) plus the seam's own forwarder, each
+// with the reason its author typed. The value is in the diff.
 // Adding a cross-tenant call is a two-line change in a store plus a line in this
 // file, and that second line is what a reviewer sees without having to know the
 // lane mechanism exists or think to grep for it.
@@ -41,9 +41,10 @@ import (
 //     Import* does — so this undercounts the executed surface on purpose,
 //     because the decision is what is being inventoried.
 //   - Cross-tenant access that never calls Unscoped is invisible to it, and
-//     some exists: internal/energy still takes the process pool, and the
-//     boot-time BackfillTenantIDs / EnsureTenantIdentities take a *sql.DB
-//     directly. Those are outside the seam, not exceptions inside it.
+//     some exists: the boot-time BackfillTenantIDs / EnsureTenantIdentities
+//     take a *sql.DB directly. Those are outside the seam, not exceptions
+//     inside it. (internal/energy used to be on that list; it is on lanes now
+//     and its ten sites are in the golden.)
 //   - A reason built at runtime is recorded as its SOURCE TEXT under kind
 //     "dynamic", not as a value. Exactly one such site exists today and it is
 //     the seam's own forwarder, TenantDB.Unscoped, passing its parameter

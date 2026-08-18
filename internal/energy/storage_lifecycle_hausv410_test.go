@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -17,7 +16,7 @@ func lifecycleStoreFactories() map[string]func(*testing.T) energy.Storage {
 		// the engine it is NOT running on is a label that lies.
 		"sql": func(t *testing.T) energy.Storage {
 			t.Helper()
-			return energy.NewSQLStore(dbtest.Open(t))
+			return openEnergyStore(t)
 		},
 	}
 }

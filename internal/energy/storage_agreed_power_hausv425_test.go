@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -57,7 +56,7 @@ func TestAgreedPowerSurvivesRoundTripHAUSV425(t *testing.T) {
 
 // Ein Bestandsprofil ohne den Wert darf nicht plötzlich mit 0 kW rechnen.
 func TestExistingProfileWithoutAgreedPowerStaysUnsetHAUSV425(t *testing.T) {
-	store := energy.NewSQLStore(dbtest.Open(t))
+	store := openEnergyStore(t)
 
 	if err := store.SaveProfile(energy.DefaultProfile("altbestand", time.Date(2026, time.July, 31, 12, 0, 0, 0, time.UTC))); err != nil {
 		t.Fatalf("Profil speichern: %v", err)

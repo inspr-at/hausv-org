@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -24,7 +23,7 @@ import (
 // arbiters still name tenant_slug, because every energy primary key leads with
 // it on both engines, so this is a dual-key layer and not a slug-free one.
 func TestEnergyReadsAddressRowsByTenantIdentityNotTheLabel(t *testing.T) {
-	database := dbtest.Open(t)
+	database, lanes := openEnergyLanes(t)
 	identities, err := store.EnsureTenantIdentities(t.Context(), database, []store.TenantIdentity{
 		{Slug: "haus-a", Name: "Haus A"},
 		{Slug: "haus-b", Name: "Haus B"},
@@ -33,7 +32,7 @@ func TestEnergyReadsAddressRowsByTenantIdentityNotTheLabel(t *testing.T) {
 		t.Fatalf("boot: %v", err)
 	}
 	now := time.Date(2026, time.August, 18, 9, 0, 0, 0, time.UTC)
-	storage := energy.NewSQLStore(database)
+	storage := energy.NewSQLStore(lanes)
 	for _, slug := range []string{"haus-a", "haus-b"} {
 		if err := storage.SaveProfile(energy.DefaultProfile(slug, now)); err != nil {
 			t.Fatalf("save %s profile: %v", slug, err)
@@ -82,13 +81,13 @@ func TestEnergyReadsAddressRowsByTenantIdentityNotTheLabel(t *testing.T) {
 // and writes a DEFAULT one, and that upsert would overwrite a real household's
 // name, mode and onboarding state.
 func TestARowFromThePreviousReleaseIsHealedByTheNextWrite(t *testing.T) {
-	database := dbtest.Open(t)
+	database, lanes := openEnergyLanes(t)
 	if _, err := store.EnsureTenantIdentities(t.Context(), database,
 		[]store.TenantIdentity{{Slug: "haus-a", Name: "Haus A"}}); err != nil {
 		t.Fatalf("boot: %v", err)
 	}
 	now := time.Date(2026, time.August, 18, 9, 0, 0, 0, time.UTC)
-	storage := energy.NewSQLStore(database)
+	storage := energy.NewSQLStore(lanes)
 	if err := storage.SaveProfile(energy.DefaultProfile("haus-a", now)); err != nil {
 		t.Fatalf("save profile: %v", err)
 	}
@@ -235,7 +234,7 @@ func storedTenantID(t *testing.T, database *sql.DB, assetID string) sql.NullStri
 // asserting the schema: if anyone ever retypes one of these columns to
 // timestamptz, the nanoseconds go and this fails.
 func TestSubSecondTimestampsSurviveTheRoundTripOnBothEngines(t *testing.T) {
-	storage := energy.NewSQLStore(dbtest.Open(t))
+	storage := openEnergyStore(t)
 	precise := time.Date(2026, time.August, 18, 9, 30, 15, 123456789, time.UTC)
 
 	profile := energy.DefaultProfile("haus-a", precise)
@@ -289,7 +288,7 @@ func TestSubSecondTimestampsSurviveTheRoundTripOnBothEngines(t *testing.T) {
 // on being steered by whatever string reached it last, which is the shape the
 // port set out to remove.
 func TestABoundStoreRefusesAnotherHousesSlug(t *testing.T) {
-	database := dbtest.Open(t)
+	database, lanes := openEnergyLanes(t)
 	identities, err := store.EnsureTenantIdentities(t.Context(), database, []store.TenantIdentity{
 		{Slug: "haus-a", Name: "Haus A"},
 		{Slug: "haus-b", Name: "Haus B"},
@@ -298,7 +297,7 @@ func TestABoundStoreRefusesAnotherHousesSlug(t *testing.T) {
 		t.Fatalf("boot: %v", err)
 	}
 	now := time.Date(2026, time.August, 18, 9, 0, 0, 0, time.UTC)
-	root := energy.NewSQLStore(database)
+	root := energy.NewSQLStore(lanes)
 	for _, slug := range []string{"haus-a", "haus-b"} {
 		profile := energy.DefaultProfile(slug, now)
 		profile.HouseholdName = "Haushalt " + slug

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -16,7 +15,7 @@ func postgresGapStoreFactories() map[string]func(*testing.T) energy.Storage {
 		},
 		"sql": func(t *testing.T) energy.Storage {
 			t.Helper()
-			return energy.NewSQLStore(dbtest.Open(t))
+			return openEnergyStore(t)
 		},
 	}
 }

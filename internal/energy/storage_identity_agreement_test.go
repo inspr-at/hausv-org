@@ -1,11 +1,9 @@
 package energy_test
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -27,7 +25,7 @@ import (
 func TestEnergyWritesReuseTheBootIdentity(t *testing.T) {
 	for _, slug := range []string{"haus-a", "haus.a", "haus a", "haus--a", "haus-", "haus-grün", "demo"} {
 		t.Run(slug, func(t *testing.T) {
-			database := openEnergyDB(t)
+			database, lanes := openEnergyLanes(t)
 			identities, err := store.EnsureTenantIdentities(t.Context(), database,
 				[]store.TenantIdentity{{Slug: slug, Name: "Haus"}})
 			if err != nil {
@@ -39,7 +37,7 @@ func TestEnergyWritesReuseTheBootIdentity(t *testing.T) {
 			}
 
 			now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-			if err := energy.NewSQLStore(database).SaveProfile(energy.DefaultProfile(slug, now)); err != nil {
+			if err := energy.NewSQLStore(lanes).SaveProfile(energy.DefaultProfile(slug, now)); err != nil {
 				t.Fatalf("save profile: %v", err)
 			}
 
@@ -85,7 +83,7 @@ func TestEnergyWritesReuseTheBootIdentity(t *testing.T) {
 // filter on tenant_slug, which is now the same string the identity was minted
 // from, so they agree by construction rather than by test.
 func TestTwoHousesWhoseSlugsDifferOnlyOutsideTheAlphabetStaySeparate(t *testing.T) {
-	database := openEnergyDB(t)
+	database, lanes := openEnergyLanes(t)
 	identities, err := store.EnsureTenantIdentities(t.Context(), database, []store.TenantIdentity{
 		{Slug: "haus-a", Name: "Haus A"},
 		{Slug: "haus.a", Name: "Haus Punkt A"},
@@ -94,7 +92,7 @@ func TestTwoHousesWhoseSlugsDifferOnlyOutsideTheAlphabetStaySeparate(t *testing.
 		t.Fatalf("boot: %v", err)
 	}
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-	storage := energy.NewSQLStore(database)
+	storage := energy.NewSQLStore(lanes)
 	for _, slug := range []string{"haus-a", "haus.a"} {
 		if err := storage.SaveProfile(energy.DefaultProfile(slug, now)); err != nil {
 			t.Fatalf("save profile for %s: %v", slug, err)
@@ -109,9 +107,4 @@ func TestTwoHousesWhoseSlugsDifferOnlyOutsideTheAlphabetStaySeparate(t *testing.
 			t.Errorf("house %s's profile carries %q, want %q", slug, id, want)
 		}
 	}
-}
-
-func openEnergyDB(t *testing.T) *sql.DB {
-	t.Helper()
-	return dbtest.Open(t)
 }
