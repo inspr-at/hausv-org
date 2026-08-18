@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSettingsTemplSwitchDefaultsAllFiveRoutesToLegacyRenderer(t *testing.T) {
+func TestSettingsRoutesAlwaysUseTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	for _, route := range []string{
@@ -19,10 +19,10 @@ func TestSettingsTemplSwitchDefaultsAllFiveRoutesToLegacyRenderer(t *testing.T) 
 		t.Run(route, func(t *testing.T) {
 			response := authedRequest(t, a, "manager@example.com", route)
 			if response.Code != http.StatusOK {
-				t.Fatalf("legacy %s status = %d, want 200", route, response.Code)
+				t.Fatalf("%s status = %d, want 200", route, response.Code)
 			}
-			if strings.Contains(response.Body.String(), "data-templ-settings") {
-				t.Fatalf("%s must use the legacy renderer by default", route)
+			if !strings.Contains(response.Body.String(), "data-templ-settings") {
+				t.Fatalf("%s must use the templ renderer", route)
 			}
 		})
 	}
@@ -30,7 +30,6 @@ func TestSettingsTemplSwitchDefaultsAllFiveRoutesToLegacyRenderer(t *testing.T) 
 
 func TestSettingsTemplRendersAllFiveRoutesWithSharedNavigation(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	cases := map[string][]string{
 		"/demo/app/settings":               {"Einstellungen", `href="/demo/app/settings" class="nav-item active"`, `href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`},
@@ -57,7 +56,6 @@ func TestSettingsTemplRendersAllFiveRoutesWithSharedNavigation(t *testing.T) {
 
 func TestSettingsTemplKeepsManagementAndRoleAssignmentGates(t *testing.T) {
 	resident := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	resident.portalTemplEnabled = true
 	body := authedRequest(t, resident, "resident@example.com", "/demo/app/settings").Body.String()
 	for _, forbidden := range []string{`href="/demo/app/settings/building"`, `href="/demo/app/settings/users"`, `href="/demo/app/settings/modules"`} {
 		if strings.Contains(body, forbidden) {
@@ -66,7 +64,6 @@ func TestSettingsTemplKeepsManagementAndRoleAssignmentGates(t *testing.T) {
 	}
 
 	manager := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	manager.portalTemplEnabled = true
 	users := authedRequest(t, manager, "manager@example.com", "/demo/app/settings/users").Body.String()
 	if strings.Contains(users, `<option value="Admin"`) {
 		t.Fatal("non-admin role editor must not offer the Admin role")
@@ -83,7 +80,6 @@ func TestSettingsTemplKeepsManagementAndRoleAssignmentGates(t *testing.T) {
 
 func TestSettingsTemplStillDeniesServiceProviders(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	for _, route := range []string{"/demo/app/settings", "/demo/app/settings/profile", "/demo/app/settings/notifications"} {
 		response := authedRequest(t, a, "service@example.com", route)
 		if response.Code != http.StatusForbidden {

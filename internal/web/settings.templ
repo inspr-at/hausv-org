@@ -145,7 +145,11 @@ templ SettingsHubContent(data SettingsHubPageData) {
 					}
 				</nav></section>
 			}
-			<section class="settings-group panel"><header><div><h2>Mein Konto</h2><p>Persönliche Angaben und Sichtbarkeit.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/profile"><span class="link-icon">@PortalIcon("users")</span><span><strong>Profil</strong><small>Name, Telefon und Sichtbarkeit verwalten</small></span><b>›</b></a></nav></section>
+			<section class="settings-group panel"><header><div><h2>Mein Konto</h2><p>Persönliche Angaben und Sichtbarkeit.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/profile"><span class="link-icon">@PortalIcon("users")</span><span><strong>Profil</strong><small>Name, Telefon und Sichtbarkeit verwalten</small></span><b>›</b></a>
+				if data.Portal.Modules.Audit && data.CanViewAudit && !settingsHasAdministrativeManagement(data) {
+					@SettingsLink("audit", "Aktivitätsverlauf", "Änderungen nachvollziehen", "/app/audit")
+				}
+			</nav></section>
 			<section class="settings-group panel"><header><div><h2>Kommunikation</h2><p>Was automatisch in Ihrem Postfach ankommt.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/notifications"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>Benachrichtigungen</strong><small>{ data.SettingsNotificationSummary }</small></span><b>›</b></a>
 				if data.HasCalendarFeedURL {
 					<a href={ templ.SafeURL(data.CalendarFeedURL) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>Kalender-Abo</strong><small>Haustermine im eigenen Kalender</small></span><b>›</b></a>
@@ -204,8 +208,12 @@ func settingsHomeDetail(home view.HomeIdentityView) string {
 	return "Name, Art und Zuordnung festlegen"
 }
 
+func settingsHasAdministrativeManagement(data SettingsHubPageData) bool {
+	return data.CanManageBuilding || (data.Portal.Modules.Users && data.Portal.CanManageUsers) || (data.Portal.Modules.Documents && data.CanManageDocuments) || (data.Portal.Modules.Handovers && data.CanManageHandovers) || (data.Portal.Modules.Parking && data.IsAdmin)
+}
+
 func settingsHasManagement(data SettingsHubPageData) bool {
-	return data.CanManageBuilding || (data.Portal.Modules.Users && data.Portal.CanManageUsers) || (data.Portal.Modules.Documents && data.CanManageDocuments) || (data.Portal.Modules.Handovers && data.CanManageHandovers) || (data.Portal.Modules.Audit && data.CanViewAudit) || (data.Portal.Modules.Parking && data.IsAdmin)
+	return settingsHasAdministrativeManagement(data)
 }
 
 templ ProfileSettingsPage(data ProfileSettingsPageData) {
@@ -382,7 +390,7 @@ templ BuildingUnitRow(unit view.BuildingUnitView) {
 		if unit.HasHomeDisplayName {
 			<em>Mein Zuhause · { unit.HomeDisplayName }</em>
 		}
-	</div><div class="assignment"><small>Eigentümer</small><strong>{ unit.OwnerSummary }</strong><small>Mieter</small><strong>{ unit.RenterSummary }</strong></div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class="pill">{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
+	</div><div class="assignment"><small>Eigentümer</small><strong>{ unit.OwnerSummary }</strong><small>Mieter</small><strong>{ unit.RenterSummary }</strong></div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class={ "pill", unit.PaymentStatusClass }>{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
 }
 
 func paymentUpdated(unit view.BuildingUnitView) string { if unit.PaymentHasUpdated { return unit.PaymentUpdatedAt }; return "Manuell" }

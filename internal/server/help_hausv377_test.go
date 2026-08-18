@@ -92,7 +92,6 @@ func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
 				Email: email, Role: role,
 				Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 			})
-			a.portalTemplEnabled = true
 
 			page := authedRequest(t, a, email, "/demo/app/hilfe")
 			if page.Code != http.StatusOK {

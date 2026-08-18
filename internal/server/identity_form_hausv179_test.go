@@ -40,10 +40,10 @@ func usersPageFor(t *testing.T, actorRole string) string {
 func TestHouseAdminCannotEditIdentityFieldsInForm(t *testing.T) {
 	body := usersPageFor(t, roleManager)
 
-	// Target the EDIT dialog's inputs by their class. The invite form also has
-	// first_name/last_name, andthat one is fine: creating a person establishes an
+	// Target the EDIT dialog's inputs by name. The invite form also has
+	// first_name/last_name, and that one is fine: creating a person establishes an
 	// identity that does not exist yet. AC8 is about CHANGING an existing one.
-	for _, field := range []string{`class="f-vorname"`, `class="f-nachname"`, `class="f-titel"`, `class="f-email"`} {
+	for _, field := range []string{`name="first_name"`, `name="last_name"`, `name="title"`, `name="email"`} {
 		idx := strings.Index(body, field)
 		if idx < 0 {
 			t.Fatalf("field %s missing from the form", field)
@@ -58,7 +58,7 @@ func TestHouseAdminCannotEditIdentityFieldsInForm(t *testing.T) {
 			t.Fatalf("a house admin must not be offered an editable %s: <input %s>", field, tag)
 		}
 	}
-	if !strings.Contains(body, "zentral von der Plattform-Administration") {
+	if !strings.Contains(body, "zentral gepflegt") {
 		t.Fatal("the form should explain why identity is not editable here")
 	}
 }
@@ -66,7 +66,7 @@ func TestHouseAdminCannotEditIdentityFieldsInForm(t *testing.T) {
 func TestPlatformAdminKeepsEditableIdentityFields(t *testing.T) {
 	body := usersPageFor(t, roleAdmin)
 
-	idx := strings.Index(body, `class="f-vorname"`)
+	idx := strings.Index(body, `name="first_name"`)
 	if idx < 0 {
 		t.Fatal("edit-dialog first_name field missing")
 	}
@@ -75,7 +75,7 @@ func TestPlatformAdminKeepsEditableIdentityFields(t *testing.T) {
 	if strings.Contains(tag, "readonly") {
 		t.Fatalf("a platform admin must keep identity editable: <input %s>", tag)
 	}
-	if strings.Contains(body, "zentral von der Plattform-Administration") {
+	if strings.Contains(body, "zentral gepflegt") {
 		t.Fatal("the read-only hint should not show for a platform admin")
 	}
 }

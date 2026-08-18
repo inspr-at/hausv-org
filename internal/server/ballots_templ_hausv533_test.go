@@ -7,15 +7,12 @@ import (
 	"time"
 )
 
-func TestBallotsTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestBallotsAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/abstimmungen").Body.String()
-	if strings.Contains(body, "data-templ-ballots") {
-		t.Fatal("ballots templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `nav-item active`) {
-		t.Fatal("default ballots response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-ballots") {
+		t.Fatal("ballots response must use the templ renderer")
 	}
 }
 
@@ -32,7 +29,6 @@ func TestBallotsTemplKeepsSharedNavigationAndRoleAccess(t *testing.T) {
 		t.Run(persona.name, func(t *testing.T) {
 			email := persona.name + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, Role: persona.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 			created, err := testVoteRepository(t, a, "demo").Create(ballot{
 				TenantSlug: "demo",
 				Title:      "Innenhof begrünen",

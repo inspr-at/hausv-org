@@ -7,15 +7,12 @@ import (
 	"time"
 )
 
-func TestAuditTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestAuditAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/audit").Body.String()
-	if strings.Contains(body, "data-templ-audit") {
-		t.Fatal("audit templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main audit-screen"`) {
-		t.Fatal("default audit response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-audit") {
+		t.Fatal("audit response must use the templ renderer")
 	}
 }
 
@@ -25,7 +22,6 @@ func TestAuditTemplUsesSharedPortalNavigationForFourRoles(t *testing.T) {
 		t.Run(role, func(t *testing.T) {
 			email := role + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, Role: role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 
 			response := authedRequest(t, a, email, "/demo/app/audit")
 			if response.Code != http.StatusOK {
@@ -48,7 +44,6 @@ func TestAuditTemplUsesSharedPortalNavigationForFourRoles(t *testing.T) {
 
 func TestAuditTemplKeepsFiltersDetailsAndManagementLinksReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	if err := a.auditStore.Append(auditEvent{
 		TenantSlug: "demo",
 		At:         time.Date(2026, 8, 15, 12, 30, 0, 0, time.Local),

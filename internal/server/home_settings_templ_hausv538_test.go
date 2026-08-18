@@ -38,24 +38,20 @@ func newHomeIdentityTemplApp(t *testing.T, profileEmail, role, unitID string, ow
 	return a
 }
 
-func TestHomeIdentityTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestHomeIdentityAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newHomeIdentityTemplApp(t, "owner@example.com", roleOwner, "einheit-12", []string{"owner@example.com"})
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/settings/home")
 	if response.Code != http.StatusOK {
-		t.Fatalf("legacy home settings status = %d", response.Code)
+		t.Fatalf("home settings status = %d", response.Code)
 	}
 	body := response.Body.String()
-	if strings.Contains(body, "data-templ-home-settings") || strings.Contains(body, "data-templ-settings") {
-		t.Fatal("/app/settings/home must use the legacy renderer while the switch is off")
-	}
-	if !strings.Contains(body, `class="page home-identity-page"`) {
-		t.Fatal("legacy home settings markup disappeared")
+	if !strings.Contains(body, "data-templ-home-settings") || !strings.Contains(body, "data-templ-settings") {
+		t.Fatal("/app/settings/home must use the templ renderer")
 	}
 }
 
 func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 	a := newHomeIdentityTemplApp(t, "owner@example.com", roleOwner, "einheit-12", []string{"owner@example.com"})
-	a.portalTemplEnabled = true
 
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/settings/home?from=energy")
 	if response.Code != http.StatusOK {
@@ -118,7 +114,6 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 
 func TestHomeIdentityTemplKeepsUnitPickerAndTypeSelect(t *testing.T) {
 	a := newHomeIdentityTemplApp(t, "manager@example.com", roleManager, "", nil)
-	a.portalTemplEnabled = true
 
 	response := authedRequest(t, a, "manager@example.com", "/demo/app/settings/home")
 	if response.Code != http.StatusOK {
@@ -148,7 +143,6 @@ func TestHomeIdentityTemplKeepsUnitPickerAndTypeSelect(t *testing.T) {
 
 func TestHomeIdentityTemplKeepsAccessGate(t *testing.T) {
 	a := newHomeIdentityTemplApp(t, "owner@example.com", roleOwner, "einheit-12", []string{"owner@example.com"})
-	a.portalTemplEnabled = true
 	a.profiles["resident@example.com"] = userProfile{
 		Email:       "resident@example.com",
 		Role:        roleResident,

@@ -68,16 +68,16 @@ func TestHAUSV200UserSettingsUsesProgressiveDisclosureAndContextualGate(t *testi
 	}
 	body := page.Body.String()
 	for _, want := range []string{
-		`class="access-metrics"`,
+		`class="metrics four"`,
 		`id="invite"`,
 		`Name ergänzen`,
 		`Zugang anpassen`,
-		`Einheit verknüpfen`,
-		`Zuordnung bei Gebäude &amp; Einheiten verwalten`,
+		`Danach bei Bedarf: Einheit verknüpfen`,
+		`Zuordnung verwalten`,
 		`Anmeldung &amp; Sonderrechte`,
 		`Zugang dauerhaft entfernen`,
-		`class="col-secondary"`,
-		`class="col-auth"`,
+		`class="user-list"`,
+		`class="user-card`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("user settings should contain %q", want)

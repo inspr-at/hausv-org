@@ -5,21 +5,17 @@ import (
 	"testing"
 )
 
-func TestPortalTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestPortalAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
-	if strings.Contains(body, "data-templ-portal") {
-		t.Fatal("portal templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="home-hero"`) {
-		t.Fatal("default portal response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-portal") {
+		t.Fatal("portal response must use the templ renderer")
 	}
 }
 
 func TestPortalTemplCombinesModuleAndCapabilityGates(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	if err := a.tenantOverrides.SetDisabledModules("demo", []string{"energy", "events", "contacts", "documents", "issues", "votes", "parking", "handovers", "users", "audit", "help"}); err != nil {
 		t.Fatalf("disable portal modules: %v", err)
 	}
@@ -64,7 +60,6 @@ func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.
 		t.Run(test.name, func(t *testing.T) {
 			email := strings.ReplaceAll(test.name, " ", "-") + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, FirstName: "Ada", Role: test.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 			if test.seedIssue {
 				_, _ = testRepositories(a, "demo").issues.Create(residentIssue{
 					TenantSlug: "demo", AuthorEmail: email, AuthorName: "Ada",

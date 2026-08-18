@@ -301,40 +301,21 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 	}
 	msg, msgOK := voteMessage(r.URL.Query().Get("vote"))
-	if a.portalTemplEnabled {
-		a.renderBallotsTempl(w, r, web.BallotsPageData{
-			Portal:            a.ballotsPortalContext(ac),
-			AssetVersion:      version.AssetVersion(),
-			CanManageVotes:    canManage,
-			CanVote:           ac.can(capabilityVote),
-			Ballots:           views,
-			HasBallots:        len(pageItems) > 0,
-			BallotCountLabel:  pluralizeCount(len(pageItems), "Abstimmung", "Abstimmungen"),
-			VoteOverviewTitle: overviewTitle,
-			VoteOverviewText:  overviewText,
-			VoteOverviewClass: overviewClass,
-			VoteMessage:       msg,
-			VoteMessageOK:     msgOK,
-			NowInput:          formatLocalDateTimeInput(now),
-		})
-		return
-	}
-	a.render(w, "ballots", a.withBase(ac, map[string]any{
-		"Title":             "Abstimmungen",
-		"CanManageVotes":    canManage,
-		"CanVote":           ac.can(capabilityVote),
-		"CanOversightVotes": canOversight,
-		"ActivePage":        "abstimmungen",
-		"Ballots":           views,
-		"HasBallots":        len(pageItems) > 0,
-		"BallotCountLabel":  pluralizeCount(len(pageItems), "Abstimmung", "Abstimmungen"),
-		"VoteOverviewTitle": overviewTitle,
-		"VoteOverviewText":  overviewText,
-		"VoteOverviewClass": overviewClass,
-		"VoteMsg":           msg,
-		"VoteOK":            msgOK,
-		"NowInput":          formatLocalDateTimeInput(now),
-	}))
+	a.renderBallotsTempl(w, r, web.BallotsPageData{
+		Portal:            a.ballotsPortalContext(ac),
+		AssetVersion:      version.AssetVersion(),
+		CanManageVotes:    canManage,
+		CanVote:           ac.can(capabilityVote),
+		Ballots:           views,
+		HasBallots:        len(pageItems) > 0,
+		BallotCountLabel:  pluralizeCount(len(pageItems), "Abstimmung", "Abstimmungen"),
+		VoteOverviewTitle: overviewTitle,
+		VoteOverviewText:  overviewText,
+		VoteOverviewClass: overviewClass,
+		VoteMessage:       msg,
+		VoteMessageOK:     msgOK,
+		NowInput:          formatLocalDateTimeInput(now),
+	})
 }
 
 func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {

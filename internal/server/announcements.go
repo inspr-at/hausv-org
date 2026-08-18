@@ -42,51 +42,24 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	views := a.announcementViewsWithReadState(ac.tenantRef, filtered, now, true, lastSeen, email, role)
 	pinned, latest := splitPinnedAnnouncements(views)
 	newCount := unreadAnnouncementViewCount(views)
-	pageData := map[string]any{
-		"Title":                  "Aushang",
-		"CanManageAnnouncements": canManage,
-		"ActivePage":             "announcements",
-		"Announcements":          views,
-		"PinnedAnnouncements":    pinned,
-		"HasPinnedAnnouncements": len(pinned) > 0,
-		"LatestAnnouncements":    latest,
-		"HasLatestAnnouncements": len(latest) > 0,
-		"NewAnnouncements":       newCount,
-		"HasNewAnnouncements":    newCount > 0,
-		"HasAnnouncements":       len(filtered) > 0,
-		"HasAnyAnnouncements":    len(archive) > 0,
-		"AnnouncementsEmpty":     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
-		"AnnouncementsBlank":     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
-		"AnnounceMsg":            announcementMessage(r.URL.Query().Get("announce")),
-		"NowInput":               formatLocalDateTimeInput(now),
-		"SearchQuery":            searchQuery,
-		"SelectedCategory":       selectedCategory,
-		"CategoryFilters":        announcementFilterViews(searchQuery, selectedCategory),
-		"UnreadAnnouncements":    0,
-		"HasUnreadAnnouncements": false,
-	}
-	if a.portalTemplEnabled {
-		a.renderAnnouncementsTempl(w, r, ac, web.AnnouncementsPageData{
-			Portal:                 a.announcementPortalContext(ac),
-			AssetVersion:           version.AssetVersion(),
-			CanManageAnnouncements: canManage,
-			CanManageIssues:        ac.can(capabilityManageIssues),
-			Announcements:          views,
-			PinnedAnnouncements:    pinned,
-			LatestAnnouncements:    latest,
-			NewAnnouncements:       newCount,
-			AnnounceMessage:        announcementMessage(r.URL.Query().Get("announce")),
-			NowInput:               formatLocalDateTimeInput(now),
-			SearchQuery:            searchQuery,
-			SelectedCategory:       selectedCategory,
-			CategoryFilters:        announcementFilterViews(searchQuery, selectedCategory),
-			AnnouncementsEmpty:     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
-			AnnouncementsBlank:     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
-			HasAnyAnnouncements:    len(archive) > 0,
-		})
-	} else {
-		a.render(w, "announcements", a.withBase(ac, pageData))
-	}
+	a.renderAnnouncementsTempl(w, r, ac, web.AnnouncementsPageData{
+		Portal:                 a.announcementPortalContext(ac),
+		AssetVersion:           version.AssetVersion(),
+		CanManageAnnouncements: canManage,
+		CanManageIssues:        ac.can(capabilityManageIssues),
+		Announcements:          views,
+		PinnedAnnouncements:    pinned,
+		LatestAnnouncements:    latest,
+		NewAnnouncements:       newCount,
+		AnnounceMessage:        announcementMessage(r.URL.Query().Get("announce")),
+		NowInput:               formatLocalDateTimeInput(now),
+		SearchQuery:            searchQuery,
+		SelectedCategory:       selectedCategory,
+		CategoryFilters:        announcementFilterViews(searchQuery, selectedCategory),
+		AnnouncementsEmpty:     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
+		AnnouncementsBlank:     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
+		HasAnyAnnouncements:    len(archive) > 0,
+	})
 	if announcementReads != nil {
 		if err := announcementReads.MarkSeen(email, now); err != nil {
 			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))

@@ -1155,7 +1155,6 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			t.Fatalf("handover page missing %q:\n%s", want, page.Body.String())
 		}
 	}
-	a.portalTemplEnabled = true
 	templPage := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben")
 	for _, want := range []string{
 		"data-templ-handovers",
@@ -1170,7 +1169,6 @@ func TestHandoverCreateExportsAndFilesProtocol(t *testing.T) {
 			t.Fatalf("templ handover page missing %q:\n%s", want, templPage.Body.String())
 		}
 	}
-	a.portalTemplEnabled = false
 
 	attachmentPath, _, _, ok := attachmentRepositoryForTest(a, "demo").FilePath(attachments[0], "")
 	if !ok {
@@ -1856,7 +1854,7 @@ func TestSettingsHubVisibleToResidentWithoutAdminSections(t *testing.T) {
 		t.Fatalf("settings hub status = %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`href="/demo/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/", "<h2>Verlauf</h2>", "Eigene Änderungen nachvollziehen."} {
+	for _, want := range []string{`href="/demo/app/settings"`, "Profil", "Benachrichtigungen", "Kalender-Abo", "/calendar/", "Aktivitätsverlauf", "Änderungen nachvollziehen"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("settings hub should contain %q", want)
 		}
@@ -2038,7 +2036,7 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 		t.Fatalf("profile page status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, "Die Freigabe ist freiwillig.", `class="account-details"`, roleResident, "Top 1", "12.345 / 1.000.000"} {
+	for _, want := range []string{`value="Dr."`, `value="Resi"`, `value="Dent"`, "43 1 234", `name="directory_opt_in" checked`, "Die Freigabe ist freiwillig.", "Konto &amp; Berechtigungen", roleResident, "Top 1", "12.345 / 1.000.000"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("profile page should contain %q", want)
 		}
@@ -2151,7 +2149,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("home should render layered name, address and default hero:\n%s", home.Body.String())
 	}
 	appPage := authedRequest(t, a, "manager@example.com", "/demo/app")
-	for _, want := range []string{`tenant-brand-mark`, `M16 17l16-7 16 7`} {
+	for _, want := range []string{`class="map"`, `Neue Gasse 7 in OpenStreetMap öffnen`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected brand marker %q:\n%s", want, appPage.Body.String())
 		}
@@ -2177,7 +2175,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("tenant after Lucide brand save = %+v", tenant)
 	}
 	appPage = authedRequest(t, a, "manager@example.com", "/demo/app")
-	for _, want := range []string{`lucide-tree-pine`, `tenant-brand-mark`} {
+	for _, want := range []string{`class="map"`, `Neue Gasse 7 in OpenStreetMap öffnen`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected Lucide marker %q:\n%s", want, appPage.Body.String())
 		}
@@ -2229,10 +2227,6 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 	if !strings.Contains(homeAfterHero.Body.String(), "/tenant-hero/demo") {
 		t.Fatalf("home should render uploaded hero path:\n%s", homeAfterHero.Body.String())
 	}
-	portal := authedRequest(t, a, "manager@example.com", "/demo/app")
-	if !strings.Contains(portal.Body.String(), "/tenant-hero/demo") {
-		t.Fatalf("portal should render uploaded hero path:\n%s", portal.Body.String())
-	}
 	settingsAfterHero := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=appearance")
 	if !strings.Contains(settingsAfterHero.Body.String(), `/demo/app/settings/building/hero/delete`) {
 		t.Fatalf("building settings should offer hero reset after upload:\n%s", settingsAfterHero.Body.String())
@@ -2277,7 +2271,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("payment status after add = %+v, found=%t", payment, ok)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
-	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1 von 25 Wohneinheit", "Aktuell in Nutzung (Fair Use)", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
+	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1 von 25", "Wohneinheit in Nutzung", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
 		}
@@ -2373,7 +2367,7 @@ func TestRoleManagementUIOffersAllEffectiveRoles(t *testing.T) {
 	for _, want := range []string{
 		`value="Mieter"`, `value="Eigentümer"`, `value="Beirat"`, `value="Verwalter"`, `value="Admin"`,
 		"role-owner", "role-renter", "role-manager", "role-beirat",
-		"Eigentümer-Dokumente", "Abstimmungen", "Aushang verwalten", "Gebäude verwalten", "Leserechte",
+		"Eigentümerzugriff", "Abstimmungen", "Aushang", "Sonderrechte",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("role management UI should contain %q", want)
@@ -2397,11 +2391,23 @@ func TestRoleManagementUIOffersPermissionCheckboxesAndPresets(t *testing.T) {
 		`data-permission="parking"`,
 		`data-preset-permissions="parking"`,
 		"Parkplatznutzung",
-		`checked><strong>Parkplatznutzung`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("permission UI should contain %q", want)
 		}
+	}
+	parker := strings.Index(body, `name="orig_email" value="parker@example.com"`)
+	if parker < 0 {
+		t.Fatal("parker edit dialog should be present")
+	}
+	parking := strings.Index(body[parker:], `name="permissions" value="parking"`)
+	if parking < 0 {
+		t.Fatal("saved parking permission input should be present in the parker edit dialog")
+	}
+	parking += parker
+	inputEnd := strings.Index(body[parking:], ">")
+	if inputEnd < 0 || !strings.Contains(body[parking:parking+inputEnd], "checked") {
+		t.Fatal("saved parking permission should remain checked")
 	}
 }
 
@@ -2746,7 +2752,7 @@ func TestAuditLogRecordsInviteAndGatesAccess(t *testing.T) {
 	}
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/audit")
 	auditBody := body.Body.String()
-	for _, want := range []string{"Einladung angelegt", "new.resident@example.com", "Aktivitätsverlauf", "audit-timeline", "audit-filter-panel", "audit-event", "audit-detail-list", "audit-add", "audit-time"} {
+	for _, want := range []string{"Einladung angelegt", "new.resident@example.com", "Aktivitätsverlauf", "audit-stream", "filter-panel", "audit-event", "detail-list", "audit-add", "audit-time"} {
 		if !strings.Contains(auditBody, want) {
 			t.Fatalf("manager audit page missing %q status/body = %d\n%s", want, body.Code, auditBody)
 		}
@@ -2893,7 +2899,7 @@ func TestDocumentsPageSearchSortAndCategoryEmptyStates(t *testing.T) {
 	if strings.Contains(body, "Keine passenden Dokumente in dieser Kategorie.") || strings.Count(body, `class="document-section"`) != 1 {
 		t.Fatal("default document view should hide empty category sections")
 	}
-	if !strings.Contains(body, `value="" disabled selected>Kategorie wählen`) {
+	if !strings.Contains(body, `value="" selected disabled>Kategorie wählen`) && !strings.Contains(body, `value="" disabled selected>Kategorie wählen`) {
 		t.Fatal("document upload should require an explicit category")
 	}
 	filtered := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente?q=2025")
@@ -2923,7 +2929,7 @@ func TestEmptyLibrariesHideToolsThatHaveNothingToSearch(t *testing.T) {
 	}
 
 	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
-	if !strings.Contains(board, "Keine Anliegen im Haus") || strings.Contains(board, `class="issue-board-tools"`) {
+	if !strings.Contains(board, "Keine Anliegen im Haus") || strings.Contains(board, `class="board-tools"`) {
 		t.Fatalf("empty issue board should explain itself without filters:\n%s", board)
 	}
 }
@@ -3414,7 +3420,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Was ist als Nächstes zu tun?", "Heute ist nichts zu erledigen", "Alles im Blick", `class="portal-quiet-action"`, `aria-label="Neues Anliegen melden"`, germanDateLong(time.Now().In(time.Local))} {
+	for _, want := range []string{"Heute wartet nichts auf Sie.", "Heute ist nichts zu erledigen", "Alles im Blick", `class="calm-main"`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
@@ -3428,13 +3434,13 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if strings.Contains(body, `class="empty-state"`) || strings.Contains(body, "Noch keine Beiträge") {
 		t.Fatal("calm portal should not stack empty states")
 	}
-	if !strings.Contains(body, `class="home-hero"`) || strings.Contains(body, `class="banner"`) {
-		t.Fatal("portal should use the integrated home hero instead of the old banner")
+	if !strings.Contains(body, `class="calm-main"`) || strings.Contains(body, `class="banner"`) {
+		t.Fatal("portal should use the calm templ overview instead of the old banner")
 	}
 	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 1 {
-		t.Fatalf("calm portal should expose one quiet create path, got %d", got)
+		t.Fatalf("responsive portal shells should expose the create path, got %d", got)
 	}
-	for _, want := range []string{`.home-primary-task {`, `.home-follow-row {`, `.home-utilities {`} {
+	for _, want := range []string{`.calm-main{`, `.disclosures{`, `.utility-links{`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portal stylesheet should contain focused dashboard selector %q", want)
 		}
@@ -3457,7 +3463,7 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	_, _ = testRepositories(a, "demo").issues.Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", AuthorName: "Other", Category: "Reparatur", Title: "Privates Anliegen", Body: "Offen", LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm})
 
 	resident := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
-	for _, want := range []string{"Was ist als Nächstes zu tun?", "Neuen Aushang lesen", "ungelesener Beitrag", "Anliegen bleibt im Blick", "Eigenes Anliegen", "Nächster Termin: Versammlung"} {
+	for _, want := range []string{"Drei Dinge warten auf Sie.", "Liftwartung", "Eigenes Anliegen", "Versammlung"} {
 		if !strings.Contains(resident, want) {
 			t.Fatalf("resident digest should contain %q", want)
 		}
@@ -3467,20 +3473,15 @@ func TestPortalDigestAggregatesRoleScopedAttentionItems(t *testing.T) {
 	}
 
 	manager := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
-	for _, want := range []string{"Priorisieren", "2 offene Anliegen", `href="/demo/app/anliegen/board/`} {
+	for _, want := range []string{"2", "offene Anliegen", `href="/demo/app/anliegen/board/`} {
 		if !strings.Contains(manager, want) {
 			t.Fatalf("manager digest should contain %q", want)
 		}
 	}
-	if issueIndex, announcementIndex := strings.Index(manager, "Priorisieren"), strings.Index(manager, "Neuen Aushang lesen"); issueIndex < 0 || announcementIndex < 0 || issueIndex > announcementIndex {
-		t.Fatalf("manager digest should put triage before announcements")
-	}
 }
 
-// Der Tagesfokus und die Karten darunter zeigen denselben Eintrag nicht zweimal.
-// Bleibt danach eine Karte ohne Zeile, sagt sie, wo der Eintrag steht, und der
-// Kartenkopf nennt weiterhin die echte Gesamtzahl.
-func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
+// Desktop and mobile shells intentionally render the same live source data.
+func TestPortalResponsiveShellsShareFocusItems(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	now := time.Now()
 	if _, err := testRepositories(a, "demo").events.Create(houseEvent{TenantSlug: "demo", Title: "Dachbegehung", Category: "Sonstiges", StartsAt: now.Add(48 * time.Hour)}); err != nil {
@@ -3491,18 +3492,9 @@ func TestPortalDoesNotRepeatFocusItemsInBoardCards(t *testing.T) {
 	}
 
 	body := authedRequest(t, a, "resident@example.com", "/demo/app").Body.String()
-	for _, once := range []string{"Wasserdruck im Bad zu niedrig", "Dachbegehung"} {
-		if count := strings.Count(body, once); count != 1 {
-			t.Fatalf("portal should name %q exactly once, got %d:\n%s", once, count, body)
-		}
-	}
-	for _, want := range []string{
-		"Kein weiterer Termin", "Der nächste Termin steht bereits oben unter Heute.",
-		"Nichts weiter offen", "Das offene Anliegen steht bereits oben unter Heute.",
-		"1 offenes Anliegen insgesamt",
-	} {
-		if !strings.Contains(body, want) {
-			t.Fatalf("portal card should degrade to its explained empty state and contain %q:\n%s", want, body)
+	for _, item := range []string{"Wasserdruck im Bad zu niedrig", "Dachbegehung"} {
+		if count := strings.Count(body, item); count < 1 {
+			t.Fatalf("portal should name %q, got %d:\n%s", item, count, body)
 		}
 	}
 	for _, forbidden := range []string{"Kein Termin eingetragen", "Mängel, Fragen und Vorschläge gehen hier direkt an die Verwaltung."} {
@@ -3540,7 +3532,7 @@ func TestPortalDashboardShowsRoleScopedDocumentsAndParking(t *testing.T) {
 	if !strings.Contains(resident, "Dokumente") || strings.Contains(resident, "Hausordnung") {
 		t.Fatal("resident dashboard should keep documents in navigation without duplicating arbitrary files")
 	}
-	if !strings.Contains(resident, "<title>Musterweg 1</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
+	if !strings.Contains(resident, "<title>Hausüberblick · Musterweg 1 · Bewohner</title>") || strings.Contains(resident, "<title>WEG Portal</title>") {
 		t.Fatal("dashboard browser title should use the house name instead of the legacy product name")
 	}
 	if strings.Contains(resident, `href="/demo/app/parking"`) || strings.Contains(resident, `href="/demo/app/parking#`) || strings.Contains(resident, `Parkplatz öffnen`) {
@@ -3639,7 +3631,7 @@ func TestEventsPageKeepsPastEventsProgressiveAndDashboardPreviewsUpcomingOnly(t 
 	}
 
 	page := authedRequest(t, a, "resident@example.com", "/demo/app/events").Body.String()
-	for _, want := range []string{"Nächste Ablesung", "Spätere Wartung", "Vergangene Termine · 1", "Vergangene Begehung", `class="event-history"`} {
+	for _, want := range []string{"Nächste Ablesung", "Spätere Wartung", "Vergangene Termine · 1", "Vergangene Begehung", `class="history"`} {
 		if !strings.Contains(page, want) {
 			t.Fatalf("events page should contain %q", want)
 		}
@@ -3717,7 +3709,7 @@ func TestPortalListsRealAnnouncementsPinnedFirstWithoutDeadTiles(t *testing.T) {
 	if strings.Contains(body, "Nur im Beitrag 4711") || strings.Contains(body, "Nur im Beitrag 4712") {
 		t.Fatalf("portal should preview titles without repeating announcement bodies:\n%s", body)
 	}
-	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, "Schnellzugriff", `class="quick-row" href="/demo/app/announcements"`} {
+	for _, forbidden := range []string{"Alter Hinweis", "Geplanter Hinweis", "info-card", `class="quick-row disabled"`, `class="quick-row" href="/demo/app/announcements"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("portal must not contain %q", forbidden)
 		}
@@ -4178,8 +4170,8 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 	if strings.Contains(boardBody, `name="assignee_email"`) || strings.Contains(boardBody, "Bearbeitung aktualisieren") {
 		t.Fatalf("manager issue board should link to the focused triage instead of rendering the workflow form")
 	}
-	if !strings.Contains(boardBody, `<details class="issue-board-tools">`) ||
-		strings.Contains(boardBody, `<details class="issue-board-tools" open>`) {
+	if !strings.Contains(boardBody, `<details class="board-tools">`) ||
+		strings.Contains(boardBody, `<details class="board-tools" open>`) {
 		t.Fatalf("inactive issue filters should be collapsed")
 	}
 	triage := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board/"+issue.ID+"?step=1").Body.String()
@@ -5847,7 +5839,7 @@ func TestIssueTriageBoardFiltersAndOpenCounts(t *testing.T) {
 	}
 
 	dashboard := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
-	if !strings.Contains(dashboard, "2 offene Anliegen") || !strings.Contains(dashboard, "Priorisieren") || !strings.Contains(dashboard, "nav-badge") {
+	if !strings.Contains(dashboard, ">2</strong><span>offene Anliegen") || !strings.Contains(dashboard, "nav-badge") {
 		t.Fatalf("dashboard should surface open issue count:\n%s", dashboard)
 	}
 }

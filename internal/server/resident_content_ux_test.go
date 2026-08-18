@@ -52,7 +52,7 @@ func TestBallotOverviewExplainsReadOnlyOpenBallotTruthfully(t *testing.T) {
 	for _, want := range []string{
 		"Offene Abstimmung zur Information",
 		"Für diesen Zugang ist keine Stimmabgabe hinterlegt.",
-		`class="vote-readonly-note"`,
+		`class="vote-note"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("read-only ballot overview missing %q:\n%s", want, body)

@@ -35,56 +35,31 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if len(documents) == 1 {
 		documentCountLabel = "1 Dokument"
 	}
-	if a.portalTemplEnabled {
-		guide := documentCategoryGuide()
-		documentGuide := make([]web.DocumentGuideEntry, 0, len(guide))
-		for _, entry := range guide {
-			documentGuide = append(documentGuide, web.DocumentGuideEntry{Category: entry.Category, Detail: entry.Detail})
-		}
-		a.renderDocumentsTempl(w, r, web.DocumentsPageData{
-			Portal:             a.documentsPortalContext(ac),
-			AssetVersion:       version.AssetVersion(),
-			CanManageDocuments: canManage,
-			DocumentSections:   a.documentCategorySectionsForActor(ac.tenantRef, email, role, documents, false),
-			HasDocuments:       len(documents) > 0,
-			HasAnyDocuments:    len(visible) > 0,
-			DocumentsEmpty:     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
-			DocumentGuide:      documentGuide,
-			DocumentCountLabel: documentCountLabel,
-			DocumentMessage:    documentMsg,
-			DocumentMessageOK:  documentOK,
-			SearchQuery:        searchQuery,
-			HasSearchQuery:     searchQuery != "",
-			SortOptions:        documentSortOptions(sortMode),
-			CategoryOptions:    documentCategoryOptions(""),
-			VisibilityOptions:  documentVisibilityOptions(""),
-			UnitOptions:        documentUnitOptions(ac.repositories.units.List(), ""),
-			MaxDocumentSize:    formatBytes(maxDocumentBytes),
-		})
-		return
+	guide := documentCategoryGuide()
+	documentGuide := make([]web.DocumentGuideEntry, 0, len(guide))
+	for _, entry := range guide {
+		documentGuide = append(documentGuide, web.DocumentGuideEntry{Category: entry.Category, Detail: entry.Detail})
 	}
-	a.render(w, "documents", a.withBase(ac, map[string]any{
-		"Title":              "Dokumente",
-		"CanManageDocuments": canManage,
-		"ActivePage":         "documents",
-		"Documents":          a.documentViewsForActor(ac.tenantRef, email, role, documents),
-		"DocumentSections":   a.documentCategorySectionsForActor(ac.tenantRef, email, role, documents, false),
-		"HasDocuments":       len(documents) > 0,
-		"HasAnyDocuments":    len(visible) > 0,
-		"DocumentsEmpty":     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
-		"DocumentGuide":      documentCategoryGuide(),
-		"DocumentCountLabel": documentCountLabel,
-		"DocumentMsg":        documentMsg,
-		"DocumentOK":         documentOK,
-		"SearchQuery":        searchQuery,
-		"HasSearchQuery":     searchQuery != "",
-		"SortMode":           sortMode,
-		"SortOptions":        documentSortOptions(sortMode),
-		"CategoryOptions":    documentCategoryOptions(""),
-		"VisibilityOptions":  documentVisibilityOptions(""),
-		"UnitOptions":        documentUnitOptions(ac.repositories.units.List(), ""),
-		"MaxDocumentSize":    formatBytes(maxDocumentBytes),
-	}))
+	a.renderDocumentsTempl(w, r, web.DocumentsPageData{
+		Portal:             a.documentsPortalContext(ac),
+		AssetVersion:       version.AssetVersion(),
+		CanManageDocuments: canManage,
+		DocumentSections:   a.documentCategorySectionsForActor(ac.tenantRef, email, role, documents, false),
+		HasDocuments:       len(documents) > 0,
+		HasAnyDocuments:    len(visible) > 0,
+		DocumentsEmpty:     emptyState("Noch keine Dokumente", "Sobald die Verwaltung eine Unterlage freigibt, erscheint sie hier – mit Kategorie, Datum und Download."),
+		DocumentGuide:      documentGuide,
+		DocumentCountLabel: documentCountLabel,
+		DocumentMessage:    documentMsg,
+		DocumentMessageOK:  documentOK,
+		SearchQuery:        searchQuery,
+		HasSearchQuery:     searchQuery != "",
+		SortOptions:        documentSortOptions(sortMode),
+		CategoryOptions:    documentCategoryOptions(""),
+		VisibilityOptions:  documentVisibilityOptions(""),
+		UnitOptions:        documentUnitOptions(ac.repositories.units.List(), ""),
+		MaxDocumentSize:    formatBytes(maxDocumentBytes),
+	})
 }
 
 func (a *app) documentsPortalContext(ac authCtx) web.PortalPageData {

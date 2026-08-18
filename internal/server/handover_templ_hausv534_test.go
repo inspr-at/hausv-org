@@ -5,21 +5,17 @@ import (
 	"testing"
 )
 
-func TestHandoversTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestHandoversAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben").Body.String()
-	if strings.Contains(body, "data-templ-handovers") {
-		t.Fatal("handover templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="page wide handover-page"`) {
-		t.Fatal("default handover response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-handovers") {
+		t.Fatal("handover response must use the templ renderer")
 	}
 }
 
 func TestHandoversTemplUsesSharedPermissionGatedPortalShell(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben").Body.String()
 	for _, want := range []string{

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"math"
 	"net/http"
@@ -689,20 +688,14 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Name und Zuordnung dürfen nur zuständige Eigentümer oder die Hausverwaltung ändern.", http.StatusForbidden)
 		return
 	}
-	onboardingIdentity := defaultHomeIdentityView()
-	if exists && profile.OnboardingStep >= 3 {
-		onboardingIdentity = a.homeIdentityFromProfile(ac.tenantRef, profile)
-	}
 	discovery := energyDiscoveryView{}
 	connectorMessage := "Home Assistant ist noch nicht verbunden. Das ist okay – Sie können später weitermachen."
-	connectorOK := false
 	if step == 4 {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 		states, configured, sourceErr := a.energyStates(ctx, ac.tenant)
 		if discovered, discoverErr := discoverEnergyCandidatesFromStates(states, mappings); configured && sourceErr == nil && discoverErr == nil {
 			discovery = discovered
-			connectorOK = true
 			if len(discovery.Recommended) > 0 {
 				connectorMessage = fmt.Sprintf("%d sichere Vorschläge gefunden. Sie bleiben vollständig lesend.", len(discovery.Recommended))
 			} else {
@@ -712,72 +705,33 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 			connectorMessage = "Home Assistant antwortet gerade nicht. Ihre bisherigen Angaben bleiben erhalten."
 		}
 	}
-	if a.portalTemplEnabled {
-		// The legacy data map never carried an operating mode or tariff, so the
-		// energy mode strip on this route always rendered the observing state.
-		// The templ page keeps that contract rather than inventing a new one.
-		a.renderOnboardingTempl(w, r, web.OnboardingPageData{
-			Portal:               a.onboardingPortalContext(ac),
-			Step:                 step,
-			Progress:             step * 20,
-			ProfileReset:         r.URL.Query().Get("reset") == "1",
-			HouseholdName:        profile.HouseholdName,
-			HomeType:             profile.HomeType,
-			HomeTypeLabel:        energyHomeTypeLabel(profile.HomeType),
-			HomeTypeDescription:  energyHomeTypeDescription(profile.HomeType),
-			HomeTypeLocked:       a.homeIdentityTypeLocked(ac.tenantRef, profile),
-			HasHomeUnit:          hasHomeUnit,
-			HomeUnitID:           homeUnitID,
-			HomeUnitLabel:        homeUnitLabel,
-			HasUnitOptions:       len(unitOptions) > 0,
-			UnitOptions:          onboardingUnitOptions(unitOptions),
-			AssetOptions:         onboardingAssetOptions(buildEnergyAssetOptions(assets)),
-			MappingSlots:         onboardingMappingSlots(mappingSlots),
-			MappingAssetOptions:  onboardingOptions(buildEnergyMappingAssetOptions(assets)),
-			ConnectorMessage:     connectorMessage,
-			Candidates:           onboardingCandidates(discovery.Recommended),
-			HasCandidates:        len(discovery.Recommended) > 0,
-			RecommendedCount:     len(discovery.Recommended),
-			AdditionalCandidates: onboardingCandidates(discovery.Additional),
-			HasAdditional:        len(discovery.Additional) > 0,
-			FinishRecommendation: onboardingRecommendation(finishRecommendation),
-			CanControlEnergy:     a.canControlEnergy(ac),
-		})
-		return
-	}
-	a.render(w, "homeOnboarding", a.withBase(ac, map[string]any{
-		"Title":                 "Mein Zuhause einrichten",
-		"ActivePage":            "energy",
-		"Profile":               profile,
-		"Step":                  step,
-		"Progress":              step * 20,
-		"AssetOptions":          buildEnergyAssetOptions(assets),
-		"MappingAssetOptions":   buildEnergyMappingAssetOptions(assets),
-		"MappingSlots":          mappingSlots,
-		"Candidates":            discovery.Recommended,
-		"HasCandidates":         len(discovery.Recommended) > 0,
-		"RecommendedCount":      len(discovery.Recommended),
-		"AdditionalCandidates":  discovery.Additional,
-		"HasAdditional":         len(discovery.Additional) > 0,
-		"ConnectorOK":           connectorOK,
-		"ConnectorMessage":      connectorMessage,
-		"FinishRecommendation":  finishRecommendation,
-		"CanManageEnergy":       a.canManageEnergy(ac),
-		"CanManageHomeIdentity": a.canManageHomeIdentityProfile(ac, profile, exists),
-		"CanControlEnergy":      a.canControlEnergy(ac),
-		"HomeTypeLabel":         energyHomeTypeLabel(profile.HomeType),
-		"HomeTypeDescription":   energyHomeTypeDescription(profile.HomeType),
-		"HomeTypeLocked":        a.homeIdentityTypeLocked(ac.tenantRef, profile),
-		"UnitOptions":           unitOptions,
-		"HasUnitOptions":        len(unitOptions) > 0,
-		"HomeUnitID":            homeUnitID,
-		"HomeUnitLabel":         homeUnitLabel,
-		"HasHomeUnit":           hasHomeUnit,
-		"HomeIdentity":          onboardingIdentity,
-		"IsObserveMode":         profile.OperatingMode == energy.ModeObserve,
-		"OnboardingComplete":    profile.OnboardingComplete,
-		"ProfileReset":          r.URL.Query().Get("reset") == "1",
-	}))
+	a.renderOnboardingTempl(w, r, web.OnboardingPageData{
+		Portal:               a.onboardingPortalContext(ac),
+		Step:                 step,
+		Progress:             step * 20,
+		ProfileReset:         r.URL.Query().Get("reset") == "1",
+		HouseholdName:        profile.HouseholdName,
+		HomeType:             profile.HomeType,
+		HomeTypeLabel:        energyHomeTypeLabel(profile.HomeType),
+		HomeTypeDescription:  energyHomeTypeDescription(profile.HomeType),
+		HomeTypeLocked:       a.homeIdentityTypeLocked(ac.tenantRef, profile),
+		HasHomeUnit:          hasHomeUnit,
+		HomeUnitID:           homeUnitID,
+		HomeUnitLabel:        homeUnitLabel,
+		HasUnitOptions:       len(unitOptions) > 0,
+		UnitOptions:          onboardingUnitOptions(unitOptions),
+		AssetOptions:         onboardingAssetOptions(buildEnergyAssetOptions(assets)),
+		MappingSlots:         onboardingMappingSlots(mappingSlots),
+		MappingAssetOptions:  onboardingOptions(buildEnergyMappingAssetOptions(assets)),
+		ConnectorMessage:     connectorMessage,
+		Candidates:           onboardingCandidates(discovery.Recommended),
+		HasCandidates:        len(discovery.Recommended) > 0,
+		RecommendedCount:     len(discovery.Recommended),
+		AdditionalCandidates: onboardingCandidates(discovery.Additional),
+		HasAdditional:        len(discovery.Additional) > 0,
+		FinishRecommendation: onboardingRecommendation(finishRecommendation),
+		CanControlEnergy:     a.canControlEnergy(ac),
+	})
 }
 
 func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -940,11 +894,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		"Saved":               r.URL.Query().Get("saved") == "1",
 		"Invalid":             r.URL.Query().Get("invalid") == "1",
 	}
-	if a.portalTemplEnabled {
-		a.renderHomeIdentitySettingsTempl(w, r, ac, profile, pageData)
-		return
-	}
-	a.render(w, "homeIdentitySettings", a.withBase(ac, pageData))
+	a.renderHomeIdentitySettingsTempl(w, r, ac, profile, pageData)
 }
 
 func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -1157,7 +1107,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
 		mappings = updated
 	}
-	metrics, sourceStatus, liveLastSeen := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
+	metrics, _, liveLastSeen := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
 	live := buildEnergyLiveView(metrics)
 	chart := a.energy24HourChart(r.Context(), ac.tenant, mappings, profile, time.Now(), r.URL.Query().Get("zeitraum"))
 	coverage, coverageSummary := buildEnergyCoverageViews(assets, mappings)
@@ -1217,170 +1167,89 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		lucideIconNamesJSON = []byte("[]")
 	}
 	systemAssets := energySystemAssets(assets)
-	if a.portalTemplEnabled {
-		a.renderEnergyTempl(w, r, web.EnergyPageData{
-			Portal:                  a.energyPortalContext(ac, profile.HouseholdName),
-			FlowConfigJSON:          energyWebJSON(flowConfigJSON, "null"),
-			LucideIconNamesJSON:     energyWebJSON(lucideIconNamesJSON, "[]"),
-			HouseholdName:           profile.HouseholdName,
-			HomeIdentity:            a.homeIdentityFromProfile(ac.tenantRef, profile),
-			HomeTypeLabel:           energyHomeTypeLabel(profile.HomeType),
-			HomeUnitLabel:           homeUnitLabel,
-			HasHomeUnit:             hasHomeUnit,
-			Welcome:                 r.URL.Query().Get("welcome") == "1",
-			ModeChanged:             r.URL.Query().Get("mode") == "1",
-			ProfileChanged:          r.URL.Query().Get("profile") == "1",
-			ConsumerNotice:          r.URL.Query().Get("verbraucher"),
-			MeasureCreated:          r.URL.Query().Get("measure") == "created",
-			RecommendationDeferred:  profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "deferred",
-			RecommendationDismissed: profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "dismissed",
-			Recommendation: web.EnergyRecommendationView{
-				ID: recommendation.ID, Title: recommendation.Title, Reason: recommendation.Reason,
-				Benefit: recommendation.Benefit, Effort: recommendation.Effort, ImpactRange: recommendation.ImpactRange,
-			},
-			RecommendationURL: recommendationURL(recommendation.ID),
-			ObservationProgress: web.EnergyObservationProgressView{
-				Completed: observationProgress.Completed, Target: observationProgress.Target,
-				Percent: observationProgress.Percent, Label: observationProgress.Label, Title: observationProgress.Title,
-			},
-			IsActiveMode:           profile.OperatingMode == energy.ModeActive,
-			IsShadowMode:           profile.AutomationStage == energy.StageShadow,
-			CanManageEnergy:        a.canManageEnergy(ac),
-			CanControlEnergy:       a.canControlEnergy(ac),
-			CanManageHomeIdentity:  canManageEnergyData,
-			CanManageEnergyData:    canManageEnergyData,
-			CanGrantEnergyAccess:   a.canControlEnergy(ac),
-			CanInviteEnergyAccess:  a.canControlEnergy(ac),
-			MetricCount:            len(metrics),
-			HasMetrics:             len(metrics) > 0,
-			Live:                   energyWebLive(live),
-			Chart:                  energyWebChart(chart),
-			Tariff:                 energyWebTariff(tariffView),
-			TargetChanged:          r.URL.Query().Get("target") == "1",
-			AgreedPowerChanged:     r.URL.Query().Get("agreed") == "1",
-			TargetPeakValue:        energyTargetValue(profile.TargetPeakKW),
-			AgreedPowerValue:       energyTargetValue(profile.AgreedPowerKW),
-			TariffAssessmentStatus: r.URL.Query().Get("assessment"),
-			TariffAssessments:      energyWebAssessments(assessmentViews),
-			HasTariffAssessments:   len(assessmentViews) > 0,
-			Quality: web.EnergyQualityView{
-				Status: quality.Status, Label: quality.Label, Effect: quality.Effect, NextAction: quality.NextAction,
-			},
-			Coverage:          energyWebCoverage(coverage),
-			CoverageSummary:   coverageSummary,
-			Roadmap:           energyWebRoadmap(energyRoadmap(profile, len(assets), len(mappings))),
-			SystemAssets:      energyWebSystemAssets(systemAssets),
-			HasSystemAssets:   len(systemAssets) > 0,
-			FreeUntil:         freeUntil,
-			Assets:            energyWebAssets(assets),
-			HasAssets:         len(assets) > 0,
-			Maintenance:       energyWebMaintenance(maintenanceViews),
-			HasMaintenance:    len(maintenanceViews) > 0,
-			MaintenanceStatus: r.URL.Query().Get("maintenance"),
-			ContactOptions:    energyWebOptions(contactOptions),
-			DocumentOptions:   energyWebOptions(documentOptions),
-			IssueOptions:      energyWebOptions(issueOptions),
-			ImportStatus:      r.URL.Query().Get("import"),
-			Imports:           energyWebImports(importViews),
-			HasImports:        len(importViews) > 0,
-			Peaks:             energyWebPeaks(peakViews),
-			HasPeaks:          len(peakViews) > 0,
-			Comparison: web.EnergyComparisonView{
-				Tone: comparisonView.Tone, Title: comparisonView.Title, Details: comparisonView.Details,
-			},
-			HasComparison:         hasComparison,
-			Caretakers:            energyWebCaretakers(caretakers),
-			HasCaretakers:         len(caretakers) > 0,
-			CaretakerChanged:      r.URL.Query().Get("caretaker") == "1",
-			CaretakerInviteStatus: r.URL.Query().Get("caretaker_invite"),
-			Measures:              energyWebMeasures(measureViews),
-			HasMeasures:           len(measureViews) > 0,
-			MeasureStatus:         r.URL.Query().Get("measure_status"),
-			Scenarios:             energyWebScenarios(scenarioViews),
-			HasScenarios:          len(scenarioViews) > 0,
-			ConsumerKindOptions:   energyWebOptions(buildEnergyConsumerKindOptions()),
-			ConsumerIconOptions:   energyWebOptions(buildEnergyConsumerIconOptions()),
-		})
-		return
-	}
-	a.render(w, "energyCockpit", a.withBase(ac, map[string]any{
-		"FlowConfigJSON":          template.JS(flowConfigJSON),
-		"LucideIconNamesJSON":     template.JS(lucideIconNamesJSON),
-		"Title":                   profile.HouseholdName,
-		"ActivePage":              "energy",
-		"Profile":                 profile,
-		"Assets":                  assets,
-		"SystemAssets":            systemAssets,
-		"HasSystemAssets":         len(systemAssets) > 0,
-		"ConsumerKindOptions":     buildEnergyConsumerKindOptions(),
-		"ConsumerIconOptions":     buildEnergyConsumerIconOptions(),
-		"ConsumerNotice":          r.URL.Query().Get("verbraucher"),
-		"HasAssets":               len(assets) > 0,
-		"Mappings":                mappings,
-		"HasMappings":             len(mappings) > 0,
-		"Metrics":                 metrics,
-		"HasMetrics":              len(metrics) > 0,
-		"Live":                    live,
-		"Chart":                   chart,
-		"Coverage":                coverage,
-		"CoverageSummary":         coverageSummary,
-		"SourceStatus":            sourceStatus,
-		"Roadmap":                 energyRoadmap(profile, len(assets), len(mappings)),
-		"CanManageEnergy":         a.canManageEnergy(ac),
-		"CanControlEnergy":        a.canControlEnergy(ac),
-		"IsObserveMode":           profile.OperatingMode == energy.ModeObserve,
-		"IsActiveMode":            profile.OperatingMode == energy.ModeActive,
-		"IsShadowMode":            profile.AutomationStage == energy.StageShadow,
-		"FreeUntil":               freeUntil,
-		"Welcome":                 r.URL.Query().Get("welcome") == "1",
-		"ModeChanged":             r.URL.Query().Get("mode") == "1",
-		"ProfileChanged":          r.URL.Query().Get("profile") == "1",
-		"HomeTypeLabel":           energyHomeTypeLabel(profile.HomeType),
-		"HomeUnitLabel":           homeUnitLabel,
-		"HasHomeUnit":             hasHomeUnit,
-		"CanManageHomeIdentity":   canManageEnergyData,
-		"CanManageEnergyData":     canManageEnergyData,
-		"Imports":                 importViews,
-		"HasImports":              len(importViews) > 0,
-		"Peaks":                   peakViews,
-		"HasPeaks":                len(peakViews) > 0,
-		"Comparison":              comparisonView,
-		"HasComparison":           hasComparison,
-		"ImportStatus":            r.URL.Query().Get("import"),
-		"Recommendation":          recommendation,
-		"ObservationProgress":     observationProgress,
-		"RecommendationURL":       recommendationURL(recommendation.ID),
-		"RecommendationDeferred":  profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "deferred",
-		"RecommendationDismissed": profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "dismissed",
-		"MeasureCreated":          r.URL.Query().Get("measure") == "created",
-		"Quality":                 quality,
-		"Tariff":                  tariffView,
-		"Scenarios":               scenarioViews,
-		"HasScenarios":            len(scenarioViews) > 0,
-		"TargetChanged":           r.URL.Query().Get("target") == "1",
-		"AgreedPowerChanged":      r.URL.Query().Get("agreed") == "1",
-		"TargetPeakValue":         energyTargetValue(profile.TargetPeakKW),
-		"AgreedPowerValue":        energyTargetValue(profile.AgreedPowerKW),
-		"Caretakers":              caretakers,
-		"HasCaretakers":           len(caretakers) > 0,
-		"CaretakerChanged":        r.URL.Query().Get("caretaker") == "1",
-		"CanGrantEnergyAccess":    a.canControlEnergy(ac),
-		"CanInviteEnergyAccess":   a.canControlEnergy(ac),
-		"CaretakerInviteStatus":   r.URL.Query().Get("caretaker_invite"),
-		"Maintenance":             maintenanceViews,
-		"HasMaintenance":          len(maintenanceViews) > 0,
-		"MaintenanceStatus":       r.URL.Query().Get("maintenance"),
-		"ContactOptions":          contactOptions,
-		"DocumentOptions":         documentOptions,
-		"IssueOptions":            issueOptions,
-		"TariffAssessments":       assessmentViews,
-		"HasTariffAssessments":    len(assessmentViews) > 0,
-		"TariffAssessmentStatus":  r.URL.Query().Get("assessment"),
-		"Measures":                measureViews,
-		"HasMeasures":             len(measureViews) > 0,
-		"MeasureStatus":           r.URL.Query().Get("measure_status"),
-		"ServiceAccessEnabled":    a.serviceAccessEnabled,
-	}))
+	a.renderEnergyTempl(w, r, web.EnergyPageData{
+		Portal:                  a.energyPortalContext(ac, profile.HouseholdName),
+		FlowConfigJSON:          energyWebJSON(flowConfigJSON, "null"),
+		LucideIconNamesJSON:     energyWebJSON(lucideIconNamesJSON, "[]"),
+		HouseholdName:           profile.HouseholdName,
+		HomeIdentity:            a.homeIdentityFromProfile(ac.tenantRef, profile),
+		HomeTypeLabel:           energyHomeTypeLabel(profile.HomeType),
+		HomeUnitLabel:           homeUnitLabel,
+		HasHomeUnit:             hasHomeUnit,
+		Welcome:                 r.URL.Query().Get("welcome") == "1",
+		ModeChanged:             r.URL.Query().Get("mode") == "1",
+		ProfileChanged:          r.URL.Query().Get("profile") == "1",
+		ConsumerNotice:          r.URL.Query().Get("verbraucher"),
+		MeasureCreated:          r.URL.Query().Get("measure") == "created",
+		RecommendationDeferred:  profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "deferred",
+		RecommendationDismissed: profile.RecommendationID == recommendation.ID && profile.RecommendationStatus == "dismissed",
+		Recommendation: web.EnergyRecommendationView{
+			ID: recommendation.ID, Title: recommendation.Title, Reason: recommendation.Reason,
+			Benefit: recommendation.Benefit, Effort: recommendation.Effort, ImpactRange: recommendation.ImpactRange,
+		},
+		RecommendationURL: recommendationURL(recommendation.ID),
+		ObservationProgress: web.EnergyObservationProgressView{
+			Completed: observationProgress.Completed, Target: observationProgress.Target,
+			Percent: observationProgress.Percent, Label: observationProgress.Label, Title: observationProgress.Title,
+		},
+		IsActiveMode:           profile.OperatingMode == energy.ModeActive,
+		IsShadowMode:           profile.AutomationStage == energy.StageShadow,
+		CanManageEnergy:        a.canManageEnergy(ac),
+		CanControlEnergy:       a.canControlEnergy(ac),
+		CanManageHomeIdentity:  canManageEnergyData,
+		CanManageEnergyData:    canManageEnergyData,
+		CanGrantEnergyAccess:   a.canControlEnergy(ac),
+		CanInviteEnergyAccess:  a.canControlEnergy(ac),
+		MetricCount:            len(metrics),
+		HasMetrics:             len(metrics) > 0,
+		Live:                   energyWebLive(live),
+		Chart:                  energyWebChart(chart),
+		Tariff:                 energyWebTariff(tariffView),
+		TargetChanged:          r.URL.Query().Get("target") == "1",
+		AgreedPowerChanged:     r.URL.Query().Get("agreed") == "1",
+		TargetPeakValue:        energyTargetValue(profile.TargetPeakKW),
+		AgreedPowerValue:       energyTargetValue(profile.AgreedPowerKW),
+		TariffAssessmentStatus: r.URL.Query().Get("assessment"),
+		TariffAssessments:      energyWebAssessments(assessmentViews),
+		HasTariffAssessments:   len(assessmentViews) > 0,
+		Quality: web.EnergyQualityView{
+			Status: quality.Status, Label: quality.Label, Effect: quality.Effect, NextAction: quality.NextAction,
+		},
+		Coverage:          energyWebCoverage(coverage),
+		CoverageSummary:   coverageSummary,
+		Roadmap:           energyWebRoadmap(energyRoadmap(profile, len(assets), len(mappings))),
+		SystemAssets:      energyWebSystemAssets(systemAssets),
+		HasSystemAssets:   len(systemAssets) > 0,
+		FreeUntil:         freeUntil,
+		Assets:            energyWebAssets(assets),
+		HasAssets:         len(assets) > 0,
+		Maintenance:       energyWebMaintenance(maintenanceViews),
+		HasMaintenance:    len(maintenanceViews) > 0,
+		MaintenanceStatus: r.URL.Query().Get("maintenance"),
+		ContactOptions:    energyWebOptions(contactOptions),
+		DocumentOptions:   energyWebOptions(documentOptions),
+		IssueOptions:      energyWebOptions(issueOptions),
+		ImportStatus:      r.URL.Query().Get("import"),
+		Imports:           energyWebImports(importViews),
+		HasImports:        len(importViews) > 0,
+		Peaks:             energyWebPeaks(peakViews),
+		HasPeaks:          len(peakViews) > 0,
+		Comparison: web.EnergyComparisonView{
+			Tone: comparisonView.Tone, Title: comparisonView.Title, Details: comparisonView.Details,
+		},
+		HasComparison:         hasComparison,
+		Caretakers:            energyWebCaretakers(caretakers),
+		HasCaretakers:         len(caretakers) > 0,
+		CaretakerChanged:      r.URL.Query().Get("caretaker") == "1",
+		CaretakerInviteStatus: r.URL.Query().Get("caretaker_invite"),
+		Measures:              energyWebMeasures(measureViews),
+		HasMeasures:           len(measureViews) > 0,
+		MeasureStatus:         r.URL.Query().Get("measure_status"),
+		Scenarios:             energyWebScenarios(scenarioViews),
+		HasScenarios:          len(scenarioViews) > 0,
+		ConsumerKindOptions:   energyWebOptions(buildEnergyConsumerKindOptions()),
+		ConsumerIconOptions:   energyWebOptions(buildEnergyConsumerIconOptions()),
+	})
 }
 
 // energyLiveRefresh returns only the data required to redraw the live flow.

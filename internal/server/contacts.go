@@ -39,71 +39,32 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	managedEmpty := emptyState(managedEmptyTitle, managedEmptyMessage)
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
-	hasQuickContacts := len(managerContacts)+len(emergencyContacts)+len(boardContacts) > 0
-	hasAnyContacts := hasQuickContacts || len(activeManagedContacts)+len(residentContacts) > 0
-	if canManageContacts && len(inactiveManagedContacts) > 0 {
-		hasAnyContacts = true
+	groups := groupManagedContactsByKind(activeManagedContacts)
+	templGroups := make([]web.ContactKindGroup, 0, len(groups))
+	for _, group := range groups {
+		templGroups = append(templGroups, web.ContactKindGroup{Kind: group.Kind, Contacts: group.Contacts})
 	}
-	if a.portalTemplEnabled {
-		groups := groupManagedContactsByKind(activeManagedContacts)
-		templGroups := make([]web.ContactKindGroup, 0, len(groups))
-		for _, group := range groups {
-			templGroups = append(templGroups, web.ContactKindGroup{Kind: group.Kind, Contacts: group.Contacts})
-		}
-		a.renderContactsTempl(w, r, web.ContactsPageData{
-			Portal:                       a.contactsPortalContext(ac),
-			AssetVersion:                 version.AssetVersion(),
-			ContactMessage:               contactMsg,
-			ContactOK:                    contactOK,
-			CanManageContacts:            canManageContacts,
-			CanManageIssues:              ac.can(capabilityManageIssues),
-			CanJoinDirectory:             residentDirectoryRole(role),
-			DirectoryOptIn:               profile.DirectoryOptIn,
-			ServiceProviderAccessEnabled: a.serviceAccessEnabled,
-			ContactFormOpen:              r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
-			ManagerContacts:              managerContacts,
-			EmergencyContacts:            emergencyContacts,
-			ManagedContacts:              activeManagedContacts,
-			ManagedGroups:                templGroups,
-			InactiveContacts:             inactiveManagedContacts,
-			BoardContacts:                boardContacts,
-			ResidentContacts:             residentContacts,
-			ContactKindOptions:           contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
-			ManagedEmpty:                 managedEmpty,
-		})
-		return
-	}
-	a.render(w, "contacts", a.withBase(ac, map[string]any{
-		"Title":                "Kontakte",
-		"CanManageContacts":    canManageContacts,
-		"ActivePage":           "contacts",
-		"ContactMsg":           contactMsg,
-		"ContactOK":            contactOK,
-		"ManagerContacts":      managerContacts,
-		"HasManagerContacts":   len(managerContacts) > 0,
-		"ManagerEmpty":         emptyState("Kein Verwaltungskontakt", "Der Kontaktblock wird in den Gebäude-Einstellungen gepflegt."),
-		"EmergencyContacts":    emergencyContacts,
-		"HasEmergencyContacts": len(emergencyContacts) > 0,
-		"EmergencyEmpty":       emptyState("Kein Notdienst hinterlegt", "Notdienst und Hausmeister werden in den Gebäude-Einstellungen gepflegt."),
-		"ManagedContacts":      activeManagedContacts,
-		"ManagedGroups":        groupManagedContactsByKind(activeManagedContacts),
-		"HasManagedContacts":   len(activeManagedContacts) > 0,
-		"InactiveContacts":     inactiveManagedContacts,
-		"HasInactiveContacts":  len(inactiveManagedContacts) > 0,
-		"ManagedEmpty":         managedEmpty,
-		"ContactKindOptions":   contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
-		"BoardContacts":        boardContacts,
-		"HasBoardContacts":     len(boardContacts) > 0,
-		"BoardEmpty":           emptyState("Kein Beirat hinterlegt", "Beiräte erscheinen hier, sobald sie in Benutzer & Rechte die Beirat-Rolle haben."),
-		"ResidentContacts":     residentContacts,
-		"HasResidentContacts":  len(residentContacts) > 0,
-		"ResidentEmpty":        emptyState("Keine freigegebenen Kontakte", "Kontakte aus der Hausgemeinschaft erscheinen nur nach ausdrücklicher Freigabe im Profil."),
-		"HasQuickContacts":     hasQuickContacts,
-		"HasAnyContacts":       hasAnyContacts,
-		"CanJoinDirectory":     residentDirectoryRole(role),
-		"DirectoryOptIn":       profile.DirectoryOptIn,
-		"ContactFormOpen":      r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
-	}))
+	a.renderContactsTempl(w, r, web.ContactsPageData{
+		Portal:                       a.contactsPortalContext(ac),
+		AssetVersion:                 version.AssetVersion(),
+		ContactMessage:               contactMsg,
+		ContactOK:                    contactOK,
+		CanManageContacts:            canManageContacts,
+		CanManageIssues:              ac.can(capabilityManageIssues),
+		CanJoinDirectory:             residentDirectoryRole(role),
+		DirectoryOptIn:               profile.DirectoryOptIn,
+		ServiceProviderAccessEnabled: a.serviceAccessEnabled,
+		ContactFormOpen:              r.URL.Query().Get("contact") == "invalid" || r.URL.Query().Get("contact") == "error",
+		ManagerContacts:              managerContacts,
+		EmergencyContacts:            emergencyContacts,
+		ManagedContacts:              activeManagedContacts,
+		ManagedGroups:                templGroups,
+		InactiveContacts:             inactiveManagedContacts,
+		BoardContacts:                boardContacts,
+		ResidentContacts:             residentContacts,
+		ContactKindOptions:           contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
+		ManagedEmpty:                 managedEmpty,
+	})
 }
 
 func (a *app) contactsPortalContext(ac authCtx) web.PortalPageData {

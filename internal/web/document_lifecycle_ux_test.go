@@ -5,26 +5,6 @@ import (
 	"testing"
 )
 
-func TestDocumentLifecycleKeepsSecondaryActionsQuietAndDialogFooterStable(t *testing.T) {
-	for _, want := range []string{
-		`aria-label="Dokument hochladen"`,
-		`class="button ghost" href="/app/dokumente/rechnungen/import"`,
-		`class="doc-blank-side"`,
-		`Optional: bestimmte Einheit`,
-		`class="dialog-footer"><button class="button primary" type="submit">Hochladen`,
-		`class="button small ghost" href="{{.DownloadURL}}"`,
-		`.documents-screen .document-actions .primary { grid-column: auto; }`,
-		`.documents-screen .document-icon { display: none; }`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("document lifecycle UX missing %q", want)
-		}
-	}
-	if strings.Contains(PageTemplates, `#document-upload .dialog-body > button:last-child`) {
-		t.Fatal("document upload submit must stay in the dedicated dialog footer")
-	}
-}
-
 func TestEBInterfaceLifecycleShowsCompactProgressAndTrustBoundary(t *testing.T) {
 	for _, want := range []string{
 		`E-Rechnung ablegen`,

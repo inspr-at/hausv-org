@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Which authenticated routes actually render templ when the switch is on?
+// Do all routes in the maintained authenticated coverage list render templ?
 //   node templ-coverage.mjs <baseURL> [outJson]
 import { chromium } from 'playwright';
 import { writeFile } from 'node:fs/promises';
@@ -65,11 +65,13 @@ for (const r of ROUTES) {
 }
 
 await browser.close();
-const legacy = rows.filter((r) => r.status === 200 && !r.templ);
+const wrongRenderer = rows.filter((r) => r.status === 200 && !r.templ);
+const failed = rows.filter((r) => r.status !== 200 || !r.templ || r.redirected);
 console.log(`${'route'.padEnd(34)} ${'status'.padStart(6)}  renderer`);
-for (const r of rows) console.log(`${r.route.padEnd(30)} ${String(r.status).padStart(4)}  ${(r.templ ? 'templ' : 'LEGACY').padEnd(7)} ${r.redirected ? '→ ' + r.landed + ' (NOT MEASURED)' : r.marker}`);
+for (const r of rows) console.log(`${r.route.padEnd(30)} ${String(r.status).padStart(4)}  ${(r.templ ? 'templ' : 'WRONG').padEnd(7)} ${r.redirected ? '→ ' + r.landed + ' (NOT MEASURED)' : r.marker}`);
 const red = rows.filter((r) => r.redirected);
-console.log(`\n${rows.filter((r) => r.templ && !r.redirected).length} templ · ${legacy.length} legacy · ${red.length} redirected away and therefore unmeasured`);
+console.log(`\n${rows.filter((r) => r.templ && !r.redirected).length} templ · ${wrongRenderer.length} wrong renderer · ${red.length} redirected away and therefore unmeasured`);
 if (red.length) console.log(`unmeasured: ${red.map((r) => r.route + ' → ' + r.landed).join(', ')}`);
-if (legacy.length) console.log(`still legacy: ${legacy.map((r) => r.route).join(', ')}`);
+if (wrongRenderer.length) console.log(`wrong renderer: ${wrongRenderer.map((r) => r.route).join(', ')}`);
 if (process.argv[3]) await writeFile(process.argv[3], JSON.stringify(rows, null, 2));
+if (failed.length) process.exit(1);

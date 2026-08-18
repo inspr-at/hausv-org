@@ -58,6 +58,7 @@ func (a *app) onboardingPortalContext(ac authCtx) web.PortalPageData {
 		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
 		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
 		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		HomeIdentity:        a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		Issues:              make([]view.IssueView, openIssues),
 		UnreadAnnouncements: unreadAnnouncements,
 		Contexts:            portalContexts,

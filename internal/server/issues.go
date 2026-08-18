@@ -52,25 +52,15 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			step = "message"
 		}
 	}
-	if a.portalTemplEnabled {
-		portal := a.issuesPortalContext(ac)
-		portal.Title = views[0].Title + " · " + portal.Title
-		a.renderIssueTriageTempl(w, r, web.IssueTriagePageData{
-			Portal:       portal,
-			AssetVersion: version.AssetVersion(),
-			ActorEmail:   normalizeEmail(ac.email),
-			Issue:        views[0],
-			TriageStep:   step,
-		})
-		return
-	}
-	a.render(w, "issueTriage", a.withBase(ac, map[string]any{
-		"Title":      "Anliegen bearbeiten",
-		"ActivePage": "issues",
-		"Issue":      views[0],
-		"TriageStep": step,
-		"ActorEmail": normalizeEmail(ac.email),
-	}))
+	portal := a.issuesPortalContext(ac)
+	portal.Title = views[0].Title + " · " + portal.Title
+	a.renderIssueTriageTempl(w, r, web.IssueTriagePageData{
+		Portal:       portal,
+		AssetVersion: version.AssetVersion(),
+		ActorEmail:   normalizeEmail(ac.email),
+		Issue:        views[0],
+		TriageStep:   step,
+	})
 }
 
 func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -105,7 +95,6 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	issues := []issueView{}
 	manageIssues := []issueView{}
-	manageIssuePreview := []issueView{}
 	canManageIssues := ac.can(capabilityManageIssues)
 	canCreateIssue := canCreateResidentIssue(ac.actor(), ac.resource())
 	totalIssueCount := 0
@@ -133,11 +122,6 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 			if boardOnly {
 				manageIssues = a.issueViewsForActor(ac.tenantRef, filteredIssues, role, email)
 			}
-			previewIssues := filterIssueBoard(allTenantIssues, issueBoardFilterView{Sort: "updated"})
-			if len(previewIssues) > 3 {
-				previewIssues = previewIssues[:3]
-			}
-			manageIssuePreview = a.issueViewsForActor(ac.tenantRef, previewIssues, role, email)
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
@@ -147,7 +131,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)
-	if a.portalTemplEnabled && boardOnly {
+	if boardOnly {
 		a.renderIssueBoardTempl(w, r, web.IssueBoardPageData{
 			Portal:                  a.issuesPortalContext(ac),
 			AssetVersion:            version.AssetVersion(),
@@ -167,52 +151,19 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		})
 		return
 	}
-	if a.portalTemplEnabled {
-		a.renderIssuesTempl(w, r, web.IssuesPageData{
-			Portal:            a.issuesPortalContext(ac),
-			AssetVersion:      version.AssetVersion(),
-			CalendarFeedURL:   calendarFeedURL,
-			CanManageIssues:   canManageIssues,
-			CanCreateIssue:    canCreateIssue,
-			IsServiceProvider: isServiceProviderRole(role),
-			Issues:            issues,
-			IssuesEmpty:       emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
-			Message:           msg,
-			MessageOK:         msgOK,
-			OpenIssueCreate:   openIssueCreate,
-		})
-		return
-	}
-	a.render(w, "issues", a.withBase(ac, map[string]any{
-		"Title":                      "Anliegen",
-		"CanManageAnnouncements":     canManageAnnouncements(ac.actor(), ac.resource()),
-		"CanManageIssues":            canManageIssues,
-		"CanCreateIssue":             canCreateIssue,
-		"ActivePage":                 "issues",
-		"BoardOnly":                  boardOnly,
-		"BoardAction":                issueBoardAction(boardOnly),
-		"CalendarFeedURL":            calendarFeedURL,
-		"HasCalendarFeedURL":         calendarFeedURL != "",
-		"ServiceProviderContacts":    serviceContacts,
-		"HasServiceProviderContacts": len(serviceContacts) > 0,
-		"BoardFilters":               issueBoardFilterOptions(filters),
-		"Issues":                     issues,
-		"HasIssues":                  len(issues) > 0,
-		"IssueCount":                 len(issues),
-		"TotalIssueCount":            totalIssueCount,
-		"OpenIssueCount":             openIssueCount,
-		"UrgentIssueCount":           urgentIssueCount,
-		"IssuesEmpty":                emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
-		"ManageIssues":               manageIssues,
-		"HasManageIssues":            len(manageIssues) > 0,
-		"ManageIssuePreview":         manageIssuePreview,
-		"HasManageIssuePreview":      len(manageIssuePreview) > 0,
-		"ManageIssuePreviewCount":    len(manageIssuePreview),
-		"ManageIssuesEmpty":          emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
-		"IssueMsg":                   msg,
-		"IssueOK":                    msgOK,
-		"OpenIssueCreate":            openIssueCreate,
-	}))
+	a.renderIssuesTempl(w, r, web.IssuesPageData{
+		Portal:            a.issuesPortalContext(ac),
+		AssetVersion:      version.AssetVersion(),
+		CalendarFeedURL:   calendarFeedURL,
+		CanManageIssues:   canManageIssues,
+		CanCreateIssue:    canCreateIssue,
+		IsServiceProvider: isServiceProviderRole(role),
+		Issues:            issues,
+		IssuesEmpty:       emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
+		Message:           msg,
+		MessageOK:         msgOK,
+		OpenIssueCreate:   openIssueCreate,
+	})
 }
 
 func (a *app) issuesPortalContext(ac authCtx) web.PortalPageData {

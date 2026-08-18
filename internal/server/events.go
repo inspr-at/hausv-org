@@ -43,44 +43,24 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		upcomingViews[0].IsNext = true
 	}
 	pastViews := a.eventViews(ac.tenantRef, past, now, email, role)
-	if a.portalTemplEnabled {
-		monthGroups := eventMonthGroups(upcoming, upcomingViews, time.Local)
-		months := make([]web.EventsMonth, 0, len(monthGroups))
-		for _, month := range monthGroups {
-			months = append(months, web.EventsMonth{Label: month.Label, Events: month.Events})
-		}
-		a.renderEventsTempl(w, r, web.EventsPageData{
-			Portal:          a.eventsPortalContext(ac),
-			AssetVersion:    version.AssetVersion(),
-			NowInput:        formatLocalDateTimeInput(now),
-			CalendarFeedURL: calendarFeedURL,
-			Message:         msg,
-			MessageOK:       msgOK,
-			CanManageEvents: canManage,
-			CanManageIssues: ac.can(capabilityManageIssues),
-			Upcoming:        upcomingViews,
-			Months:          months,
-			Past:            pastViews,
-		})
-		return
+	monthGroups := eventMonthGroups(upcoming, upcomingViews, time.Local)
+	months := make([]web.EventsMonth, 0, len(monthGroups))
+	for _, month := range monthGroups {
+		months = append(months, web.EventsMonth{Label: month.Label, Events: month.Events})
 	}
-	a.render(w, "events", a.withBase(ac, map[string]any{
-		"Title":                  "Termine",
-		"CanManageAnnouncements": canManageAnnouncements(ac.actor(), ac.resource()),
-		"CanManageEvents":        canManage,
-		"ActivePage":             "events",
-		"Events":                 upcomingViews,
-		"EventMonths":            eventMonthGroups(upcoming, upcomingViews, time.Local),
-		"HasEvents":              len(upcoming) > 0,
-		"EventsEmpty":            emptyState("Noch keine kommenden Termine", "Geplante Versammlungen, Wartungen und Fristen erscheinen hier."),
-		"CalendarFeedURL":        calendarFeedURL,
-		"HasCalendarFeedURL":     calendarFeedURL != "",
-		"PastEvents":             pastViews,
-		"HasPastEvents":          len(past) > 0,
-		"EventMsg":               msg,
-		"EventOK":                msgOK,
-		"NowInput":               formatLocalDateTimeInput(now),
-	}))
+	a.renderEventsTempl(w, r, web.EventsPageData{
+		Portal:          a.eventsPortalContext(ac),
+		AssetVersion:    version.AssetVersion(),
+		NowInput:        formatLocalDateTimeInput(now),
+		CalendarFeedURL: calendarFeedURL,
+		Message:         msg,
+		MessageOK:       msgOK,
+		CanManageEvents: canManage,
+		CanManageIssues: ac.can(capabilityManageIssues),
+		Upcoming:        upcomingViews,
+		Months:          months,
+		Past:            pastViews,
+	})
 }
 
 func (a *app) eventsPortalContext(ac authCtx) web.PortalPageData {

@@ -7,21 +7,17 @@ import (
 	"time"
 )
 
-func TestDocumentsTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestDocumentsAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/dokumente").Body.String()
-	if strings.Contains(body, "data-templ-documents") {
-		t.Fatal("documents templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main documents-screen"`) {
-		t.Fatal("default documents response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-documents") {
+		t.Fatal("documents response must use the templ renderer")
 	}
 }
 
 func TestDocumentsTemplKeepsDocumentLifecycleReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	documents := documentRepositoryForTest(a, "demo")
 	created, err := documents.Create(documentRecord{
 		TenantSlug: "demo",
@@ -71,7 +67,6 @@ func TestDocumentsTemplUsesSharedPortalNavigationForEveryResidentRole(t *testing
 	for _, test := range roles {
 		t.Run(test.name, func(t *testing.T) {
 			a := newTestPortalApp(t, userProfile{Email: test.email, Role: test.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 
 			response := authedRequest(t, a, test.email, "/demo/app/dokumente")
 			if response.Code != http.StatusOK {

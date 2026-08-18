@@ -70,28 +70,13 @@ function fail(message) {
   throw new Error(message);
 }
 
-// The mobile menu is opened by whatever the page provides: legacy ships a
-// scripted button (.mobile-menu-toggle), templ ships a native <details>
-// disclosure that works with JavaScript disabled. What this file asserts is that
-// the menu OPENS and carries the household identity — not which widget does it.
-// Pinning the widget would have forced the scripted button back for the test's
-// sake, which is the tail wagging the dog.
-// Which element IS the mobile navigation depends on the shell: legacy turns the
-// sidebar into a sticky top bar, templ hides the sidebar and shows .mobile-head.
-// The property under test is that the mode strip sits directly beneath the
-// navigation — not which element provides it.
+// The surviving shell uses a native <details> disclosure that works with
+// JavaScript disabled. The mode strip must sit directly beneath that header.
 async function mobileNavBox(page) {
-  const sidebar = await page.locator('.sidebar').boundingBox();
-  if (sidebar) return sidebar;
   return page.locator('.mobile-head').boundingBox();
 }
 
 async function toggleMobileMenu(page) {
-  const legacy = page.locator('.mobile-menu-toggle');
-  if (await legacy.count()) {
-    await legacy.click();
-    return;
-  }
   const summary = page.locator('.mobile-head details > summary').first();
   if (!(await summary.count())) fail('Mobiles Menü: kein Bedienelement gefunden');
   await summary.click();
@@ -291,7 +276,11 @@ async function assertSidebarNavReachable() {
     const page = await localLogin(context, 'owner@example.com');
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
     const result = await page.evaluate(() => {
-      const nav = document.querySelector('.side-nav');
+      // The templ shell renders the sidebar as #portal-navigation; .side-nav was the
+      // legacy renderer's class and matched nothing once the switch went live. Nobody
+      // noticed because CI runs the energy-only subset of these flows, so this probe had
+      // been failing silently for every full run since 0.96.0.
+      const nav = document.querySelector('#portal-navigation');
       if (!nav) return { missing: true };
       const box = nav.getBoundingClientRect();
       const hidden = [...nav.querySelectorAll('.nav-item')]
@@ -302,7 +291,7 @@ async function assertSidebarNavReachable() {
         .map((el) => (el.textContent || '').trim());
       return { missing: false, hidden };
     });
-    if (result.missing) fail(`Seitenleiste bei ${height}px: .side-nav fehlt`);
+    if (result.missing) fail(`Seitenleiste bei ${height}px: #portal-navigation fehlt`);
     if (result.hidden.length) {
       fail(`Seitenleiste bei 1440x${height}: nicht erreichbar — ${result.hidden.join(', ')}`);
     }
@@ -311,39 +300,48 @@ async function assertSidebarNavReachable() {
   process.stdout.write('  ✓ Seitenleiste · alle Einträge erreichbar · 720–1080px\n');
 }
 
-async function assertMapIntegratedPortalSwitcher() {
+// The legacy shell placed the portal switcher inside a sidebar map card, and this
+// assertion used to encode that placement (.side-map-card, .side-foot, .side-map-top).
+// The templ shell renders it as details.context-switch in the sidebar and a mobile twin,
+// so those selectors matched nothing — and because CI runs only the energy subset of
+// these flows, this had been failing silently since the switch went live. What is worth
+// keeping is the BEHAVIOUR: switching portals updates URL, house name and role atomically,
+// and the switcher stays usable at phone width. Placement is a design decision, not a
+// contract, so it is no longer asserted here.
+async function assertPortalSwitcherAtomic() {
   const context = await trackedContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
   const page = await localLogin(context, 'multi@example.com');
   await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
 
-  const switcher = page.locator('.side-map-card .portal-context-switch');
-  if ((await switcher.count()) !== 1 || await page.locator('.side-foot .portal-context-switch').count()) {
-    fail('Portalwechsler ist nicht ausschließlich in die Sidebar-Karte integriert');
+  const switcher = page.locator('aside.sidebar > header details.context-switch');
+  if ((await switcher.count()) !== 1) {
+    fail(`Portalwechsler fehlt im Kopf der Seitenleiste oder ist mehrfach vorhanden (${await switcher.count()})`);
   }
-  if ((await page.locator('.side-map-top .portal-context-current strong').textContent())?.trim() !== 'Demohaus' || await page.locator('.side-address-label').count()) {
-    fail('Portalwechsler zeigt den aktiven Portalnamen nicht eindeutig im Kartenkopf');
+  if ((await switcher.locator('.context-current strong').textContent())?.trim() !== 'Demohaus') {
+    fail('Portalwechsler zeigt den aktiven Portalnamen nicht eindeutig');
   }
   await switcher.locator('summary').click();
   await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
+  const after = page.locator('aside.sidebar > header details.context-switch .context-current');
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
-      !(await page.locator('.side-map-tile').count()) ||
-      (await page.locator('.portal-context-current strong').textContent())?.trim() !== 'Haus B' ||
-      !(await page.locator('.portal-context-current small').textContent())?.includes('Admin')) {
-    fail(`Portalwechsel aktualisiert URL, Name, Rolle oder Karte nicht atomar (${page.url()})`);
+      (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
+      !(await after.locator('small').textContent())?.includes('Admin')) {
+    fail(`Portalwechsel aktualisiert URL, Name oder Rolle nicht atomar (${page.url()})`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileGeometry = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-    switcherVisible: Boolean(document.querySelector('.portal-context-switch > summary')?.getClientRects().length),
-    mapWidth: document.querySelector('.side-map')?.getBoundingClientRect().width || 0,
+    // On a phone the sidebar copy is inside the closed hamburger; the mobile twin is what
+    // must be reachable without opening anything.
+    switcherVisible: Boolean(document.querySelector('.mobile-context-switch > summary')?.getClientRects().length),
   }));
-  if (mobileGeometry.overflow || !mobileGeometry.switcherVisible || mobileGeometry.mapWidth > 64) {
+  if (mobileGeometry.overflow || !mobileGeometry.switcherVisible) {
     fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
   }
   await closeContext(context);
-  process.stdout.write('  ✓ Portalwechsler · Kartenkopf · Desktop und Mobil\n');
+  process.stdout.write('  ✓ Portalwechsler · URL, Name und Rolle atomar · Desktop und Mobil\n');
 }
 
 async function assertSharedAppShellNavigation() {
@@ -354,75 +352,165 @@ async function assertSharedAppShellNavigation() {
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
     adminStorageState = await context.storageState();
 
-    if (await page.locator('.nav-toggle').count()) {
-      fail(`App-Shell ${width}px: versteckte Checkbox-Navigation ist noch vorhanden`);
-    }
     await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
     await page.keyboard.press('Tab');
     if (!(await page.locator('.skip-link').evaluate((link) => link === document.activeElement))) {
       fail(`App-Shell ${width}px: Sprunglink ist nicht das erste Tastaturziel`);
     }
     await page.keyboard.press('Enter');
-    await page.waitForFunction(() => window.location.hash === '#main-content');
-    const skipResult = await page.evaluate(() => ({
-      hash: window.location.hash,
-      active: document.activeElement?.id || '',
-    }));
-    if (skipResult.active !== 'main-content') {
+    // The skip link now focuses whichever <main> is actually rendered at this width and
+    // writes THAT element's id into the fragment (#main-content on desktop,
+    // #mobile-main-content on phones). Wait for focus to land, not for one fixed hash.
+    await page.waitForFunction(() => document.activeElement && document.activeElement.hasAttribute('data-skip-target'));
+    const skipResult = await page.evaluate(() => {
+      const m = document.getElementById('main-content');
+      return {
+        hash: window.location.hash,
+        active: document.activeElement?.id || document.activeElement?.tagName?.toLowerCase() || '',
+        // Diagnostic context, so a failure says WHY focus did not land rather than only that
+        // it did not: whether the target exists, is focusable, and is actually rendered.
+        target: m ? (() => {
+          const cs = getComputedStyle(m); const r = m.getBoundingClientRect();
+          return { tabindex: m.getAttribute('tabindex'), display: cs.display, visibility: cs.visibility, w: Math.round(r.width), h: Math.round(r.height), inDoc: document.contains(m), count: document.querySelectorAll('#main-content').length, parent: m.parentElement?.className || m.parentElement?.tagName };
+        })() : null,
+      };
+    });
+    if (!['main-content', 'mobile-main-content'].includes(skipResult.active)) {
       fail(`App-Shell ${width}px: Sprunglink fokussiert den Inhalt nicht (${JSON.stringify(skipResult)})`);
     }
 
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
-    const toggle = page.locator('[data-mobile-menu-toggle]');
-    const navigation = page.locator('#portal-navigation');
-    const account = page.locator('#portal-account');
-    if (!(await toggle.isVisible()) || await toggle.getAttribute('aria-expanded') !== 'false' ||
-        !(await navigation.evaluate((element) => element.hidden)) ||
-        !(await account.evaluate((element) => element.hidden))) {
-      fail(`App-Shell ${width}px: mobiles Menü startet nicht semantisch geschlossen`);
+    const menu = page.locator('.mobile-head > details.menu');
+    const summary = menu.locator(':scope > summary');
+    const panel = menu.locator(':scope > .menu-panel');
+    const navigation = panel.locator('nav[aria-label="Bereiche"]');
+    const logout = panel.locator('form.logout-form button[type="submit"]');
+    const identity = page.locator('.mobile-head > a.mobile-identity');
+    const avatar = page.locator('.mobile-head > a.avatar');
+    if ((await menu.count()) !== 1 || !(await summary.isVisible()) ||
+        await menu.getAttribute('open') !== null || await panel.isVisible() ||
+        await summary.getAttribute('aria-label') !== 'Navigation öffnen' ||
+        !(await identity.isVisible()) || !(await avatar.isVisible())) {
+      fail(`App-Shell ${width}px: natives mobiles Menü startet nicht geschlossen oder Kopfaktionen fehlen`);
     }
 
-    await toggle.focus();
+    await summary.focus();
     await page.keyboard.press('Enter');
-    if (await toggle.getAttribute('aria-expanded') !== 'true' ||
-        !(await navigation.isVisible()) || !(await account.isVisible())) {
-      fail(`App-Shell ${width}px: Enter öffnet Navigation und Konto nicht`);
+    if (await menu.getAttribute('open') === null || !(await panel.isVisible()) ||
+        !(await navigation.isVisible()) || !(await logout.isVisible())) {
+      fail(`App-Shell ${width}px: Enter öffnet Navigation und Kontoaktionen nicht`);
+    }
+
+    const openGeometry = await page.evaluate(() => {
+      const panelElement = document.querySelector('.mobile-head > details.menu > .menu-panel');
+      return {
+        pageOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        panelOverflow: panelElement ? panelElement.scrollWidth > panelElement.clientWidth + 1 : null,
+      };
+    });
+    if (openGeometry.pageOverflow || openGeometry.panelOverflow !== false) {
+      fail(`App-Shell ${width}px: horizontales Überlaufen im offenen Menü (${JSON.stringify(openGeometry)})`);
+    }
+
+    await summary.focus();
+    await page.keyboard.press('Enter');
+    if (await menu.getAttribute('open') !== null || await panel.isVisible()) {
+      fail(`App-Shell ${width}px: Enter schließt das native Menü nicht`);
+    }
+    await page.keyboard.press('Enter');
+    if (await menu.getAttribute('open') === null || !(await panel.isVisible())) {
+      fail(`App-Shell ${width}px: Enter öffnet das native Menü nicht erneut`);
     }
     await page.keyboard.press('Tab');
     const tabReachedNavigation = await navigation.evaluate((nav) => nav.contains(document.activeElement));
     if (!tabReachedNavigation) fail(`App-Shell ${width}px: Tab erreicht nach dem Menüknopf nicht die Navigation`);
+
+    const navEntries = navigation.locator('a');
+    const navEntryCount = await navEntries.count();
+    if (!navEntryCount) fail(`App-Shell ${width}px: offenes Menü enthält keine Navigationseinträge`);
+    for (let index = 0; index < navEntryCount; index += 1) {
+      const entry = navEntries.nth(index);
+      await entry.focus();
+      await entry.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+      const reachability = await entry.evaluate((element) => {
+        const panelElement = element.closest('.menu-panel');
+        if (!panelElement) return { missingPanel: true };
+        const item = element.getBoundingClientRect();
+        const viewport = panelElement.getBoundingClientRect();
+        return {
+          focused: document.activeElement === element,
+          visible: item.width > 0 && item.height > 0,
+          verticallyReachable: item.top >= viewport.top - 1 && item.bottom <= viewport.bottom + 1,
+          horizontallyContained: item.left >= -1 && item.right <= window.innerWidth + 1,
+          label: (element.textContent || '').trim(),
+        };
+      });
+      if (!reachability.focused || !reachability.visible || !reachability.verticallyReachable ||
+          !reachability.horizontallyContained) {
+        fail(`App-Shell ${width}px: Navigationseintrag nicht erreichbar (${JSON.stringify(reachability)})`);
+      }
+    }
+
     await page.keyboard.press('Escape');
+    // Closing a <details> and the panel losing its rendered box are not synchronous with
+    // the keypress; sampling getClientRects() the same instant reads the previous frame.
+    // Wait for the panel to actually be gone, then assert — the same fix the energy Escape
+    // probe needed, for the same reason. If it never goes, the wait fails and says so.
+    await page.waitForFunction(() => {
+      const d = document.querySelector('.mobile-head > details.menu');
+      return d && !d.open && !d.querySelector(':scope > .menu-panel')?.getClientRects().length;
+    }, undefined, { timeout: 3000 }).catch(() => {});
     const escapeResult = await page.evaluate(() => {
-      const button = document.querySelector('[data-mobile-menu-toggle]');
+      const details = document.querySelector('.mobile-head > details.menu');
+      const summaryElement = details?.querySelector(':scope > summary');
       return {
-        expanded: button?.getAttribute('aria-expanded'),
-        focused: button === document.activeElement,
-        navigationHidden: document.querySelector('#portal-navigation')?.hidden,
-        accountHidden: document.querySelector('#portal-account')?.hidden,
+        open: details?.open,
+        focused: summaryElement === document.activeElement,
+        // "Visible" means a user can see or reach it. A closed <details> keeps its panel out
+        // of hit-testing and paint even though Chromium still lays out a box for it (measured:
+        // 40x516, hitTest null, no open attribute), so getClientRects() alone over-reports.
+        // Ask whether anything in the panel can actually be hit at its own position.
+        panelVisible: (() => { const pnl = details?.querySelector(':scope > .menu-panel'); if (!pnl) return false;
+          if (details.open) return true;
+          const r = pnl.getBoundingClientRect(); if (!r.width || !r.height) return false;
+          const hit = document.elementFromPoint(Math.min(r.left + 5, innerWidth - 1), Math.min(r.top + 5, innerHeight - 1));
+          return Boolean(hit && pnl.contains(hit)); })(),
       };
     });
-    if (escapeResult.expanded !== 'false' || !escapeResult.focused ||
-        !escapeResult.navigationHidden || !escapeResult.accountHidden) {
+    if (escapeResult.open || !escapeResult.focused || escapeResult.panelVisible) {
       fail(`App-Shell ${width}px: Escape schließt/fokussiert nicht sauber (${JSON.stringify(escapeResult)})`);
     }
 
-    await toggle.click();
-    await page.evaluate(() => {
-      const main = document.querySelector('#main-content');
-      main.focus();
-      main.click();
+    await summary.click();
+    if (await menu.getAttribute('open') === null || !(await panel.isVisible())) {
+      fail(`App-Shell ${width}px: Zeiger öffnet das native Menü nicht`);
+    }
+    await summary.click();
+    if (await menu.getAttribute('open') !== null || await panel.isVisible()) {
+      fail(`App-Shell ${width}px: Zeiger schließt das native Menü nicht`);
+    }
+
+    // Closing an overlay from outside it is a shell behaviour, not a selector or
+    // placement choice. Keep this strict even though the surviving <details>
+    // implementation may need an explicit enhancement to provide it.
+    await summary.click();
+    const outsideResult = await page.evaluate(() => {
+      const main = [...document.querySelectorAll('[data-skip-target]')]
+        .find((element) => element.getClientRects().length);
+      main?.focus();
+      main?.click();
+      return {
+        open: document.querySelector('.mobile-head > details.menu')?.open,
+        active: document.activeElement?.id || '',
+      };
     });
-    const outsideResult = await page.evaluate(() => ({
-      expanded: document.querySelector('[data-mobile-menu-toggle]')?.getAttribute('aria-expanded'),
-      active: document.activeElement?.id || '',
-    }));
-    if (outsideResult.expanded !== 'false' || outsideResult.active !== 'main-content') {
+    if (outsideResult.open || outsideResult.active !== 'mobile-main-content') {
       fail(`App-Shell ${width}px: Außenklick schließt nicht ohne Fokusdiebstahl (${JSON.stringify(outsideResult)})`);
     }
 
     if (width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
       mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
-      await toggle.click();
+      await summary.click();
       await page.screenshot({
         path: join(process.env.HV_QA_SCREENSHOT_DIR, 'app-shell-mobile-semantic-menu.png'),
         fullPage: false,
@@ -436,14 +524,11 @@ async function assertSharedAppShellNavigation() {
     const page = await localLogin(context, 'admin@example.com');
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
     const desktopState = await page.evaluate(() => ({
-      toggleVisible: Boolean(document.querySelector('[data-mobile-menu-toggle]')?.getClientRects().length),
-      navigationVisible: Boolean(document.querySelector('#portal-navigation')?.getClientRects().length),
-      accountVisible: Boolean(document.querySelector('#portal-account')?.getClientRects().length),
-      navigationHidden: document.querySelector('#portal-navigation')?.hidden,
-      accountHidden: document.querySelector('#portal-account')?.hidden,
+      mobileHeaderVisible: Boolean(document.querySelector('.mobile-head')?.getClientRects().length),
+      navigationVisible: Boolean(document.querySelector('aside.sidebar > nav[aria-label="Bereiche"]')?.getClientRects().length),
+      accountVisible: Boolean(document.querySelector('aside.sidebar > footer.account')?.getClientRects().length),
     }));
-    if (desktopState.toggleVisible || !desktopState.navigationVisible || !desktopState.accountVisible ||
-        desktopState.navigationHidden || desktopState.accountHidden) {
+    if (desktopState.mobileHeaderVisible || !desktopState.navigationVisible || !desktopState.accountVisible) {
       fail(`App-Shell ${width}px: Desktop-Navigation ist nicht vollständig sichtbar (${JSON.stringify(desktopState)})`);
     }
     await closeContext(context);
@@ -461,12 +546,20 @@ async function assertSharedAppShellNavigation() {
     fail(`App-Shell ohne JavaScript: Status ${noScriptResponse?.status() ?? 0}`);
   }
   const noScriptState = await noScriptPage.evaluate(() => ({
-    toggleVisible: Boolean(document.querySelector('[data-mobile-menu-toggle]')?.getClientRects().length),
-    navigationVisible: Boolean(document.querySelector('#portal-navigation')?.getClientRects().length),
-    accountVisible: Boolean(document.querySelector('#portal-account')?.getClientRects().length),
+    menuOpen: document.querySelector('.mobile-head > details.menu')?.open,
+    summaryVisible: Boolean(document.querySelector('.mobile-head > details.menu > summary')?.getClientRects().length),
+    panelVisible: (() => { const d = document.querySelector('.mobile-head > details.menu'); const pnl = d?.querySelector(':scope > .menu-panel'); if (!pnl) return false;
+      if (d.open) return true; const r = pnl.getBoundingClientRect(); if (!r.width || !r.height) return false;
+      const hit = document.elementFromPoint(Math.min(r.left + 5, innerWidth - 1), Math.min(r.top + 5, innerHeight - 1)); return Boolean(hit && pnl.contains(hit)); })(),
   }));
-  if (noScriptState.toggleVisible || !noScriptState.navigationVisible || !noScriptState.accountVisible) {
-    fail(`App-Shell ohne JavaScript: Navigation ist nicht als Fallback offen (${JSON.stringify(noScriptState)})`);
+  if (noScriptState.menuOpen || !noScriptState.summaryVisible || noScriptState.panelVisible) {
+    fail(`App-Shell ohne JavaScript: natives Menü startet nicht bedienbar geschlossen (${JSON.stringify(noScriptState)})`);
+  }
+  const noScriptMenu = noScriptPage.locator('.mobile-head > details.menu');
+  await noScriptMenu.locator(':scope > summary').click();
+  if (await noScriptMenu.getAttribute('open') === null ||
+      !(await noScriptMenu.locator(':scope > .menu-panel nav[aria-label="Bereiche"]').isVisible())) {
+    fail('App-Shell ohne JavaScript: natives Menü lässt sich nicht öffnen');
   }
   await closeContext(noScriptContext);
   process.stdout.write('  ✓ App-Shell · Sprunglink, Tastaturmenü, Escape & No-JS · 320–1440px\n');
@@ -509,7 +602,9 @@ async function assertBoundedAdminDialogs() {
     const contactRow = page.locator('.contact-row').filter({ hasText: 'QA Dialogkontakt' }).first();
     const contactTrigger = contactRow.getByRole('button', { name: 'Bearbeiten' });
     await contactTrigger.click();
-    const contactDialog = page.locator('.contact-edit-dialog[open]');
+    // templ renders the contact editor as dialog.dialog with a per-contact id
+    // (contacts.templ:228); .contact-edit-dialog was the legacy renderer's class.
+    const contactDialog = page.locator('dialog.dialog[open]');
     await contactDialog.waitFor({ state: 'visible' });
     const contactGeometry = await contactDialog.evaluate(async (dialog, mobile) => {
       const head = dialog.querySelector(':scope > .dialog-head');
@@ -2823,7 +2918,7 @@ try {
 
     if (process.env.HV_QA_LANDING_ONLY !== 'true') {
       await assertSidebarNavReachable();
-      await assertMapIntegratedPortalSwitcher();
+      await assertPortalSwitcherAtomic();
       await assertSharedAppShellNavigation();
       await assertHomeOnboarding();
       await assertBoundedAdminDialogs();
