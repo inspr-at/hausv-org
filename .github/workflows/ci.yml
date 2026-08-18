@@ -14,6 +14,13 @@ jobs:
     env:
       HAUSV_TEST_POSTGRES_DSN: postgres://hausv_ci:hausv_ci@127.0.0.1:5432/hausv_ci?sslmode=disable
       HAUSV_TEST_POSTGRES_REQUIRED: "true"
+      # Runs the store and server suites against PostgreSQL as well as SQLite.
+      # Gated separately until 0.97.0 because the store layer keyed on tenant_slug
+      # and could not execute there; it now addresses rows by tenant_id and passes.
+      # Without this the two-tenant isolation oracle silently runs on SQLite, where
+      # there is no row-level security to observe — it was measured returning ok in
+      # 0.697s against a dead port, i.e. never dialling at all.
+      HAUSV_STORE_TEST_POSTGRES: "1"
     services:
       postgres:
         image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94

@@ -29,7 +29,11 @@ const (
 	defaultConnMaxLifetime  = 30 * time.Minute
 	defaultConnMaxIdleTime  = 5 * time.Minute
 	defaultMaxOpenConns     = 20
-	defaultMaxIdleConns     = 5
+	// defaultLaneCap x defaultLaneMaxConns plus defaultMaxOpenConns must stay
+	// under a stock server's usable connections: 24 x 3 + 20 = 92 against
+	// max_connections 100 less 3 reserved. VerifyBudget checks it for real.
+	defaultLaneCap      = 24
+	defaultLaneMaxConns = 3
 )
 
 // Config describes a database connection without reading process state. The
@@ -43,6 +47,10 @@ type Config struct {
 	MaxIdleConns     int
 	ConnMaxLifetime  time.Duration
 	ConnMaxIdleTime  time.Duration
+	// LaneCap bounds how many tenant-pinned pools Scoped keeps alive at once.
+	LaneCap int
+	// LaneMaxConns is MaxOpenConns of a single tenant lane.
+	LaneMaxConns int
 }
 
 //go:embed postgres/migrations/*.sql
@@ -70,15 +78,10 @@ func openPostgres(ctx context.Context, cfg Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("db: postgres DSN required")
 	}
 	applyPostgresDefaults(&cfg)
-	pgCfg, err := pgx.ParseConfig(cfg.DSN)
+	pgCfg, err := postgresConnConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("db: parse postgres DSN: %w", err)
+		return nil, err
 	}
-	pgCfg.ConnectTimeout = cfg.ConnectTimeout
-	if pgCfg.RuntimeParams == nil {
-		pgCfg.RuntimeParams = make(map[string]string)
-	}
-	pgCfg.RuntimeParams["statement_timeout"] = strconv.FormatInt(cfg.StatementTimeout.Milliseconds(), 10)
 
 	database := stdlib.OpenDB(*pgCfg)
 	database.SetMaxOpenConns(cfg.MaxOpenConns)
@@ -103,6 +106,33 @@ func openPostgres(ctx context.Context, cfg Config) (*sql.DB, error) {
 	return database, nil
 }
 
+// postgresConnConfig parses the DSN and applies every tuning decision a
+// connection from this process carries. It is the ONLY place that does so:
+// tenant lanes are built from the same function, because a lane assembled from
+// the DSN alone comes back untuned — measured, statement_timeout 0 where the
+// process pool says 30s — and nothing about the resulting pool looks wrong until
+// a pathological query holds a backend open forever.
+//
+// cfg is taken by value and defaulted here, so a caller cannot get a config
+// tuned against numbers it did not see.
+func postgresConnConfig(cfg Config) (*pgx.ConnConfig, error) {
+	applyPostgresDefaults(&cfg)
+	pgCfg, err := pgx.ParseConfig(cfg.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("db: parse postgres DSN: %w", err)
+	}
+	pgCfg.ConnectTimeout = cfg.ConnectTimeout
+	// A fresh map, never the parsed config's own and never one another pool may
+	// still be holding. See Scoped.lane for the trap this guards.
+	params := make(map[string]string, len(pgCfg.RuntimeParams)+2)
+	for name, value := range pgCfg.RuntimeParams {
+		params[name] = value
+	}
+	params["statement_timeout"] = strconv.FormatInt(cfg.StatementTimeout.Milliseconds(), 10)
+	pgCfg.RuntimeParams = params
+	return pgCfg, nil
+}
+
 func applyPostgresDefaults(cfg *Config) {
 	if cfg.ConnectTimeout <= 0 {
 		cfg.ConnectTimeout = defaultConnectTimeout
@@ -114,7 +144,12 @@ func applyPostgresDefaults(cfg *Config) {
 		cfg.MaxOpenConns = defaultMaxOpenConns
 	}
 	if cfg.MaxIdleConns <= 0 {
-		cfg.MaxIdleConns = defaultMaxIdleConns
+		// Equal to MaxOpenConns on purpose. A lower idle cap makes the pool close
+		// connections it is about to need again: at 20 open / 5 idle a burst the
+		// pool was sized for cost fifteen measured idle-closes of pure churn, each
+		// one a TCP setup, a TLS handshake and a fresh backend on the server.
+		// ConnMaxIdleTime, not the idle cap, is what returns unused connections.
+		cfg.MaxIdleConns = cfg.MaxOpenConns
 	}
 	if cfg.MaxIdleConns > cfg.MaxOpenConns {
 		cfg.MaxIdleConns = cfg.MaxOpenConns
@@ -124,6 +159,12 @@ func applyPostgresDefaults(cfg *Config) {
 	}
 	if cfg.ConnMaxIdleTime <= 0 {
 		cfg.ConnMaxIdleTime = defaultConnMaxIdleTime
+	}
+	if cfg.LaneCap <= 0 {
+		cfg.LaneCap = defaultLaneCap
+	}
+	if cfg.LaneMaxConns <= 0 {
+		cfg.LaneMaxConns = defaultLaneMaxConns
 	}
 }
 
