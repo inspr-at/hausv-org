@@ -2608,7 +2608,7 @@ func (a *app) portalEnergyCard(ac authCtx, now time.Time) (portalEnergyView, boo
 		ActionURL:   "/app/zuhause/onboarding",
 		Footnote:    "Im geplanten Leistungstarif zählt die höchste Viertelstunde eines Monats.",
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		card.Message = "Die Energiedaten sind gerade nicht abrufbar. Bitte später erneut ansehen."
 		card.ActionLabel = "Zuhause öffnen"
@@ -2631,7 +2631,7 @@ func (a *app) portalEnergyCard(ac authCtx, now time.Time) (portalEnergyView, boo
 		card.ModeLabel = "Aktive Steuerung"
 	}
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, monthStart.UTC(), time.Time{})
+	intervals, _ := a.energyFor(ac).ListIntervals(ac.tenant.Slug, monthStart.UTC(), time.Time{})
 	peak := energy.PeakForMonth(intervals, now, time.Local)
 	peakStat := portalEnergyStat{Label: "Spitze diesen Monat", Value: "Noch nicht gemessen", Muted: true}
 	if peak > 0 {
@@ -3629,7 +3629,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		notificationSummary = "E-Mails pausiert"
 	}
 	homeURL := "/app/zuhause/onboarding"
-	homeProfile, homeProfileExists, homeProfileErr := a.energyStore.Profile(tenant.Slug)
+	homeProfile, homeProfileExists, homeProfileErr := a.energyFor(ac).Profile(tenant.Slug)
 	if homeProfileErr == nil && homeProfileExists && homeProfile.OnboardingComplete {
 		homeURL = "/app/settings/home"
 	}
@@ -3667,7 +3667,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	units := ac.repositories.units.List()
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
-	homeProfile, hasHomeProfile, profileErr := a.energyStore.Profile(tenant.Slug)
+	homeProfile, hasHomeProfile, profileErr := a.energyFor(ac).Profile(tenant.Slug)
 	if profileErr != nil || !homeProfile.OnboardingComplete {
 		hasHomeProfile = false
 	}
@@ -4204,7 +4204,7 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			return
 		}
 	}
-	if profile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr != nil {
+	if profile, exists, profileErr := a.energyFor(ac).Profile(tenant.Slug); profileErr != nil {
 		http.Redirect(w, r, "/app/settings/building?section=units&unit=error"+dialogTarget, http.StatusSeeOther)
 		return
 	} else if exists && profile.HomeType == energy.HomeApartment {
@@ -4269,7 +4269,7 @@ func (a *app) deleteBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 		http.Redirect(w, r, "/app/settings/building?section=units&unit=invalid", http.StatusSeeOther)
 		return
 	}
-	if profile, exists, profileErr := a.energyStore.Profile(tenant.Slug); profileErr != nil {
+	if profile, exists, profileErr := a.energyFor(ac).Profile(tenant.Slug); profileErr != nil {
 		http.Redirect(w, r, "/app/settings/building?section=units&unit=error", http.StatusSeeOther)
 		return
 	} else if exists && profile.HomeType == energy.HomeApartment {
@@ -5491,7 +5491,7 @@ func (a *app) homeIdentityForActor(ac authCtx, canViewEnergy bool) homeIdentityV
 	if !canViewEnergy || a.energyStore == nil {
 		return identity
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists || (!profile.OnboardingComplete && profile.OnboardingStep < 3) {
 		return identity
 	}

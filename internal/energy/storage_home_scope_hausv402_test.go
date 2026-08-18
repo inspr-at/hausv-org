@@ -1,24 +1,18 @@
 package energy_test
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
 func TestHomeScopedStoresIsolateHomesWithinTenant(t *testing.T) {
 	stores := map[string]func(*testing.T) energy.Storage{
 		"memory": func(*testing.T) energy.Storage { return energy.NewMemoryStore() },
-		"sqlite": func(t *testing.T) energy.Storage {
-			database, err := db.Open(filepath.Join(t.TempDir(), "energy.db"))
-			if err != nil {
-				t.Fatalf("open db: %v", err)
-			}
-			t.Cleanup(func() { database.Close() })
-			return energy.NewSQLStore(database)
+		"sql": func(t *testing.T) energy.Storage {
+			return energy.NewSQLStore(dbtest.Open(t))
 		},
 	}
 

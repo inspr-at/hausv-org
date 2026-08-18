@@ -375,6 +375,21 @@ type energyMeasureView struct {
 	Completed        string
 }
 
+// energyFor hands back the energy store bound to the identity this request was
+// authorized with.
+//
+// It exists so the tenant a query filters on comes from the authorization
+// check, not from a slug re-resolved inside the storage layer on every call.
+// The slug arguments below stay: the Storage API is shared with the in-memory
+// implementation, whose keys ARE slugs, and the SQL store refuses outright if
+// the two disagree.
+func (a *app) energyFor(ac authCtx) energy.Storage {
+	if a == nil || a.energyStore == nil {
+		return nil
+	}
+	return a.energyStore.ForTenant(ac.tenantRef)
+}
+
 func (a *app) canViewEnergy(ac authCtx) bool {
 	_, allowed := a.energyStoreForHome(ac, energy.DefaultHomeKey)
 	return allowed
@@ -387,7 +402,11 @@ func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bo
 	if !roleCanUseResidentAreas(ac.role) {
 		return nil, false
 	}
-	store := a.energyStore.ForHome(homeKey)
+	// The tenant reference travels with the handle from here on. This is the
+	// point where the caller's right to this house was just established, so it
+	// is the point where the identity every query filters on should be fixed —
+	// a slug that arrives later cannot re-point what this store answers for.
+	store := a.energyFor(ac).ForHome(homeKey)
 	if a.isEnergyHouseAdmin(ac) {
 		return store, true
 	}
@@ -434,7 +453,7 @@ func (a *app) canManageEnergy(ac authCtx) bool {
 	if a.isEnergyHouseAdmin(ac) {
 		return true
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		return false
 	}
@@ -449,7 +468,7 @@ func (a *app) canManageEnergy(ac authCtx) bool {
 func (a *app) canManageHomeIdentity(ac authCtx) bool {
 	// A delegated technical caretaker may configure readings, but the shared
 	// name and type of the home profile stay with owners and house management.
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	return err == nil && a.canManageHomeIdentityProfile(ac, profile, exists)
 }
 
@@ -459,7 +478,7 @@ func (a *app) canControlEnergy(ac authCtx) bool {
 	if a.isEnergyHouseAdmin(ac) {
 		return true
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	return err == nil && a.ownerCanAccessEnergyProfile(ac, profile, exists)
 }
 
@@ -632,7 +651,7 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -655,10 +674,10 @@ func (a *app) homeOnboarding(w http.ResponseWriter, r *http.Request, ac authCtx)
 	if linked, ok := a.effectiveEnergyUnit(ac.tenantRef, profile); ok {
 		homeUnitID = linked.ID
 	}
-	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	mappingSlots := buildEnergyMappingSlots(assets, mappings)
-	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
+	intervals, _ := a.energyFor(ac).ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
 	finishRecommendation := energy.NextRecommendation(profile, assets, mappings, intervals)
 	step := profile.OnboardingStep
 	if raw := strings.TrimSpace(r.URL.Query().Get("step")); raw != "" {
@@ -770,7 +789,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -854,7 +873,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	profile.OnboardingStep = nextStep
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Hausprofil konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -878,7 +897,7 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 }
 
 func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -933,7 +952,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Hausprofil konnte nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -975,7 +994,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 	profile.HouseholdName = name
 	profile.HomeType = homeType
 	profile.UnitID = unitID
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Hausprofil konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -1121,7 +1140,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -1130,8 +1149,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		http.Redirect(w, r, "/app/zuhause/onboarding", http.StatusSeeOther)
 		return
 	}
-	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	// Named EVs from the pilot inventory predate per-consumer mappings. When
 	// Home Assistant exposes an unambiguous matching home-charging sensor, bind
 	// it once and then use the normal persisted measurement path.
@@ -1145,7 +1164,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	canManageEnergyData := a.canManageHomeIdentity(ac)
 	imports := []energy.ImportRecord{}
 	if canManageEnergyData {
-		imports, _ = a.energyStore.ListImports(ac.tenant.Slug)
+		imports, _ = a.energyFor(ac).ListImports(ac.tenant.Slug)
 	}
 	importViews := make([]energyImportView, 0, len(imports))
 	for _, item := range imports {
@@ -1156,7 +1175,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		})
 	}
 	monthStart := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
-	monthIntervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, monthStart.UTC(), time.Time{})
+	monthIntervals, _ := a.energyFor(ac).ListIntervals(ac.tenant.Slug, monthStart.UTC(), time.Time{})
 	peakViews := energyPeakViews(monthIntervals, time.Now())
 	comparisonView, hasComparison := energyComparisonForView(monthIntervals, time.Now())
 	recommendation := energy.NextRecommendation(profile, assets, mappings, monthIntervals)
@@ -1168,7 +1187,7 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	tariffView := buildEnergyTariffView(profile, monthIntervals, recordsItself)
 	scenarioViews := buildEnergyScenarioViews(profile, assets, monthIntervals)
 	caretakers := a.energyCaretakerViews(ac)
-	maintenance, _ := a.energyStore.ListMaintenance(ac.tenant.Slug)
+	maintenance, _ := a.energyFor(ac).ListMaintenance(ac.tenant.Slug)
 	if maintenanceRecommendation, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
 		recommendation = maintenanceRecommendation
 	}
@@ -1176,9 +1195,9 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	documentOptions, documentNames := a.energyDocumentOptions(ac.tenantRef)
 	issueOptions, issueNames := a.energyIssueOptions(ac.tenantRef)
 	maintenanceViews := buildEnergyMaintenanceViews(maintenance, assets, contactNames, documentNames, issueNames, time.Now())
-	assessments, _ := a.energyStore.ListTariffAssessments(ac.tenant.Slug)
+	assessments, _ := a.energyFor(ac).ListTariffAssessments(ac.tenant.Slug)
 	assessmentViews := buildEnergyTariffAssessmentViews(assessments)
-	measures, _ := a.energyStore.ListMeasures(ac.tenant.Slug)
+	measures, _ := a.energyFor(ac).ListMeasures(ac.tenant.Slug)
 	measureViews := buildEnergyMeasureViews(measures, contactNames)
 	freeUntil := ""
 	if profile.FreeUntilAt != nil {
@@ -1372,7 +1391,7 @@ func (a *app) energyLiveRefresh(w http.ResponseWriter, r *http.Request, ac authC
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -1381,8 +1400,8 @@ func (a *app) energyLiveRefresh(w http.ResponseWriter, r *http.Request, ac authC
 		http.Error(w, "Energie-Cockpit ist noch nicht eingerichtet.", http.StatusConflict)
 		return
 	}
-	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
 		mappings = updated
 	}
@@ -1762,7 +1781,7 @@ func (a *app) updateEnergyMode(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
 		return
@@ -1786,7 +1805,7 @@ func (a *app) updateEnergyMode(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Error(w, "Unbekannter Modus", http.StatusBadRequest)
 		return
 	}
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Modus konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -1863,7 +1882,7 @@ func (a *app) importSmartMeter(w http.ResponseWriter, r *http.Request, ac authCt
 		http.Redirect(w, r, "/app/energie?import=invalid", http.StatusSeeOther)
 		return
 	}
-	inserted, err := a.energyStore.PutImport(record, intervals)
+	inserted, err := a.energyFor(ac).PutImport(record, intervals)
 	if err != nil {
 		http.Error(w, "Smart-Meter-Daten konnten nicht gespeichert werden.", http.StatusInternalServerError)
 		return
@@ -1904,7 +1923,7 @@ func (a *app) updateEnergyTarget(w http.ResponseWriter, r *http.Request, ac auth
 		http.Error(w, "Peak-Ziel muss eine positive kW-Zahl sein.", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
 		return
@@ -1914,7 +1933,7 @@ func (a *app) updateEnergyTarget(w http.ResponseWriter, r *http.Request, ac auth
 		before = formatEnergyNumber(*profile.TargetPeakKW)
 	}
 	profile.TargetPeakKW = &value
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Peak-Ziel konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -1947,7 +1966,7 @@ func (a *app) updateEnergyAgreedPower(w http.ResponseWriter, r *http.Request, ac
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
 		return
@@ -1969,7 +1988,7 @@ func (a *app) updateEnergyAgreedPower(w http.ResponseWriter, r *http.Request, ac
 		}
 		profile.AgreedPowerKW = &value
 	}
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Anschlussleistung konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2002,7 +2021,7 @@ func (a *app) updateEnergyRecommendation(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
 		return
@@ -2015,7 +2034,7 @@ func (a *app) updateEnergyRecommendation(w http.ResponseWriter, r *http.Request,
 	}
 	profile.RecommendationID = id
 	profile.RecommendationStatus = status
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Auswahl konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2041,16 +2060,16 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		http.Error(w, "Hausprofil fehlt.", http.StatusBadRequest)
 		return
 	}
-	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
-	intervals, _ := a.energyStore.ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
+	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
+	intervals, _ := a.energyFor(ac).ListIntervals(ac.tenant.Slug, time.Now().AddDate(0, -1, 0), time.Time{})
 	recommendation := energy.NextRecommendation(profile, assets, mappings, intervals)
-	if maintenance, listErr := a.energyStore.ListMaintenance(ac.tenant.Slug); listErr == nil {
+	if maintenance, listErr := a.energyFor(ac).ListMaintenance(ac.tenant.Slug); listErr == nil {
 		if due, ok := energy.MaintenanceRecommendation(time.Now(), maintenance); ok {
 			recommendation = due
 		}
@@ -2095,7 +2114,7 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	profile.RecommendationID = recommendation.ID
 	profile.RecommendationStatus = "measure-created"
-	if err := a.energyStore.SaveProfile(profile); err != nil {
+	if err := a.energyFor(ac).SaveProfile(profile); err != nil {
 		http.Error(w, "Maßnahme wurde angelegt, der Hausstatus konnte aber nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2107,7 +2126,7 @@ func (a *app) createEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		Status:           energy.MeasureRequested,
 		SharedFields:     shared,
 	}
-	if err := a.energyStore.UpsertMeasure(measure); err != nil {
+	if err := a.energyFor(ac).UpsertMeasure(measure); err != nil {
 		http.Error(w, "Hausaufgabe wurde angelegt, der Maßnahmenkontext konnte aber nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2260,7 +2279,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 		plan.CreatedAt = existing.CreatedAt
 		plan.LastCompletedAt = existing.LastCompletedAt
 	}
-	if err := a.energyStore.UpsertMaintenance(plan); err != nil {
+	if err := a.energyFor(ac).UpsertMaintenance(plan); err != nil {
 		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
 		return
 	}
@@ -2309,7 +2328,7 @@ func (a *app) completeEnergyMaintenance(w http.ResponseWriter, r *http.Request, 
 		http.Redirect(w, r, "/app/energie?maintenance=invalid#wartung", http.StatusSeeOther)
 		return
 	}
-	if err := a.energyStore.UpsertMaintenance(plan); err != nil {
+	if err := a.energyFor(ac).UpsertMaintenance(plan); err != nil {
 		http.Error(w, "Wartung konnte nicht abgeschlossen werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2328,7 +2347,7 @@ func (a *app) saveEnergyTariffAssessment(w http.ResponseWriter, r *http.Request,
 	}
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	intervals, err := a.energyStore.ListIntervals(ac.tenant.Slug, monthStart.UTC(), monthStart.AddDate(0, 1, 0).UTC())
+	intervals, err := a.energyFor(ac).ListIntervals(ac.tenant.Slug, monthStart.UTC(), monthStart.AddDate(0, 1, 0).UTC())
 	if err != nil {
 		http.Error(w, "Messwerte konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -2341,7 +2360,7 @@ func (a *app) saveEnergyTariffAssessment(w http.ResponseWriter, r *http.Request,
 	rules := energy.AustrianDraft2027()
 	// Die vereinbarte Anschlussleistung entscheidet über die Mindestbemessung.
 	// Fehlt das Profil, bleibt sie 0 und nur der 2-kW-Sockel greift.
-	assessedProfile, _, _ := a.energyStore.Profile(ac.tenant.Slug)
+	assessedProfile, _, _ := a.energyFor(ac).Profile(ac.tenant.Slug)
 	estimate := rules.Estimate(peak, agreedPowerKW(assessedProfile))
 	gaps, conflicts := intervalQualityCounts(intervals)
 	quality := energy.QualityMeasured
@@ -2354,7 +2373,7 @@ func (a *app) saveEnergyTariffAssessment(w http.ResponseWriter, r *http.Request,
 		ProfileID: rules.ID, ProfileVersion: rules.Version, ProfileStatus: rules.Status, SourceURL: rules.SourceURL,
 		PeakKW: peak, BilledKW: estimate.BilledKW, AnnualPowerEUR: estimate.AnnualPowerEUR, DataQuality: quality,
 	}
-	if err := a.energyStore.SaveTariffAssessment(item); err != nil {
+	if err := a.energyFor(ac).SaveTariffAssessment(item); err != nil {
 		http.Error(w, "Tarifbewertung konnte nicht festgehalten werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2375,7 +2394,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, "Ungültige Eingabe", http.StatusBadRequest)
 		return
 	}
-	item, ok, err := a.energyStore.GetMeasure(ac.tenant.Slug, strings.TrimSpace(r.FormValue("id")))
+	item, ok, err := a.energyFor(ac).GetMeasure(ac.tenant.Slug, strings.TrimSpace(r.FormValue("id")))
 	if err != nil || !ok {
 		http.Error(w, "Maßnahme nicht gefunden.", http.StatusNotFound)
 		return
@@ -2426,7 +2445,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 	if item.ContactID != "" && item.Status == energy.MeasureRequested {
 		item.Status = energy.MeasureAssigned
 	}
-	if err := a.energyStore.UpsertMeasure(item); err != nil {
+	if err := a.energyFor(ac).UpsertMeasure(item); err != nil {
 		http.Error(w, "Maßnahme konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -2870,8 +2889,8 @@ func (a *app) energyConsumerMeasurementOptions(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Kein Zugriff", http.StatusForbidden)
 		return
 	}
-	assets, _ := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	assetNames := map[string]string{}
 	for _, asset := range assets {
 		assetNames[asset.ID] = asset.Name
@@ -3175,7 +3194,7 @@ func (a *app) updateEnergyFlowNode(w http.ResponseWriter, r *http.Request, ac au
 		http.Error(w, "Ungültiger Energieknoten.", http.StatusBadRequest)
 		return
 	}
-	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	assets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Energieknoten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -3230,7 +3249,7 @@ func (a *app) updateEnergyFlowNode(w http.ResponseWriter, r *http.Request, ac au
 		http.Redirect(w, r, "/app/energie?verbraucher=messwerte", http.StatusSeeOther)
 		return
 	}
-	if err := a.energyStore.UpsertAsset(asset); err != nil {
+	if err := a.energyFor(ac).UpsertAsset(asset); err != nil {
 		http.Error(w, "Energieknoten konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -3314,7 +3333,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		return
 	}
 	kind := energyConsumerKind(r.FormValue("kind"))
-	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	assets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -3402,7 +3421,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 			return
 		}
 	}
-	if err := a.energyStore.UpsertAsset(asset); err != nil {
+	if err := a.energyFor(ac).UpsertAsset(asset); err != nil {
 		http.Error(w, "Verbraucher konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -3410,7 +3429,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 		http.Error(w, "Messwerte konnten nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
-	updatedAssets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	updatedAssets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Priorität konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
@@ -3436,7 +3455,7 @@ func (a *app) addEnergyConsumer(w http.ResponseWriter, r *http.Request, ac authC
 	orderedIDs = append(orderedIDs, "")
 	copy(orderedIDs[insertAt+1:], orderedIDs[insertAt:])
 	orderedIDs[insertAt] = asset.ID
-	if written, err := a.energyStore.UpdateAssetPriorities(ac.tenant.Slug, orderedIDs); err != nil || !written {
+	if written, err := a.energyFor(ac).UpdateAssetPriorities(ac.tenant.Slug, orderedIDs); err != nil || !written {
 		http.Error(w, "Priorität konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return
 	}
@@ -3477,12 +3496,12 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	assetID := strings.TrimSpace(r.FormValue("asset_id"))
-	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	assets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Verbraucher konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
-	mappings, _ := a.energyStore.ListMappings(ac.tenant.Slug)
+	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	parkingID := energyFlowNodeID(ac.tenant.Slug, "parking")
 	if assetID == parkingID {
 		asset := energyFlowNodeAsset(assets, ac.tenant.Slug, "parking")
@@ -3491,13 +3510,13 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 		}
 		asset.Metadata["hidden"] = "true"
 		asset.Source = energyFlowNodeAssetSource
-		if err := a.energyStore.UpsertAsset(asset); err != nil {
+		if err := a.energyFor(ac).UpsertAsset(asset); err != nil {
 			http.Error(w, "Verbraucher konnte nicht entfernt werden.", http.StatusInternalServerError)
 			return
 		}
 		for _, mapping := range mappings {
 			if mapping.AssetID == assetID && (mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy) {
-				_, _ = a.energyStore.DeleteMapping(ac.tenant.Slug, mapping.ID)
+				_, _ = a.energyFor(ac).DeleteMapping(ac.tenant.Slug, mapping.ID)
 			}
 		}
 		a.recordAudit(auditEvent{
@@ -3516,7 +3535,7 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 			http.Redirect(w, r, "/app/energie", http.StatusSeeOther)
 			return
 		}
-		if _, err := a.energyStore.DeleteAsset(ac.tenant.Slug, assetID); err != nil {
+		if _, err := a.energyFor(ac).DeleteAsset(ac.tenant.Slug, assetID); err != nil {
 			http.Error(w, "Verbraucher konnte nicht entfernt werden.", http.StatusInternalServerError)
 			return
 		}
@@ -3525,7 +3544,7 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 				continue
 			}
 			if mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy {
-				_, _ = a.energyStore.DeleteMapping(ac.tenant.Slug, mapping.ID)
+				_, _ = a.energyFor(ac).DeleteMapping(ac.tenant.Slug, mapping.ID)
 			}
 		}
 		a.recordAudit(auditEvent{
@@ -4306,7 +4325,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 		return
 	}
 	order := r.Form["order"]
-	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	assets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -4322,7 +4341,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 		}
 		if !found && ac.tenant.HA.ChargingConfigured() {
 			parking := energyFlowNodeAsset(assets, ac.tenant.Slug, "parking")
-			if err := a.energyStore.UpsertAsset(parking); err != nil {
+			if err := a.energyFor(ac).UpsertAsset(parking); err != nil {
 				http.Error(w, "Reihenfolge konnte nicht gespeichert werden.", http.StatusInternalServerError)
 				return
 			}
@@ -4354,7 +4373,7 @@ func (a *app) reorderEnergyConsumers(w http.ResponseWriter, r *http.Request, ac 
 	// Ein atomarer Schreibschritt: verschwindet ein Verbraucher zwischen
 	// Validierung und Schreiben (paralleles Löschen), wird nichts geändert —
 	// und ein Upsert könnte ihn auch nicht wieder auferstehen lassen.
-	written, err := a.energyStore.UpdateAssetPriorities(ac.tenant.Slug, order)
+	written, err := a.energyFor(ac).UpdateAssetPriorities(ac.tenant.Slug, order)
 	if err != nil {
 		http.Error(w, "Reihenfolge konnte nicht gespeichert werden.", http.StatusInternalServerError)
 		return

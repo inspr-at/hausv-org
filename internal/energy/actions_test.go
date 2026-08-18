@@ -1,11 +1,11 @@
 package energy_test
 
 import (
-	"path/filepath"
+	"errors"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -15,13 +15,8 @@ func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
 		"memory": func(t *testing.T) energy.Storage {
 			return energy.NewMemoryStore()
 		},
-		"sqlite": func(t *testing.T) energy.Storage {
-			database, err := appdb.Open(filepath.Join(t.TempDir(), "energy-profile.db"))
-			if err != nil {
-				t.Fatalf("open database: %v", err)
-			}
-			t.Cleanup(func() { _ = database.Close() })
-			return energy.NewSQLStore(database)
+		"sql": func(t *testing.T) energy.Storage {
+			return energy.NewSQLStore(dbtest.Open(t))
 		},
 	}
 	for name, factory := range factories {
@@ -60,13 +55,8 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 		"memory": func(t *testing.T) energy.Storage {
 			return energy.NewMemoryStore()
 		},
-		"sqlite": func(t *testing.T) energy.Storage {
-			database, err := appdb.Open(filepath.Join(t.TempDir(), "energy.db"))
-			if err != nil {
-				t.Fatalf("open database: %v", err)
-			}
-			t.Cleanup(func() { _ = database.Close() })
-			return energy.NewSQLStore(database)
+		"sql": func(t *testing.T) energy.Storage {
+			return energy.NewSQLStore(dbtest.Open(t))
 		},
 	}
 	for name, factory := range factories {
@@ -82,7 +72,14 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 					t.Fatalf("save %s asset: %v", tenant, err)
 				}
 			}
-			if got, _ := store.ListAssets("home-a"); len(got) != 1 || got[0].ID == energy.StableAssetID("home-b", "pv") {
+			// The error is asserted, not discarded: a query that fails outright
+			// returns an empty slice, and "home-a has no foreign asset" is then
+			// true for the wrong reason.
+			got, err := store.ListAssets("home-a")
+			if err != nil {
+				t.Fatalf("list home-a assets: %v", err)
+			}
+			if len(got) != 1 || got[0].ID != energy.StableAssetID("home-a", "pv") {
 				t.Fatalf("home-a assets = %+v", got)
 			}
 			mapping := energy.EntityMapping{
@@ -97,8 +94,12 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 			foreign.ID = "mapping-foreign"
 			foreign.EntityID = "sensor.foreign_pv_power"
 			foreign.AssetID = energy.StableAssetID("home-b", "pv")
-			if err := store.UpsertMapping(foreign); err == nil {
-				t.Fatal("cross-tenant asset mapping was accepted")
+			// Named, not merely non-nil: any dialect failure on the way to the
+			// guard satisfied the old assertion identically, and this is the
+			// only test covering the mapping/asset cross-tenant guard.
+			if err := store.UpsertMapping(foreign); !errors.Is(err, energy.ErrMappingAssetForeign) {
+				t.Fatalf("cross-tenant asset mapping must be refused with %v, got: %v",
+					energy.ErrMappingAssetForeign, err)
 			}
 			if mappings, err := store.ListMappings("home-a"); err != nil || len(mappings) != 1 ||
 				mappings[0].AssetID != energy.StableAssetID("home-a", "pv") {
@@ -172,8 +173,8 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 			if mappings, err := store.ListMappings("home-a"); err != nil || len(mappings) != 1 || mappings[0].AssetID != "" {
 				t.Fatalf("deleting asset should keep measurement and clear link: %+v err=%v", mappings, err)
 			}
-			if assets, _ := store.ListAssets("home-b"); len(assets) != 1 {
-				t.Fatalf("home-b asset affected by home-a delete: %+v", assets)
+			if assets, err := store.ListAssets("home-b"); err != nil || len(assets) != 1 {
+				t.Fatalf("home-b asset affected by home-a delete: %+v err=%v", assets, err)
 			}
 		})
 	}

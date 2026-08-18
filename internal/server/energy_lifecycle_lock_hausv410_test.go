@@ -14,13 +14,14 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 type blockingEnergyImportStoreHAUSV410 struct {
 	energy.Storage
 	started chan struct{}
 	release <-chan struct{}
-	once    sync.Once
+	once    *sync.Once
 }
 
 func (s *blockingEnergyImportStoreHAUSV410) PutImport(record energy.ImportRecord, intervals []energy.Interval) (bool, error) {
@@ -29,17 +30,46 @@ func (s *blockingEnergyImportStoreHAUSV410) PutImport(record energy.ImportRecord
 	return s.Storage.PutImport(record, intervals)
 }
 
+// ForTenant and ForHome have to re-wrap, or scoping quietly UNWRAPS this
+// double: the embedded Storage returns its own scoped copy, the handler holds
+// that instead, and the block this whole test is built on never happens. The
+// signals are shared rather than copied so a scoped clone still reports to the
+// test that is waiting on them.
+func (s *blockingEnergyImportStoreHAUSV410) ForTenant(tenant store.TenantRef) energy.Storage {
+	return &blockingEnergyImportStoreHAUSV410{
+		Storage: s.Storage.ForTenant(tenant), started: s.started, release: s.release, once: s.once,
+	}
+}
+
+func (s *blockingEnergyImportStoreHAUSV410) ForHome(homeKey string) energy.Storage {
+	return &blockingEnergyImportStoreHAUSV410{
+		Storage: s.Storage.ForHome(homeKey), started: s.started, release: s.release, once: s.once,
+	}
+}
+
 type blockingEnergyProfileDeleteStoreHAUSV410 struct {
 	energy.Storage
 	started chan struct{}
 	release <-chan struct{}
-	once    sync.Once
+	once    *sync.Once
 }
 
 func (s *blockingEnergyProfileDeleteStoreHAUSV410) DeleteProfile(tenantSlug string) (energy.DeleteSummary, error) {
 	s.once.Do(func() { close(s.started) })
 	<-s.release
 	return s.Storage.DeleteProfile(tenantSlug)
+}
+
+func (s *blockingEnergyProfileDeleteStoreHAUSV410) ForTenant(tenant store.TenantRef) energy.Storage {
+	return &blockingEnergyProfileDeleteStoreHAUSV410{
+		Storage: s.Storage.ForTenant(tenant), started: s.started, release: s.release, once: s.once,
+	}
+}
+
+func (s *blockingEnergyProfileDeleteStoreHAUSV410) ForHome(homeKey string) energy.Storage {
+	return &blockingEnergyProfileDeleteStoreHAUSV410{
+		Storage: s.Storage.ForHome(homeKey), started: s.started, release: s.release, once: s.once,
+	}
 }
 
 func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
@@ -56,6 +86,7 @@ func TestEnergyProfileDeletionWaitsForInFlightSmartMeterImport(t *testing.T) {
 		Storage: a.energyStore,
 		started: importStarted,
 		release: importRelease,
+		once:    &sync.Once{},
 	}
 
 	importRequest := newAuthedEnergyMultipartRequestHAUSV410(
@@ -123,6 +154,7 @@ func TestEnergyMutationQueuedBehindProfileDeletionCannotRecreateData(t *testing.
 		Storage: a.energyStore,
 		started: deleteStarted,
 		release: deleteRelease,
+		once:    &sync.Once{},
 	}
 
 	deleteRequest := newAuthedEnergyFormRequestHAUSV410(

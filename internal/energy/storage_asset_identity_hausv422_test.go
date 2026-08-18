@@ -1,11 +1,11 @@
 package energy_test
 
 import (
-	"path/filepath"
+	"errors"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -19,14 +19,9 @@ func TestAssetIDIsGloballyUniqueInBothStoresHAUSV422(t *testing.T) {
 
 	stores := map[string]func(*testing.T) energy.Storage{
 		"memory": func(*testing.T) energy.Storage { return energy.NewMemoryStore() },
-		"sqlite": func(t *testing.T) energy.Storage {
+		"sql": func(t *testing.T) energy.Storage {
 			t.Helper()
-			database, err := appdb.Open(filepath.Join(t.TempDir(), "assets.db"))
-			if err != nil {
-				t.Fatalf("Datenbank öffnen: %v", err)
-			}
-			t.Cleanup(func() { _ = database.Close() })
-			return energy.NewSQLStore(database)
+			return energy.NewSQLStore(dbtest.Open(t))
 		},
 	}
 
@@ -46,17 +41,34 @@ func TestAssetIDIsGloballyUniqueInBothStoresHAUSV422(t *testing.T) {
 
 			// Dieselbe ID für ein anderes Haus muss abgewiesen werden — sonst
 			// könnte ein fremdes Haus ein Asset überschreiben.
+			//
+			// Die Prüfung nennt den Fehler beim Namen. Vorher genügte
+			// irgendein Fehler, und genau das machte den Test wertlos: auf
+			// PostgreSQL scheiterte dieselbe Anweisung am Dialekt (42P10,
+			// ON CONFLICT ohne passenden Unique-Index), und der Test hätte die
+			// Mandantentrennung als bewiesen gemeldet, obwohl sie dort gar
+			// nicht existierte.
 			err := store.UpsertAsset(energy.Asset{
 				ID: "asset-geteilt", TenantSlug: "haus-b", Kind: "pv", Confirmed: true,
 			})
-			if err == nil {
-				t.Fatal("dieselbe Asset-ID für zwei Häuser wurde angenommen")
+			if !errors.Is(err, energy.ErrAssetIDTaken) {
+				t.Fatalf("dieselbe Asset-ID für zwei Häuser muss mit %v abgewiesen werden, war: %v",
+					energy.ErrAssetIDTaken, err)
 			}
 
-			a, _ := store.ListAssets("haus-a")
-			b, _ := store.ListAssets("haus-b")
-			if len(a) != 1 {
-				t.Fatalf("haus-a sollte genau ein Asset haben, hatte %d", len(a))
+			a, err := store.ListAssets("haus-a")
+			if err != nil {
+				t.Fatalf("Assets von haus-a lesen: %v", err)
+			}
+			b, err := store.ListAssets("haus-b")
+			if err != nil {
+				t.Fatalf("Assets von haus-b lesen: %v", err)
+			}
+			// Beide Hälften: haus-b hat nichts bekommen UND haus-a hat sein
+			// Asset behalten. Ohne die zweite wäre eine fehlgeschlagene Abfrage
+			// von echter Trennung nicht zu unterscheiden.
+			if len(a) != 1 || a[0].ID != "asset-geteilt" {
+				t.Fatalf("haus-a sollte genau sein Asset behalten, hatte %+v", a)
 			}
 			if len(b) != 0 {
 				t.Fatalf("haus-b darf kein Asset haben, hatte %d", len(b))

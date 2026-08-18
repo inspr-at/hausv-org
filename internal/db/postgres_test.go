@@ -87,13 +87,23 @@ func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 		t.Fatalf("second idempotent migration run: %v", err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
+	// The expectation is DERIVED from the embedded migrations, not written
+	// down. A literal here made adding a migration look like a regression in
+	// this test rather than the thing it was: what this check is actually for
+	// is that a second run records each migration ONCE, and a hand-maintained
+	// count cannot say that any better than counting the files can.
+	wantMigrations := len(embeddedPostgresMigrations(t))
+	if wantMigrations == 0 {
+		t.Fatal("no postgres migrations are embedded — the probe is broken, not the schema")
+	}
 	var migrationCount, distinctMigrationCount int
 	if err := database.QueryRow(`SELECT count(*), count(DISTINCT version) FROM schema_migrations`).
 		Scan(&migrationCount, &distinctMigrationCount); err != nil {
 		t.Fatalf("count migrations: %v", err)
 	}
-	if migrationCount != 4 || distinctMigrationCount != 4 {
-		t.Fatalf("migration records = %d/%d, want 4/4", migrationCount, distinctMigrationCount)
+	if migrationCount != wantMigrations || distinctMigrationCount != wantMigrations {
+		t.Fatalf("migration records = %d/%d, want %d/%d after two runs — a migration was applied twice",
+			migrationCount, distinctMigrationCount, wantMigrations, wantMigrations)
 	}
 
 	assertApplicationRoleCannotBypassRLS(t, database)
@@ -370,4 +380,22 @@ func assertOtherTenantCannotSeeRows(t *testing.T, database *sql.DB, tables []str
 			t.Fatalf("other tenant saw %d rows in %s", count, table)
 		}
 	}
+}
+
+// embeddedPostgresMigrations lists the migration files the binary carries, so
+// the idempotence check above counts what actually ran.
+func embeddedPostgresMigrations(t *testing.T) []string {
+	t.Helper()
+	entries, err := postgresMigrationsFS.ReadDir("postgres/migrations")
+	if err != nil {
+		t.Fatalf("read embedded postgres migrations: %v", err)
+	}
+	names := []string{}
+	for _, entry := range entries {
+		name := entry.Name()
+		if !entry.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".sql") {
+			names = append(names, name)
+		}
+	}
+	return names
 }

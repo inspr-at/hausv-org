@@ -1,11 +1,10 @@
 package energy_test
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -14,14 +13,11 @@ func lifecycleStoreFactories() map[string]func(*testing.T) energy.Storage {
 		"memory": func(*testing.T) energy.Storage {
 			return energy.NewMemoryStore()
 		},
-		"sqlite": func(t *testing.T) energy.Storage {
+		// "sql", not "sqlite": dbtest picks the engine, and a case named after
+		// the engine it is NOT running on is a label that lies.
+		"sql": func(t *testing.T) energy.Storage {
 			t.Helper()
-			database, err := appdb.Open(filepath.Join(t.TempDir(), "energy-lifecycle.db"))
-			if err != nil {
-				t.Fatalf("open lifecycle database: %v", err)
-			}
-			t.Cleanup(func() { _ = database.Close() })
-			return energy.NewSQLStore(database)
+			return energy.NewSQLStore(dbtest.Open(t))
 		},
 	}
 }

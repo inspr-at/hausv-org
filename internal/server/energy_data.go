@@ -95,7 +95,7 @@ func (a *app) startEnergyRetentionWorker() func() {
 }
 
 func (a *app) energyDataAccess(ac authCtx) (energy.HomeProfile, bool) {
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists || energyProfileUnclaimed(profile) || !a.canManageHomeIdentityProfile(ac, profile, exists) {
 		return energy.HomeProfile{}, false
 	}
@@ -108,7 +108,7 @@ func (a *app) energyDataPage(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Dieser Bereich ist Eigentümern und der Hausadministration vorbehalten.", http.StatusForbidden)
 		return
 	}
-	imports, err := a.energyStore.ListImports(ac.tenant.Slug)
+	imports, err := a.energyFor(ac).ListImports(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -122,10 +122,10 @@ func (a *app) energyDataPage(w http.ResponseWriter, r *http.Request, ac authCtx)
 			Size:     "nach 30 Tagen · Löschung spätestens 6 Stunden später",
 		})
 	}
-	intervals, intervalsErr := a.energyStore.ListIntervals(ac.tenant.Slug, time.Time{}, time.Time{})
-	assessments, assessmentsErr := a.energyStore.ListTariffAssessments(ac.tenant.Slug)
-	assets, assetsErr := a.energyStore.ListAssets(ac.tenant.Slug)
-	mappings, mappingsErr := a.energyStore.ListMappings(ac.tenant.Slug)
+	intervals, intervalsErr := a.energyFor(ac).ListIntervals(ac.tenant.Slug, time.Time{}, time.Time{})
+	assessments, assessmentsErr := a.energyFor(ac).ListTariffAssessments(ac.tenant.Slug)
+	assets, assetsErr := a.energyFor(ac).ListAssets(ac.tenant.Slug)
+	mappings, mappingsErr := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	if intervalsErr != nil || assessmentsErr != nil || assetsErr != nil || mappingsErr != nil {
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
@@ -217,7 +217,7 @@ func (a *app) deleteEnergyMeasurementData(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Die Löschung konnte nicht sicher protokolliert werden.", http.StatusInternalServerError)
 		return
 	}
-	summary, err := a.energyStore.DeleteMeasurementData(ac.tenant.Slug)
+	summary, err := a.energyFor(ac).DeleteMeasurementData(ac.tenant.Slug)
 	if err != nil {
 		http.Error(w, "Der Messverlauf konnte nicht gelöscht werden.", http.StatusInternalServerError)
 		return
@@ -278,7 +278,7 @@ func (a *app) deleteEnergyProfile(w http.ResponseWriter, r *http.Request, ac aut
 			return
 		}
 	}
-	summary, err := a.energyStore.DeleteProfile(ac.tenant.Slug)
+	summary, err := a.energyFor(ac).DeleteProfile(ac.tenant.Slug)
 	if err != nil {
 		// Revoking delegated access before deleting is fail-safe: a later retry
 		// may complete the deletion, while stale grants can never revive through
@@ -376,35 +376,35 @@ func (a *app) revokeTechnicalEnergyAccess(tenantSlug string) (int, error) {
 }
 
 func (a *app) buildEnergyDataPackage(ac authCtx, generatedAt time.Time) ([]byte, string, map[string]int, error) {
-	profile, exists, err := a.energyStore.Profile(ac.tenant.Slug)
+	profile, exists, err := a.energyFor(ac).Profile(ac.tenant.Slug)
 	if err != nil || !exists {
 		return nil, "", nil, fmt.Errorf("energy profile unavailable")
 	}
-	assets, err := a.energyStore.ListAssets(ac.tenant.Slug)
+	assets, err := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	mappings, err := a.energyStore.ListMappings(ac.tenant.Slug)
+	mappings, err := a.energyFor(ac).ListMappings(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	intervals, err := a.energyStore.ListIntervals(ac.tenant.Slug, time.Time{}, time.Time{})
+	intervals, err := a.energyFor(ac).ListIntervals(ac.tenant.Slug, time.Time{}, time.Time{})
 	if err != nil {
 		return nil, "", nil, err
 	}
-	imports, err := a.energyStore.ListImportsForExport(ac.tenant.Slug)
+	imports, err := a.energyFor(ac).ListImportsForExport(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	maintenance, err := a.energyStore.ListMaintenance(ac.tenant.Slug)
+	maintenance, err := a.energyFor(ac).ListMaintenance(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	assessments, err := a.energyStore.ListTariffAssessments(ac.tenant.Slug)
+	assessments, err := a.energyFor(ac).ListTariffAssessments(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	measures, err := a.energyStore.ListMeasures(ac.tenant.Slug)
+	measures, err := a.energyFor(ac).ListMeasures(ac.tenant.Slug)
 	if err != nil {
 		return nil, "", nil, err
 	}

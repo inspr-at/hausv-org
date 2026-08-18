@@ -3,14 +3,14 @@ package energy_test
 import (
 	"database/sql"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -25,17 +25,12 @@ import (
 // every SQL writer in this package and then asks the database — rather than the
 // code — whether an identity was recorded.
 //
-// Where it is blind: it proves the column is POPULATED, not that the value is
-// the right tenant's. The energy package still filters its reads on tenant_slug
-// (its Storage API takes a bare slug and has no tenant reference to filter by),
-// so a wrong id here would not surface in a read. That is the follow-up this
-// test is meant to make visible rather than hide.
+// Where it is blind: it proves the column is POPULATED and that the value
+// belongs to this house. It does not prove the READ path uses it — that is
+// TestEnergyReadsAddressRowsByTenantIdentity next door, which is only possible
+// now that the reads filter on tenant_id instead of the slug.
 func TestEveryEnergyWriteRecordsATenantIdentity(t *testing.T) {
-	database, err := appdb.Open(filepath.Join(t.TempDir(), "energy-tenant-id.db"))
-	if err != nil {
-		t.Fatalf("open database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
+	database := dbtest.Open(t)
 	store := energy.NewSQLStore(database)
 
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
@@ -147,8 +142,17 @@ var insertedTable = regexp.MustCompile(`(?is)INSERT\s+INTO\s+([a-z_]+)`)
 func tenantScopedTablesWrittenHere(t *testing.T, database *sql.DB) []string {
 	t.Helper()
 	scoped := map[string]bool{}
-	rows, err := database.Query(`SELECT m.name FROM sqlite_master m JOIN pragma_table_info(m.name) p
-		WHERE m.type='table' AND p.name='tenant_id' AND m.name <> 'tenant'`)
+	// Both engines are asked the same question — "which tables carry a
+	// tenant_id column" — in the only dialect each one has for it. Skipping the
+	// check on PostgreSQL instead would take the whole oracle offline on the
+	// engine it was written to protect.
+	query := `SELECT m.name FROM sqlite_master m JOIN pragma_table_info(m.name) p
+		WHERE m.type='table' AND p.name='tenant_id' AND m.name <> 'tenant'`
+	if dbtest.Backend() == db.BackendPostgres {
+		query = `SELECT table_name FROM information_schema.columns
+			WHERE table_schema=current_schema() AND column_name='tenant_id' AND table_name <> 'tenant'`
+	}
+	rows, err := database.Query(query)
 	if err != nil {
 		t.Fatalf("read the tenant-scoped tables from the schema: %v", err)
 	}
@@ -222,5 +226,44 @@ func assertIdentityMatchesSlug(t *testing.T, database *sql.DB, slug string, tabl
 			t.Errorf("%s: %d of %d rows are not addressable by tenant_slug=%q — "+
 				"the rollback window is closed and nothing said so", table, rows-addressable, rows, slug)
 		}
+	}
+}
+
+// DeleteProfile does not remove the tenant's profile row; it replaces it with a TOMBSTONE.
+// That is a write like any other and must carry tenant_slug, or a rollback to the previous
+// release — which reads by slug — cannot see it.
+//
+// This needs its own test rather than a line in the fixture above: DeleteProfile cascades
+// and empties the tenant's other tables, so calling it there makes every OTHER writer look
+// unexercised. Until this existed, blanking the tombstone's slug left the entire suite green
+// on both engines.
+func TestDeleteProfileTombstoneStaysAddressableBySlug(t *testing.T) {
+	database := dbtest.Open(t)
+	store := energy.NewSQLStore(database)
+
+	const tenant = "haus-tombstone"
+	now := time.Date(2026, time.August, 18, 12, 0, 0, 0, time.UTC)
+	if err := store.SaveProfile(energy.DefaultProfile(tenant, now)); err != nil {
+		t.Fatalf("save profile: %v", err)
+	}
+	if _, err := store.DeleteProfile(tenant); err != nil {
+		t.Fatalf("delete profile: %v", err)
+	}
+
+	var rows, addressable, withIdentity int
+	if err := database.QueryRow(
+		`SELECT count(*), count(CASE WHEN tenant_slug=$1 THEN 1 END), count(tenant_id) FROM home_profiles`,
+		tenant).Scan(&rows, &addressable, &withIdentity); err != nil {
+		t.Fatalf("inspect home_profiles: %v", err)
+	}
+	if rows == 0 {
+		t.Fatal("DeleteProfile left no tombstone row — this test would assert nothing")
+	}
+	if addressable != rows {
+		t.Errorf("%d of %d tombstone rows are not addressable by tenant_slug=%q — "+
+			"a rollback to the previous release would not see them", rows-addressable, rows, tenant)
+	}
+	if withIdentity != rows {
+		t.Errorf("%d of %d tombstone rows carry no tenant_id", rows-withIdentity, rows)
 	}
 }
