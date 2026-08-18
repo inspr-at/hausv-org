@@ -19,9 +19,10 @@ import (
 // to take CASUALLY. Unscoped("...") compiles just as readily as For(tenant), and
 // the reason string is not read by anything at runtime.
 //
-// So the cross-tenant surface is written down here, whole, as a golden file: 65
-// declared cross-tenant call sites plus the seam's own forwarder, each with the
-// reason its author typed. The value is in the diff.
+// So the cross-tenant surface is written down here, whole, as a golden file: 67
+// declared cross-tenant call sites (65 in the stores, 2 in the import ledger in
+// internal/server) plus the seam's own forwarder, each with the reason its
+// author typed. The value is in the diff.
 // Adding a cross-tenant call is a two-line change in a store plus a line in this
 // file, and that second line is what a reviewer sees without having to know the
 // lane mechanism exists or think to grep for it.
@@ -47,7 +48,10 @@ import (
 //     "dynamic", not as a value. Exactly one such site exists today and it is
 //     the seam's own forwarder, TenantDB.Unscoped, passing its parameter
 //     through. A second appearing is the signal that a reason has stopped being
-//     greppable, which is precisely what should show up in review.
+//     greppable, which is precisely what should show up in review. A reason
+//     named through THIS package's exported constants from another package
+//     (store.HealOrphanReason in internal/server) is resolved to its text under
+//     kind "const:store.<Name>", so it is not mistaken for a runtime value.
 //   - Moving or renaming a function churns the golden without changing the
 //     surface, because the entry is keyed on file and function rather than on a
 //     line number that every unrelated edit would move.
@@ -107,6 +111,29 @@ func TestUnscopedCallSiteInventory(t *testing.T) {
 // line per Unscoped call in the non-test sources under internal/ and cmd/.
 func collectUnscopedCallSites(t *testing.T, root string) []string {
 	t.Helper()
+	// This package's exported string constants, so a qualified reference from
+	// another package resolves to the same text a bare one does here.
+	storeConstants := map[string]string{}
+	storeFiles, err := os.ReadDir(filepath.Join(root, "internal", "store"))
+	if err != nil {
+		t.Fatalf("read internal/store: %v", err)
+	}
+	for _, entry := range storeFiles {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		parsed, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, "internal", "store", name), nil, parser.SkipObjectResolution)
+		if err != nil {
+			t.Fatalf("parse internal/store/%s: %v", name, err)
+		}
+		collectStringConstants(parsed, storeConstants)
+	}
+	for name := range storeConstants {
+		if !ast.IsExported(name) {
+			delete(storeConstants, name)
+		}
+	}
 	var lines []string
 	for _, tree := range []string{"internal", "cmd"} {
 		base := filepath.Join(root, tree)
@@ -130,14 +157,14 @@ func collectUnscopedCallSites(t *testing.T, root string) []string {
 			t.Fatalf("walk %s: %v", base, err)
 		}
 		for dir := range dirs {
-			lines = append(lines, unscopedCallsInPackage(t, root, dir)...)
+			lines = append(lines, unscopedCallsInPackage(t, root, dir, storeConstants)...)
 		}
 	}
 	slices.Sort(lines)
 	return lines
 }
 
-func unscopedCallsInPackage(t *testing.T, root string, dir string) []string {
+func unscopedCallsInPackage(t *testing.T, root string, dir string, storeConstants map[string]string) []string {
 	t.Helper()
 	fset := token.NewFileSet()
 	entries, err := os.ReadDir(dir)
@@ -161,7 +188,7 @@ func unscopedCallsInPackage(t *testing.T, root string, dir string) []string {
 	}
 
 	// String constants of this package, so a reason hoisted into a named
-	// constant — healOrphanReason is one — lands in the golden as its TEXT.
+	// constant — HealOrphanReason is one — lands in the golden as its TEXT.
 	// A reason nobody can read is not a reason.
 	constants := map[string]string{}
 	for _, file := range files {
@@ -171,6 +198,7 @@ func unscopedCallsInPackage(t *testing.T, root string, dir string) []string {
 	var lines []string
 	for name, file := range files {
 		relative := filepath.ToSlash(mustRelative(t, root, filepath.Join(dir, name)))
+		qualified := qualifiedStoreConstants(file, storeConstants)
 		for _, decl := range file.Decls {
 			owner := "<package-level>"
 			if fn, ok := decl.(*ast.FuncDecl); ok {
@@ -185,7 +213,7 @@ func unscopedCallsInPackage(t *testing.T, root string, dir string) []string {
 				if !ok || selector.Sel == nil || selector.Sel.Name != "Unscoped" {
 					return true
 				}
-				kind, reason := describeReason(fset, call.Args[0], constants)
+				kind, reason := describeReason(fset, call.Args[0], constants, qualified)
 				lines = append(lines, strings.Join([]string{relative, owner, kind, reason}, "\t"))
 				return true
 			})
@@ -220,9 +248,31 @@ func collectStringConstants(file *ast.File, into map[string]string) {
 	}
 }
 
+// qualifiedStoreConstants maps "alias.Name" to text for every exported store
+// constant, under the alias this file imports internal/store by. Empty when the
+// file does not import it.
+func qualifiedStoreConstants(file *ast.File, storeConstants map[string]string) map[string]string {
+	for _, spec := range file.Imports {
+		path, err := strconv.Unquote(spec.Path.Value)
+		if err != nil || !strings.HasSuffix(path, "/internal/store") {
+			continue
+		}
+		alias := "store"
+		if spec.Name != nil {
+			alias = spec.Name.Name
+		}
+		out := make(map[string]string, len(storeConstants))
+		for name, text := range storeConstants {
+			out[alias+"."+name] = text
+		}
+		return out
+	}
+	return nil
+}
+
 // describeReason classifies the argument so the golden distinguishes a reason
 // that can be read from source from one that only exists at runtime.
-func describeReason(fset *token.FileSet, arg ast.Expr, constants map[string]string) (kind string, reason string) {
+func describeReason(fset *token.FileSet, arg ast.Expr, constants map[string]string, qualified map[string]string) (kind string, reason string) {
 	switch node := arg.(type) {
 	case *ast.BasicLit:
 		if node.Kind == token.STRING {
@@ -233,6 +283,12 @@ func describeReason(fset *token.FileSet, arg ast.Expr, constants map[string]stri
 	case *ast.Ident:
 		if text, ok := constants[node.Name]; ok {
 			return "const:" + node.Name, flatten(text)
+		}
+	case *ast.SelectorExpr:
+		if pkg, ok := node.X.(*ast.Ident); ok && node.Sel != nil {
+			if text, ok := qualified[pkg.Name+"."+node.Sel.Name]; ok {
+				return "const:" + pkg.Name + "." + node.Sel.Name, flatten(text)
+			}
 		}
 	}
 	return "dynamic", flatten(nodeSource(fset, arg))

@@ -131,10 +131,10 @@ func TestStoreTestsRunOnRealLanes(t *testing.T) {
 // The tightening the conversion actually buys, stated as behaviour: a row with
 // no tenant_id is reachable from the maintenance lane and from NO tenant lane.
 //
-// This is the reason healOrphanReason exists, pinned as a test rather than left
+// This is the reason HealOrphanReason exists, pinned as a test rather than left
 // as a paragraph. If a later change makes a tenant lane able to see an orphan
-// row, those five sites can go back to For(tenant) — and this test is what will
-// say so, by failing.
+// row, every site naming HealOrphanReason can go back to For(tenant) — and this
+// test is what will say so, by failing.
 func TestATenantLaneCannotReachARowWithoutAnIdentity(t *testing.T) {
 	if dbtest.Backend() != appdb.BackendPostgres {
 		t.Skip("row-level security exists only on PostgreSQL; SQLite has one pool and no policy")

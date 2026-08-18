@@ -96,7 +96,7 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 	if slug == "" {
 		return fmt.Errorf("home connector reading: slug required")
 	}
-	unscoped := s.db.Unscoped(healOrphanReason)
+	unscoped := s.db.Unscoped(HealOrphanReason)
 	tx, err := unscoped.Begin()
 	if err != nil {
 		return err

@@ -108,7 +108,7 @@ func (s *SQLAnnouncementReadStore) markSeen(tenant TenantRef, email string, seen
 	if tenantSlug == "" || email == "" {
 		return nil
 	}
-	_, err := s.db.Unscoped(healOrphanReason).Exec(
+	_, err := s.db.Unscoped(HealOrphanReason).Exec(
 		`INSERT INTO announcement_reads(tenant_id, tenant_slug, email, seen_at) VALUES($1, $2, $3, $4)
 		 ON CONFLICT(tenant_slug, email) DO UPDATE SET seen_at = excluded.seen_at,
 		   tenant_id = coalesce(announcement_reads.tenant_id, excluded.tenant_id)`,

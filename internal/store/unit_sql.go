@@ -182,8 +182,8 @@ func (s *SQLUnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
 	}
 	// The whole transaction, not just one statement: replaceTenantTx upserts by
 	// (tenant_slug, id), which is exactly where a legacy row without an identity
-	// sits. See healOrphanReason.
-	tx, err := s.db.Unscoped(healOrphanReason).Begin()
+	// sits. See HealOrphanReason.
+	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
 	if err != nil {
 		return err
 	}
@@ -212,8 +212,8 @@ func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (b
 
 	// The whole transaction, not just one statement: replaceTenantTx upserts by
 	// (tenant_slug, id), which is exactly where a legacy row without an identity
-	// sits. See healOrphanReason.
-	tx, err := s.db.Unscoped(healOrphanReason).Begin()
+	// sits. See HealOrphanReason.
+	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
 	if err != nil {
 		return false, err
 	}
