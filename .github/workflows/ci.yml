@@ -209,22 +209,19 @@ jobs:
       - name: Responsive shell probe
         env:
           CI: "true"
-          TEMPL_PORTAL_ENABLED: "1"
           HV_CAPTURE: shell-widths.mjs
         run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/widths.json" 8299
 
-      # The expensive one: renders every page BOTH ways and fails if the templ
-      # rendering offers less than the legacy one — a dropped script, body
-      # attribute, POST target, confirmation, required field or DOM hook.
-      #
-      # Where this does NOT reach, stated so nobody reads it as total coverage:
-      #   - it compares rendered markup, so anything hidden by CSS looks present;
-      #     visibility contracts live in Go tests under internal/web
-      #   - data-confirm never appears in the seeded fixtures, so that aspect
-      #     passes vacuously; the structural half is a Go test
-      #   - it only sees routes listed in capture.mjs
-      - name: Contract parity, legacy versus templ
-        run: bash scripts/snapshot/templ-parity.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/parity"
+      # The dual-renderer parity oracle was retired with the deleted renderer.
+      # Keep a non-vacuous replacement: every route in the maintained
+      # authenticated coverage list must return successfully, land on the
+      # intended route, and carry its templ marker. Route-specific Go tests
+      # cover authenticated subresources outside that browser list.
+      - name: Covered authenticated routes use the surviving renderer
+        env:
+          CI: "true"
+          HV_CAPTURE: templ-coverage.mjs
+        run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/renderer.json" 8399
 
       - name: Upload oracle evidence
         if: failure()

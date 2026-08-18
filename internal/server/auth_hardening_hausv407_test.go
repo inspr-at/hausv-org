@@ -325,7 +325,7 @@ func TestLogoutRevokesSessionAndAuthenticatedBackCacheIsRevalidated(t *testing.T
 	}
 
 	page := authedRequest(t, a, "owner@example.com", "/demo/app")
-	if !strings.Contains(page.Body.String(), "<body data-authenticated-app>") {
+	if !strings.Contains(page.Body.String(), "data-authenticated-app") {
 		t.Fatal("authenticated page is missing its back-cache marker")
 	}
 	script, err := web.Assets.ReadFile("assets/app.js")

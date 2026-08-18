@@ -745,7 +745,6 @@ type app struct {
 	localDevLogin           bool
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
-	portalTemplEnabled      bool
 	sessionTTL              time.Duration
 	tokens                  *tokenStore
 	sessions                *sessionStore
@@ -1778,7 +1777,6 @@ func newApp() (*app, error) {
 		localDevLogin:            localDevLogin,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
 		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
-		portalTemplEnabled:       parseBool(env("TEMPL_PORTAL_ENABLED", "true")),
 		sessionTTL:               sessionTTL,
 		tokens:                   auth.NewTokenStore(secret),
 		sessions:                 newSessionStore(secret),
@@ -2348,79 +2346,76 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		data["OpenIssues"] = len(signals.openIssues)
 		data["HasOpenIssues"] = len(signals.openIssues) > 0
 	}
-	if a.portalTemplEnabled {
-		contexts := a.portalContextsFor(email, tenant.Slug, role)
-		portalContexts := make([]web.PortalContext, 0, len(contexts))
-		for _, context := range contexts {
-			portalContexts = append(portalContexts, web.PortalContext{
-				TenantSlug: context.TenantSlug,
-				HouseName:  context.HouseName,
-				Address:    context.Address,
-				Role:       context.Role,
-				Current:    context.Current,
-			})
-		}
-		areas := portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots)
-		portalAreas := make([]web.PortalArea, 0, len(areas))
-		for _, area := range areas {
-			portalAreas = append(portalAreas, web.PortalArea{Label: area.Label, URL: area.URL})
-		}
-		energy := web.PortalEnergy{
-			Ready:       energyCard.Ready,
-			HomeName:    energyCard.HomeName,
-			Message:     energyCard.Message,
-			ActionLabel: energyCard.ActionLabel,
-			ActionURL:   energyCard.ActionURL,
-		}
-		if !hasEnergyCard {
-			energy = web.PortalEnergy{}
-		}
-		portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
-		portalEvents := eventViews(signals.events, now)
-		portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
-		// HAUSV-527: density follows content as well as role. An empty house gives a
-		// manager nothing to be dense about — the dense composition then renders tall
-		// empty cards, which reads worse than the calm one and loses the reassurance
-		// the old page carried. Calm for everyone when nothing is waiting.
-		portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
-
-		a.renderPortalTempl(w, r, web.PortalPageData{
-			Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
-			TenantSlug:             tenant.Slug,
-			HouseName:              houseDisplayName(tenant),
-			Address:                tenant.Address,
-			MapURL:                 tenantMapURL(tenant.Address),
-			GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
-			Today:                  germanDateLong(now.In(time.Local)),
-			DisplayName:            profile.DisplayName(),
-			Initials:               profile.Initials(),
-			Role:                   role,
-			DisplayVersion:         version.DisplayVersion(version.Version),
-			Dense:                  portalDense,
-			Modules:                web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-			CanUseResidentAreas:    canResidentAreas,
-			CanViewEnergy:          modules.Energy && a.canViewEnergy(ac),
-			CanManageIssues:        canManageIssueBoard,
-			CanCreateResidentIssue: canCreateResidentIssue(ac.actor(), ac.resource()),
-			CanSeeParking:          canSeeParking,
-			CanManageHandovers:     canManagePortalHandovers,
-			CanManageUsers:         canManagePortalUsers,
-			CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-			HasPrimary:             hasPrimary,
-			Primary:                primary,
-			Issues:                 portalIssues,
-			Events:                 portalEvents,
-			Announcements:          portalAnnouncements,
-			UnreadAnnouncements:    signals.unreadAnnouncements,
-			Energy:                 energy,
-			HasEnergy:              hasEnergyCard,
-			Areas:                  portalAreas,
-			Contexts:               portalContexts,
-			ReleaseNotes:           version.Notes(),
+	contexts := a.portalContextsFor(email, tenant.Slug, role)
+	portalContexts := make([]web.PortalContext, 0, len(contexts))
+	for _, context := range contexts {
+		portalContexts = append(portalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug,
+			HouseName:  context.HouseName,
+			Address:    context.Address,
+			Role:       context.Role,
+			Current:    context.Current,
 		})
-		return
 	}
-	a.render(w, "portal", a.withBase(ac, data))
+	areas := portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots)
+	portalAreas := make([]web.PortalArea, 0, len(areas))
+	for _, area := range areas {
+		portalAreas = append(portalAreas, web.PortalArea{Label: area.Label, URL: area.URL})
+	}
+	energy := web.PortalEnergy{
+		Ready:       energyCard.Ready,
+		HomeName:    energyCard.HomeName,
+		Message:     energyCard.Message,
+		ActionLabel: energyCard.ActionLabel,
+		ActionURL:   energyCard.ActionURL,
+	}
+	if !hasEnergyCard {
+		energy = web.PortalEnergy{}
+	}
+	portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
+	portalEvents := eventViews(signals.events, now)
+	portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
+	// HAUSV-527: density follows content as well as role. An empty house gives a
+	// manager nothing to be dense about — the dense composition then renders tall
+	// empty cards, which reads worse than the calm one and loses the reassurance
+	// the old page carried. Calm for everyone when nothing is waiting.
+	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
+
+	a.renderPortalTempl(w, r, web.PortalPageData{
+		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
+		TenantSlug:             tenant.Slug,
+		HouseName:              houseDisplayName(tenant),
+		Address:                tenant.Address,
+		MapURL:                 tenantMapURL(tenant.Address),
+		GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		Today:                  germanDateLong(now.In(time.Local)),
+		DisplayName:            profile.DisplayName(),
+		Initials:               profile.Initials(),
+		Role:                   role,
+		DisplayVersion:         version.DisplayVersion(version.Version),
+		Dense:                  portalDense,
+		Modules:                web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+		CanUseResidentAreas:    canResidentAreas,
+		CanViewEnergy:          modules.Energy && a.canViewEnergy(ac),
+		CanManageIssues:        canManageIssueBoard,
+		CanCreateResidentIssue: canCreateResidentIssue(ac.actor(), ac.resource()),
+		CanSeeParking:          canSeeParking,
+		CanManageHandovers:     canManagePortalHandovers,
+		CanManageUsers:         canManagePortalUsers,
+		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		HomeIdentity:           a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
+		HasPrimary:             hasPrimary,
+		Primary:                primary,
+		Issues:                 portalIssues,
+		Events:                 portalEvents,
+		Announcements:          portalAnnouncements,
+		UnreadAnnouncements:    signals.unreadAnnouncements,
+		Energy:                 energy,
+		HasEnergy:              hasEnergyCard,
+		Areas:                  portalAreas,
+		Contexts:               portalContexts,
+		ReleaseNotes:           version.Notes(),
+	})
 }
 
 func (a *app) renderPortalTempl(w http.ResponseWriter, r *http.Request, data web.PortalPageData) {
@@ -3647,11 +3642,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SettingsHomeURL":             homeURL,
 		"SettingsCanManageEnergyData": canManageEnergyData,
 	}
-	if a.portalTemplEnabled {
-		a.renderSettingsHubTempl(w, r, ac, pageData)
-		return
-	}
-	a.render(w, "settingsHub", a.withBase(ac, pageData))
+	a.renderSettingsHubTempl(w, r, ac, pageData)
 }
 
 func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -3717,11 +3708,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HomeProfileScopeLabel": homeProfileScopeLabel,
 		"HomeProfileSaved":      r.URL.Query().Get("home") == "saved",
 	}
-	if a.portalTemplEnabled {
-		a.renderBuildingSettingsTempl(w, r, ac, pageData)
-		return
-	}
-	a.render(w, "buildingSettings", a.withBase(ac, pageData))
+	a.renderBuildingSettingsTempl(w, r, ac, pageData)
 }
 
 func normalizeBuildingSettingsSection(section string) string {
@@ -3765,38 +3752,20 @@ func (a *app) auditLog(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		auditTitle = "Freigegebener Verlauf"
 		auditLede = "Änderungen bei den Vorgängen, auf die Sie aktuell Zugriff haben. Interne Verwaltungsdetails bleiben geschützt."
 	}
-	if a.portalTemplEnabled {
-		a.renderAuditTempl(w, r, web.AuditPageData{
-			Portal:         a.auditPortalContext(ac, auditTitle),
-			Events:         eventViews,
-			HasEvents:      len(eventViews) > 0,
-			HasAnyEvents:   len(availableEvents) > 0,
-			EventsEmpty:    emptyState("Noch nichts im Verlauf", "Relevante Änderungen an Ihrem Zugang und Ihren Vorgängen erscheinen hier."),
-			ActionOptions:  auditActionOptionsForEvents(action, availableEvents),
-			SearchQuery:    query,
-			AuditStats:     stats,
-			AuditPageTitle: auditTitle,
-			AuditLede:      auditLede,
-			AuditIsFull:    fullAudit,
-			CanManageUsers: ac.can(capabilityManageUsers),
-		})
-		return
-	}
-	a.render(w, "auditLog", a.withBase(ac, map[string]any{
-		"Title":          auditTitle,
-		"ActivePage":     "audit",
-		"Events":         eventViews,
-		"HasEvents":      len(eventViews) > 0,
-		"HasAnyEvents":   len(availableEvents) > 0,
-		"EventsEmpty":    emptyState("Noch nichts im Verlauf", "Relevante Änderungen an Ihrem Zugang und Ihren Vorgängen erscheinen hier."),
-		"ActionOptions":  auditActionOptionsForEvents(action, availableEvents),
-		"ActionFilter":   action,
-		"SearchQuery":    query,
-		"AuditStats":     stats,
-		"AuditPageTitle": auditTitle,
-		"AuditLede":      auditLede,
-		"AuditIsFull":    fullAudit,
-	}))
+	a.renderAuditTempl(w, r, web.AuditPageData{
+		Portal:         a.auditPortalContext(ac, auditTitle),
+		Events:         eventViews,
+		HasEvents:      len(eventViews) > 0,
+		HasAnyEvents:   len(availableEvents) > 0,
+		EventsEmpty:    emptyState("Noch nichts im Verlauf", "Relevante Änderungen an Ihrem Zugang und Ihren Vorgängen erscheinen hier."),
+		ActionOptions:  auditActionOptionsForEvents(action, availableEvents),
+		SearchQuery:    query,
+		AuditStats:     stats,
+		AuditPageTitle: auditTitle,
+		AuditLede:      auditLede,
+		AuditIsFull:    fullAudit,
+		CanManageUsers: ac.can(capabilityManageUsers),
+	})
 }
 
 func (a *app) auditEventsForView(repositories requestRepositories, tenant store.TenantRef, events []auditEvent, includeTechnicalID bool) []auditEvent {
@@ -4750,11 +4719,7 @@ func (a *app) profileSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 		"Units":                  units,
 		"HasUnits":               len(units) > 0,
 	}
-	if a.portalTemplEnabled {
-		a.renderProfileSettingsTempl(w, r, ac, pageData)
-		return
-	}
-	a.render(w, "profileSettings", a.withBase(ac, pageData))
+	a.renderProfileSettingsTempl(w, r, ac, pageData)
 }
 
 func (a *app) updateProfileSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -4861,11 +4826,7 @@ func (a *app) notificationSettings(w http.ResponseWriter, r *http.Request, ac au
 		"NotificationEnabledCount":  enabledCount,
 		"NotificationEventCount":    len(events),
 	}
-	if a.portalTemplEnabled {
-		a.renderNotificationSettingsTempl(w, r, ac, pageData)
-		return
-	}
-	a.render(w, "notificationSettings", a.withBase(ac, pageData))
+	a.renderNotificationSettingsTempl(w, r, ac, pageData)
 }
 
 func (a *app) updateNotificationSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -4934,11 +4895,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"InviteOK":          inviteOK,
 		"ActivePage":        "users",
 	}
-	if a.portalTemplEnabled {
-		a.renderUserSettingsTempl(w, r, ac, pageData)
-		return
-	}
-	a.render(w, "userSettings", a.withBase(ac, pageData))
+	a.renderUserSettingsTempl(w, r, ac, pageData)
 }
 
 func userStatusCounts(users []userRow) (active int, invited int, deactivated int) {

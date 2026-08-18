@@ -114,48 +114,25 @@ func (a *app) renderHelpPage(w http.ResponseWriter, r *http.Request, ac authCtx,
 		connectorLastSeen = formatLocalDateTime(*connector.LastSeenAt)
 	}
 
-	if a.portalTemplEnabled {
-		modules := a.portalModulesFor(ac.tenant.Slug)
-		a.renderHelpTempl(w, r, web.HelpPageData{
-			Portal:                  a.helpPortalContext(ac),
-			ConnectorAvailable:      connectorAvailable,
-			ConnectorState:          state,
-			ConnectorStateTone:      stateTone,
-			ConnectorDetail:         detail,
-			ConnectorConnected:      connected,
-			ConnectorFresh:          fresh,
-			ConnectorPairingPending: pairingPending,
-			PairingCreated:          pairingCreated,
-			PairingCode:             pairingCode,
-			PairingExpires:          pairingExpires,
-			ConnectorLastSeen:       connectorLastSeen,
-			ConnectorVersion:        connector.ConnectorVersion,
-			HomeAssistantVersion:    connector.HomeAssistantVersion,
-			ConnectorEntityCount:    connector.EntityCount,
-			CanManageEnergy:         modules.Energy && a.canManageEnergy(ac),
-		})
-		return
-	}
-
-	data := map[string]any{
-		"Title":                   "Hilfe",
-		"ActivePage":              "help",
-		"ConnectorAvailable":      connectorAvailable,
-		"ConnectorState":          state,
-		"ConnectorStateTone":      stateTone,
-		"ConnectorDetail":         detail,
-		"ConnectorConnected":      connected,
-		"ConnectorFresh":          fresh,
-		"ConnectorPairingPending": pairingPending,
-		"PairingCreated":          pairingCreated,
-		"PairingCode":             pairingCode,
-		"PairingExpires":          pairingExpires,
-		"ConnectorLastSeen":       connectorLastSeen,
-		"ConnectorVersion":        connector.ConnectorVersion,
-		"HomeAssistantVersion":    connector.HomeAssistantVersion,
-		"ConnectorEntityCount":    connector.EntityCount,
-	}
-	a.render(w, "help", a.withBase(ac, data))
+	modules := a.portalModulesFor(ac.tenant.Slug)
+	a.renderHelpTempl(w, r, web.HelpPageData{
+		Portal:                  a.helpPortalContext(ac),
+		ConnectorAvailable:      connectorAvailable,
+		ConnectorState:          state,
+		ConnectorStateTone:      stateTone,
+		ConnectorDetail:         detail,
+		ConnectorConnected:      connected,
+		ConnectorFresh:          fresh,
+		ConnectorPairingPending: pairingPending,
+		PairingCreated:          pairingCreated,
+		PairingCode:             pairingCode,
+		PairingExpires:          pairingExpires,
+		ConnectorLastSeen:       connectorLastSeen,
+		ConnectorVersion:        connector.ConnectorVersion,
+		HomeAssistantVersion:    connector.HomeAssistantVersion,
+		ConnectorEntityCount:    connector.EntityCount,
+		CanManageEnergy:         modules.Energy && a.canManageEnergy(ac),
+	})
 }
 
 func (a *app) helpPortalContext(ac authCtx) web.PortalPageData {

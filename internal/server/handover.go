@@ -125,40 +125,21 @@ func (a *app) handovers(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	msg, okMsg := handoverMessage(r.URL.Query().Get("handover"))
 	views := a.handoverViewsForActor(ac.tenantRef, email, role, items)
 	sections := handoverSections(views)
-	if a.portalTemplEnabled {
-		a.renderHandoversTempl(w, r, web.HandoversPageData{
-			Portal:            a.handoverPortalContext(ac),
-			AssetVersion:      version.AssetVersion(),
-			NowInput:          formatLocalDateTimeInput(time.Now()),
-			Message:           msg,
-			MessageOK:         okMsg,
-			HasHandovers:      len(items) > 0,
-			CanManageBuilding: ac.can(capabilityManageBuilding),
-			OpenCount:         sections[0].Count,
-			ReadyCount:        sections[1].Count,
-			FiledCount:        sections[2].Count,
-			Sections:          handoverTemplSections(sections),
-			Empty:             emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
-			UnitOptions:       handoverUnitOptions(ac.repositories.units.List(), ""),
-		})
-		return
-	}
-	a.render(w, "handovers", a.withBase(ac, map[string]any{
-		"Title":              "Übergaben",
-		"CanManageHandovers": true,
-		"ActivePage":         "handovers",
-		"Handovers":          views,
-		"HandoverSections":   sections,
-		"HandoverOpenCount":  sections[0].Count,
-		"HandoverReadyCount": sections[1].Count,
-		"HandoverFiledCount": sections[2].Count,
-		"HasHandovers":       len(items) > 0,
-		"HandoversEmpty":     emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
-		"HandoverMsg":        msg,
-		"HandoverOK":         okMsg,
-		"UnitOptions":        handoverUnitOptions(ac.repositories.units.List(), ""),
-		"NowInput":           formatLocalDateTimeInput(time.Now()),
-	}))
+	a.renderHandoversTempl(w, r, web.HandoversPageData{
+		Portal:            a.handoverPortalContext(ac),
+		AssetVersion:      version.AssetVersion(),
+		NowInput:          formatLocalDateTimeInput(time.Now()),
+		Message:           msg,
+		MessageOK:         okMsg,
+		HasHandovers:      len(items) > 0,
+		CanManageBuilding: ac.can(capabilityManageBuilding),
+		OpenCount:         sections[0].Count,
+		ReadyCount:        sections[1].Count,
+		FiledCount:        sections[2].Count,
+		Sections:          handoverTemplSections(sections),
+		Empty:             emptyState("Noch keine Übergaben", "Neue Nutzerwechsel werden hier mit Räumen, Zählern, Schlüsseln, Fotos und Bestätigung dokumentiert."),
+		UnitOptions:       handoverUnitOptions(ac.repositories.units.List(), ""),
+	})
 }
 
 func (a *app) handoverPortalContext(ac authCtx) web.PortalPageData {

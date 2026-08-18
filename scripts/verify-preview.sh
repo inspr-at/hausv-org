@@ -8,9 +8,9 @@
 # the app container's network namespace (compose uses network_mode: service:app),
 # so the magic link cannot be collected from anywhere else.
 #
-# Written after a deploy that was healthy, answered on the tailnet, carried
-# TEMPL_PORTAL_ENABLED=true in its env file — and could not be logged into by
-# anyone, because the SMTP fixture was never started (NIX-371). Three pieces of
+# Written after a deploy that was healthy and answered on the tailnet — but
+# could not be logged into by anyone, because the SMTP fixture was never
+# started (NIX-371). Three pieces of
 # evidence all pointing the right way, none of which meant the slot was usable.
 #
 # Never prints the magic link: it is a working credential for the slot.

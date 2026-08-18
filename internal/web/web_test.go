@@ -44,76 +44,18 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	}
 }
 
-func TestPageTemplatesExposeAccessibilityConventions(t *testing.T) {
-	wants := []string{
-		`:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible`,
-		`aria-haspopup="dialog" aria-controls="announcement-create"`,
-		`<dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">`,
-		`aria-haspopup="dialog" aria-controls="event-create"`,
-		`<dialog id="event-create" class="dialog" aria-labelledby="event-create-title">`,
-		`aria-describedby="role-help"`,
-		`<span id="role-help" class="popup" role="tooltip">`,
-		`aria-label="E-Mail-Adresse" autocomplete="email" required`,
-		`aria-label="Nachricht an Bewohner"`,
-		`aria-label="Ihre Antwort"`,
-		`Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen`,
-		`aria-label="Parkplatzbereiche"`,
-		`aria-label="Monatsabrechnungen"`,
-		`aria-label="Ältere Monate"`,
-		`aria-label="Aktueller Ladezustand Parkplatz 20"`,
-	}
-	for _, want := range wants {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("PageTemplates missing accessibility convention %q", want)
-		}
-	}
-	for _, path := range []string{"assets/announcements.js", "assets/users.js"} {
-		body, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
-		}
-		text := string(body)
-		for _, want := range []string{"dialogTriggers", `aria-expanded`, "focusFirstDialogField"} {
-			if !strings.Contains(text, want) {
-				t.Fatalf("%s missing dialog focus convention %q", path, want)
-			}
-		}
-	}
-	// Two deliberate triggers: the toolbar button that is present in every state
-	// and the primary action inside the empty state, so a house without a single
-	// notice is not a dead end. More than that would be an accidental duplicate.
-	if got := strings.Count(PageTemplates, `data-dialog="announcement-create"`); got != 2 {
-		t.Fatalf("announcement create should have the toolbar and empty-state entry point, got %d", got)
-	}
-	for _, want := range []string{`class="announcement-body"`, `class="dialog-optional full"`, `Aushang veröffentlichen`} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("announcement flow missing progressive-disclosure marker %q", want)
-		}
-	}
-	if got := strings.Count(PageTemplates, `data-dialog="event-create"`); got != 2 {
-		t.Fatalf("event create should have the toolbar and empty-state entry point, got %d", got)
-	}
-	// The calendar feed is a one-click action, so it stays visible in the side
-	// column instead of hiding behind a collapsed disclosure.
-	for _, want := range []string{`class="events-aside"`, `Kalender abonnieren`, `class="event-history"`, `Termin veröffentlichen`, `Ende, Details oder Anhang`} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("event flow missing progressive-disclosure marker %q", want)
-		}
-	}
-	if got := strings.Count(PageTemplates, `data-dialog="document-upload"`); got != 1 {
-		t.Fatalf("document upload should have one entry point, got %d", got)
-	}
-	for _, want := range []string{`class="document-toolbar"`, `class="document-actions"`, `class="document-admin-tools"`, `class="dialog-footer"><button class="button primary" type="submit">Hochladen`, `Optional: bestimmte Einheit`, `Keine Dokumente gefunden`} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("document flow missing hierarchy/progressive-disclosure marker %q", want)
-		}
-	}
-	if got := strings.Count(PageTemplates, `data-dialog="ballot-create"`); got != 1 {
-		t.Fatalf("ballot create should have one entry point, got %d", got)
-	}
-	for _, want := range []string{`class="vote-overview {{.VoteOverviewClass}}"`, `Ihre Stimme ist gefragt`, `Ihre Stimme zählt:`, `Details zur Abstimmung`, `Abstimmungsregeln`, `Entwurf anlegen`, `{{template "ballotResult" .}}`} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("ballot flow missing hierarchy/progressive-disclosure marker %q", want)
+// The detailed behavior checks for these routes live beside the surviving templ
+// components. This string-template oracle now guards the actual migration
+// boundary: converted portal pages must not creep back into PageTemplates.
+func TestPageTemplatesExcludeConvertedPortalDefinitions(t *testing.T) {
+	for _, name := range []string{
+		"portal", "contacts", "issues", "issueTriage", "announcements", "events",
+		"documents", "ballots", "handovers", "parking", "help", "settingsHub",
+		"homeIdentitySettings", "auditLog", "buildingSettings", "profileSettings",
+		"notificationSettings", "userSettings", "homeOnboarding", "energyCockpit",
+	} {
+		if strings.Contains(PageTemplates, `{{define "`+name+`"}}`) {
+			t.Errorf("converted portal template %q returned to PageTemplates", name)
 		}
 	}
 }
@@ -139,7 +81,7 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 	appOpens := strings.Count(PageTemplates, `{{template "appOpen" .}}`)
 	mainTargets := strings.Count(PageTemplates, `id="main-content" tabindex="-1" class="app-main`)
 	appCloses := strings.Count(PageTemplates, `{{template "appClose" .}}`)
-	if appOpens != 29 || mainTargets != appOpens || appCloses != appOpens {
+	if appOpens != 9 || mainTargets != appOpens || appCloses != appOpens {
 		t.Fatalf("authenticated templates must each have one skip target: opens=%d targets=%d closes=%d", appOpens, mainTargets, appCloses)
 	}
 
@@ -160,112 +102,6 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 		if !strings.Contains(text, want) {
 			t.Fatalf("shared app behavior missing mobile-menu convention %q", want)
 		}
-	}
-}
-
-func TestAdminDialogsKeepActionsVisibleAtShortHeights(t *testing.T) {
-	for _, want := range []string{
-		`.dialog[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto; }`,
-		`.dialog > form { min-width: 0; min-height: 0; grid-column: 1; grid-row: 1 / -1;`,
-		`.dialog-body { min-width: 0; min-height: 0;`,
-		`.dialog-footer { position: relative; z-index: 2;`,
-		`.dialog-close { width: 44px; height: 44px;`,
-		`<form id="{{.EditDialogID}}-form" method="post" action="/app/kontakte">`,
-		`class="dialog-footer contact-dialog-footer"`,
-		`form="{{.EditDialogID}}-form">Änderungen speichern`,
-		`class="dialog-footer handover-dialog-submit"`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("bounded admin-dialog contract missing %q", want)
-		}
-	}
-	if strings.Contains(PageTemplates, `.dialog form {`) {
-		t.Fatal("shared dialog layout must not turn nested action forms into dialog shells")
-	}
-	handoverBody := strings.Index(PageTemplates, `<div class="dialog-body">
-            <p class="document-dialog-intro">`)
-	handoverFooter := strings.Index(PageTemplates, `<div class="dialog-footer handover-dialog-submit">`)
-	if handoverBody < 0 || handoverFooter < handoverBody {
-		t.Fatal("handover submit footer must follow its independently scrolling dialog body")
-	}
-}
-
-func TestAdminPagesConstrainKnownResponsiveMinContent(t *testing.T) {
-	for _, want := range []string{
-		`.announce .announce-feed { grid-template-columns: minmax(0,1fr); gap: 14px; }`,
-		`.announce .entry-head { display: grid; grid-template-columns: minmax(0,1fr); }`,
-		`@media (min-width: 761px) and (max-width: 1120px)`,
-		`.building .unit-table-head, .building .unit-row { grid-template-columns: minmax(190px,1fr) minmax(180px,.9fr) minmax(130px,.7fr) 48px; }`,
-		`.building .unit-dialog { width: 100%; max-height: 92dvh;`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("responsive admin-page constraint missing %q", want)
-		}
-	}
-}
-
-func TestResidentContentFlowsStayCompactAndProgressivelyDisclosed(t *testing.T) {
-	for _, want := range []string{
-		`.guide-disclosure > summary { min-height: 44px;`,
-		`.guide-disclosure[open] > summary::after { transform: rotate(90deg); }`,
-		`@media (prefers-reduced-motion: reduce) { .guide-disclosure > summary::after { transition: none; } }`,
-		`class="panel compact announce-aside-panel guide-disclosure"`,
-		`class="panel compact events-aside-panel guide-disclosure"`,
-		`class="panel compact contacts-aside-panel guide-disclosure"`,
-		`@media (max-width: 900px) and (min-width: 721px)`,
-		`.announce .filter-form { grid-template-columns: minmax(0,1fr) auto; align-items: end; }`,
-		`.announce .announcement-entry h3 { overflow-wrap: anywhere; }`,
-		`.announce .announcement-entry h3 { font-size: 18px; line-height: 1.18; }`,
-		`.announce .filter-form .button, .announce .filter-tab, .announce .announcement-body > summary, .announce .entry-actions .button { min-height: 44px; }`,
-		`.events-page .event-details > summary, .events-page .event-history > summary { min-height: 44px;`,
-		`.vote-actions .button, .vote-management-actions .button, .vote-result-actions .button { min-height: 44px;`,
-		`class="audit-help-disclosure guide-disclosure"`,
-		`<summary><strong>Einträge verstehen</strong></summary>`,
-		`min-height: clamp(280px,34vh,360px)`,
-		`class="vote-readonly-note"`,
-		`class="button ghost" href="/app/settings">Einstellungen`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("resident content UX contract missing %q", want)
-		}
-	}
-	if got := strings.Count(PageTemplates, `min-height: clamp(280px,34vh,360px)`); got != 3 {
-		t.Fatalf("resident empty-state height is constrained %d times, want announcements, events and contacts", got)
-	}
-}
-
-func TestSettingsAndParkingKeepReducedMobileInteractionContracts(t *testing.T) {
-	for _, want := range []string{
-		`<a class="side-map side-address" href="{{.MapURL}}"`,
-		`<div class="side-place-copy{{if .CanSwitchPortalContext}} has-context-switch{{end}}">`,
-		`<a class="side-address-label" href="/app" aria-label="Hausportal {{.HouseName}} öffnen"><strong>{{.HouseName}}</strong>`,
-		`<details class="portal-context-switch">`,
-		`@media (max-width: 350px)`,
-		`.side-address-label { font-size: 9px; }`,
-		`.content-top .crumb { max-width: 100%; gap: 6px; flex-wrap: wrap; font-size: 13px; }`,
-		`min-height: 44px !important;`,
-		`.payment-import .apply-bar { position: static;`,
-		`.payment-import .import-panel { min-width: 0; grid-template-columns: minmax(0,1fr); }`,
-		`.payment-import .upload-form { min-width: 0; width: 100%; max-width: 100%; grid-template-columns: 1fr; }`,
-		`settings-guide-details`,
-		`<details class="account-details profile-visibility-details">`,
-		`<details class="notification-details">`,
-		`Tarif, zwei Zählerstände und ein Preis genügen.`,
-		`<strong>Messwerte</strong>`,
-		`<strong>Nur Nachweis.</strong>`,
-		`access-fixed`,
-		`data-help="Fest vergeben · hier nicht änderbar"`,
-		`min-width: 44px; min-height: 44px;`,
-		`.users .dlg-x button { width: 44px; height: 44px;`,
-		`.users .edit-dialog h2 { padding-right: 48px; font-size: 23px; }`,
-		`<span class="file-control"><span>Datei auswählen</span><input id="camt-file"`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("settings/parking mobile contract missing %q", want)
-		}
-	}
-	if strings.Contains(PageTemplates, `<details class="account-details" open>`) {
-		t.Fatal("profile account metadata should use progressive disclosure")
 	}
 }
 
@@ -327,11 +163,6 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 	for _, want := range []string{`dataset.submitting`, `Bitte warten`, `dataset.confirm`, `setTimeout`, `data-notification-form`, `email-paused`, `data-notification-count`, `data-home-type-select`, `data-home-type-explanation`, `dataset.description`, `data-energy-chart-interactive`, `data-chart-tooltip`, `ArrowLeft`, `ArrowRight`, `requestFullscreen`, `fullscreenchange`, `is-fullscreen-fallback`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("submit guard missing %q", want)
-		}
-	}
-	for _, want := range []string{`data-dialog="energy-chart-dialog"`, `{{.Chart.DialogTitle}}`, `data-chart-hit`, `data-chart-marker-index`, `zeitraum=heute`, `data-energy-fullscreen`, `data-energy-fullscreen-surface`} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("energy chart interaction missing %q", want)
 		}
 	}
 	landingJS, err := os.ReadFile("assets/landing.js")
@@ -402,154 +233,5 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 		if !strings.Contains(issueText, want) {
 			t.Fatalf("issue wizard script missing %q", want)
 		}
-	}
-}
-
-func TestHomeIdentityUXSeparatesFriendlyNameFromOfficialUnits(t *testing.T) {
-	for _, want := range []string{
-		`{{define "homeIdentitySettings"}}`,
-		`href="/app/settings/home?from=energy"`,
-		`href="/app/settings/home?from=building"`,
-		`Anzeigename für „Mein Zuhause“`,
-		`Offizielle Bezeichnung`,
-		`Zugeordnete offizielle Wohnung`,
-		`Die Sichtbarkeit folgt dieser Wohnung`,
-		`aria-describedby="home-settings-unit-help"`,
-		`data-home-identity="nav"`,
-		`data-home-identity="energy-heading"`,
-		`data-home-identity="settings"`,
-		`class="home-profile-notice"`,
-		`class="home-badge"`,
-		`Mein Zuhause ·`,
-		`data-home-identity="onboarding-summary"`,
-		`data-home-display-name`,
-		`data-home-unit-label`,
-		`{{if .CanManageHomeIdentity}}`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("home identity UX missing %q", want)
-		}
-	}
-}
-
-func TestHomeTypeGuidanceAndSidebarBrandHierarchy(t *testing.T) {
-	for _, want := range []string{
-		`data-home-type-select`,
-		`id="home-type-explanation"`,
-		`data-description="Ein einzelner Haushalt in einem Mehrparteienhaus.`,
-		`data-description="Ein Haushalt mit eigenem Gebäude.`,
-		`data-description="Mehrere Parteien und gemeinsam genutzte Anlagen.`,
-		`Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern.`,
-		`„Nur beobachten“ bleibt unverändert.`,
-		`.side-map-card { position: relative; min-width: 0; height: 276px;`,
-		`.side-map { position: absolute; inset: 0; width: 100%; height: 100%;`,
-		`.side-map-pin-mark svg { width: 25px; height: 21px;`,
-		`Standort nicht hinterlegt`,
-		`Kartendaten © OpenStreetMap`,
-		`text-decoration: none;`,
-		`Hausportal</strong><span>· hausv.org`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("home-type/sidebar polish missing %q", want)
-		}
-	}
-}
-
-func TestEnergyLiveCardUsesIndependentIconsAndAccessibleMotion(t *testing.T) {
-	for _, want := range []string{
-		`<div class="energy-flow-area" data-energy-flow>`,
-		`.energy-flow-tile.k-pv`,
-		`.energy-flow-tile.k-grid`,
-		`.energy-flow-tile.k-batt`,
-		`.energy-flow-hub2`,
-		`.energy-flow-area.is-enhanced .energy-flow-fallback { display: none; }`,
-		`svg.energy-flow-ribbons`,
-		`@media (prefers-reduced-motion: reduce)`,
-		`.energy-flow-big .prio`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("energy live-card polish missing %q", want)
-		}
-	}
-}
-
-func TestEnergyGeometryKeepsSafetyAndLiveFlowFirst(t *testing.T) {
-	for _, want := range []string{
-		`--soft:#716d62; --gold-ink:#705c22; --energy-focus-ring:#ad862c;`,
-		`.app-shell { --mobile-nav-height:68px; display: block; }`,
-		`top: var(--mobile-nav-height); grid-template-columns: 30px minmax(0,1fr) auto;`,
-		`grid-template-columns: minmax(0,1fr); align-content: start;`,
-		`energy-mode-action-compact`,
-		`@media (max-width: 1439px)`,
-		`.energy-cockpit-top .energy-health { display: grid; grid-template-columns: minmax(0,1fr); row-gap: 22px; }`,
-		`Keine Steuerung`,
-		`HAUSV liest und empfiehlt, steuert aber kein Gerät.`,
-		`Freigabe nur für Eigentümer oder Hausadministration`,
-		`action="/app/energie/mode"`,
-		`Sofort zurück zu „Nur beobachten“`,
-		`Testlauf bewusst starten`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("energy geometry/safety slice missing %q", want)
-		}
-	}
-
-	cockpitStart := strings.Index(PageTemplates, `{{define "energyCockpit"}}`)
-	if cockpitStart < 0 {
-		t.Fatal("energy cockpit template is missing")
-	}
-	cockpit := PageTemplates[cockpitStart:]
-	lead := strings.Index(cockpit, `{{template "energyLead" .}}`)
-	tariff := strings.Index(cockpit, `class="energy-card energy-tariff"`)
-	if lead < 0 || tariff < 0 || lead >= tariff {
-		t.Fatalf("energy cockpit source order is not live/next before tariff: lead=%d tariff=%d", lead, tariff)
-	}
-
-	// This slice changes hierarchy only; the legally/product-relevant tariff
-	// qualifications must remain in the rendered source until its focused route
-	// is implemented separately.
-	for _, caveat := range []string{
-		`Das ist nicht Ihre Stromrechnung.`,
-		`Arbeitspreis, Energiekosten, Abgaben und Steuern`,
-		`Niedertarif-Fenster (SNAP, WiNAP)`,
-		`Diesen Stand festhalten`,
-	} {
-		if !strings.Contains(cockpit, caveat) {
-			t.Fatalf("energy hierarchy slice removed tariff caveat %q", caveat)
-		}
-	}
-}
-
-func TestIssueCreationUsesTwoFocusedSteps(t *testing.T) {
-	for _, want := range []string{
-		`<script src="/assets/issues.js?v={{.AssetVersion}}" defer></script>`,
-		`data-issue-wizard`,
-		`data-issue-step="describe"`,
-		`Schritt 1 von 2`,
-		`Was ist passiert?`,
-		`Foto oder Datei hinzufügen`,
-		`data-issue-step="review"`,
-		`Schritt 2 von 2`,
-		`Prüfen &amp; senden`,
-		`data-issue-summary="body"`,
-		`data-issue-review-expand`,
-		`Titel ändern`,
-		`data-busy-label="Meldung wird gesendet…"`,
-		`class="wizard-exit" href="/app">Abbrechen</a>`,
-		`Akute Gefahr? 112 anrufen.`,
-		`href="/app/kontakte">Hauskontakte</a>`,
-		`class="issue-resident-report"`,
-		`.issue-resident-report .attachment-delete button { position: relative; width: 44px; height: 44px;`,
-		`Neuigkeiten zum Anliegen`,
-	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("issue creation flow missing %q", want)
-		}
-	}
-	if strings.Contains(PageTemplates, `Ort genauer angeben oder Datei anhängen`) {
-		t.Fatal("issue creation should not mix location and attachments in one disclosure")
-	}
-	if strings.Contains(PageTemplates, `name="title" maxlength="140" required`) || strings.Contains(PageTemplates, `Schritt 3 von 3`) {
-		t.Fatal("issue creation must keep the title optional and stop after two focused steps")
 	}
 }

@@ -277,14 +277,14 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		t.Fatalf("GET home settings status = %d body=%s", settings.Code, settings.Body.String())
 	}
 	for _, want := range []string{
-		`<title>Dachwohnung · Mein Zuhause</title>`,
+		`<title>Dachwohnung · Mein Zuhause · Musterweg 1 · Eigentümer</title>`,
 		`data-home-identity="editor-heading" aria-label="Dachwohnung, offizielle Einheit Einheit 12"`,
 		`<h1 data-home-display-name>Dachwohnung</h1>`,
-		`<p class="home-identity-head-unit" data-home-unit-label>Einheit 12</p>`,
+		`<p class="home-unit" data-home-unit-label>Einheit 12</p>`,
 		`value="Dachwohnung"`,
 		`Einheit 12`,
 		`name="unit_id" value="einheit-12"`,
-		`Diesem Hausprofil zugeordnet.`,
+		`Diesem Hausprofil zugeordnet`,
 		`„Dachwohnung“ ist der freundliche Name. „Einheit 12“ bleibt die offizielle Einheit`,
 	} {
 		if !strings.Contains(settings.Body.String(), want) {
@@ -292,12 +292,18 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		}
 	}
 	hub := authedRequest(t, a, "owner@example.com", "/demo/app/settings")
-	if hub.Code != http.StatusOK ||
-		!strings.Contains(hub.Body.String(), `href="/demo/app/settings/home"`) ||
-		!strings.Contains(hub.Body.String(), `data-home-identity="settings" aria-label="Dachwohnung, offizielle Einheit Einheit 12 bearbeiten"`) ||
-		!strings.Contains(hub.Body.String(), `<strong data-home-display-name>Dachwohnung</strong>`) ||
-		!strings.Contains(hub.Body.String(), `data-home-unit-label>Einheit 12</span>`) {
-		t.Fatalf("owner settings hub does not expose home identity: status=%d", hub.Code)
+	if hub.Code != http.StatusOK {
+		t.Fatalf("owner settings hub status=%d", hub.Code)
+	}
+	for _, want := range []string{
+		`href="/demo/app/settings/home"`,
+		`data-home-identity="settings" aria-label="Dachwohnung, offizielle Einheit Einheit 12 bearbeiten"`,
+		`<strong data-home-display-name>Dachwohnung</strong>`,
+		`data-home-unit-label>Einheit 12</small>`,
+	} {
+		if !strings.Contains(hub.Body.String(), want) {
+			t.Fatalf("owner settings hub does not expose home identity marker %q", want)
+		}
 	}
 
 	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/settings/home", url.Values{

@@ -6,15 +6,12 @@ import (
 	"testing"
 )
 
-func TestIssuesTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestIssuesAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "resident@example.com", "/demo/app/anliegen").Body.String()
-	if strings.Contains(body, "data-templ-issues") {
-		t.Fatal("issues templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main"`) {
-		t.Fatal("default issues response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-issues") {
+		t.Fatal("issues response must use the templ renderer")
 	}
 }
 
@@ -24,7 +21,6 @@ func TestIssuesTemplUsesSharedPermissionGatedShellWithoutNewRoleDenials(t *testi
 		t.Run(role, func(t *testing.T) {
 			email := strings.ToLower(role) + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, Role: role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 			if role == roleServiceProvider {
 				a.serviceAccessEnabled = true
 			}
@@ -66,7 +62,6 @@ func TestIssuesTemplUsesSharedPermissionGatedShellWithoutNewRoleDenials(t *testi
 
 func TestIssuesTemplKeepsResidentCreationAndDetailReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
@@ -103,7 +98,6 @@ func TestIssuesTemplKeepsResidentCreationAndDetailReachable(t *testing.T) {
 
 func TestIssuesTemplKeepsAssignedServiceProviderToolsReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "service@example.com", Role: roleServiceProvider, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	a.serviceAccessEnabled = true
 	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:    "demo",
@@ -155,11 +149,10 @@ func TestIssuesTemplKeepsAssignedServiceProviderToolsReachable(t *testing.T) {
 }
 
 // HAUSV-538 finished what HAUSV-535 left out: the manager board and its triage
-// detail were the two /app/anliegen/board routes still on the legacy renderer,
-// so a manager with the switch on dropped into the old design mid-session.
+// detail were the two /app/anliegen/board routes still outside the shared templ
+// shell, so a manager could drop into the old design mid-session.
 func TestIssueBoardTemplRendersTheManagerBoardOnTheSharedShell(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	response := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board")
 	if response.Code != http.StatusOK {
@@ -188,7 +181,6 @@ func TestIssueBoardTemplRendersTheManagerBoardOnTheSharedShell(t *testing.T) {
 
 func TestIssueBoardTemplKeepsFiltersAndTriageEntryReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
@@ -231,7 +223,6 @@ func TestIssueBoardTemplKeepsFiltersAndTriageEntryReachable(t *testing.T) {
 
 func TestIssueTriageTemplKeepsEveryStepActionable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
@@ -296,7 +287,6 @@ func TestIssueTriageTemplKeepsEveryStepActionable(t *testing.T) {
 
 func TestIssueTriageTemplStaysClosedToNonManagers(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
 		TenantSlug:   "demo",
 		AuthorEmail:  "resident@example.com",
@@ -319,11 +309,11 @@ func TestIssueTriageTemplStaysClosedToNonManagers(t *testing.T) {
 	}
 }
 
-func TestIssueBoardTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestIssueBoardAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
-	if strings.Contains(board, "data-templ-issue-board") || !strings.Contains(board, `class="app-main"`) {
-		t.Fatal("the manager board must stay on the legacy renderer while the switch is off")
+	if !strings.Contains(board, "data-templ-issue-board") {
+		t.Fatal("the manager board must use the templ renderer")
 	}
 }

@@ -4,9 +4,11 @@ package server
 // panels on /app/parking/settings, and the manual/settings/telegram actions.
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 var errInvalidChargingForm = errors.New("invalid charging settings")
@@ -390,9 +393,14 @@ func (a *app) chargingStatus(w http.ResponseWriter, r *http.Request, ac authCtx)
 		})
 		return
 	}
-	if err := a.templates.ExecuteTemplate(w, "parkingLiveCard", map[string]any{"Live": live}); err != nil {
+	var rendered bytes.Buffer
+	if err := web.ParkingLiveCard(live).Render(r.Context(), &rendered); err != nil {
 		logError("charging status render failed", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), tenant.Slug))
 }
 
 func (a *app) chargingManualAction(w http.ResponseWriter, r *http.Request, ac authCtx, mode string) {

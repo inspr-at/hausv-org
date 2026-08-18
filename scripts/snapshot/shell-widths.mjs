@@ -84,11 +84,8 @@ for (const [name, route] of ROUTES) {
         // only navigation on the page sat below the fold — off-screen on load,
         // and this probe called it visible because it had a bounding box.
         headTop: (() => { const h = document.querySelector('.mobile-head'); return h ? Math.round(h.getBoundingClientRect().top) : null; })(),
-        // This probe describes the TEMPL shell: sidebar below the breakpoint is
-        // hidden and a mobile header takes over. The legacy shell does something
-        // else entirely — it turns the sidebar into a sticky bar — so a legacy
-        // route reads as "desktop" at every width. Recording which renderer served
-        // the page keeps that from being reported as a defect it is not.
+        // Record the renderer marker so a route cannot silently evade the shell
+        // assertions by returning unrelated or obsolete markup.
         templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),
       };
     }, shown.toString());
@@ -131,19 +128,17 @@ let failures = 0;
 console.log(`${'width'.padStart(6)}  ${'shell'.padEnd(8)} routes`);
 for (const w of WIDTHS) {
   const all = results.filter((r) => r.width === w);
-  const at = all.filter((r) => r.templ);
-  const legacy = all.filter((r) => !r.templ);
-  const none = at.filter((r) => !r.sidebar && !r.mobile);
-  const both = at.filter((r) => r.sidebar && r.mobile);
-  const desktop = at.filter((r) => r.sidebar && !r.mobile).map((r) => r.route);
-  const mob = at.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);
-  const noLinks = at.filter((r) => r.links === 0);
-  const noMenu = at.filter((r) => r.mobile && !r.menu);
-  const buried = at.filter((r) => r.mobile && r.headTop !== null && r.headTop > 0);
+  const wrongRenderer = all.filter((r) => !r.templ);
+  const none = all.filter((r) => !r.sidebar && !r.mobile);
+  const both = all.filter((r) => r.sidebar && r.mobile);
+  const desktop = all.filter((r) => r.sidebar && !r.mobile).map((r) => r.route);
+  const mob = all.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);
+  const noLinks = all.filter((r) => r.links === 0);
+  const noMenu = all.filter((r) => r.mobile && !r.menu);
+  const buried = all.filter((r) => r.mobile && r.headTop !== null && r.headTop > 0);
 
   let kind = desktop.length && mob.length ? 'SPLIT' : (mob.length ? 'mobile' : 'desktop');
-  const skipped = legacy.length ? `  (${legacy.length} on the legacy renderer, not covered: ${[...new Set(legacy.map((r) => r.route))].join(', ')})` : '';
-  console.log(`${String(w).padStart(6)}  ${kind.padEnd(8)} ${desktop.length} desktop / ${mob.length} mobile${skipped}`);
+  console.log(`${String(w).padStart(6)}  ${kind.padEnd(8)} ${desktop.length} desktop / ${mob.length} mobile`);
 
   for (const [label, list] of [['no navigation at all', none], ['both shells at once', both],
                                ['no nav links', noLinks], ['mobile head without a usable menu', noMenu],
@@ -155,13 +150,13 @@ for (const w of WIDTHS) {
     console.log(`         routes disagree — desktop: ${desktop.join(', ')}`);
     console.log(`                           mobile: ${mob.join(', ')}`);
   }
+  if (wrongRenderer.length) {
+    failures += wrongRenderer.length;
+    console.log(`         wrong renderer: ${wrongRenderer.map((r) => r.route).join(', ')}`);
+  }
 }
 
 if (outJson) await writeFile(outJson, JSON.stringify(results, null, 2));
-const legacyRoutes = [...new Set(results.filter((r) => !r.templ).map((r) => r.route))];
-console.log(`\n${results.filter((r) => r.templ).length} route/width combinations checked`);
-if (legacyRoutes.length) {
-  console.log(`not covered — still on the legacy renderer: ${legacyRoutes.join(', ')}`);
-}
+console.log(`\n${results.length} route/width combinations checked`);
 if (failures) { console.log(`FAIL — ${failures} problem(s)`); process.exit(1); }
 console.log('PASS — every route has exactly one navigation at every width, it sits at the top, and they all agree');

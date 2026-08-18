@@ -6,15 +6,12 @@ import (
 	"testing"
 )
 
-func TestContactsTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestContactsAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
-	if strings.Contains(body, "data-templ-contacts") {
-		t.Fatal("contacts templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main contacts"`) {
-		t.Fatal("default contacts response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-contacts") {
+		t.Fatal("contacts response must use the templ renderer")
 	}
 }
 
@@ -24,7 +21,6 @@ func TestContactsTemplUsesSharedPermissionGatedShellForEveryPortalRole(t *testin
 		t.Run(role, func(t *testing.T) {
 			email := strings.ToLower(role) + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, Role: role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			a.portalTemplEnabled = true
 
 			response := authedRequest(t, a, email, "/demo/app/kontakte")
 			if response.Code != http.StatusOK {
@@ -48,7 +44,6 @@ func TestContactsTemplUsesSharedPermissionGatedShellForEveryPortalRole(t *testin
 
 func TestContactsTemplKeepsManagementAndContactDetailsReachable(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	a.serviceAccessEnabled = true
 	if _, _, err := testRepositories(a, "demo").contacts.Upsert(managedContact{
 		TenantSlug: "demo", Kind: "Dienstleister", Name: "Liftservice", Email: "lift@example.com", Phone: "+43 316 500",

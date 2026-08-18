@@ -7,21 +7,17 @@ import (
 	"testing"
 )
 
-func TestOnboardingTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestOnboardingAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding").Body.String()
-	if strings.Contains(body, "data-templ-onboarding") {
-		t.Fatal("onboarding templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main"`) {
-		t.Fatal("default onboarding response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-onboarding") {
+		t.Fatal("onboarding response must use the templ renderer")
 	}
 }
 
 func TestOnboardingTemplUsesSharedPermissionGatedShell(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/zuhause/onboarding")
 	if response.Code != http.StatusOK {
@@ -48,7 +44,6 @@ func TestOnboardingTemplUsesSharedPermissionGatedShell(t *testing.T) {
 
 func TestOnboardingTemplKeepsEveryStepActionAndHook(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	steps := map[string][]string{
 		"1": {
@@ -96,7 +91,6 @@ func TestOnboardingTemplKeepsTestRunBehindItsCapabilityGate(t *testing.T) {
 	// The deliberate test run is the only state-changing control on this page,
 	// and canControlEnergy is what decides it — exactly as in the legacy strip.
 	owner := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	owner.portalTemplEnabled = true
 	ownerBody := authedRequest(t, owner, "owner@example.com", "/demo/app/zuhause/onboarding").Body.String()
 	for _, want := range []string{
 		`action="/demo/app/energie/mode"`,
@@ -111,7 +105,6 @@ func TestOnboardingTemplKeepsTestRunBehindItsCapabilityGate(t *testing.T) {
 	// A role without the energy-control capability never reaches this page at
 	// all: canViewEnergy already refuses it, which is the stronger gate.
 	resident := newTestPortalApp(t, userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	resident.portalTemplEnabled = true
 	if response := authedRequest(t, resident, "resident@example.com", "/demo/app/zuhause/onboarding"); response.Code != http.StatusForbidden {
 		t.Fatalf("resident onboarding status = %d, want 403", response.Code)
 	}
@@ -121,7 +114,6 @@ func TestOnboardingTemplStillCompletesTheWizard(t *testing.T) {
 	// The switch changes the renderer, never the flow: every POST target the
 	// legacy page offered must keep working with templ on.
 	a := newTestPortalApp(t, userProfile{Email: "owner@example.com", Role: roleOwner, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 
 	for _, form := range []url.Values{
 		{"action": {"understand"}},

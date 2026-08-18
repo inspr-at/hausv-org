@@ -83,8 +83,8 @@ func TestContactsUXUsesOneHelpfulEmptyState(t *testing.T) {
 		AuthMethods: defaultAuthMethods(),
 	})
 	body := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
-	if got := strings.Count(body, `class="empty-state"`); got != 1 {
-		t.Fatalf("empty-state count = %d, want 1", got)
+	if got := strings.Count(body, `class="blank"`); got != 1 {
+		t.Fatalf("blank-state count = %d, want 1", got)
 	}
 	if !strings.Contains(body, "Noch keine Kontakte hinterlegt") || !strings.Contains(body, "Die Hausverwaltung hat für dieses Haus") {
 		t.Fatalf("helpful combined empty state missing:\n%s", body)

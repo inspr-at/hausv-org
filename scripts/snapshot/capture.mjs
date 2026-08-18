@@ -132,9 +132,8 @@ async function capturePersona(persona, routes) {
     const html = normalise(await page.content());
     await writeFile(path.join(dir, `${name}.html`), `<!-- status:${status} -->\n${html}\n`);
 
-    // The parts of the page a user can act on, in DOM terms. contract-diff.mjs
-    // compares two of these; the HTML diff above cannot answer "is this still
-    // wired up", only "did these bytes move".
+    // The parts of the page a user can act on, in DOM terms. The HTML snapshot
+    // alone cannot answer "is this still wired up", only "did these bytes move".
     const contract = await page.evaluate(EXTRACT_CONTRACT);
     await writeFile(path.join(dir, `${name}.contract.json`), `${JSON.stringify(contract, null, 2)}\n`);
 

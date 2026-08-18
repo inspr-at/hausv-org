@@ -204,7 +204,11 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
 		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel } · { data.Role }</small></a>
-		<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
+		if data.CanUseResidentAreas {
+			<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
+		} else {
+			<a class="avatar" href="/app" aria-label={ "Portal von " + data.DisplayName }>{ data.Initials }</a>
+		}
 	</header>
 }
 
@@ -324,7 +328,7 @@ templ PortalIcon(kind string) {
 }
 
 templ PortalDense(data PortalPageData) {
-	<main class="dense-main" id="main-content" tabindex="-1">
+	<main class="dense-main" id="main-content" tabindex="-1" data-skip-target>
 		<header class="topbar"><div class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></div><div class="top-actions"><div class="metrics" aria-label="Kennzahlen">
 			if data.Modules.Issues {
 				<a class="metric" href={ templ.SafeURL(portalIssuesURL(data)) }><strong>{ len(data.Issues) }</strong><span>offene Anliegen</span></a>
@@ -410,7 +414,7 @@ templ DenseAnnouncements(data PortalPageData) {
 }
 
 templ PortalCalm(data PortalPageData) {
-	<main class="calm-main" id="main-content" tabindex="-1"><div class="calm-column">
+	<main class="calm-main" id="main-content" tabindex="-1" data-skip-target><div class="calm-column">
 		<header class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></header>
 		<h2 class="answer">{ calmAnswer(data) }</h2>
 		<section class="disclosures" aria-label="Was Sie betrifft">
@@ -495,7 +499,7 @@ templ PortalUtilities(data PortalPageData) {
 
 templ PortalMobile(data PortalPageData) {
 	@PortalMobileHeader(data, data.Address)
-	<main class="mobile-content" id="mobile-main-content"><header class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></header>
+	<main class="mobile-content" id="mobile-main-content" tabindex="-1" data-skip-target><header class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></header>
 		<article class="task-card"><p class="eyebrow">Jetzt zu erledigen</p>
 			if data.HasPrimary {
 				<h2>{ data.Primary.Title }</h2><p>{ data.Primary.Detail }</p><a class="primary" href={ templ.SafeURL(data.Primary.URL) }>{ data.Primary.ActionLabel }</a>

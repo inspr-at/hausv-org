@@ -7,21 +7,17 @@ import (
 	"time"
 )
 
-func TestParkingTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestParkingAlwaysUsesTemplRenderer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 
 	body := authedRequest(t, a, "admin@example.com", "/demo/app/parking").Body.String()
-	if strings.Contains(body, "data-templ-parking") {
-		t.Fatal("parking templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="page wide parking-page"`) {
-		t.Fatal("default parking response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-parking") {
+		t.Fatal("parking response must use the templ renderer")
 	}
 }
 
 func TestParkingTemplKeepsEveryActionForManagers(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	base := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
 	if err := a.parkingStore.AppendReadings("demo", []parkingNumericSample{
 		{At: base, Value: 100},
@@ -66,7 +62,6 @@ func TestParkingTemplKeepsEveryActionForManagers(t *testing.T) {
 
 func TestParkingTemplEmptyStateKeepsItsPermissionGates(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "admin@example.com", Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	a.portalTemplEnabled = true
 	if _, err := a.inviteStore.Add(userProfile{Email: "parker@example.com", FirstName: "Pat", LastName: "Parker", Role: roleRenter, Tenants: []string{"demo"}, Permissions: []string{permissionParking}, AuthMethods: defaultAuthMethods()}); err != nil {
 		t.Fatalf("Add invite: %v", err)
 	}

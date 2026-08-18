@@ -30,7 +30,6 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	isAdmin := ac.can(capabilityPlatformAdmin)
-	telemetry := a.parkingTelemetry(r.Context(), tenant)
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), r.URL.Query().Get("reminder"))
 	if parkingMsg == "" {
 		parkingMsg, parkingOK = chargingFlashMessage(r.URL.Query())
@@ -49,44 +48,21 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
 	canManageParkingPayments := ac.can(capabilityManageUsers) || ac.can(capabilityManageParking)
-	if a.portalTemplEnabled {
-		a.renderParkingTempl(w, r, web.ParkingPageData{
-			Portal:                   a.parkingPortalContext(ac),
-			AssetVersion:             version.AssetVersion(),
-			IsAdmin:                  isAdmin,
-			CanManageParkingPayments: canManageParkingPayments,
-			Message:                  parkingMsg,
-			MessageOK:                parkingOK,
-			StatementYear:            time.Now().In(time.Local).Year(),
-			CurrentMonthHeading:      currentMonthHeading,
-			HasOlderMonths:           len(olderMonths) > 0,
-			Accounting:               accounting,
-			Live:                     live,
-			CurrentMonth:             currentMonth,
-			OlderMonths:              olderMonths,
-		})
-		return
-	}
-	a.render(w, "parking", a.withBase(ac, map[string]any{
-		"Title":                    "Parkplatznutzung",
-		"CanManageParkingPayments": canManageParkingPayments,
-		"CanMarkParkingPayment":    isAdmin || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
-		// The parking page is reachable through the explicit per-user parking
-		// permission too, so keep this intentional base-context override.
-		"CanSeeParking":       true,
-		"ActivePage":          "parking",
-		"Telemetry":           telemetry,
-		"Accounting":          accounting,
-		"CurrentMonth":        currentMonth,
-		"CurrentMonthHeading": currentMonthHeading,
-		"OlderMonths":         olderMonths,
-		"HasOlderMonths":      len(olderMonths) > 0,
-		"ParkingMsg":          parkingMsg,
-		"ParkingOK":           parkingOK,
-		"Live":                live,
-		"TodayInput":          time.Now().In(time.Local).Format("2006-01-02"),
-		"StatementYear":       time.Now().In(time.Local).Year(),
-	}))
+	a.renderParkingTempl(w, r, web.ParkingPageData{
+		Portal:                   a.parkingPortalContext(ac),
+		AssetVersion:             version.AssetVersion(),
+		IsAdmin:                  isAdmin,
+		CanManageParkingPayments: canManageParkingPayments,
+		Message:                  parkingMsg,
+		MessageOK:                parkingOK,
+		StatementYear:            time.Now().In(time.Local).Year(),
+		CurrentMonthHeading:      currentMonthHeading,
+		HasOlderMonths:           len(olderMonths) > 0,
+		Accounting:               accounting,
+		Live:                     live,
+		CurrentMonth:             currentMonth,
+		OlderMonths:              olderMonths,
+	})
 }
 
 // parkingPortalContext mirrors the legacy base-context override: /app/parking

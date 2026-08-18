@@ -1,12 +1,12 @@
 // The interactive contract of one rendered page.
 //
-// The existing oracles compare bytes (switch off) and reachable hrefs (switch on).
-// Neither can see a lost <script>, a dropped body attribute, a form that no longer
+// Snapshot the interactive DOM contract so evidence captures lost scripts, body
+// attributes, POST targets, confirmations, required fields and enhancement hooks.
+// Reachable href checks alone cannot see a lost <script>, a dropped body attribute, a form that no longer
 // asks before deleting, or a DOM hook a script still looks for. Four real
 // regressions went through that gap in Phase 3 — two of them security-relevant.
 //
-// So: extract the things a user can ACT on, in DOM terms rather than by regex, and
-// diff the legacy rendering against the templ rendering of the same route.
+// Extract the things a user can act on in DOM terms rather than by regex.
 //
 // Runs inside page.evaluate(), so it must be a self-contained function body with no
 // imports and no closure over module scope.

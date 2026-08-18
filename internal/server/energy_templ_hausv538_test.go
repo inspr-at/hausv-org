@@ -6,21 +6,17 @@ import (
 	"testing"
 )
 
-func TestEnergyCockpitTemplSwitchDefaultsToLegacyRenderer(t *testing.T) {
+func TestEnergyCockpitAlwaysUsesTemplRenderer(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "")
 
 	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
-	if strings.Contains(body, "data-templ-energy") {
-		t.Fatal("energy templ renderer must remain off by default")
-	}
-	if !strings.Contains(body, `class="app-main energy-cockpit-main"`) {
-		t.Fatal("default energy response must still use the legacy renderer")
+	if !strings.Contains(body, "data-templ-energy") {
+		t.Fatal("energy response must use the templ renderer")
 	}
 }
 
 func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "14,0")
-	a.portalTemplEnabled = true
 
 	response := authedRequest(t, a, "owner@example.com", "/demo/app/energie")
 	if response.Code != http.StatusOK {
@@ -61,7 +57,6 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 
 func TestEnergyCockpitTemplKeepsTheHouseholdNameAsItsDocumentTitle(t *testing.T) {
 	a := energyCockpitAppHAUSV425(t, 16, "")
-	a.portalTemplEnabled = true
 
 	body := authedRequest(t, a, "owner@example.com", "/demo/app/energie").Body.String()
 	if !strings.Contains(body, "<title>Zuhause Test</title>") {

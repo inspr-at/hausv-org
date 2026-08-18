@@ -116,13 +116,13 @@ func TestPortalContextSwitchChangesTenantWithoutExtendingLogin(t *testing.T) {
 	req.AddCookie(newCookie)
 	page := httptest.NewRecorder()
 	a.handler().ServeHTTP(page, req)
-	targetTile := sidebarMapForTenant(a.tenants["haus-b"]).Tiles[0].URL
-	sourceTile := sidebarMapForTenant(a.tenants["demo"]).Tiles[0].URL
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Haus B") || !strings.Contains(page.Body.String(), roleRenter) || !strings.Contains(page.Body.String(), targetTile) {
+	targetMap := tenantMapURL(a.tenants["haus-b"].Address)
+	sourceMap := tenantMapURL(a.tenants["demo"].Address)
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Haus B") || !strings.Contains(page.Body.String(), roleRenter) || !strings.Contains(page.Body.String(), targetMap) {
 		t.Fatalf("target portal status=%d body=%s", page.Code, page.Body.String())
 	}
-	if sourceTile != targetTile && strings.Contains(page.Body.String(), sourceTile) {
-		t.Fatal("target portal must not keep the previous tenant map tiles")
+	if sourceMap != targetMap && strings.Contains(page.Body.String(), sourceMap) {
+		t.Fatal("target portal must not keep the previous tenant map link")
 	}
 	if strings.Contains(page.Body.String(), "Standort nicht hinterlegt") {
 		t.Fatal("target portal with coordinates must render its map instead of the fallback")

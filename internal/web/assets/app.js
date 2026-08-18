@@ -473,3 +473,54 @@
     window.print();
   });
 })();
+
+// The portal shell renders TWO <main> elements and shows one per breakpoint: .desktop-main
+// (hidden below 760px) and .mobile-content (hidden above). A plain href="#main-content" skip
+// link therefore pointed at a display:none element on every phone — the widths where a skip
+// link matters most — and Enter moved the hash but never the focus. Native fragment
+// navigation cannot express "the visible one", so resolve it here: focus the first skip
+// target that actually has a rendered box, and fall back to the fragment otherwise.
+(function () {
+  var link = document.querySelector("a.skip-link");
+  if (!link) return;
+  link.addEventListener("click", function (event) {
+    var targets = document.querySelectorAll("[data-skip-target]");
+    for (var i = 0; i < targets.length; i++) {
+      var el = targets[i];
+      if (el.getClientRects().length) {
+        event.preventDefault();
+        if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "-1");
+        el.focus();
+        // Keep the URL fragment meaningful for the visible target too.
+        if (el.id && window.history && history.replaceState) history.replaceState(null, "", "#" + el.id);
+        return;
+      }
+    }
+  });
+})();
+
+// The templ shell's mobile menu is a native <details class="menu"> in .mobile-head. The
+// Escape/outside-click block above is guarded by a legacy #mobile-menu-toggle that templ
+// never renders, so on every templ page it was dead code and the menu had NO keyboard
+// dismissal: a phone user could open it and not close it with Escape. Native <details>
+// gives open/close on the summary for free; it does not give Escape, outside-click, or
+// focus return, so those are supplied here.
+(function () {
+  var menu = document.querySelector(".mobile-head details.menu");
+  if (!menu) return;
+  var summary = menu.querySelector("summary");
+  function close(returnFocus) {
+    if (!menu.open) return;
+    menu.open = false;
+    if (returnFocus && summary) summary.focus({ preventScroll: true });
+  }
+  menu.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape" || !menu.open) return;
+    event.preventDefault();
+    event.stopPropagation();
+    close(true);
+  });
+  document.addEventListener("click", function (event) {
+    if (menu.open && !menu.contains(event.target)) close(false);
+  });
+})();
