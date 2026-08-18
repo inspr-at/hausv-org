@@ -68,6 +68,14 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "migrate-data" {
+		if err := runMigrateData(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("data migration did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		target := "http://127.0.0.1:8080/healthz"
 		if len(os.Args) > 2 {
