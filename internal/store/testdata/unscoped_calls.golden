@@ -1,3 +1,4 @@
+cmd/hausv-org/migrate_data.go	runMigrateData	literal	data mover: copies every tenant's rows from SQLite into an empty PostgreSQL target before the cutover; there is no request and no tenant in scope, and a fail-closed policy would otherwise refuse every insert
 internal/dbtest/dbtest.go	MaintenanceView	literal	test fixtures and assertions read and write outside every tenant lane
 internal/energy/storage.go	(*SQLStore).PurgeExpired	literal	retention sweep over every tenant's expired energy imports, intervals and assessments: the boot path that calls it has no tenant in scope
 internal/energy/storage.go	(*SQLStore).PutImport	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
