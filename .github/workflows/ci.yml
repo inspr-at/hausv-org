@@ -85,6 +85,9 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      - name: Boot app on PostgreSQL
+        run: go test ./internal/server -run '^TestBootsOnPostgres$' -count=1
+
       - name: Test (race)
         run: go test -race ./...
 
