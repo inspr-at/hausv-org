@@ -453,9 +453,27 @@
       rebuild("");
     };
     if (consumerDialog) consumerDialog.addEventListener("close", function () {
-      if (!wrap._energyFlowPending) return;
+      // openConsumerDialog stores the trigger on _returnFocus, but nothing ever read it, so
+      // closing the dialog left focus on <body> and a keyboard user lost their place. Native
+      // <dialog> restoration cannot cover for that here: this dialog deliberately moves focus
+      // inside itself (the name field on open, the remove button when a delete is cancelled).
+      // announcements.js and building-settings.js both restore their trigger explicitly; this
+      // one only looked as though it did.
+      var target = consumerDialog._returnFocus;
+      consumerDialog._returnFocus = null;
+      var restoreFocus = function () {
+        var node = target;
+        // A pending change rebuilds the flow list, which detaches the original button. Falling
+        // back to the equivalent trigger keeps focus in the list instead of dropping it.
+        if (!node || !node.isConnected) node = wrap.querySelector("button.energy-flow-main");
+        if (node && typeof node.focus === "function") node.focus();
+      };
+      if (!wrap._energyFlowPending) {
+        restoreFocus();
+        return;
+      }
       wrap._energyFlowPending = false;
-      window.setTimeout(function () { rebuild(""); }, 0);
+      window.setTimeout(function () { rebuild(""); restoreFocus(); }, 0);
     });
 
     function persist(previousOrder, focusConsumerID) {
