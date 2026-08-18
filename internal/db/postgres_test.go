@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -113,11 +115,13 @@ func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 		t.Fatal("target schema has no tenant-bound tables")
 	}
 	seedEveryTenantTable(t, database, tables)
-	assertUnscopedSessionIsTheMaintenanceView(t, database, tables)
+	assertUnscopedSessionSeesNothingAndWritesNothing(t, database, tables)
+	assertOnlyTheDeclaredMaintenanceLaneSeesEverything(t, database, tables)
 	assertPooledConnectionLosesTenantScope(t, database)
 	assertOtherTenantCannotSeeRows(t, database, tables)
-	assertRowsWithoutAnIdentityBelongToNobody(t, database)
-	assertOrphanRowCanBeAdoptedOnceAndNeverRepointed(t, database)
+	assertTenantLaneCannotWriteAnotherTenantsRow(t, database)
+	assertNoGovernedRowCanExistWithoutAnIdentity(t, database, tables)
+	assertPreTenantReservationBelongsToNobodyUntilAdopted(t, database)
 }
 
 func isolatedPostgresSchema(t *testing.T, dsn string) string {
@@ -247,75 +251,262 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	}
 }
 
-// assertUnscopedSessionIsTheMaintenanceView pins what migration 0003 changed.
+// assertUnscopedSessionSeesNothingAndWritesNothing pins what migration 0006
+// changed, and it is the assertion migration 0003 said it could not make yet.
 //
-// Under 0002 an unscoped session saw only rows with a NULL tenant_id, which read
-// as "fail closed" but was an accident: it was true only because nothing wrote
-// tenant_id. Now that every writer does, the same policy would have hidden the
-// entire database from the application, which issues every query on an unscoped
-// pooled connection.
+// Under 0003 an unscoped session — one carrying neither hausv.tenant_id nor
+// hausv.cross_tenant — was the maintenance view and saw everything, because the
+// application issued every query on an unscoped pooled connection and a policy
+// that hid rows from it would have hidden the whole database. Every SQL surface
+// on the serve path now runs on a lane, so the escape moved from "declared
+// nothing" to "declared cross-tenant", and the process pool — which declares
+// nothing — reads zero rows from every governed table and cannot write one.
 //
-// So the escape moved from the row to the session, and this is the assertion
-// that says so out loud: an unscoped session is the maintenance view and sees
-// everything. It is NOT fail-closed, and pretending otherwise in a test name
-// would be the more dangerous mistake. The isolation that matters — one scoped
-// session cannot see another tenant, and un-owned rows belong to nobody — is
-// asserted separately below.
-func assertUnscopedSessionIsTheMaintenanceView(t *testing.T, database *sql.DB, tables []string) {
+// The tenant registry is the deliberate exception (0002/0003/0006 all exclude
+// it): the boot path mints identities on the pool before any lane exists.
+func assertUnscopedSessionSeesNothingAndWritesNothing(t *testing.T, database *sql.DB, tables []string) {
 	t.Helper()
+	if got := scopeOfSession(t, database); got != "" {
+		t.Fatalf("the process pool carries a scope %q; this assertion is about an undeclared session", got)
+	}
 	for _, table := range tables {
 		var count int
 		if err := database.QueryRow(`SELECT count(*) FROM ` + table).Scan(&count); err != nil {
 			t.Fatalf("unscoped query %s: %v", table, err)
 		}
-		if count != 1 {
-			t.Fatalf("unscoped %s returned %d rows, want the single seeded row", table, count)
+		if count != 0 {
+			t.Fatalf("unscoped %s returned %d rows, want 0: an undeclared session must be fail-closed", table, count)
+		}
+		// The write side, per statement kind. INSERT is refused by WITH CHECK;
+		// UPDATE and DELETE simply find nothing to touch, because USING hides
+		// every row from them.
+		_, err := database.Exec(`INSERT INTO `+table+`(tenant_id) VALUES($1)`, tenantA)
+		if code := sqlState(err); code != "42501" {
+			t.Fatalf("unscoped INSERT into %s: err=%v (SQLSTATE %q), want the policy's 42501", table, err, code)
+		}
+		for _, statement := range []string{
+			`UPDATE ` + table + ` SET tenant_id=tenant_id`,
+			`DELETE FROM ` + table,
+		} {
+			result, err := database.Exec(statement)
+			if err != nil {
+				t.Fatalf("unscoped %q: %v", statement, err)
+			}
+			if affected, _ := result.RowsAffected(); affected != 0 {
+				t.Fatalf("unscoped %q touched %d rows, want 0", statement, affected)
+			}
+		}
+	}
+	var tenants int
+	if err := database.QueryRow(`SELECT count(*) FROM tenant`).Scan(&tenants); err != nil {
+		t.Fatalf("unscoped query tenant: %v", err)
+	}
+	if tenants != 2 {
+		t.Fatalf("the tenant registry must stay reachable from the pool, saw %d rows, want 2", tenants)
+	}
+}
+
+// assertOnlyTheDeclaredMaintenanceLaneSeesEverything is the escape hatch, and
+// its exact shape: hausv.cross_tenant='on', the value db.Scoped.Unscoped sends
+// in the startup packet — not merely "set", not any other spelling.
+func assertOnlyTheDeclaredMaintenanceLaneSeesEverything(t *testing.T, database *sql.DB, tables []string) {
+	t.Helper()
+	for _, tc := range []struct {
+		declared string
+		want     int
+	}{
+		{declared: "on", want: 1},
+		{declared: "off", want: 0},
+		{declared: "yes", want: 0},
+		{declared: "ON", want: 0},
+		{declared: "", want: 0},
+	} {
+		tx, err := database.BeginTx(t.Context(), nil)
+		if err != nil {
+			t.Fatalf("begin declared transaction: %v", err)
+		}
+		// The value has been chosen from a fixed list above; SET LOCAL does not
+		// take parameters.
+		if _, err := tx.Exec(`SET LOCAL hausv.cross_tenant = '` + tc.declared + `'`); err != nil {
+			tx.Rollback()
+			t.Fatalf("declare cross_tenant=%q: %v", tc.declared, err)
+		}
+		for _, table := range tables {
+			var count int
+			if err := tx.QueryRow(`SELECT count(*) FROM ` + table).Scan(&count); err != nil {
+				tx.Rollback()
+				t.Fatalf("cross_tenant=%q query %s: %v", tc.declared, table, err)
+			}
+			if count != tc.want {
+				tx.Rollback()
+				t.Fatalf("cross_tenant=%q sees %d rows in %s, want %d", tc.declared, count, table, tc.want)
+			}
+		}
+		tx.Rollback()
+	}
+}
+
+// assertTenantLaneCannotWriteAnotherTenantsRow is the write half of isolation:
+// WITH CHECK refuses an INSERT that names another tenant, and USING hides the
+// other tenant's rows from UPDATE and DELETE.
+func assertTenantLaneCannotWriteAnotherTenantsRow(t *testing.T, database *sql.DB) {
+	t.Helper()
+	tx, err := BeginTenantTx(t.Context(), database, tenantB, nil)
+	if err != nil {
+		t.Fatalf("begin tenant B transaction: %v", err)
+	}
+	_, err = tx.Exec(`INSERT INTO contacts(tenant_id, id) VALUES($1, 'smuggled')`, tenantA)
+	// A failed statement poisons the transaction on PostgreSQL, and the pool
+	// under this test has ONE connection: the rest needs a fresh transaction and
+	// this one must be released first, or the next Begin blocks forever.
+	tx.Rollback()
+	if code := sqlState(err); code != "42501" {
+		t.Fatalf("tenant B inserted a row for tenant A: err=%v (SQLSTATE %q), want 42501", err, code)
+	}
+	tx, err = BeginTenantTx(t.Context(), database, tenantB, nil)
+	if err != nil {
+		t.Fatalf("begin second tenant B transaction: %v", err)
+	}
+	defer tx.Rollback()
+	for _, statement := range []string{
+		`UPDATE contacts SET active=false WHERE tenant_id='` + tenantA + `'`,
+		`DELETE FROM contacts WHERE tenant_id='` + tenantA + `'`,
+	} {
+		result, err := tx.Exec(statement)
+		if err != nil {
+			t.Fatalf("tenant B %q: %v", statement, err)
+		}
+		if affected, _ := result.RowsAffected(); affected != 0 {
+			t.Fatalf("tenant B %q touched %d of tenant A's rows", statement, affected)
 		}
 	}
 }
 
-// assertRowsWithoutAnIdentityBelongToNobody is the leak 0002 had. A row with a
-// NULL tenant_id used to satisfy every scoped tenant's policy, so tenant B was
-// served tenant A's un-backfilled rows.
-func assertRowsWithoutAnIdentityBelongToNobody(t *testing.T, database *sql.DB) {
+// assertNoGovernedRowCanExistWithoutAnIdentity is the loud half of 0006: NOT
+// NULL on every governed table but the pre-tenant one, read from the catalog
+// AND exercised, because the migration is catalog-driven and a table it missed
+// would otherwise be found by an orphan in production rather than here.
+//
+// home_reservations is the stated exemption. A reservation precedes the house,
+// so its identity is minted at activation; it is asserted nullable HERE so that
+// widening the exemption is a visible change to this list, not a drift.
+func assertNoGovernedRowCanExistWithoutAnIdentity(t *testing.T, database *sql.DB, tables []string) {
 	t.Helper()
-	if _, err := database.Exec(`INSERT INTO contacts(tenant_id, id) VALUES(NULL, 'orphan')`); err != nil {
-		t.Fatalf("seed orphan row: %v", err)
+	for _, table := range tables {
+		var notNull bool
+		if err := database.QueryRow(`
+			SELECT a.attnotnull FROM pg_attribute a
+			JOIN pg_class c ON c.oid=a.attrelid
+			JOIN pg_namespace n ON n.oid=c.relnamespace
+			WHERE n.nspname=current_schema() AND c.relname=$1 AND a.attname='tenant_id'`, table).Scan(&notNull); err != nil {
+			t.Fatalf("inspect %s.tenant_id: %v", table, err)
+		}
+		wantNotNull := table != "home_reservations"
+		if notNull != wantNotNull {
+			t.Fatalf("%s.tenant_id NOT NULL = %v, want %v", table, notNull, wantNotNull)
+		}
 	}
-	for _, tenant := range []string{tenantA, tenantB} {
+	// Exercised, on the one lane the policy lets through, so the refusal is the
+	// column's and not the policy's.
+	tx, err := database.BeginTx(t.Context(), nil)
+	if err != nil {
+		t.Fatalf("begin maintenance transaction: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
+		t.Fatalf("declare maintenance lane: %v", err)
+	}
+	_, err = tx.Exec(`INSERT INTO contacts(tenant_id, id) VALUES(NULL, 'orphan')`)
+	if code := sqlState(err); code != "23502" {
+		t.Fatalf("an orphan row was accepted: err=%v (SQLSTATE %q), want 23502", err, code)
+	}
+}
+
+// assertPreTenantReservationBelongsToNobodyUntilAdopted keeps, for the one
+// table that still admits a NULL tenant_id, the two properties 0003 established
+// on every table: an identity-less row is visible to NO tenant lane and only to
+// the maintenance lane, and it can be given an identity once — activation is
+// exactly that transition — but never re-pointed or erased afterwards.
+func assertPreTenantReservationBelongsToNobodyUntilAdopted(t *testing.T, database *sql.DB) {
+	t.Helper()
+	maintenance := func(statement string, args ...any) (sql.Result, error) {
+		tx, err := database.BeginTx(t.Context(), nil)
+		if err != nil {
+			t.Fatalf("begin maintenance transaction: %v", err)
+		}
+		defer tx.Rollback()
+		if _, err := tx.Exec(`SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
+			t.Fatalf("declare maintenance lane: %v", err)
+		}
+		result, err := tx.Exec(statement, args...)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			t.Fatalf("commit maintenance transaction: %v", err)
+		}
+		return result, nil
+	}
+	if _, err := maintenance(`INSERT INTO home_reservations(slug, tenant_id) VALUES('pre-tenant', NULL)`); err != nil {
+		t.Fatalf("seed pre-tenant reservation: %v", err)
+	}
+	countAs := func(tenant string) int {
 		tx, err := BeginTenantTx(t.Context(), database, tenant, nil)
 		if err != nil {
 			t.Fatalf("begin scoped transaction: %v", err)
 		}
+		defer tx.Rollback()
 		var count int
-		if err := tx.QueryRow(`SELECT count(*) FROM contacts WHERE id='orphan'`).Scan(&count); err != nil {
-			tx.Rollback()
-			t.Fatalf("scoped orphan query: %v", err)
+		if err := tx.QueryRow(`SELECT count(*) FROM home_reservations WHERE slug='pre-tenant'`).Scan(&count); err != nil {
+			t.Fatalf("scoped reservation query: %v", err)
 		}
-		tx.Rollback()
-		if count != 0 {
-			t.Fatalf("tenant %s saw %d rows it does not own", tenant, count)
+		return count
+	}
+	for _, tenant := range []string{tenantA, tenantB} {
+		if count := countAs(tenant); count != 0 {
+			t.Fatalf("tenant %s saw %d pre-tenant reservations it does not own", tenant, count)
 		}
+	}
+	if _, err := maintenance(`UPDATE home_reservations SET tenant_id=$1 WHERE slug='pre-tenant'`, tenantB); err != nil {
+		t.Fatalf("a pre-tenant reservation must be adoptable at activation: %v", err)
+	}
+	if got := countAs(tenantB); got != 1 {
+		t.Fatalf("after adoption tenant B sees %d reservations, want 1", got)
+	}
+	if got := countAs(tenantA); got != 0 {
+		t.Fatalf("after adoption tenant A sees %d of tenant B's reservations", got)
+	}
+	if _, err := maintenance(`UPDATE home_reservations SET tenant_id=$1 WHERE slug='pre-tenant'`, tenantA); err == nil {
+		t.Fatal("re-pointing an owned reservation at another tenant must stay rejected")
+	}
+	if _, err := maintenance(`UPDATE home_reservations SET tenant_id=NULL WHERE slug='pre-tenant'`); err == nil {
+		t.Fatal("erasing an identity must stay rejected")
+	}
+	if _, err := maintenance(`DELETE FROM home_reservations WHERE slug='pre-tenant'`); err != nil {
+		t.Fatalf("clean up pre-tenant reservation: %v", err)
 	}
 }
 
-// assertOrphanRowCanBeAdoptedOnceAndNeverRepointed covers the other half of
-// migration 0003: the immutability trigger used to reject NULL -> value, which
-// made a row the backfill missed permanently unrepairable.
-func assertOrphanRowCanBeAdoptedOnceAndNeverRepointed(t *testing.T, database *sql.DB) {
+// scopeOfSession reads the tenant scope a handle's session carries, empty when
+// none.
+func scopeOfSession(t *testing.T, database *sql.DB) string {
 	t.Helper()
-	if _, err := database.Exec(`UPDATE contacts SET tenant_id=$1 WHERE id='orphan'`, tenantB); err != nil {
-		t.Fatalf("an un-owned row must be adoptable: %v", err)
+	var scope string
+	if err := database.QueryRow(`SELECT coalesce(current_setting('hausv.tenant_id', true), '')`).Scan(&scope); err != nil {
+		t.Fatalf("read session scope: %v", err)
 	}
-	if _, err := database.Exec(`UPDATE contacts SET tenant_id=$1 WHERE id='orphan'`, tenantA); err == nil {
-		t.Fatal("re-pointing an owned row at another tenant must stay rejected")
+	return scope
+}
+
+// sqlState extracts the SQLSTATE of a PostgreSQL error, empty for nil or a
+// non-PostgreSQL error, so an assertion can name the exact refusal it wants
+// instead of accepting any error.
+func sqlState(err error) string {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code
 	}
-	if _, err := database.Exec(`UPDATE contacts SET tenant_id=NULL WHERE id='orphan'`); err == nil {
-		t.Fatal("erasing an identity must stay rejected")
-	}
-	if _, err := database.Exec(`DELETE FROM contacts WHERE id='orphan'`); err != nil {
-		t.Fatalf("clean up orphan row: %v", err)
-	}
+	return ""
 }
 
 func assertPooledConnectionLosesTenantScope(t *testing.T, database *sql.DB) {
@@ -334,9 +525,10 @@ func assertPooledConnectionLosesTenantScope(t *testing.T, database *sql.DB) {
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit scoped transaction: %v", err)
 	}
-	// The scope itself is now the thing to probe. Counting rows no longer
-	// distinguishes "scope was dropped" from "scope survived", because an
-	// unscoped session legitimately sees the same row; the setting does.
+	// The scope itself is the thing to probe, not a row count: since 0006 an
+	// unscoped session sees nothing, so a count of zero here would be
+	// indistinguishable from a scope that survived onto a session that then
+	// saw a tenant that owns no contacts. The setting says it directly.
 	var reusedPID int
 	var leakedScope string
 	if err := database.QueryRow(

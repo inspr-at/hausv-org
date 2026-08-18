@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -82,6 +83,13 @@ func TestEnergyReadsAddressRowsByTenantIdentityNotTheLabel(t *testing.T) {
 // name, mode and onboarding state.
 func TestARowFromThePreviousReleaseIsHealedByTheNextWrite(t *testing.T) {
 	database, lanes := openEnergyLanes(t)
+	// On PostgreSQL the rows this seeds cannot exist since migration 0006 made
+	// tenant_id NOT NULL; the helper proves that refusal, and with it there is
+	// nothing left here to assert on that engine. On SQLite — production, and
+	// the open rollback window — it proves the row IS accepted and carries on.
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	if _, err := store.EnsureTenantIdentities(t.Context(), database,
 		[]store.TenantIdentity{{Slug: "haus-a", Name: "Haus A"}}); err != nil {
 		t.Fatalf("boot: %v", err)

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
@@ -42,6 +43,13 @@ import (
 // by running the previous binary.
 func TestBackfillHealsTheRollbackWindowAcrossAFullCycle(t *testing.T) {
 	database, lanes := testLanes(t)
+	// On PostgreSQL the row this reproduces cannot exist since migration 0006
+	// made tenant_id NOT NULL; the helper proves that refusal, and with it there
+	// is nothing left here to assert on that engine. On SQLite — production, and
+	// the open rollback window — it proves the row IS accepted and carries on.
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC().Truncate(time.Second)
 
@@ -108,6 +116,9 @@ func TestBackfillHealsTheRollbackWindowAcrossAFullCycle(t *testing.T) {
 // repaired too, so the state the rules coped with no longer occurs.
 func TestBackfillCanonicalisesEveryStoredSpellingBeforeLinking(t *testing.T) {
 	database, lanes := testLanes(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	now := time.Now().UTC().Truncate(time.Second)
 	seedPaymentRow(t, database, "Demo", "u1", UnitPaymentStatusOpen, now)
 	seedPaymentRow(t, database, "demo ", "u2", UnitPaymentStatusPaid, now)
@@ -137,6 +148,9 @@ func TestBackfillCanonicalisesEveryStoredSpellingBeforeLinking(t *testing.T) {
 // state as the first and must not pay for the pass again.
 func TestBackfillIsIdempotentAfterCanonicalising(t *testing.T) {
 	database := testDB(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	now := time.Now().UTC().Truncate(time.Second)
 	seedPaymentRow(t, database, "Demo", "u1", UnitPaymentStatusOpen, now)
 
@@ -242,6 +256,9 @@ func TestBackfillRefusesASpellingThatCannotBeCanonicalised(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			database := testDB(t)
+			if dbtest.RollbackWindowClosed(t, database) {
+				return
+			}
 			tc.seed(t, database)
 
 			err := BackfillTenantIDs(t.Context(), database)
@@ -285,6 +302,9 @@ func TestBackfillRefusesASpellingThatCannotBeCanonicalised(t *testing.T) {
 // cannot resolve, which is the state migration 0033 already shipped once.
 func TestBackfillRefusesToCanonicaliseALabelTiedByAForeignKey(t *testing.T) {
 	database := testDB(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := database.ExecContext(t.Context(),
 		`INSERT INTO home_profiles(tenant_slug,home_key,created_at,updated_at) VALUES($1,'default',$2,$3)`,

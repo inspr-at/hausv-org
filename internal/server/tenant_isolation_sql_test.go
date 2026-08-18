@@ -216,7 +216,7 @@ func TestTwoTenantsCannotSeeEachOtherThroughTheHandlerChain(t *testing.T) {
 
 	// And the rows really do carry distinct identities — a page that renders
 	// nothing would satisfy the assertion above without proving anything.
-	assertOneRowPerTenant(t, testPool(t, a), "announcements", refs["haus-a"].ID, refs["haus-b"].ID)
+	assertOneRowPerTenant(t, testFixtureView(t, a), "announcements", refs["haus-a"].ID, refs["haus-b"].ID)
 }
 
 // TestSessionOfOneTenantCannotDriveAnotherTenantsPath pins the other half: the
@@ -260,6 +260,19 @@ func testPool(t *testing.T, a *app) *sql.DB {
 		t.Fatalf("app.pool is %T, not the *sql.DB the fixture needs", a.pool)
 	}
 	return pool
+}
+
+// testFixtureView is the handle fixtures and assertions read governed tables
+// through: the maintenance lane of the app's own seam, which sees across every
+// tenant and is still not the tenant lane a handler writes on. It is not
+// testPool: since PostgreSQL migration 0006 the process pool sees nothing on a
+// governed table, which is a property tests assert, not one they read through.
+func testFixtureView(t *testing.T, a *app) *sql.DB {
+	t.Helper()
+	if a.scopedDB == nil {
+		t.Fatal("app has no scoped seam; there is no maintenance lane to read through")
+	}
+	return dbtest.MaintenanceView(t, a.scopedDB)
 }
 
 func assertOneRowPerTenant(t *testing.T, database *sql.DB, table string, tenantIDs ...string) {

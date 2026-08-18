@@ -1,11 +1,14 @@
 package store
 
 import (
+	"errors"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 
 	appdb "github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
@@ -98,7 +101,13 @@ func TestStoreTestsRunOnRealLanes(t *testing.T) {
 	}
 
 	if lanes.For(tenant) == appdb.Handle(database) {
-		t.Fatal("the stores were handed the process pool, so nothing in this suite exercises a lane")
+		t.Fatal("the stores were handed the fixture handle itself, so nothing in this suite exercises a tenant lane")
+	}
+	// The fixture handle is the maintenance lane, not the process pool: since
+	// migration 0006 the pool sees nothing, so a suite whose fixtures still
+	// went through it would seed nothing and count nothing.
+	if lanes.Unscoped("prove the fixture handle is the maintenance lane") != appdb.Handle(database) {
+		t.Fatal("the fixture handle is not the maintenance lane; on a fail-closed database it can neither seed nor assert")
 	}
 	var scope string
 	if err := lanes.For(tenant).QueryRow(`SELECT current_setting('hausv.tenant_id', true)`).Scan(&scope); err != nil {
@@ -128,44 +137,63 @@ func TestStoreTestsRunOnRealLanes(t *testing.T) {
 	}
 }
 
-// The tightening the conversion actually buys, stated as behaviour: a row with
-// no tenant_id is reachable from the maintenance lane and from NO tenant lane.
+// The tightening the flip actually buys, stated as behaviour: on PostgreSQL a
+// row with no tenant_id can no longer EXIST on a governed table. Not "is
+// reachable from the maintenance lane and from no tenant lane", which is what
+// this test pinned under migration 0003 — the schema refuses the row outright.
 //
-// This is the reason HealOrphanReason exists, pinned as a test rather than left
-// as a paragraph. If a later change makes a tenant lane able to see an orphan
-// row, every site naming HealOrphanReason can go back to For(tenant) — and this
-// test is what will say so, by failing.
-func TestATenantLaneCannotReachARowWithoutAnIdentity(t *testing.T) {
+// This is the reason HealOrphanReason can go back to For(tenant): the row it
+// was introduced to reach is unconstructible. That reversion is a follow-up,
+// made against this test rather than by assumption; the sites still name the
+// maintenance lane today and still succeed on it.
+//
+// The one governed table that keeps a nullable tenant_id is home_reservations,
+// which is pre-tenant by design (a reservation precedes the house). Its
+// identity-less rows are the last place the 0003 property still applies, and
+// it is pinned here in the same breath: reachable from the maintenance lane,
+// from no tenant lane.
+func TestARowWithoutAnIdentityCannotExistExceptAsAReservation(t *testing.T) {
 	if dbtest.Backend() != appdb.BackendPostgres {
-		t.Skip("row-level security exists only on PostgreSQL; SQLite has one pool and no policy")
+		t.Skip("row-level security and the NOT NULL flip exist only on PostgreSQL; SQLite has one pool, no policy, and an open rollback window")
 	}
 	database, lanes := testLanes(t)
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 
 	// Exactly the shape the previous release wrote: no tenant_id column value.
-	if _, err := database.ExecContext(t.Context(),
+	// The maintenance lane is the ONE handle the policy lets through, so what
+	// refuses this is the column, not the policy.
+	_, err := database.ExecContext(t.Context(),
 		`INSERT INTO unit_payment_status(tenant_slug, unit_id, status, updated_at, updated_by)
 		 VALUES($1,$2,$3,$4,$5)`,
-		tenant.Slug, "u1", UnitPaymentStatusOpen, now, "old@example.com"); err != nil {
-		t.Fatalf("seed the orphan row: %v", err)
+		tenant.Slug, "u1", UnitPaymentStatusOpen, now, "old@example.com")
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23502" {
+		t.Fatalf("an orphan row was accepted (err=%v); migration 0006 says tenant_id is NOT NULL and the row cannot exist", err)
 	}
 
+	// home_reservations: nullable on purpose, so the 0003 property is what
+	// holds there.
+	if _, err := database.ExecContext(t.Context(),
+		`INSERT INTO home_reservations(slug, household_name, owner_email, authorization_confirmed, status, created_at, updated_at)
+		 VALUES($1,$2,$3,$4,$5,$6,$7)`,
+		"pre-tenant", "Pre Tenant", "a@example.com", true, HomeReservationEmailPending, now, now); err != nil {
+		t.Fatalf("seed the pre-tenant reservation: %v", err)
+	}
 	var fromLane int
 	if err := lanes.For(tenant).QueryRow(
-		`SELECT count(*) FROM unit_payment_status WHERE unit_id=$1`, "u1").Scan(&fromLane); err != nil {
+		`SELECT count(*) FROM home_reservations WHERE slug=$1`, "pre-tenant").Scan(&fromLane); err != nil {
 		t.Fatalf("count from the tenant lane: %v", err)
 	}
 	if fromLane != 0 {
-		t.Fatalf("the tenant lane can see %d orphan rows; migration 0003 says it must see none", fromLane)
+		t.Fatalf("the tenant lane can see %d pre-tenant reservations; it must see none", fromLane)
 	}
-
 	var fromMaintenance int
-	if err := lanes.Unscoped("prove the orphan is reachable somewhere").QueryRow(
-		`SELECT count(*) FROM unit_payment_status WHERE unit_id=$1`, "u1").Scan(&fromMaintenance); err != nil {
+	if err := lanes.Unscoped("prove the reservation is reachable somewhere").QueryRow(
+		`SELECT count(*) FROM home_reservations WHERE slug=$1`, "pre-tenant").Scan(&fromMaintenance); err != nil {
 		t.Fatalf("count from the maintenance lane: %v", err)
 	}
 	if fromMaintenance != 1 {
-		t.Fatalf("the maintenance lane sees %d orphan rows, want 1: nothing could heal it", fromMaintenance)
+		t.Fatalf("the maintenance lane sees %d pre-tenant reservations, want 1: activation could not reach it", fromMaintenance)
 	}
 }

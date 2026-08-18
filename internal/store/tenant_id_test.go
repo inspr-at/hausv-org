@@ -195,6 +195,13 @@ func tenantIDTablesInSchema(ctx context.Context, database *sql.DB) ([]string, er
 // and no identity, because the migration ran before `tenant` had a single row.
 func TestTenantIDBackfillRepairsRowsWrittenBeforeAnyIdentityExisted(t *testing.T) {
 	database := dbtest.Open(t)
+	// On PostgreSQL the row this reproduces cannot exist since migration 0006
+	// made tenant_id NOT NULL; the helper proves that refusal, and with it there
+	// is nothing left here to assert on that engine. On SQLite — production, and
+	// the open rollback window — it proves the row IS accepted and carries on.
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	seedSlugOnlyRow(t, database, "announcements", "pre-identity", "a1")
 	seedSlugOnlyRow(t, database, "units", "pre-identity", "u1")
 
@@ -232,6 +239,9 @@ func TestTenantIDBackfillRepairsRowsWrittenBeforeAnyIdentityExisted(t *testing.T
 // empty, and "may be empty" is decided by counting rather than by assumption.
 func TestTenantIDVerificationRefusesToBootWithRowsThatHaveNoIdentity(t *testing.T) {
 	database := dbtest.Open(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	// An empty slug cannot be resolved to any identity and cannot have one
 	// minted for it, so this row is genuinely unrepairable — which is exactly
 	// the case the boot must refuse rather than serve.
@@ -256,6 +266,9 @@ func TestTenantIDVerificationRefusesToBootWithRowsThatHaveNoIdentity(t *testing.
 // re-mint. Re-minting would orphan every row referencing the previous identity.
 func TestTenantIDBackfillIsIdempotent(t *testing.T) {
 	database := dbtest.Open(t)
+	if dbtest.RollbackWindowClosed(t, database) {
+		return
+	}
 	seedSlugOnlyRow(t, database, "announcements", "demo", "a1")
 	configured := []TenantIdentity{{Slug: "demo", Name: "Demo"}}
 	if _, err := EnsureTenantIdentities(t.Context(), database, configured); err != nil {

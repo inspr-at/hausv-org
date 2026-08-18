@@ -2,11 +2,14 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const (
@@ -105,8 +108,9 @@ func TestLaneCarriesTheSameStatementTimeoutAsTheProcessPool(t *testing.T) {
 
 // The startup-packet placement is what makes a session-reset hook unnecessary.
 // If any of these reset the scope, a pooled connection could be handed to the
-// next borrower unscoped — which under the maintenance-view policy is the whole
-// database — so the claim is measured rather than assumed.
+// next borrower unscoped — which under migration 0003 was the whole database
+// and since 0006 is nothing at all; either is the wrong tenant's answer — so the
+// claim is measured rather than assumed.
 func TestLaneScopeSurvivesEveryResetAConnectionCanBeGiven(t *testing.T) {
 	scoped, _ := scopedPostgres(t)
 	lane := scoped.For(scopedTenantA)
@@ -158,8 +162,9 @@ func TestTransactionOnALaneInheritsTheLaneScope(t *testing.T) {
 }
 
 // A tenant id that is not a ULID cannot be allowed to become "no scope": under
-// the maintenance-view policy that is the entire database. It becomes a value no
-// row can carry instead.
+// migration 0003 that was the entire database, and since 0006 it is nothing —
+// which reads as fail-closed but is a lie about WHICH scope failed. It becomes a
+// value no row can carry instead, and stays that even if the policy moves again.
 func TestUnusableTenantIDFailsClosedInsteadOfUnscoped(t *testing.T) {
 	scoped, _ := scopedPostgres(t)
 	for _, bad := range []string{"", "   ", "demo", "01ARZ3NDEKTSV4RRFFQ69G5FA", strings.Repeat("Z", 26)} {
@@ -170,8 +175,10 @@ func TestUnusableTenantIDFailsClosedInsteadOfUnscoped(t *testing.T) {
 }
 
 // The maintenance lane declares itself in the startup packet, and the process
-// pool declares nothing — so once the policy flips, the process pool sees
-// nothing and only the lane that asked for it can cross tenants.
+// pool declares nothing — so under the flipped policy the process pool sees
+// nothing and only the lane that asked for it can cross tenants. That behaviour
+// is measured in TestTheFlipIsObservableThroughRealLanes below; this pins the
+// declarations themselves.
 func TestUnscopedLaneDeclaresItselfAndTheProcessPoolDoesNot(t *testing.T) {
 	scoped, database := scopedPostgres(t)
 
@@ -233,5 +240,69 @@ func TestSQLiteHandsBackTheOneProcessPool(t *testing.T) {
 		if handle != Handle(database) {
 			t.Fatalf("%s returned a different pool than the process pool", name)
 		}
+	}
+}
+
+// TestTheFlipIsObservableThroughRealLanes is migration 0006 measured through
+// the mechanism the application actually uses — lanes born with their scope in
+// the startup packet — rather than through SET LOCAL on the pool, which is how
+// TestPostgresTargetSchemaAndRLS drives the same policy. Both are needed: the
+// policy test proves the contract, this proves the lanes hit it.
+//
+// One tenant lane writes a row. Then:
+//   - the process pool, which declares nothing, reads zero rows and cannot
+//     insert one (SQLSTATE 42501) — under 0003 it read the row, which is how
+//     this test was watched failing before the flip;
+//   - the other tenant's lane reads zero rows and cannot insert one under the
+//     first tenant's identity;
+//   - the maintenance lane reads the row.
+//
+// The tenant registry, which the policy leaves alone, is readable from all of
+// them; the pool minted it.
+func TestTheFlipIsObservableThroughRealLanes(t *testing.T) {
+	scoped, database := scopedPostgres(t)
+	if _, err := database.Exec(`INSERT INTO tenant(tenant_id,slug,name) VALUES($1,'haus-a','Haus A'),($2,'haus-b','Haus B')`,
+		scopedTenantA, scopedTenantB); err != nil {
+		t.Fatalf("mint tenants on the pool: %v", err)
+	}
+	if _, err := scoped.For(scopedTenantA).Exec(`INSERT INTO contacts(tenant_id, id) VALUES($1, 'c1')`, scopedTenantA); err != nil {
+		t.Fatalf("tenant A lane cannot write its own row: %v", err)
+	}
+
+	count := func(name string, handle Handle) int {
+		t.Helper()
+		var n int
+		if err := handle.QueryRow(`SELECT count(*) FROM contacts`).Scan(&n); err != nil {
+			t.Fatalf("%s: count contacts: %v", name, err)
+		}
+		return n
+	}
+	if got := count("process pool", database); got != 0 {
+		t.Fatalf("the process pool sees %d contacts, want 0: an undeclared session must be fail-closed", got)
+	}
+	if got := count("tenant B lane", scoped.For(scopedTenantB)); got != 0 {
+		t.Fatalf("tenant B's lane sees %d of tenant A's contacts", got)
+	}
+	if got := count("tenant A lane", scoped.For(scopedTenantA)); got != 1 {
+		t.Fatalf("tenant A's lane sees %d contacts, want its own 1", got)
+	}
+	if got := count("maintenance lane", scoped.Unscoped("prove the declared lane crosses tenants")); got != 1 {
+		t.Fatalf("the maintenance lane sees %d contacts, want 1", got)
+	}
+
+	for name, handle := range map[string]Handle{
+		"process pool":  database,
+		"tenant B lane": scoped.For(scopedTenantB),
+	} {
+		_, err := handle.Exec(`INSERT INTO contacts(tenant_id, id) VALUES($1, 'smuggled')`, scopedTenantA)
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "42501" {
+			t.Fatalf("%s wrote a row under tenant A's identity: err=%v, want SQLSTATE 42501", name, err)
+		}
+	}
+
+	var tenants int
+	if err := database.QueryRow(`SELECT count(*) FROM tenant`).Scan(&tenants); err != nil || tenants != 2 {
+		t.Fatalf("the tenant registry must stay reachable from the pool: rows=%d err=%v", tenants, err)
 	}
 }
