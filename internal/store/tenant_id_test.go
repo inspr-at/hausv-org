@@ -42,10 +42,11 @@ var tenantSlugPredicate = regexp.MustCompile(`(?i)tenant_slug\s*(=|<>|!=|<|>|\bI
 //
 // Where it is blind, stated here rather than discovered later:
 //
-//   - It only reads internal/store. internal/energy still filters on
-//     tenant_slug by design (its Storage API has no tenant identity to filter
-//     by yet) and internal/server's import ledger was switched by hand. Neither
-//     is covered.
+//   - It only reads internal/store. internal/energy filters on tenant_id and
+//     runs on lanes, but has its own checks (storage_tenant_id_test.go,
+//     storage_tenant_identity_reads_test.go) rather than this one, and
+//     internal/server's import ledger was switched by hand. Neither is covered
+//     here.
 //   - It sees only string LITERALS. A predicate assembled from a variable at
 //     runtime — home_connector.go passes its WHERE clause in as a Go string —
 //     is invisible to it.

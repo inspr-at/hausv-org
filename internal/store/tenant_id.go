@@ -133,17 +133,24 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 // collide with a row the previous release wrote. The tenant-bound tables are
 // read from the schema by TestEveryOrphanAdoptingUpsertNamesTheMaintenanceLane,
 // which demands this lane for every DO UPDATE upsert on them unless the table
-// carries a stated exemption; the natural-key class that is left is EIGHT
-// tables, not the three this comment first claimed:
+// carries a stated exemption; the natural-key class that is left is FOURTEEN
+// tables, not the three this comment first claimed — eight here and in the
+// import ledger, six in internal/energy:
 //
-//	unit_payment_status     (tenant_slug, unit_id)
-//	announcement_reads      (tenant_slug, email)
-//	units                   (tenant_slug, id)           — ids are chosen, not minted
-//	home_connectors         (slug)
-//	home_connector_readings (slug, entity_id)
-//	home_portals            (slug)
-//	house_memberships       (person_id, tenant_slug)
-//	integration_imports     (tenant_slug, format, file_digest) — written from internal/server
+//	unit_payment_status      (tenant_slug, unit_id)
+//	announcement_reads       (tenant_slug, email)
+//	units                    (tenant_slug, id)           — ids are chosen, not minted
+//	home_connectors          (slug)
+//	home_connector_readings  (slug, entity_id)
+//	home_portals             (slug)
+//	house_memberships        (person_id, tenant_slug)
+//	integration_imports      (tenant_slug, format, file_digest) — written from internal/server
+//	home_profiles            (tenant_slug, home_key)              — internal/energy
+//	energy_assets            (id)                                 — ids are chosen (StableAssetID)
+//	energy_entity_mappings   (tenant_slug, home_key, entity_id)
+//	energy_intervals         (tenant_slug, home_key, starts_at, source)
+//	energy_maintenance_plans (tenant_slug, home_key, asset_id)
+//	energy_measures          (tenant_slug, home_key, issue_id)
 //
 // Two of them (home_portals, and house_memberships on three of its four paths)
 // reach the maintenance lane under a different reason: they run in transactions
@@ -167,8 +174,9 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 // constant goes back to For(tenant). Until then, removing this is what re-opens
 // HAUSV-145's "wrote a row it cannot see".
 //
-// Exported because the import ledger in internal/server is one of the eight and
-// names its lane with the same words; the golden inventory records both.
+// Exported because the import ledger in internal/server and the six energy
+// upserts in internal/energy name their lane with the same words; the golden
+// inventory records all of them.
 const HealOrphanReason = "adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL"
 
 // tenantIDQuerier is the subset of *sql.DB and *sql.Tx the resolver needs, so

@@ -113,7 +113,7 @@ func newSQLTestApp(t *testing.T, tenants []sqlTestTenant, profiles ...userProfil
 	a.profileOverlays = newSQLProfileOverlayStore(a.tenantDB)
 	a.identityStore = newSQLIdentityStore(a.tenantDB)
 	a.inviteStore = a.identityStore
-	a.energyStore = energy.NewSQLStore(database)
+	a.energyStore = energy.NewSQLStore(a.tenantDB)
 	a.homeReservations = storepkg.NewSQLHomeReservationStore(a.tenantDB)
 	a.homePortals = storepkg.NewSQLHomePortalStore(a.tenantDB)
 	a.homeConnectors = storepkg.NewSQLHomeConnectorStore(a.tenantDB)

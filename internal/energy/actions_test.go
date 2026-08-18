@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -16,7 +15,7 @@ func TestHomeProfileUnitScopeStorageParity(t *testing.T) {
 			return energy.NewMemoryStore()
 		},
 		"sql": func(t *testing.T) energy.Storage {
-			return energy.NewSQLStore(dbtest.Open(t))
+			return openEnergyStore(t)
 		},
 	}
 	for name, factory := range factories {
@@ -56,7 +55,7 @@ func TestEnergyActionStorageParityAndHistory(t *testing.T) {
 			return energy.NewMemoryStore()
 		},
 		"sql": func(t *testing.T) energy.Storage {
-			return energy.NewSQLStore(dbtest.Open(t))
+			return openEnergyStore(t)
 		},
 	}
 	for name, factory := range factories {

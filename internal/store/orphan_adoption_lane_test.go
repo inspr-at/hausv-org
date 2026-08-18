@@ -138,6 +138,8 @@ const (
 	laneFor laneClass = "for(tenant)"
 	// laneRaw is an executor that is not a lane at all: a *sql.DB field or a
 	// value the seam never produced. Outside every guard the seam provides.
+	// Nothing in the tree is allowed on it any more; it stays a class so that
+	// a raw executor is REPORTED as one rather than as "unresolved".
 	laneRaw laneClass = "raw pool"
 )
 
@@ -187,24 +189,15 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 		"and the whole-profile writes (a UserProfile spans every house and the same transaction touches persons, which has no tenant_id). " +
 		"All of them are on the maintenance lane, so the orphan is reachable; none of them will revert to For(tenant)."},
 
-	// internal/energy is the one SQL surface still outside the lane seam: its
-	// store holds the process pool and every statement, including its seven
-	// healing upserts on these six tables, runs on it. Under migration 0003 an
-	// unscoped session sees everything, so today the heal works. Under a
-	// fail-closed policy the raw pool would see and write nothing — a flip
-	// blocker in its own right — and converting energy to lanes is what retires
-	// these entries. When that happens this exemption goes stale and this test
-	// says so.
-	"energy_assets":            {allowed: []laneClass{laneRaw}, why: energyRawReason},
-	"energy_entity_mappings":   {allowed: []laneClass{laneRaw}, why: energyRawReason},
-	"energy_intervals":         {allowed: []laneClass{laneRaw}, why: energyRawReason},
-	"energy_maintenance_plans": {allowed: []laneClass{laneRaw}, why: energyRawReason},
-	"energy_measures":          {allowed: []laneClass{laneRaw}, why: energyRawReason},
-	"home_profiles":            {allowed: []laneClass{laneRaw}, why: energyRawReason},
+	// internal/energy has no entry, and that is the point of its absence: its
+	// seven coalescing upserts on six tables (home_profiles, energy_assets,
+	// energy_entity_mappings, energy_intervals, energy_maintenance_plans,
+	// energy_measures) all conflict on natural keys, all run on
+	// Unscoped(store.HealOrphanReason), and are held to it by enumeration —
+	// exactly like the store's own. Until the package moved onto lanes the six
+	// sat here under a "raw pool" exemption that was designed to go stale the
+	// day they did; it did, this test said so, and the entries came out.
 }
-
-const energyRawReason = "internal/energy runs on the process pool, outside the lane seam; its upserts coalesce tenant_id and heal today only " +
-	"because migration 0003 lets an unscoped session through. Not a lane decision — a package that has not been converted yet."
 
 // upsertLane is one lane an upsert was traced to, with where the decision was
 // made so a failure names the function to change.

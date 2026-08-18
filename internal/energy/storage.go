@@ -725,7 +725,14 @@ func (c *tenantIdentityCache) id(q tenantid.Querier, slug string) string {
 }
 
 type SQLStore struct {
-	db      *sql.DB
+	// db is the lane seam, not a pool. It has For and Unscoped and nothing
+	// else, so every statement below names the lane it runs on before it
+	// compiles: For(tenant) for the reads and the tenant-addressed writes,
+	// Unscoped(store.HealOrphanReason) for the seven upserts that coalesce a
+	// legacy NULL tenant_id, and Unscoped(<retention reason>) for the one
+	// sweep that has no tenant at all. Retyping this field from *sql.DB is
+	// what found all 28 sites; nothing else here changed shape.
+	db      *store.TenantDB
 	homeKey string
 	// tenant is the reference the caller was authorized with. When it is set,
 	// every predicate below filters on tenant.ID without re-deriving the
@@ -734,11 +741,26 @@ type SQLStore struct {
 	identities *tenantIdentityCache
 }
 
-func NewSQLStore(db *sql.DB) *SQLStore {
+func NewSQLStore(db *store.TenantDB) *SQLStore {
 	if db == nil {
 		return nil
 	}
 	return &SQLStore{db: db, identities: newTenantIdentityCache()}
+}
+
+// tenantRegistryReason is the lane decision for resolving a slug to its
+// identity, spelled with the same words internal/store uses so the cross-tenant
+// inventory shows one decision, not two. The `tenant` table is the registry
+// migration 0003 leaves outside row-level security, and the lookup necessarily
+// happens BEFORE there is an identity to scope to.
+const tenantRegistryReason = "slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to"
+
+// registry is the handle every slug-to-identity resolution and every mint runs
+// on. It is the one Unscoped call in this package that is not a heal or a
+// retention sweep, and it exists so that resolution is threaded into exactly
+// one place rather than into 28 statements.
+func (s *SQLStore) registry() tenantid.Querier {
+	return s.db.Unscoped(tenantRegistryReason)
 }
 
 func (s *SQLStore) ForHome(homeKey string) Storage {
@@ -773,30 +795,52 @@ var ErrTenantScopeMismatch = errors.New("energy: tenant scope mismatch")
 // through tenantid, which is the same resolver every writer already uses, so
 // there is still exactly one definition of who a slug is.
 //
-// A slug with no identity yet resolves to "", which matches no row. That is the
-// intended answer and not an error: a caller that cannot be identified must
-// read nothing rather than everything.
-func (s *SQLStore) scope(tenantSlug string) (string, error) {
+// A slug with no identity yet resolves to a reference with an empty ID, which
+// matches no row AND lands on the lane no row can match — TenantDB.For turns an
+// unusable reference into the sentinel scope. That is the intended answer and
+// not an error: a caller that cannot be identified must read nothing rather
+// than everything.
+//
+// The reference is what the statement's lane is taken from (s.db.For(tenant))
+// and what its predicate binds (tenant.ID), so the two cannot disagree.
+func (s *SQLStore) scope(tenantSlug string) (store.TenantRef, error) {
 	slug := normalizeSlug(tenantSlug)
 	if bound := normalizeSlug(s.tenant.Slug); s.tenant.ID != "" && bound != "" {
 		if bound != slug {
-			return "", fmt.Errorf("%w: bound to %q, asked for %q", ErrTenantScopeMismatch, bound, slug)
+			return store.TenantRef{}, fmt.Errorf("%w: bound to %q, asked for %q", ErrTenantScopeMismatch, bound, slug)
 		}
-		return s.tenant.ID, nil
+		return store.TenantRef{ID: s.tenant.ID, Slug: bound}, nil
 	}
 	if slug == "" {
-		return "", nil
+		return store.TenantRef{}, nil
 	}
-	return s.identities.id(s.db, slug), nil
+	return store.TenantRef{ID: s.identities.id(s.registry(), slug), Slug: slug}, nil
+}
+
+// identity resolves the reference a WRITE is stamped with. Unlike scope it
+// mints: a house activated through the home portal, or replayed from a seed,
+// reaches its first energy write before the boot pass ever saw it, and the row
+// must still carry an identity. The bound reference is checked first so a
+// write cannot mint under a slug the caller was not authorized for.
+func (s *SQLStore) identity(tenantSlug string) (store.TenantRef, error) {
+	slug := normalizeSlug(tenantSlug)
+	if _, err := s.scope(slug); err != nil {
+		return store.TenantRef{}, err
+	}
+	id, err := tenantid.Ensure(s.registry(), slug)
+	if err != nil {
+		return store.TenantRef{}, err
+	}
+	return store.TenantRef{ID: id, Slug: slug}, nil
 }
 
 func (s *SQLStore) ListProfiles(tenantSlug string) ([]HomeProfile, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
-		FROM home_profiles WHERE tenant_id=$1 ORDER BY home_key`, tenantID)
+	rows, err := s.db.For(tenant).Query(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
+		FROM home_profiles WHERE tenant_id=$1 ORDER BY home_key`, tenant.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -848,12 +892,12 @@ func (s *SQLStore) Profile(tenantSlug string) (HomeProfile, bool, error) {
 	if s == nil || s.db == nil {
 		return HomeProfile{}, false, nil
 	}
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return HomeProfile{}, false, err
 	}
-	item, err := scanHomeProfile(s.db.QueryRow(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
-		FROM home_profiles WHERE tenant_id=$1 AND home_key=$2`, tenantID, s.scopeHomeKey()))
+	item, err := scanHomeProfile(s.db.For(tenant).QueryRow(`SELECT tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at
+		FROM home_profiles WHERE tenant_id=$1 AND home_key=$2`, tenant.ID, s.scopeHomeKey()))
 	if err == sql.ErrNoRows {
 		return HomeProfile{}, false, nil
 	}
@@ -872,7 +916,8 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.TenantSlug == "" {
 		return fmt.Errorf("energy: tenant required")
 	}
-	if _, err := s.scope(profile.TenantSlug); err != nil {
+	tenant, err := s.identity(profile.TenantSlug)
+	if err != nil {
 		return err
 	}
 	var target any
@@ -891,11 +936,11 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.FreeUntilAt != nil {
 		freeUntil = profile.FreeUntilAt.UTC().Format(time.RFC3339Nano)
 	}
-	tenantID, err := tenantid.Ensure(s.db, profile.TenantSlug)
-	if err != nil {
-		return err
-	}
-	_, err = s.db.Exec(`INSERT INTO home_profiles
+	// ON CONFLICT(tenant_slug,home_key) is a natural key a new write arrives
+	// with, so it can collide with a row the previous release wrote without a
+	// tenant_id — and from a tenant lane that row is neither visible nor
+	// writable. Same lane, same reason as the store's siblings.
+	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO home_profiles
 		(tenant_id,tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		ON CONFLICT(tenant_slug,home_key) DO UPDATE SET
@@ -908,7 +953,7 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 		free_until_at=COALESCE(home_profiles.free_until_at,excluded.free_until_at),
 		tenant_id=coalesce(home_profiles.tenant_id,excluded.tenant_id),
 		updated_at=excluded.updated_at`,
-		tenantID, profile.TenantSlug, profile.HomeKey, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
+		tenant.ID, profile.TenantSlug, profile.HomeKey, profile.UnitID, profile.HomeType, profile.HouseholdName, profile.OperatingMode, profile.AutomationStage,
 		profile.OnboardingStep, profile.OnboardingComplete, target, agreed, profile.RecommendationID, profile.RecommendationStatus, free, freeUntil,
 		profile.CreatedAt.Format(time.RFC3339Nano), profile.UpdatedAt.Format(time.RFC3339Nano))
 	return err
@@ -943,16 +988,15 @@ func (s *SQLStore) adoptUnownedProfile(tenantSlug string) (bool, error) {
 	if slug == "" {
 		return false, nil
 	}
-	if _, err := s.scope(slug); err != nil {
-		return false, err
-	}
-	tenantID, err := tenantid.Ensure(s.db, slug)
+	tenant, err := s.identity(slug)
 	if err != nil {
 		return false, err
 	}
-	result, err := s.db.Exec(
+	// The row being adopted has no tenant_id, so no tenant lane can reach it:
+	// this is the heal by definition, and it runs where the heal runs.
+	result, err := s.db.Unscoped(store.HealOrphanReason).Exec(
 		`UPDATE home_profiles SET tenant_id=$1 WHERE tenant_id IS NULL AND tenant_slug=$2 AND home_key=$3`,
-		tenantID, slug, s.scopeHomeKey())
+		tenant.ID, slug, s.scopeHomeKey())
 	if err != nil {
 		return false, err
 	}
@@ -967,12 +1011,12 @@ func (s *SQLStore) ListAssets(tenantSlug string) ([]Asset, error) {
 	if s == nil || s.db == nil {
 		return nil, nil
 	}
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at
-		FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 ORDER BY kind,name,id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at
+		FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 ORDER BY kind,name,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1009,7 +1053,7 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		rated = *asset.RatedPowerKW
 	}
 	metadata, _ := json.Marshal(asset.Metadata)
-	tenantID, err := tenantid.Ensure(s.db, asset.TenantSlug)
+	tenant, err := s.identity(asset.TenantSlug)
 	if err != nil {
 		return err
 	}
@@ -1020,7 +1064,11 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 	// COLLIDES here instead of inserting a second row. Conflicting on
 	// (tenant_slug,id) would delete that guarantee silently: the insert would
 	// succeed, RowsAffected would be 1, and the check below would never fire.
-	result, err := s.db.Exec(`INSERT INTO energy_assets
+	//
+	// The heal lane, like every coalescing upsert here: the id is chosen by the
+	// caller (StableAssetID), so a new write CAN collide with a row the
+	// previous release left without a tenant_id.
+	result, err := s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_assets
 		(id,tenant_id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,name=excluded.name,rated_power_kw=excluded.rated_power_kw,
@@ -1028,7 +1076,7 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		metadata_json=excluded.metadata_json,updated_at=excluded.updated_at,
 		tenant_id=coalesce(energy_assets.tenant_id,excluded.tenant_id)
 		WHERE energy_assets.tenant_slug=excluded.tenant_slug AND energy_assets.home_key=excluded.home_key`,
-		asset.ID, tenantID, asset.TenantSlug, asset.HomeKey, asset.Kind, asset.Name, rated, asset.Flexibility,
+		asset.ID, tenant.ID, asset.TenantSlug, asset.HomeKey, asset.Kind, asset.Name, rated, asset.Flexibility,
 		asset.Source, asset.Confirmed, string(metadata),
 		asset.CreatedAt.Format(time.RFC3339Nano), asset.UpdatedAt.Format(time.RFC3339Nano))
 	if err != nil {
@@ -1054,11 +1102,11 @@ func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (boo
 	if s == nil || s.db == nil {
 		return false, fmt.Errorf("energy: sql store unavailable")
 	}
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return false, err
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
@@ -1066,7 +1114,7 @@ func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (boo
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	for position, id := range order {
 		var raw string
-		row := tx.QueryRow(`SELECT metadata_json FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, s.scopeHomeKey(), id)
+		row := tx.QueryRow(`SELECT metadata_json FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, s.scopeHomeKey(), id)
 		if err := row.Scan(&raw); err != nil {
 			if err == sql.ErrNoRows {
 				return false, nil
@@ -1078,7 +1126,7 @@ func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (boo
 		metadata["priority"] = strconv.Itoa(position + 1)
 		encoded, _ := json.Marshal(metadata)
 		if _, err := tx.Exec(`UPDATE energy_assets SET metadata_json=$1, updated_at=$2 WHERE tenant_id=$3 AND home_key=$4 AND id=$5`,
-			string(encoded), now, tenantID, s.scopeHomeKey(), id); err != nil {
+			string(encoded), now, tenant.ID, s.scopeHomeKey(), id); err != nil {
 			return false, err
 		}
 	}
@@ -1089,21 +1137,21 @@ func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (boo
 }
 
 func (s *SQLStore) DeleteAsset(tenantSlug, id string) (bool, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return false, err
 	}
 	id = strings.TrimSpace(id)
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback()
 	if _, err := tx.Exec(`UPDATE energy_entity_mappings SET asset_id='',updated_at=$1 WHERE tenant_id=$2 AND home_key=$3 AND asset_id=$4`,
-		time.Now().UTC().Format(time.RFC3339Nano), tenantID, s.scopeHomeKey(), id); err != nil {
+		time.Now().UTC().Format(time.RFC3339Nano), tenant.ID, s.scopeHomeKey(), id); err != nil {
 		return false, err
 	}
-	result, err := tx.Exec(`DELETE FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, s.scopeHomeKey(), id)
+	result, err := tx.Exec(`DELETE FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, s.scopeHomeKey(), id)
 	if err != nil {
 		return false, err
 	}
@@ -1115,12 +1163,12 @@ func (s *SQLStore) DeleteAsset(tenantSlug, id string) (bool, error) {
 }
 
 func (s *SQLStore) ListMappings(tenantSlug string) ([]EntityMapping, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at
-		FROM energy_entity_mappings WHERE tenant_id=$1 AND home_key=$2 ORDER BY confirmed DESC,metric,display_name,entity_id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at
+		FROM energy_entity_mappings WHERE tenant_id=$1 AND home_key=$2 ORDER BY confirmed DESC,metric,display_name,entity_id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1151,13 +1199,13 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 	}
 	mapping.HomeKey = s.scopeHomeKey()
 	mapping = NormalizeMapping(mapping, time.Now())
-	tenantID, err := tenantid.Ensure(s.db, mapping.TenantSlug)
+	tenant, err := s.identity(mapping.TenantSlug)
 	if err != nil {
 		return err
 	}
 	if mapping.AssetID != "" {
 		var exists int
-		if err := s.db.QueryRow(`SELECT COUNT(*) FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, mapping.HomeKey, mapping.AssetID).Scan(&exists); err != nil {
+		if err := s.db.For(tenant).QueryRow(`SELECT COUNT(*) FROM energy_assets WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, mapping.HomeKey, mapping.AssetID).Scan(&exists); err != nil {
 			return err
 		}
 		if exists != 1 {
@@ -1168,7 +1216,7 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 	if mapping.LastSeenAt != nil {
 		seen = mapping.LastSeenAt.UTC().Format(time.RFC3339Nano)
 	}
-	_, err = s.db.Exec(`INSERT INTO energy_entity_mappings
+	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_entity_mappings
 		(id,tenant_id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		ON CONFLICT(tenant_slug,home_key,entity_id) DO UPDATE SET
@@ -1176,7 +1224,7 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 		device_class=excluded.device_class,confirmed=excluded.confirmed,last_seen_at=excluded.last_seen_at,
 		tenant_id=coalesce(energy_entity_mappings.tenant_id,excluded.tenant_id),
 		updated_at=excluded.updated_at`,
-		mapping.ID, tenantID, mapping.TenantSlug, mapping.HomeKey, mapping.EntityID, mapping.AssetID, mapping.Metric, mapping.DisplayName,
+		mapping.ID, tenant.ID, mapping.TenantSlug, mapping.HomeKey, mapping.EntityID, mapping.AssetID, mapping.Metric, mapping.DisplayName,
 		mapping.Unit, mapping.DeviceClass, mapping.Confirmed, seen,
 		mapping.CreatedAt.Format(time.RFC3339Nano), mapping.UpdatedAt.Format(time.RFC3339Nano))
 	return err
@@ -1189,11 +1237,11 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 var ErrMappingAssetForeign = errors.New("energy: mapping asset must belong to tenant")
 
 func (s *SQLStore) DeleteMapping(tenantSlug, id string) (bool, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return false, err
 	}
-	result, err := s.db.Exec(`DELETE FROM energy_entity_mappings WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, s.scopeHomeKey(), strings.TrimSpace(id))
+	result, err := s.db.For(tenant).Exec(`DELETE FROM energy_entity_mappings WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, s.scopeHomeKey(), strings.TrimSpace(id))
 	if err != nil {
 		return false, err
 	}
@@ -1220,25 +1268,25 @@ func (s *SQLStore) PutInterval(interval Interval) error {
 		interval.CreatedAt = time.Now().UTC()
 	}
 	interval.HomeKey = s.scopeHomeKey()
-	tenantID, err := tenantid.Ensure(s.db, interval.TenantSlug)
+	tenant, err := s.identity(interval.TenantSlug)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT INTO energy_intervals
+	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_intervals
 		(tenant_id,tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT(tenant_slug,home_key,starts_at,source) DO UPDATE SET
 		duration_minutes=excluded.duration_minutes,import_kwh=excluded.import_kwh,
 		tenant_id=coalesce(energy_intervals.tenant_id,excluded.tenant_id),
 		average_kw=excluded.average_kw,quality=excluded.quality,created_at=excluded.created_at`,
-		tenantID, interval.TenantSlug, interval.HomeKey, interval.StartsAt.Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
+		tenant.ID, interval.TenantSlug, interval.HomeKey, interval.StartsAt.Format(time.RFC3339Nano), int(interval.Duration/time.Minute),
 		interval.ImportKWh, interval.AverageKW, interval.Quality, interval.Source,
 		interval.CreatedAt.UTC().Format(time.RFC3339Nano))
 	return err
 }
 
 func (s *SQLStore) ListIntervals(tenantSlug string, from, to time.Time) ([]Interval, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -1249,9 +1297,9 @@ func (s *SQLStore) ListIntervals(tenantSlug string, from, to time.Time) ([]Inter
 	// An earlier version of this comment asserted the named-parameter behaviour and
 	// misled two readers into reasoning from it; the conclusion was right for the
 	// wrong reason.
-	rows, err := s.db.Query(`SELECT tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at
+	rows, err := s.db.For(tenant).Query(`SELECT tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at
 		FROM energy_intervals WHERE tenant_id=$1 AND home_key=$2 AND starts_at>=$3 AND ($4='' OR starts_at<$5)
-		ORDER BY starts_at`, tenantID, s.scopeHomeKey(), from.UTC().Format(time.RFC3339Nano), nullableTime(to), nullableTime(to))
+		ORDER BY starts_at`, tenant.ID, s.scopeHomeKey(), from.UTC().Format(time.RFC3339Nano), nullableTime(to), nullableTime(to))
 	if err != nil {
 		return nil, err
 	}
@@ -1289,7 +1337,11 @@ func (s *SQLStore) PutImport(record ImportRecord, intervals []Interval) (bool, e
 			return false, fmt.Errorf("energy: interval tenant mismatch")
 		}
 	}
-	tx, err := s.db.Begin()
+	// The whole transaction is on the heal lane, for two statements in it: the
+	// identity repair below addresses a row that HAS no tenant_id, and the
+	// interval upsert coalesces one. Neither can reach its row from a tenant
+	// lane, and a transaction has exactly one lane.
+	tx, err := s.db.Unscoped(store.HealOrphanReason).Begin()
 	if err != nil {
 		return false, err
 	}
@@ -1363,12 +1415,12 @@ func (s *SQLStore) PutImport(record ImportRecord, intervals []Interval) (bool, e
 }
 
 func (s *SQLStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,filename,sha256,format,imported_at
-		FROM energy_imports WHERE tenant_id=$1 AND home_key=$2 ORDER BY imported_at DESC,id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,filename,sha256,format,imported_at
+		FROM energy_imports WHERE tenant_id=$1 AND home_key=$2 ORDER BY imported_at DESC,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1387,12 +1439,12 @@ func (s *SQLStore) ListImports(tenantSlug string) ([]ImportRecord, error) {
 }
 
 func (s *SQLStore) ListImportsForExport(tenantSlug string) ([]ImportRecord, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,filename,sha256,format,payload,imported_at
-		FROM energy_imports WHERE tenant_id=$1 AND home_key=$2 ORDER BY imported_at DESC,id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,filename,sha256,format,payload,imported_at
+		FROM energy_imports WHERE tenant_id=$1 AND home_key=$2 ORDER BY imported_at DESC,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1411,12 +1463,13 @@ func (s *SQLStore) ListImportsForExport(tenantSlug string) ([]ImportRecord, erro
 }
 
 func (s *SQLStore) DeleteMeasurementData(tenantSlug string) (DeleteSummary, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return DeleteSummary{}, err
 	}
+	tenantID := tenant.ID
 	homeKey := s.scopeHomeKey()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return DeleteSummary{}, err
 	}
@@ -1463,12 +1516,15 @@ func (s *SQLStore) DeleteMeasurementData(tenantSlug string) (DeleteSummary, erro
 
 func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 	slug := normalizeSlug(tenantSlug)
-	tenantID, err := s.scope(slug)
+	tenant, err := s.scope(slug)
 	if err != nil {
 		return DeleteSummary{}, err
 	}
+	tenantID := tenant.ID
 	homeKey := s.scopeHomeKey()
-	tx, err := s.db.Begin()
+	// The tenant lane: every statement here addresses rows by tenant_id, and
+	// the tombstone it writes carries that same identity, so WITH CHECK holds.
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return DeleteSummary{}, err
 	}
@@ -1540,16 +1596,16 @@ func (s *SQLStore) DeleteProfile(tenantSlug string) (DeleteSummary, error) {
 }
 
 // PurgeExpired enforces retention across EVERY house, which is why it is the
-// only method here with no tenant predicate at all — and why it must keep
-// running on the process-wide handle. On a tenant-pinned PostgreSQL connection
-// the row-level-security policy would narrow these deletes to one house and
-// report the reduced count as success, turning a global retention sweep into a
-// partial one with nothing to notice.
+// only method here with no tenant predicate at all — and why it runs on the
+// declared cross-tenant lane. On a tenant lane the row-level-security policy
+// would narrow these deletes to one house and report the reduced count as
+// success, turning a global retention sweep into a partial one with nothing to
+// notice.
 //
 // It is on the fatal boot path (newApp returns its error), so a dialect defect
 // here is not a degraded feature: the binary does not start.
 func (s *SQLStore) PurgeExpired(rawImportBefore, intervalBefore, assessmentBefore time.Time) (DeleteSummary, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("retention sweep over every tenant's expired energy imports, intervals and assessments: the boot path that calls it has no tenant in scope").Begin()
 	if err != nil {
 		return DeleteSummary{}, err
 	}
@@ -1583,12 +1639,12 @@ func (s *SQLStore) PurgeExpired(rawImportBefore, intervalBefore, assessmentBefor
 }
 
 func (s *SQLStore) ListMaintenance(tenantSlug string) ([]MaintenancePlan, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at
-		FROM energy_maintenance_plans WHERE tenant_id=$1 AND home_key=$2 ORDER BY next_due_at,title,id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at
+		FROM energy_maintenance_plans WHERE tenant_id=$1 AND home_key=$2 ORDER BY next_due_at,title,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1628,11 +1684,11 @@ func (s *SQLStore) UpsertMaintenance(plan MaintenancePlan) error {
 	if normalized.LastCompletedAt != nil {
 		completed = normalized.LastCompletedAt.Format(time.RFC3339Nano)
 	}
-	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	tenant, err := s.identity(normalized.TenantSlug)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT INTO energy_maintenance_plans
+	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_maintenance_plans
 		(id,tenant_id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 		ON CONFLICT(tenant_slug,home_key,asset_id) DO UPDATE SET
@@ -1640,18 +1696,18 @@ func (s *SQLStore) UpsertMaintenance(plan MaintenancePlan) error {
 		next_due_at=excluded.next_due_at,contact_id=excluded.contact_id,document_id=excluded.document_id,
 		issue_id=excluded.issue_id,evidence_note=excluded.evidence_note,active=excluded.active,
 		tenant_id=coalesce(energy_maintenance_plans.tenant_id,excluded.tenant_id),updated_at=excluded.updated_at`,
-		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.AssetID, normalized.Title, normalized.IntervalMonths, completed,
+		normalized.ID, tenant.ID, normalized.TenantSlug, normalized.HomeKey, normalized.AssetID, normalized.Title, normalized.IntervalMonths, completed,
 		normalized.NextDueAt.Format(time.RFC3339Nano), normalized.ContactID, normalized.DocumentID, normalized.IssueID,
 		normalized.EvidenceNote, normalized.Active, normalized.CreatedAt.Format(time.RFC3339Nano), normalized.UpdatedAt.Format(time.RFC3339Nano))
 	return err
 }
 
 func (s *SQLStore) DeleteMaintenance(tenantSlug, id string) (bool, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return false, err
 	}
-	result, err := s.db.Exec(`DELETE FROM energy_maintenance_plans WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, s.scopeHomeKey(), strings.TrimSpace(id))
+	result, err := s.db.For(tenant).Exec(`DELETE FROM energy_maintenance_plans WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, s.scopeHomeKey(), strings.TrimSpace(id))
 	if err != nil {
 		return false, err
 	}
@@ -1668,26 +1724,28 @@ func (s *SQLStore) SaveTariffAssessment(item TariffAssessment) error {
 	if err != nil {
 		return err
 	}
-	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	tenant, err := s.identity(normalized.TenantSlug)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT INTO energy_tariff_assessments
+	// A plain INSERT keyed on a minted id: it cannot collide with a legacy row,
+	// so it stays on the tenant lane, exactly like the store's random-id tables.
+	_, err = s.db.For(tenant).Exec(`INSERT INTO energy_tariff_assessments
 		(id,tenant_id,tenant_slug,home_key,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.AssessmentMonth, normalized.ProfileID, normalized.ProfileVersion,
+		normalized.ID, tenant.ID, normalized.TenantSlug, normalized.HomeKey, normalized.AssessmentMonth, normalized.ProfileID, normalized.ProfileVersion,
 		normalized.ProfileStatus, normalized.SourceURL, normalized.PeakKW, normalized.BilledKW, normalized.AnnualPowerEUR,
 		normalized.DataQuality, normalized.CreatedAt.Format(time.RFC3339Nano))
 	return err
 }
 
 func (s *SQLStore) ListTariffAssessments(tenantSlug string) ([]TariffAssessment, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at
-		FROM energy_tariff_assessments WHERE tenant_id=$1 AND home_key=$2 ORDER BY created_at DESC,id`, tenantID, s.scopeHomeKey())
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,assessment_month,profile_id,profile_version,profile_status,source_url,peak_kw,billed_kw,annual_power_eur,data_quality,created_at
+		FROM energy_tariff_assessments WHERE tenant_id=$1 AND home_key=$2 ORDER BY created_at DESC,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}
@@ -1717,11 +1775,11 @@ func (s *SQLStore) UpsertMeasure(item Measure) error {
 		return err
 	}
 	shared, _ := json.Marshal(normalized.SharedFields)
-	tenantID, err := tenantid.Ensure(s.db, normalized.TenantSlug)
+	tenant, err := s.identity(normalized.TenantSlug)
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT INTO energy_measures
+	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_measures
 		(id,tenant_id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
 		 work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
 		 before_quality,after_quality,created_at,updated_at)
@@ -1734,7 +1792,7 @@ func (s *SQLStore) UpsertMeasure(item Measure) error {
 		before_peak_kw=excluded.before_peak_kw,after_peak_kw=excluded.after_peak_kw,
 		before_quality=excluded.before_quality,after_quality=excluded.after_quality,
 		tenant_id=coalesce(energy_measures.tenant_id,excluded.tenant_id),updated_at=excluded.updated_at`,
-		normalized.ID, tenantID, normalized.TenantSlug, normalized.HomeKey, normalized.IssueID, normalized.RecommendationID, normalized.Title,
+		normalized.ID, tenant.ID, normalized.TenantSlug, normalized.HomeKey, normalized.IssueID, normalized.RecommendationID, normalized.Title,
 		normalized.Status, normalized.ContactID, string(shared), normalized.OfferNote, nullableTimePtr(normalized.AppointmentAt),
 		normalized.WorkNote, nullableTimePtr(normalized.CompletedAt), normalized.EvidenceNote,
 		nullableTimePtr(normalized.BeforeFrom), nullableTimePtr(normalized.BeforeTo), nullableTimePtr(normalized.AfterFrom), nullableTimePtr(normalized.AfterTo),
@@ -1744,14 +1802,14 @@ func (s *SQLStore) UpsertMeasure(item Measure) error {
 }
 
 func (s *SQLStore) GetMeasure(tenantSlug, id string) (Measure, bool, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return Measure{}, false, err
 	}
-	row := s.db.QueryRow(`SELECT id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+	row := s.db.For(tenant).QueryRow(`SELECT id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
 		work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
 		before_quality,after_quality,created_at,updated_at
-		FROM energy_measures WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenantID, s.scopeHomeKey(), strings.TrimSpace(id))
+		FROM energy_measures WHERE tenant_id=$1 AND home_key=$2 AND id=$3`, tenant.ID, s.scopeHomeKey(), strings.TrimSpace(id))
 	item, err := scanMeasure(row)
 	if err == sql.ErrNoRows {
 		return Measure{}, false, nil
@@ -1760,14 +1818,14 @@ func (s *SQLStore) GetMeasure(tenantSlug, id string) (Measure, bool, error) {
 }
 
 func (s *SQLStore) ListMeasures(tenantSlug string) ([]Measure, error) {
-	tenantID, err := s.scope(tenantSlug)
+	tenant, err := s.scope(tenantSlug)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(`SELECT id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
+	rows, err := s.db.For(tenant).Query(`SELECT id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
 		work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
 		before_quality,after_quality,created_at,updated_at
-		FROM energy_measures WHERE tenant_id=$1 AND home_key=$2 ORDER BY updated_at DESC,id`, tenantID, s.scopeHomeKey())
+		FROM energy_measures WHERE tenant_id=$1 AND home_key=$2 ORDER BY updated_at DESC,id`, tenant.ID, s.scopeHomeKey())
 	if err != nil {
 		return nil, err
 	}

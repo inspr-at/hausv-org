@@ -18,18 +18,19 @@ import (
 // store then compiles, its statements name no lane, and nothing else in the
 // package notices, because the twenty converted stores keep working.
 //
-// So this reads the package's own source and asserts the absence. It is the only
-// guard here that fires on code that has not been written yet: a store added
-// next month with `db *sql.DB` fails this test on the first `go test`, without
-// anyone remembering that lanes exist.
+// So this reads the source of every package that holds SQL stores and asserts
+// the absence. It is the only guard here that fires on code that has not been
+// written yet: a store added next month with `db *sql.DB` fails this test on
+// the first `go test`, without anyone remembering that lanes exist.
 //
 // WHERE IT IS BLIND, stated so nobody reads a pass as more than it is:
 //
-//   - It reads only THIS package. internal/energy still takes the pool and is
-//     the one unconverted SQL surface; this test says nothing about it, and
-//     will not notice a new package that takes pools either. internal/server
-//     has its own sibling, TestServerReachesTheDatabaseOnlyThroughTheTenantSeam,
-//     which additionally traces every statement call there to a lane.
+//   - It reads the packages named in rawPoolGuardedPackages — internal/store
+//     and internal/energy, the two that hold SQL stores — and no others. It
+//     will not notice a NEW package that takes pools; adding one means adding
+//     it to that list. internal/server has its own sibling,
+//     TestServerReachesTheDatabaseOnlyThroughTheTenantSeam, which additionally
+//     traces every statement call there to a lane.
 //   - It checks struct FIELDS only. A function parameter, a return value, a
 //     package-level var or a local that carries a *sql.DB is invisible to it,
 //     and two such functions exist on purpose: BackfillTenantIDs and
@@ -44,10 +45,49 @@ import (
 //     purpose: an assertion that read back through the same lane as the write
 //     could not tell a correctly scoped row from a row the lane was hiding.
 func TestNoStoreHoldsARawConnectionPool(t *testing.T) {
+	root := repositoryRoot(t)
+	var offences []string
+	for _, pkg := range rawPoolGuardedPackages {
+		offences = append(offences, rawPoolFieldsIn(t, filepath.Join(root, filepath.FromSlash(pkg.path)), pkg)...)
+	}
+	if len(offences) > 0 {
+		t.Fatalf("a store holds a raw *sql.DB, which lets its statements reach the database without naming a tenant lane:\n  %s\n\n"+
+			"Take a *store.TenantDB instead. Retyping the field is the point: every statement site stops\n"+
+			"compiling until it says For(tenant) or Unscoped(reason).",
+			strings.Join(offences, "\n  "))
+	}
+}
+
+// rawPoolGuardedPackages is every package that holds SQL stores, each with
+// floors under the non-test files, structs and struct fields the walk saw on
+// the day the package was listed — floors, not counts, so a walk that silently
+// reads nothing is caught while ordinary growth is not. They are per package
+// because the packages differ by an order of magnitude: on the day energy was
+// added the store walk saw 32 files / 45 structs / 110 fields and the energy
+// walk 8 / 9 / 35 (only files that import database/sql are inspected).
+var rawPoolGuardedPackages = []rawPoolGuardedPackage{
+	{path: "internal/store", minFiles: 20, minStructs: 20, minFields: 20},
+	// internal/energy was the last SQL surface to move onto lanes. Its SQLStore
+	// took the process pool until then, which is exactly the field this guard
+	// exists to refuse; it is listed so the pool cannot come back.
+	{path: "internal/energy", minFiles: 5, minStructs: 5, minFields: 20},
+}
+
+type rawPoolGuardedPackage struct {
+	path       string
+	minFiles   int
+	minStructs int
+	minFields  int
+}
+
+// rawPoolFieldsIn parses one package's non-test files and returns every struct
+// field whose type mentions *sql.DB.
+func rawPoolFieldsIn(t *testing.T, dir string, pkg rawPoolGuardedPackage) []string {
+	t.Helper()
 	fset := token.NewFileSet()
-	entries, err := os.ReadDir(".")
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		t.Fatalf("read the store package directory: %v", err)
+		t.Fatalf("read %s: %v", dir, err)
 	}
 
 	var offences []string
@@ -58,7 +98,7 @@ func TestNoStoreHoldsARawConnectionPool(t *testing.T) {
 		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
-		file, err := parser.ParseFile(fset, name, nil, parser.SkipObjectResolution)
+		file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, parser.SkipObjectResolution)
 		if err != nil {
 			t.Fatalf("parse %s: %v", name, err)
 		}
@@ -92,21 +132,16 @@ func TestNoStoreHoldsARawConnectionPool(t *testing.T) {
 		})
 	}
 
-	// A source-reading test that walks nothing passes forever. These are the
-	// numbers today; they only ever move down if the walk itself breaks.
-	if filesParsed < 20 {
-		t.Fatalf("only %d non-test files parsed in the store package; the walk is broken, not the package empty", filesParsed)
+	// A source-reading test that walks nothing passes forever. The floors are
+	// the package's own numbers from rawPoolGuardedPackages; they only ever
+	// move down if the walk itself breaks.
+	if filesParsed < pkg.minFiles {
+		t.Fatalf("only %d non-test files parsed in %s; the walk is broken, not the package empty", filesParsed, dir)
 	}
-	if structsSeen < 20 || fieldsSeen < 20 {
-		t.Fatalf("walk found %d structs / %d fields; it is not reaching the declarations it claims to check", structsSeen, fieldsSeen)
+	if structsSeen < pkg.minStructs || fieldsSeen < pkg.minFields {
+		t.Fatalf("walk of %s found %d structs / %d fields (floor %d / %d); it is not reaching the declarations it claims to check", dir, structsSeen, fieldsSeen, pkg.minStructs, pkg.minFields)
 	}
-
-	if len(offences) > 0 {
-		t.Fatalf("a store holds a raw *sql.DB, which lets its statements reach the database without naming a tenant lane:\n  %s\n\n"+
-			"Take a *TenantDB instead. Retyping the field is the point: every statement site stops\n"+
-			"compiling until it says For(tenant) or Unscoped(reason).",
-			strings.Join(offences, "\n  "))
-	}
+	return offences
 }
 
 // sqlPackageAlias reports the local name database/sql is imported under, and
@@ -162,5 +197,5 @@ func describeField(fset *token.FileSet, field *ast.Field) string {
 	if len(names) > 0 {
 		label = strings.Join(names, ", ")
 	}
-	return filepath.Base(position.Filename) + ":" + strconv.Itoa(position.Line) + " field " + label
+	return filepath.Join(filepath.Base(filepath.Dir(position.Filename)), filepath.Base(position.Filename)) + ":" + strconv.Itoa(position.Line) + " field " + label
 }

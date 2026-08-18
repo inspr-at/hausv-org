@@ -30,8 +30,8 @@ import (
 // TestEnergyReadsAddressRowsByTenantIdentity next door, which is only possible
 // now that the reads filter on tenant_id instead of the slug.
 func TestEveryEnergyWriteRecordsATenantIdentity(t *testing.T) {
-	database := dbtest.Open(t)
-	store := energy.NewSQLStore(database)
+	database, lanes := openEnergyLanes(t)
+	store := energy.NewSQLStore(lanes)
 
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	const tenant = "haus-a"
@@ -238,8 +238,8 @@ func assertIdentityMatchesSlug(t *testing.T, database *sql.DB, slug string, tabl
 // unexercised. Until this existed, blanking the tombstone's slug left the entire suite green
 // on both engines.
 func TestDeleteProfileTombstoneStaysAddressableBySlug(t *testing.T) {
-	database := dbtest.Open(t)
-	store := energy.NewSQLStore(database)
+	database, lanes := openEnergyLanes(t)
+	store := energy.NewSQLStore(lanes)
 
 	const tenant = "haus-tombstone"
 	now := time.Date(2026, time.August, 18, 12, 0, 0, 0, time.UTC)
