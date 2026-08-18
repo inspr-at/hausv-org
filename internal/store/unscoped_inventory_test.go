@@ -19,10 +19,11 @@ import (
 // to take CASUALLY. Unscoped("...") compiles just as readily as For(tenant), and
 // the reason string is not read by anything at runtime.
 //
-// So the cross-tenant surface is written down here, whole, as a golden file: 77
+// So the cross-tenant surface is written down here, whole, as a golden file: 78
 // declared cross-tenant call sites (65 in the stores, 10 in internal/energy, 2
-// in the import ledger in internal/server) plus the seam's own forwarder, each
-// with the reason its author typed. The value is in the diff.
+// in the import ledger in internal/server, 1 in the data mover command in
+// cmd/hausv-org) plus the seam's own forwarder, each with the reason its author
+// typed. The value is in the diff.
 // Adding a cross-tenant call is a two-line change in a store plus a line in this
 // file, and that second line is what a reviewer sees without having to know the
 // lane mechanism exists or think to grep for it.
