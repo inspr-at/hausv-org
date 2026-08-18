@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.0] - 2026-08-18
+
+### Verbessert
+
+- Die alte Portal-Darstellung ist vollständig entfernt; es gibt nur noch die neue Oberfläche.
+- Tastaturbedienung: Der Sprung zum Inhalt funktioniert jetzt auch am Telefon, und Escape
+  schließt das mobile Menü.
+- Energie: Nach dem Schließen eines Dialogs kehrt der Fokus zur auslösenden Schaltfläche zurück.
+
 ## [0.97.0] - 2026-08-18
 
 ### Verbessert

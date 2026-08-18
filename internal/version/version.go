@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.0",
+			Date:     "18. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Die alte Darstellung ist entfernt — es gibt nur noch die neue Oberfläche.",
+			Intro:    "Seit 0.96.0 lief das Portal auf der neuen Oberfläche; die alte lief im Hintergrund weiter mit. Sie ist jetzt vollständig entfernt. Dabei sind zwei Bedienfehler aufgefallen und behoben worden.",
+			Items: []NoteItem{
+				{Label: "Tastatur", Text: "Der Sprung zum Inhalt landet auf dem Telefon jetzt wirklich beim Inhalt, und Escape schließt das mobile Menü."},
+				{Label: "Energie", Text: "Nach dem Schließen eines Dialogs kehrt der Fokus zur Schaltfläche zurück, von der er kam."},
+				{Label: "Aufgeräumt", Text: "Rund 8.400 Zeilen der alten Darstellung sind entfernt; jede Änderung muss nur noch einmal gemacht werden."},
+			},
+		},
+		{
 			Version:  "0.97.0",
 			Date:     "18. August 2026",
 			Kind:     "Technik",
