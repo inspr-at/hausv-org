@@ -601,6 +601,24 @@ async function assertBoundedAdminDialogs() {
     await page.goto(`${baseURL}/app/kontakte`, { waitUntil: 'networkidle' });
     const contactRow = page.locator('.contact-row').filter({ hasText: 'QA Dialogkontakt' }).first();
     const contactTrigger = contactRow.getByRole('button', { name: 'Bearbeiten' });
+    // Diagnostic: if the click cannot happen, say what is in the way rather than time out.
+    const clickable = await contactTrigger.evaluate((btn) => {
+      btn.scrollIntoView({ block: 'center' });
+      const r = btn.getBoundingClientRect();
+      const cs = getComputedStyle(btn);
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { w: Math.round(r.width), h: Math.round(r.height), top: Math.round(r.top), display: cs.display, vis: cs.visibility, op: cs.opacity,
+        covered: hit === btn || btn.contains(hit) ? null : (() => { const hr = hit.getBoundingClientRect();
+          // walk up to name the select's context: its label text, its form, and its own box
+          const lbl = hit.closest('label')?.textContent?.trim().slice(0, 30); const frm = hit.closest('form')?.className || hit.closest('form')?.id || 'no-form';
+          const dlg = hit.closest('dialog'); return { tag: hit.tagName.toLowerCase(), name: hit.getAttribute('name'), label: lbl, form: frm,
+            inDialog: dlg ? (dlg.id + ' open=' + dlg.open) : null, box: [Math.round(hr.left), Math.round(hr.top), Math.round(hr.width), Math.round(hr.height)],
+            zi: getComputedStyle(hit).zIndex, pos: getComputedStyle(hit).position }; })(),
+        inViewport: r.top >= 0 && r.bottom <= innerHeight };
+    }).catch((e) => ({ error: String(e).slice(0, 120) }));
+    if (clickable.error || clickable.covered || !clickable.w) {
+      fail(`Kontaktliste ${label}: Bearbeiten ist nicht klickbar (${JSON.stringify(clickable)})`);
+    }
     await contactTrigger.click();
     // templ renders the contact editor as dialog.dialog with a per-contact id
     // (contacts.templ:228); .contact-edit-dialog was the legacy renderer's class.
@@ -767,13 +785,16 @@ async function assertResponsiveAdminWidths() {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (phone) => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      const feed = document.querySelector('.announce-feed');
+      // templ renders the announcements column as .feed; .announce-feed and .announce-group
+      // were the legacy renderer's names. .announcement-entry / .entry-head / .section-head /
+      // .archive-tools survived the switch unchanged.
+      const feed = document.querySelector('.feed');
       if (!feed) return { missing: true };
       const style = getComputedStyle(feed);
       const feedBox = feed.getBoundingClientRect();
       const contentLeft = feedBox.left + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.paddingLeft);
       const contentRight = feedBox.right - Number.parseFloat(style.borderRightWidth) - Number.parseFloat(style.paddingRight);
-      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, :scope > .announce-group, .announcement-entry')]
+      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, .announcement-entry')]
         .filter((element) => element.getClientRects().length)
         .filter((element) => {
           const box = element.getBoundingClientRect();
@@ -810,7 +831,11 @@ async function assertResponsiveAdminWidths() {
         phone,
         headsAreGrid: headDisplays.length > 0 && headDisplays.every((display) => display === 'grid'),
       };
-    }, width <= 1180);
+    // "Phone" is where the templ shell collapses to a single column and stacks entry heads
+    // as a grid: max-width 760px (portal.templ). The legacy renderer collapsed at 1180px and
+    // this probe still carried that number, so it demanded phone layout at 768 and 1024 —
+    // widths the current design deliberately keeps as tablet/desktop.
+    }, width <= 760);
     if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
         result.clipped.length || result.badHeads || result.offscreenControls.length ||
         (result.phone && (result.feedColumns !== 1 || !result.headsAreGrid))) {
