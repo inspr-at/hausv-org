@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -26,15 +25,16 @@ var (
 )
 
 // SQLProtocolFiler writes the document row and the handover link inside ONE
-// transaction. Only usable when both stores share a database.
+// transaction. Only usable when both stores were built from the same *TenantDB:
+// one transaction means one lane, and two seams are two sets of pools.
 type SQLProtocolFiler struct {
-	db        *sql.DB
+	db        *TenantDB
 	documents *SQLDocumentStore
 	handovers *SQLHandoverStore
 }
 
-// NewSQLProtocolFiler returns nil unless both stores are present and share the
-// same database — the caller then falls back to the sequential filer.
+// NewSQLProtocolFiler returns nil unless both stores are present and were built
+// from the same seam — the caller then falls back to the sequential filer.
 func NewSQLProtocolFiler(documents *SQLDocumentStore, handovers *SQLHandoverStore) *SQLProtocolFiler {
 	if documents == nil || handovers == nil || documents.db == nil || documents.db != handovers.db {
 		return nil
@@ -64,7 +64,7 @@ func (f *SQLProtocolFiler) FileHandoverProtocol(tenant TenantRef, handoverID str
 		return DocumentRecord{}, HandoverRecord{}, false, err
 	}
 
-	tx, err := f.db.Begin()
+	tx, err := f.db.For(resolvedTenant).Begin()
 	if err != nil {
 		_ = os.Remove(path)
 		return DocumentRecord{}, HandoverRecord{}, false, err

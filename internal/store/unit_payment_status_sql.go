@@ -63,10 +63,10 @@ func (r *boundUnitPaymentStatusRepository) List() []UnitPaymentStatus {
 // SQLUnitPaymentStatusStore is the SQLite-backed manual payment-status marker,
 // one row per (tenant, unit). Table from migration 0005.
 type SQLUnitPaymentStatusStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLUnitPaymentStatusStore(db *sql.DB) *SQLUnitPaymentStatusStore {
+func NewSQLUnitPaymentStatusStore(db *TenantDB) *SQLUnitPaymentStatusStore {
 	return &SQLUnitPaymentStatusStore{db: db}
 }
 
@@ -83,7 +83,7 @@ func (s *SQLUnitPaymentStatusStore) set(tenant TenantRef, item UnitPaymentStatus
 		return UnitPaymentStatus{}, err
 	}
 	item.UpdatedAt = time.Now().UTC().Truncate(time.Second)
-	if _, err := s.db.Exec(
+	if _, err := s.db.Unscoped(healOrphanReason).Exec(
 		`INSERT INTO unit_payment_status(tenant_id, tenant_slug, unit_id, status, updated_at, updated_by)
 		 VALUES($1, $2, $3, $4, $5, $6)
 		 ON CONFLICT(tenant_slug, unit_id) DO UPDATE SET
@@ -106,7 +106,7 @@ func (s *SQLUnitPaymentStatusStore) get(tenant TenantRef, unitID string) (UnitPa
 	if tenantSlug == "" || unitID == "" {
 		return UnitPaymentStatus{}, false
 	}
-	item, ok := scanUnitPaymentRow(s.db.QueryRow(
+	item, ok := scanUnitPaymentRow(s.db.For(tenant).QueryRow(
 		`SELECT tenant_slug, unit_id, status, updated_at, updated_by
 		 FROM unit_payment_status WHERE tenant_id = $1 AND unit_id = $2`, tenant.ID, unitID))
 	if !ok {
@@ -125,7 +125,7 @@ func (s *SQLUnitPaymentStatusStore) listTenant(tenant TenantRef) []UnitPaymentSt
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(
+	rows, err := s.db.For(tenant).Query(
 		`SELECT tenant_slug, unit_id, status, updated_at, updated_by
 		 FROM unit_payment_status WHERE tenant_id = $1`, tenant.ID)
 	if err != nil {
@@ -157,7 +157,8 @@ func (s *SQLUnitPaymentStatusStore) ImportStatuses(src *UnitPaymentStatusStore) 
 	src.mu.Lock()
 	snapshot := append([]UnitPaymentStatus(nil), src.data.Statuses...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON payment-status snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, raw := range snapshot {
 		item, err := NormalizeUnitPaymentRecord(raw)
 		if err != nil {
@@ -171,7 +172,7 @@ func (s *SQLUnitPaymentStatusStore) ImportStatuses(src *UnitPaymentStatusStore) 
 		if item.UpdatedAt.IsZero() {
 			updatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO unit_payment_status(tenant_id, tenant_slug, unit_id, status, updated_at, updated_by)
 			 VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT(tenant_slug, unit_id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.UnitID, item.Status, updatedAt, item.UpdatedBy,

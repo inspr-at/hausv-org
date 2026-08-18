@@ -837,11 +837,9 @@ type app struct {
 	structuredExportMu       sync.Mutex
 	structuredExportPreviews map[string]structuredExportPreview
 
-	// tenantDB is the scoped seam: the object a store will ask for a
-	// tenant-scoped database handle. It is deliberately NOT consumed yet —
-	// converting the stores onto it is a separate, reviewable step — and it is
-	// wired here first so the lane plan is verified against the real server on
-	// every boot before anything depends on it.
+	// tenantDB is the scoped seam: the object every SQL store asks for a database
+	// handle, and the only way those stores can reach the database at all. The
+	// app keeps it because stores are constructed from it at boot.
 	tenantDB *store.TenantDB
 	// scopedDB owns the lane pools tenantDB hands out. The app holds it purely to
 	// close them on shutdown: TenantDB deliberately has no Close, because its
@@ -1605,11 +1603,11 @@ func newApp() (*app, error) {
 		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
-	// The scoped seam. Nothing reads from it yet: the stores still take the
-	// process pool, and this batch deliberately converts none of them. It is
-	// constructed here so the lane plan is asserted against the real server on
-	// every boot from the moment the seam exists, rather than on the first boot
-	// that happens to use it.
+	// The scoped seam. Every SQL store below takes this instead of the process
+	// pool, so each of their statements names a tenant lane or a declared
+	// cross-tenant one. VerifyBudget runs before any store exists, so a lane plan
+	// the server cannot serve stops the boot rather than turning into connection
+	// refusals under load.
 	scoped, err := db.NewScoped(dbConfig, database)
 	if err != nil {
 		_ = database.Close()
@@ -1634,27 +1632,27 @@ func newApp() (*app, error) {
 	// they are idempotent and clobber-safe: on an already-migrated database they
 	// are a no-op, and they are what migrates a fresh environment. A failing
 	// import aborts the boot rather than quietly starting on an empty store.
-	sqlActivity := newSQLActivityStore(database)
-	sqlProfileOverlay := newSQLProfileOverlayStore(database)
-	sqlNotification := newSQLNotificationPrefStore(database)
-	sqlUnitPayment := newSQLUnitPaymentStatusStore(database)
-	sqlContacts := newSQLContactBookStore(database)
-	sqlAnnRead := newSQLAnnouncementReadStore(database)
-	sqlAnn := newSQLAnnouncementStore(database)
-	sqlEvent := newSQLEventStore(database)
-	sqlHandover := newSQLHandoverStore(database)
-	sqlDocument := newSQLDocumentStore(database, documentFileDir)
-	sqlAttachment := newSQLAttachmentStore(database, attachmentFileDir)
-	sqlTelegram := newSQLTelegramStore(database)
-	sqlUnits := newSQLUnitStore(database)
-	sqlVotes := newSQLVoteStore(database)
-	sqlIssues := newSQLIssueStore(database, issueAttachmentDir)
-	identity := newSQLIdentityStore(database)
+	sqlActivity := newSQLActivityStore(tenantDB)
+	sqlProfileOverlay := newSQLProfileOverlayStore(tenantDB)
+	sqlNotification := newSQLNotificationPrefStore(tenantDB)
+	sqlUnitPayment := newSQLUnitPaymentStatusStore(tenantDB)
+	sqlContacts := newSQLContactBookStore(tenantDB)
+	sqlAnnRead := newSQLAnnouncementReadStore(tenantDB)
+	sqlAnn := newSQLAnnouncementStore(tenantDB)
+	sqlEvent := newSQLEventStore(tenantDB)
+	sqlHandover := newSQLHandoverStore(tenantDB)
+	sqlDocument := newSQLDocumentStore(tenantDB, documentFileDir)
+	sqlAttachment := newSQLAttachmentStore(tenantDB, attachmentFileDir)
+	sqlTelegram := newSQLTelegramStore(tenantDB)
+	sqlUnits := newSQLUnitStore(tenantDB)
+	sqlVotes := newSQLVoteStore(tenantDB)
+	sqlIssues := newSQLIssueStore(tenantDB, issueAttachmentDir)
+	identity := newSQLIdentityStore(tenantDB)
 	energyBackend := energy.NewSQLStore(database)
-	homeReservationBackend := store.NewSQLHomeReservationStore(database)
-	homePortalBackend := store.NewSQLHomePortalStore(database)
-	homeConnectorBackend := store.NewSQLHomeConnectorStore(database)
-	homeConnectorReadingBackend := store.NewSQLHomeConnectorReadingStore(database)
+	homeReservationBackend := store.NewSQLHomeReservationStore(tenantDB)
+	homePortalBackend := store.NewSQLHomePortalStore(tenantDB)
+	homeConnectorBackend := store.NewSQLHomeConnectorStore(tenantDB)
+	homeConnectorReadingBackend := store.NewSQLHomeConnectorReadingStore(tenantDB)
 	if removed, err := homeReservationBackend.PurgePendingBefore(time.Now().Add(-homePendingRetention)); err != nil {
 		return nil, fmt.Errorf("expired home reservation purge failed: %w", err)
 	} else if removed > 0 {

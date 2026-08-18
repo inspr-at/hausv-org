@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	appdb "github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
@@ -51,9 +52,59 @@ func testTenantRef(slug string) TenantRef {
 // same way production does.
 func testDB(t *testing.T) *sql.DB {
 	t.Helper()
-	database := dbtest.Open(t)
-	seedFixtureTenants(t, database)
+	database, _ := testLanes(t)
 	return database
+}
+
+// testLanes returns the fixture pool AND the scoped seam over it, which is what
+// a store now takes.
+//
+// The pool is still handed back because fixtures and assertions write and read
+// directly, deliberately outside the store's lane: an assertion that ran through
+// the same lane as the write could not tell "the row is scoped correctly" from
+// "the lane hid a row that is scoped wrong".
+//
+// On PostgreSQL the seam is built from the DSN of this test's isolated schema,
+// so every handle a store takes here is a REAL lane — a pool of its own, born
+// with the scope in its startup packet — not the process pool wearing a wrapper.
+// On SQLite there are no lanes and nothing to scope, and db.Scoped hands back
+// the one pool for every accessor, so these tests behave exactly as before.
+func testLanes(t *testing.T) (*sql.DB, *TenantDB) {
+	t.Helper()
+	database, cfg := dbtest.OpenWithConfig(t)
+	seedFixtureTenants(t, database)
+	return database, lanesOver(t, database, cfg)
+}
+
+// testStoreDB is testLanes for the tests that never touch the pool directly.
+func testStoreDB(t *testing.T) *TenantDB {
+	t.Helper()
+	_, lanes := testLanes(t)
+	return lanes
+}
+
+// LanesForTest is testLanes for this package's black-box tests, which cannot see
+// an unexported helper. It is not named Test* on purpose: vet would then read it
+// as a test with the wrong signature.
+func LanesForTest(t *testing.T, database *sql.DB, cfg appdb.Config) *TenantDB {
+	t.Helper()
+	return lanesOver(t, database, cfg)
+}
+
+// lanesOver builds the scoped seam over a pool the caller already opened, for
+// the tests that open their own database (reopen-after-close, two-database
+// isolation checks) rather than going through testLanes.
+func lanesOver(t *testing.T, database *sql.DB, cfg appdb.Config) *TenantDB {
+	t.Helper()
+	scoped, err := appdb.NewScoped(cfg, database)
+	if err != nil {
+		t.Fatalf("open scoped test lanes: %v", err)
+	}
+	// Lanes are pools; without this a package-sized test run leaks one set per
+	// database it opens, and the server runs out of backends long before the
+	// suite ends.
+	t.Cleanup(func() { _ = scoped.Close() })
+	return NewTenantDB(scoped)
 }
 
 func seedFixtureTenants(t *testing.T, database *sql.DB) {

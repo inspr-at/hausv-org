@@ -15,9 +15,9 @@ func TestUnitStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) UnitStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLUnitStore(database)
+			return NewSQLUnitStore(lanes)
 		},
 	}
 
@@ -144,9 +144,9 @@ func TestSQLUnitImportFromJSON(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLUnitStore(database)
+	sqlStore := NewSQLUnitStore(lanes)
 	sqlRepository, _ := BindUnitRepository(sqlStore, testTenantRef("demo"))
 
 	for i := 0; i < 2; i++ {

@@ -41,16 +41,16 @@ import (
 // the previous release with raw SQL in the shape that release used rather than
 // by running the previous binary.
 func TestBackfillHealsTheRollbackWindowAcrossAFullCycle(t *testing.T) {
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC().Truncate(time.Second)
 
 	// 1. The new release runs. Every row it writes carries an identity.
-	announcements, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(database), tenant)
+	announcements, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(lanes), tenant)
 	if _, err := announcements.Create(Announcement{Title: "written by the new release", Body: "x"}); err != nil {
 		t.Fatalf("new release announcement: %v", err)
 	}
-	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(database), tenant)
+	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), tenant)
 	if _, err := payments.Set(UnitPaymentStatus{
 		UnitID: "u1", Status: UnitPaymentStatusOpen, UpdatedBy: "new@example.com",
 	}); err != nil {
@@ -107,7 +107,7 @@ func TestBackfillHealsTheRollbackWindowAcrossAFullCycle(t *testing.T) {
 // is the state every ambiguity rule existed to cope with. Now the label is
 // repaired too, so the state the rules coped with no longer occurs.
 func TestBackfillCanonicalisesEveryStoredSpellingBeforeLinking(t *testing.T) {
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	now := time.Now().UTC().Truncate(time.Second)
 	seedPaymentRow(t, database, "Demo", "u1", UnitPaymentStatusOpen, now)
 	seedPaymentRow(t, database, "demo ", "u2", UnitPaymentStatusPaid, now)
@@ -117,7 +117,7 @@ func TestBackfillCanonicalisesEveryStoredSpellingBeforeLinking(t *testing.T) {
 		t.Fatalf("backfill: %v", err)
 	}
 
-	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(database), testTenantRef("demo"))
+	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), testTenantRef("demo"))
 	if listed := payments.List(); len(listed) != 3 {
 		t.Errorf("payments.List() = %d rows, want 3: every row of this tenant must be visible", len(listed))
 	}

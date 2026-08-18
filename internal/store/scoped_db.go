@@ -16,6 +16,12 @@ import (
 // What comes back is a db.Handle: the exact four non-context methods the stores
 // already call, which *sql.DB satisfies unchanged. So adopting this is a change
 // of where the handle comes from, not of how it is used.
+//
+// All twenty SQL stores in this package now hold one of these instead of a pool.
+// Retyping the field is what did the work: every statement site in a converted
+// file stopped compiling until it named a lane, including the ones that pass the
+// handle on as a value (newTenantIDCache(s.db), s.allRecords(s.db), a bare
+// s.db.QueryRow method value) that no grep for ".db.Query" would have found.
 type TenantDB struct {
 	scoped *db.Scoped
 }

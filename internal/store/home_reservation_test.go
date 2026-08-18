@@ -12,12 +12,13 @@ import (
 )
 
 func TestHomeReservationStoreParity(t *testing.T) {
-	database := dbtest.Open(t)
+	database, cfg := dbtest.OpenWithConfig(t)
 	t.Cleanup(func() { _ = database.Close() })
+	lanes := store.LanesForTest(t, database, cfg)
 
 	stores := map[string]store.HomeReservationStorage{
 		"memory": store.NewMemoryHomeReservationStore(),
-		"sqlite": store.NewSQLHomeReservationStore(database),
+		"sqlite": store.NewSQLHomeReservationStore(lanes),
 	}
 	for name, backend := range stores {
 		t.Run(name, func(t *testing.T) {
@@ -79,7 +80,7 @@ func TestSQLHomeReservationSurvivesReopen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	backend := store.NewSQLHomeReservationStore(database)
+	backend := store.NewSQLHomeReservationStore(store.LanesForTest(t, database, db.Config{}))
 	if _, err := backend.Reserve(store.HomeReservation{
 		Slug: "dauerhaft", HouseholdName: "Dauerhaftes Zuhause", OwnerEmail: "owner@example.com",
 		AuthorizationConfirmed: true,
@@ -95,7 +96,7 @@ func TestSQLHomeReservationSurvivesReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
-	item, found, err := store.NewSQLHomeReservationStore(database).Get("dauerhaft")
+	item, found, err := store.NewSQLHomeReservationStore(store.LanesForTest(t, database, db.Config{})).Get("dauerhaft")
 	if err != nil || !found || item.OwnerEmail != "owner@example.com" {
 		t.Fatalf("reopened reservation = %+v, found=%v, err=%v", item, found, err)
 	}

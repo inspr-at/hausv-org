@@ -122,10 +122,10 @@ func (s *MemoryHomeReservationStore) PurgePendingBefore(before time.Time) (int64
 }
 
 type SQLHomeReservationStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLHomeReservationStore(db *sql.DB) *SQLHomeReservationStore {
+func NewSQLHomeReservationStore(db *TenantDB) *SQLHomeReservationStore {
 	return &SQLHomeReservationStore{db: db}
 }
 
@@ -137,7 +137,7 @@ func (s *SQLHomeReservationStore) Reserve(item HomeReservation, at time.Time) (H
 	if item.Slug == "" || item.HouseholdName == "" || item.OwnerEmail == "" || !item.AuthorizationConfirmed {
 		return HomeReservation{}, fmt.Errorf("invalid home reservation")
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("onboarding reserves a slug that has no tenant row yet, so there is nothing to scope to").Begin()
 	if err != nil {
 		return HomeReservation{}, err
 	}
@@ -185,7 +185,8 @@ func (s *SQLHomeReservationStore) Confirm(slug, ownerEmail string, at time.Time)
 	slug = textutil.Slug(slug)
 	ownerEmail = textutil.Email(ownerEmail)
 	at = homeReservationTime(at)
-	result, err := s.db.Exec(`UPDATE home_reservations
+	unscoped := s.db.Unscoped("the home reservation confirmation path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	result, err := unscoped.Exec(`UPDATE home_reservations
 		SET status=CASE WHEN status=$1 THEN status ELSE $2 END, confirmed_at=COALESCE(confirmed_at,$3), updated_at=$4
 		WHERE slug=$5 AND owner_email=$6`, HomeReservationActive, HomeReservationEmailConfirmed,
 		homeReservationTimestamp(at), homeReservationTimestamp(at), slug, ownerEmail)
@@ -204,14 +205,16 @@ func (s *SQLHomeReservationStore) Get(slug string) (HomeReservation, bool, error
 	if s == nil || s.db == nil {
 		return HomeReservation{}, false, fmt.Errorf("home reservation store unavailable")
 	}
-	return getHomeReservation(s.db.QueryRow, textutil.Slug(slug))
+	unscoped := s.db.Unscoped("the home reservation read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	return getHomeReservation(unscoped.QueryRow, textutil.Slug(slug))
 }
 
 func (s *SQLHomeReservationStore) PurgePendingBefore(before time.Time) (int64, error) {
 	if s == nil || s.db == nil {
 		return 0, fmt.Errorf("home reservation store unavailable")
 	}
-	result, err := s.db.Exec(`DELETE FROM home_reservations WHERE status=$1 AND updated_at<$2`,
+	unscoped := s.db.Unscoped("retention sweep over every tenant's expired reservations: the boot path that calls it has no tenant in scope")
+	result, err := unscoped.Exec(`DELETE FROM home_reservations WHERE status=$1 AND updated_at<$2`,
 		HomeReservationEmailPending, homeReservationTimestamp(before))
 	if err != nil {
 		return 0, err

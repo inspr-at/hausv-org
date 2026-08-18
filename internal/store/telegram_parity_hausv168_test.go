@@ -16,9 +16,9 @@ func TestTelegramStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) TelegramStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLTelegramStore(database)
+			return NewSQLTelegramStore(lanes)
 		},
 	}
 
@@ -151,9 +151,9 @@ func TestSQLTelegramImportFromJSON(t *testing.T) {
 		t.Fatalf("pending code: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLTelegramStore(database)
+	sqlStore := NewSQLTelegramStore(lanes)
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportTelegram(jsonStore); err != nil {

@@ -16,9 +16,9 @@ func TestContactBookStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) ContactBookStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLContactBookStore(database)
+			return NewSQLContactBookStore(lanes)
 		},
 	}
 
@@ -97,9 +97,9 @@ func TestSQLContactImportFromJSON(t *testing.T) {
 	a, _, _ := jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "dienstleister", Name: "Alpha", Phone: "+43 1 1", Active: true})
 	_, _, _ = jsonRepo.Upsert(ManagedContact{TenantSlug: "demo", Kind: "notdienst", Company: "Beta GmbH", Email: "b@example.com", Active: true})
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLContactBookStore(database)
+	sqlStore := NewSQLContactBookStore(lanes)
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportContacts(jsonStore); err != nil {

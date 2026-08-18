@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
@@ -67,10 +66,10 @@ func (r *boundAnnouncementReadRepository) MarkSeen(email string, seenAt time.Tim
 // SQLAnnouncementReadStore records the per-user last-seen announcement time.
 // Table from migration 0007.
 type SQLAnnouncementReadStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLAnnouncementReadStore(db *sql.DB) *SQLAnnouncementReadStore {
+func NewSQLAnnouncementReadStore(db *TenantDB) *SQLAnnouncementReadStore {
 	return &SQLAnnouncementReadStore{db: db}
 }
 
@@ -87,7 +86,7 @@ func (s *SQLAnnouncementReadStore) lastSeen(tenant TenantRef, email string) time
 		return time.Time{}
 	}
 	var raw string
-	if err := s.db.QueryRow(
+	if err := s.db.For(tenant).QueryRow(
 		`SELECT seen_at FROM announcement_reads WHERE tenant_id = $1 AND email = $2`, tenant.ID, email,
 	).Scan(&raw); err != nil {
 		return time.Time{}
@@ -109,7 +108,7 @@ func (s *SQLAnnouncementReadStore) markSeen(tenant TenantRef, email string, seen
 	if tenantSlug == "" || email == "" {
 		return nil
 	}
-	_, err := s.db.Exec(
+	_, err := s.db.Unscoped(healOrphanReason).Exec(
 		`INSERT INTO announcement_reads(tenant_id, tenant_slug, email, seen_at) VALUES($1, $2, $3, $4)
 		 ON CONFLICT(tenant_slug, email) DO UPDATE SET seen_at = excluded.seen_at,
 		   tenant_id = coalesce(announcement_reads.tenant_id, excluded.tenant_id)`,
@@ -136,7 +135,8 @@ func (s *SQLAnnouncementReadStore) ImportReads(src *AnnouncementReadStore) error
 		}
 	}
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON read-marker snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, p := range pairs {
 		slug := textutil.Slug(p.tenant)
 		email := textutil.Email(p.email)
@@ -147,7 +147,7 @@ func (s *SQLAnnouncementReadStore) ImportReads(src *AnnouncementReadStore) error
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO announcement_reads(tenant_id, tenant_slug, email, seen_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(tenant_slug, email) DO NOTHING`,
 			tenant.ID, tenant.Slug, email, p.at.UTC().Format(time.RFC3339Nano),

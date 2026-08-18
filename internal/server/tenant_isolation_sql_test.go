@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	appdb "github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	storepkg "github.com/inspr-at/hausv-org/internal/store"
@@ -48,8 +49,20 @@ func newSQLTestApp(t *testing.T, tenants []sqlTestTenant, profiles ...userProfil
 		t.Fatal("a tenant-scoping harness needs at least one tenant")
 	}
 	a := newTestPortalApp(t, profiles[0])
-	database := dbtest.Open(t)
+	database, dbCfg := dbtest.OpenWithConfig(t)
 	a.db = database
+	// The stores below reach the database only through this seam, and on
+	// PostgreSQL every handle it hands out is a real lane dialled from this
+	// test schema's DSN. That is the only reason this oracle can see a scoping
+	// mistake at all: handing the stores the plain pool instead would leave
+	// every lane in the converted stores untested while still passing.
+	scoped, err := appdb.NewScoped(dbCfg, database)
+	if err != nil {
+		t.Fatalf("open scoped test lanes: %v", err)
+	}
+	t.Cleanup(func() { _ = scoped.Close() })
+	a.scopedDB = scoped
+	a.tenantDB = storepkg.NewTenantDB(scoped)
 	a.dataDir = t.TempDir()
 
 	configured := make([]storepkg.TenantIdentity, 0, len(tenants))
@@ -84,27 +97,27 @@ func newSQLTestApp(t *testing.T, tenants []sqlTestTenant, profiles ...userProfil
 	// by the database instead of by the in-memory doubles. A store left on its
 	// double would silently opt out of the oracle.
 	files := t.TempDir()
-	a.announcementStore = newSQLAnnouncementStore(database)
-	a.announcementReadStore = newSQLAnnouncementReadStore(database)
-	a.eventStore = newSQLEventStore(database)
-	a.contactStore = newSQLContactBookStore(database)
-	a.documentStore = newSQLDocumentStore(database, filepath.Join(files, "documents"))
-	a.attachmentStore = newSQLAttachmentStore(database, filepath.Join(files, "attachments"))
-	a.handoverStore = newSQLHandoverStore(database)
-	a.issueStore = newSQLIssueStore(database, filepath.Join(files, "issues"))
-	a.unitStore = newSQLUnitStore(database)
-	a.unitPaymentStore = newSQLUnitPaymentStatusStore(database)
-	a.voteStore = newSQLVoteStore(database)
-	a.activityStore = newSQLActivityStore(database)
-	a.notificationPrefs = newSQLNotificationPrefStore(database)
-	a.profileOverlays = newSQLProfileOverlayStore(database)
-	a.identityStore = newSQLIdentityStore(database)
+	a.announcementStore = newSQLAnnouncementStore(a.tenantDB)
+	a.announcementReadStore = newSQLAnnouncementReadStore(a.tenantDB)
+	a.eventStore = newSQLEventStore(a.tenantDB)
+	a.contactStore = newSQLContactBookStore(a.tenantDB)
+	a.documentStore = newSQLDocumentStore(a.tenantDB, filepath.Join(files, "documents"))
+	a.attachmentStore = newSQLAttachmentStore(a.tenantDB, filepath.Join(files, "attachments"))
+	a.handoverStore = newSQLHandoverStore(a.tenantDB)
+	a.issueStore = newSQLIssueStore(a.tenantDB, filepath.Join(files, "issues"))
+	a.unitStore = newSQLUnitStore(a.tenantDB)
+	a.unitPaymentStore = newSQLUnitPaymentStatusStore(a.tenantDB)
+	a.voteStore = newSQLVoteStore(a.tenantDB)
+	a.activityStore = newSQLActivityStore(a.tenantDB)
+	a.notificationPrefs = newSQLNotificationPrefStore(a.tenantDB)
+	a.profileOverlays = newSQLProfileOverlayStore(a.tenantDB)
+	a.identityStore = newSQLIdentityStore(a.tenantDB)
 	a.inviteStore = a.identityStore
 	a.energyStore = energy.NewSQLStore(database)
-	a.homeReservations = storepkg.NewSQLHomeReservationStore(database)
-	a.homePortals = storepkg.NewSQLHomePortalStore(database)
-	a.homeConnectors = storepkg.NewSQLHomeConnectorStore(database)
-	a.homeConnectorReadings = storepkg.NewSQLHomeConnectorReadingStore(database)
+	a.homeReservations = storepkg.NewSQLHomeReservationStore(a.tenantDB)
+	a.homePortals = storepkg.NewSQLHomePortalStore(a.tenantDB)
+	a.homeConnectors = storepkg.NewSQLHomeConnectorStore(a.tenantDB)
+	a.homeConnectorReadings = storepkg.NewSQLHomeConnectorReadingStore(a.tenantDB)
 
 	for _, profile := range profiles {
 		if _, err := a.inviteStore.Add(profile); err != nil {

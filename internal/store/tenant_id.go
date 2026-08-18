@@ -110,6 +110,41 @@ var ErrTenantIDMissing = errors.New("store: tenant-bound rows without a tenant_i
 // tenant_slug tables. Reaching this error takes a hand-edited or imported row.
 var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot be canonicalised")
 
+// healOrphanReason is the Unscoped reason for the handful of writes that can
+// land on a row LEFT BEHIND BY THE PREVIOUS RELEASE — one whose tenant_id is
+// still NULL because it was written before the column existed.
+//
+// It is a lane decision, not a preference. PostgreSQL migration 0003 scopes a
+// session by tenant_id and gives NO escape for a row that has none:
+//
+//	USING (coalesce(current_setting('hausv.tenant_id', true), '') = ''
+//	       OR tenant_id = current_setting('hausv.tenant_id', true))
+//
+// A tenant lane always sets hausv.tenant_id, so the first branch is false and
+// the second cannot match NULL. An orphan row is therefore invisible AND
+// unwritable from every tenant lane, and the healing upsert that is supposed to
+// give it its identity fails outright:
+//
+//	ERROR: new row violates row-level security policy (USING expression)
+//	       for table "unit_payment_status" (SQLSTATE 42501)
+//
+// measured on the three tables whose rows are addressable by a NATURAL key
+// (unit_payment_status, announcement_reads, units) — those are the only ones a
+// new write can collide with an orphan on. The other tenant-bound tables key on
+// a random id, so no write ever lands on a legacy row there and their upserts
+// stay on the tenant lane.
+//
+// So the adoption runs on the declared cross-tenant lane, where the policy's
+// first branch applies and the row can be reached. The statement itself still
+// writes tenant_id=$1 and still filters on the tenant, so nothing widens: what
+// changes is which lane is allowed to touch a row that belongs to no lane.
+//
+// This is time-boxed by the rollback window. When tenant_id becomes NOT NULL
+// there are no orphans left, the heal is dead code, and these three sites go
+// back to For(tenant). Until then, removing this is what re-opens HAUSV-145's
+// "wrote a row it cannot see".
+const healOrphanReason = "adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL"
+
 // tenantIDQuerier is the subset of *sql.DB and *sql.Tx the resolver needs, so
 // the same code works inside and outside a transaction.
 type tenantIDQuerier = tenantid.Querier

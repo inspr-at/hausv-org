@@ -7,9 +7,9 @@ import (
 
 func hausv516DB(t *testing.T) *SQLIdentityStore {
 	t.Helper()
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	t.Cleanup(func() { database.Close() })
-	return NewSQLIdentityStore(database)
+	return NewSQLIdentityStore(lanes)
 }
 
 func TestBoundAnnouncementRepositoryExcludesOtherTenants(t *testing.T) {
@@ -24,7 +24,7 @@ func TestBoundAnnouncementRepositoryExcludesOtherTenants(t *testing.T) {
 }
 
 func TestRepositoryBoundaryValidatesTenantIdentity(t *testing.T) {
-	storage := NewSQLAnnouncementStore(testDB(t))
+	storage := NewSQLAnnouncementStore(testStoreDB(t))
 	if _, ok := BindAnnouncementRepository(storage, TenantRef{Slug: "demo"}); ok {
 		t.Fatal("repository accepted an empty tenant id")
 	}

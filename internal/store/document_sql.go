@@ -92,11 +92,11 @@ func (r *boundDocumentRepository) FilePath(item DocumentRecord) (string, bool) {
 // per decade. If that ever changes, prune by SeriesID keeping the current
 // version plus the N most recent, rather than by age.
 type SQLDocumentStore struct {
-	db      *sql.DB
+	db      *TenantDB
 	fileDir string
 }
 
-func NewSQLDocumentStore(db *sql.DB, fileDir string) *SQLDocumentStore {
+func NewSQLDocumentStore(db *TenantDB, fileDir string) *SQLDocumentStore {
 	return &SQLDocumentStore{db: db, fileDir: fileDir}
 }
 
@@ -119,7 +119,7 @@ func (s *SQLDocumentStore) writeTx(tx *sql.Tx, tenant TenantRef, item DocumentRe
 // insertOne persists a freshly created record, removing the stored file if the
 // metadata write fails (mirrors the JSON store's rollback).
 func (s *SQLDocumentStore) insertOne(tenant TenantRef, item DocumentRecord, filePath string) (DocumentRecord, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		_ = os.Remove(filePath)
 		return DocumentRecord{}, err
@@ -205,7 +205,7 @@ func (s *SQLDocumentStore) replace(tenant TenantRef, id string, uploadedBy strin
 		return DocumentRecord{}, DocumentRecord{}, err
 	}
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, err
@@ -258,7 +258,7 @@ func (s *SQLDocumentStore) replace(tenant TenantRef, id string, uploadedBy strin
 }
 
 func (s *SQLDocumentStore) allForTenant(tenant TenantRef) []DocumentRecord {
-	rows, err := s.db.Query(`SELECT data FROM documents WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM documents WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []DocumentRecord{}
 	}
@@ -335,7 +335,7 @@ func (s *SQLDocumentStore) get(tenant TenantRef, id string) (DocumentRecord, boo
 		return DocumentRecord{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM documents WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	if err := s.db.For(tenant).QueryRow(`SELECT data FROM documents WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return DocumentRecord{}, false
 	}
 	var item DocumentRecord
@@ -362,7 +362,8 @@ func (s *SQLDocumentStore) ImportDocuments(src *DocumentStore) error {
 	src.mu.Lock()
 	snapshot := append([]DocumentRecord(nil), src.data.Documents...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON document snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
@@ -375,7 +376,7 @@ func (s *SQLDocumentStore) ImportDocuments(src *DocumentStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO documents(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

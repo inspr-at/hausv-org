@@ -100,10 +100,10 @@ func (r *boundVoteRepository) Get(id string) (Ballot, bool) {
 // SQLVoteStore keeps each ballot — votes included — as one JSON document keyed
 // by (tenant, id). Table from migration 0015.
 type SQLVoteStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLVoteStore(db *sql.DB) *SQLVoteStore {
+func NewSQLVoteStore(db *TenantDB) *SQLVoteStore {
 	return &SQLVoteStore{db: db}
 }
 
@@ -159,7 +159,7 @@ func (s *SQLVoteStore) create(tenant TenantRef, item Ballot) (Ballot, error) {
 	if !item.OpensAt.IsZero() && !item.ClosesAt.IsZero() && !item.ClosesAt.After(item.OpensAt) {
 		return Ballot{}, fmt.Errorf("Ballot close must be after open")
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return Ballot{}, err
 	}
@@ -183,7 +183,7 @@ func (s *SQLVoteStore) delete(tenant TenantRef, id string) (bool, error) {
 	if tenantSlug == "" || id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM ballots WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
+	res, err := s.db.For(tenant).Exec(`DELETE FROM ballots WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
 	if err != nil {
 		return false, err
 	}
@@ -214,7 +214,7 @@ func (s *SQLVoteStore) setStatus(tenant TenantRef, id string, status string, at 
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return Ballot{}, false, err
 	}
@@ -257,7 +257,7 @@ func (s *SQLVoteStore) closeExpiredTenant(tenant TenantRef, at time.Time) ([]Bal
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func (s *SQLVoteStore) castVote(tenant TenantRef, id string, email string, optio
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return Ballot{}, false, err
 	}
@@ -383,7 +383,7 @@ func (s *SQLVoteStore) markReminderSent(tenant TenantRef, id string, recipients 
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return Ballot{}, false, err
 	}
@@ -416,7 +416,7 @@ func (s *SQLVoteStore) listTenant(tenant TenantRef) []Ballot {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM ballots WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM ballots WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []Ballot{}
 	}
@@ -448,7 +448,7 @@ func (s *SQLVoteStore) get(tenant TenantRef, id string) (Ballot, bool) {
 		return Ballot{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM ballots WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	if err := s.db.For(tenant).QueryRow(`SELECT data FROM ballots WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return Ballot{}, false
 	}
 	var item Ballot
@@ -467,7 +467,8 @@ func (s *SQLVoteStore) ImportBallots(src *VoteStore) error {
 	src.mu.Lock()
 	snapshot := append([]Ballot(nil), src.data.Ballots...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON ballot snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		slug := textutil.Slug(item.TenantSlug)
 		if slug == "" || strings.TrimSpace(item.ID) == "" {
@@ -481,7 +482,7 @@ func (s *SQLVoteStore) ImportBallots(src *VoteStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO ballots(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

@@ -66,10 +66,10 @@ func (r *boundEventRepository) Upcoming(now time.Time) []HouseEvent {
 // SQLEventStore keeps each event as a JSON document keyed by (tenant, id).
 // Table from migration 0009.
 type SQLEventStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLEventStore(db *sql.DB) *SQLEventStore {
+func NewSQLEventStore(db *TenantDB) *SQLEventStore {
 	return &SQLEventStore{db: db}
 }
 
@@ -105,7 +105,7 @@ func (s *SQLEventStore) create(tenant TenantRef, item HouseEvent) (HouseEvent, e
 		return HouseEvent{}, err
 	}
 	normalized.ID = id
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return HouseEvent{}, err
 	}
@@ -130,7 +130,7 @@ func (s *SQLEventStore) update(tenant TenantRef, id string, updated HouseEvent) 
 	if !ok {
 		return false, fmt.Errorf("invalid event")
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
@@ -168,7 +168,7 @@ func (s *SQLEventStore) delete(tenant TenantRef, id string) (bool, error) {
 	if tenantSlug == "" || id == "" {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM events WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
+	res, err := s.db.For(tenant).Exec(`DELETE FROM events WHERE tenant_id=$1 AND id=$2`, tenant.ID, id)
 	if err != nil {
 		return false, err
 	}
@@ -179,7 +179,7 @@ func (s *SQLEventStore) delete(tenant TenantRef, id string) (bool, error) {
 func (s *SQLEventStore) allForTenant(tenant TenantRef) []HouseEvent {
 	tenantSlug := tenant.Slug
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM events WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM events WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []HouseEvent{}
 	}
@@ -225,7 +225,8 @@ func (s *SQLEventStore) ImportEvents(src *EventStore) error {
 	src.mu.Lock()
 	snapshot := append([]HouseEvent(nil), src.data.Events...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON event snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" {
 			continue
@@ -238,7 +239,7 @@ func (s *SQLEventStore) ImportEvents(src *EventStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO events(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

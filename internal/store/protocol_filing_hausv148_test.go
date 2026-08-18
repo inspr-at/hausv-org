@@ -62,10 +62,10 @@ func TestProtocolFilerParity(t *testing.T) {
 		"sqlite-atomic": func(t *testing.T) filingBackend {
 			dir := t.TempDir()
 			fileDir := filepath.Join(dir, "files")
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			docs := NewSQLDocumentStore(database, fileDir)
-			hs := NewSQLHandoverStore(database)
+			docs := NewSQLDocumentStore(lanes, fileDir)
+			hs := NewSQLHandoverStore(lanes)
 			filer := NewSQLProtocolFiler(docs, hs)
 			if filer == nil {
 				t.Fatal("expected an atomic filer when both stores share a db")
@@ -145,10 +145,10 @@ func TestProtocolFilerParity(t *testing.T) {
 func TestSQLProtocolFilerConcurrentFilingCreatesOneDocument(t *testing.T) {
 	dir := t.TempDir()
 	fileDir := filepath.Join(dir, "files")
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	docs := NewSQLDocumentStore(database, fileDir)
-	handovers := NewSQLHandoverStore(database)
+	docs := NewSQLDocumentStore(lanes, fileDir)
+	handovers := NewSQLHandoverStore(lanes)
 	filer := NewSQLProtocolFiler(docs, handovers)
 	handoverRepo, _ := BindHandoverRepository(handovers, testTenantRef("demo"))
 	if _, err := handoverRepo.Create(sampleHandover("h1")); err != nil {
@@ -201,16 +201,21 @@ func TestSQLProtocolFilerRequiresSharedDatabase(t *testing.T) {
 	}
 	defer dbB.Close()
 
-	if f := NewSQLProtocolFiler(NewSQLDocumentStore(dbA, dirA), NewSQLHandoverStore(dbB)); f != nil {
+	// One seam per database: sharing a database now means sharing the *TenantDB
+	// the stores were built from, which is what NewSQLProtocolFiler compares.
+	lanesA := lanesOver(t, dbA, db.Config{})
+	lanesB := lanesOver(t, dbB, db.Config{})
+
+	if f := NewSQLProtocolFiler(NewSQLDocumentStore(lanesA, dirA), NewSQLHandoverStore(lanesB)); f != nil {
 		t.Fatal("filer must be nil when the stores use different databases")
 	}
-	if f := NewSQLProtocolFiler(nil, NewSQLHandoverStore(dbA)); f != nil {
+	if f := NewSQLProtocolFiler(nil, NewSQLHandoverStore(lanesA)); f != nil {
 		t.Fatal("filer must be nil without a document store")
 	}
-	if f := NewSQLProtocolFiler(NewSQLDocumentStore(dbA, dirA), nil); f != nil {
+	if f := NewSQLProtocolFiler(NewSQLDocumentStore(lanesA, dirA), nil); f != nil {
 		t.Fatal("filer must be nil without a handover store")
 	}
-	if f := NewSQLProtocolFiler(NewSQLDocumentStore(dbA, dirA), NewSQLHandoverStore(dbA)); f == nil {
+	if f := NewSQLProtocolFiler(NewSQLDocumentStore(lanesA, dirA), NewSQLHandoverStore(lanesA)); f == nil {
 		t.Fatal("filer must be returned when both stores share a database")
 	}
 }

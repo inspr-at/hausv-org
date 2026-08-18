@@ -19,9 +19,10 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reservations := store.NewSQLHomeReservationStore(database)
-	identity := store.NewSQLIdentityStore(database)
-	portals := store.NewSQLHomePortalStore(database)
+	lanes := store.LanesForTest(t, database, db.Config{})
+	reservations := store.NewSQLHomeReservationStore(lanes)
+	identity := store.NewSQLIdentityStore(lanes)
+	portals := store.NewSQLHomePortalStore(lanes)
 	now := time.Date(2026, time.August, 14, 12, 0, 0, 0, time.UTC)
 
 	person, err := identity.UpsertPerson(store.Person{
@@ -102,22 +103,24 @@ func TestSQLHomePortalActivationIsAtomicIdempotentAndPersistent(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
-	reopened, found, err := store.NewSQLHomePortalStore(database).Get("stadtpark-home")
+	lanes = store.LanesForTest(t, database, db.Config{})
+	reopened, found, err := store.NewSQLHomePortalStore(lanes).Get("stadtpark-home")
 	if err != nil || !found || reopened.OwnerEmail != "owner@example.com" || reopened.HouseholdName != portal.HouseholdName {
 		t.Fatalf("reopened portal=%+v found=%v err=%v", reopened, found, err)
 	}
-	owned, err = store.NewSQLHomePortalStore(database).ListByOwner("owner@example.com")
+	owned, err = store.NewSQLHomePortalStore(lanes).ListByOwner("owner@example.com")
 	if err != nil || len(owned) != 1 || owned[0].HouseholdName != portal.HouseholdName {
 		t.Fatalf("reopened owned portals=%+v err=%v", owned, err)
 	}
 }
 
 func TestSQLHomePortalRejectsForeignUnconfirmedAndRollsBack(t *testing.T) {
-	database := dbtest.Open(t)
+	database, cfg := dbtest.OpenWithConfig(t)
 	t.Cleanup(func() { _ = database.Close() })
-	reservations := store.NewSQLHomeReservationStore(database)
-	portals := store.NewSQLHomePortalStore(database)
-	identity := store.NewSQLIdentityStore(database)
+	lanes := store.LanesForTest(t, database, cfg)
+	reservations := store.NewSQLHomeReservationStore(lanes)
+	portals := store.NewSQLHomePortalStore(lanes)
+	identity := store.NewSQLIdentityStore(lanes)
 	now := time.Date(2026, time.August, 14, 12, 0, 0, 0, time.UTC)
 	if _, err := reservations.Reserve(store.HomeReservation{
 		Slug: "sicheres-home", HouseholdName: "Sicheres Home", OwnerEmail: "owner@example.com", AuthorizationConfirmed: true,

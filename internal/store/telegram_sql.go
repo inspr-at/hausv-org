@@ -34,10 +34,10 @@ const telegramOffsetKey = "offset"
 // SQLTelegramStore keeps the bot offset, the chat links and the pending link
 // codes in three tables from migration 0013.
 type SQLTelegramStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLTelegramStore(db *sql.DB) *SQLTelegramStore {
+func NewSQLTelegramStore(db *TenantDB) *SQLTelegramStore {
 	return &SQLTelegramStore{db: db}
 }
 
@@ -56,7 +56,8 @@ func (s *SQLTelegramStore) Offset() int64 {
 		return 0
 	}
 	var raw string
-	if err := s.db.QueryRow(`SELECT value FROM telegram_state WHERE key=$1`, telegramOffsetKey).Scan(&raw); err != nil {
+	unscoped := s.db.Unscoped("telegram_state has no tenant_id: the bot poll offset is one cursor for the whole process")
+	if err := unscoped.QueryRow(`SELECT value FROM telegram_state WHERE key=$1`, telegramOffsetKey).Scan(&raw); err != nil {
 		return 0
 	}
 	n, err := strconv.ParseInt(raw, 10, 64)
@@ -73,7 +74,7 @@ func (s *SQLTelegramStore) SetOffset(offset int64) error {
 	if offset == s.Offset() {
 		return nil
 	}
-	_, err := s.db.Exec(
+	_, err := s.db.Unscoped("telegram_state has no tenant_id: the bot poll offset is one cursor for the whole process").Exec(
 		`INSERT INTO telegram_state(key, value) VALUES($1, $2)
 		 ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
 		telegramOffsetKey, strconv.FormatInt(offset, 10),
@@ -100,7 +101,8 @@ func (s *SQLTelegramStore) Links() []TelegramLink {
 	if s == nil {
 		return nil
 	}
-	rows, err := s.db.Query(`SELECT chat_id, email, name, linked_at FROM telegram_links`)
+	unscoped := s.db.Unscoped("telegram_links has no tenant_id: a chat is linked to a person, not to a house")
+	rows, err := unscoped.Query(`SELECT chat_id, email, name, linked_at FROM telegram_links`)
 	if err != nil {
 		return []TelegramLink{}
 	}
@@ -120,7 +122,8 @@ func (s *SQLTelegramStore) LinkByChat(chatID int64) (TelegramLink, bool) {
 	}
 	var link TelegramLink
 	var linkedAt string
-	if err := s.db.QueryRow(
+	unscoped := s.db.Unscoped("telegram_links has no tenant_id: an incoming chat is resolved before any house is known")
+	if err := unscoped.QueryRow(
 		`SELECT chat_id, email, name, linked_at FROM telegram_links WHERE chat_id=$1`, chatID,
 	).Scan(&link.ChatID, &link.Email, &link.Name, &linkedAt); err != nil {
 		return TelegramLink{}, false
@@ -134,7 +137,8 @@ func (s *SQLTelegramStore) ChatsByEmail(email string) []int64 {
 		return nil
 	}
 	email = textutil.Email(email)
-	rows, err := s.db.Query(`SELECT chat_id FROM telegram_links WHERE email=$1 ORDER BY chat_id`, email)
+	unscoped := s.db.Unscoped("telegram_links has no tenant_id: every chat a person has, whichever house the notification came from")
+	rows, err := unscoped.Query(`SELECT chat_id FROM telegram_links WHERE email=$1 ORDER BY chat_id`, email)
 	if err != nil {
 		return []int64{}
 	}
@@ -168,7 +172,8 @@ func (s *SQLTelegramStore) CreateLinkCode(email string, createdBy string, ttl ti
 		ttl = 24 * time.Hour
 	}
 	now := time.Now()
-	tx, err := s.db.Begin()
+	unscoped := s.db.Unscoped("telegram_link_codes has no tenant_id: a code is issued to a person, redeemable from any house they belong to")
+	tx, err := unscoped.Begin()
 	if err != nil {
 		return "", err
 	}
@@ -228,7 +233,7 @@ func (s *SQLTelegramStore) ConsumeLinkCode(code string, chatID int64, name strin
 		return TelegramLink{}, fmt.Errorf("invalid link code")
 	}
 	now := time.Now()
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("redemption spans telegram_link_codes and telegram_links, neither of which has a tenant_id").Begin()
 	if err != nil {
 		return TelegramLink{}, err
 	}
@@ -272,7 +277,8 @@ func (s *SQLTelegramStore) Unlink(chatID int64) error {
 	if s == nil {
 		return nil
 	}
-	_, err := s.db.Exec(`DELETE FROM telegram_links WHERE chat_id=$1`, chatID)
+	unscoped := s.db.Unscoped("telegram_links has no tenant_id: unlinking is a chat-level act, not a house-level one")
+	_, err := unscoped.Exec(`DELETE FROM telegram_links WHERE chat_id=$1`, chatID)
 	return err
 }
 
@@ -288,8 +294,9 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 	codes := append([]TelegramLinkCode(nil), src.data.Codes...)
 	src.mu.Unlock()
 
+	imports := s.db.Unscoped("boot import replay of the JSON telegram snapshot into three tables that have no tenant_id, before the first request")
 	if offset != 0 {
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO telegram_state(key, value) VALUES($1, $2) ON CONFLICT(key) DO NOTHING`,
 			telegramOffsetKey, strconv.FormatInt(offset, 10),
 		); err != nil {
@@ -300,7 +307,7 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 		if link.ChatID == 0 {
 			continue
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO telegram_links(chat_id, email, name, linked_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(chat_id) DO NOTHING`,
 			link.ChatID, textutil.Email(link.Email), strings.TrimSpace(link.Name), telegramTime(link.LinkedAt),
@@ -312,7 +319,7 @@ func (s *SQLTelegramStore) ImportTelegram(src *TelegramStore) error {
 		if strings.TrimSpace(code.Code) == "" {
 			continue
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO telegram_link_codes(code, email, created_by, expires_at) VALUES($1, $2, $3, $4)
 			 ON CONFLICT(code) DO NOTHING`,
 			code.Code, textutil.Email(code.Email), textutil.Email(code.CreatedBy), telegramTime(code.ExpiresAt),

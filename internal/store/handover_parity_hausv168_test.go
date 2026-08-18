@@ -28,9 +28,9 @@ func TestHandoverStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) HandoverStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLHandoverStore(database)
+			return NewSQLHandoverStore(lanes)
 		},
 	}
 
@@ -136,9 +136,9 @@ func TestSQLHandoverImportFromJSON(t *testing.T) {
 		t.Fatalf("seed h2: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLHandoverStore(database)
+	sqlStore := NewSQLHandoverStore(lanes)
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportHandovers(jsonStore); err != nil {

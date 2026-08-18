@@ -99,10 +99,10 @@ func (r *boundIdentityRepository) RemoveMembership(personID string) (bool, error
 // whole-profile update or delete, which is exactly the defect HAUSV-135
 // described. Tables from migration 0017.
 type SQLIdentityStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLIdentityStore(db *sql.DB) *SQLIdentityStore {
+func NewSQLIdentityStore(db *TenantDB) *SQLIdentityStore {
 	return &SQLIdentityStore{db: db}
 }
 
@@ -167,7 +167,8 @@ func (s *SQLIdentityStore) PersonByEmail(email string) (Person, bool) {
 	if email == "" {
 		return Person{}, false
 	}
-	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=$1`, email)
+	unscoped := s.db.Unscoped("persons has no tenant_id: one identity per email, shared by every house it belongs to")
+	row := unscoped.QueryRow(`SELECT `+personColumns+` FROM persons WHERE email=$1`, email)
 	p, err := scanPerson(row.Scan)
 	if err != nil {
 		return Person{}, false
@@ -183,7 +184,8 @@ func (s *SQLIdentityStore) PersonByID(id string) (Person, bool) {
 	if id == "" {
 		return Person{}, false
 	}
-	row := s.db.QueryRow(`SELECT `+personColumns+` FROM persons WHERE id=$1`, id)
+	unscoped := s.db.Unscoped("persons has no tenant_id: one identity per email, shared by every house it belongs to")
+	row := unscoped.QueryRow(`SELECT `+personColumns+` FROM persons WHERE id=$1`, id)
 	p, err := scanPerson(row.Scan)
 	if err != nil {
 		return Person{}, false
@@ -195,7 +197,8 @@ func (s *SQLIdentityStore) ListPersons() []Person {
 	if s == nil {
 		return nil
 	}
-	rows, err := s.db.Query(`SELECT ` + personColumns + ` FROM persons ORDER BY email`)
+	unscoped := s.db.Unscoped("persons has no tenant_id: this is the platform-wide people list, not one house's")
+	rows, err := unscoped.Query(`SELECT ` + personColumns + ` FROM persons ORDER BY email`)
 	if err != nil {
 		return []Person{}
 	}
@@ -222,7 +225,7 @@ func (s *SQLIdentityStore) UpsertPerson(p Person, at time.Time) (Person, error) 
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("persons has no tenant_id: minting or updating an identity is a platform-level act").Begin()
 	if err != nil {
 		return Person{}, err
 	}
@@ -302,7 +305,7 @@ func (s *SQLIdentityStore) ChangePersonEmail(personID string, newEmail string, a
 	}
 	at = at.UTC()
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("persons has no tenant_id: an email change follows the identity into every house at once").Begin()
 	if err != nil {
 		return Person{}, err
 	}
@@ -358,7 +361,7 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped(healOrphanReason).Begin()
 	if err != nil {
 		return HouseMembership{}, err
 	}
@@ -435,7 +438,8 @@ func (s *SQLIdentityStore) membershipBySlug(personID string, slug string) (House
 	if s == nil {
 		return HouseMembership{}, false
 	}
-	tenantID, ok := lookupTenantID(s.db, slug)
+	unscoped := s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to")
+	tenantID, ok := lookupTenantID(unscoped, slug)
 	if !ok {
 		return HouseMembership{}, false
 	}
@@ -447,7 +451,8 @@ func (s *SQLIdentityStore) removeMembershipBySlug(personID string, slug string) 
 	if s == nil {
 		return false, nil
 	}
-	tenantID, ok := lookupTenantID(s.db, slug)
+	unscoped := s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to")
+	tenantID, ok := lookupTenantID(unscoped, slug)
 	if !ok {
 		return false, nil
 	}
@@ -458,7 +463,7 @@ func (s *SQLIdentityStore) membership(personID string, tenant TenantRef) (HouseM
 	if s == nil {
 		return HouseMembership{}, false
 	}
-	row := s.db.QueryRow(
+	row := s.db.For(tenant).QueryRow(
 		`SELECT `+membershipColumns+` FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`,
 		strings.TrimSpace(personID), tenant.ID,
 	)
@@ -473,7 +478,8 @@ func (s *SQLIdentityStore) MembershipsForPerson(personID string) []HouseMembersh
 	if s == nil {
 		return nil
 	}
-	rows, err := s.db.Query(
+	unscoped := s.db.Unscoped("cross-tenant by design: this answers which houses a person is in, so scoping it to one would answer a different question")
+	rows, err := unscoped.Query(
 		// Cross-tenant by design: this answers "which houses is this person in?".
 		// ORDER BY stays on the slug because the result is a user-visible list;
 		// ordering by ULID would reorder it from alphabetical to creation order.
@@ -501,7 +507,7 @@ func (s *SQLIdentityStore) listHouseMembers(tenant TenantRef) []HouseMember {
 	if s == nil {
 		return nil
 	}
-	rows, err := s.db.Query(
+	rows, err := s.db.For(tenant).Query(
 		`SELECT p.id, p.email, p.title, p.first_name, p.last_name, p.auth_methods,
 		        p.deactivated, p.adopted, p.created_at, p.updated_at,
 		        m.person_id, m.tenant_id, m.tenant_slug, m.role, m.permissions, m.status,
@@ -547,7 +553,7 @@ func (s *SQLIdentityStore) removeMembership(personID string, tenant TenantRef) (
 	if s == nil {
 		return false, nil
 	}
-	res, err := s.db.Exec(
+	res, err := s.db.For(tenant).Exec(
 		`DELETE FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`,
 		strings.TrimSpace(personID), tenant.ID,
 	)
@@ -565,7 +571,8 @@ func (s *SQLIdentityStore) DeletePerson(personID string) (bool, error) {
 	if s == nil {
 		return false, nil
 	}
-	res, err := s.db.Exec(`DELETE FROM persons WHERE id=$1`, strings.TrimSpace(personID))
+	unscoped := s.db.Unscoped("persons has no tenant_id and this delete cascades into every house's membership: a platform-level act that must NOT be scoped, because a tenant lane here was measured deleting another tenant's membership through the cascade")
+	res, err := unscoped.Exec(`DELETE FROM persons WHERE id=$1`, strings.TrimSpace(personID))
 	if err != nil {
 		return false, err
 	}

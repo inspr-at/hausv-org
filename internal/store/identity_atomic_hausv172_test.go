@@ -12,9 +12,9 @@ import (
 
 func identityStoreWithDB(t *testing.T) (*SQLIdentityStore, *sql.DB) {
 	t.Helper()
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	t.Cleanup(func() { database.Close() })
-	return NewSQLIdentityStore(database), database
+	return NewSQLIdentityStore(lanes), database
 }
 
 // The failure is simulated by removing the memberships table: the person INSERT

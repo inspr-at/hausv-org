@@ -140,9 +140,9 @@ func (s *MemoryHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConne
 	return cloneHomeConnector(item), true, nil
 }
 
-type SQLHomeConnectorStore struct{ db *sql.DB }
+type SQLHomeConnectorStore struct{ db *TenantDB }
 
-func NewSQLHomeConnectorStore(db *sql.DB) *SQLHomeConnectorStore {
+func NewSQLHomeConnectorStore(db *TenantDB) *SQLHomeConnectorStore {
 	return &SQLHomeConnectorStore{db: db}
 }
 
@@ -159,11 +159,13 @@ func (s *SQLHomeConnectorStore) StartPairing(slug string, pairingHash []byte, ex
 	// Pairing only ever starts for an already-activated house, so the identity
 	// exists; ensureTenantID is here so that a connector row can never be the
 	// one row in the database without one.
-	tenantID, err := ensureTenantID(s.db, slug)
+	registry := s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to")
+	tenantID, err := ensureTenantID(registry, slug)
 	if err != nil {
 		return HomeConnector{}, err
 	}
-	_, err = s.db.Exec(`INSERT INTO home_connectors
+	unscoped := s.db.Unscoped(healOrphanReason)
+	_, err = unscoped.Exec(`INSERT INTO home_connectors
 		(tenant_id,slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		ON CONFLICT(slug) DO UPDATE SET
@@ -189,7 +191,7 @@ func (s *SQLHomeConnectorStore) ExchangePairing(pairingHash, credentialHash []by
 	if len(pairingHash) == 0 || len(credentialHash) == 0 {
 		return HomeConnector{}, false, nil
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.Unscoped("the connector presents a pairing secret, not a tenant: the row is found by hash").Begin()
 	if err != nil {
 		return HomeConnector{}, false, err
 	}
@@ -231,7 +233,8 @@ func (s *SQLHomeConnectorStore) Heartbeat(credentialHash []byte, heartbeat HomeC
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
 	now = homeReservationTime(now)
-	result, err := s.db.Exec(`UPDATE home_connectors SET connector_version=$1,ha_version=$2,entity_count=$3,last_seen_at=$4,updated_at=$5
+	unscoped := s.db.Unscoped("the connector presents a credential hash, not a tenant: heartbeats arrive with no request context to take a tenant from")
+	result, err := unscoped.Exec(`UPDATE home_connectors SET connector_version=$1,ha_version=$2,entity_count=$3,last_seen_at=$4,updated_at=$5
 		WHERE status=$6 AND credential_hash=$7`, heartbeat.ConnectorVersion, heartbeat.HomeAssistantVersion, heartbeat.EntityCount,
 		homeReservationTimestamp(now), homeReservationTimestamp(now), HomeConnectorConnected, credentialHash)
 	if err != nil {
@@ -241,14 +244,15 @@ func (s *SQLHomeConnectorStore) Heartbeat(credentialHash []byte, heartbeat HomeC
 	if err != nil || count == 0 {
 		return HomeConnector{}, false, err
 	}
-	return getHomeConnector(s.db.QueryRow, "credential_hash=$1", credentialHash)
+	return getHomeConnector(unscoped.QueryRow, "credential_hash=$1", credentialHash)
 }
 
 func (s *SQLHomeConnectorStore) Get(slug string) (HomeConnector, bool, error) {
 	if s == nil || s.db == nil {
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
-	return getHomeConnector(s.db.QueryRow, "slug=$1", textutil.Slug(slug))
+	unscoped := s.db.Unscoped("the home connector read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	return getHomeConnector(unscoped.QueryRow, "slug=$1", textutil.Slug(slug))
 }
 
 func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnector, bool, error) {
@@ -256,7 +260,8 @@ func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnecto
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
 	slug = textutil.Slug(slug)
-	result, err := s.db.Exec(`UPDATE home_connectors SET status=$1,credential_hash=NULL,pairing_hash=NULL,
+	unscoped := s.db.Unscoped("the home connector revoke path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
+	result, err := unscoped.Exec(`UPDATE home_connectors SET status=$1,credential_hash=NULL,pairing_hash=NULL,
 		pairing_expires_at=NULL,connector_version='',ha_version='',entity_count=0,last_seen_at=NULL,updated_at=$2 WHERE slug=$3`,
 		HomeConnectorRevoked, homeReservationTimestamp(now), slug)
 	if err != nil {

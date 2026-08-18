@@ -92,10 +92,10 @@ func (r *boundUnitRepository) MembersForUnit(unitID string) UnitMembers {
 // SQLUnitStore keeps each unit as a JSON document keyed by (tenant, id). Table
 // from migration 0014.
 type SQLUnitStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLUnitStore(db *sql.DB) *SQLUnitStore {
+func NewSQLUnitStore(db *TenantDB) *SQLUnitStore {
 	return &SQLUnitStore{db: db}
 }
 
@@ -128,7 +128,7 @@ func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenant TenantRef, units []Uni
 }
 
 func (s *SQLUnitStore) tenantUnits(tenant TenantRef) []Unit {
-	rows, err := s.db.Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil
 	}
@@ -180,7 +180,10 @@ func (s *SQLUnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
 	if tenantSlug == "" {
 		return nil
 	}
-	tx, err := s.db.Begin()
+	// The whole transaction, not just one statement: replaceTenantTx upserts by
+	// (tenant_slug, id), which is exactly where a legacy row without an identity
+	// sits. See healOrphanReason.
+	tx, err := s.db.Unscoped(healOrphanReason).Begin()
 	if err != nil {
 		return err
 	}
@@ -207,7 +210,10 @@ func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (b
 	item.TenantSlug = tenantSlug
 	wasCreate := origID == ""
 
-	tx, err := s.db.Begin()
+	// The whole transaction, not just one statement: replaceTenantTx upserts by
+	// (tenant_slug, id), which is exactly where a legacy row without an identity
+	// sits. See healOrphanReason.
+	tx, err := s.db.Unscoped(healOrphanReason).Begin()
 	if err != nil {
 		return false, err
 	}
@@ -251,7 +257,7 @@ func (s *SQLUnitStore) deleteUnit(tenant TenantRef, id string) (bool, Unit, erro
 	if tenantSlug == "" {
 		return false, Unit{}, nil
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, Unit{}, err
 	}
@@ -350,7 +356,8 @@ func (s *SQLUnitStore) ImportUnits(src *UnitStore) error {
 	src.mu.Lock()
 	snapshot := append([]Unit(nil), src.data.Units...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON unit snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		slug := textutil.Slug(item.TenantSlug)
 		if slug == "" || item.ID == "" {
@@ -364,7 +371,7 @@ func (s *SQLUnitStore) ImportUnits(src *UnitStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

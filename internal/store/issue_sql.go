@@ -86,11 +86,11 @@ func (r *boundIssueRepository) ClearPhotoPaths(id string) (bool, error) {
 // SQLIssueStore keeps each issue — comments and status history included — as
 // one JSON document keyed by (tenant, id). Table from migration 0016.
 type SQLIssueStore struct {
-	db            *sql.DB
+	db            *TenantDB
 	attachmentDir string
 }
 
-func NewSQLIssueStore(db *sql.DB, attachmentDir string) *SQLIssueStore {
+func NewSQLIssueStore(db *TenantDB, attachmentDir string) *SQLIssueStore {
 	return &SQLIssueStore{db: db, attachmentDir: attachmentDir}
 }
 
@@ -171,7 +171,7 @@ func (s *SQLIssueStore) create(tenant TenantRef, item ResidentIssue) (ResidentIs
 	if item.StatusChangedBy == "" {
 		item.StatusChangedBy = item.AuthorEmail
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ResidentIssue{}, err
 	}
@@ -186,7 +186,7 @@ func (s *SQLIssueStore) create(tenant TenantRef, item ResidentIssue) (ResidentIs
 }
 
 func (s *SQLIssueStore) allForTenant(tenant TenantRef) []ResidentIssue {
-	rows, err := s.db.Query(`SELECT data FROM issues WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM issues WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []ResidentIssue{}
 	}
@@ -244,7 +244,7 @@ func (s *SQLIssueStore) get(tenant TenantRef, id string) (ResidentIssue, bool) {
 		return ResidentIssue{}, false
 	}
 	var data string
-	if err := s.db.QueryRow(`SELECT data FROM issues WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	if err := s.db.For(tenant).QueryRow(`SELECT data FROM issues WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
 		return ResidentIssue{}, false
 	}
 	var item ResidentIssue
@@ -274,7 +274,7 @@ func (s *SQLIssueStore) updateWorkflow(tenant TenantRef, id string, update Issue
 	actorName := strings.TrimSpace(update.ActorName)
 	assignee := textutil.Email(update.AssigneeEmail)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ResidentIssue{}, false, err
 	}
@@ -383,7 +383,7 @@ func (s *SQLIssueStore) addComment(tenant TenantRef, id string, comment IssueCom
 	} else {
 		comment.CreatedAt = comment.CreatedAt.UTC()
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ResidentIssue{}, false, err
 	}
@@ -420,7 +420,7 @@ func (s *SQLIssueStore) deleteComment(tenant TenantRef, id string, commentID str
 	} else {
 		at = at.UTC()
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return ResidentIssue{}, false, err
 	}
@@ -462,7 +462,8 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 	src.mu.Lock()
 	snapshot := append([]ResidentIssue(nil), src.data.Issues...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON issue snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		slug := textutil.Slug(item.TenantSlug)
 		if slug == "" || strings.TrimSpace(item.ID) == "" {
@@ -476,7 +477,7 @@ func (s *SQLIssueStore) ImportIssues(src *IssueStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO issues(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {
@@ -493,7 +494,7 @@ func (s *SQLIssueStore) clearPhotoPaths(tenant TenantRef, id string) (bool, erro
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}

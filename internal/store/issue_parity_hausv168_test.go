@@ -30,9 +30,9 @@ func TestIssueStorageParity(t *testing.T) {
 		},
 		"sqlite": func(t *testing.T) IssueStorage {
 			dir := t.TempDir()
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLIssueStore(database, filepath.Join(dir, "issue-attachments"))
+			return NewSQLIssueStore(lanes, filepath.Join(dir, "issue-attachments"))
 		},
 	}
 
@@ -189,9 +189,9 @@ func TestSQLIssueImportFromJSON(t *testing.T) {
 		t.Fatalf("seed comment: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLIssueStore(database, filepath.Join(dir, "issue-attachments"))
+	sqlStore := NewSQLIssueStore(lanes, filepath.Join(dir, "issue-attachments"))
 
 	for i := 0; i < 2; i++ {
 		if err := sqlStore.ImportIssues(jsonStore); err != nil {

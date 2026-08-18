@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
@@ -26,10 +25,10 @@ var (
 // relationally, so a JSON column preserves exact semantics without a schema for
 // every event. Table from migration 0004_notification_prefs.
 type SQLNotificationPrefStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLNotificationPrefStore(db *sql.DB) *SQLNotificationPrefStore {
+func NewSQLNotificationPrefStore(db *TenantDB) *SQLNotificationPrefStore {
 	return &SQLNotificationPrefStore{db: db}
 }
 
@@ -43,7 +42,8 @@ func (s *SQLNotificationPrefStore) Get(email string) NotificationPreferences {
 		return prefs
 	}
 	var raw string
-	if err := s.db.QueryRow(`SELECT prefs FROM notification_prefs WHERE email = $1`, email).Scan(&raw); err != nil {
+	unscoped := s.db.Unscoped("notification_prefs has no tenant_id: a person has one mail preference set, not one per house")
+	if err := unscoped.QueryRow(`SELECT prefs FROM notification_prefs WHERE email = $1`, email).Scan(&raw); err != nil {
 		return prefs // not found (or read error) -> default, matching the JSON store
 	}
 	var stored NotificationPreferences
@@ -66,7 +66,7 @@ func (s *SQLNotificationPrefStore) Set(email string, prefs NotificationPreferenc
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(
+	_, err = s.db.Unscoped("notification_prefs has no tenant_id: a person has one mail preference set, not one per house").Exec(
 		`INSERT INTO notification_prefs(email, prefs) VALUES($1, $2)
 		 ON CONFLICT(email) DO UPDATE SET prefs = excluded.prefs`,
 		email, string(raw),
@@ -108,6 +108,7 @@ func (s *SQLNotificationPrefStore) ImportPrefs(src *NotificationPrefStore) error
 		snapshot[email] = prefs
 	}
 	src.mu.Unlock()
+	imports := s.db.Unscoped("boot import replay of the JSON preference snapshot into a table with no tenant_id, before the first request")
 	for rawEmail, prefs := range snapshot {
 		email := textutil.Email(rawEmail)
 		if email == "" {
@@ -117,7 +118,7 @@ func (s *SQLNotificationPrefStore) ImportPrefs(src *NotificationPrefStore) error
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO notification_prefs(email, prefs) VALUES($1, $2) ON CONFLICT(email) DO NOTHING`,
 			email, string(blob),
 		); err != nil {

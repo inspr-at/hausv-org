@@ -16,9 +16,9 @@ func TestAnnouncementReadStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) AnnouncementReadStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLAnnouncementReadStore(database)
+			return NewSQLAnnouncementReadStore(lanes)
 		},
 	}
 	for name, build := range backends {

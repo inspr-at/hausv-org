@@ -19,9 +19,9 @@ func profileBackends() map[string]func(t *testing.T) ProfileStorage {
 			return s
 		},
 		"sqlite": func(t *testing.T) ProfileStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLIdentityStore(database)
+			return NewSQLIdentityStore(lanes)
 		},
 	}
 }

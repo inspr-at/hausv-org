@@ -66,10 +66,10 @@ func (r *boundHandoverRepository) SetFiledDocument(id string, documentID string,
 // Table from migration 0010. Foundation for the atomic PDF-filing flow once the
 // document store also lives in SQLite (HAUSV-145/148).
 type SQLHandoverStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLHandoverStore(db *sql.DB) *SQLHandoverStore {
+func NewSQLHandoverStore(db *TenantDB) *SQLHandoverStore {
 	return &SQLHandoverStore{db: db}
 }
 
@@ -99,7 +99,7 @@ func (s *SQLHandoverStore) create(tenant TenantRef, item HandoverRecord) (Handov
 	if item.ID == "" || item.TenantSlug == "" || item.Title == "" || item.CreatedBy == "" {
 		return HandoverRecord{}, fmt.Errorf("invalid handover")
 	}
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return HandoverRecord{}, err
 	}
@@ -127,7 +127,7 @@ func (s *SQLHandoverStore) list(tenant TenantRef) []HandoverRecord {
 		return nil
 	}
 	tenantSlug = textutil.Slug(tenantSlug)
-	rows, err := s.db.Query(`SELECT data FROM handovers WHERE tenant_id=$1`, tenant.ID)
+	rows, err := s.db.For(tenant).Query(`SELECT data FROM handovers WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return []HandoverRecord{}
 	}
@@ -156,7 +156,7 @@ func (s *SQLHandoverStore) get(tenant TenantRef, id string) (HandoverRecord, boo
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	var data string
-	if err := s.db.QueryRow(
+	if err := s.db.For(tenant).QueryRow(
 		`SELECT data FROM handovers WHERE tenant_id=$1 AND id=$2`, tenant.ID, id,
 	).Scan(&data); err != nil {
 		return HandoverRecord{}, false
@@ -197,7 +197,8 @@ func (s *SQLHandoverStore) GetByToken(token string) (HandoverRecord, int, bool) 
 		return HandoverRecord{}, -1, false
 	}
 	hash := HandoverTokenHash(token)
-	for _, item := range s.allRecords(s.db) {
+	byToken := s.db.Unscoped("handover confirmation link: the token is the only identifier the recipient has, and it names no tenant")
+	for _, item := range s.allRecords(byToken) {
 		for idx, confirmation := range item.Confirmations {
 			if confirmation.TokenHash != "" && SubtleConstantStringCompare(confirmation.TokenHash, hash) {
 				return CopyHandover(item), idx, true
@@ -217,7 +218,8 @@ func (s *SQLHandoverStore) ConfirmByToken(token string, name string, note string
 	if at.IsZero() {
 		at = time.Now()
 	}
-	tx, err := s.db.Begin()
+	byToken := s.db.Unscoped("handover confirmation link: the token is the only identifier the recipient has, and it names no tenant")
+	tx, err := byToken.Begin()
 	if err != nil {
 		return HandoverRecord{}, HandoverConfirmation{}, false, err
 	}
@@ -263,7 +265,7 @@ func (s *SQLHandoverStore) setFiledDocument(tenant TenantRef, id string, documen
 	tenantSlug = textutil.Slug(tenantSlug)
 	id = strings.TrimSpace(id)
 	documentID = strings.TrimSpace(documentID)
-	tx, err := s.db.Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return HandoverRecord{}, false, err
 	}
@@ -300,7 +302,8 @@ func (s *SQLHandoverStore) ImportHandovers(src *HandoverStore) error {
 	src.mu.Lock()
 	snapshot := append([]HandoverRecord(nil), src.data.Handovers...)
 	src.mu.Unlock()
-	tenants := newTenantIDCache(s.db)
+	imports := s.db.Unscoped("boot import replay of the JSON handover snapshot: it spans every tenant and runs before the first request")
+	tenants := newTenantIDCache(imports)
 	for _, item := range snapshot {
 		if strings.TrimSpace(item.ID) == "" || textutil.Slug(item.TenantSlug) == "" {
 			continue
@@ -313,7 +316,7 @@ func (s *SQLHandoverStore) ImportHandovers(src *HandoverStore) error {
 		if err != nil {
 			return err
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO handovers(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
 			tenant.ID, tenant.Slug, item.ID, string(blob),
 		); err != nil {

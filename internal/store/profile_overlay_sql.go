@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -23,10 +22,10 @@ var (
 // SQLProfileOverlayStore is the SQLite-backed self-service profile overlay
 // store. Table created by migration 0003_profile_overlays (internal/db).
 type SQLProfileOverlayStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLProfileOverlayStore(db *sql.DB) *SQLProfileOverlayStore {
+func NewSQLProfileOverlayStore(db *TenantDB) *SQLProfileOverlayStore {
 	return &SQLProfileOverlayStore{db: db}
 }
 
@@ -43,7 +42,8 @@ func (s *SQLProfileOverlayStore) Get(email string) (ProfileOverlay, bool) {
 		optIn     bool
 		updatedAt string
 	)
-	if err := s.db.QueryRow(
+	unscoped := s.db.Unscoped("profile_overlays has no tenant_id: the self-service name and phone follow the person across every house")
+	if err := unscoped.QueryRow(
 		`SELECT title, first_name, last_name, phone, directory_opt_in, updated_at
 		 FROM profile_overlays WHERE email = $1`, email,
 	).Scan(&o.Title, &o.FirstName, &o.LastName, &o.Phone, &optIn, &updatedAt); err != nil {
@@ -70,7 +70,7 @@ func (s *SQLProfileOverlayStore) Set(email string, overlay ProfileOverlay) error
 }
 
 func (s *SQLProfileOverlayStore) upsert(email string, o ProfileOverlay) error {
-	_, err := s.db.Exec(
+	_, err := s.db.Unscoped("profile_overlays has no tenant_id: the self-service name and phone follow the person across every house").Exec(
 		`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 ON CONFLICT(email) DO UPDATE SET
@@ -94,6 +94,7 @@ func (s *SQLProfileOverlayStore) ImportOverlays(src *ProfileOverlayStore) error 
 		snapshot[email] = o
 	}
 	src.mu.Unlock()
+	imports := s.db.Unscoped("boot import replay of the JSON overlay snapshot into a table with no tenant_id, before the first request")
 	for rawEmail, o := range snapshot {
 		email := textutil.Email(rawEmail)
 		if email == "" {
@@ -103,7 +104,7 @@ func (s *SQLProfileOverlayStore) ImportOverlays(src *ProfileOverlayStore) error 
 		if o.UpdatedAt.IsZero() {
 			updatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		}
-		if _, err := s.db.Exec(
+		if _, err := imports.Exec(
 			`INSERT INTO profile_overlays(email, title, first_name, last_name, phone, directory_opt_in, updated_at)
 			 VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT(email) DO NOTHING`,
 			email, o.Title, o.FirstName, o.LastName, o.Phone, o.DirectoryOptIn, updatedAt,

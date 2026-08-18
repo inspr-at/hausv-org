@@ -45,10 +45,10 @@ func newLegacyPhotoFixture(t *testing.T, backend string) legacyPhotoFixture {
 		}
 		issues, attachments = is, as
 	default:
-		database := testDB(t)
+		database, lanes := testLanes(t)
 		t.Cleanup(func() { database.Close() })
-		issues = NewSQLIssueStore(database, photoDir)
-		attachments = NewSQLAttachmentStore(database, filepath.Join(dir, "files"))
+		issues = NewSQLIssueStore(lanes, photoDir)
+		attachments = NewSQLAttachmentStore(lanes, filepath.Join(dir, "files"))
 	}
 
 	issue := sampleIssue()

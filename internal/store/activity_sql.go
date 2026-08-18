@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
@@ -25,10 +24,10 @@ var (
 // created by migration 0002_login_activity (internal/db). Times are stored as
 // RFC3339Nano UTC text, matching the JSON store's UTC semantics on round-trip.
 type SQLActivityStore struct {
-	db *sql.DB
+	db *TenantDB
 }
 
-func NewSQLActivityStore(db *sql.DB) *SQLActivityStore {
+func NewSQLActivityStore(db *TenantDB) *SQLActivityStore {
 	return &SQLActivityStore{db: db}
 }
 
@@ -37,7 +36,7 @@ func (s *SQLActivityStore) Touch(email string, at time.Time, authMethod string) 
 	if email == "" {
 		return nil
 	}
-	_, err := s.db.Exec(
+	_, err := s.db.Unscoped("login_activity has no tenant_id: one row per person, shared by every house").Exec(
 		`INSERT INTO login_activity(email, last_login, auth_method) VALUES($1, $2, $3)
 		 ON CONFLICT(email) DO UPDATE SET last_login = excluded.last_login, auth_method = excluded.auth_method`,
 		email, at.UTC().Format(time.RFC3339Nano), authMethod,
@@ -51,7 +50,7 @@ func (s *SQLActivityStore) Get(email string) (ActivityRecord, bool) {
 		return ActivityRecord{}, false
 	}
 	var lastLogin, authMethod string
-	if err := s.db.QueryRow(
+	if err := s.db.Unscoped("login_activity has no tenant_id: read on sign-in, before a tenant is chosen").QueryRow(
 		`SELECT last_login, auth_method FROM login_activity WHERE email = $1`, email,
 	).Scan(&lastLogin, &authMethod); err != nil {
 		return ActivityRecord{}, false
@@ -82,7 +81,7 @@ func (s *SQLActivityStore) ImportActivity(src *ActivityStore) error {
 		if email == "" {
 			continue
 		}
-		if _, err := s.db.Exec(
+		if _, err := s.db.Unscoped("boot import replay into login_activity, runs before the first request").Exec(
 			`INSERT INTO login_activity(email, last_login, auth_method) VALUES($1, $2, $3)
 			 ON CONFLICT(email) DO NOTHING`,
 			email, rec.LastLogin.UTC().Format(time.RFC3339Nano), rec.AuthMethod,

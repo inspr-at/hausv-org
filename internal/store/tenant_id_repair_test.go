@@ -175,7 +175,7 @@ func TestTenantIDMissingErrorNamesTheOffendingSlugs(t *testing.T) {
 // to be fixed as well. TestEveryTenantScopedUpsertHealsTheIdentity covers the
 // remaining statements as SQL text rather than behaviour.
 func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC().Truncate(time.Second)
 
@@ -187,7 +187,7 @@ func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
 		"demo", "u1", UnitPaymentStatusOpen, now.Format(time.RFC3339Nano), "old@example.com"); err != nil {
 		t.Fatalf("seed legacy unit payment status: %v", err)
 	}
-	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(database), tenant)
+	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), tenant)
 	if _, err := payments.Set(UnitPaymentStatus{
 		UnitID: "u1", Status: UnitPaymentStatusPaid, UpdatedBy: "a@example.com",
 	}); err != nil {
@@ -203,7 +203,7 @@ func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
 		"demo", "a@example.com", now.Format(time.RFC3339Nano)); err != nil {
 		t.Fatalf("seed legacy announcement read: %v", err)
 	}
-	reads, _ := BindAnnouncementReadRepository(NewSQLAnnouncementReadStore(database), tenant)
+	reads, _ := BindAnnouncementReadRepository(NewSQLAnnouncementReadStore(lanes), tenant)
 	if err := reads.MarkSeen("a@example.com", now.Add(time.Hour)); err != nil {
 		t.Fatalf("mark seen: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
 		"demo", "u1"); err != nil {
 		t.Fatalf("seed legacy unit: %v", err)
 	}
-	units, _ := BindUnitRepository(NewSQLUnitStore(database), tenant)
+	units, _ := BindUnitRepository(NewSQLUnitStore(lanes), tenant)
 	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err != nil {
 		t.Fatalf("set units: %v", err)
 	}

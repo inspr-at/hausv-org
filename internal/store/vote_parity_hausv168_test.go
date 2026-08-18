@@ -27,9 +27,9 @@ func TestVoteStorageParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLVoteStore(database)
+			return NewSQLVoteStore(lanes)
 		},
 	}
 
@@ -160,9 +160,9 @@ func TestVoteCastAfterCloseTimePersistsClosureParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLVoteStore(database)
+			return NewSQLVoteStore(lanes)
 		},
 	}
 
@@ -206,9 +206,9 @@ func TestVoteCloseExpiredTenantParity(t *testing.T) {
 			return s
 		},
 		"sqlite": func(t *testing.T) VoteStorage {
-			database := testDB(t)
+			database, lanes := testLanes(t)
 			t.Cleanup(func() { database.Close() })
-			return NewSQLVoteStore(database)
+			return NewSQLVoteStore(lanes)
 		},
 	}
 
@@ -285,9 +285,9 @@ func TestSQLVoteImportFromJSON(t *testing.T) {
 		t.Fatalf("cast: %v", err)
 	}
 
-	database := testDB(t)
+	database, lanes := testLanes(t)
 	defer database.Close()
-	sqlStore := NewSQLVoteStore(database)
+	sqlStore := NewSQLVoteStore(lanes)
 	sqlRepository, _ := BindVoteRepository(sqlStore, testTenantRef("demo"))
 
 	for i := 0; i < 2; i++ {
