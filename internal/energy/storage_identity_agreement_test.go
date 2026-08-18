@@ -2,11 +2,10 @@ package energy_test
 
 import (
 	"database/sql"
-	"path/filepath"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -114,10 +113,5 @@ func TestTwoHousesWhoseSlugsDifferOnlyOutsideTheAlphabetStaySeparate(t *testing.
 
 func openEnergyDB(t *testing.T) *sql.DB {
 	t.Helper()
-	database, err := appdb.Open(filepath.Join(t.TempDir(), "energy-identity.db"))
-	if err != nil {
-		t.Fatalf("open database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
-	return database
+	return dbtest.Open(t)
 }

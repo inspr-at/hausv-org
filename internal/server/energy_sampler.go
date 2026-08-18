@@ -116,7 +116,15 @@ func (a *app) sampleEnergyHome(ctx context.Context, tenant tenantConfig, homeKey
 		return nil
 	}
 	tenant.HA = connector
-	store := a.energyStore.ForHome(homeKey)
+	// The background sampler has a tenantConfig, which carries no identity, so
+	// the reference is resolved here rather than left to the storage layer.
+	// tenantIdentity falls back to the home portal, which is what makes a house
+	// activated after boot samplable at all.
+	energyStore := a.energyStore
+	if identity, ok := a.tenantIdentity(tenant.Slug); ok {
+		energyStore = energyStore.ForTenant(identity.Ref())
+	}
+	store := energyStore.ForHome(homeKey)
 	samplerKey := tenant.Slug
 	if homeKey != energy.DefaultHomeKey {
 		samplerKey += "\x00" + homeKey

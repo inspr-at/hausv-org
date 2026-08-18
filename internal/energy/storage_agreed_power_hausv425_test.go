@@ -2,11 +2,10 @@ package energy_test
 
 import (
 	"math"
-	"path/filepath"
 	"testing"
 	"time"
 
-	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
 )
 
@@ -41,9 +40,13 @@ func TestAgreedPowerSurvivesRoundTripHAUSV425(t *testing.T) {
 			if err := store.SaveProfile(loaded); err != nil {
 				t.Fatalf("Profil erneut speichern: %v", err)
 			}
-			cleared, _, err := store.Profile("haus")
-			if err != nil {
-				t.Fatalf("Profil erneut laden: %v", err)
+			// `ok` wird geprüft, nicht verworfen: verschwindet die Zeile ganz,
+			// liefert Profile ein leeres Profil ohne Fehler — und der Test
+			// meldete "Leeren hat funktioniert", während in Wahrheit der
+			// gesamte Datensatz unsichtbar geworden war.
+			cleared, ok, err := store.Profile("haus")
+			if err != nil || !ok {
+				t.Fatalf("Profil erneut laden: %v (gefunden=%v)", err, ok)
 			}
 			if cleared.AgreedPowerKW != nil {
 				t.Fatalf("geleerte Anschlussleistung blieb erhalten: %v", *cleared.AgreedPowerKW)
@@ -54,12 +57,7 @@ func TestAgreedPowerSurvivesRoundTripHAUSV425(t *testing.T) {
 
 // Ein Bestandsprofil ohne den Wert darf nicht plötzlich mit 0 kW rechnen.
 func TestExistingProfileWithoutAgreedPowerStaysUnsetHAUSV425(t *testing.T) {
-	database, err := appdb.Open(filepath.Join(t.TempDir(), "agreed.db"))
-	if err != nil {
-		t.Fatalf("Datenbank öffnen: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
-	store := energy.NewSQLStore(database)
+	store := energy.NewSQLStore(dbtest.Open(t))
 
 	if err := store.SaveProfile(energy.DefaultProfile("altbestand", time.Date(2026, time.July, 31, 12, 0, 0, 0, time.UTC))); err != nil {
 		t.Fatalf("Profil speichern: %v", err)
