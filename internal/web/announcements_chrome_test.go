@@ -135,7 +135,7 @@ func TestAnnouncementPageDoesNotBreakMobileChrome(t *testing.T) {
 	// The mobile head styling from PortalShellStyles should not be overridden
 	// by page-level .mobile-head rules. The doctrine says:
 	// "do not restyle shared .mobile-head position/height"
-	
+
 	// Verify mobile-head is present from PortalMobileHeader
 	if !strings.Contains(html, `class="mobile-head"`) {
 		t.Error("Mobile header is missing")
