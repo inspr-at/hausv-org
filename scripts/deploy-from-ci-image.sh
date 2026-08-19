@@ -180,6 +180,9 @@ live_health=$(curl -fsS --max-time 10 "$health_url") \
 valid_health_payload "$live_health" \
     || fail_before_change "the current production health payload is not healthy"
 
+ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
+ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
+
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 release_tag="$image_repo:release-$app_version-$commit"
 
@@ -253,6 +256,11 @@ eval "$preserve_script" \
 echo "preserved previous image: $previous_tag"
 
 echo "pulling CI image from GHCR…"
+if [ ! -r "$ghcr_token_file" ]; then
+    fail_before_change "GHCR token file is not readable: $ghcr_token_file"
+fi
+( docker login ghcr.io -u "$ghcr_user" --password-stdin < "$ghcr_token_file" ) >/dev/null 2>&1 \
+    || fail_before_change "GHCR login failed"
 docker pull "$release_tag" \
     || fail_before_change "CI image pull failed; the live image and container were not changed"
 docker image inspect "$release_tag" >/dev/null \

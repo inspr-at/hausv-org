@@ -473,9 +473,17 @@ ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preserve_script")" \
     || fail_before_change "could not preserve the currently running image"
 echo "preserved previous image: $previous_tag"
 
+ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
+ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
+
 release_tag="$image_repo:release-$app_version-$commit"
 echo "pulling CI image from GHCR…"
 pull_script="\
+    if [ ! -r $ghcr_token_file ]; then \
+        echo 'GHCR token file is not readable: $ghcr_token_file' >&2; \
+        exit 1; \
+    fi; \
+    ( docker login ghcr.io -u $ghcr_user --password-stdin < $ghcr_token_file ) >/dev/null 2>&1 || exit 1; \
     docker pull $release_tag || exit 1; \
     docker image inspect $release_tag >/dev/null"
 ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$pull_script")" \
