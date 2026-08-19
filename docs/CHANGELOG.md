@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.6] - 2026-08-19
+
+### Verbessert
+
+- Hausüberblick: Anliegen-Tabelle zeigt den Ort jetzt übersichtlicher, kein Umbruch nach dem Trennzeichen.
+
 ## [0.98.5] - 2026-08-19
 
 ### Verbessert

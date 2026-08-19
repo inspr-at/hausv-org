@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.6",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Anliegen-Tabelle im Hausüberblick zeigt den Ort übersichtlicher.",
+			Intro:    "Die Ortsangabe in der Anliegen-Tabelle konnte über viele Zeilen umbrechen und den Trennpunkt auf eine eigene Zeile setzen. Die Spalte ist jetzt breiter und der Text umbricht sauberer.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Anliegen-Tabelle zeigt den Ort übersichtlicher, kein Umbruch nach dem Trennzeichen."},
+			},
+		},
+		{
 			Version:  "0.98.5",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
