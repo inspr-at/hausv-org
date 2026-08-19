@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.10] - 2026-08-19
+
+### Stabilität verbessert
+
+- Aushang: Kategorien-Legende wird standardmäßig angezeigt, Farbkennzeichnung der Kategorien stimmt überein, Seitenkopf und Schaltflächen korrekt dargestellt.
+
 ## [0.98.9] - 2026-08-19
 
 ### Verbessert
