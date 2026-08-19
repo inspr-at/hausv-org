@@ -41,6 +41,8 @@ func (a *app) auditPortalContext(ac authCtx, title string) web.PortalPageData {
 		HouseName:           houseDisplayName(ac.tenant),
 		Address:             ac.tenant.Address,
 		MapURL:              tenantMapURL(ac.tenant.Address),
+		HeroImageURL:        ac.tenant.HeroImageURL,
+		Map:                 portalMapForTenant(ac.tenant),
 		DisplayName:         profile.DisplayName(),
 		Initials:            profile.Initials(),
 		Role:                ac.role,

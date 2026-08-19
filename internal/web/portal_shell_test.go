@@ -23,6 +23,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		DisplayName:            "Ada Beispiel",
 		Initials:               "AB",
 		Role:                   "Verwaltung",
+		HeroImageURL:           "/assets/hausv-landing-hero.png",
+		Map:                    PortalMap{Configured: true, Tiles: []PortalMapTile{{URL: "/map-tiles/17/1/2.png", Style: "left:calc(50% + 0.00px);top:calc(50% + 0.00px)"}}},
 		CanUseResidentAreas:    true,
 		CanManageIssues:        true,
 		CanCreateResidentIssue: true,
@@ -108,6 +110,12 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 
 			if strings.Count(html, `action="/app/context"`) < 2 || !strings.Contains(html, "mobile-context-switch") {
 				t.Errorf("desktop and mobile context switches must both be rendered")
+			}
+			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
+				t.Errorf("authenticated shell is missing OSM map tiles")
+			}
+			if i, j := strings.Index(html, `class="map"`), strings.Index(html, `details class="context-switch"`); i < 0 || j < 0 || j < i {
+				t.Errorf("context switch must stay after aside.sidebar a.map, not inside it")
 			}
 			if !strings.Contains(html, ".mobile-context-switch>summary{min-height:44px") {
 				t.Errorf("mobile context switch lacks its 44px touch target")
