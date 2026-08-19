@@ -211,6 +211,12 @@ if grep -qF -- "git archive" "$deploy_fixture_root/preserve_identity_drift/comma
     echo "FAIL preserve_identity_drift: pull ran after preflight image identity changed" >&2
     exit 1
 fi
+fixture ghcr_token_missing 1 "CI image pull failed" release
+if ! grep -qF -- "GHCR token file is not readable" "$deploy_fixture_root/ghcr_token_missing/output.txt"; then
+    echo "FAIL ghcr_token_missing: token file error not reported in stderr" >&2
+    exit 1
+fi
+fixture ghcr_login_fail 1 "CI image pull failed" release
 fixture build_fail 1 "CI image pull failed" release
 fixture activation_fail 1 "image rollback command:" release
 if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/activation_fail/output.txt")"; then

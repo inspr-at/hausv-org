@@ -378,7 +378,34 @@ def mock_ssh(args: list[str]) -> int:
         if required_fragment not in script:
             print(f"release pull is missing: {required_fragment}", file=sys.stderr)
             return 64
-        return 1 if CASE == "build_fail" else 0
+        # Verify docker login is present
+        if "docker login ghcr.io" not in script:
+            print("release pull missing docker login", file=sys.stderr)
+            return 64
+        if "--password-stdin" not in script:
+            print("docker login missing --password-stdin", file=sys.stderr)
+            return 64
+        # Verify token file check
+        token_file_check = "if [ ! -r /run/agenix/csb1-hausv-ghcr-pull ]"
+        if token_file_check not in script:
+            print("pull script missing token file readability check", file=sys.stderr)
+            return 64
+        # Check that login is in a subshell to prevent token leakage
+        if "( docker login" not in script:
+            print("docker login not in subshell", file=sys.stderr)
+            return 64
+        # Simulate test-specific behaviors
+        if CASE == "ghcr_token_missing":
+            # Simulate the script detecting missing token file and echoing to stderr
+            print("GHCR token file is not readable: /run/agenix/csb1-hausv-ghcr-pull", file=sys.stderr)
+            return 1
+        if CASE == "ghcr_login_fail":
+            # Simulate docker login failure
+            return 1
+        if CASE == "build_fail":
+            # Simulate docker pull failure after successful login
+            return 1
+        return 0
 
     if "docker tag" in script and "release-" in script:
         if not require_remote_sh(wrapped, "activation"):

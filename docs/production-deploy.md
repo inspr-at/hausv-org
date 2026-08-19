@@ -68,6 +68,41 @@ HAUSV_DEPLOY_BASE64_BIN=/run/current-system/sw/bin/base64
 HAUSV_DEPLOY_MKTEMP_BIN=/run/current-system/sw/bin/mktemp
 ```
 
+## GHCR authentication
+
+The `hausv-org` GHCR package is private and inherits repository visibility.
+Production deployment pulls the CI-built image from `ghcr.io/inspr-at/hausv-org`
+and requires authentication before every pull.
+
+Both `deploy.sh` (remote SSH pull) and `deploy-from-ci-image.sh` (runs on csb1)
+read a token from a file on the target host and fail closed if the file is
+missing or unreadable.
+
+Default token file: `/run/agenix/csb1-hausv-ghcr-pull` (override via
+`HAUSV_DEPLOY_GHCR_TOKEN_FILE`).
+
+Default username: `x-access-token` (override via `HAUSV_DEPLOY_GHCR_USER`).
+This username is valid for GHCR personal access tokens and fine-grained tokens.
+
+### Setup procedure
+
+1. Create a fine-grained GitHub PAT with `read:packages` scope limited to
+   `inspr-at/hausv-org` only.
+2. Store the PAT in 1Password with a descriptive name (e.g.,
+   `csb1-hausv-ghcr-pull`).
+3. Encrypt the token as `csb1-hausv-ghcr-pull.age` in the agenix secrets
+   repository (nixcfg).
+4. Deploy the agenix secret to csb1 so it appears at
+   `/run/agenix/csb1-hausv-ghcr-pull` with mode `400` or `600`, readable by
+   the deployment user.
+
+The token is passed to `docker login` via stdin in a subshell, preventing
+accidental disclosure through environment variables, command history, or
+process listings. Never print, commit, or summarize the token value.
+
+Janus will later project this capability; do not add a reveal path or manual
+token distribution outside the agenix pipeline.
+
 The application runtime must separately configure its public URL, operator
 details, tenant directory, mail or OIDC login and secrets. Tenant URLs use
 `https://hausv.org/<tenant>/...`; tenant-specific DNS entries are not required.

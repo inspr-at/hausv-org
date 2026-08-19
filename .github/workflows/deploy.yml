@@ -1,5 +1,8 @@
 name: Deploy
 
+# NOTE: This workflow builds and pushes the image to GHCR but does NOT deploy to production.
+# Production deployment is manual via scripts/deploy.sh or scripts/deploy-from-ci-image.sh on csb1.
+
 on:
   workflow_run:
     workflows: [CI]
@@ -47,21 +50,19 @@ jobs:
             echo "sha_full=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           fi
       
-      # NOTE: This workflow is incomplete. SSH access to csb1 from GitHub Actions
-      # requires a deploy key or GitHub App that is not yet wired in this repository.
+      # This workflow does NOT swap production. It only reports that the CI image is ready.
+      # Production deployment is manual, using one of these methods:
       #
-      # Two completion paths:
+      # 1. On csb1: scripts/deploy-from-ci-image.sh <version> <commit>
+      #    (Pulls the CI-built image from GHCR and swaps the container)
       #
-      # 1. Wire SSH secrets (HAUSV_DEPLOY_SSH_KEY, HAUSV_DEPLOY_SSH_HOST, etc.) and
-      #    uncomment the steps below to enable automated deployment from Actions.
+      # 2. From dev machine: scripts/deploy.sh
+      #    (Ships git archive to csb1, builds there, and swaps)
       #
-      # 2. Use the local csb1 script: `scripts/deploy-from-ci-image.sh <version> <commit>`
-      #    This script runs ON csb1 and pulls the CI image that this workflow's
-      #    prerequisite CI run already pushed to GHCR.
-      #
-      # Current state: CI builds and pushes the image to GHCR. This workflow can be
-      # completed when SSH access is available or deployment can be triggered manually
-      # on csb1 using the local script.
+      # Both scripts require:
+      # - Private deploy.env loaded on the operator's machine or csb1
+      # - GHCR authentication via /run/agenix/csb1-hausv-ghcr-pull token file
+      # - All fail-closed preconditions (green CI, VERSION bump, health checks)
       
       - name: Report deploy readiness
         run: |
@@ -70,32 +71,9 @@ jobs:
           echo "  Version: ${{ steps.params.outputs.version }}"
           echo "  Commit: ${{ steps.params.outputs.commit }} (${{ steps.params.outputs.sha_full }})"
           echo ""
-          echo "To deploy this image:"
+          echo "To deploy this image to production:"
           echo "  1. SSH to csb1"
           echo "  2. Load deploy.env: . ~/.config/hausv/deploy.env"
           echo "  3. Run: scripts/deploy-from-ci-image.sh ${{ steps.params.outputs.version }} ${{ steps.params.outputs.commit }}"
           echo ""
-          echo "Or wire SSH secrets (HAUSV_DEPLOY_SSH_KEY, HAUSV_DEPLOY_SSH_HOST) to enable automated deployment."
-      
-      # Uncomment when SSH secrets are available:
-      #
-      # - name: Configure SSH
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     echo "${{ secrets.HAUSV_DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-      #     chmod 600 ~/.ssh/deploy_key
-      #     ssh-keyscan -p ${{ secrets.HAUSV_DEPLOY_SSH_PORT || 22 }} ${{ secrets.HAUSV_DEPLOY_SSH_HOST }} >> ~/.ssh/known_hosts
-      #
-      # - name: Deploy to production
-      #   env:
-      #     HAUSV_DEPLOY_SSH_HOST: ${{ secrets.HAUSV_DEPLOY_SSH_HOST }}
-      #     HAUSV_DEPLOY_SSH_PORT: ${{ secrets.HAUSV_DEPLOY_SSH_PORT || 22 }}
-      #     HAUSV_DEPLOY_COMPOSE_DIR: ${{ secrets.HAUSV_DEPLOY_COMPOSE_DIR }}
-      #     HAUSV_DEPLOY_COMPOSE_FILE: ${{ secrets.HAUSV_DEPLOY_COMPOSE_FILE }}
-      #     HAUSV_DEPLOY_COMPOSE_PROJECT: ${{ secrets.HAUSV_DEPLOY_COMPOSE_PROJECT || 'hausv' }}
-      #     HAUSV_DEPLOY_DATA_DIR: ${{ secrets.HAUSV_DEPLOY_DATA_DIR }}
-      #     HAUSV_DEPLOY_SNAPSHOT_ROOT: ${{ secrets.HAUSV_DEPLOY_SNAPSHOT_ROOT }}
-      #     HAUSV_DEPLOY_LIVE_URL: ${{ secrets.HAUSV_DEPLOY_LIVE_URL }}
-      #   run: |
-      #     ssh -i ~/.ssh/deploy_key -p $HAUSV_DEPLOY_SSH_PORT $HAUSV_DEPLOY_SSH_HOST \
-      #       "cd /path/to/hausv-org && bash scripts/deploy-from-ci-image.sh ${{ steps.params.outputs.version }} ${{ steps.params.outputs.commit }}"
+          echo "This workflow does NOT deploy to production automatically."
