@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.3] - 2026-08-19
+
+### Verbessert
+
+- Hausüberblick: das Titelbild sitzt wieder über der Begrüßung, die Karte links zeigt den Standort, Anliegen-Zeilen haben mehr Luft.
+- Energie: die Sicherheitsleiste bleibt auf dem Laptop in einem schmalen Fenster eine Zeile.
+
 ## [0.98.2] - 2026-08-19
 
 ### Verbessert

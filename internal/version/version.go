@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.3",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Titelbild, Karte und die Energieleiste sitzen wieder, wo sie hingehören.",
+			Intro:    "Der Hausüberblick hatte das Hausbild und die echte Karte verloren. Beides ist zurück. Die Energiesicherheitsleiste bleibt auf einem schmalen Laptop-Fenster eine Zeile.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Das Titelbild liegt wieder hinter der Begrüßung; links ist die Standortkarte mit OpenStreetMap."},
+				{Label: "Anliegen", Text: "Die Zeilen haben mehr Abstand, der Status bleibt als Markierung lesbar, der Ort umbricht sauber."},
+				{Label: "Energie", Text: "Monatsspitze und Testlauf bleiben in einem schmalen Fenster in einer Zeile."},
+			},
+		},
+		{
 			Version:  "0.98.2",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
