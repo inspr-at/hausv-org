@@ -36,7 +36,7 @@ func TemplExample(assetVersion string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.ResolveAttributeValue("/assets/htmx/2.0.10/htmx.min.js?v=" + assetVersion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templ_example.templ`, Line: 10, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templ_example.templ`, Line: 10, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 		if templ_7745c5c3_Err != nil {
