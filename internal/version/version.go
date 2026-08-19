@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.2",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Energie am Telefon: Sicherheitsleiste und Erklärung sitzen richtig.",
+			Intro:    "Am Telefon lag die Testlauf-Schaltfläche über dem Modustext, und die Erklärung ragte rechts aus dem Bild. Beides ist behoben.",
+			Items: []NoteItem{
+				{Label: "Energie", Text: "Modus, Monatsspitze und Testlauf stehen am Telefon sauber untereinander; die Erklärung bleibt im Bild."},
+				{Label: "Aufklappen", Text: "Überschrift und Kicker der Lesehilfen stehen wieder untereinander."},
+			},
+		},
+		{
 			Version:  "0.98.1",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
