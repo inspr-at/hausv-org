@@ -237,9 +237,48 @@ jobs:
 
   docker:
     runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      
+      - name: Read VERSION
+        id: version
+        run: echo "app_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+      
       - name: Build image
-        # Never pushed — this only proves the Dockerfile still builds, which
-        # `go test` cannot (HAUSV-139).
-        run: docker build --build-arg APP_VERSION=ci --build-arg GIT_COMMIT="${GITHUB_SHA::7}" -t hausv-org:ci ./
+        run: |
+          docker build \
+            --build-arg APP_VERSION="${{ steps.version.outputs.app_version }}" \
+            --build-arg GIT_COMMIT="${GITHUB_SHA::7}" \
+            -t hausv-org:ci \
+            ./
+      
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      
+      - name: Push image to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          IMAGE_BASE="ghcr.io/inspr-at/hausv-org"
+          COMMIT_SHORT="${GITHUB_SHA::7}"
+          VERSION="${{ steps.version.outputs.app_version }}"
+          
+          # Tag with commit SHA (for digest-pinned pulls)
+          docker tag hausv-org:ci "${IMAGE_BASE}:${GITHUB_SHA}"
+          docker tag hausv-org:ci "${IMAGE_BASE}:${COMMIT_SHORT}"
+          
+          # Tag with release format (what deploy expects)
+          docker tag hausv-org:ci "${IMAGE_BASE}:release-${VERSION}-${COMMIT_SHORT}"
+          
+          # Push all tags
+          docker push "${IMAGE_BASE}:${GITHUB_SHA}"
+          docker push "${IMAGE_BASE}:${COMMIT_SHORT}"
+          docker push "${IMAGE_BASE}:release-${VERSION}-${COMMIT_SHORT}"
+          
+          # Output the digest for downstream use
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_BASE}:${GITHUB_SHA}" | cut -d'@' -f2)
+          echo "Pushed image digest: ${DIGEST}"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Git commit SHA (7 chars) to deploy'
+        required: true
+        type: string
+      version:
+        description: 'VERSION to deploy (e.g. 0.98.10)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Only deploy if CI succeeded (for workflow_run trigger)
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.event.workflow_run.head_sha }}
+      
+      - name: Read VERSION
+        id: version
+        run: echo "app_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+      
+      - name: Determine deploy parameters
+        id: params
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "commit=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+            echo "sha_full=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ steps.version.outputs.app_version }}" >> "$GITHUB_OUTPUT"
+            echo "commit=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "sha_full=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      
+      # NOTE: This workflow is incomplete. SSH access to csb1 from GitHub Actions
+      # requires a deploy key or GitHub App that is not yet wired in this repository.
+      #
+      # Two completion paths:
+      #
+      # 1. Wire SSH secrets (HAUSV_DEPLOY_SSH_KEY, HAUSV_DEPLOY_SSH_HOST, etc.) and
+      #    uncomment the steps below to enable automated deployment from Actions.
+      #
+      # 2. Use the local csb1 script: `scripts/deploy-from-ci-image.sh <version> <commit>`
+      #    This script runs ON csb1 and pulls the CI image that this workflow's
+      #    prerequisite CI run already pushed to GHCR.
+      #
+      # Current state: CI builds and pushes the image to GHCR. This workflow can be
+      # completed when SSH access is available or deployment can be triggered manually
+      # on csb1 using the local script.
+      
+      - name: Report deploy readiness
+        run: |
+          echo "CI image ready for deployment:"
+          echo "  Image: ghcr.io/inspr-at/hausv-org:release-${{ steps.params.outputs.version }}-${{ steps.params.outputs.commit }}"
+          echo "  Version: ${{ steps.params.outputs.version }}"
+          echo "  Commit: ${{ steps.params.outputs.commit }} (${{ steps.params.outputs.sha_full }})"
+          echo ""
+          echo "To deploy this image:"
+          echo "  1. SSH to csb1"
+          echo "  2. Load deploy.env: . ~/.config/hausv/deploy.env"
+          echo "  3. Run: scripts/deploy-from-ci-image.sh ${{ steps.params.outputs.version }} ${{ steps.params.outputs.commit }}"
+          echo ""
+          echo "Or wire SSH secrets (HAUSV_DEPLOY_SSH_KEY, HAUSV_DEPLOY_SSH_HOST) to enable automated deployment."
+      
+      # Uncomment when SSH secrets are available:
+      #
+      # - name: Configure SSH
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.HAUSV_DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+      #     chmod 600 ~/.ssh/deploy_key
+      #     ssh-keyscan -p ${{ secrets.HAUSV_DEPLOY_SSH_PORT || 22 }} ${{ secrets.HAUSV_DEPLOY_SSH_HOST }} >> ~/.ssh/known_hosts
+      #
+      # - name: Deploy to production
+      #   env:
+      #     HAUSV_DEPLOY_SSH_HOST: ${{ secrets.HAUSV_DEPLOY_SSH_HOST }}
+      #     HAUSV_DEPLOY_SSH_PORT: ${{ secrets.HAUSV_DEPLOY_SSH_PORT || 22 }}
+      #     HAUSV_DEPLOY_COMPOSE_DIR: ${{ secrets.HAUSV_DEPLOY_COMPOSE_DIR }}
+      #     HAUSV_DEPLOY_COMPOSE_FILE: ${{ secrets.HAUSV_DEPLOY_COMPOSE_FILE }}
+      #     HAUSV_DEPLOY_COMPOSE_PROJECT: ${{ secrets.HAUSV_DEPLOY_COMPOSE_PROJECT || 'hausv' }}
+      #     HAUSV_DEPLOY_DATA_DIR: ${{ secrets.HAUSV_DEPLOY_DATA_DIR }}
+      #     HAUSV_DEPLOY_SNAPSHOT_ROOT: ${{ secrets.HAUSV_DEPLOY_SNAPSHOT_ROOT }}
+      #     HAUSV_DEPLOY_LIVE_URL: ${{ secrets.HAUSV_DEPLOY_LIVE_URL }}
+      #   run: |
+      #     ssh -i ~/.ssh/deploy_key -p $HAUSV_DEPLOY_SSH_PORT $HAUSV_DEPLOY_SSH_HOST \
+      #       "cd /path/to/hausv-org && bash scripts/deploy-from-ci-image.sh ${{ steps.params.outputs.version }} ${{ steps.params.outputs.commit }}"

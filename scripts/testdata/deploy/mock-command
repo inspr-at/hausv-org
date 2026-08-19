@@ -371,10 +371,13 @@ def mock_ssh(args: list[str]) -> int:
             return 64
         return 1 if CASE in {"preserve_fail", "preserve_identity_drift"} else 0
 
-    if "docker build" in script:
-        if not require_remote_sh(wrapped, "release build"):
+    if "docker pull" in script:
+        if not require_remote_sh(wrapped, "release pull"):
             return 64
-        sys.stdin.buffer.read()
+        required_fragment = f"docker pull ghcr.io/inspr-at/hausv-org:release-{APP_VERSION}-aaaaaaa"
+        if required_fragment not in script:
+            print(f"release pull is missing: {required_fragment}", file=sys.stderr)
+            return 64
         return 1 if CASE == "build_fail" else 0
 
     if "docker tag" in script and "release-" in script:
