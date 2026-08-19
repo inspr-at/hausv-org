@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.2] - 2026-08-19
+
+### Verbessert
+
+- Energie am Telefon: Sicherheitsleiste ohne Überlappung, Testlauf-Erklärung bleibt im Bild.
+- Lesehilfen: Kicker und Überschrift stehen wieder untereinander.
+
 ## [0.98.1] - 2026-08-19
 
 ### Verbessert
