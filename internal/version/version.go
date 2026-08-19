@@ -91,6 +91,19 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.1",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Am Telefon und Tablet sitzt jetzt alles, wo es hingehört.",
+			Intro:    "Eine vollständige Prüfung aller Bildschirme in allen Breiten hat einige Stellen gefunden, an denen die neue Oberfläche auf kleinen Geräten noch nicht sauber war. Alle sind behoben.",
+			Items: []NoteItem{
+				{Label: "Dialoge", Text: "Kopf und Speichern-Schaltfläche bleiben am Telefon immer sichtbar; nur der Inhalt scrollt."},
+				{Label: "Tastziele", Text: "Schließen, Herunterladen, Aufklappen und Kontaktlinks sind am Telefon jetzt durchgehend groß genug."},
+				{Label: "Verwaltung", Text: "Termine anlegen und Dokumente hochladen geht jetzt auch am Telefon."},
+				{Label: "Energie", Text: "Die Sicherheitsleiste bleibt am Telefon kompakt, das Flussbild passt auf jedes Tablet, und die Kontrastfarben sind wieder da."},
+			},
+		},
+		{
 			Version:  "0.98.0",
 			Date:     "18. August 2026",
 			Kind:     "Oberfläche",

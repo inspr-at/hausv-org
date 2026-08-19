@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.1] - 2026-08-19
+
+### Verbessert
+
+- Dialoge am Telefon: Kopf und Speichern-Schaltfläche bleiben sichtbar, nur der Inhalt scrollt.
+- Tastziele am Telefon sind durchgehend groß genug (Schließen, Herunterladen, Aufklappen, Kontaktlinks).
+- Verwaltung: Termine anlegen und Dokumente hochladen funktioniert jetzt auch am Telefon.
+- Energie: kompakte Sicherheitsleiste am Telefon, Flussbild passt auf jedes Tablet, Kontrastfarben
+  und Aufklapp-Animation wiederhergestellt.
+
 ## [0.98.0] - 2026-08-18
 
 ### Verbessert
