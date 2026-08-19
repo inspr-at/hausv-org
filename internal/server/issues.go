@@ -197,6 +197,8 @@ func (a *app) issuesPortalContext(ac authCtx) web.PortalPageData {
 		Address:             tenant.Address,
 		MapURL:              tenantMapURL(tenant.Address),
 		HeroImageURL:        tenant.HeroImageURL,
+		BrandIcon:           tenant.BrandIcon,
+		BrandMarkSVG:        tenantBrandMarkSVG(tenant.BrandIcon),
 		Map:                 portalMapForTenant(tenant),
 		DisplayName:         profile.DisplayName(),
 		Initials:            profile.Initials(),

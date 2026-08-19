@@ -971,6 +971,30 @@ func tenantBrandLucideSVG(icon string) template.HTML {
 	return template.HTML(svg) // #nosec G203 -- only a whitelisted, vendored Lucide SVG can reach this branch.
 }
 
+// tenantBrandMarkSVG returns the brand mark SVG for templ portal (string, not template.HTML).
+func tenantBrandMarkSVG(icon string) string {
+	if lucideSVG := tenantBrandLucideSVG(icon); lucideSVG != "" {
+		return string(lucideSVG)
+	}
+	// Fall back to built-in SVGs based on icon type
+	icon = normalizeTenantBrandIcon(icon)
+	switch icon {
+	case "single-home":
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M12 35h40"/><path d="M16 35V22.5L32 11l16 11.5V35"/><path d="M26.5 35v-9h11v9"/><path d="M21.5 27.5h5M37.5 27.5h5"/></svg>`
+	case "multi-tenant":
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M13 36h38"/><path d="M17 36V18h30v18"/><path d="M23 36v-7h6v7M35 36v-7h6v7"/><path d="M22 23h5M37 23h5M22 28h5M37 28h5"/><path d="M19 18l13-8 13 8"/></svg>`
+	case "mixed-use":
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M14 36h36"/><path d="M18 36V17h28v19"/><path d="M18 24h28"/><path d="M22 36v-7h8v7M35 36v-7h7v7"/><path d="M22 21h5M36 21h5"/><path d="M16 17l16-7 16 7"/></svg>`
+	case "address-plaque":
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M15 12h34a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/><path d="M20 21h24M20 28h18"/><path d="M46 28h.01"/></svg>`
+	case "parking":
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M17 36h30"/><path d="M20 36l2.5-12h19L44 36"/><path d="M23 36v4M41 36v4"/><path d="M24 29h16"/><path d="M28 20h8a5 5 0 0 1 0 10h-8V16"/></svg>`
+	default:
+		// Default community icon
+		return `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M13 34h38"/><path d="M14.5 34v-9l7-5.5 7 5.5v9"/><path d="M35.5 34v-9l7-5.5 7 5.5v9"/><path d="M25 34V20.5L32 15l7 5.5V34"/><path d="M29 34v-7h6v7"/><path d="M18 28h3.5M42.5 28H46"/></svg>`
+	}
+}
+
 // routes builds the application's ServeMux. Extracted from main() so that
 // tests exercise the real route patterns instead of calling handler methods
 // directly — a test that fakes r.SetPathValue cannot catch a wrong pattern.
@@ -2402,6 +2426,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Address:                tenant.Address,
 		MapURL:                 tenantMapURL(tenant.Address),
 		HeroImageURL:           tenant.HeroImageURL,
+		BrandIcon:              tenant.BrandIcon,
+		BrandMarkSVG:           tenantBrandMarkSVG(tenant.BrandIcon),
 		Map:                    portalMapForTenant(tenant),
 		GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
 		Today:                  germanDateLong(now.In(time.Local)),
