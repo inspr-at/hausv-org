@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.8",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Kontakte-Seite: Darstellung der Seitenleiste stabilisiert.",
+			Intro:    "Die Kontakte-Seite hatte noch Darstellungsfehler bei der Seitenleiste – Navigationsleisten wurden als schwarze Balken über die gesamte Seite gezogen. Die Ansicht ist jetzt vollständig korrigiert.",
+			Items: []NoteItem{
+				{Label: "Kontakte", Text: "Darstellung der Seitenleiste stabilisiert – keine schwarzen Balken mehr, Navigationselemente bleiben in der Spalte."},
+			},
+		},
+		{
 			Version:  "0.98.7",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
