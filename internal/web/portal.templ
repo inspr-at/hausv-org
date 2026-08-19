@@ -130,7 +130,7 @@ templ PortalSidebar(data PortalPageData) {
 		<header>
 			<div class="side-brand">
 				<div class="side-map-card">
-					<a class="side-map side-address" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title="In OpenStreetMap öffnen">
+					<a class="map side-map side-address" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title="In OpenStreetMap öffnen">
 						if data.Map.Configured {
 							<span class="side-map-tiles" aria-hidden="true">
 								for _, tile := range data.Map.Tiles {
