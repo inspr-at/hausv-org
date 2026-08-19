@@ -46,6 +46,8 @@ func (a *app) onboardingPortalContext(ac authCtx) web.PortalPageData {
 		Address:             ac.tenant.Address,
 		MapURL:              tenantMapURL(ac.tenant.Address),
 		HeroImageURL:        ac.tenant.HeroImageURL,
+		BrandIcon:           ac.tenant.BrandIcon,
+		BrandMarkSVG:        tenantBrandMarkSVG(ac.tenant.BrandIcon),
 		Map:                 portalMapForTenant(ac.tenant),
 		DisplayName:         profile.DisplayName(),
 		Initials:            profile.Initials(),

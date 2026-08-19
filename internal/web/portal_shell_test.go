@@ -24,6 +24,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		Initials:               "AB",
 		Role:                   "Verwaltung",
 		HeroImageURL:           "/assets/hausv-landing-hero.png",
+		BrandIcon:              "single-home",
+		BrandMarkSVG:           `<svg class="hausv-mark tenant-brand-mark" viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M12 35h40"/><path d="M16 35V22.5L32 11l16 11.5V35"/><path d="M26.5 35v-9h11v9"/><path d="M21.5 27.5h5M37.5 27.5h5"/></svg>`,
 		Map:                    PortalMap{Configured: true, Tiles: []PortalMapTile{{URL: "/map-tiles/17/1/2.png", Style: "left:calc(50% + 0.00px);top:calc(50% + 0.00px)"}}},
 		CanUseResidentAreas:    true,
 		CanManageIssues:        true,
@@ -114,8 +116,12 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
-			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `details class="context-switch"`); i < 0 || j < 0 || j < i {
-				t.Errorf("context switch must stay after aside.sidebar .side-map, not inside it")
+			// Context switch is now inside the map overlay (.side-place-copy)
+			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `class="side-place-copy"`); i < 0 || j < 0 || i >= j {
+				t.Errorf("place copy overlay must come after the map anchor")
+			}
+			if !strings.Contains(html, `class="side-map-pin-mark"`) {
+				t.Errorf("map pin is missing the brand mark")
 			}
 			if !strings.Contains(html, ".mobile-context-switch>summary{min-height:44px") {
 				t.Errorf("mobile context switch lacks its 44px touch target")
