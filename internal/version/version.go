@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.10",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Aushang-Darstellung stabilisiert.",
+			Intro:    "Die Kategorien-Legende ist jetzt standardmäßig sichtbar, die Farbkennzeichnung stimmt überein, und alle Seitenelemente werden korrekt angezeigt.",
+			Items: []NoteItem{
+				{Label: "Kategorien", Text: `Die Legende "Was die Farben bedeuten" wird beim Laden der Seite angezeigt.`},
+				{Label: "Farbkennzeichnung", Text: "Die Kategorien-Kapseln in der Legende haben jetzt dieselben Farben wie die Markierungen auf den Karten."},
+				{Label: "Seitenkopf", Text: "Überschrift, Beschreibung und Schaltflächen werden korrekt dargestellt."},
+			},
+		},
+		{
 			Version:  "0.98.9",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
