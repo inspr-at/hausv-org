@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.7] - 2026-08-19
+
+### Verbessert
+
+- Kontakte: Seitenleiste auf dem Desktop wieder übersichtlich mit vollständigen Beschriftungen.
+
 ## [0.98.6] - 2026-08-19
 
 ### Verbessert
