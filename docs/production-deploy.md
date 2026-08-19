@@ -153,12 +153,15 @@ The `.github/workflows/deploy.yml` workflow runs automatically after green CI on
 `main`. It requires a self-hosted runner with the `csb1-hausv` label registered
 on csb1.
 
-**Runner setup (already configured on csb1):**
+**Runner setup:**
 
-1. Runner registered with `csb1-hausv` label;
-2. Runner has access to host docker socket;
+The human registers a repository self-hosted runner labeled `csb1-hausv` as mba
+on csb1 once. The runner must have:
+
+1. `csb1-hausv` label;
+2. Access to host docker socket;
 3. GHCR authentication via `/run/agenix/csb1-hausv-ghcr-pull` token file;
-4. Runner user has access to the compose lock and compose directory.
+4. Access to the compose lock and compose directory.
 
 **Manual dispatch:**
 
