@@ -135,7 +135,9 @@ jobs:
           cache-dependency-path: scripts/snapshot/package-lock.json
 
       - name: Verify fail-closed release contract
-        run: bash scripts/test-deploy.sh
+        run: |
+          bash scripts/test-deploy.sh
+          bash scripts/test-deploy-from-ci-image.sh
 
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py

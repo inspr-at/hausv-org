@@ -158,10 +158,15 @@ if [ -n "${HAUSV_DEPLOY_VERIFY_SLEEP+x}" ]; then
     verify_sleep=$HAUSV_DEPLOY_VERIFY_SLEEP
 fi
 
-for required in docker curl; do
+for required in docker curl git; do
     command -v "$required" >/dev/null \
         || fail_before_change "required command '$required' is unavailable"
 done
+
+# This script must run from a git checkout to verify migrations.
+repo=$(git rev-parse --show-toplevel 2>/dev/null) \
+    || fail_before_change "not inside the HAUSV repository; the runner must check out hausv-org at the green SHA"
+cd "$repo" || fail_before_change "cannot enter repository root"
 
 live_page=$(curl -fsS --max-time 10 "$live_url") \
     || fail_before_change "cannot read the current live build"
@@ -179,6 +184,32 @@ live_health=$(curl -fsS --max-time 10 "$health_url") \
     || fail_before_change "the current production health endpoint is unavailable"
 valid_health_payload "$live_health" \
     || fail_before_change "the current production health payload is not healthy"
+
+# Resolve live commit to full SHA for migration check. Fail closed if git
+# cannot resolve the live commit: without it we cannot prove migrations
+# did not change.
+live_sha=$(git rev-parse "$live_commit^{commit}" 2>/dev/null) \
+    || fail_before_change "live commit $live_commit is not present in local git history; the runner must check out hausv-org at the green SHA"
+case $live_sha in
+    "$live_commit"*) ;;
+    *) fail_before_change "live commit $live_commit is ambiguous" ;;
+esac
+
+# Refuse deployment if migrations changed. This is the same fail-closed gate
+# as deploy.sh: a schema change requires an attended snapshot first, which
+# deploy-from-ci-image.sh does not support.
+schema_changed=0
+git diff --quiet "$live_sha" HEAD -- internal/db/migrations
+schema_diff_status=$?
+case $schema_diff_status in
+    0) ;;
+    1) schema_changed=1 ;;
+    *) fail_before_change "cannot determine whether database migrations changed" ;;
+esac
+
+if [ "$schema_changed" -eq 1 ]; then
+    fail_before_change "database migrations changed between $live_commit and HEAD; this script does not support schema migrations. Use scripts/deploy.sh for attended schema releases."
+fi
 
 ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
 ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
@@ -228,7 +259,7 @@ fi
 echo "release candidate: $app_version ($commit)"
 echo "CI image: $release_tag"
 echo "live now: $live_version ($live_commit), health ok"
-echo "schema change: no (this script does not support schema migrations)"
+echo "schema change: no (verified via git diff; deploy.sh required for schema migrations)"
 
 if [ "$dry_run" -eq 1 ]; then
     echo "[dry-run] all fail-closed preconditions passed; production was not changed."

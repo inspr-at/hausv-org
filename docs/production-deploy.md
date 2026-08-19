@@ -12,11 +12,49 @@ Every production release must:
 2. be committed and pushed to `origin/main`;
 3. have a completed green `CI` run on Blacksmith for the exact commit;
 4. pass the read-only deployment preflight;
-5. be built from `git archive HEAD` on the configured host;
+5. be built from the CI image pushed to GHCR (Mac-less path) or from `git archive HEAD` on the configured host (attended Mac path);
 6. expose the expected version and commit after activation.
 
-The script preserves the previous image. If migrations changed, it also creates
-a quiesced SQLite and blob snapshot before building the new image.
+The script preserves the previous image. If migrations changed, deployment is
+refused in the Mac-less path; the attended Mac path creates a quiesced SQLite
+and blob snapshot before building the new image.
+
+## Deployment paths
+
+### Mac-less automatic deployment (recommended for non-schema releases)
+
+After a green CI run on `main`, the `.github/workflows/deploy.yml` workflow
+automatically triggers on a self-hosted runner (`csb1-hausv` label) on csb1.
+The runner:
+
+1. Checks out the repository at the exact green CI commit;
+2. Verifies migrations did not change vs. the live version;
+3. Pulls the CI-built image from GHCR;
+4. Swaps the production container under the project lock.
+
+**Migration refuse:** If `internal/db/migrations` changed, deployment is refused
+before any pull or swap. Schema releases still require the attended Mac path.
+
+**No SSH secrets:** The runner runs locally on csb1 with host docker and GHCR
+credentials from `/run/agenix/csb1-hausv-ghcr-pull`. No SSH keys or GitHub
+secrets are involved.
+
+**Manual invocation:** The workflow also supports `workflow_dispatch` with
+explicit `version` and `commit` inputs for manual or roll-forward deploys.
+
+**Concurrency:** One deploy at a time via `concurrency: deploy-production`.
+
+### Attended Mac deployment (required for schema releases)
+
+`scripts/deploy.sh` remains the attended path for schema-changing releases. It:
+
+1. Runs preflight checks including migration diff;
+2. Creates a quiesced SQLite snapshot if migrations changed;
+3. Pulls the CI image and swaps the container over SSH;
+4. Provides rollback commands.
+
+Use this path when `internal/db/migrations` changes or when manual verification
+is required.
 
 ## Private deployment environment
 
@@ -108,6 +146,30 @@ details, tenant directory, mail or OIDC login and secrets. Tenant URLs use
 `https://hausv.org/<tenant>/...`; tenant-specific DNS entries are not required.
 
 ## Run
+
+### Mac-less automatic path (self-hosted runner on csb1)
+
+The `.github/workflows/deploy.yml` workflow runs automatically after green CI on
+`main`. It requires a self-hosted runner with the `csb1-hausv` label registered
+on csb1.
+
+**Runner setup (already configured on csb1):**
+
+1. Runner registered with `csb1-hausv` label;
+2. Runner has access to host docker socket;
+3. GHCR authentication via `/run/agenix/csb1-hausv-ghcr-pull` token file;
+4. Runner user has access to the compose lock and compose directory.
+
+**Manual dispatch:**
+
+To deploy a specific version and commit via the workflow:
+
+1. Go to Actions → Deploy → Run workflow
+2. Select branch `main`
+3. Enter `version` (e.g., `0.98.10`) and `commit` (7-char SHA)
+4. Click "Run workflow"
+
+### Attended Mac path (for schema releases)
 
 `set -a` is **bash**. In fish it is a different builtin and fails with
 `expected >= 1 arguments; got 0`, so wrap the whole thing in one `bash -c`:

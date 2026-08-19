@@ -1,7 +1,9 @@
 name: Deploy
 
-# NOTE: This workflow builds and pushes the image to GHCR but does NOT deploy to production.
-# Production deployment is manual via scripts/deploy.sh or scripts/deploy-from-ci-image.sh on csb1.
+# Mac-less production deployment: after green main CI, a self-hosted runner
+# on csb1 runs scripts/deploy-from-ci-image.sh to pull the CI image from GHCR
+# and swap the production container. Schema migrations still require attended
+# deployment via scripts/deploy.sh (Mac path with snapshot support).
 
 on:
   workflow_run:
@@ -10,30 +12,45 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      commit_sha:
-        description: 'Git commit SHA (7 chars) to deploy'
-        required: true
-        type: string
       version:
         description: 'VERSION to deploy (e.g. 0.98.10)'
+        required: true
+        type: string
+      commit:
+        description: 'Git commit SHA (7 chars) to deploy'
         required: true
         type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     # Only deploy if CI succeeded (for workflow_run trigger)
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: csb1-hausv
     steps:
-      - name: Checkout
+      - name: Determine deploy commit
+        id: commit
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "sha=${{ github.event.inputs.commit }}" >> "$GITHUB_OUTPUT"
+          else
+            # Use the exact commit that CI ran on, not the workflow_run commit.
+            # github.event.workflow_run.head_sha is the CI commit that went green.
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Checkout at green CI commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.event.workflow_run.head_sha }}
+          ref: ${{ steps.commit.outputs.sha }}
       
-      - name: Read VERSION
+      - name: Read VERSION from checked-out commit
         id: version
         run: echo "app_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
       
@@ -42,37 +59,24 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "commit=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
-            echo "sha_full=${{ github.event.inputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+            echo "commit=${{ github.event.inputs.commit }}" >> "$GITHUB_OUTPUT"
           else
+            sha_full="${{ steps.commit.outputs.sha }}"
             echo "version=${{ steps.version.outputs.app_version }}" >> "$GITHUB_OUTPUT"
-            echo "commit=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-            echo "sha_full=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+            echo "commit=${sha_full:0:7}" >> "$GITHUB_OUTPUT"
           fi
       
-      # This workflow does NOT swap production. It only reports that the CI image is ready.
-      # Production deployment is manual via scripts/deploy.sh:
-      #
-      # 1. From dev machine (Mac): scripts/deploy.sh
-      #    (Authenticates to GHCR, pulls the CI-built image over SSH, retags and swaps on csb1)
-      #
-      # 2. On csb1: scripts/deploy-from-ci-image.sh <version> <commit>
-      #    (Local pull+swap half of the same workflow; no schema snapshot support)
-      #
-      # Both scripts require:
-      # - Private deploy.env loaded on the operator's machine
-      # - GHCR authentication via /run/agenix/csb1-hausv-ghcr-pull token file on csb1
-      # - All fail-closed preconditions (green CI, VERSION bump, health checks)
-      
-      - name: Report deploy readiness
+      - name: Deploy to production
+        env:
+          HAUSV_DEPLOY_COMPOSE_DIR: /home/mba/Code/hausv-jhw22
+          HAUSV_DEPLOY_COMPOSE_FILE: /home/mba/Code/hausv-jhw22/compose.yml
+          HAUSV_DEPLOY_COMPOSE_PROJECT: hausv-jhw22
+          HAUSV_DEPLOY_CONTAINER: hausv-org
+          HAUSV_DEPLOY_COMPOSE_LOCK: /run/lock/compose-hausv.lock
+          HAUSV_DEPLOY_LIVE_URL: https://hausv.org/jhw22/
+          HAUSV_DEPLOY_HEALTH_URL: https://hausv.org/healthz
+          HAUSV_DEPLOY_FLOCK_BIN: /run/current-system/sw/bin/flock
+          HAUSV_DEPLOY_BASE64_BIN: /run/current-system/sw/bin/base64
+          HAUSV_DEPLOY_MKTEMP_BIN: /run/current-system/sw/bin/mktemp
         run: |
-          echo "CI image ready for deployment:"
-          echo "  Image: ghcr.io/inspr-at/hausv-org:release-${{ steps.params.outputs.version }}-${{ steps.params.outputs.commit }}"
-          echo "  Version: ${{ steps.params.outputs.version }}"
-          echo "  Commit: ${{ steps.params.outputs.commit }} (${{ steps.params.outputs.sha_full }})"
-          echo ""
-          echo "To deploy this image to production:"
-          echo "  1. On your Mac, load deploy.env: set -a; . ~/.config/hausv/deploy.env; set +a"
-          echo "  2. Run: scripts/deploy.sh [--dry-run]"
-          echo ""
-          echo "This workflow does NOT deploy to production automatically."
+          bash scripts/deploy-from-ci-image.sh "${{ steps.params.outputs.version }}" "${{ steps.params.outputs.commit }}"
