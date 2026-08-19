@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.5",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Hausüberblick zeigt Adresse, Icon und Rolle nur einmal.",
+			Intro:    "Im Hausüberblick waren noch doppelte Adressen, ein fehlendes Marken-Icon und andere kleine Darstellungsfehler übrig. Die Adresse steht jetzt nur einmal, das Icon ist zurück, und die Kontofußzeile zeigt die Rolle nur noch im richtigen Bereich.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Adresse nur einmal, Marken-Icon in der Stecknadel, Titelbild bündig an den Rändern, besserer Kontrast über dem Foto, Anliegen-Schaltfläche mit mehr Luft, Zeilen besser formatiert."},
+				{Label: "Kontofußzeile", Text: "Rolle nur im Fußbereich, Portal-Wechsler unauffällig in der Kartenüberlagerung."},
+			},
+		},
+		{
 			Version:  "0.98.4",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",

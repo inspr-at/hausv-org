@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.5] - 2026-08-19
+
+### Verbessert
+
+- Hausüberblick: Adresse steht nur einmal da, Marken-Icon ist in der Stecknadel zurück, das Titelbild reicht bis an die Ränder, lesbarer Kontrast über dem Foto, Anliegen-Schaltfläche mit mehr Luft, Zeilen besser formatiert.
+- Kontofußzeile: Rolle steht nur noch im Fußbereich, Portal-Wechsler liegt unauffällig in der Kartenüberlagerung.
+
 ## [0.98.4] - 2026-08-19
 
 ### Verbessert
