@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.4] - 2026-08-19
+
+### Verbessert
+
+- Hausüberblick: die Karte sitzt bündig am Rand der Seitenleiste, der Hausname liegt klein auf der Karte, das Titelbild füllt die ganze Kopfzeile.
+
 ## [0.98.3] - 2026-08-19
 
 ### Verbessert

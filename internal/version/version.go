@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.4",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Die Karte sitzt bündig, das Titelbild füllt den Kopf.",
+			Intro:    "Der Hausüberblick hatte noch einen Rahmen um die Karte und einen zu großen Titel. Die Karte geht jetzt an den Rand, der Name liegt klein darauf, und das Hausbild füllt die ganze Kopfzeile.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Karte ohne Rand, ein kleiner Name auf der Karte, Titelbild über die volle Breite, Linie unter dem Bild."},
+			},
+		},
+		{
 			Version:  "0.98.3",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
