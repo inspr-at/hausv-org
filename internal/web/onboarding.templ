@@ -330,7 +330,7 @@ func onboardingSummaryLabel(data OnboardingPageData) templ.Attributes {
 }
 
 templ OnboardingStyles() {
-	<style>
+	<style>.energy-mode-strip,.energy-page,.onboarding-page,.energy-data-page,.home-identity-page{--soft:#716d62;--gold-ink:#705c22;--energy-focus-ring:#ad862c}
 		a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 		.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 		.mobile-head{display:none}.onboarding-main{min-width:0;display:flex;flex-direction:column}.button.primary{background:var(--gold);color:var(--panel);border-color:var(--gold)}.button.ghost{border-color:var(--line);color:var(--muted)}
