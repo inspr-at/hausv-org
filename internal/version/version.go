@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.7",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Kontakte-Seitenleiste auf dem Desktop wieder übersichtlich.",
+			Intro:    "Die Seitenleiste der Kontakte-Seite hatte auf dem Desktop falsche Abmessungen, sodass Navigationspunkte abgeschnitten und Beschriftungen verkürzt wurden. Die Ansicht ist jetzt wieder korrekt.",
+			Items: []NoteItem{
+				{Label: "Kontakte", Text: "Seitenleiste auf dem Desktop wieder übersichtlich mit vollständigen Beschriftungen."},
+			},
+		},
+		{
 			Version:  "0.98.6",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
