@@ -114,8 +114,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
-			if i, j := strings.Index(html, `class="map"`), strings.Index(html, `details class="context-switch"`); i < 0 || j < 0 || j < i {
-				t.Errorf("context switch must stay after aside.sidebar a.map, not inside it")
+			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `details class="context-switch"`); i < 0 || j < 0 || j < i {
+				t.Errorf("context switch must stay after aside.sidebar .side-map, not inside it")
 			}
 			if !strings.Contains(html, ".mobile-context-switch>summary{min-height:44px") {
 				t.Errorf("mobile context switch lacks its 44px touch target")
@@ -174,7 +174,7 @@ func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
 	// never reaches, because they live behind a breakpoint or a closed <details>.
 	html := renderComponent(t, SettingsHubPage(SettingsHubPageData{Portal: PortalPageData{Title: "Einstellungen"}}))
 
-	base := strings.Index(html, ".house-name{")    // only PortalBaseStyles defines this
+	base := strings.Index(html, ".side-brand{")    // only PortalBaseStyles defines this
 	page := strings.Index(html, ".settings-main{") // only the settings page block does
 	shell := strings.Index(html, ".mobile-context-switch{")
 
