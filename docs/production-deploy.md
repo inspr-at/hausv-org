@@ -93,8 +93,8 @@ This username is valid for GHCR personal access tokens and fine-grained tokens.
 3. Encrypt the token as `csb1-hausv-ghcr-pull.age` in the agenix secrets
    repository (nixcfg).
 4. Deploy the agenix secret to csb1 so it appears at
-   `/run/agenix/csb1-hausv-ghcr-pull` with mode `400` or `600`, readable by
-   the deployment user.
+   `/run/agenix/csb1-hausv-ghcr-pull` with mode `0440 root:users`, readable by
+   the deployment user (mba).
 
 The token is passed to `docker login` via stdin in a subshell, preventing
 accidental disclosure through environment variables, command history, or

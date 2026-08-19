@@ -51,17 +51,17 @@ jobs:
           fi
       
       # This workflow does NOT swap production. It only reports that the CI image is ready.
-      # Production deployment is manual, using one of these methods:
+      # Production deployment is manual via scripts/deploy.sh:
       #
-      # 1. On csb1: scripts/deploy-from-ci-image.sh <version> <commit>
-      #    (Pulls the CI-built image from GHCR and swaps the container)
+      # 1. From dev machine (Mac): scripts/deploy.sh
+      #    (Authenticates to GHCR, pulls the CI-built image over SSH, retags and swaps on csb1)
       #
-      # 2. From dev machine: scripts/deploy.sh
-      #    (Ships git archive to csb1, builds there, and swaps)
+      # 2. On csb1: scripts/deploy-from-ci-image.sh <version> <commit>
+      #    (Local pull+swap half of the same workflow; no schema snapshot support)
       #
       # Both scripts require:
-      # - Private deploy.env loaded on the operator's machine or csb1
-      # - GHCR authentication via /run/agenix/csb1-hausv-ghcr-pull token file
+      # - Private deploy.env loaded on the operator's machine
+      # - GHCR authentication via /run/agenix/csb1-hausv-ghcr-pull token file on csb1
       # - All fail-closed preconditions (green CI, VERSION bump, health checks)
       
       - name: Report deploy readiness
@@ -72,8 +72,7 @@ jobs:
           echo "  Commit: ${{ steps.params.outputs.commit }} (${{ steps.params.outputs.sha_full }})"
           echo ""
           echo "To deploy this image to production:"
-          echo "  1. SSH to csb1"
-          echo "  2. Load deploy.env: . ~/.config/hausv/deploy.env"
-          echo "  3. Run: scripts/deploy-from-ci-image.sh ${{ steps.params.outputs.version }} ${{ steps.params.outputs.commit }}"
+          echo "  1. On your Mac, load deploy.env: set -a; . ~/.config/hausv/deploy.env; set +a"
+          echo "  2. Run: scripts/deploy.sh [--dry-run]"
           echo ""
           echo "This workflow does NOT deploy to production automatically."
