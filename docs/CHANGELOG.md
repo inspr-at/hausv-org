@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.9] - 2026-08-19
+
+### Verbessert
+
+- Aushang: Hinweise als Karten mit Kategorie, Datum und kurzem Text.
+- Termine: Termine als Karten mit Datumsfeld und kurzem Ablauf.
+
 ## [0.98.8] - 2026-08-19
 
 ### Stabilität verbessert

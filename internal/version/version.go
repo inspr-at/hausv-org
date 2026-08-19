@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.9",
+			Date:     "19. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Aushang und Termine als übersichtliche Karten.",
+			Intro:    "Die Listen Aushang und Termine zeigen Einträge jetzt als Karten: Kategorie bzw. Datum vorn, kurzer Text, ruhige Metadaten. Die Seitenleiste bleibt unverändert.",
+			Items: []NoteItem{
+				{Label: "Aushang", Text: "Hinweise als Karten mit Kategorie, Datum und kurzem Text."},
+				{Label: "Termine", Text: "Termine als Karten mit Datumsfeld und kurzem Ablauf."},
+			},
+		},
+		{
 			Version:  "0.98.8",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
