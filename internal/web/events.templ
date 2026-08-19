@@ -38,7 +38,8 @@ templ EventsPage(data EventsPageData) {
 }
 
 templ EventsStyles() {
-	<style>.events-main{min-width:0;padding:var(--space-6)}
+	<style>[data-templ-events] .mobile-head{display:none}
+		.events-main{min-width:0;padding:var(--space-6)}
 		.events-main .page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
 		.events-main .page{max-width:1180px;margin:var(--space-5) auto 0}
 		.events-main .page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}
@@ -150,7 +151,7 @@ templ EventsStyles() {
 		.events-main .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}
 		.events-main .file-control span{color:var(--gold-ink)}
 		@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
-		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page-top{justify-content:flex-end}.events-main .page-top>.crumb{display:none}.events-main .page{margin-top:0}.events-main .page-heading{align-items:start;display:grid}.events-main .page-heading h1{font-size:34px}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}.events-main .dialog-grid,.events-main .dialog-optional-grid{grid-template-columns:minmax(0,1fr)}.events-main .dialog-grid .full,.events-main .dialog-optional-grid .full{grid-column:1}}
+		@media(max-width:760px){[data-templ-events] .mobile-head{display:grid}.events-main{padding:var(--space-4)}.events-main .page-top{justify-content:flex-end}.events-main .page-top>.crumb{display:none}.events-main .page{margin-top:0}.events-main .page-heading{align-items:start;display:grid}.events-main .page-heading h1{font-size:34px}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}.events-main .dialog-grid,.events-main .dialog-optional-grid{grid-template-columns:minmax(0,1fr)}.events-main .dialog-grid .full,.events-main .dialog-optional-grid .full{grid-column:1}}
 	</style>
 }
 
