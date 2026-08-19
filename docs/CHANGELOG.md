@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.8] - 2026-08-19
+
+### Stabilität verbessert
+
+- Kontakte: Darstellung der Seitenleiste stabilisiert – keine schwarzen Balken mehr, Navigationselemente bleiben in der Spalte.
+
 ## [0.98.7] - 2026-08-19
 
 ### Verbessert
