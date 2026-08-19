@@ -2149,7 +2149,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("home should render layered name, address and default hero:\n%s", home.Body.String())
 	}
 	appPage := authedRequest(t, a, "manager@example.com", "/demo/app")
-	for _, want := range []string{`class="map"`, `Neue Gasse 7 in OpenStreetMap öffnen`} {
+	for _, want := range []string{`class="map `, `Neue Gasse 7 in OpenStreetMap öffnen`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected brand marker %q:\n%s", want, appPage.Body.String())
 		}
@@ -2175,7 +2175,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("tenant after Lucide brand save = %+v", tenant)
 	}
 	appPage = authedRequest(t, a, "manager@example.com", "/demo/app")
-	for _, want := range []string{`class="map"`, `Neue Gasse 7 in OpenStreetMap öffnen`} {
+	for _, want := range []string{`class="map `, `Neue Gasse 7 in OpenStreetMap öffnen`} {
 		if !strings.Contains(appPage.Body.String(), want) {
 			t.Fatalf("app sidebar should render selected Lucide marker %q:\n%s", want, appPage.Body.String())
 		}

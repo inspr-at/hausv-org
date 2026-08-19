@@ -53,7 +53,7 @@ func TestAuthenticatedPortalShellsIncludeMapTiles(t *testing.T) {
 		if !strings.Contains(body, "/map-tiles/") {
 			t.Fatalf("%s authenticated shell is missing /map-tiles/ — the portal-context builder forgot Map", route)
 		}
-		if !strings.Contains(body, `class="map"`) {
+		if !strings.Contains(body, `class="map `) {
 			t.Fatalf("%s authenticated shell dropped aside.sidebar a.map", route)
 		}
 	}
