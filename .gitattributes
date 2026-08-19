@@ -1,0 +1,4 @@
+# Exclude Claude command symlinks from git archive (deploy blocker fix)
+# These symlinks target doctrine/doctrine-private submodule content
+# that is not included in the archive, causing tar extraction failures.
+.claude/commands/*.md export-ignore

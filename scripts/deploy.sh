@@ -486,7 +486,7 @@ build_script="\
     tar -x; \
     docker build --build-arg APP_VERSION=$app_version --build-arg GIT_COMMIT=$commit -t $release_tag .; \
     docker image inspect $release_tag >/dev/null"
-git archive --format=tar HEAD \
+git archive --format=tar HEAD -- . ':!.claude' \
     | ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$build_script")"
 for command_status in "${PIPESTATUS[@]}"; do
     if [ "$command_status" -ne 0 ]; then
