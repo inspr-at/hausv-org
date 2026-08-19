@@ -146,7 +146,7 @@ if ! grep -qF -- "$deploy_fixture_lock_prefix" \
     echo "FAIL no_schema: preflight did not use the encoded locked transport" >&2
     exit 1
 fi
-for forbidden in "docker build" "docker tag" "--source /var/lib/hausv"; do
+for forbidden in "git archive" "docker tag" "--source /var/lib/hausv"; do
     if grep -qF -- "$forbidden" "$deploy_fixture_root/no_schema/commands.log"; then
         echo "FAIL no_schema: dry-run invoked mutating command '$forbidden'" >&2
         exit 1
@@ -167,7 +167,7 @@ fixture same_version_different_commit 1 "every production deployment requires a 
 fixture remote_preflight_fail 1 "remote preflight failed" dry-run
 fixture remote_early_failure_masked 1 "remote preflight failed" dry-run
 fixture retry_after_activation_fail 1 "remote preflight failed" dry-run
-for forbidden in "docker build" "docker tag"; do
+for forbidden in "git archive" "docker tag"; do
     if grep -qF -- "$forbidden" "$deploy_fixture_root/retry_after_activation_fail/commands.log"; then
         echo "FAIL retry_after_activation_fail: retry invoked '$forbidden' despite image identity mismatch" >&2
         exit 1
@@ -180,13 +180,13 @@ fixture wrong_compose_identity 1 "remote preflight failed" dry-run
 fixture preflight_visible_drift 1 "remote preflight failed" dry-run
 fixture encoder_fail 1 "cannot encode the locked remote preflight" dry-run
 fixture schema_snapshot_identity_drift 1 "fresh consistent pre-deploy snapshot failed" release
-if grep -qF -- "docker build" "$deploy_fixture_root/schema_snapshot_identity_drift/commands.log"; then
-    echo "FAIL schema_snapshot_identity_drift: build ran after snapshot identity changed" >&2
+if grep -qF -- "git archive" "$deploy_fixture_root/schema_snapshot_identity_drift/commands.log"; then
+    echo "FAIL schema_snapshot_identity_drift: pull ran after snapshot identity changed" >&2
     exit 1
 fi
 fixture schema_snapshot_fail 1 "fresh consistent pre-deploy snapshot failed" release
-if grep -qF -- "docker build" "$deploy_fixture_root/schema_snapshot_fail/commands.log"; then
-    echo "FAIL schema_snapshot_fail: build ran without a recovery point" >&2
+if grep -qF -- "git archive" "$deploy_fixture_root/schema_snapshot_fail/commands.log"; then
+    echo "FAIL schema_snapshot_fail: pull ran without a recovery point" >&2
     exit 1
 fi
 fixture schema_snapshot_recovery_fail 1 "mandatory recovery command:" release
@@ -207,11 +207,11 @@ fi
 
 fixture preserve_fail 1 "could not preserve the currently running image" release
 fixture preserve_identity_drift 1 "could not preserve the currently running image" release
-if grep -qF -- "docker build" "$deploy_fixture_root/preserve_identity_drift/commands.log"; then
-    echo "FAIL preserve_identity_drift: build ran after preflight image identity changed" >&2
+if grep -qF -- "git archive" "$deploy_fixture_root/preserve_identity_drift/commands.log"; then
+    echo "FAIL preserve_identity_drift: pull ran after preflight image identity changed" >&2
     exit 1
 fi
-fixture build_fail 1 "release image build failed" release
+fixture build_fail 1 "CI image pull failed" release
 fixture activation_fail 1 "image rollback command:" release
 if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/activation_fail/output.txt")"; then
     echo "FAIL activation_fail: rollback command is not fail-fast" >&2

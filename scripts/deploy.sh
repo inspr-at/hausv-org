@@ -3,8 +3,8 @@
 #
 #   scripts/deploy.sh [--dry-run]
 #
-# CI proves the exact commit on Blacksmith but never publishes an image.
-# Production is built from `git archive HEAD` on the configured host after every precondition
+# CI builds and pushes the image to GHCR on every green main push. Production
+# deployment pulls that CI image to the configured host after every precondition
 # below has passed. A schema-changing release first creates a quiesced,
 # transactionally consistent recovery point outside the live mount.
 #
@@ -168,7 +168,6 @@ container=${HAUSV_DEPLOY_CONTAINER:-$service}
 case $container in
     ""|*[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_CONTAINER must be a valid Docker container name" ;;
 esac
-build_dir=/tmp/hausv-build
 data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
 snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
 live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL)
@@ -475,24 +474,12 @@ ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$preserve_script")" \
 echo "preserved previous image: $previous_tag"
 
 release_tag="$image_repo:release-$app_version-$commit"
-echo "building exact HEAD…"
-export COPYFILE_DISABLE=1
-build_script="\
-    test \"$build_dir\" = /tmp/hausv-build; \
-    rm -rf \"$build_dir\"; \
-    mkdir -p $build_dir; \
-    trap 'rm -rf \"$build_dir\"' EXIT; \
-    cd $build_dir; \
-    tar -x; \
-    docker build --build-arg APP_VERSION=$app_version --build-arg GIT_COMMIT=$commit -t $release_tag .; \
+echo "pulling CI image from GHCR…"
+pull_script="\
+    docker pull $release_tag || exit 1; \
     docker image inspect $release_tag >/dev/null"
-git archive --format=tar HEAD \
-    | ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$build_script")"
-for command_status in "${PIPESTATUS[@]}"; do
-    if [ "$command_status" -ne 0 ]; then
-        fail_before_change "release image build failed; the live image and container were not changed"
-    fi
-done
+ssh -p "$ssh_port" "$ssh_host" "$(remote_sh_command "$pull_script")" \
+    || fail_before_change "CI image pull failed; the live image and container were not changed"
 
 echo "replacing the production container…"
 activate_body="\
