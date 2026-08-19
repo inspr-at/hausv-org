@@ -99,7 +99,7 @@ func AnnouncementsStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}\n\t\t\t\t.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t\t\t.page-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-bottom:var(--space-6)}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.page-head h1{margin-top:var(--space-1);font-size:42px;line-height:1}.lede{max-width:62ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3);font-size:11px}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:var(--space-5);align-items:start}.feed,.aside-panel,.blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.feed{padding:var(--space-5)}.section-head{display:flex;align-items:baseline;gap:var(--space-3)}.section-head h2{font-size:26px}.counts{display:flex;gap:var(--space-2);margin-left:auto}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}.pill.unread{border-color:var(--leaf);color:var(--leaf)}.pill.dringend,.pill.wartung,.pill.termin,.pill.info{color:var(--gold-ink)}.archive-tools{display:grid;gap:var(--space-3);margin-top:var(--space-5);padding:var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.filter-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end}.filter-form .button{min-height:42px}.filter-form label,.dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.filter-form input,.dialog-grid input,.dialog-grid textarea,.dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog-grid textarea{min-height:130px;resize:vertical}.filter-tabs{display:flex;flex-wrap:wrap;gap:var(--space-2)}.filter-tab{min-height:34px;display:inline-flex;align-items:center;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:11px}.filter-tab.active{background:var(--nav-2);border-color:var(--nav-2);color:var(--panel);font-weight:700}.group{display:grid;gap:var(--space-3);margin-top:var(--space-5)}.group-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{font-family:var(--font-sans);color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.entries{display:grid;gap:var(--space-3)}.announcement-entry{padding:var(--space-4);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm)}.announcement-entry.is-unread{background:var(--panel-soft)}.announcement-entry.is-pinned{border-color:var(--gold)}.entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.entry-head h3{font-size:21px;overflow-wrap:anywhere}.entry-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:var(--space-2);color:var(--muted);font-size:11px}.entry-actions{display:flex;align-items:center;gap:var(--space-2);flex:0 0 auto}.announcement-body{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.announcement-body>summary{min-height:38px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:12px;font-weight:800;cursor:pointer}.announcement-body-content{display:grid;gap:var(--space-3);padding-top:var(--space-2)}.entry-body{font-size:13px;line-height:1.6;white-space:normal}.empty-filter{display:grid;gap:var(--space-3);margin-top:var(--space-5);justify-items:start}.empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px}.empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px}.blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}.blank .empty-state{justify-items:center}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}.aside{display:grid;gap:var(--space-4)}.aside-panel{padding:var(--space-5)}.aside-panel h2{margin-top:var(--space-1);font-size:20px}.aside-panel>p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.guide>summary{cursor:pointer;list-style:none}.guide>summary::-webkit-details-marker{display:none}.legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none}.legend li{display:grid;gap:var(--space-1);justify-items:start}.legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid;margin-top:var(--space-3)}.portal-link{min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);border-top:1px solid var(--line);font-size:12px}.portal-link:first-child{border-top:0}.portal-link small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t\t\t.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.check-row{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start}.check-row input{width:auto;min-height:auto}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.attachment-picker{margin-top:var(--space-2)}.attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px}.attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 32px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy span{display:block}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--muted);font-size:10px}.attachment-picker-remove{border:0;background:transparent;color:var(--muted);font-size:20px}.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm)}.attachment-lightbox figcaption{text-align:center}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:42px;height:42px;font-size:24px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:28px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t\t\t.mobile-head{display:none}@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.layout{grid-template-columns:minmax(0,1fr)}.aside{grid-template-columns:1fr 1fr;align-items:start}}@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.page-main{padding:var(--space-5) var(--space-4) 48px}.page-head{align-items:flex-start}.page-head h1{font-size:34px}.page-head .button{min-height:44px}.layout{gap:var(--space-3)}.feed{padding:var(--space-4)}.aside{grid-template-columns:1fr;gap:var(--space-3)}.section-head{align-items:flex-start;flex-wrap:wrap}.counts{width:100%;margin-left:0}.filter-form{grid-template-columns:1fr}.announcement-body>summary{min-height:44px}.entry-head{display:grid}.entry-actions{justify-content:flex-start}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1}.blank-actions{width:100%}.blank-actions .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}\n\t\t\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}\n\t\t\t\t.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t\t\t.page-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);margin-bottom:var(--space-6)}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.page-head h1{margin-top:var(--space-1);font-size:42px;line-height:1}.lede{max-width:62ch;margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3);font-size:11px}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:var(--space-5);align-items:start}.feed,.aside-panel,.blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.feed{padding:var(--space-5)}.section-head{display:flex;align-items:baseline;gap:var(--space-3)}.section-head h2{font-size:26px}.counts{display:flex;gap:var(--space-2);margin-left:auto}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}.pill.unread{border-color:var(--leaf);color:var(--leaf)}.pill.dringend,.pill.wartung,.pill.termin,.pill.info{color:var(--gold-ink)}.archive-tools{display:grid;gap:var(--space-3);margin-top:var(--space-5);padding:var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.filter-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end}.filter-form .button{min-height:42px}.filter-form label,.dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.filter-form input,.dialog-grid input,.dialog-grid textarea,.dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog-grid textarea{min-height:130px;resize:vertical}.filter-tabs{display:flex;flex-wrap:wrap;gap:var(--space-2)}.filter-tab{min-height:34px;display:inline-flex;align-items:center;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:11px;background:transparent;transition:all .15s}.filter-tab.active{background:var(--gold);border-color:var(--gold);color:var(--panel);font-weight:700}.group{display:grid;gap:var(--space-3);margin-top:var(--space-5)}.group-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{font-family:var(--font-sans);color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.entries{display:grid;gap:var(--space-4)}.announcement-card{position:relative;display:grid;grid-template-columns:4px 1fr;min-height:100px;background:var(--paper);border-radius:var(--radius-sm);overflow:hidden;box-shadow:0 1px 3px rgba(32,37,31,.06)}.announcement-card.is-expired{opacity:.65}.announcement-card-tick{width:4px;background:var(--gold)}.announcement-card-tick.info{background:#c8993f}.announcement-card-tick.termin{background:#8a7b3f}.announcement-card-tick.wartung{background:#2f6b4a}.announcement-card-tick.dringend{background:#a8593c}.announcement-card-content{padding:var(--space-4);display:grid;gap:var(--space-2)}.announcement-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}.announcement-card-title-group{min-width:0;flex:1}.announcement-fixiert-label{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:var(--space-1)}.announcement-card-icon{width:20px;height:20px;flex-shrink:0;color:var(--gold-ink);opacity:.7}.announcement-card-icon svg{display:block;width:100%;height:100%;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}.announcement-card-title{font-family:var(--font-serif);font-size:20px;font-weight:600;line-height:1.3;color:var(--ink);margin:0}.announcement-card-preview{font-size:13px;line-height:1.5;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.announcement-card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:var(--soft)}.announcement-card-meta>span::after{content:\"·\";margin-left:6px}.announcement-card-meta>span:last-child::after{content:none}.announcement-card-pin-icon{color:var(--gold-ink)}.announcement-card-actions{display:flex;align-items:center;gap:var(--space-2);flex:0 0 auto;margin-top:var(--space-2)}.announcement-body{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.announcement-body>summary{min-height:38px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:12px;font-weight:800;cursor:pointer}.announcement-body-content{display:grid;gap:var(--space-3);padding-top:var(--space-2)}.entry-body{font-size:13px;line-height:1.6;white-space:normal}.empty-filter{display:grid;gap:var(--space-3);margin-top:var(--space-5);justify-items:start}.empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px}.empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px}.blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}.blank .empty-state{justify-items:center}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}.aside{display:grid;gap:var(--space-4)}.aside-panel{padding:var(--space-5)}.aside-panel h2{margin-top:var(--space-1);font-size:20px}.aside-panel>p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.guide>summary{cursor:pointer;list-style:none}.guide>summary::-webkit-details-marker{display:none}.legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none}.legend li{display:grid;gap:var(--space-1);justify-items:start}.legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid;margin-top:var(--space-3)}.portal-link{min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);border-top:1px solid var(--line);font-size:12px}.portal-link:first-child{border-top:0}.portal-link small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t\t\t.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.check-row{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start}.check-row input{width:auto;min-height:auto}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.attachment-picker{margin-top:var(--space-2)}.attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px}.attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}.attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 32px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy span{display:block}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--muted);font-size:10px}.attachment-picker-remove{border:0;background:transparent;color:var(--muted);font-size:20px}.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm)}.attachment-lightbox figcaption{text-align:center}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:42px;height:42px;font-size:24px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:28px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t\t\t.mobile-head{display:none}@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.layout{grid-template-columns:minmax(0,1fr)}.aside{grid-template-columns:1fr 1fr;align-items:start}}@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.page-main{padding:var(--space-5) var(--space-4) 48px}.page-head{align-items:flex-start}.page-head h1{font-size:34px}.page-head .button{min-height:44px}.layout{gap:var(--space-3)}.feed{padding:var(--space-4)}.aside{grid-template-columns:1fr;gap:var(--space-3)}.section-head{align-items:flex-start;flex-wrap:wrap}.counts{width:100%;margin-left:0}.filter-form{grid-template-columns:1fr}.announcement-body>summary{min-height:44px}.announcement-card-actions{margin-top:var(--space-3)}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1}.blank-actions{width:100%}.blank-actions .button{width:100%}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}\n\t\t\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -540,7 +540,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 			templ_7745c5c3_Var21 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var22 = []any{"announcement-entry", templ.KV("is-unread", item.Unread), templ.KV("is-pinned", item.Pinned)}
+		var templ_7745c5c3_Var22 = []any{"announcement-card", templ.KV("is-expired", item.Expired)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var22...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -565,211 +565,210 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue("announcement-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 143}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 118, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\"><header class=\"entry-head\"><div><h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 50}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		var templ_7745c5c3_Var25 = []any{"announcement-card-tick", item.CategoryClass}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var25...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</h3><div class=\"entry-meta\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var26 = []any{"pill", item.CategoryClass}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var26...)
+		var templ_7745c5c3_Var26 string
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var25).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\"></div><div class=\"announcement-card-content\"><div class=\"announcement-card-header\"><div class=\"announcement-card-title-group\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if item.Pinned {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<div class=\"announcement-fixiert-label\">Fixiert</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<h3 class=\"announcement-card-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var26).String())
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 126, Col: 53}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 119, Col: 139}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</h3></div><div class=\"announcement-card-icon\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</span> ")
+		templ_7745c5c3_Err = AnnouncementCategoryIcon(item.Category).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if item.Unread {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<span class=\"pill unread\">neu</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if item.Body != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"announcement-card-preview\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var28 string
+			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(truncateText(item.Body, 120))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 133, Col: 73}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if item.Status != "" && item.Status != "Veröffentlicht" && item.Status != "Fixiert" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<span class=\"pill\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var29 string
-			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 124, Col: 36}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</span> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"announcement-card-meta\"><span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<span>")
+		var templ_7745c5c3_Var29 string
+		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 136, Col: 25}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</span> <span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(item.PublishedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 126, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 137, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if item.HasExpiresAt {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<span>bis ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var31 string
-			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(item.ExpiresAt)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 128, Col: 30}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span>")
+		if item.Pinned {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<span class=\"announcement-card-pin-icon\">📌</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if item.CanManage {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"entry-actions\"><button class=\"button small\" type=\"button\" data-dialog=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<div class=\"announcement-card-actions\"><button class=\"button small\" type=\"button\" data-dialog=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var31 string
+			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 143, Col: 117}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" aria-haspopup=\"dialog\" aria-controls=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 132, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 143, Col: 176}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\" aria-haspopup=\"dialog\" aria-controls=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\">Bearbeiten</button><form method=\"post\" action=\"/app/announcements/delete\" data-confirm=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var33 string
-			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
+			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.DeleteConfirmLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 132, Col: 163}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 143, Col: 291}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\">Bearbeiten</button><form method=\"post\" action=\"/app/announcements/delete\" data-confirm=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\"><input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 string
-			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.DeleteConfirmLabel)
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 132, Col: 278}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 143, Col: 340}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\"><input type=\"hidden\" name=\"id\" value=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var35 string
-			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 132, Col: 327}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\"><button class=\"button small ghost\" type=\"submit\">Löschen</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\"><button class=\"button small ghost\" type=\"submit\">Löschen</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</header><details class=\"announcement-body\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<details class=\"announcement-body\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if item.Unread {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, " open")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " open")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "><summary>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "><summary>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var36 string
-		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(announcementReadLabel(item.Unread))
+		var templ_7745c5c3_Var35 string
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(announcementReadLabel(item.Unread))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 135, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 145, Col: 105}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</summary><div class=\"announcement-body-content\"><div class=\"entry-body\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</summary><div class=\"announcement-body-content\"><div class=\"entry-body\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -777,7 +776,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -785,7 +784,7 @@ func AnnouncementEntry(item view.AnnouncementView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</div></details></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</div></details></div></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -815,210 +814,210 @@ func AnnouncementAttachments(item view.AnnouncementView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var37 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var37 == nil {
-			templ_7745c5c3_Var37 = templ.NopComponent
+		templ_7745c5c3_Var36 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var36 == nil {
+			templ_7745c5c3_Var36 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if item.HasAttachments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, attachment := range item.Attachments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<div class=\"attachment-item\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<div class=\"attachment-item\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if attachment.IsImage {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var37 string
+					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 93}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "\" data-lightbox-full=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var38 string
-					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
+					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 131}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\" data-lightbox-full=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\" data-lightbox-caption=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var39 string
-					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
+					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 131}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 177}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "\" data-lightbox-caption=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\"><img src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var40 string
-					templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
+					templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 177}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 210}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\"><img src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "\" alt=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var41 string
-					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
+					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 210}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 238}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var41)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" alt=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var42 string
-					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
+					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 238}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 159, Col: 325}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "</span></button> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var43 string
-					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
+				} else {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<a class=\"attachment-open\" href=\"")
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 148, Col: 325}
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var43 templ.SafeURL
+					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 161, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</span></button> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<a class=\"attachment-open\" href=\"")
+					var templ_7745c5c3_Var44 string
+					templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(attachmentKind(attachment))
 					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var44 templ.SafeURL
-					templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 150, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 161, Col: 166}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</span><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var45 string
-					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(attachmentKind(attachment))
+					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 150, Col: 166}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 161, Col: 226}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</span><span class=\"attachment-name\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var46 string
-					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 150, Col: 226}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</span></a> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</span></a> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if attachment.CanDelete {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<form class=\"attachment-delete\" method=\"post\" action=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<form class=\"attachment-delete\" method=\"post\" action=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var47 templ.SafeURL
-					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
+					var templ_7745c5c3_Var46 templ.SafeURL
+					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 153, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 164, Col: 96}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var48 string
-					templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 153, Col: 191}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "\"> ")
+					var templ_7745c5c3_Var47 string
+					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 164, Col: 191}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "\"> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if attachment.DeleteRedirect != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<input type=\"hidden\" name=\"redirect\" value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<input type=\"hidden\" name=\"redirect\" value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var49 string
-						templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
+						var templ_7745c5c3_Var48 string
+						templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 155, Col: 78}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 166, Col: 78}
 						}
-						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var49)
+						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\"> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1043,12 +1042,12 @@ func AnnouncementsBlank(data AnnouncementsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var50 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var50 == nil {
-			templ_7745c5c3_Var50 = templ.NopComponent
+		templ_7745c5c3_Var49 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var49 == nil {
+			templ_7745c5c3_Var49 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<section class=\"blank\" aria-label=\"Aushang des Hauses\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<section class=\"blank\" aria-label=\"Aushang des Hauses\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1056,35 +1055,35 @@ func AnnouncementsBlank(data AnnouncementsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<div class=\"blank-actions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<div class=\"blank-actions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageAnnouncements {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<button class=\"button primary\" type=\"button\" data-dialog=\"announcement-create\" aria-haspopup=\"dialog\" aria-controls=\"announcement-create\">Ersten Aushang erstellen</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<button class=\"button primary\" type=\"button\" data-dialog=\"announcement-create\" aria-haspopup=\"dialog\" aria-controls=\"announcement-create\">Ersten Aushang erstellen</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<a class=\"button primary\" href=\"/app/events\">Termine ansehen</a><a class=\"button ghost\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<a class=\"button primary\" href=\"/app/events\">Termine ansehen</a><a class=\"button ghost\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var51 templ.SafeURL
-			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(announcementIssuesURL(data.CanManageIssues)))
+			var templ_7745c5c3_Var50 templ.SafeURL
+			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(announcementIssuesURL(data.CanManageIssues)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 170, Col: 156}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 181, Col: 156}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\">Anliegen melden</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "\">Anliegen melden</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1108,38 +1107,38 @@ func AnnouncementEmptyState(data view.EmptyStateView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var52 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var52 == nil {
-			templ_7745c5c3_Var52 = templ.NopComponent
+		templ_7745c5c3_Var51 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var51 == nil {
+			templ_7745c5c3_Var51 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "<div class=\"empty-state\"><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<div class=\"empty-state\"><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var52 string
+		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(data.Title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 186, Col: 102}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "</strong><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var53 string
-		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(data.Title)
+		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(data.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 175, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 186, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</strong><p>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var54 string
-		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(data.Message)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 175, Col: 130}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1163,12 +1162,12 @@ func AnnouncementsAside() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var55 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var55 == nil {
-			templ_7745c5c3_Var55 = templ.NopComponent
+		templ_7745c5c3_Var54 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var54 == nil {
+			templ_7745c5c3_Var54 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<aside class=\"aside\" aria-label=\"Hinweise zum Aushang\"><details class=\"aside-panel guide\"><summary><p class=\"eyebrow\">Kategorien</p><h2>Was die Farben bedeuten</h2></summary><ul class=\"legend\"><li><span class=\"pill dringend\">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li><li><span class=\"pill wartung\">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li><li><span class=\"pill termin\">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li><li><span class=\"pill info\">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li></ul></details><section class=\"aside-panel\" aria-labelledby=\"announce-next-title\"><p class=\"eyebrow\">Auch hilfreich</p><h2 id=\"announce-next-title\">Weiter im Portal</h2><nav class=\"portal-links\"><a class=\"portal-link\" href=\"/app/events\"><span><strong>Termine</strong><small>Versammlungen, Wartungen und Fristen mit Datum.</small></span></a><a class=\"portal-link\" href=\"/app/dokumente\"><span><strong>Dokumente</strong><small>Protokolle, Abrechnungen und Hausordnung.</small></span></a><a class=\"portal-link\" href=\"/app/settings/notifications\"><span><strong>Benachrichtigungen</strong><small>Neue Aushänge zusätzlich per E-Mail erhalten.</small></span></a></nav></section></aside>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<aside class=\"aside\" aria-label=\"Hinweise zum Aushang\"><details class=\"aside-panel guide\"><summary><p class=\"eyebrow\">Kategorien</p><h2>Was die Farben bedeuten</h2></summary><ul class=\"legend\"><li><span class=\"pill dringend\">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li><li><span class=\"pill wartung\">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li><li><span class=\"pill termin\">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li><li><span class=\"pill info\">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li></ul></details><section class=\"aside-panel\" aria-labelledby=\"announce-next-title\"><p class=\"eyebrow\">Auch hilfreich</p><h2 id=\"announce-next-title\">Weiter im Portal</h2><nav class=\"portal-links\"><a class=\"portal-link\" href=\"/app/events\"><span><strong>Termine</strong><small>Versammlungen, Wartungen und Fristen mit Datum.</small></span></a><a class=\"portal-link\" href=\"/app/dokumente\"><span><strong>Dokumente</strong><small>Protokolle, Abrechnungen und Hausordnung.</small></span></a><a class=\"portal-link\" href=\"/app/settings/notifications\"><span><strong>Benachrichtigungen</strong><small>Neue Aushänge zusätzlich per E-Mail erhalten.</small></span></a></nav></section></aside>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1192,12 +1191,12 @@ func AnnouncementCreateDialog(nowInput string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var56 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var56 == nil {
-			templ_7745c5c3_Var56 = templ.NopComponent
+		templ_7745c5c3_Var55 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var55 == nil {
+			templ_7745c5c3_Var55 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<dialog id=\"announcement-create\" class=\"dialog\" aria-labelledby=\"announcement-create-title\"><form method=\"post\" action=\"/app/announcements\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><h2 id=\"announcement-create-title\">Aushang erstellen</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"dialog-grid\"><label class=\"full\" for=\"announcement-title\">Titel<input id=\"announcement-title\" name=\"title\" required maxlength=\"140\"></label><label class=\"full\" for=\"announcement-body\">Text<textarea id=\"announcement-body\" name=\"body\" required placeholder=\"Was soll die Hausgemeinschaft wissen?\"></textarea></label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<dialog id=\"announcement-create\" class=\"dialog\" aria-labelledby=\"announcement-create-title\"><form method=\"post\" action=\"/app/announcements\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><h2 id=\"announcement-create-title\">Aushang erstellen</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"dialog-grid\"><label class=\"full\" for=\"announcement-title\">Titel<input id=\"announcement-title\" name=\"title\" required maxlength=\"140\"></label><label class=\"full\" for=\"announcement-body\">Text<textarea id=\"announcement-body\" name=\"body\" required placeholder=\"Was soll die Hausgemeinschaft wissen?\"></textarea></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1205,20 +1204,20 @@ func AnnouncementCreateDialog(nowInput string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<details class=\"dialog-optional\"><summary>Planung, Fixierung oder Anhang</summary><div class=\"dialog-optional-grid\"><label for=\"announcement-published\">Veröffentlichen<input id=\"announcement-published\" type=\"datetime-local\" name=\"published_at\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<details class=\"dialog-optional\"><summary>Planung, Fixierung oder Anhang</summary><div class=\"dialog-optional-grid\"><label for=\"announcement-published\">Veröffentlichen<input id=\"announcement-published\" type=\"datetime-local\" name=\"published_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var57 string
-		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.ResolveAttributeValue(nowInput)
+		var templ_7745c5c3_Var56 string
+		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(nowInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 185, Col: 1027}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 196, Col: 1027}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\"></label><label for=\"announcement-expires\">Ablauf optional<input id=\"announcement-expires\" type=\"datetime-local\" name=\"expires_at\"></label><label class=\"check-row full\"><input type=\"checkbox\" name=\"pinned\" value=\"true\"> oben fixieren</label><label class=\"full\" for=\"announcement-attachments\">Anhänge<span class=\"file-control\"><input id=\"announcement-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div></details></div><button class=\"button primary\" type=\"submit\">Aushang veröffentlichen</button></div></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "\"></label><label for=\"announcement-expires\">Ablauf optional<input id=\"announcement-expires\" type=\"datetime-local\" name=\"expires_at\"></label><label class=\"check-row full\"><input type=\"checkbox\" name=\"pinned\" value=\"true\"> oben fixieren</label><label class=\"full\" for=\"announcement-attachments\">Anhänge<span class=\"file-control\"><input id=\"announcement-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div></details></div><button class=\"button primary\" type=\"submit\">Aushang veröffentlichen</button></div></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1242,142 +1241,142 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var58 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var58 == nil {
-			templ_7745c5c3_Var58 = templ.NopComponent
+		templ_7745c5c3_Var57 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var57 == nil {
+			templ_7745c5c3_Var57 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<dialog id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<dialog id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var58 string
+		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 31}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\" class=\"dialog\" aria-labelledby=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var59 string
-		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
+		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "\" class=\"dialog\" aria-labelledby=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\"><form method=\"post\" action=\"/app/announcements/edit\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var60 string
-		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
+		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 227}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\"><form method=\"post\" action=\"/app/announcements/edit\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\"><div class=\"dialog-head\"><h2 id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var61 string
-		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
+		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 227}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 293}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\"><div class=\"dialog-head\"><h2 id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\">Aushang bearbeiten</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"dialog-grid\"><label class=\"full\" for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var62 string
-		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
+		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue("title-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 293}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 515}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\">Aushang bearbeiten</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"dialog-grid\"><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\">Titel<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue("title-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 515}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 553}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\">Titel<input id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\" name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue("title-" + item.ID)
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 553}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 587}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\" required maxlength=\"140\"></label><label class=\"full\" for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var65 string
-		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Title)
+		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue("body-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 587}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 667}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\" required maxlength=\"140\"></label><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\">Text<textarea id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue("body-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 667}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 706}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\">Text<textarea id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\" name=\"body\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var67 string
-		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue("body-" + item.ID)
+		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(item.Body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 706}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 741}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\" name=\"body\" required>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var68 string
-		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(item.Body)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 741}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</textarea></label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</textarea></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1385,121 +1384,121 @@ func AnnouncementEditDialog(item view.AnnouncementView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<label for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<label for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var68 string
+		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue("published-" + item.ID)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 862}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\">Veröffentlichen<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue("published-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 862}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 915}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "\">Veröffentlichen<input id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\" type=\"datetime-local\" name=\"published_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var70 string
-		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue("published-" + item.ID)
+		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.PublishedAtInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 915}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 989}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\" type=\"datetime-local\" name=\"published_at\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\"></label><label for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var71 string
-		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.PublishedAtInput)
+		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue("expires-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 989}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 1034}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\"></label><label for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "\">Ablauf optional<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue("expires-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 1034}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 1084}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\">Ablauf optional<input id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\" type=\"datetime-local\" name=\"expires_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var73 string
-		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue("expires-" + item.ID)
+		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ExpiresAtInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 1084}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 1154}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "\" type=\"datetime-local\" name=\"expires_at\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\"></label><label class=\"check-row\"><input type=\"checkbox\" name=\"pinned\" value=\"true\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if item.PinnedChecked {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "> oben fixieren</label><label class=\"full\" for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var74 string
-		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ExpiresAtInput)
+		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue("attachments-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 1154}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 1346}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\"></label><label class=\"check-row\"><input type=\"checkbox\" name=\"pinned\" value=\"true\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if item.PinnedChecked {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "> oben fixieren</label><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\">Anhänge ergänzen<span class=\"file-control\"><input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var75 string
 		templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue("attachments-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 1346}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 200, Col: 1430}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\">Anhänge ergänzen<span class=\"file-control\"><input id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var76 string
-		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue("attachments-" + item.ID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 189, Col: 1430}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></div></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></div></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1523,83 +1522,161 @@ func AnnouncementCategorySelect(id, selected string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var77 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var77 == nil {
-			templ_7745c5c3_Var77 = templ.NopComponent
+		templ_7745c5c3_Var76 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var76 == nil {
+			templ_7745c5c3_Var76 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<label for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<label for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var77 string
+		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 203, Col: 71}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\">Kategorie<select id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var78 string
 		templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 192, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 203, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "\">Kategorie<select id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var79 string
-		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/announcements.templ`, Line: 192, Col: 98}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" name=\"category\"><option value=\"Info\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "\" name=\"category\"><option value=\"Info\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Info" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, ">Info</option><option value=\"Termin\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, ">Info</option><option value=\"Termin\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Termin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, ">Termin</option><option value=\"Wartung\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, ">Termin</option><option value=\"Wartung\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Wartung" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, ">Wartung</option><option value=\"Dringend\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, ">Wartung</option><option value=\"Dringend\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Dringend" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, ">Dringend</option></select></label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, ">Dringend</option></select></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
+}
+
+func AnnouncementCategoryIcon(category string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var79 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var79 == nil {
+			templ_7745c5c3_Var79 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		switch category {
+		case "Info":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<path d=\"M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z\"></path><path d=\"M12 11v5\"></path><path d=\"M12 8h.01\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		case "Termin":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<path d=\"M7 3v4M17 3v4\"></path><path d=\"M4.5 6h15v14h-15z\"></path><path d=\"M4.5 10h15\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		case "Wartung":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<path d=\"M14.5 3l-1.2 1.2m-5.5.9L6.5 3.9m12 5.7l1.2-1.2m-15.5.9L3 7.9\"></path><path d=\"M9 14a3 3 0 1 0 6 0 3 3 0 0 0-6 0\"></path><path d=\"M9 14v7\"></path><path d=\"M15 14v7\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		case "Dringend":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<path d=\"M10.3 3.3l-8 14c-.6 1-.1 2.2.9 2.7h17.6c1-.5 1.5-1.7.9-2.7l-8-14c-.6-1-2-1-2.4 0z\"></path><path d=\"M12 9v4\"></path><path d=\"M12 17h.01\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		default:
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<path d=\"M4 5h16v13H7l-3 3z\"></path><path d=\"M8 9h8M8 13h6\"></path>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</svg>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func truncateText(text string, maxLength int) string {
+	if len(text) <= maxLength {
+		return text
+	}
+	truncated := text[:maxLength]
+	lastSpace := -1
+	for i := len(truncated) - 1; i >= 0; i-- {
+		if truncated[i] == ' ' || truncated[i] == '\n' || truncated[i] == '\r' {
+			lastSpace = i
+			break
+		}
+	}
+	if lastSpace > maxLength/2 {
+		truncated = truncated[:lastSpace]
+	}
+	return truncated + "…"
 }
 
 func announcementReadLabel(unread bool) string {
