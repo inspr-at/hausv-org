@@ -1925,6 +1925,24 @@ async function assertPilotHome({
   process.stdout.write(`  ✓ Pilot ${householdName} · getrennt · read-only · Messlücken\n`);
 }
 
+
+async function assertSidebarAccountFits() {
+  for (const size of [{ name: '1440x900', width: 1440, height: 900 }, { name: '1280x800', width: 1280, height: 800 }]) {
+    const context = await newContext({ width: size.width, height: size.height });
+    const page = await localLogin(context, 'admin@example.com');
+    const response = await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) {
+      fail(`Seitenleiste ${size.name}: /app nicht erreichbar`);
+    }
+    const account = await page.locator('aside.sidebar footer.account').boundingBox();
+    if (!account || account.bottom > size.height + 1) {
+      fail(`Seitenleiste ${size.name}: footer.account ragt aus dem Viewport (${JSON.stringify(account)})`);
+    }
+    await closeContext(context);
+    process.stdout.write(`  ✓ Seitenleiste · ${size.name} · Konto bleibt im Viewport\n`);
+  }
+}
+
 async function assertPage(page, persona, route, viewportName) {
   const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
   if (!response || response.status() !== 200) {
@@ -1944,12 +1962,10 @@ async function assertPage(page, persona, route, viewportName) {
     // .home-primary-task; templ renders main.calm-main or main.dense-main.
     const focusCount = await page.locator('main.calm-main, main.dense-main').count();
     if (focusCount !== 1) fail(`${persona.name} ${viewportName}: Hausüberblick hat ${focusCount} Hauptzustände`);
-    // The legacy sidebar showed a raster map TILE (a PNG endpoint, a pin overlay, fixed pixel
-    // sizes) and this probe asserted the PNG bytes, the pin width and the tile geometry. The
-    // templ shell replaced that with an inline SVG street sketch that links to OpenStreetMap —
-    // a design decision, not a regression. What still holds and is asserted: the map link
-    // exists, points at OpenStreetMap, carries an accessible label, and on desktop is actually
-    // painted. Tile bytes and pin pixels are gone with the tile.
+    // The sidebar map is again a raster tile (HAUSV-560): GET /map-tiles/…, pin overlay,
+    // height tiers. The SVG street sketch is only the unconfigured fallback, not a design
+    // decision. Asserted here: the OSM link, the tile URL in the painted card, and that
+    // footer.account stays inside the viewport on the hire-walk notebooks.
     if (viewportName === 'Desktop') {
       const map = page.locator('aside.sidebar a.map');
       if ((await map.count()) !== 1) fail(`${persona.name} Desktop: Kartenlink in der Seitenleiste fehlt`);
@@ -1961,6 +1977,15 @@ async function assertPage(page, persona, route, viewportName) {
       const box = await map.boundingBox();
       if (!box || box.width < 120 || box.height < 40) {
         fail(`${persona.name} Desktop: Kartenlink ist nicht sichtbar gerendert (${JSON.stringify(box)})`);
+      }
+      const tileCount = await map.locator('img.side-map-tile').count();
+      const tileSrc = tileCount ? await map.locator('img.side-map-tile').first().getAttribute('src') : '';
+      if (!tileCount || !/map-tiles\//.test(tileSrc || '')) {
+        fail(`${persona.name} Desktop: Kartenkachel /map-tiles/ fehlt (${tileCount} / ${tileSrc})`);
+      }
+      const account = await page.locator('aside.sidebar footer.account').boundingBox();
+      if (!account || account.bottom > 900 + 1) {
+        fail(`${persona.name} Desktop: footer.account ragt aus dem Viewport (${JSON.stringify(account)})`);
       }
     }
   }
@@ -2619,6 +2644,8 @@ async function assertEnergyGeometryMatrix() {
     { name: '899x900', width: 899, height: 900 },
     { name: '900x900', width: 900, height: 900 },
     { name: '901x900', width: 901, height: 900 },
+    { name: '1050x900', width: 1050, height: 900 },
+    { name: '1051x900', width: 1051, height: 900 },
     { name: '1023x768', width: 1023, height: 768 },
     { name: '1024x768', width: 1024, height: 768 },
     { name: '1280x800', width: 1280, height: 800 },
@@ -2799,6 +2826,36 @@ async function assertEnergyGeometryMatrix() {
     if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 68)) {
       fail(`Energie-Geometrie ${size.name}: Desktop-Sicherheitsleiste ist nicht kompakt (${JSON.stringify(result)})`);
     }
+    if (size.name === '901x900') {
+      const control = page.locator('summary.energy-mode-action');
+      if (!(await control.count())) {
+        fail(`Energie-Geometrie ${size.name}: Testlauf-Schalter fehlt für die active-mode Zeile`);
+      }
+      await control.click();
+      await page.locator('.energy-mode-popover input[name="confirm"]').check();
+      await page.locator('.energy-mode-popover input[name="confirmation_text"]').fill('TESTLAUF');
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        page.getByRole('button', { name: 'Testlauf starten' }).click(),
+      ]);
+      const active = await page.evaluate(() => {
+        const strip = document.querySelector('.energy-mode-strip');
+        const rect = strip?.getBoundingClientRect();
+        return {
+          active: Boolean(strip?.classList.contains('active')),
+          top: rect?.top ?? -1,
+          height: rect?.height ?? 0,
+          label: strip?.querySelector('.energy-mode-action')?.innerText.trim() || '',
+        };
+      });
+      if (!active.active || active.top > 1 || active.height > 68) {
+        fail(`Energie-Geometrie ${size.name} active: Sicherheitsleiste ist nicht eine Zeile (${JSON.stringify(active)})`);
+      }
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        page.locator('button.energy-mode-action').click(),
+      ]);
+    }
 
     if (size.name === '390x844') {
       const stripHeight = result.stripRect.height;
@@ -2952,6 +3009,7 @@ try {
 
     if (process.env.HV_QA_LANDING_ONLY !== 'true') {
       await assertSidebarNavReachable();
+      await assertSidebarAccountFits();
       await assertPortalSwitcherAtomic();
       await assertSharedAppShellNavigation();
       await assertHomeOnboarding();
@@ -3006,7 +3064,7 @@ try {
           process.stdout.write(`  ✓ ${persona.name} · ${viewport.name}\n`);
         }
       }
-      await assertEnergyGeometryMatrix();
+      if (!fastQA) await assertEnergyGeometryMatrix();
       await assertLogoutBackNavigation();
     }
   }

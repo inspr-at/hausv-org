@@ -350,6 +350,8 @@ func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {
 		HouseName:           houseDisplayName(tenant),
 		Address:             tenant.Address,
 		MapURL:              tenantMapURL(tenant.Address),
+		HeroImageURL:        tenant.HeroImageURL,
+		Map:                 portalMapForTenant(tenant),
 		DisplayName:         profile.DisplayName(),
 		Initials:            profile.Initials(),
 		Role:                role,

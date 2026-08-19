@@ -2401,6 +2401,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		HouseName:              houseDisplayName(tenant),
 		Address:                tenant.Address,
 		MapURL:                 tenantMapURL(tenant.Address),
+		HeroImageURL:           tenant.HeroImageURL,
+		Map:                    portalMapForTenant(tenant),
 		GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
 		Today:                  germanDateLong(now.In(time.Local)),
 		DisplayName:            profile.DisplayName(),
