@@ -130,6 +130,10 @@ type IssueWorkflowUpdate struct {
 	UpdateEstimate        bool
 	ResolutionConfirmed   bool
 	UpdateResolution      bool
+	Body                  string
+	LocationType          string
+	LocationDetail        string
+	UpdateDetails         bool
 	ActorEmail            string
 	ActorName             string
 	ChangedAt             time.Time
@@ -592,6 +596,16 @@ func (s *IssueStore) updateWorkflow(tenant TenantRef, id string, update IssueWor
 				updated.EstimateAmountCents = 0
 				updated.EstimateUpdatedBy = ""
 				updated.EstimateUpdatedAt = time.Time{}
+			}
+		}
+		if update.UpdateDetails {
+			body := strings.TrimSpace(update.Body)
+			locationType := NormalizeIssueLocation(update.LocationType)
+			locationDetail := strings.TrimSpace(update.LocationDetail)
+			if body != "" && locationType != "" {
+				updated.Body = body
+				updated.LocationType = locationType
+				updated.LocationDetail = locationDetail
 			}
 		}
 		if status != IssueStatusDone {

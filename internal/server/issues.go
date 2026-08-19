@@ -597,6 +597,11 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	}
+	body, locationType, locationDetail, detailsProvided := issueDetailsFromForm(r.Form)
+	if detailsProvided && (body == "" || locationType == "") {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
 	proposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
@@ -675,6 +680,10 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		EstimateAmountCents:   estimateAmount,
 		EstimateNote:          estimateNote,
 		UpdateEstimate:        estimateProvided,
+		Body:                  body,
+		LocationType:          locationType,
+		LocationDetail:        locationDetail,
+		UpdateDetails:         detailsProvided,
 		ActorEmail:            email,
 		ActorName:             profile.DisplayName(),
 		ChangedAt:             time.Now(),
@@ -922,6 +931,28 @@ func issueEstimateFromForm(values url.Values) (int64, string, bool, error) {
 		return 0, "", true, fmt.Errorf("estimate note too long")
 	}
 	return amount, note, true, nil
+}
+
+func issueDetailsFromForm(values url.Values) (body string, locationType string, locationDetail string, provided bool) {
+	if values == nil {
+		return "", "", "", false
+	}
+	_, bodyProvided := values["body"]
+	_, locationTypeProvided := values["location_type"]
+	_, locationDetailProvided := values["location_detail"]
+	if !bodyProvided && !locationTypeProvided && !locationDetailProvided {
+		return "", "", "", false
+	}
+	body = strings.Join(strings.Fields(values.Get("body")), " ")
+	if len([]rune(body)) > 4000 {
+		return "", "", "", true
+	}
+	locationType = normalizeIssueLocation(values.Get("location_type"))
+	locationDetail = strings.TrimSpace(values.Get("location_detail"))
+	if len([]rune(locationDetail)) > 160 {
+		return "", "", "", true
+	}
+	return body, locationType, locationDetail, true
 }
 
 func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {

@@ -3,6 +3,7 @@ package web
 import (
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/inspr-at/hausv-org/internal/view"
 )
@@ -420,6 +421,10 @@ templ IssueTriageAside(data IssueTriagePageData) {
 			<p class="issue-triage-state-next">{ data.Issue.NextStep }</p>
 		</section>
 		<details class="issue-triage-more">
+			<summary>Ort &amp; Beschreibung bearbeiten</summary>
+			<form class="issue-triage-more-body" method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value={ data.Issue.ID }/><input type="hidden" name="status" value={ data.Issue.Status }/><input type="hidden" name="priority" value={ data.Issue.Priority }/><input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/><input type="hidden" name="redirect" value={ "/app/anliegen/board/" + data.Issue.ID }/><label class="issue-message-body">Beschreibung<textarea name="body" maxlength="4000" required>{ data.Issue.Body }</textarea></label><label class="issue-message-body">Ort (Bereich)<select name="location_type" required><option value="common" selected?={ issueLocationIsCommon(data.Issue.Location) }>Gemeinschaftsbereich</option><option value="own-unit" selected?={ !issueLocationIsCommon(data.Issue.Location) }>Eigene Einheit</option></select></label><label class="issue-message-body">Wo genau?<input type="text" name="location_detail" maxlength="160" value={ issueLocationDetailFromLabel(data.Issue.Location) } placeholder="Nur Ort, z. B. Heizungsraum"/></label><button type="submit">Speichern</button></form>
+		</details>
+		<details class="issue-triage-more">
 			<summary>{ issueTriageMoreSummary(data.Issue) }</summary>
 			<div class="issue-triage-more-body">
 				@IssueAttachments(data.Issue.Attachments)
@@ -469,4 +474,16 @@ func issueTriageMoreSummary(issue view.IssueView) string {
 		}
 	}
 	return label
+}
+
+func issueLocationDetailFromLabel(location string) string {
+	parts := strings.SplitN(location, " · ", 2)
+	if len(parts) == 2 {
+		return strings.TrimSpace(parts[1])
+	}
+	return ""
+}
+
+func issueLocationIsCommon(location string) bool {
+	return strings.HasPrefix(location, "Gemeinschaft")
 }
