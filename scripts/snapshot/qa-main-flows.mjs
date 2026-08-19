@@ -2145,6 +2145,21 @@ async function assertEnergySafetyAndFlow(viewport) {
     width: viewport.size.width,
   });
   const live = page.locator('[data-energy-flow-diagram]');
+  // The flow diagram must actually MOVE, not merely carry an animation rule. Sample the
+  // animated property twice: if the dots' stroke-dashoffset does not change over 400ms the
+  // animation is not running — a stylesheet regression, a dropped keyframe, or a JS path
+  // that stopped emitting .energy-flow-dots would all read as "present but frozen" here.
+  // Only asserted when the diagram has flow edges at all (it does on this fixture).
+  const motion = await live.evaluate(async (diagram) => {
+    const dots = diagram.querySelector('.energy-flow-dots');
+    if (!dots) return { present: false };
+    const read = () => getComputedStyle(dots).strokeDashoffset;
+    const a = read(); await new Promise((r) => setTimeout(r, 400)); const b = read();
+    return { present: true, animationName: getComputedStyle(dots).animationName, running: (dots.getAnimations?.() || []).length, moved: a !== b, a, b };
+  });
+  if (motion.present && (motion.animationName !== 'energy-flow-dots' || !motion.running || !motion.moved)) {
+    fail(`Energie ${viewport.name}: Energiefluss animiert nicht (${JSON.stringify(motion)})`);
+  }
   const chart = page.locator('.energy-chart');
   if (!(await chart.getByRole('heading', { name: 'Letzte 24 Stunden' }).count()) ||
       (await chart.locator('path.energy-chart-line').count()) < 3 ||
