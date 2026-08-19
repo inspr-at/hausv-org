@@ -116,6 +116,60 @@ Exact storage paths are intentionally absent from this repository. Use only the
 paths loaded in the private deployment environment and the snapshot path printed
 for the failed release.
 
+## PostgreSQL cutover procedure
+
+Everything the cutover needs is merged: every store runs on a tenant lane, migration
+`0006` makes row-level security fail-closed with `NOT NULL` on `tenant_id`, and
+`hausv-org migrate-data` moves the rows and proves the copy before committing. Nothing
+below runs by itself. Steps marked **operator** need a secret or an authorisation an
+agent must not hold; the rest can be rehearsed by anyone with the private deployment
+environment.
+
+The order matters. `0006` refuses on any orphan row and the mover refuses a non-empty
+target, so each step is a gate for the next.
+
+1. **Census.** On the *source*, confirm every tenant-scoped row already carries an
+   identity: `SELECT count(*) FROM <table> WHERE tenant_id IS NULL` per governed table
+   must be 0. (Measured 2026-08-19 on production: 25 tables, 1,633 rows, 0 unlinked.)
+   Against the *target* after `0006` has been applied, `psql -f
+   scripts/postgres-tenant-id-census.sql` must report every table `READY`
+   (`home_reservations` `EXEMPT`). Any `BLOCKS-0006` row means stop.
+2. **operator — application role.** In the PostgreSQL container, an application role
+   that is `NOSUPERUSER NOBYPASSRLS` and owns an empty database. `verifyPostgresRole`
+   refuses anything else at boot.
+3. **operator — `DATABASE_URL`.** Provide it to the container through the private
+   deployment environment (agenix), *without* setting `DB_BACKEND` yet. It is read
+   from the environment only; there is no flag for it anywhere.
+4. **operator — backup role.** `FORCE ROW LEVEL SECURITY` binds the table owner too, so
+   `pg_dump` errors under the application role. Create a dedicated `hausv_backup`
+   role with `BYPASSRLS`, read-only, for backups; never the superuser. Then perform
+   one dump-and-restore drill under the flipped policy before relying on it.
+5. **Snapshot.** Take the pre-cutover snapshot of the SQLite data directory exactly
+   as `scripts/deploy.sh` does for a schema change; run `PRAGMA quick_check` on the
+   copy; record its path. This is the rollback.
+6. **Stop.** Hold the compose lock and stop `hausv-org` so the SQLite file is
+   quiescent. The mover opens it read-only and refuses to guess at a moving file.
+7. **Rehearse.** `docker compose run --rm hausv-org migrate-data --dry-run` — everything
+   runs, including verification, then rolls back on purpose. Expect `ROLLED BACK`, the
+   full table count, a source row total matching the census, and no refusal.
+8. **Move.** The same command without `--dry-run`. Expect `COMMITTED: N rows in M
+   tables`. Then `migrate-data --verify-only` must exit 0.
+9. **Switch.** Set `DB_BACKEND=postgres`, recreate the service, verify `/healthz`, the
+   visible version, and log in as each tenant. The first PostgreSQL boot runs the
+   identity backfill and the idempotent imports; watch the log for any import doing
+   real work — none should.
+10. **Verify as a user, not a health check.** Open the pages a resident and a manager
+    actually use on both a desktop and a phone. Row-level security is now fail-closed:
+    a page that renders empty where SQLite showed data is a lane bug, and the
+    Unscoped inventory (`internal/store/testdata/unscoped_calls.golden`) is where to
+    look first.
+
+**Rollback** before step 9 is trivial: the SQLite file was never modified. After step
+9, roll back by switching `DB_BACKEND` back and recreating the service — the SQLite
+data directory is exactly as it was, and `0006` never touched it. A PostgreSQL
+database that has already applied `0006` keeps `NOT NULL` and fail-closed until the
+`0003` policy is recreated by hand and `NOT NULL` dropped; a fresh database is easier.
+
 ## Runtime legal and privacy configuration
 
 Public operators must provide accurate deployment-specific values outside the
