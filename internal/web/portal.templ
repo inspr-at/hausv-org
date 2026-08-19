@@ -140,16 +140,16 @@ templ PortalSidebar(data PortalPageData) {
 							<span class="side-map-pin" aria-hidden="true">
 								<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
 							</span>
-							<div class="side-place-copy">
-								<a class="side-address-label" href="/app" aria-label={ "Hausportal " + data.HouseName + " öffnen" }>
-									<strong>{ data.HouseName }</strong>
-									<small>{ data.Address }</small>
-								</a>
-							</div>
 						} else {
 							<span class="side-map-fallback">Standort nicht hinterlegt</span>
 						}
 					</a>
+					<div class="side-place-copy">
+						<a class="side-address-label" href="/app" aria-label={ "Hausportal " + data.HouseName + " öffnen" }>
+							<strong>{ data.HouseName }</strong>
+							<small>{ data.Address }</small>
+						</a>
+					</div>
 				</div>
 			</div>
 			if len(data.Contexts) > 1 {
