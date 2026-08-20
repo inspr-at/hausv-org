@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.7] - 2026-08-20
+
+### Energiewerte eindeutiger dargestellt
+
+- Energie: Verbraucherkarten zeigen eine alleinige Energiezahl nur einmal; zusätzliche Zeilen erscheinen ausschließlich für weitere, eigenständige Messwerte.
+
 ## [0.99.6] - 2026-08-20
 
 ### Energieansicht ruhiger gegliedert

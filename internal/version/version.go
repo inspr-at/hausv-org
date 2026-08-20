@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.7",
+			Date:     "20. August 2026",
+			Kind:     "Energie",
+			Headline: "Jede Energiezahl erscheint genau einmal.",
+			Intro:    "Eine zusätzliche Kennzahlenzeile wird nur angezeigt, wenn ein weiterer eigenständiger Messwert vorhanden ist.",
+			Items: []NoteItem{
+				{Label: "Verbraucherkarten", Text: "Einzelne Energiezahlen werden nicht mehr als Hauptwert und Zusatzwert wiederholt."},
+			},
+		},
+		{
 			Version:  "0.99.6",
 			Date:     "20. August 2026",
 			Kind:     "Energie",

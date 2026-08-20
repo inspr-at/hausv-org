@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -105,6 +106,47 @@ func TestConsumerCardHierarchyKeepsEveryAvailableReading(t *testing.T) {
 	}
 	if len(active.Metrics) != 2 || active.Metrics[0].Label != "Ladestand" || active.Metrics[1].Label != "Energie" {
 		t.Fatalf("active card did not retain SOC and energy as quiet metrics: %+v", active)
+	}
+
+	boiler := energy.Asset{
+		ID: "boiler", TenantSlug: "demo", Kind: "hot-water", Name: "Boiler - Warmwasser",
+		Metadata: map[string]string{},
+	}
+	soleEnergy := energyConsumerHAUSV551(t,
+		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{boiler}, nil, []energyMetricView{{
+			AssetID: boiler.ID, Metric: energy.MetricConsumerEnergy,
+			Numeric: 4890.6, Unit: "kWh", Value: formatEnergyReading(4890.6, "kWh"),
+		}}, parkingLiveView{}, false, now),
+		boiler.ID,
+	)
+	if soleEnergy.Primary == nil || soleEnergy.Primary.Value != "4.890,6" || soleEnergy.Primary.Unit != "kWh" ||
+		soleEnergy.Primary.Label != "Energie" || len(soleEnergy.Metrics) != 0 {
+		t.Fatalf("sole kWh must appear once as the primary metric: %+v", soleEnergy)
+	}
+	payload, err := json.Marshal(soleEnergy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(payload), `"metrics":[]`) {
+		t.Fatalf("structured empty metric row must reach the renderer: %s", payload)
+	}
+
+	parkingID := energyFlowNodeID("demo", "parking")
+	parking := energy.Asset{
+		ID: parkingID, TenantSlug: "demo", Kind: energyFlowParkingKind, Name: "Parkplatz 20",
+		Metadata: map[string]string{},
+	}
+	parkingEnergy := energyConsumerHAUSV551(t,
+		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{parking}, nil, []energyMetricView{
+			{AssetID: parkingID, Metric: energy.MetricConsumerPower, Numeric: 0, Unit: "W", Value: formatEnergyReading(0, "W"), LastUpdated: now.Add(-time.Minute)},
+			{AssetID: parkingID, Metric: energy.MetricConsumerEnergy, Numeric: 2797.6, Unit: "kWh", Value: formatEnergyReading(2797.6, "kWh")},
+		}, parkingLiveView{Available: true, Mode: "manual", ModeLabel: "Normalladen"}, false, now),
+		parkingID,
+	)
+	if parkingEnergy.Primary == nil || parkingEnergy.Primary.Value != "2.797,6" ||
+		parkingEnergy.Primary.Unit != "kWh" || parkingEnergy.Primary.Label != "Ladeenergie" ||
+		len(parkingEnergy.Metrics) != 0 {
+		t.Fatalf("parking sole kWh must appear once as the primary metric: %+v", parkingEnergy)
 	}
 }
 
