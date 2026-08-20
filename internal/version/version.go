@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.3",
+			Date:     "20. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Kompakte Seitentitel bleiben vollständig lesbar.",
+			Intro:    "Portalüberschriften zeigen Buchstaben mit Unterlängen jetzt auch in kompakten Seitenköpfen vollständig.",
+			Items: []NoteItem{
+				{Label: "Seitentitel", Text: "Unterlängen in Buchstaben wie g, y, p und q werden in allen kompakten Portalüberschriften ohne Beschnitt dargestellt."},
+			},
+		},
+		{
 			Version:  "0.99.1",
 			Date:     "20. August 2026",
 			Kind:     "Oberfläche",
