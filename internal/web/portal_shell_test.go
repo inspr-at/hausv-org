@@ -272,7 +272,7 @@ func TestSharedHeroTitlesLeaveRoomForDescenders(t *testing.T) {
 func TestDenseIssueLocationsShareSpaceAndStayBounded(t *testing.T) {
 	const location = "Gemeinschaft · Heizungsraum, Tiefenbohrung unter der Wiese"
 	html := renderComponent(t, PortalPage(PortalPageData{
-		Title: "Portal", Dense: true,
+		Title: "Portal", Dense: true, Modules: PortalModules{Issues: true},
 		Issues: []view.IssueView{{
 			ID: "issue-1", Status: "Neu", Title: "Wärmepumpe prüfen",
 			Location: location, DetailURL: "/app/anliegen/issue-1",
