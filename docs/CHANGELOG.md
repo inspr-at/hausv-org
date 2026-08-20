@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.0] - 2026-08-20
+
+### Portal vereinheitlicht
+
+- Alle Hauptbereiche verwenden nun dieselbe Seitenleiste, mobile Navigation und ruhige Kopfzeile.
+- Hausüberblick, Aushang und Termine teilen sich ein bündiges Titelbild; die übrigen Bereiche bleiben bewusst ohne Foto.
+- Aktionen im Seitenkopf sind einheitlich zurückhaltend dargestellt, während wichtige Schritte im Inhalt weiterhin deutlich hervorgehoben sind.
+
 ## [0.98.11] - 2026-08-20
 
 ### Stabilität verbessert

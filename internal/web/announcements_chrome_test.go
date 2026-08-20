@@ -8,9 +8,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/view"
 )
 
-// TestAnnouncementsPageRestoresRemovedCSS validates that PR #100's CSS rules
-// that were inadvertently removed are now restored (HAUSV-0.98.10 fixes).
-func TestAnnouncementsPageRestoresRemovedCSS(t *testing.T) {
+func TestAnnouncementsPageKeepsFeatureCSSAndUsesSharedChrome(t *testing.T) {
 	portal := PortalPageData{
 		Title:     "Aushang Test",
 		HouseName: "Test House",
@@ -22,12 +20,10 @@ func TestAnnouncementsPageRestoresRemovedCSS(t *testing.T) {
 
 	html := renderComponent(t, AnnouncementsPage(data))
 
-	// Restored page structure rules that were removed in PR #100
+	// Feature-body rules stay local. Landing/header/hero geometry belongs to
+	// portal.templ and must not drift back into this page.
 	requiredRules := []string{
-		".page-main{",
-		".page-head{",
 		".eyebrow{",
-		".lede{",
 		".button.primary{",
 		".button.ghost{",
 		".button.small{",
@@ -37,11 +33,18 @@ func TestAnnouncementsPageRestoresRemovedCSS(t *testing.T) {
 		".dialog-head{",
 		".dialog-close{",
 		".dialog-body{",
+		".portal-section-landing{",
+		".portal-section-hero{",
 	}
 
 	for _, rule := range requiredRules {
 		if !strings.Contains(html, rule) {
 			t.Errorf("Announcements page is missing restored CSS rule: %s", rule)
+		}
+	}
+	for _, clone := range []string{".page-main{", ".page-head{", ".home-hero{", ".lede{"} {
+		if strings.Contains(html, clone) {
+			t.Errorf("Announcements page still carries cloned chrome rule %s", clone)
 		}
 	}
 }

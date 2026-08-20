@@ -60,256 +60,340 @@ func HelpPage(data HelpPageData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a class=\"skip-link\" href=\"#main-content\">Zum Inhalt springen</a>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalMobileHeader(data.Portal, "Hilfe").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <div class=\"shell\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalSidebar(data.Portal).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<main class=\"help-main\" id=\"main-content\" tabindex=\"-1\"><section class=\"help-page\"><header class=\"help-head\"><div class=\"help-head-copy\"><span class=\"help-eyebrow\">HAUSV Home verständlich erklärt</span><h1>Hilfe zur Energieverbindung</h1><p class=\"lede\">Der lokale Connector verbindet Home Assistant mit HAUSV. Ihre Zugangsdaten bleiben zu Hause, HAUSV liest nur die Messwerte, die Sie ausdrücklich auswählen.</p></div><span class=\"help-mode\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalIcon("audit").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<span>Standard: nur beobachten</span></span></header>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var3 = []any{"panel", "help-status", templ.KV("ready", data.ConnectorStateTone == "ready"), templ.KV("attention", data.ConnectorStateTone == "attention")}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var3...)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<section class=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var3).String())
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 1, Col: 0}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" aria-labelledby=\"connector-status-title\"><span class=\"help-status-icon\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalIcon(helpStatusIcon(data.ConnectorFresh)).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span><div class=\"help-status-copy\"><span>Connector-Status</span><strong id=\"connector-status-title\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorState)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 37, Col: 123}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</strong><p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorDetail)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 37, Col: 159}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if data.ConnectorConnected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"help-status-facts\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				if data.ConnectorLastSeen != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<small>Zuletzt gemeldet: ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var7 string
-					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorLastSeen)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 41, Col: 60}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</small> ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				if data.HomeAssistantVersion != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<small>Home Assistant ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var8 string
-					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(data.HomeAssistantVersion)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 44, Col: 60}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</small> ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<small>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorEntityCount)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 46, Col: 44}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " erkannte Messwerte</small></div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if data.ConnectorAvailable && data.CanManageEnergy {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"help-actions\"><form method=\"post\" action=\"/app/hilfe/connector/pairing\"><button class=\"button primary\" type=\"submit\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(helpConnectorAction(data.ConnectorConnected))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 51, Col: 183}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</button></form>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				if data.ConnectorConnected {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<form method=\"post\" action=\"/app/hilfe/connector/revoke\" data-confirm=\"Die Verbindung wirklich widerrufen? Zuletzt gepufferte Connector-Messwerte werden entfernt.\"><button class=\"button\" type=\"submit\">Widerrufen</button></form>")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</section>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if data.PairingCreated {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<section class=\"panel help-pairing\" aria-labelledby=\"help-pairing-title\"><div class=\"help-pairing-head\"><span class=\"help-eyebrow\">Einmal-Code bis ")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingExpires)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 61, Col: 103}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span><h2 id=\"help-pairing-title\">Connector jetzt lokal starten</h2><p>Der Code wird nur jetzt angezeigt. Führen Sie den Befehl auf einem Linux-Gerät aus, das Home Assistant im lokalen Netzwerk erreicht.</p></div><code class=\"help-pairing-code\" data-pairing-code>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var12 string
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 62, Col: 76}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</code><div class=\"help-downloads\"><a href=\"/downloads/hausv-connector-linux-amd64\">Connector für Intel/AMD Linux</a><a href=\"/downloads/hausv-connector-linux-arm64\">Connector für ARM oder Raspberry Pi</a></div><code class=\"help-command\">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code ")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 64, Col: 152}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code><p>Für ARM ersetzen Sie den Dateinamen. Legen Sie den Home-Assistant-Token vorher als Datei <code>home-assistant.token</code> mit eingeschränkten Dateirechten auf diesem Gerät ab.</p></section>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<section class=\"panel help-flow\" aria-labelledby=\"help-flow-title\"><header class=\"help-section-head\"><h2 id=\"help-flow-title\">So läuft es in HAUSV ab</h2><p>Die Kopplung und die Auswahl der Messwerte sind bewusst getrennt. Eine erkannte Entität wird nicht automatisch im Portal verwendet.</p></header><ol class=\"help-steps\"><li><strong>Einmal verbinden</strong><span>Sie erzeugen hier einen zehn Minuten gültigen Code und starten den Connector bei sich zu Hause.</span></li><li><strong>Messwerte erkennen</strong><span>Der Connector meldet einen begrenzten Katalog plausibler Energie-, Leistungs- und Ladestandsensoren.</span></li><li><strong>Bewusst auswählen</strong><span>Unter „Mein Zuhause“ ordnen Sie Netz, PV, Hausverbrauch, Speicher und Verbraucher den richtigen Sensoren zu.</span></li><li><strong>Live verstehen</strong><span>Das Energieportal zeigt nur bestätigte Werte. Fehlende Sensoren bleiben sichtbar als Datenlücke, ohne erfundene Ersatzwerte.</span></li></ol></section><div class=\"help-grid\"><section class=\"panel help-card\" aria-labelledby=\"help-app-title\"><span class=\"help-card-icon\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalIcon("energy").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span><h2 id=\"help-app-title\">In der App</h2><ul class=\"help-list\"><li><span><strong>Messwerte zuordnen:</strong> Öffnen Sie <a href=\"/app/zuhause/onboarding?step=4\">Mein Zuhause, Schritt 4</a> und wählen Sie nur passende Sensoren.</span></li><li><span><strong>Ergebnis prüfen:</strong> Im <a href=\"/app/energie\">Energieportal</a> sehen Sie Live-Werte, Aktualisierungszeit und Datenlücken.</span></li><li><span><strong>Später ändern:</strong> Zuordnungen, Anlagen und Verbraucher können jederzeit korrigiert werden.</span></li><li><span><strong>Ohne Batterie:</strong> Nicht vorhandene Geräte werden nicht angelegt. Das Portal funktioniert auch mit PV, Netz und Hausverbrauch allein.</span></li></ul></section><section class=\"panel help-card\" aria-labelledby=\"help-tech-title\"><span class=\"help-card-icon\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = PortalIcon("settings").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</span><h2 id=\"help-tech-title\">Technisch und datensparsam</h2><ul class=\"help-list\"><li><span><strong>Nur ausgehend:</strong> Der Connector baut verschlüsselte HTTPS-Verbindungen zu hausv.org auf. Sie brauchen keine Portfreigabe und keinen eigenen DNS-Eintrag.</span></li><li><span><strong>Geheimnisse bleiben lokal:</strong> Home-Assistant-Adresse und Token werden nicht an HAUSV übertragen.</span></li><li><span><strong>Keine Steuerbefehle:</strong> Der Connector ruft ausschließlich <code>GET /api/config</code> und <code>GET /api/states</code> ab. Er verwendet keine Home-Assistant-Services.</span></li><li><span><strong>Begrenzte Übertragung:</strong> Vor der Auswahl höchstens 64 plausible Energiesensoren, danach nur bestätigte Entity-IDs, Werte, Einheiten und Zeitstempel.</span></li></ul></section></div><section class=\"panel help-faq\" aria-labelledby=\"help-faq-title\"><h2 id=\"help-faq-title\">Wenn etwas nicht klappt</h2><details><summary>Wo bekomme ich den Home-Assistant-Token?</summary><p>Öffnen Sie in Home Assistant Ihr Benutzerprofil, dann „Sicherheit“ und unten „Langlebige Zugriffstoken“. Erzeugen Sie einen eigenen Token für HAUSV und speichern Sie ihn nur in der lokalen Datei. <a href=\"https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token\" target=\"_blank\" rel=\"noopener noreferrer\">Offizielle Home-Assistant-Anleitung öffnen</a>.</p></details> <details><summary>Der Status bleibt „Wartet auf Kopplung“</summary><p>Prüfen Sie, ob der Einmal-Code noch gültig ist, der lokale Rechner hausv.org erreicht und die Home-Assistant-Adresse von diesem Rechner aus geöffnet werden kann. Ein verlorener oder abgelaufener Code kann gefahrlos ersetzt werden.</p></details> <details><summary>Der Connector ist verbunden, aber es erscheinen keine Werte</summary><p>Öffnen Sie „Mein Zuhause, Schritt 4“ und bestätigen Sie die passenden Sensoren. Der erste Kontakt übermittelt nur einen sicheren Auswahlkatalog. Live-Werte beginnen erst nach der bewussten Zuordnung.</p></details> <details><summary>Der Status wechselt auf „Verbindung prüfen“</summary><p>Der lokale Prozess hat sich länger als 90 Sekunden nicht gemeldet. Starten Sie ihn neu und prüfen Sie Internetzugang, Systemzeit sowie die Erreichbarkeit von Home Assistant. Die App steuert in dieser Zeit keine Geräte.</p></details> <details><summary>Wie beende ich die Verbindung vollständig?</summary><p>Berechtigte Personen können oben „Widerrufen“ wählen. Der Connector-Zugang wird sofort ungültig und die zuletzt gepufferten Connector-Messwerte werden entfernt. Der lokale Token bleibt bei Ihnen und kann zusätzlich in Home Assistant gelöscht werden.</p></details></section></section></main></div>")
+			templ_7745c5c3_Err = PortalShell(data.Portal, "Hilfe", HelpContent(data)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = PortalDocument(data.Portal.Title, portalAssetVersion(), nil, HelpStyles(), templ.Attributes{"data-templ-help": true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func HelpContent(data HelpPageData) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = PortalSectionLanding(
+			PortalSectionLandingData{
+				Portal:    data.Portal,
+				PageLabel: "Hilfe",
+				Class:     "help-main",
+				Identity:  PortalSectionIdentityData{Label: "HAUSV Home verständlich erklärt", Icon: "help"},
+			},
+			PortalSectionTitle("Hilfe zur Energieverbindung"),
+			PortalSectionLede("Der lokale Connector verbindet Home Assistant mit HAUSV. Ihre Zugangsdaten bleiben zu Hause, HAUSV liest nur die Messwerte, die Sie ausdrücklich auswählen."),
+			nil,
+			nil,
+			HelpContext(),
+			HelpBody(data),
+		).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func HelpContext() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<span class=\"help-mode\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PortalIcon("audit").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<span>Standard: nur beobachten</span></span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func HelpBody(data HelpPageData) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<section class=\"help-page\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 = []any{"panel", "help-status", templ.KV("ready", data.ConnectorStateTone == "ready"), templ.KV("attention", data.ConnectorStateTone == "attention")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<section class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var6).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" aria-labelledby=\"connector-status-title\"><span class=\"help-status-icon\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PortalIcon(helpStatusIcon(data.ConnectorFresh)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span><div class=\"help-status-copy\"><span>Connector-Status</span><strong id=\"connector-status-title\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorState)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 53, Col: 123}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</strong><p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorDetail)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 53, Col: 159}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.ConnectorConnected {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"help-status-facts\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if data.ConnectorLastSeen != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<small>Zuletzt gemeldet: ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var10 string
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorLastSeen)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 57, Col: 60}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</small> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			if data.HomeAssistantVersion != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<small>Home Assistant ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var11 string
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.HomeAssistantVersion)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 60, Col: 60}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</small> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<small>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var12 string
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorEntityCount)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 62, Col: 44}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " erkannte Messwerte</small></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.ConnectorAvailable && data.CanManageEnergy {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"help-actions\"><form method=\"post\" action=\"/app/hilfe/connector/pairing\"><button class=\"button primary\" type=\"submit\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var13 string
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(helpConnectorAction(data.ConnectorConnected))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 67, Col: 183}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if data.ConnectorConnected {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<form method=\"post\" action=\"/app/hilfe/connector/revoke\" data-confirm=\"Die Verbindung wirklich widerrufen? Zuletzt gepufferte Connector-Messwerte werden entfernt.\"><button class=\"button\" type=\"submit\">Widerrufen</button></form>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</section>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.PairingCreated {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<section class=\"panel help-pairing\" aria-labelledby=\"help-pairing-title\"><div class=\"help-pairing-head\"><span class=\"help-eyebrow\">Einmal-Code bis ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var14 string
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingExpires)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 77, Col: 103}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span><h2 id=\"help-pairing-title\">Connector jetzt lokal starten</h2><p>Der Code wird nur jetzt angezeigt. Führen Sie den Befehl auf einem Linux-Gerät aus, das Home Assistant im lokalen Netzwerk erreicht.</p></div><code class=\"help-pairing-code\" data-pairing-code>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var15 string
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 78, Col: 76}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</code><div class=\"help-downloads\"><a href=\"/downloads/hausv-connector-linux-amd64\">Connector für Intel/AMD Linux</a><a href=\"/downloads/hausv-connector-linux-arm64\">Connector für ARM oder Raspberry Pi</a></div><code class=\"help-command\">chmod 700 ./hausv-connector-linux-amd64<br>./hausv-connector-linux-amd64 connector --pairing-code ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var16 string
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 80, Col: 152}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " --home-assistant-url http://homeassistant.local:8123 --home-assistant-token-file ./home-assistant.token</code><p>Für ARM ersetzen Sie den Dateinamen. Legen Sie den Home-Assistant-Token vorher als Datei <code>home-assistant.token</code> mit eingeschränkten Dateirechten auf diesem Gerät ab.</p></section>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<section class=\"panel help-flow\" aria-labelledby=\"help-flow-title\"><header class=\"help-section-head\"><h2 id=\"help-flow-title\">So läuft es in HAUSV ab</h2><p>Die Kopplung und die Auswahl der Messwerte sind bewusst getrennt. Eine erkannte Entität wird nicht automatisch im Portal verwendet.</p></header><ol class=\"help-steps\"><li><strong>Einmal verbinden</strong><span>Sie erzeugen hier einen zehn Minuten gültigen Code und starten den Connector bei sich zu Hause.</span></li><li><strong>Messwerte erkennen</strong><span>Der Connector meldet einen begrenzten Katalog plausibler Energie-, Leistungs- und Ladestandsensoren.</span></li><li><strong>Bewusst auswählen</strong><span>Unter „Mein Zuhause“ ordnen Sie Netz, PV, Hausverbrauch, Speicher und Verbraucher den richtigen Sensoren zu.</span></li><li><strong>Live verstehen</strong><span>Das Energieportal zeigt nur bestätigte Werte. Fehlende Sensoren bleiben sichtbar als Datenlücke, ohne erfundene Ersatzwerte.</span></li></ol></section><div class=\"help-grid\"><section class=\"panel help-card\" aria-labelledby=\"help-app-title\"><span class=\"help-card-icon\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PortalIcon("energy").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</span><h2 id=\"help-app-title\">In der App</h2><ul class=\"help-list\"><li><span><strong>Messwerte zuordnen:</strong> Öffnen Sie <a href=\"/app/zuhause/onboarding?step=4\">Mein Zuhause, Schritt 4</a> und wählen Sie nur passende Sensoren.</span></li><li><span><strong>Ergebnis prüfen:</strong> Im <a href=\"/app/energie\">Energieportal</a> sehen Sie Live-Werte, Aktualisierungszeit und Datenlücken.</span></li><li><span><strong>Später ändern:</strong> Zuordnungen, Anlagen und Verbraucher können jederzeit korrigiert werden.</span></li><li><span><strong>Ohne Batterie:</strong> Nicht vorhandene Geräte werden nicht angelegt. Das Portal funktioniert auch mit PV, Netz und Hausverbrauch allein.</span></li></ul></section><section class=\"panel help-card\" aria-labelledby=\"help-tech-title\"><span class=\"help-card-icon\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PortalIcon("settings").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span><h2 id=\"help-tech-title\">Technisch und datensparsam</h2><ul class=\"help-list\"><li><span><strong>Nur ausgehend:</strong> Der Connector baut verschlüsselte HTTPS-Verbindungen zu hausv.org auf. Sie brauchen keine Portfreigabe und keinen eigenen DNS-Eintrag.</span></li><li><span><strong>Geheimnisse bleiben lokal:</strong> Home-Assistant-Adresse und Token werden nicht an HAUSV übertragen.</span></li><li><span><strong>Keine Steuerbefehle:</strong> Der Connector ruft ausschließlich <code>GET /api/config</code> und <code>GET /api/states</code> ab. Er verwendet keine Home-Assistant-Services.</span></li><li><span><strong>Begrenzte Übertragung:</strong> Vor der Auswahl höchstens 64 plausible Energiesensoren, danach nur bestätigte Entity-IDs, Werte, Einheiten und Zeitstempel.</span></li></ul></section></div><section class=\"panel help-faq\" aria-labelledby=\"help-faq-title\"><h2 id=\"help-faq-title\">Wenn etwas nicht klappt</h2><details><summary>Wo bekomme ich den Home-Assistant-Token?</summary><p>Öffnen Sie in Home Assistant Ihr Benutzerprofil, dann „Sicherheit“ und unten „Langlebige Zugriffstoken“. Erzeugen Sie einen eigenen Token für HAUSV und speichern Sie ihn nur in der lokalen Datei. <a href=\"https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token\" target=\"_blank\" rel=\"noopener noreferrer\">Offizielle Home-Assistant-Anleitung öffnen</a>.</p></details> <details><summary>Der Status bleibt „Wartet auf Kopplung“</summary><p>Prüfen Sie, ob der Einmal-Code noch gültig ist, der lokale Rechner hausv.org erreicht und die Home-Assistant-Adresse von diesem Rechner aus geöffnet werden kann. Ein verlorener oder abgelaufener Code kann gefahrlos ersetzt werden.</p></details> <details><summary>Der Connector ist verbunden, aber es erscheinen keine Werte</summary><p>Öffnen Sie „Mein Zuhause, Schritt 4“ und bestätigen Sie die passenden Sensoren. Der erste Kontakt übermittelt nur einen sicheren Auswahlkatalog. Live-Werte beginnen erst nach der bewussten Zuordnung.</p></details> <details><summary>Der Status wechselt auf „Verbindung prüfen“</summary><p>Der lokale Prozess hat sich länger als 90 Sekunden nicht gemeldet. Starten Sie ihn neu und prüfen Sie Internetzugang, Systemzeit sowie die Erreichbarkeit von Home Assistant. Die App steuert in dieser Zeit keine Geräte.</p></details> <details><summary>Wie beende ich die Verbindung vollständig?</summary><p>Berechtigte Personen können oben „Widerrufen“ wählen. Der Connector-Zugang wird sofort ungültig und die zuletzt gepufferten Connector-Messwerte werden entfernt. Der lokale Token bleibt bei Ihnen und kann zusätzlich in Home Assistant gelöscht werden.</p></details></section></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -333,12 +417,12 @@ func HelpStyles() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var14 == nil {
-			templ_7745c5c3_Var14 = templ.NopComponent
+		templ_7745c5c3_Var17 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var17 == nil {
+			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<style>a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}\n\t\t.shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:var(--space-5) var(--space-4) var(--space-4);overflow:auto;background:var(--nav);color:var(--panel)}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.mobile-head{display:none}.help-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.help-page{max-width:1180px;margin:0 auto;display:grid;gap:var(--space-5)}.help-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-5);align-items:end}.help-head-copy{display:grid;gap:6px}.help-eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.help-head h1{font-size:42px;line-height:1}.lede{max-width:720px;color:var(--muted);font-size:14px;line-height:1.5}.help-mode{align-self:start;display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--leaf);font-size:12px;font-weight:850;white-space:nowrap}.help-mode svg,.help-status-icon svg,.help-card-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.help-mode svg{width:16px;height:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}\n\t\t.help-status{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);background:var(--panel-soft)}.help-status.ready{border-color:var(--leaf)}.help-status.attention{border-color:var(--gold)}.help-status-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf)}.help-status.attention .help-status-icon{color:var(--gold-ink)}.help-status-copy>span{display:block;margin-bottom:3px;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.help-status-copy strong{display:block;font-family:var(--font-serif);font-size:22px}.help-status-copy p{margin-top:var(--space-1);max-width:720px;color:var(--muted);font-size:13px;line-height:1.45}.help-status-facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--space-2)}.help-status-facts small{padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-weight:700}.help-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2)}.help-actions form{margin:0}.button.primary{background:var(--gold);color:var(--panel)}\n\t\t.help-pairing,.help-flow,.help-card{padding:var(--space-5)}.help-pairing{border-color:var(--leaf);background:var(--panel-soft)}.help-pairing-head{display:grid;gap:var(--space-1)}.help-pairing h2,.help-section-head h2{font-size:26px}.help-pairing p,.help-section-head p{color:var(--muted);font-size:13px;line-height:1.5}.help-pairing-code,.help-command{display:block;width:100%;padding:var(--space-4);overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}.help-pairing-code{margin:var(--space-4) 0;font-size:clamp(14px,2.2vw,20px);font-weight:850;overflow-wrap:anywhere}.help-command{margin-top:var(--space-3);background:var(--nav);color:var(--panel);white-space:nowrap}.help-downloads{display:flex;flex-wrap:wrap;gap:var(--space-3)}.help-downloads a,.help-card a,.help-faq a{color:var(--leaf);font-weight:850}.help-section-head{display:grid;gap:var(--space-1);margin-bottom:var(--space-4)}.help-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;padding:0;list-style:none;counter-reset:help-step}.help-steps li{min-width:0;padding:var(--space-4);border:1px solid var(--line);background:var(--panel-soft);counter-increment:help-step}.help-steps li+li{border-left:0}.help-steps li::before{content:counter(help-step);width:27px;height:27px;display:grid;place-items:center;margin-bottom:var(--space-2);border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:900}.help-steps strong{display:block;font-size:15px}.help-steps span{display:block;margin-top:var(--space-1);color:var(--muted);font-size:12px;line-height:1.48}\n\t\t.help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.help-card{background:var(--panel-soft)}.help-card-icon{width:42px;height:42px;display:grid;place-items:center;margin-bottom:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--gold-ink)}.help-card h2{font-size:23px}.help-list{display:grid;gap:var(--space-3);margin:var(--space-3) 0 0;padding:0;list-style:none}.help-list li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:13px;line-height:1.48}.help-list li::before{content:\"✓\";color:var(--leaf);font-weight:900}.help-list strong{color:var(--ink)}.help-faq{overflow:hidden}.help-faq>h2{padding:var(--space-5) var(--space-5) var(--space-3);font-size:25px}.help-faq details{border-top:1px solid var(--line);background:var(--panel-soft)}.help-faq summary{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-5);cursor:pointer;list-style:none;font-weight:850}.help-faq summary::-webkit-details-marker{display:none}.help-faq summary::after{content:\"+\";margin-left:auto;color:var(--gold-ink);font-size:22px}.help-faq details[open] summary::after{content:\"−\"}.help-faq details p{padding:0 var(--space-5) var(--space-4);max-width:850px;color:var(--muted);font-size:13px;line-height:1.55}\n\t\t@media(max-width:1050px){.shell{grid-template-columns:210px minmax(0,1fr)}.help-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.help-steps li+li{border-left:1px solid var(--line)}.help-steps li:nth-child(even){border-left:0}.help-steps li:nth-child(n+3){border-top:0}}\n\t\t@media(max-width:760px){.shell{display:block}.sidebar{display:none}.mobile-head{position:sticky;z-index:40;top:0;display:grid;grid-template-columns:42px minmax(0,1fr) 38px;align-items:center;gap:var(--space-3);min-height:74px;padding:var(--space-3) var(--space-4);background:var(--nav);color:var(--panel)}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.hamburger,.hamburger::before,.hamburger::after{width:22px;height:2px;display:block;background:var(--panel);border-radius:var(--radius-pill)}.hamburger{position:relative}.hamburger::before,.hamburger::after{content:\"\";position:absolute;left:0}.hamburger::before{top:-7px}.hamburger::after{top:7px}.menu-panel{position:absolute;top:74px;right:0;left:0;max-height:calc(100vh - 74px);overflow:auto;padding:var(--space-3) var(--space-4) var(--space-5);background:var(--nav);border-top:1px solid var(--nav-2);box-shadow:var(--shadow-dialog)}.menu-panel .nav{grid-template-columns:1fr 1fr;margin-top:0}.menu-panel .nav a{margin:0;min-height:44px;padding:var(--space-2) var(--space-3)}.menu-panel .nav-label{grid-column:1/-1}.menu-panel .logout-form button{min-height:44px;margin-top:var(--space-3)}.mobile-identity strong,.mobile-identity small{display:block}.mobile-identity strong{font-family:var(--font-serif);font-size:21px}.mobile-identity small{margin-top:var(--space-1);color:var(--soft);font-size:10px}.mobile-head .avatar{width:38px;height:38px}.help-main{padding:var(--space-5) var(--space-4) 48px}.help-head{grid-template-columns:1fr}.help-head h1{font-size:34px}.help-mode{justify-self:start}.help-status{grid-template-columns:auto minmax(0,1fr)}.help-actions{grid-column:1/-1;justify-content:stretch}.help-actions form,.help-actions .button{width:100%}.help-grid{grid-template-columns:1fr}.release-panel{left:var(--space-3);bottom:var(--space-3);width:calc(100vw - 24px)}}\n\t\t@media(max-width:480px){.help-status{grid-template-columns:1fr}.help-status-icon{width:42px;height:42px}.help-steps{grid-template-columns:1fr}.help-steps li+li,.help-steps li:nth-child(even),.help-steps li:nth-child(n+3){border:1px solid var(--line);border-top:0}}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<style>a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.help-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.help-page{max-width:1180px;margin:0 auto;display:grid;gap:var(--space-5)}.help-eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.help-mode{align-self:start;display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--leaf);font-size:12px;font-weight:850;white-space:nowrap}.help-mode svg,.help-status-icon svg,.help-card-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.help-mode svg{width:16px;height:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}\n\t\t.help-status{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);background:var(--panel-soft)}.help-status.ready{border-color:var(--leaf)}.help-status.attention{border-color:var(--gold)}.help-status-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf)}.help-status.attention .help-status-icon{color:var(--gold-ink)}.help-status-copy>span{display:block;margin-bottom:3px;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.help-status-copy strong{display:block;font-family:var(--font-serif);font-size:22px}.help-status-copy p{margin-top:var(--space-1);max-width:720px;color:var(--muted);font-size:13px;line-height:1.45}.help-status-facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--space-2)}.help-status-facts small{padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-weight:700}.help-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2)}.help-actions form{margin:0}.button.primary{background:var(--gold);color:var(--panel)}\n\t\t.help-pairing,.help-flow,.help-card{padding:var(--space-5)}.help-pairing{border-color:var(--leaf);background:var(--panel-soft)}.help-pairing-head{display:grid;gap:var(--space-1)}.help-pairing h2,.help-section-head h2{font-size:26px}.help-pairing p,.help-section-head p{color:var(--muted);font-size:13px;line-height:1.5}.help-pairing-code,.help-command{display:block;width:100%;padding:var(--space-4);overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}.help-pairing-code{margin:var(--space-4) 0;font-size:clamp(14px,2.2vw,20px);font-weight:850;overflow-wrap:anywhere}.help-command{margin-top:var(--space-3);background:var(--nav);color:var(--panel);white-space:nowrap}.help-downloads{display:flex;flex-wrap:wrap;gap:var(--space-3)}.help-downloads a,.help-card a,.help-faq a{color:var(--leaf);font-weight:850}.help-section-head{display:grid;gap:var(--space-1);margin-bottom:var(--space-4)}.help-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;padding:0;list-style:none;counter-reset:help-step}.help-steps li{min-width:0;padding:var(--space-4);border:1px solid var(--line);background:var(--panel-soft);counter-increment:help-step}.help-steps li+li{border-left:0}.help-steps li::before{content:counter(help-step);width:27px;height:27px;display:grid;place-items:center;margin-bottom:var(--space-2);border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:900}.help-steps strong{display:block;font-size:15px}.help-steps span{display:block;margin-top:var(--space-1);color:var(--muted);font-size:12px;line-height:1.48}\n\t\t.help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.help-card{background:var(--panel-soft)}.help-card-icon{width:42px;height:42px;display:grid;place-items:center;margin-bottom:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--gold-ink)}.help-card h2{font-size:23px}.help-list{display:grid;gap:var(--space-3);margin:var(--space-3) 0 0;padding:0;list-style:none}.help-list li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:13px;line-height:1.48}.help-list li::before{content:\"✓\";color:var(--leaf);font-weight:900}.help-list strong{color:var(--ink)}.help-faq{overflow:hidden}.help-faq>h2{padding:var(--space-5) var(--space-5) var(--space-3);font-size:25px}.help-faq details{border-top:1px solid var(--line);background:var(--panel-soft)}.help-faq summary{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-5);cursor:pointer;list-style:none;font-weight:850}.help-faq summary::-webkit-details-marker{display:none}.help-faq summary::after{content:\"+\";margin-left:auto;color:var(--gold-ink);font-size:22px}.help-faq details[open] summary::after{content:\"−\"}.help-faq details p{padding:0 var(--space-5) var(--space-4);max-width:850px;color:var(--muted);font-size:13px;line-height:1.55}\n\t\t@media(max-width:1050px){.help-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.help-steps li+li{border-left:1px solid var(--line)}.help-steps li:nth-child(even){border-left:0}.help-steps li:nth-child(n+3){border-top:0}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.help-main{padding:var(--space-5) var(--space-4) 48px}.help-mode{justify-self:start}.help-status{grid-template-columns:auto minmax(0,1fr)}.help-actions{grid-column:1/-1;justify-content:stretch}.help-actions form,.help-actions .button{width:100%}.help-grid{grid-template-columns:1fr}}\n\t\t@media(max-width:480px){.help-status{grid-template-columns:1fr}.help-status-icon{width:42px;height:42px}.help-steps{grid-template-columns:1fr}.help-steps li+li,.help-steps li:nth-child(even),.help-steps li:nth-child(n+3){border:1px solid var(--line);border-top:0}}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

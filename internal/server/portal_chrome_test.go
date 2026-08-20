@@ -74,15 +74,13 @@ func TestAuthenticatedPortalShellsIncludeMapTiles(t *testing.T) {
 	}
 
 	home := authedRequest(t, a, "admin@example.com", "/demo/app").Body.String()
-	// One document shows one desktop density plus the mobile greeting — two
-	// heroes. The third greeting lives in the unused density template.
-	if got := strings.Count(home, `class="home-hero"`); got != 2 {
-		t.Fatalf("home must wrap the rendered greetings only, got %d heroes", got)
+	if got := strings.Count(home, `data-portal-section-hero`); got != 1 {
+		t.Fatalf("home must render exactly one shared hero, got %d", got)
 	}
-	if strings.Count(home, `<div class="greeting">`) != 0 {
-		t.Fatal("a fourth unwrapped greeting leaked onto /app")
+	if strings.Count(home, `<div class="greeting">`) != 1 {
+		t.Fatal("home greeting must be the title slot inside the shared hero")
 	}
-	if !strings.Contains(home, `<img class="home-hero-image" src="/demo`+defaultTenantHeroImageURL) {
+	if !strings.Contains(home, `<img class="portal-section-hero-image" src="/demo`+defaultTenantHeroImageURL) {
 		t.Fatalf("home hero must use <img src> so prefixTenantHTMLPaths can rewrite it")
 	}
 	if strings.Contains(home, "url('") && strings.Contains(home, defaultTenantHeroImageURL) {

@@ -41,6 +41,24 @@ const routes = [
   { path: '/app/energie', heading: 'QA Zuhause', content: 'Nur beobachten' },
 ];
 
+const portalChromeRoutes = [
+  { path: '/app', hero: true, action: 'Anliegen melden' },
+  { path: '/app/energie', hero: false, action: 'Zuhause bearbeiten', energy: true },
+  { path: '/app/announcements', hero: true, action: 'Aushang erstellen' },
+  { path: '/app/events', hero: true, action: 'Termin erstellen' },
+  { path: '/app/kontakte', hero: false, action: 'Kontakt hinzufügen' },
+  { path: '/app/dokumente', hero: false, action: 'Hochladen' },
+  { path: '/app/anliegen', hero: false, action: 'Triage-Board' },
+  { path: '/app/anliegen/board', hero: false, boardContext: true },
+  { path: '/app/abstimmungen', hero: false, action: 'Abstimmung anlegen' },
+  { path: '/app/parking', hero: false, action: 'Mehr' },
+  { path: '/app/uebergaben', hero: false, action: 'Übergabe anlegen' },
+  { path: '/app/settings/users', hero: false },
+  { path: '/app/audit', hero: false, action: 'Einstellungen' },
+  { path: '/app/settings', hero: false },
+  { path: '/app/hilfe', hero: false },
+];
+
 const executableCandidates = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
   ...(process.env.CI === 'true' ? [] : [
@@ -257,6 +275,87 @@ async function newContext(viewport) {
     locale: 'de-AT',
     timezoneId: 'Europe/Vienna',
   });
+}
+
+async function assertPortalChromeKit() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+
+  for (const route of portalChromeRoutes) {
+    const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) {
+      fail(`Portal-Chrome ${route.path}: Status ${response?.status() ?? 0}`);
+    }
+    const result = await page.evaluate((expected) => {
+      const shell = document.querySelector('[data-portal-shell]');
+      const landing = document.querySelector('[data-portal-section-landing]');
+      const header = landing?.querySelector('[data-portal-section-header]');
+      const hero = landing?.querySelector(':scope > [data-portal-section-hero]');
+      const landingRect = landing?.getBoundingClientRect();
+      const heroRect = hero?.getBoundingClientRect();
+      const headerButtons = [...(header?.querySelectorAll('.button') || [])];
+      const sidebar = shell?.querySelector('aside.sidebar');
+      const mobileIdentity = document.querySelector('.mobile-head .mobile-identity small')?.textContent?.trim() || '';
+      const switchRows = [...document.querySelectorAll('.context-switch .context-current small, .context-switch .context-menu button small')]
+        .map((node) => node.textContent?.trim() || '');
+      const strip = landing?.querySelector(':scope > .energy-mode-strip');
+      const stripStyle = strip ? getComputedStyle(strip) : null;
+      return {
+        shell: Boolean(shell),
+        landing: Boolean(landing),
+        header: Boolean(header),
+        declaredHero: landing?.getAttribute('data-portal-hero'),
+        heroCount: landing?.querySelectorAll('[data-portal-section-hero]').length || 0,
+        heroGap: heroRect && landingRect ? Math.round(heroRect.top - landingRect.top) : null,
+        actionTexts: headerButtons.map((button) => button.textContent?.trim() || ''),
+        primaryActions: headerButtons.filter((button) => button.classList.contains('primary')).length,
+        wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
+        sidebarMap: Boolean(sidebar?.querySelector('.side-map')),
+        sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
+        sidebarAccount: Boolean(sidebar?.querySelector('footer.account small')),
+        mobileIdentity,
+        switchRows,
+        boardContext: Boolean(landing?.querySelector('.portal-section-context a[href$="/app/anliegen"]')),
+        energyStrip: Boolean(strip),
+        energyFlexWrap: stripStyle?.flexWrap || '',
+        energyContainerType: stripStyle?.containerType || '',
+        expected,
+      };
+    }, route);
+
+    if (!result.shell || !result.landing || !result.header) {
+      fail(`Portal-Chrome ${route.path}: Shared kit fehlt (${JSON.stringify(result)})`);
+    }
+    if (result.declaredHero !== String(route.hero) || result.heroCount !== (route.hero ? 1 : 0)) {
+      fail(`Portal-Chrome ${route.path}: Hero-Vertrag verletzt (${JSON.stringify(result)})`);
+    }
+    if (route.hero && result.heroGap !== 0) {
+      fail(`Portal-Chrome ${route.path}: Hero beginnt mit ${result.heroGap}px Abstand`);
+    }
+    if (route.action && !result.actionTexts.some((text) => text.includes(route.action))) {
+      fail(`Portal-Chrome ${route.path}: Header-Aktion „${route.action}“ fehlt`);
+    }
+    if (result.primaryActions || result.wrappedActions) {
+      fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
+    }
+    if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccount) {
+      fail(`Portal-Chrome ${route.path}: Sidebar-Invarianten verletzt (${JSON.stringify(result)})`);
+    }
+    if (/\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(result.mobileIdentity) ||
+        result.switchRows.some((row) => /\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(row))) {
+      fail(`Portal-Chrome ${route.path}: Rolle außerhalb des Account-Footers (${JSON.stringify(result)})`);
+    }
+    if (route.boardContext && !result.boardContext) {
+      fail(`Portal-Chrome ${route.path}: Board-Zurücklink fehlt im Kontext-Slot`);
+    }
+    if (route.energy && (!result.energyStrip || result.energyFlexWrap !== 'wrap' ||
+        !result.energyContainerType.includes('inline-size'))) {
+      fail(`Portal-Chrome ${route.path}: Energie-Strip-Wrap verloren (${JSON.stringify(result)})`);
+    }
+  }
+
+  await closeContext(context);
+  process.stdout.write('  ✓ Gemeinsames Portal-Chrome · 14 Navigationseinträge + Anliegen-Board\n');
 }
 
 // Eine überlaufende Seitenleiste ist auf einem Screenshot unsichtbar: die Seite
@@ -3059,6 +3158,7 @@ try {
         await createIssue('owner@example.com', 'QA Eigentümeranliegen');
       }
       await seedManagedContent();
+      await assertPortalChromeKit();
       await assertResidentContentResponsiveMatrix(ciCore ? [
         { width: 390, height: 844 },
         { width: 768, height: 1024 },
