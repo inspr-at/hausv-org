@@ -108,6 +108,7 @@ templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, s
 		id="main-content"
 		class={ "portal-section-landing", data.Class, templ.KV("has-hero", data.Hero), templ.KV("has-status", status != nil) }
 		tabindex="-1"
+		data-skip-target
 		data-portal-section-landing
 		data-portal-hero={ portalBool(data.Hero) }
 	>
