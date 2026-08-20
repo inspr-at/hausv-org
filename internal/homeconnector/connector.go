@@ -210,7 +210,8 @@ func readHomeAssistant(ctx context.Context, client *http.Client, baseURL, tokenF
 	for _, state := range states {
 		unit := connectorAttribute(state.Attributes, "unit_of_measurement")
 		deviceClass := strings.ToLower(connectorAttribute(state.Attributes, "device_class"))
-		if !allowedEnergyReading(state.EntityID, state.State, unit, deviceClass) {
+		displayName := connectorAttribute(state.Attributes, "friendly_name")
+		if !allowedEnergyReading(state.EntityID, state.State, displayName, unit, deviceClass) {
 			continue
 		}
 		updated := state.Updated
@@ -222,7 +223,7 @@ func readHomeAssistant(ctx context.Context, client *http.Client, baseURL, tokenF
 		}
 		readings = append(readings, Reading{
 			EntityID: strings.ToLower(strings.TrimSpace(state.EntityID)), State: strings.TrimSpace(state.State),
-			DisplayName: connectorAttribute(state.Attributes, "friendly_name"), Unit: strings.TrimSpace(unit),
+			DisplayName: displayName, Unit: strings.TrimSpace(unit),
 			DeviceClass: deviceClass, StateClass: strings.ToLower(connectorAttribute(state.Attributes, "state_class")),
 			LastUpdated: updated.UTC(),
 		})
@@ -244,9 +245,15 @@ func connectorAttribute(attributes map[string]any, key string) string {
 	return strings.TrimSpace(value)
 }
 
-func allowedEnergyReading(entityID, state, unit, deviceClass string) bool {
+func allowedEnergyReading(entityID, state, displayName, unit, deviceClass string) bool {
 	entityID = strings.ToLower(strings.TrimSpace(entityID))
-	if !strings.HasPrefix(entityID, "sensor.") || len(entityID) > 180 || len(strings.TrimSpace(state)) > 48 {
+	if len(entityID) > 180 || len(strings.TrimSpace(state)) > 48 {
+		return false
+	}
+	if allowedVehicleSleepReading(entityID, state, displayName) {
+		return true
+	}
+	if !strings.HasPrefix(entityID, "sensor.") {
 		return false
 	}
 	normalizedUnit := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(unit), " ", ""))
@@ -254,6 +261,25 @@ func allowedEnergyReading(entityID, state, unit, deviceClass string) bool {
 		normalizedUnit == "wh" || normalizedUnit == "kwh" || normalizedUnit == "mwh" || normalizedUnit == "%"
 	deviceClass = strings.ToLower(strings.TrimSpace(deviceClass))
 	return allowedUnit && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
+}
+
+func allowedVehicleSleepReading(entityID, state, displayName string) bool {
+	entityID = strings.ToLower(strings.TrimSpace(entityID))
+	if !strings.HasPrefix(entityID, "sensor.") && !strings.HasPrefix(entityID, "binary_sensor.") {
+		return false
+	}
+	name := strings.ToLower(entityID + " " + strings.TrimSpace(displayName))
+	if !strings.Contains(name, "sleep") && !strings.Contains(name, "asleep") &&
+		!strings.Contains(name, "schlaf") && !strings.Contains(name, "schläf") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(state)) {
+	case "on", "off", "true", "false", "1", "0", "sleep", "sleeping", "asleep",
+		"schläft", "awake", "online", "unknown", "unavailable":
+		return true
+	default:
+		return false
+	}
 }
 
 func selectHeartbeatReadings(heartbeat Heartbeat, selected []string) Heartbeat {

@@ -986,7 +986,7 @@ func EnergyLead(data EnergyPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.HasMetrics {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"energy-live-meta\" data-energy-live-status><span class=\"energy-live-dot\" aria-hidden=\"true\"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class=\"energy-live-updated\" data-energy-live-updated>Zuletzt aktualisiert vor 0&nbsp;s</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"energy-live-meta\" data-energy-live-status><span class=\"energy-live-dot\" aria-hidden=\"true\"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class=\"energy-live-updated\" data-energy-live-updated>Portal abgerufen vor 0&nbsp;s</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1863,7 +1863,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var76 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<dialog id=\"energy-consumer-dialog\" class=\"dialog energy-consumer-dialog\" aria-labelledby=\"energy-consumer-dialog-title\"><form method=\"post\" action=\"/app/energie/verbraucher\"><input type=\"hidden\" name=\"asset_id\" value=\"\"> <input type=\"hidden\" name=\"node_type\" value=\"consumer\"> <input type=\"hidden\" name=\"measurements_present\" value=\"1\"> <input type=\"hidden\" name=\"icon\" value=\"plug\" data-consumer-icon-value><header class=\"dialog-head\"><div class=\"energy-consumer-dialog-heading\"><h2 id=\"energy-consumer-dialog-title\" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\"><span class=\"energy-ui-icon energy-ui-icon-x\" aria-hidden=\"true\"></span></button></header><div class=\"dialog-body\"><div class=\"energy-consumer-primary\"><label class=\"energy-consumer-field\"><span>Name</span><input type=\"text\" name=\"name\" maxlength=\"80\" required autocomplete=\"off\" placeholder=\"z. B. Sauna\"></label> <label class=\"energy-consumer-field\" data-consumer-priority-field><span>Priorität</span><select name=\"priority\" aria-label=\"Priorität\"></select></label></div><div class=\"energy-consumer-display-fields\"><label class=\"energy-consumer-field energy-consumer-color\"><span>Farbe</span><input type=\"color\" name=\"color\" value=\"#3e704c\" aria-label=\"Farbe der Entität\"></label> <label class=\"energy-consumer-field\"><span>Beschriftung zweite Kennzahl</span><input type=\"text\" name=\"secondary_label\" maxlength=\"60\" autocomplete=\"off\" placeholder=\"z. B. Energie heute\"></label></div><section class=\"energy-icon-picker\" aria-labelledby=\"energy-icon-picker-title\"><div class=\"energy-icon-picker-head\"><div><strong id=\"energy-icon-picker-title\">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class=\"energy-icon-search\"><span class=\"energy-ui-icon energy-ui-icon-search\" aria-hidden=\"true\"></span><span class=\"sr-only\">Symbole durchsuchen</span><input type=\"search\" data-consumer-icon-search placeholder=\"Symbol suchen\"></label></div><div class=\"energy-icon-options energy-icon-presets\" data-consumer-icon-presets>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<dialog id=\"energy-consumer-dialog\" class=\"dialog energy-consumer-dialog\" aria-labelledby=\"energy-consumer-dialog-title\"><form method=\"post\" action=\"/app/energie/verbraucher\"><input type=\"hidden\" name=\"asset_id\" value=\"\"> <input type=\"hidden\" name=\"node_type\" value=\"consumer\"> <input type=\"hidden\" name=\"measurements_present\" value=\"1\"> <input type=\"hidden\" name=\"icon\" value=\"plug\" data-consumer-icon-value><header class=\"dialog-head\"><div class=\"energy-consumer-dialog-heading\"><h2 id=\"energy-consumer-dialog-title\" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\"><span class=\"energy-ui-icon energy-ui-icon-x\" aria-hidden=\"true\"></span></button></header><div class=\"dialog-body\"><div class=\"energy-consumer-primary\"><label class=\"energy-consumer-field\"><span>Name</span><input type=\"text\" name=\"name\" maxlength=\"80\" required autocomplete=\"off\" placeholder=\"z. B. Sauna\"></label> <label class=\"energy-consumer-field\" data-consumer-priority-field><span>Priorität</span><select name=\"priority\" aria-label=\"Priorität\"></select></label></div><div class=\"energy-consumer-display-fields\"><label class=\"energy-consumer-field energy-consumer-color\"><span>Farbe</span><input type=\"color\" name=\"color\" value=\"#3e704c\" aria-label=\"Farbe der Entität\"></label> <label class=\"energy-consumer-field\"><span>Beschriftung zweite Kennzahl</span><input type=\"text\" name=\"secondary_label\" maxlength=\"60\" autocomplete=\"off\" placeholder=\"z. B. Energie heute\"></label> <label class=\"energy-consumer-field\" data-consumer-stale-field><span>Als veraltet markieren nach</span><input type=\"number\" name=\"stale_after_minutes\" min=\"1\" max=\"1440\" step=\"1\" inputmode=\"numeric\" placeholder=\"Standard: 10 Minuten\"><small>Leer verwendet den Standardwert.</small></label></div><section class=\"energy-icon-picker\" aria-labelledby=\"energy-icon-picker-title\"><div class=\"energy-icon-picker-head\"><div><strong id=\"energy-icon-picker-title\">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class=\"energy-icon-search\"><span class=\"energy-ui-icon energy-ui-icon-search\" aria-hidden=\"true\"></span><span class=\"sr-only\">Symbole durchsuchen</span><input type=\"search\" data-consumer-icon-search placeholder=\"Symbol suchen\"></label></div><div class=\"energy-icon-options energy-icon-presets\" data-consumer-icon-presets>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1875,7 +1875,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var77 string
 			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Label + " " + option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 569, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 			if templ_7745c5c3_Err != nil {
@@ -1888,7 +1888,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 569, Col: 164}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 164}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 			if templ_7745c5c3_Err != nil {
@@ -1933,7 +1933,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var81 string
 			templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 569, Col: 317}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 317}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 			if templ_7745c5c3_Err != nil {
@@ -1956,7 +1956,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 583, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 584, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var82)
 			if templ_7745c5c3_Err != nil {
@@ -1969,7 +1969,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var83 string
 			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 583, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 584, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 			if templ_7745c5c3_Err != nil {
@@ -2039,7 +2039,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var87 string
 			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(series.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 598, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 599, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 			if templ_7745c5c3_Err != nil {
@@ -2052,7 +2052,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var88 string
 			templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinStringErrs(series.Latest)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 598, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 599, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 			if templ_7745c5c3_Err != nil {
@@ -2071,7 +2071,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var89 string
 			templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 601, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 602, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 			if templ_7745c5c3_Err != nil {
@@ -2084,7 +2084,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var90 string
 			templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 601, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 602, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 			if templ_7745c5c3_Err != nil {
@@ -2131,7 +2131,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.Title + ": Viertelstundenwerte. Mit der Maus erkunden oder mit den Pfeiltasten durchgehen.")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 607, Col: 192}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 608, Col: 192}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 		if templ_7745c5c3_Err != nil {
@@ -2144,7 +2144,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.ResolveAttributeValue("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 608, Col: 120}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 609, Col: 120}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 		if templ_7745c5c3_Err != nil {
@@ -2157,7 +2157,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 		var templ_7745c5c3_Var94 string
 		templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 609, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 610, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 		if templ_7745c5c3_Err != nil {
@@ -2193,7 +2193,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var97 string
 			templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 612, Col: 115}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var97)
 			if templ_7745c5c3_Err != nil {
@@ -2206,7 +2206,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var98 string
 			templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 612, Col: 136}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 136}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var98)
 			if templ_7745c5c3_Err != nil {
@@ -2219,7 +2219,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var99 string
 			templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 612, Col: 208}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 208}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var99)
 			if templ_7745c5c3_Err != nil {
@@ -2232,7 +2232,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var100 string
 			templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 612, Col: 268}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 268}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 			if templ_7745c5c3_Err != nil {
@@ -2251,7 +2251,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var101 string
 			templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 615, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 			if templ_7745c5c3_Err != nil {
@@ -2264,7 +2264,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var102 string
 			templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 615, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var102)
 			if templ_7745c5c3_Err != nil {
@@ -2277,7 +2277,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var103 string
 			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 615, Col: 157}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 157}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var103)
 			if templ_7745c5c3_Err != nil {
@@ -2290,7 +2290,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var104 string
 			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 615, Col: 201}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 201}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 			if templ_7745c5c3_Err != nil {
@@ -2328,7 +2328,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var107 string
 				templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.AreaPath)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 619, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 620, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var107)
 				if templ_7745c5c3_Err != nil {
@@ -2348,7 +2348,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var108 string
 			templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var108)
 			if templ_7745c5c3_Err != nil {
@@ -2361,7 +2361,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var109 string
 			templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 117}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 117}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var109)
 			if templ_7745c5c3_Err != nil {
@@ -2374,7 +2374,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var110 string
 			templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 205}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 205}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var110)
 			if templ_7745c5c3_Err != nil {
@@ -2387,7 +2387,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var111 string
 			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 256}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 256}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 			if templ_7745c5c3_Err != nil {
@@ -2424,7 +2424,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var114 string
 			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.Path)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 626, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 627, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var114)
 			if templ_7745c5c3_Err != nil {
@@ -2466,7 +2466,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var117 string
 				templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 631, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var117)
 				if templ_7745c5c3_Err != nil {
@@ -2479,7 +2479,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var118 string
 				templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Position)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 631, Col: 131}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 131}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var118)
 				if templ_7745c5c3_Err != nil {
@@ -2492,7 +2492,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var119 string
 				templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Position)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 631, Col: 153}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 153}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
 				if templ_7745c5c3_Err != nil {
@@ -2510,7 +2510,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var120 string
 			templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 633, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var120)
 			if templ_7745c5c3_Err != nil {
@@ -2523,7 +2523,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var121 string
 			templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 633, Col: 116}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 116}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var121)
 			if templ_7745c5c3_Err != nil {
@@ -2536,7 +2536,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var122 string
 			templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.HitPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 633, Col: 141}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 141}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var122)
 			if templ_7745c5c3_Err != nil {
@@ -2549,7 +2549,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var123 string
 			templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.HitWidth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 633, Col: 174}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 174}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var123)
 			if templ_7745c5c3_Err != nil {
@@ -2567,7 +2567,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 		var templ_7745c5c3_Var124 string
 		templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.ResolveAttributeValue("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 636, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 637, Col: 119}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var124)
 		if templ_7745c5c3_Err != nil {
@@ -2580,7 +2580,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 		var templ_7745c5c3_Var125 string
 		templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.JoinStringErrs("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 637, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 638, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var125))
 		if templ_7745c5c3_Err != nil {
@@ -2616,7 +2616,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var128 string
 			templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 640, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 121}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var128)
 			if templ_7745c5c3_Err != nil {
@@ -2629,7 +2629,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var129 string
 			templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 640, Col: 148}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 148}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var129)
 			if templ_7745c5c3_Err != nil {
@@ -2642,7 +2642,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var130 string
 			templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 640, Col: 226}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 226}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var130)
 			if templ_7745c5c3_Err != nil {
@@ -2655,7 +2655,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var131 string
 			templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 640, Col: 286}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 286}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var131))
 			if templ_7745c5c3_Err != nil {
@@ -2674,7 +2674,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var132 string
 			templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 643, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var132)
 			if templ_7745c5c3_Err != nil {
@@ -2687,7 +2687,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var133 string
 			templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 643, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var133)
 			if templ_7745c5c3_Err != nil {
@@ -2700,7 +2700,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var134 string
 			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 643, Col: 175}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 175}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 			if templ_7745c5c3_Err != nil {
@@ -2713,7 +2713,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var135 string
 			templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 643, Col: 219}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 219}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
 			if templ_7745c5c3_Err != nil {
@@ -2751,7 +2751,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var138 string
 				templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.MobileAreaPath)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 647, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 648, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var138)
 				if templ_7745c5c3_Err != nil {
@@ -2771,7 +2771,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var139 string
 			templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var139)
 			if templ_7745c5c3_Err != nil {
@@ -2784,7 +2784,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var140 string
 			templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 129}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 129}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var140)
 			if templ_7745c5c3_Err != nil {
@@ -2797,7 +2797,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var141 string
 			templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 223}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 223}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var141)
 			if templ_7745c5c3_Err != nil {
@@ -2810,7 +2810,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var142 string
 			templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 274}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 274}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
 			if templ_7745c5c3_Err != nil {
@@ -2847,7 +2847,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var145 string
 			templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.MobilePath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 654, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 655, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var145)
 			if templ_7745c5c3_Err != nil {
@@ -2889,7 +2889,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var148 string
 				templ_7745c5c3_Var148, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 659, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var148)
 				if templ_7745c5c3_Err != nil {
@@ -2902,7 +2902,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var149 string
 				templ_7745c5c3_Var149, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobilePosition)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 659, Col: 137}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 137}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var149)
 				if templ_7745c5c3_Err != nil {
@@ -2915,7 +2915,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var150 string
 				templ_7745c5c3_Var150, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.MobilePosition)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 659, Col: 165}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 165}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var150)
 				if templ_7745c5c3_Err != nil {
@@ -2933,7 +2933,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var151 string
 			templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 661, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var151)
 			if templ_7745c5c3_Err != nil {
@@ -2946,7 +2946,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var152 string
 			templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 661, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var152)
 			if templ_7745c5c3_Err != nil {
@@ -2959,7 +2959,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var153 string
 			templ_7745c5c3_Var153, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobileHit)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 661, Col: 145}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 145}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var153)
 			if templ_7745c5c3_Err != nil {
@@ -2972,7 +2972,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var154 string
 			templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobileHitWidth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 661, Col: 184}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 184}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var154)
 			if templ_7745c5c3_Err != nil {
@@ -2995,7 +2995,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var155 string
 			templ_7745c5c3_Var155, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 667, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 668, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var155)
 			if templ_7745c5c3_Err != nil {
@@ -3008,7 +3008,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			var templ_7745c5c3_Var156 string
 			templ_7745c5c3_Var156, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Time)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 667, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 668, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var156)
 			if templ_7745c5c3_Err != nil {
@@ -3026,7 +3026,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var157 string
 				templ_7745c5c3_Var157, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 669, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var157)
 				if templ_7745c5c3_Err != nil {
@@ -3039,7 +3039,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var158 string
 				templ_7745c5c3_Var158, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 669, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var158)
 				if templ_7745c5c3_Err != nil {
@@ -3052,7 +3052,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				var templ_7745c5c3_Var159 string
 				templ_7745c5c3_Var159, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 669, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var159)
 				if templ_7745c5c3_Err != nil {
@@ -3104,7 +3104,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var161 string
 		templ_7745c5c3_Var161, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 679, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var161))
 		if templ_7745c5c3_Err != nil {
@@ -3117,7 +3117,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var162 string
 		templ_7745c5c3_Var162, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 679, Col: 220}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 220}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var162))
 		if templ_7745c5c3_Err != nil {
@@ -3130,7 +3130,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var163 string
 		templ_7745c5c3_Var163, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(!data.Chart.IsToday))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 679, Col: 440}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 440}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var163)
 		if templ_7745c5c3_Err != nil {
@@ -3143,7 +3143,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var164 string
 		templ_7745c5c3_Var164, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(data.Chart.IsToday))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 679, Col: 563}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 563}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var164)
 		if templ_7745c5c3_Err != nil {
@@ -3183,7 +3183,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var165 string
 			templ_7745c5c3_Var165, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Range)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 689, Col: 205}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 205}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var165))
 			if templ_7745c5c3_Err != nil {
@@ -3196,7 +3196,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var166 string
 			templ_7745c5c3_Var166, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Summary)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 691, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 692, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var166))
 			if templ_7745c5c3_Err != nil {
@@ -3209,7 +3209,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var167 string
 			templ_7745c5c3_Var167, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 691, Col: 126}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 692, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var167))
 			if templ_7745c5c3_Err != nil {
@@ -3227,7 +3227,7 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var168 string
 			templ_7745c5c3_Var168, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 694, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 695, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var168))
 			if templ_7745c5c3_Err != nil {
@@ -3274,7 +3274,7 @@ func EnergyChartDialog(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var170 string
 		templ_7745c5c3_Var170, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.DialogTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 701, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 702, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var170))
 		if templ_7745c5c3_Err != nil {
@@ -3303,7 +3303,7 @@ func EnergyChartDialog(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var171 string
 		templ_7745c5c3_Var171, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Range)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 706, Col: 126}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 707, Col: 126}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var171))
 		if templ_7745c5c3_Err != nil {
@@ -3351,7 +3351,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var173 string
 				templ_7745c5c3_Var173, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MinimumReason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 716, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 717, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var173))
 				if templ_7745c5c3_Err != nil {
@@ -3376,7 +3376,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var174 string
 			templ_7745c5c3_Var174, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 722, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 723, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var174))
 			if templ_7745c5c3_Err != nil {
@@ -3394,7 +3394,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var175 string
 		templ_7745c5c3_Var175, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MonthLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 724, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 725, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var175))
 		if templ_7745c5c3_Err != nil {
@@ -3407,7 +3407,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var176 string
 		templ_7745c5c3_Var176, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 725, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 726, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var176)
 		if templ_7745c5c3_Err != nil {
@@ -3420,7 +3420,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var177 string
 		templ_7745c5c3_Var177, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 725, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 726, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var177)
 		if templ_7745c5c3_Err != nil {
@@ -3450,7 +3450,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var178 string
 			templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.PeakKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 735, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 736, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var178))
 			if templ_7745c5c3_Err != nil {
@@ -3463,7 +3463,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var179 string
 			templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(data.Tariff.PeakMeterPercent))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 735, Col: 225}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 736, Col: 225}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var179)
 			if templ_7745c5c3_Err != nil {
@@ -3476,7 +3476,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var180 string
 			templ_7745c5c3_Var180, templ_7745c5c3_Err = templ.ResolveAttributeValue("Gemessene Spitze relativ zur verrechneten Leistung: " + strconv.Itoa(data.Tariff.PeakMeterPercent) + " Prozent")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 735, Col: 353}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 736, Col: 353}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var180)
 			if templ_7745c5c3_Err != nil {
@@ -3494,7 +3494,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var181 string
 				templ_7745c5c3_Var181, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.PeakTime)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 737, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 738, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var181))
 				if templ_7745c5c3_Err != nil {
@@ -3512,7 +3512,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var182 string
 			templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BilledKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 740, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 741, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var182))
 			if templ_7745c5c3_Err != nil {
@@ -3526,7 +3526,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var183 string
 				templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MinimumReason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 742, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 743, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var183))
 				if templ_7745c5c3_Err != nil {
@@ -3545,7 +3545,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var184 string
 			templ_7745c5c3_Var184, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AnnualPowerEUR)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 749, Col: 561}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 750, Col: 561}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var184))
 			if templ_7745c5c3_Err != nil {
@@ -3563,7 +3563,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var185 string
 				templ_7745c5c3_Var185, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Basis)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 752, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 753, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var185)
 				if templ_7745c5c3_Err != nil {
@@ -3577,7 +3577,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var186 string
 					templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.CoverageLabel)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 754, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 755, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var186))
 					if templ_7745c5c3_Err != nil {
@@ -3587,7 +3587,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var187 string
 					templ_7745c5c3_Var187, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 756, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 757, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var187))
 					if templ_7745c5c3_Err != nil {
@@ -3640,7 +3640,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var190 string
 			templ_7745c5c3_Var190, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MissingReason)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 769, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 770, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var190))
 			if templ_7745c5c3_Err != nil {
@@ -3685,7 +3685,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var191 string
 			templ_7745c5c3_Var191, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 784, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 785, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var191))
 			if templ_7745c5c3_Err != nil {
@@ -3704,7 +3704,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var192 string
 			templ_7745c5c3_Var192, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowRateEUR)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 787, Col: 289}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 289}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var192))
 			if templ_7745c5c3_Err != nil {
@@ -3717,7 +3717,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var193 string
 			templ_7745c5c3_Var193, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.ThresholdKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 787, Col: 327}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 327}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var193))
 			if templ_7745c5c3_Err != nil {
@@ -3730,7 +3730,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var194 string
 			templ_7745c5c3_Var194, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveRateEUR)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 787, Col: 360}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 360}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var194))
 			if templ_7745c5c3_Err != nil {
@@ -3743,7 +3743,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var195 string
 			templ_7745c5c3_Var195, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BilledKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 787, Col: 434}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 434}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var195))
 			if templ_7745c5c3_Err != nil {
@@ -3761,7 +3761,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var196 string
 				templ_7745c5c3_Var196, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowKW)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 789, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var196))
 				if templ_7745c5c3_Err != nil {
@@ -3774,7 +3774,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var197 string
 				templ_7745c5c3_Var197, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowRateEUR)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 789, Col: 146}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 146}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var197))
 				if templ_7745c5c3_Err != nil {
@@ -3787,7 +3787,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var198 string
 				templ_7745c5c3_Var198, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveKW)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 789, Col: 237}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 237}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var198))
 				if templ_7745c5c3_Err != nil {
@@ -3800,7 +3800,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var199 string
 				templ_7745c5c3_Var199, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveRateEUR)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 789, Col: 281}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 281}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var199))
 				if templ_7745c5c3_Err != nil {
@@ -3823,7 +3823,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var200 string
 				templ_7745c5c3_Var200, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.TierHint)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 793, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 794, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var200))
 				if templ_7745c5c3_Err != nil {
@@ -3841,7 +3841,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var201 string
 			templ_7745c5c3_Var201, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Disclaimer)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 795, Col: 158}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 796, Col: 158}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var201))
 			if templ_7745c5c3_Err != nil {
@@ -3860,7 +3860,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var202 string
 			templ_7745c5c3_Var202, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.TargetPeakValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 802, Col: 246}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 803, Col: 246}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var202)
 			if templ_7745c5c3_Err != nil {
@@ -3873,7 +3873,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var203 string
 			templ_7745c5c3_Var203, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.AgreedPowerValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 803, Col: 265}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 265}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var203)
 			if templ_7745c5c3_Err != nil {
@@ -3886,7 +3886,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var204 string
 			templ_7745c5c3_Var204, templ_7745c5c3_Err = templ.JoinStringErrs(energyAgreedHint(data.Tariff))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 803, Col: 354}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 354}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var204))
 			if templ_7745c5c3_Err != nil {
@@ -3904,7 +3904,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var205 string
 		templ_7745c5c3_Var205, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 808, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var205))
 		if templ_7745c5c3_Err != nil {
@@ -3917,7 +3917,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var206 string
 		templ_7745c5c3_Var206, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 808, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var206))
 		if templ_7745c5c3_Err != nil {
@@ -3930,7 +3930,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var207 templ.SafeURL
 		templ_7745c5c3_Var207, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Tariff.SourceURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 810, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var207))
 		if templ_7745c5c3_Err != nil {
@@ -3943,7 +3943,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var208 string
 		templ_7745c5c3_Var208, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.SourceTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 810, Col: 128}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var208))
 		if templ_7745c5c3_Err != nil {
@@ -3976,7 +3976,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var209 string
 				templ_7745c5c3_Var209, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Month)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var209))
 				if templ_7745c5c3_Err != nil {
@@ -3989,7 +3989,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var210 string
 				templ_7745c5c3_Var210, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Peak)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var210))
 				if templ_7745c5c3_Err != nil {
@@ -4002,7 +4002,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var211 string
 				templ_7745c5c3_Var211, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Profile)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 133}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 133}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var211))
 				if templ_7745c5c3_Err != nil {
@@ -4015,7 +4015,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var212 string
 				templ_7745c5c3_Var212, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Quality)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 159}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 159}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var212))
 				if templ_7745c5c3_Err != nil {
@@ -4028,7 +4028,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var213 string
 				templ_7745c5c3_Var213, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Annual)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 201}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 201}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var213))
 				if templ_7745c5c3_Err != nil {
@@ -4041,7 +4041,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var214 string
 				templ_7745c5c3_Var214, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Created)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 817, Col: 239}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 239}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var214))
 				if templ_7745c5c3_Err != nil {
@@ -4093,7 +4093,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var216 string
 		templ_7745c5c3_Var216, templ_7745c5c3_Err = templ.JoinStringErrs(energyQualityMark(data.Quality.Status == "measured"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 829, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var216))
 		if templ_7745c5c3_Err != nil {
@@ -4106,7 +4106,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var217 string
 		templ_7745c5c3_Var217, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.Label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 829, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 152}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var217))
 		if templ_7745c5c3_Err != nil {
@@ -4119,7 +4119,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var218 string
 		templ_7745c5c3_Var218, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.Effect)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 829, Col: 187}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 187}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var218))
 		if templ_7745c5c3_Err != nil {
@@ -4132,7 +4132,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var219 string
 		templ_7745c5c3_Var219, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.NextAction)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 829, Col: 231}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 231}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var219))
 		if templ_7745c5c3_Err != nil {
@@ -4145,7 +4145,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var220 string
 		templ_7745c5c3_Var220, templ_7745c5c3_Err = templ.JoinStringErrs(data.CoverageSummary)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 151}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 831, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var220))
 		if templ_7745c5c3_Err != nil {
@@ -4163,7 +4163,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var221 string
 			templ_7745c5c3_Var221, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 832, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var221)
 			if templ_7745c5c3_Err != nil {
@@ -4176,7 +4176,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var222 string
 			templ_7745c5c3_Var222, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 832, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var222))
 			if templ_7745c5c3_Err != nil {
@@ -4211,7 +4211,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var225 string
 			templ_7745c5c3_Var225, templ_7745c5c3_Err = templ.JoinStringErrs(energyCoverageMark(item.Tone == "good"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 832, Col: 183}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 183}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var225))
 			if templ_7745c5c3_Err != nil {
@@ -4224,7 +4224,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var226 string
 			templ_7745c5c3_Var226, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 832, Col: 199}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 199}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var226))
 			if templ_7745c5c3_Err != nil {
@@ -4294,7 +4294,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var230 string
 			templ_7745c5c3_Var230, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(step.Number))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 844, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var230))
 			if templ_7745c5c3_Err != nil {
@@ -4307,7 +4307,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var231 string
 			templ_7745c5c3_Var231, templ_7745c5c3_Err = templ.JoinStringErrs(step.State)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 844, Col: 199}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 199}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var231))
 			if templ_7745c5c3_Err != nil {
@@ -4320,7 +4320,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var232 string
 			templ_7745c5c3_Var232, templ_7745c5c3_Err = templ.JoinStringErrs(step.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 844, Col: 228}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 228}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var232))
 			if templ_7745c5c3_Err != nil {
@@ -4333,7 +4333,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var233 string
 			templ_7745c5c3_Var233, templ_7745c5c3_Err = templ.JoinStringErrs(step.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 844, Col: 255}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 255}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var233))
 			if templ_7745c5c3_Err != nil {
@@ -4351,7 +4351,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var234 templ.SafeURL
 				templ_7745c5c3_Var234, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(step.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 846, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 847, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var234))
 				if templ_7745c5c3_Err != nil {
@@ -4364,7 +4364,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var235 string
 				templ_7745c5c3_Var235, templ_7745c5c3_Err = templ.JoinStringErrs(step.Action)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 846, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 847, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var235))
 				if templ_7745c5c3_Err != nil {
@@ -4458,7 +4458,7 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var239 string
 				templ_7745c5c3_Var239, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 864, Col: 145}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 865, Col: 145}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var239))
 				if templ_7745c5c3_Err != nil {
@@ -4486,7 +4486,7 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 		var templ_7745c5c3_Var240 string
 		templ_7745c5c3_Var240, templ_7745c5c3_Err = templ.JoinStringErrs(energyCostModelSentence(data.FreeUntil))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 872, Col: 146}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 873, Col: 146}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var240))
 		if templ_7745c5c3_Err != nil {
@@ -4555,7 +4555,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var242 string
 				templ_7745c5c3_Var242, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 891, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var242))
 				if templ_7745c5c3_Err != nil {
@@ -4568,7 +4568,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var243 string
 				templ_7745c5c3_Var243, templ_7745c5c3_Err = templ.JoinStringErrs(energyMaintenanceMeta(plan))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 891, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var243))
 				if templ_7745c5c3_Err != nil {
@@ -4603,7 +4603,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var246 string
 				templ_7745c5c3_Var246, templ_7745c5c3_Err = templ.JoinStringErrs(plan.DueLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 891, Col: 200}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 200}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var246))
 				if templ_7745c5c3_Err != nil {
@@ -4626,7 +4626,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var247 string
 						templ_7745c5c3_Var247, templ_7745c5c3_Err = templ.JoinStringErrs(plan.ContactName)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 896, Col: 52}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 897, Col: 52}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var247))
 						if templ_7745c5c3_Err != nil {
@@ -4645,7 +4645,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var248 templ.SafeURL
 						templ_7745c5c3_Var248, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/dokumente/" + plan.DocumentID + "/preview"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 899, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 900, Col: 83}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var248))
 						if templ_7745c5c3_Err != nil {
@@ -4658,7 +4658,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var249 string
 						templ_7745c5c3_Var249, templ_7745c5c3_Err = templ.JoinStringErrs(plan.DocumentTitle)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 899, Col: 106}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 900, Col: 106}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var249))
 						if templ_7745c5c3_Err != nil {
@@ -4677,7 +4677,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var250 templ.SafeURL
 						templ_7745c5c3_Var250, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/anliegen/" + plan.IssueID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 902, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 903, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var250))
 						if templ_7745c5c3_Err != nil {
@@ -4690,7 +4690,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var251 string
 						templ_7745c5c3_Var251, templ_7745c5c3_Err = templ.JoinStringErrs(plan.IssueTitle)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 902, Col: 86}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 903, Col: 86}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var251))
 						if templ_7745c5c3_Err != nil {
@@ -4714,7 +4714,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var252 string
 					templ_7745c5c3_Var252, templ_7745c5c3_Err = templ.JoinStringErrs(plan.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 907, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 908, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var252))
 					if templ_7745c5c3_Err != nil {
@@ -4733,7 +4733,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var253 string
 					templ_7745c5c3_Var253, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 911, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var253)
 					if templ_7745c5c3_Err != nil {
@@ -4746,7 +4746,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var254 string
 					templ_7745c5c3_Var254, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.AssetID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 911, Col: 116}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 116}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var254)
 					if templ_7745c5c3_Err != nil {
@@ -4759,7 +4759,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var255 string
 					templ_7745c5c3_Var255, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 913, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var255)
 					if templ_7745c5c3_Err != nil {
@@ -4772,7 +4772,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var256 string
 					templ_7745c5c3_Var256, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(plan.IntervalMonths))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 226}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 913, Col: 226}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var256)
 					if templ_7745c5c3_Err != nil {
@@ -4785,7 +4785,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var257 string
 					templ_7745c5c3_Var257, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.NextDueValue)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 913, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 914, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var257)
 					if templ_7745c5c3_Err != nil {
@@ -4803,7 +4803,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var258 string
 						templ_7745c5c3_Var258, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 916, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 917, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var258)
 						if templ_7745c5c3_Err != nil {
@@ -4826,7 +4826,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var259 string
 						templ_7745c5c3_Var259, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 916, Col: 101}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 917, Col: 101}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var259))
 						if templ_7745c5c3_Err != nil {
@@ -4849,7 +4849,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var260 string
 						templ_7745c5c3_Var260, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 921, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 922, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var260)
 						if templ_7745c5c3_Err != nil {
@@ -4872,7 +4872,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var261 string
 						templ_7745c5c3_Var261, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 921, Col: 102}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 922, Col: 102}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var261))
 						if templ_7745c5c3_Err != nil {
@@ -4895,7 +4895,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var262 string
 						templ_7745c5c3_Var262, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 926, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 927, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var262)
 						if templ_7745c5c3_Err != nil {
@@ -4918,7 +4918,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var263 string
 						templ_7745c5c3_Var263, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 926, Col: 99}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 927, Col: 99}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var263))
 						if templ_7745c5c3_Err != nil {
@@ -4936,7 +4936,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var264 string
 					templ_7745c5c3_Var264, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 929, Col: 89}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 930, Col: 89}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var264)
 					if templ_7745c5c3_Err != nil {
@@ -4949,7 +4949,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var265 string
 					templ_7745c5c3_Var265, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 933, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 934, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var265)
 					if templ_7745c5c3_Err != nil {
@@ -4967,7 +4967,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var266 string
 						templ_7745c5c3_Var266, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 936, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var266)
 						if templ_7745c5c3_Err != nil {
@@ -4980,7 +4980,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var267 string
 						templ_7745c5c3_Var267, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 936, Col: 56}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 56}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var267))
 						if templ_7745c5c3_Err != nil {
@@ -5024,7 +5024,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var268 string
 				templ_7745c5c3_Var268, templ_7745c5c3_Err = templ.ResolveAttributeValue(asset.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 955, Col: 30}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 956, Col: 30}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var268)
 				if templ_7745c5c3_Err != nil {
@@ -5037,7 +5037,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var269 string
 				templ_7745c5c3_Var269, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 955, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 956, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var269))
 				if templ_7745c5c3_Err != nil {
@@ -5060,7 +5060,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var270 string
 				templ_7745c5c3_Var270, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 963, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 964, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var270)
 				if templ_7745c5c3_Err != nil {
@@ -5073,7 +5073,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var271 string
 				templ_7745c5c3_Var271, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 963, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 964, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var271))
 				if templ_7745c5c3_Err != nil {
@@ -5096,7 +5096,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var272 string
 				templ_7745c5c3_Var272, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 968, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 969, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var272)
 				if templ_7745c5c3_Err != nil {
@@ -5109,7 +5109,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var273 string
 				templ_7745c5c3_Var273, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 968, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 969, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var273))
 				if templ_7745c5c3_Err != nil {
@@ -5203,7 +5203,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var275 string
 				templ_7745c5c3_Var275, templ_7745c5c3_Err = templ.JoinStringErrs(peak.Source)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 998, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 999, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var275))
 				if templ_7745c5c3_Err != nil {
@@ -5216,7 +5216,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var276 string
 				templ_7745c5c3_Var276, templ_7745c5c3_Err = templ.JoinStringErrs(peak.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 998, Col: 109}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 999, Col: 109}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var276))
 				if templ_7745c5c3_Err != nil {
@@ -5263,7 +5263,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var279 string
 			templ_7745c5c3_Var279, templ_7745c5c3_Err = templ.JoinStringErrs(energyQualityMark(data.Comparison.Tone == "good"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1005, Col: 134}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 134}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var279))
 			if templ_7745c5c3_Err != nil {
@@ -5276,7 +5276,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var280 string
 			templ_7745c5c3_Var280, templ_7745c5c3_Err = templ.JoinStringErrs(data.Comparison.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1005, Col: 179}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 179}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var280))
 			if templ_7745c5c3_Err != nil {
@@ -5289,7 +5289,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			var templ_7745c5c3_Var281 string
 			templ_7745c5c3_Var281, templ_7745c5c3_Err = templ.JoinStringErrs(data.Comparison.Details)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1005, Col: 218}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 218}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var281))
 			if templ_7745c5c3_Err != nil {
@@ -5313,7 +5313,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var282 string
 				templ_7745c5c3_Var282, templ_7745c5c3_Err = templ.JoinStringErrs(item.Filename)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1010, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1011, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var282))
 				if templ_7745c5c3_Err != nil {
@@ -5326,7 +5326,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var283 string
 				templ_7745c5c3_Var283, templ_7745c5c3_Err = templ.JoinStringErrs(item.Date)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1010, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1011, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var283))
 				if templ_7745c5c3_Err != nil {
@@ -5448,7 +5448,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var285 string
 				templ_7745c5c3_Var285, templ_7745c5c3_Err = templ.ResolveAttributeValue(caretaker.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1058, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1059, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var285)
 				if templ_7745c5c3_Err != nil {
@@ -5461,7 +5461,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var286 string
 				templ_7745c5c3_Var286, templ_7745c5c3_Err = templ.JoinStringErrs(caretaker.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1059, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1060, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var286))
 				if templ_7745c5c3_Err != nil {
@@ -5474,7 +5474,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var287 string
 				templ_7745c5c3_Var287, templ_7745c5c3_Err = templ.JoinStringErrs(caretaker.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1059, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1060, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var287))
 				if templ_7745c5c3_Err != nil {
@@ -5626,7 +5626,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var289 string
 				templ_7745c5c3_Var289, templ_7745c5c3_Err = templ.JoinStringErrs(measure.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1110, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1111, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var289))
 				if templ_7745c5c3_Err != nil {
@@ -5639,7 +5639,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var290 string
 				templ_7745c5c3_Var290, templ_7745c5c3_Err = templ.JoinStringErrs(energyMeasureMeta(measure))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1110, Col: 122}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1111, Col: 122}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var290))
 				if templ_7745c5c3_Err != nil {
@@ -5657,7 +5657,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var291 string
 					templ_7745c5c3_Var291, templ_7745c5c3_Err = templ.JoinStringErrs(measure.BeforeQuality)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1113, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var291))
 					if templ_7745c5c3_Err != nil {
@@ -5670,7 +5670,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var292 string
 					templ_7745c5c3_Var292, templ_7745c5c3_Err = templ.JoinStringErrs(measure.BeforePeak)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1113, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var292))
 					if templ_7745c5c3_Err != nil {
@@ -5683,7 +5683,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var293 string
 					templ_7745c5c3_Var293, templ_7745c5c3_Err = templ.JoinStringErrs(measure.AfterQuality)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1113, Col: 216}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 216}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var293))
 					if templ_7745c5c3_Err != nil {
@@ -5696,7 +5696,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var294 string
 					templ_7745c5c3_Var294, templ_7745c5c3_Err = templ.JoinStringErrs(measure.AfterPeak)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1113, Col: 253}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 253}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var294))
 					if templ_7745c5c3_Err != nil {
@@ -5714,7 +5714,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var295 templ.SafeURL
 				templ_7745c5c3_Var295, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/anliegen/" + measure.IssueID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1115, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1116, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var295))
 				if templ_7745c5c3_Err != nil {
@@ -5732,7 +5732,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var296 string
 					templ_7745c5c3_Var296, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1118, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1119, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var296)
 					if templ_7745c5c3_Err != nil {
@@ -5800,7 +5800,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var297 string
 						templ_7745c5c3_Var297, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1122, Col: 40}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1123, Col: 40}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var297)
 						if templ_7745c5c3_Err != nil {
@@ -5823,7 +5823,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 						var templ_7745c5c3_Var298 string
 						templ_7745c5c3_Var298, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1122, Col: 105}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1123, Col: 105}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var298))
 						if templ_7745c5c3_Err != nil {
@@ -5841,7 +5841,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var299 string
 					templ_7745c5c3_Var299, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AppointmentValue)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1125, Col: 106}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1126, Col: 106}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var299)
 					if templ_7745c5c3_Err != nil {
@@ -5854,7 +5854,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var300 string
 					templ_7745c5c3_Var300, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.OfferNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1126, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1127, Col: 87}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var300)
 					if templ_7745c5c3_Err != nil {
@@ -5867,7 +5867,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var301 string
 					templ_7745c5c3_Var301, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.WorkNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1127, Col: 97}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1128, Col: 97}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var301)
 					if templ_7745c5c3_Err != nil {
@@ -5880,7 +5880,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var302 string
 					templ_7745c5c3_Var302, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1128, Col: 109}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1129, Col: 109}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var302)
 					if templ_7745c5c3_Err != nil {
@@ -5893,7 +5893,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var303 string
 					templ_7745c5c3_Var303, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.BeforeFrom)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1129, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var303)
 					if templ_7745c5c3_Err != nil {
@@ -5906,7 +5906,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var304 string
 					templ_7745c5c3_Var304, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.BeforeTo)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1129, Col: 180}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 180}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var304)
 					if templ_7745c5c3_Err != nil {
@@ -5919,7 +5919,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var305 string
 					templ_7745c5c3_Var305, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AfterFrom)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 90}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1131, Col: 90}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var305)
 					if templ_7745c5c3_Err != nil {
@@ -5932,7 +5932,7 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var306 string
 					templ_7745c5c3_Var306, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AfterTo)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 178}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1131, Col: 178}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var306)
 					if templ_7745c5c3_Err != nil {
@@ -6049,7 +6049,7 @@ func EnergyStyles(assetVersion string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 551, "<style>\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.energy-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.quiet{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding:6px var(--space-3);font-size:11px}.button:hover{background:var(--panel-soft)}.button.primary:hover{background:var(--gold-ink)}\n\t\t.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em}.energy-tariff>.energy-card-head .pill{border:0;padding:6px 11px;color:#816528;background:#f2ebd9;font-size:11px;letter-spacing:normal}\n\t\t.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}\n\t\t.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}\n\t\t.energy-mode-strip{container-type:inline-size;container-name:energy-strip;position:relative;z-index:20;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-size:13px}.energy-mode-copy span{color:var(--muted);font-size:11px}\n\t\t.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}\n\t\t.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}\n\t\t.energy-main>*,.energy-page,.energy-card,.energy-collapsible-body,.energy-maintenance-body,.energy-measure-body,.energy-lead-side,.energy-live,.energy-billed>div,.energy-scenario-copy,.energy-caretaker>div{min-width:0}.energy-caretaker small,.energy-help-readings span,.energy-history-row,.energy-reference-item strong,.energy-live-more-row,.energy-asset,.energy-tariff-foot a{overflow-wrap:anywhere}\n\t\t.energy-page{width:min(1160px,100%);margin:0 auto;display:grid;gap:22px;padding:clamp(var(--space-5),3vw,40px) clamp(var(--space-4),4vw,56px) 64px}.energy-cockpit-top{display:grid;gap:var(--space-4)}\n\t\t.energy-card{min-width:0;display:grid;gap:var(--space-4);padding:clamp(var(--space-4),2vw,28px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-card-quiet{background:var(--panel-soft);box-shadow:none}.energy-card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.energy-card-head h2{font-size:26px;line-height:1.1}.energy-card-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}.energy-card-head>a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-health{display:grid}.energy-lead-side{min-width:0}.energy-live{min-width:0;display:grid;gap:var(--space-3);padding:clamp(var(--space-4),2vw,26px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-live-head{display:flex;justify-content:space-between;gap:var(--space-3)}.energy-live-title h2{font-size:26px}.energy-live-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:6px;color:var(--muted);font-size:11px}.energy-live-meta strong{color:var(--leaf);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.energy-live-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--leaf)}.is-stale .energy-live-dot{background:var(--soft)}.energy-live-updated{color:var(--soft)}.energy-live-state-offline{color:var(--soft);font-size:11px}\n\t\t.energy-flow-area{container-type:inline-size;position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px;align-items:start;padding:var(--space-3) var(--space-5) 36px}@media(min-width:1180px){.energy-flow-area.has-rail{grid-template-columns:minmax(0,1fr) 258px}}.energy-flow-area .energy-flow-fallback{padding:6px 0 var(--space-3)}.energy-flow-area.is-enhanced .energy-flow-fallback{display:none}.energy-help-readings{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-help-readings span{display:inline-flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px}.energy-help-readings strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-help-readings small{color:var(--soft);font-size:10px}\n\t\tsvg.energy-flow-ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.energy-flow-band{opacity:.2}.energy-flow-dots{opacity:.86;animation:energy-flow-dots 1.15s linear infinite}@keyframes energy-flow-dots{to{stroke-dashoffset:-10.1}}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:transform .16s ease}.energy-live-more[open]>summary .energy-ui-icon,.energy-tariff-disclosure[open]>summary .energy-ui-icon{transform:rotate(90deg)}@media(prefers-reduced-motion:reduce){.energy-flow-dots{animation:none}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:none}}\n\t\t.energy-flow-grid2{--energy-flow-node-width:258px;--energy-flow-node-height:80px;position:relative;display:grid;grid-template-columns:var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr);grid-template-rows:auto 64px auto 64px auto;align-items:center;justify-items:center}.energy-flow-slot-top{grid-column:3;grid-row:1;display:flex;gap:var(--space-3);justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-left{grid-column:1;grid-row:3;width:100%}.energy-flow-slot-bottom{grid-column:3;grid-row:5;display:flex;justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile{width:var(--energy-flow-node-width)}\n\t\t.energy-flow-tile{position:relative;z-index:1;width:var(--energy-flow-node-width);min-height:var(--energy-flow-node-height);border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:11px var(--space-3);display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:var(--space-2)}.energy-flow-tile .ico{width:38px;height:38px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-tile .ico .energy-ui-icon{width:21px;height:21px}.energy-flow-tile strong{font-family:var(--font-serif);font-weight:550;font-size:17px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-tile>div{min-width:0}.energy-flow-tile>div>span{display:block;margin-top:4px;overflow:hidden;font-size:11px;line-height:1.25;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.energy-flow-tile>div>.energy-flow-secondary{margin-top:2px;font-size:10px}.energy-flow-secondary b,.energy-flow-secondary-copy b{display:inline;color:inherit;font-family:var(--font-sans);font-size:inherit;font-weight:750;white-space:nowrap}\n\t\t.energy-flow-tile span.u,.energy-flow-big span.u{display:inline;margin:0;font-family:var(--font-sans);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--soft);vertical-align:6px}\n\t\t.energy-flow-tile.k-pv,.energy-flow-tile.k-grid,.energy-flow-tile.k-batt{background:var(--panel-soft)}.energy-flow-tile.editable{cursor:pointer;transition:border-color .15s ease,background-color .15s ease}.energy-flow-tile.editable .ico>.energy-ui-icon{grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-tile.editable .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-tile.editable:hover,.energy-flow-tile.editable:focus-visible{background:var(--panel-soft)}.energy-flow-tile.editable:hover .energy-flow-icon-default,.energy-flow-tile.editable:focus-visible .energy-flow-icon-default{opacity:0}.energy-flow-tile.editable:hover .energy-flow-icon-edit,.energy-flow-tile.editable:focus-visible .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-hub2{grid-column:3;grid-row:3;width:var(--energy-flow-node-width);z-index:2}\n\t\t.energy-flow-rail{position:relative;z-index:1;align-self:start;display:grid;gap:var(--space-2);align-content:start}.energy-flow-rail>.microlabel{position:absolute;top:-22px;left:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}\n\t\t.energy-flow-big{width:min(258px,100%);max-width:100%;height:80px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:var(--space-2) var(--space-2);display:grid;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:9px;transition:background-color .15s ease}.energy-flow-main{min-width:0;width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:9px;border:0;padding:0;color:inherit;background:transparent;text-align:left;font:inherit}button.energy-flow-main{cursor:pointer}.energy-flow-big .ico{position:relative;width:34px;height:34px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-big .ico .energy-ui-icon{width:19px;height:19px;grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-big .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-copy{min-width:0;display:grid;gap:3px}.energy-flow-big b{display:block;overflow:hidden;font-size:12px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles{display:grid;min-width:0}.energy-flow-subtitles>span{grid-area:1/1;display:block;overflow:hidden;color:var(--muted);font-size:11px;line-height:1.4;text-overflow:ellipsis;white-space:nowrap;transition:opacity .15s ease}.energy-flow-secondary-copy{display:block;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles .energy-flow-edit-copy{color:var(--gold-ink);font-weight:750;opacity:0}.energy-flow-big.editable:hover,.energy-flow-big.editable:focus-within{background:var(--panel-soft)}.energy-flow-big.editable:hover .energy-flow-icon-default,.energy-flow-big.editable:focus-within .energy-flow-icon-default,.energy-flow-big.editable:hover .energy-flow-state-copy,.energy-flow-big.editable:focus-within .energy-flow-state-copy{opacity:0}.energy-flow-big.editable:hover .energy-flow-icon-edit,.energy-flow-big.editable:focus-within .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-big.editable:hover .energy-flow-edit-copy,.energy-flow-big.editable:focus-within .energy-flow-edit-copy{opacity:1}.energy-flow-big.active{background:var(--panel-soft)}.energy-flow-big.active .state{color:var(--energy-node-color,var(--leaf));font-weight:700}.energy-flow-big .rcol{display:grid;justify-items:center;gap:5px;align-self:center}.energy-flow-big .prio{width:13px;height:13px;border-radius:var(--radius-pill);border:1px solid var(--gold-ink);color:var(--gold-ink);font-size:8px;font-weight:800;line-height:1;display:grid;place-items:center;font-variant-numeric:tabular-nums}.energy-flow-big .drag{color:var(--soft);cursor:grab}.energy-flow-big button.drag{border:0;background:none;padding:5px;margin:-5px;display:grid;place-items:center}.energy-flow-big .drag .energy-ui-icon{width:10px;height:16px}.energy-flow-big .drag-static{cursor:default;opacity:.55}.energy-flow-big.dragging{opacity:.55}.energy-flow-big.ghost{border:1.5px dashed var(--line);background:transparent;color:var(--muted);grid-template-columns:minmax(0,1fr);cursor:pointer}.energy-flow-big.ghost .energy-flow-main{cursor:pointer}.energy-flow-big.ghost .plus{width:21px;height:21px;border-radius:var(--radius-pill);border:1.5px dashed var(--soft);display:grid;place-items:center;color:var(--gold-ink);margin:0 auto}.energy-flow-big.ghost .plus .energy-ui-icon{width:11px;height:11px}.energy-flow-big.ghost b{font-size:12px;font-weight:700;color:var(--muted)}\n\t\t.energy-info-disclosure summary{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer;list-style:none}.energy-info-disclosure summary::-webkit-details-marker{display:none}.energy-info-mark{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.energy-info-mark .energy-ui-icon{width:11px;height:11px}.energy-flow-hint{position:absolute;left:26px;bottom:10px}.energy-flow-hint[open]>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-md);padding:var(--space-4) var(--space-5);max-width:460px;position:relative;z-index:3;color:var(--muted);font-size:12px;line-height:1.45}.energy-flow-hint[open]>div>strong{color:var(--ink);font-size:14px}.energy-flow-hint[open]>div>a{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:var(--gold-ink);font-weight:800}\n\t\t.energy-live-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.energy-live-more{min-width:0}.energy-live-more>summary{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;list-style:none;color:var(--muted);font-size:11px}.energy-live-more>summary::-webkit-details-marker{display:none}.energy-live-more strong{display:block;color:var(--ink);font-size:12px}.energy-live-more small{display:block;color:var(--soft);font-size:10px}.energy-live-more .energy-ui-icon{width:14px;height:14px}.energy-live-more-list{display:grid;gap:2px;margin-top:var(--space-2)}.energy-live-more-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.energy-live-more-row strong{color:var(--ink);font-variant-numeric:tabular-nums}\n\t\t.energy-recommendation-trigger{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.energy-recommendation-trigger .energy-ui-icon{width:16px;height:16px}.energy-live-empty{display:grid;gap:5px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:12px}.energy-live-empty strong{color:var(--ink);font-family:var(--font-serif);font-size:17px}.energy-live-empty a{color:var(--gold-ink);font-weight:800}\n\t\t.dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog>form,.dialog{overflow:auto}.dialog-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-5) var(--space-3);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:27px}.dialog-head p{margin-top:4px;color:var(--muted);font-size:12px}.kicker{color:var(--gold-ink);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.dialog-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:17px}.dialog-close .energy-ui-icon{width:14px;height:14px}.dialog-body{min-width:0;min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto;overscroll-behavior:contain}.dialog-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);padding:var(--space-3) var(--space-5) var(--space-5);border-top:1px solid var(--line)}.dialog-optional>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.dialog-optional>summary::-webkit-details-marker{display:none}\n\t\t.energy-nextstep{display:grid;gap:var(--space-4)}.energy-recommendation-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start}.energy-nextstep-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.energy-nextstep-icon .energy-ui-icon{width:24px;height:24px}.energy-nextstep-copy{min-width:0;display:grid;gap:var(--space-2)}.energy-nextstep-copy h3{font-size:21px;line-height:1.2}.energy-next-progress-row{display:grid;gap:5px}.energy-next-progress{height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.energy-next-progress>span{display:block;height:100%;background:var(--gold)}.energy-next-progress-row small{color:var(--muted);font-size:11px}.energy-next-status{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-status .energy-ui-icon{width:13px;height:13px;color:var(--leaf)}.energy-next-why>summary{min-height:44px;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-next-why>summary::-webkit-details-marker{display:none}.energy-next-why p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-next-meta{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--soft);font-size:11px}\n\t\t.energy-recommendation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.energy-observation-running{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-menu{display:grid;gap:var(--space-3);margin-top:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-measure-form{display:grid;gap:var(--space-2)}.energy-measure-form h3{font-size:17px}.energy-measure-form p{color:var(--muted);font-size:12px;line-height:1.5}.energy-measure-form label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.energy-measure-form .button{justify-self:start;margin-top:var(--space-2)}.energy-dismiss-form .button{justify-self:start}\n\t\t.energy-recommendation-scenarios{display:grid;gap:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--line)}.energy-recommendation-scenarios h3{font-size:19px}.energy-recommendation-scenarios header p{margin-top:4px;color:var(--muted);font-size:12px}.energy-scenario{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-scenario-copy strong{display:block;font-family:var(--font-serif);font-size:16px}.energy-scenario-copy p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.energy-scenario-assumptions{color:var(--soft)}.energy-scenario-result{display:grid;justify-items:end;gap:3px;text-align:right}.energy-scenario-result span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-scenario-result strong{font-family:var(--font-serif);font-size:19px;font-variant-numeric:tabular-nums}.energy-scenario-billed{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}.energy-scenario-floor{display:flex;gap:var(--space-2);color:var(--muted);font-size:11px;line-height:1.45}.energy-scenario-caveat{color:var(--soft);font-size:11px;line-height:1.5}\n\t\t.energy-consumer-dialog{width:min(760px,calc(100vw - 32px))}.energy-consumer-dialog-heading h2{font-size:24px}.energy-consumer-primary,.energy-consumer-display-fields,.energy-consumer-recommendation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)}.energy-consumer-field{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-consumer-field input,.energy-consumer-field select{min-height:42px;width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-consumer-color input{padding:4px;min-height:42px}\n\t\t.energy-icon-picker,.energy-consumer-measurements{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-icon-picker-head,.energy-consumer-measurements-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}.energy-icon-picker-head small,.energy-consumer-measurements-head small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-icon-search{min-height:40px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted)}.energy-icon-search .energy-ui-icon{width:14px;height:14px}.energy-icon-search input{min-height:38px;border:0;background:transparent;color:var(--ink)}.energy-icon-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--space-2)}.energy-icon-choice{min-height:64px;display:grid;place-items:center;gap:4px;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:10px;text-align:center;cursor:pointer}.energy-icon-choice .energy-ui-icon{width:20px;height:20px}.energy-icon-choice input{position:absolute;opacity:0;width:1px;height:1px}.energy-icon-choice:has(input:checked){border-color:var(--gold);background:var(--panel-soft);color:var(--ink);font-weight:800}.energy-icon-result-note{color:var(--muted);font-size:11px}.energy-consumer-measurement-fields{display:grid;gap:var(--space-2)}.energy-consumer-measurement-status{color:var(--muted);font-size:11px}.energy-consumer-recommendations>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-consumer-recommendations>summary::-webkit-details-marker{display:none}.energy-consumer-recommendations>div{margin-top:var(--space-3)}.energy-consumer-delete-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-right:auto;color:var(--muted);font-size:11px}.energy-consumer-delete{margin-right:auto}\n\t\t.energy-chart{scroll-margin-top:96px}.energy-chart-head{display:flex;justify-content:space-between;gap:var(--space-4);align-items:end}.energy-chart-head h2{font-size:26px}.energy-chart-head p,.energy-chart-head small{color:var(--muted);font-size:12px}.energy-chart-head p{margin-top:4px}.energy-chart-head small{text-align:right}.energy-chart-head-actions{display:grid;gap:var(--space-2);justify-items:end}.energy-chart-toolbar,.energy-chart-size-actions,.energy-chart-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}.energy-chart-range{display:inline-flex;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-chart-range a{min-height:44px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);color:var(--muted);font-size:11px;font-weight:800}.energy-chart-range a+a{box-shadow:inset 1px 0 0 var(--line)}.energy-chart-range a[aria-current=\"page\"]{background:var(--nav);color:var(--panel)}.energy-chart-range a:hover:not([aria-current=\"page\"]){background:var(--panel-soft);color:var(--ink)}.energy-chart-size-button{flex:0 0 auto;gap:7px}.energy-chart-size-button svg{width:16px;height:16px}\n\t\t.energy-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.28fr);gap:var(--space-6);align-items:stretch}.energy-chart-plot{min-width:0;display:grid;gap:var(--space-2)}.energy-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-chart-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.energy-chart-legend strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-chart-legend i{width:24px;height:3px;border-radius:3px;background:var(--nav)}.energy-chart-legend .load i{background:var(--ink)}.energy-chart-legend .pv i{background:var(--leaf)}.energy-chart-legend .grid i{background:var(--gold)}.energy-chart-legend .battery i{background:var(--soft)}.energy-chart-legend .threshold i{height:0;border-top:2px dashed var(--muted);background:transparent}.energy-chart-legend .threshold small{font-size:10px}\n\t\t.energy-chart-svg{width:100%;height:auto;min-height:220px;display:block;overflow:visible}.energy-chart-svg.mobile{display:none}.energy-chart-grid{stroke:var(--line);stroke-width:1}.energy-chart-grid.zero{stroke:var(--soft);stroke-width:1.35}.energy-chart-axis-label{fill:var(--muted);font-family:var(--font-sans);font-size:11px}.energy-chart-line{fill:none;stroke:var(--nav);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.energy-chart-line.load{stroke:var(--ink)}.energy-chart-line.pv{stroke:var(--leaf)}.energy-chart-line.grid{stroke:var(--gold)}.energy-chart-line.battery{stroke:var(--soft);stroke-width:2.1}.energy-chart-area{stroke:none;fill:none}.energy-chart-area.load{fill:var(--line);opacity:.55}.energy-chart-threshold{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}.energy-chart-threshold-label{fill:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:750}\n\t\t.energy-chart-interactive{position:relative;min-width:0;border-radius:var(--radius-xs);outline:none}.energy-chart-hit{fill:transparent;cursor:crosshair;pointer-events:all}.energy-chart-guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker{fill:var(--panel);stroke:var(--nav);stroke-width:2.5;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker.load{stroke:var(--ink)}.energy-chart-marker.pv{stroke:var(--leaf)}.energy-chart-marker.grid{stroke:var(--gold)}.energy-chart-marker.battery{stroke:var(--soft)}.energy-chart-marker[hidden],.energy-chart-guide[hidden]{display:none}\n\t\t.energy-chart-tooltip{position:absolute;z-index:5;top:12px;width:210px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px var(--space-3);color:var(--ink);background:var(--panel);box-shadow:var(--shadow-md);pointer-events:none}.energy-chart-tooltip>strong{display:block;margin-bottom:7px;font-family:var(--font-serif);font-size:18px}.energy-chart-tooltip [data-chart-tooltip-values]{display:grid;gap:5px}.energy-chart-tooltip-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;color:var(--muted);font-size:11px}.energy-chart-tooltip-row b{color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}.energy-chart-tooltip-row i{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--nav)}.energy-chart-tooltip-row i.load{background:var(--ink)}.energy-chart-tooltip-row i.pv{background:var(--leaf)}.energy-chart-tooltip-row i.grid{background:var(--gold)}.energy-chart-tooltip-row i.battery{background:var(--soft)}\n\t\t.energy-chart-note{display:grid;align-content:center;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-chart-note span{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-chart-note strong{font-family:var(--font-serif);font-size:21px;line-height:1.25}.energy-chart-note p{color:var(--muted);font-size:13px;line-height:1.5}.energy-chart-hint{color:var(--muted);font-size:11px;line-height:1.5}.energy-chart-empty{display:grid;gap:5px;border:1px dashed var(--line);border-radius:var(--radius-sm);padding:var(--space-5)}.energy-chart-empty strong{font-family:var(--font-serif);font-size:17px}.energy-chart-empty p{color:var(--muted);font-size:13px}\n\t\t.energy-chart-dialog{width:min(1320px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);border:0;border-radius:var(--radius-md);padding:0;overflow:hidden;color:var(--ink);background:transparent;box-shadow:var(--shadow-dialog)}.energy-chart-dialog::backdrop{background:var(--nav)}.energy-chart-dialog-shell{max-height:calc(100dvh - 48px);display:grid;gap:var(--space-4);overflow:auto;overscroll-behavior:contain;padding:clamp(var(--space-6),3vw,40px);background:var(--paper)}.energy-chart-dialog-shell>header{display:flex;justify-content:space-between;gap:var(--space-6);align-items:start}.energy-chart-dialog-shell>header h2{margin-top:5px;font-size:clamp(28px,3vw,42px)}.energy-chart-dialog-shell>header p{margin-top:5px;color:var(--muted);font-size:14px}.energy-chart-dialog-actions .button{gap:7px}.energy-chart-dialog-actions svg{width:16px;height:16px}.energy-chart-dialog-plot{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-5) 4px;background:var(--panel)}.energy-chart-dialog .energy-chart-svg{min-height:min(54vh,520px)}.energy-chart-dialog .energy-chart-tooltip{top:26px}.energy-chart-dialog-shell:fullscreen,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-shell{width:100vw;height:100dvh;max-height:none;grid-template-rows:auto auto minmax(0,1fr) auto;border-radius:0;padding:clamp(var(--space-5),2.5vw,42px);background:var(--paper)}.energy-chart-dialog.is-fullscreen-fallback{position:fixed;inset:0;width:100vw;height:100dvh;max-height:none;margin:0;border-radius:0}.energy-chart-dialog-shell:fullscreen .energy-chart-dialog-plot,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-plot{min-height:0;display:grid;align-items:center}.energy-chart-dialog-shell:fullscreen .energy-chart-svg.desktop,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-svg.desktop{min-height:min(66vh,680px)}\n\t\t.energy-tariff{scroll-margin-top:96px}.energy-tariff-heading-copy p{margin-top:4px;color:var(--muted);font-size:12px}.energy-tariff-title-row{display:flex;align-items:center;gap:var(--space-2)}.energy-metric-info>summary{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink);cursor:pointer;list-style:none}.energy-metric-info>summary::-webkit-details-marker{display:none}.energy-metric-info .energy-ui-icon{width:12px;height:12px}.energy-metric-info{position:relative}.energy-metric-info>div{position:absolute;z-index:30;right:0;top:calc(100% + 7px);width:min(280px,calc(100vw - 42px));display:grid;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5;max-width:520px}.energy-metric-info>div strong{color:var(--ink)}.energy-metric-info>div small{color:var(--soft);font-size:11px}\n\t\t.energy-billed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4)}.energy-billed>div{display:grid;gap:6px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-billed strong{font-family:var(--font-serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}.energy-billed small{color:var(--muted);font-size:11px}.energy-metric-label{display:flex;align-items:center;gap:6px;color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-meter{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--line)}.energy-tariff-meter::-webkit-progress-bar{background:var(--line);border-radius:var(--radius-pill)}.energy-tariff-meter::-webkit-progress-value{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter::-moz-progress-bar{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter.billed::-webkit-progress-value{background:var(--nav)}.energy-tariff-meter.billed::-moz-progress-bar{background:var(--nav)}\n\t\t.energy-tariff-cost{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)}.energy-tariff-cost-figure{display:grid;gap:5px}.energy-tariff-cost-figure p{display:flex;align-items:baseline;gap:5px}.energy-tariff-cost-figure strong{font-family:var(--font-serif);font-size:27px;font-variant-numeric:tabular-nums}.energy-tariff-cost-figure small{color:var(--muted);font-size:11px}.energy-tariff-basis{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-tariff-basis .energy-ui-icon{width:13px;height:13px}\n\t\t.energy-tariff-empty{display:grid;justify-items:start;gap:6px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm)}.energy-tariff-empty.waiting{background:var(--panel-soft);border-style:solid}.energy-tariff-empty strong{font-family:var(--font-serif);font-size:18px}.energy-tariff-empty p{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.energy-tariff-disclosure>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-disclosure>summary::-webkit-details-marker{display:none}.energy-tariff-disclosure .energy-ui-icon{width:14px;height:14px}.energy-tariff-disclosure[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.energy-tariff-disclosure>div{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)}.energy-tariff-method,.energy-tariff-detail-basis{color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-detail-basis strong{display:block;color:var(--ink)}.energy-tariff-cost-copy{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-cost-copy strong{color:var(--ink)}.energy-tariff-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)}.energy-tariff-tiers>div{display:grid;gap:3px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.energy-tariff-tiers span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-tiers strong{font-family:var(--font-serif);font-size:19px}.energy-tariff-tiers small{color:var(--muted);font-size:11px}.energy-tariff-notes{display:grid;gap:var(--space-2);margin:0;padding-left:var(--space-5);color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-tariff-settings>summary{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-settings>summary::-webkit-details-marker{display:none}.energy-tariff-settings>summary span{color:var(--soft);font-weight:600}.energy-tariff-forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-3)}.energy-target-form{display:grid;gap:6px;justify-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-target-form label{width:100%;display:grid;gap:5px}.energy-target-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-legend{color:var(--muted);font-size:11px;font-weight:800}\n\t\t.energy-tariff-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--soft);font-size:11px}.energy-tariff-foot a{color:var(--gold-ink);font-weight:800}.energy-history{display:grid;gap:var(--space-2)}.energy-history h4{font-size:15px}.energy-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-3);align-items:center;padding:var(--space-2) 0;border-top:1px solid var(--line);font-size:12px}.energy-history-row span{display:block;color:var(--muted);font-size:11px}.energy-history-row small{color:var(--soft);font-size:10px}\n\t\t.energy-pair{display:grid;gap:22px}.energy-quality{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-quality>span:first-child{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.energy-quality.warning>span:first-child,.energy-quality.danger>span:first-child{background:var(--gold)}.energy-quality strong{display:block}.energy-quality p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}.energy-quality small{color:var(--gold-ink);font-weight:750;font-size:11px}\n\t\t.energy-coverage{display:grid;gap:var(--space-2)}.energy-coverage-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:11px}.energy-coverage-list{display:grid;gap:2px}.energy-coverage-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-top:1px solid var(--line);font-size:12px}.energy-coverage-state{color:var(--muted);font-size:11px}.energy-coverage-state.good{color:var(--leaf)}\n\t\t.energy-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--space-3)}.energy-roadmap-step{display:grid;align-content:start;gap:5px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-roadmap-step.current{border-color:var(--gold);background:var(--panel)}.energy-roadmap-number{width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:11px;font-weight:800}.energy-roadmap-step.current .energy-roadmap-number{background:var(--gold)}.energy-roadmap-state{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-roadmap-step strong{font-family:var(--font-serif);font-size:16px}.energy-roadmap-step p{color:var(--muted);font-size:12px;line-height:1.45}.energy-roadmap-step a{margin-top:4px;color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-system-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-system-asset{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.energy-system-asset .energy-ui-icon{width:20px;height:20px;color:var(--gold-ink)}.energy-system-helper{color:var(--muted);font-size:12px}.energy-related-links{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-related-links a{min-height:32px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:11px;font-weight:800}.energy-business-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-business-note>span{width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:12px}.energy-business-note strong{color:var(--ink)}\n\t\t.energy-admin{display:grid;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.energy-admin-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-3)}.energy-admin-head h2{font-size:23px}.energy-admin-head span{color:var(--muted);font-size:12px}\n\t\t.energy-collapsible{display:block;padding:0;overflow:hidden}.energy-collapsible>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),2vw,28px);cursor:pointer;list-style:none}.energy-collapsible>summary::-webkit-details-marker{display:none}.energy-collapsible>summary:hover{background:var(--panel)}.energy-collapsible-body{display:grid;gap:var(--space-4);padding:0 clamp(var(--space-4),2vw,28px) clamp(var(--space-4),2vw,28px);border-top:1px solid var(--line);padding-top:var(--space-4)}\n\t\t.energy-maintenance-list,.energy-measure-list{display:grid;gap:var(--space-2)}.energy-maintenance-row,.energy-measure-row{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-maintenance-summary,.energy-measure-summary{min-height:52px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.energy-maintenance-summary::-webkit-details-marker,.energy-measure-summary::-webkit-details-marker{display:none}.energy-maintenance-summary strong,.energy-measure-summary strong{display:block;font-size:13px}.energy-maintenance-summary small,.energy-measure-summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-status-warning{color:var(--gold-ink);font-size:11px;font-weight:800}.energy-status-danger{color:var(--ink);font-size:11px;font-weight:800}.energy-maintenance-summary>span:last-child,.energy-measure-summary>span:last-child{color:var(--muted);font-size:11px;font-weight:800}.energy-maintenance-body,.energy-measure-body{display:grid;gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}\n\t\t.energy-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-inline-form label.wide{grid-column:1/-1}.energy-inline-form input,.energy-inline-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-inline-form .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-compact-create>summary{min-height:40px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-compact-create>summary::-webkit-details-marker{display:none}.energy-compact-create>form{margin-top:var(--space-3)}\n\t\t.energy-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)}.energy-reference-item{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-reference-item span{color:var(--muted);font-size:11px}.energy-reference-item strong{font-family:var(--font-serif);font-size:23px;font-variant-numeric:tabular-nums}.energy-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-asset{padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.energy-import-form{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-import-form label{display:grid;gap:5px}.energy-import-form input[type=file]{min-height:42px;padding:var(--space-2);border:1px dashed var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:12px}.energy-import-form small{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-caretaker-list{display:grid;gap:var(--space-2)}.energy-caretaker{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:12px}.energy-caretaker small{display:block;color:var(--muted);font-size:11px}.energy-caretaker label{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-caretaker a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-comparison small{display:block;color:var(--muted);font-size:11px}.energy-comparison strong{font-family:var(--font-serif);font-size:21px;font-variant-numeric:tabular-nums}.energy-comparison>span{color:var(--soft);font-size:11px}.energy-marketplace-gate{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-marketplace-gate strong{color:var(--ink)}\n\t\t@media(max-width:1050px){.energy-chart-layout{grid-template-columns:1fr;gap:var(--space-4)}.energy-scenario{grid-template-columns:1fr}.energy-scenario-result{justify-items:start;text-align:left}}\n\t\t@media(max-width:760px){body{padding-bottom:0}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{padding-inline:var(--space-4)}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}.energy-peak-chip{grid-column:1/-1;grid-row:2;margin-left:0;width:100%;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-height:44px}.energy-peak-chip>*:nth-child(n+3){display:none}.energy-chart{scroll-margin-top:168px}.energy-chart-head{align-items:start;flex-direction:column;gap:4px}.energy-chart-head small{text-align:left}.energy-chart-head-actions{width:100%;justify-items:stretch}.energy-chart-toolbar{width:100%;justify-content:space-between}.energy-chart-range{flex:1 1 auto}.energy-chart-range a{flex:1 1 50%;justify-content:center}.energy-chart-svg.desktop{display:none}.energy-chart-svg.mobile{min-height:0;display:block}.energy-chart-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:var(--radius-sm)}.energy-chart-dialog-shell{max-height:calc(100dvh - 20px);gap:var(--space-3);padding:var(--space-4)}.energy-chart-dialog-shell>header{align-items:start;flex-direction:column}.energy-chart-dialog-shell>header h2{font-size:27px}.energy-chart-dialog-plot{padding:var(--space-2) 6px 0}.energy-chart-dialog .energy-chart-svg.mobile{min-height:0}.energy-chart-tooltip{top:8px;width:190px}\n\t\t\t.energy-flow-rail{margin-top:34px}.energy-flow-hint{position:static;margin-top:var(--space-3)}.energy-flow-area{padding:28px var(--space-3) 30px}.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}.energy-flow-rail{justify-items:center}.energy-flow-rail>.microlabel{left:max(2px,calc((100% - 258px) / 2))}\n\t\t\t.energy-quality,.energy-comparison,.energy-caretaker,.energy-history-row{grid-template-columns:1fr}.energy-caretaker{justify-items:start}.energy-inline-form{grid-template-columns:1fr}.energy-billed,.energy-tariff-cost,.energy-tariff-forms{grid-template-columns:1fr}.energy-mode-popover{position:absolute;right:0;left:auto;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 74px - 58px - 24px);overflow:auto;box-shadow:var(--shadow-dialog)}}\n\t\t@media(max-width:900px){.energy-metric-info>summary{width:44px;height:44px}.button.small,.energy-chart-size-button{min-height:44px}.energy-mode-strip{position:sticky;top:0;z-index:20;background:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);min-height:58px;padding:6px 12px;flex-wrap:nowrap}.energy-mode-state{min-height:44px;padding:6px 10px 6px 8px;min-width:0;display:flex;align-items:center;gap:8px;grid-column:1;grid-row:1}.energy-mode-control{justify-self:end;grid-column:2;grid-row:1}.energy-mode-icon{width:30px;height:30px;flex-basis:30px}.energy-mode-copy{min-height:0;padding:0;min-width:0}.energy-mode-copy strong{font-size:12px}.energy-mode-action{width:auto;max-width:126px;min-height:44px;padding:6px 11px;font-size:11px}.energy-card{position:relative}.energy-metric-info{position:static}.energy-metric-info>div{left:var(--space-4);right:var(--space-4);width:auto;max-height:60vh;overflow:auto}}\n\t@media(max-width:760px){.energy-mode-strip{top:74px}}@container energy-strip (max-width:920px){.energy-peak-chip>*:nth-child(n+3){display:none}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}}@container (max-width:560px){.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}}</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 551, "<style>\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.energy-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.quiet{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding:6px var(--space-3);font-size:11px}.button:hover{background:var(--panel-soft)}.button.primary:hover{background:var(--gold-ink)}\n\t\t.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em}.energy-tariff>.energy-card-head .pill{border:0;padding:6px 11px;color:#816528;background:#f2ebd9;font-size:11px;letter-spacing:normal}\n\t\t.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}\n\t\t.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}\n\t\t.energy-mode-strip{container-type:inline-size;container-name:energy-strip;position:relative;z-index:20;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-size:13px}.energy-mode-copy span{color:var(--muted);font-size:11px}\n\t\t.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}\n\t\t.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}\n\t\t.energy-main>*,.energy-page,.energy-card,.energy-collapsible-body,.energy-maintenance-body,.energy-measure-body,.energy-lead-side,.energy-live,.energy-billed>div,.energy-scenario-copy,.energy-caretaker>div{min-width:0}.energy-caretaker small,.energy-help-readings span,.energy-history-row,.energy-reference-item strong,.energy-live-more-row,.energy-asset,.energy-tariff-foot a{overflow-wrap:anywhere}\n\t\t.energy-page{width:min(1160px,100%);margin:0 auto;display:grid;gap:22px;padding:clamp(var(--space-5),3vw,40px) clamp(var(--space-4),4vw,56px) 64px}.energy-cockpit-top{display:grid;gap:var(--space-4)}\n\t\t.energy-card{min-width:0;display:grid;gap:var(--space-4);padding:clamp(var(--space-4),2vw,28px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-card-quiet{background:var(--panel-soft);box-shadow:none}.energy-card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.energy-card-head h2{font-size:26px;line-height:1.1}.energy-card-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}.energy-card-head>a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-health{display:grid}.energy-lead-side{min-width:0}.energy-live{min-width:0;display:grid;gap:var(--space-3);padding:clamp(var(--space-4),2vw,26px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-live-head{display:flex;justify-content:space-between;gap:var(--space-3)}.energy-live-title h2{font-size:26px}.energy-live-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:6px;color:var(--muted);font-size:11px}.energy-live-meta strong{color:var(--leaf);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.energy-live-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--leaf)}.is-stale .energy-live-dot{background:var(--soft)}.energy-live-updated{color:var(--soft)}.energy-live-state-offline{color:var(--soft);font-size:11px}\n\t\t.energy-flow-area{container-type:inline-size;position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px;align-items:start;padding:var(--space-3) var(--space-5) 36px}@media(min-width:1180px){.energy-flow-area.has-rail{grid-template-columns:minmax(0,1fr) 258px}}.energy-flow-area .energy-flow-fallback{padding:6px 0 var(--space-3)}.energy-flow-area.is-enhanced .energy-flow-fallback{display:none}.energy-help-readings{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-help-readings span{display:inline-flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px}.energy-help-readings strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-help-readings small{color:var(--soft);font-size:10px}\n\t\tsvg.energy-flow-ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.energy-flow-band{opacity:.2}.energy-flow-dots{opacity:.86;animation:energy-flow-dots 1.15s linear infinite}@keyframes energy-flow-dots{to{stroke-dashoffset:-10.1}}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:transform .16s ease}.energy-live-more[open]>summary .energy-ui-icon,.energy-tariff-disclosure[open]>summary .energy-ui-icon{transform:rotate(90deg)}@media(prefers-reduced-motion:reduce){.energy-flow-dots{animation:none}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:none}}\n\t\t.energy-flow-grid2{--energy-flow-node-width:258px;--energy-flow-node-height:80px;position:relative;display:grid;grid-template-columns:var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr);grid-template-rows:auto 64px auto 64px auto;align-items:center;justify-items:center}.energy-flow-slot-top{grid-column:3;grid-row:1;display:flex;gap:var(--space-3);justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-left{grid-column:1;grid-row:3;width:100%}.energy-flow-slot-bottom{grid-column:3;grid-row:5;display:flex;justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile{width:var(--energy-flow-node-width)}\n\t\t.energy-flow-tile{position:relative;z-index:1;width:var(--energy-flow-node-width);min-height:var(--energy-flow-node-height);border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:11px var(--space-3);display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:var(--space-2)}.energy-flow-tile .ico{width:38px;height:38px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-tile .ico .energy-ui-icon{width:21px;height:21px}.energy-flow-tile strong{font-family:var(--font-serif);font-weight:550;font-size:17px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-tile>div{min-width:0}.energy-flow-tile>div>span{display:block;margin-top:4px;overflow:hidden;font-size:11px;line-height:1.25;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.energy-flow-tile>div>.energy-flow-secondary{margin-top:2px;font-size:10px}.energy-flow-secondary b,.energy-flow-secondary-copy b{display:inline;color:inherit;font-family:var(--font-sans);font-size:inherit;font-weight:750;white-space:nowrap}\n\t\t.energy-flow-tile span.u,.energy-flow-big span.u{display:inline;margin:0;font-family:var(--font-sans);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--soft);vertical-align:6px}\n\t\t.energy-flow-tile.k-pv,.energy-flow-tile.k-grid,.energy-flow-tile.k-batt{background:var(--panel-soft)}.energy-flow-tile.editable{cursor:pointer;transition:border-color .15s ease,background-color .15s ease}.energy-flow-tile.editable .ico>.energy-ui-icon{grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-tile.editable .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-tile.editable:hover,.energy-flow-tile.editable:focus-visible{background:var(--panel-soft)}.energy-flow-tile.editable:hover .energy-flow-icon-default,.energy-flow-tile.editable:focus-visible .energy-flow-icon-default{opacity:0}.energy-flow-tile.editable:hover .energy-flow-icon-edit,.energy-flow-tile.editable:focus-visible .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-hub2{grid-column:3;grid-row:3;width:var(--energy-flow-node-width);z-index:2}\n\t\t.energy-flow-rail{position:relative;z-index:1;align-self:start;display:grid;gap:var(--space-2);align-content:start}.energy-flow-rail>.microlabel{position:absolute;top:-22px;left:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}\n\t\t.energy-flow-big{width:min(258px,100%);max-width:100%;height:80px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:var(--space-2) var(--space-2);display:grid;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:9px;transition:background-color .15s ease}.energy-flow-main{min-width:0;width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:9px;border:0;padding:0;color:inherit;background:transparent;text-align:left;font:inherit}button.energy-flow-main{cursor:pointer}.energy-flow-big .ico{position:relative;width:34px;height:34px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-big .ico .energy-ui-icon{width:19px;height:19px;grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-big .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-copy{min-width:0;display:grid;gap:3px}.energy-flow-big b{display:block;overflow:hidden;font-size:12px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles{display:grid;min-width:0}.energy-flow-subtitles>span{grid-area:1/1;display:block;overflow:hidden;color:var(--muted);font-size:11px;line-height:1.4;text-overflow:ellipsis;white-space:nowrap;transition:opacity .15s ease}.energy-flow-secondary-copy{display:block;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles .energy-flow-edit-copy{color:var(--gold-ink);font-weight:750;opacity:0}.energy-flow-big.editable:hover,.energy-flow-big.editable:focus-within{background:var(--panel-soft)}.energy-flow-big.editable:hover .energy-flow-icon-default,.energy-flow-big.editable:focus-within .energy-flow-icon-default,.energy-flow-big.editable:hover .energy-flow-state-copy,.energy-flow-big.editable:focus-within .energy-flow-state-copy{opacity:0}.energy-flow-big.editable:hover .energy-flow-icon-edit,.energy-flow-big.editable:focus-within .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-big.editable:hover .energy-flow-edit-copy,.energy-flow-big.editable:focus-within .energy-flow-edit-copy{opacity:1}.energy-flow-big.active{background:var(--panel-soft)}.energy-flow-big.active .state{color:var(--energy-node-color,var(--leaf));font-weight:700}.energy-flow-big .rcol{display:grid;justify-items:center;gap:5px;align-self:center}.energy-flow-big .prio{width:13px;height:13px;border-radius:var(--radius-pill);border:1px solid var(--gold-ink);color:var(--gold-ink);font-size:8px;font-weight:800;line-height:1;display:grid;place-items:center;font-variant-numeric:tabular-nums}.energy-flow-big .drag{color:var(--soft);cursor:grab}.energy-flow-big button.drag{border:0;background:none;padding:5px;margin:-5px;display:grid;place-items:center}.energy-flow-big .drag .energy-ui-icon{width:10px;height:16px}.energy-flow-big .drag-static{cursor:default;opacity:.55}.energy-flow-big.dragging{opacity:.55}.energy-flow-big.ghost{border:1.5px dashed var(--line);background:transparent;color:var(--muted);grid-template-columns:minmax(0,1fr);cursor:pointer}.energy-flow-big.ghost .energy-flow-main{cursor:pointer}.energy-flow-big.ghost .plus{width:21px;height:21px;border-radius:var(--radius-pill);border:1.5px dashed var(--soft);display:grid;place-items:center;color:var(--gold-ink);margin:0 auto}.energy-flow-big.ghost .plus .energy-ui-icon{width:11px;height:11px}.energy-flow-big.ghost b{font-size:12px;font-weight:700;color:var(--muted)}\n\t\t.energy-flow-big.has-data-age{height:88px}.energy-flow-big.data-stale .energy-flow-state-copy,.energy-flow-big.data-unavailable .energy-flow-state-copy,.energy-flow-big.data-unknown .energy-flow-state-copy{color:var(--soft)}.energy-flow-data-meta{min-width:0;display:flex;align-items:center;gap:5px;overflow:hidden;color:var(--soft);font-size:9.5px;line-height:1.25;white-space:nowrap}.energy-flow-data-meta>span:last-child{overflow:hidden;text-overflow:ellipsis}.energy-flow-data-label{flex:0 0 auto;border:1px solid #c9b77d;border-radius:var(--radius-pill);padding:1px 5px;color:#755e1d;background:#f6f0df;font-size:8.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.energy-flow-big.data-sleep .energy-flow-state-copy{color:var(--muted);font-style:italic}\n\t\t.energy-info-disclosure summary{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer;list-style:none}.energy-info-disclosure summary::-webkit-details-marker{display:none}.energy-info-mark{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.energy-info-mark .energy-ui-icon{width:11px;height:11px}.energy-flow-hint{position:absolute;left:26px;bottom:10px}.energy-flow-hint[open]>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-md);padding:var(--space-4) var(--space-5);max-width:460px;position:relative;z-index:3;color:var(--muted);font-size:12px;line-height:1.45}.energy-flow-hint[open]>div>strong{color:var(--ink);font-size:14px}.energy-flow-hint[open]>div>a{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:var(--gold-ink);font-weight:800}\n\t\t.energy-live-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.energy-live-more{min-width:0}.energy-live-more>summary{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;list-style:none;color:var(--muted);font-size:11px}.energy-live-more>summary::-webkit-details-marker{display:none}.energy-live-more strong{display:block;color:var(--ink);font-size:12px}.energy-live-more small{display:block;color:var(--soft);font-size:10px}.energy-live-more .energy-ui-icon{width:14px;height:14px}.energy-live-more-list{display:grid;gap:2px;margin-top:var(--space-2)}.energy-live-more-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.energy-live-more-row strong{color:var(--ink);font-variant-numeric:tabular-nums}\n\t\t.energy-recommendation-trigger{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.energy-recommendation-trigger .energy-ui-icon{width:16px;height:16px}.energy-live-empty{display:grid;gap:5px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:12px}.energy-live-empty strong{color:var(--ink);font-family:var(--font-serif);font-size:17px}.energy-live-empty a{color:var(--gold-ink);font-weight:800}\n\t\t.dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--nav)}.dialog>form,.dialog{overflow:auto}.dialog-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-5) var(--space-3);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:27px}.dialog-head p{margin-top:4px;color:var(--muted);font-size:12px}.kicker{color:var(--gold-ink);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.dialog-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:17px}.dialog-close .energy-ui-icon{width:14px;height:14px}.dialog-body{min-width:0;min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto;overscroll-behavior:contain}.dialog-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);padding:var(--space-3) var(--space-5) var(--space-5);border-top:1px solid var(--line)}.dialog-optional>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.dialog-optional>summary::-webkit-details-marker{display:none}\n\t\t.energy-nextstep{display:grid;gap:var(--space-4)}.energy-recommendation-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start}.energy-nextstep-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.energy-nextstep-icon .energy-ui-icon{width:24px;height:24px}.energy-nextstep-copy{min-width:0;display:grid;gap:var(--space-2)}.energy-nextstep-copy h3{font-size:21px;line-height:1.2}.energy-next-progress-row{display:grid;gap:5px}.energy-next-progress{height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.energy-next-progress>span{display:block;height:100%;background:var(--gold)}.energy-next-progress-row small{color:var(--muted);font-size:11px}.energy-next-status{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-status .energy-ui-icon{width:13px;height:13px;color:var(--leaf)}.energy-next-why>summary{min-height:44px;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-next-why>summary::-webkit-details-marker{display:none}.energy-next-why p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-next-meta{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--soft);font-size:11px}\n\t\t.energy-recommendation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.energy-observation-running{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-menu{display:grid;gap:var(--space-3);margin-top:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-measure-form{display:grid;gap:var(--space-2)}.energy-measure-form h3{font-size:17px}.energy-measure-form p{color:var(--muted);font-size:12px;line-height:1.5}.energy-measure-form label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.energy-measure-form .button{justify-self:start;margin-top:var(--space-2)}.energy-dismiss-form .button{justify-self:start}\n\t\t.energy-recommendation-scenarios{display:grid;gap:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--line)}.energy-recommendation-scenarios h3{font-size:19px}.energy-recommendation-scenarios header p{margin-top:4px;color:var(--muted);font-size:12px}.energy-scenario{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-scenario-copy strong{display:block;font-family:var(--font-serif);font-size:16px}.energy-scenario-copy p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.energy-scenario-assumptions{color:var(--soft)}.energy-scenario-result{display:grid;justify-items:end;gap:3px;text-align:right}.energy-scenario-result span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-scenario-result strong{font-family:var(--font-serif);font-size:19px;font-variant-numeric:tabular-nums}.energy-scenario-billed{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}.energy-scenario-floor{display:flex;gap:var(--space-2);color:var(--muted);font-size:11px;line-height:1.45}.energy-scenario-caveat{color:var(--soft);font-size:11px;line-height:1.5}\n\t\t.energy-consumer-dialog{width:min(760px,calc(100vw - 32px))}.energy-consumer-dialog-heading h2{font-size:24px}.energy-consumer-primary,.energy-consumer-display-fields,.energy-consumer-recommendation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)}.energy-consumer-field{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-consumer-field small{font-size:10px;font-weight:500;line-height:1.35}.energy-consumer-field input,.energy-consumer-field select{min-height:42px;width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-consumer-color input{padding:4px;min-height:42px}\n\t\t.energy-icon-picker,.energy-consumer-measurements{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-icon-picker-head,.energy-consumer-measurements-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}.energy-icon-picker-head small,.energy-consumer-measurements-head small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-icon-search{min-height:40px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted)}.energy-icon-search .energy-ui-icon{width:14px;height:14px}.energy-icon-search input{min-height:38px;border:0;background:transparent;color:var(--ink)}.energy-icon-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--space-2)}.energy-icon-choice{min-height:64px;display:grid;place-items:center;gap:4px;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:10px;text-align:center;cursor:pointer}.energy-icon-choice .energy-ui-icon{width:20px;height:20px}.energy-icon-choice input{position:absolute;opacity:0;width:1px;height:1px}.energy-icon-choice:has(input:checked){border-color:var(--gold);background:var(--panel-soft);color:var(--ink);font-weight:800}.energy-icon-result-note{color:var(--muted);font-size:11px}.energy-consumer-measurement-fields{display:grid;gap:var(--space-2)}.energy-consumer-measurement-status{color:var(--muted);font-size:11px}.energy-consumer-recommendations>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-consumer-recommendations>summary::-webkit-details-marker{display:none}.energy-consumer-recommendations>div{margin-top:var(--space-3)}.energy-consumer-delete-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-right:auto;color:var(--muted);font-size:11px}.energy-consumer-delete{margin-right:auto}\n\t\t.energy-chart{scroll-margin-top:96px}.energy-chart-head{display:flex;justify-content:space-between;gap:var(--space-4);align-items:end}.energy-chart-head h2{font-size:26px}.energy-chart-head p,.energy-chart-head small{color:var(--muted);font-size:12px}.energy-chart-head p{margin-top:4px}.energy-chart-head small{text-align:right}.energy-chart-head-actions{display:grid;gap:var(--space-2);justify-items:end}.energy-chart-toolbar,.energy-chart-size-actions,.energy-chart-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}.energy-chart-range{display:inline-flex;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-chart-range a{min-height:44px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);color:var(--muted);font-size:11px;font-weight:800}.energy-chart-range a+a{box-shadow:inset 1px 0 0 var(--line)}.energy-chart-range a[aria-current=\"page\"]{background:var(--nav);color:var(--panel)}.energy-chart-range a:hover:not([aria-current=\"page\"]){background:var(--panel-soft);color:var(--ink)}.energy-chart-size-button{flex:0 0 auto;gap:7px}.energy-chart-size-button svg{width:16px;height:16px}\n\t\t.energy-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.28fr);gap:var(--space-6);align-items:stretch}.energy-chart-plot{min-width:0;display:grid;gap:var(--space-2)}.energy-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-chart-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.energy-chart-legend strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-chart-legend i{width:24px;height:3px;border-radius:3px;background:var(--nav)}.energy-chart-legend .load i{background:var(--ink)}.energy-chart-legend .pv i{background:var(--leaf)}.energy-chart-legend .grid i{background:var(--gold)}.energy-chart-legend .battery i{background:var(--soft)}.energy-chart-legend .threshold i{height:0;border-top:2px dashed var(--muted);background:transparent}.energy-chart-legend .threshold small{font-size:10px}\n\t\t.energy-chart-svg{width:100%;height:auto;min-height:220px;display:block;overflow:visible}.energy-chart-svg.mobile{display:none}.energy-chart-grid{stroke:var(--line);stroke-width:1}.energy-chart-grid.zero{stroke:var(--soft);stroke-width:1.35}.energy-chart-axis-label{fill:var(--muted);font-family:var(--font-sans);font-size:11px}.energy-chart-line{fill:none;stroke:var(--nav);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.energy-chart-line.load{stroke:var(--ink)}.energy-chart-line.pv{stroke:var(--leaf)}.energy-chart-line.grid{stroke:var(--gold)}.energy-chart-line.battery{stroke:var(--soft);stroke-width:2.1}.energy-chart-area{stroke:none;fill:none}.energy-chart-area.load{fill:var(--line);opacity:.55}.energy-chart-threshold{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}.energy-chart-threshold-label{fill:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:750}\n\t\t.energy-chart-interactive{position:relative;min-width:0;border-radius:var(--radius-xs);outline:none}.energy-chart-hit{fill:transparent;cursor:crosshair;pointer-events:all}.energy-chart-guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker{fill:var(--panel);stroke:var(--nav);stroke-width:2.5;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker.load{stroke:var(--ink)}.energy-chart-marker.pv{stroke:var(--leaf)}.energy-chart-marker.grid{stroke:var(--gold)}.energy-chart-marker.battery{stroke:var(--soft)}.energy-chart-marker[hidden],.energy-chart-guide[hidden]{display:none}\n\t\t.energy-chart-tooltip{position:absolute;z-index:5;top:12px;width:210px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px var(--space-3);color:var(--ink);background:var(--panel);box-shadow:var(--shadow-md);pointer-events:none}.energy-chart-tooltip>strong{display:block;margin-bottom:7px;font-family:var(--font-serif);font-size:18px}.energy-chart-tooltip [data-chart-tooltip-values]{display:grid;gap:5px}.energy-chart-tooltip-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;color:var(--muted);font-size:11px}.energy-chart-tooltip-row b{color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}.energy-chart-tooltip-row i{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--nav)}.energy-chart-tooltip-row i.load{background:var(--ink)}.energy-chart-tooltip-row i.pv{background:var(--leaf)}.energy-chart-tooltip-row i.grid{background:var(--gold)}.energy-chart-tooltip-row i.battery{background:var(--soft)}\n\t\t.energy-chart-note{display:grid;align-content:center;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-chart-note span{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-chart-note strong{font-family:var(--font-serif);font-size:21px;line-height:1.25}.energy-chart-note p{color:var(--muted);font-size:13px;line-height:1.5}.energy-chart-hint{color:var(--muted);font-size:11px;line-height:1.5}.energy-chart-empty{display:grid;gap:5px;border:1px dashed var(--line);border-radius:var(--radius-sm);padding:var(--space-5)}.energy-chart-empty strong{font-family:var(--font-serif);font-size:17px}.energy-chart-empty p{color:var(--muted);font-size:13px}\n\t\t.energy-chart-dialog{width:min(1320px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);border:0;border-radius:var(--radius-md);padding:0;overflow:hidden;color:var(--ink);background:transparent;box-shadow:var(--shadow-dialog)}.energy-chart-dialog::backdrop{background:var(--nav)}.energy-chart-dialog-shell{max-height:calc(100dvh - 48px);display:grid;gap:var(--space-4);overflow:auto;overscroll-behavior:contain;padding:clamp(var(--space-6),3vw,40px);background:var(--paper)}.energy-chart-dialog-shell>header{display:flex;justify-content:space-between;gap:var(--space-6);align-items:start}.energy-chart-dialog-shell>header h2{margin-top:5px;font-size:clamp(28px,3vw,42px)}.energy-chart-dialog-shell>header p{margin-top:5px;color:var(--muted);font-size:14px}.energy-chart-dialog-actions .button{gap:7px}.energy-chart-dialog-actions svg{width:16px;height:16px}.energy-chart-dialog-plot{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-5) 4px;background:var(--panel)}.energy-chart-dialog .energy-chart-svg{min-height:min(54vh,520px)}.energy-chart-dialog .energy-chart-tooltip{top:26px}.energy-chart-dialog-shell:fullscreen,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-shell{width:100vw;height:100dvh;max-height:none;grid-template-rows:auto auto minmax(0,1fr) auto;border-radius:0;padding:clamp(var(--space-5),2.5vw,42px);background:var(--paper)}.energy-chart-dialog.is-fullscreen-fallback{position:fixed;inset:0;width:100vw;height:100dvh;max-height:none;margin:0;border-radius:0}.energy-chart-dialog-shell:fullscreen .energy-chart-dialog-plot,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-plot{min-height:0;display:grid;align-items:center}.energy-chart-dialog-shell:fullscreen .energy-chart-svg.desktop,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-svg.desktop{min-height:min(66vh,680px)}\n\t\t.energy-tariff{scroll-margin-top:96px}.energy-tariff-heading-copy p{margin-top:4px;color:var(--muted);font-size:12px}.energy-tariff-title-row{display:flex;align-items:center;gap:var(--space-2)}.energy-metric-info>summary{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink);cursor:pointer;list-style:none}.energy-metric-info>summary::-webkit-details-marker{display:none}.energy-metric-info .energy-ui-icon{width:12px;height:12px}.energy-metric-info{position:relative}.energy-metric-info>div{position:absolute;z-index:30;right:0;top:calc(100% + 7px);width:min(280px,calc(100vw - 42px));display:grid;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5;max-width:520px}.energy-metric-info>div strong{color:var(--ink)}.energy-metric-info>div small{color:var(--soft);font-size:11px}\n\t\t.energy-billed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4)}.energy-billed>div{display:grid;gap:6px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-billed strong{font-family:var(--font-serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}.energy-billed small{color:var(--muted);font-size:11px}.energy-metric-label{display:flex;align-items:center;gap:6px;color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-meter{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--line)}.energy-tariff-meter::-webkit-progress-bar{background:var(--line);border-radius:var(--radius-pill)}.energy-tariff-meter::-webkit-progress-value{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter::-moz-progress-bar{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter.billed::-webkit-progress-value{background:var(--nav)}.energy-tariff-meter.billed::-moz-progress-bar{background:var(--nav)}\n\t\t.energy-tariff-cost{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)}.energy-tariff-cost-figure{display:grid;gap:5px}.energy-tariff-cost-figure p{display:flex;align-items:baseline;gap:5px}.energy-tariff-cost-figure strong{font-family:var(--font-serif);font-size:27px;font-variant-numeric:tabular-nums}.energy-tariff-cost-figure small{color:var(--muted);font-size:11px}.energy-tariff-basis{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-tariff-basis .energy-ui-icon{width:13px;height:13px}\n\t\t.energy-tariff-empty{display:grid;justify-items:start;gap:6px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm)}.energy-tariff-empty.waiting{background:var(--panel-soft);border-style:solid}.energy-tariff-empty strong{font-family:var(--font-serif);font-size:18px}.energy-tariff-empty p{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.energy-tariff-disclosure>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-disclosure>summary::-webkit-details-marker{display:none}.energy-tariff-disclosure .energy-ui-icon{width:14px;height:14px}.energy-tariff-disclosure[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.energy-tariff-disclosure>div{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)}.energy-tariff-method,.energy-tariff-detail-basis{color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-detail-basis strong{display:block;color:var(--ink)}.energy-tariff-cost-copy{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-cost-copy strong{color:var(--ink)}.energy-tariff-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)}.energy-tariff-tiers>div{display:grid;gap:3px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.energy-tariff-tiers span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-tiers strong{font-family:var(--font-serif);font-size:19px}.energy-tariff-tiers small{color:var(--muted);font-size:11px}.energy-tariff-notes{display:grid;gap:var(--space-2);margin:0;padding-left:var(--space-5);color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-tariff-settings>summary{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-settings>summary::-webkit-details-marker{display:none}.energy-tariff-settings>summary span{color:var(--soft);font-weight:600}.energy-tariff-forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-3)}.energy-target-form{display:grid;gap:6px;justify-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-target-form label{width:100%;display:grid;gap:5px}.energy-target-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-legend{color:var(--muted);font-size:11px;font-weight:800}\n\t\t.energy-tariff-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--soft);font-size:11px}.energy-tariff-foot a{color:var(--gold-ink);font-weight:800}.energy-history{display:grid;gap:var(--space-2)}.energy-history h4{font-size:15px}.energy-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-3);align-items:center;padding:var(--space-2) 0;border-top:1px solid var(--line);font-size:12px}.energy-history-row span{display:block;color:var(--muted);font-size:11px}.energy-history-row small{color:var(--soft);font-size:10px}\n\t\t.energy-pair{display:grid;gap:22px}.energy-quality{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-quality>span:first-child{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.energy-quality.warning>span:first-child,.energy-quality.danger>span:first-child{background:var(--gold)}.energy-quality strong{display:block}.energy-quality p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}.energy-quality small{color:var(--gold-ink);font-weight:750;font-size:11px}\n\t\t.energy-coverage{display:grid;gap:var(--space-2)}.energy-coverage-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:11px}.energy-coverage-list{display:grid;gap:2px}.energy-coverage-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-top:1px solid var(--line);font-size:12px}.energy-coverage-state{color:var(--muted);font-size:11px}.energy-coverage-state.good{color:var(--leaf)}\n\t\t.energy-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--space-3)}.energy-roadmap-step{display:grid;align-content:start;gap:5px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-roadmap-step.current{border-color:var(--gold);background:var(--panel)}.energy-roadmap-number{width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:11px;font-weight:800}.energy-roadmap-step.current .energy-roadmap-number{background:var(--gold)}.energy-roadmap-state{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-roadmap-step strong{font-family:var(--font-serif);font-size:16px}.energy-roadmap-step p{color:var(--muted);font-size:12px;line-height:1.45}.energy-roadmap-step a{margin-top:4px;color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-system-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-system-asset{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.energy-system-asset .energy-ui-icon{width:20px;height:20px;color:var(--gold-ink)}.energy-system-helper{color:var(--muted);font-size:12px}.energy-related-links{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-related-links a{min-height:32px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:11px;font-weight:800}.energy-business-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-business-note>span{width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:12px}.energy-business-note strong{color:var(--ink)}\n\t\t.energy-admin{display:grid;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.energy-admin-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-3)}.energy-admin-head h2{font-size:23px}.energy-admin-head span{color:var(--muted);font-size:12px}\n\t\t.energy-collapsible{display:block;padding:0;overflow:hidden}.energy-collapsible>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),2vw,28px);cursor:pointer;list-style:none}.energy-collapsible>summary::-webkit-details-marker{display:none}.energy-collapsible>summary:hover{background:var(--panel)}.energy-collapsible-body{display:grid;gap:var(--space-4);padding:0 clamp(var(--space-4),2vw,28px) clamp(var(--space-4),2vw,28px);border-top:1px solid var(--line);padding-top:var(--space-4)}\n\t\t.energy-maintenance-list,.energy-measure-list{display:grid;gap:var(--space-2)}.energy-maintenance-row,.energy-measure-row{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-maintenance-summary,.energy-measure-summary{min-height:52px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.energy-maintenance-summary::-webkit-details-marker,.energy-measure-summary::-webkit-details-marker{display:none}.energy-maintenance-summary strong,.energy-measure-summary strong{display:block;font-size:13px}.energy-maintenance-summary small,.energy-measure-summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-status-warning{color:var(--gold-ink);font-size:11px;font-weight:800}.energy-status-danger{color:var(--ink);font-size:11px;font-weight:800}.energy-maintenance-summary>span:last-child,.energy-measure-summary>span:last-child{color:var(--muted);font-size:11px;font-weight:800}.energy-maintenance-body,.energy-measure-body{display:grid;gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}\n\t\t.energy-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-inline-form label.wide{grid-column:1/-1}.energy-inline-form input,.energy-inline-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-inline-form .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-compact-create>summary{min-height:40px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-compact-create>summary::-webkit-details-marker{display:none}.energy-compact-create>form{margin-top:var(--space-3)}\n\t\t.energy-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)}.energy-reference-item{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-reference-item span{color:var(--muted);font-size:11px}.energy-reference-item strong{font-family:var(--font-serif);font-size:23px;font-variant-numeric:tabular-nums}.energy-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-asset{padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.energy-import-form{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-import-form label{display:grid;gap:5px}.energy-import-form input[type=file]{min-height:42px;padding:var(--space-2);border:1px dashed var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:12px}.energy-import-form small{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-caretaker-list{display:grid;gap:var(--space-2)}.energy-caretaker{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:12px}.energy-caretaker small{display:block;color:var(--muted);font-size:11px}.energy-caretaker label{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-caretaker a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-comparison small{display:block;color:var(--muted);font-size:11px}.energy-comparison strong{font-family:var(--font-serif);font-size:21px;font-variant-numeric:tabular-nums}.energy-comparison>span{color:var(--soft);font-size:11px}.energy-marketplace-gate{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-marketplace-gate strong{color:var(--ink)}\n\t\t@media(max-width:1050px){.energy-chart-layout{grid-template-columns:1fr;gap:var(--space-4)}.energy-scenario{grid-template-columns:1fr}.energy-scenario-result{justify-items:start;text-align:left}}\n\t\t@media(max-width:760px){body{padding-bottom:0}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{padding-inline:var(--space-4)}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}.energy-peak-chip{grid-column:1/-1;grid-row:2;margin-left:0;width:100%;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-height:44px}.energy-peak-chip>*:nth-child(n+3){display:none}.energy-chart{scroll-margin-top:168px}.energy-chart-head{align-items:start;flex-direction:column;gap:4px}.energy-chart-head small{text-align:left}.energy-chart-head-actions{width:100%;justify-items:stretch}.energy-chart-toolbar{width:100%;justify-content:space-between}.energy-chart-range{flex:1 1 auto}.energy-chart-range a{flex:1 1 50%;justify-content:center}.energy-chart-svg.desktop{display:none}.energy-chart-svg.mobile{min-height:0;display:block}.energy-chart-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:var(--radius-sm)}.energy-chart-dialog-shell{max-height:calc(100dvh - 20px);gap:var(--space-3);padding:var(--space-4)}.energy-chart-dialog-shell>header{align-items:start;flex-direction:column}.energy-chart-dialog-shell>header h2{font-size:27px}.energy-chart-dialog-plot{padding:var(--space-2) 6px 0}.energy-chart-dialog .energy-chart-svg.mobile{min-height:0}.energy-chart-tooltip{top:8px;width:190px}\n\t\t\t.energy-flow-rail{margin-top:34px}.energy-flow-hint{position:static;margin-top:var(--space-3)}.energy-flow-area{padding:28px var(--space-3) 30px}.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}.energy-flow-rail{justify-items:center}.energy-flow-rail>.microlabel{left:max(2px,calc((100% - 258px) / 2))}\n\t\t\t.energy-quality,.energy-comparison,.energy-caretaker,.energy-history-row{grid-template-columns:1fr}.energy-caretaker{justify-items:start}.energy-inline-form{grid-template-columns:1fr}.energy-billed,.energy-tariff-cost,.energy-tariff-forms{grid-template-columns:1fr}.energy-mode-popover{position:absolute;right:0;left:auto;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 74px - 58px - 24px);overflow:auto;box-shadow:var(--shadow-dialog)}}\n\t\t@media(max-width:900px){.energy-metric-info>summary{width:44px;height:44px}.button.small,.energy-chart-size-button{min-height:44px}.energy-mode-strip{position:sticky;top:0;z-index:20;background:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);min-height:58px;padding:6px 12px;flex-wrap:nowrap}.energy-mode-state{min-height:44px;padding:6px 10px 6px 8px;min-width:0;display:flex;align-items:center;gap:8px;grid-column:1;grid-row:1}.energy-mode-control{justify-self:end;grid-column:2;grid-row:1}.energy-mode-icon{width:30px;height:30px;flex-basis:30px}.energy-mode-copy{min-height:0;padding:0;min-width:0}.energy-mode-copy strong{font-size:12px}.energy-mode-action{width:auto;max-width:126px;min-height:44px;padding:6px 11px;font-size:11px}.energy-card{position:relative}.energy-metric-info{position:static}.energy-metric-info>div{left:var(--space-4);right:var(--space-4);width:auto;max-height:60vh;overflow:auto}}\n\t@media(max-width:760px){.energy-mode-strip{top:74px}}@container energy-strip (max-width:920px){.energy-peak-chip>*:nth-child(n+3){display:none}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}}@container (max-width:560px){.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}}</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

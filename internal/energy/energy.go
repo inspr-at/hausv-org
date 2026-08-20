@@ -48,6 +48,7 @@ const (
 	MetricLoadPower        = "load-power"
 	MetricConsumerPower    = "consumer-power"
 	MetricConsumerEnergy   = "consumer-energy"
+	MetricConsumerSleep    = "consumer-sleep"
 	MetricUnknown          = "unknown"
 )
 
@@ -582,7 +583,7 @@ func containsAny(value string, needles ...string) bool {
 
 func normalizeMetric(raw string) string {
 	switch strings.TrimSpace(raw) {
-	case MetricGridImportPower, MetricGridImportEnergy, MetricGridExportPower, MetricPVPower, MetricBatteryPower, MetricBatteryCharge, MetricBatteryDischarge, MetricBatterySOC, MetricLoadPower, MetricConsumerPower, MetricConsumerEnergy:
+	case MetricGridImportPower, MetricGridImportEnergy, MetricGridExportPower, MetricPVPower, MetricBatteryPower, MetricBatteryCharge, MetricBatteryDischarge, MetricBatterySOC, MetricLoadPower, MetricConsumerPower, MetricConsumerEnergy, MetricConsumerSleep:
 		return strings.TrimSpace(raw)
 	default:
 		return MetricUnknown

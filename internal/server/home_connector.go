@@ -261,15 +261,39 @@ func validHomeConnectorReading(reading homeconnector.Reading, now time.Time) boo
 	state := strings.TrimSpace(reading.State)
 	unit := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(reading.Unit), " ", ""))
 	deviceClass := strings.ToLower(strings.TrimSpace(reading.DeviceClass))
-	if !strings.HasPrefix(entityID, "sensor.") || len(entityID) > 180 || len(state) == 0 || len(state) > 48 ||
+	if len(entityID) > 180 || len(state) == 0 || len(state) > 48 ||
 		len(reading.DisplayName) > 160 || len(reading.StateClass) > 32 || reading.LastUpdated.IsZero() ||
 		reading.LastUpdated.After(now.Add(5*time.Minute)) {
+		return false
+	}
+	if validHomeConnectorSleepReading(entityID, state, reading.DisplayName) {
+		return true
+	}
+	if !strings.HasPrefix(entityID, "sensor.") {
 		return false
 	}
 	allowedUnit := unit == "w" || unit == "kw" || unit == "mw" || unit == "wh" || unit == "kwh" || unit == "mwh" || unit == "%"
 	value, parseErr := strconv.ParseFloat(strings.ReplaceAll(state, ",", "."), 64)
 	allowedState := (parseErr == nil && !math.IsNaN(value) && !math.IsInf(value, 0)) || strings.EqualFold(state, "unknown") || strings.EqualFold(state, "unavailable")
 	return allowedUnit && allowedState && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
+}
+
+func validHomeConnectorSleepReading(entityID, state, displayName string) bool {
+	if !strings.HasPrefix(entityID, "sensor.") && !strings.HasPrefix(entityID, "binary_sensor.") {
+		return false
+	}
+	name := strings.ToLower(entityID + " " + strings.TrimSpace(displayName))
+	if !strings.Contains(name, "sleep") && !strings.Contains(name, "asleep") &&
+		!strings.Contains(name, "schlaf") && !strings.Contains(name, "schläf") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(state)) {
+	case "on", "off", "true", "false", "1", "0", "sleep", "sleeping", "asleep",
+		"schläft", "awake", "online", "unknown", "unavailable":
+		return true
+	default:
+		return false
+	}
 }
 
 func validHomeConnectorReadingSet(readings []homeconnector.Reading, now time.Time) bool {
@@ -297,8 +321,9 @@ func (a *app) selectedHomeConnectorEntities(slug string) []string {
 	}
 	selected := make([]string, 0, len(mappings))
 	for _, mapping := range mappings {
-		if mapping.Confirmed && strings.HasPrefix(strings.ToLower(strings.TrimSpace(mapping.EntityID)), "sensor.") {
-			selected = append(selected, strings.ToLower(strings.TrimSpace(mapping.EntityID)))
+		entityID := strings.ToLower(strings.TrimSpace(mapping.EntityID))
+		if mapping.Confirmed && (strings.HasPrefix(entityID, "sensor.") || strings.HasPrefix(entityID, "binary_sensor.")) {
+			selected = append(selected, entityID)
 		}
 	}
 	sort.Strings(selected)

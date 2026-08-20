@@ -313,12 +313,15 @@
     setDialogValue("flexibility", item.flexibility || "unknown");
     setDialogValue("color", nodeColor(item.color, LOAD));
     setDialogValue("secondary_label", item.secondaryLabel || "");
+    setDialogValue("stale_after_minutes", item.staleAfterMinutes || "");
 
     var priorityField = consumerDialog.querySelector('[name="priority"]');
     var priorityWrap = consumerDialog.querySelector("[data-consumer-priority-field]");
+    var staleField = consumerDialog.querySelector("[data-consumer-stale-field]");
     var recommendations = consumerDialog.querySelector("[data-consumer-recommendations]");
     var isRailItem = !item.nodeType || item.nodeType === "consumer" || item.nodeType === "parking";
     if (priorityWrap) priorityWrap.hidden = !isRailItem;
+    if (staleField) staleField.hidden = !isRailItem;
     if (recommendations) recommendations.hidden = !isRailItem;
     if (priorityField) {
       priorityField.replaceChildren();
@@ -609,7 +612,8 @@
         var movableIndex = -1;
         (cfg.consumers || []).forEach(function (c, i) {
           var canEdit = Boolean(c.id && cfg.addHint);
-          var t = el("div", "energy-flow-big" + (c.active ? " active" : "") + (canEdit ? " editable" : ""), rail);
+          var dataStatus = /^(stale|unavailable|unknown|sleep)$/.test(c.dataStatus || "") ? c.dataStatus : "";
+          var t = el("div", "energy-flow-big" + (c.active ? " active" : "") + (canEdit ? " editable" : "") + (dataStatus ? " data-" + dataStatus : "") + (c.age ? " has-data-age" : ""), rail);
           t.style.setProperty("--energy-node-color", nodeColor(c.color, LOAD));
           t.dataset.edge = "consumer-" + i;
           if (c.id) t.dataset.consumerId = c.id;
@@ -630,6 +634,11 @@
           var subtitles = el("span", "energy-flow-subtitles", text);
           el("span", "energy-flow-state-copy", subtitles).textContent = c.state || "Bereit";
           if (canEdit) el("span", "energy-flow-edit-copy", subtitles).textContent = "Klicken zum Bearbeiten";
+          if (c.age) {
+            var dataMeta = el("span", "energy-flow-data-meta", text);
+            if (c.dataLabel) el("span", "energy-flow-data-label", dataMeta).textContent = c.dataLabel;
+            el("span", "", dataMeta).textContent = c.age;
+          }
           if (c.secondary) secondaryLine(text, c.secondaryLabel, c.secondary, "energy-flow-secondary-copy");
           if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: nodeColor(c.color, LOAD) }, { at: 1, c: nodeColor(c.color, LOAD) }] });
           var rcol = el("span", "rcol", t);
@@ -766,7 +775,7 @@
     var refreshing = false;
     function updateAge() {
       var seconds = Math.max(0, Math.floor((Date.now() - lastSuccess) / 1000));
-      updated.textContent = "Zuletzt aktualisiert vor " + seconds + "\u00a0s";
+      updated.textContent = "Portal abgerufen vor " + seconds + "\u00a0s";
     }
     function markLive() {
       status.classList.remove("is-stale");
@@ -774,7 +783,7 @@
     }
     function markStale() {
       status.classList.add("is-stale");
-      if (label) label.textContent = "Veraltet";
+      if (label) label.textContent = "Abruf gestört";
     }
     function refreshLive() {
       if (refreshing) return;
@@ -787,7 +796,8 @@
         .then(function (payload) {
           if (!payload || !payload.flow || typeof flow._energyFlowUpdate !== "function") throw new Error("invalid live refresh");
           flow._energyFlowUpdate(payload.flow);
-          lastSuccess = Date.now();
+          var fetchedAt = Date.parse(payload.updatedAt || "");
+          lastSuccess = Number.isFinite(fetchedAt) ? fetchedAt : Date.now();
           markLive();
           updateAge();
         })
