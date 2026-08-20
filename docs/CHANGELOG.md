@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.3] - 2026-08-20
+
+### Stabilität verbessert
+
+- Alle Portalbereiche: Buchstaben mit Unterlängen werden auch in kompakten Seitenüberschriften vollständig dargestellt.
+
 ## [0.99.1] - 2026-08-20
 
 ### Stabilität verbessert

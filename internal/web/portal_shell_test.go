@@ -240,10 +240,11 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	}
 }
 
-func TestSharedHeroTitlesLeaveRoomForDescenders(t *testing.T) {
+func TestSharedSectionTitlesLeaveRoomForDescenders(t *testing.T) {
 	portal := PortalPageData{
 		Title: "Portal", GreetingName: "Peggy", Dense: true,
-		HeroImageURL: "/assets/hausv-landing-hero.png",
+		HeroImageURL:    "/assets/hausv-landing-hero.png",
+		CanManageIssues: true,
 	}
 	pages := []struct {
 		name  string
@@ -253,17 +254,19 @@ func TestSharedHeroTitlesLeaveRoomForDescenders(t *testing.T) {
 		{"home", "Hallo Peggy.", PortalPage(portal)},
 		{"announcements", "Aushang", AnnouncementsPage(AnnouncementsPageData{Portal: portal})},
 		{"events", "Termine", EventsPage(EventsPageData{Portal: portal})},
+		{"issues", "Anliegen", IssuesPage(IssuesPageData{Portal: portal})},
+		{"issue-board", "Anliegen bearbeiten", IssueBoardPage(IssueBoardPageData{Portal: portal})},
 	}
 
-	const descenderRule = ".portal-section-hero .portal-section-title h1{line-height:1.08;padding-bottom:.08em}"
+	const descenderRule = ".portal-section-title h1{min-width:0;max-width:100%;margin:0;overflow:hidden;font-family:var(--font-serif);font-size:42px;font-weight:600;line-height:1.08;padding-bottom:.08em;"
 	for _, page := range pages {
 		t.Run(page.name, func(t *testing.T) {
 			html := renderComponent(t, page.page)
 			if !strings.Contains(html, descenderRule) {
-				t.Fatal("shared hero title must leave room below the baseline")
+				t.Fatal("shared section title must leave room below the baseline")
 			}
 			if !strings.Contains(html, page.title) {
-				t.Fatalf("shared hero is missing title %q", page.title)
+				t.Fatalf("shared section header is missing title %q", page.title)
 			}
 		})
 	}
