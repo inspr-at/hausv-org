@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.98.11] - 2026-08-20
+
+### Stabilität verbessert
+
+- Termine: Seitenkopf mit Hausfoto und Linie korrekt dargestellt.
+
 ## [0.98.10] - 2026-08-19
 
 ### Stabilität verbessert
