@@ -6473,7 +6473,7 @@ func formatEnergyReading(value float64, unit string) string {
 }
 
 func formatEnergyDisplayCompact(value float64, precision int) string {
-	raw := view.FormatDecimal(value, precision)
+	raw := formatDecimal(value, precision)
 	if precision > 0 {
 		raw = strings.TrimRight(strings.TrimRight(raw, "0"), ",")
 	}
