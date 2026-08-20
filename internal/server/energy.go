@@ -4143,11 +4143,18 @@ type energyFlowNodeConfig struct {
 	Sub            string                      `json:"sub,omitempty"`
 	Secondary      string                      `json:"secondary,omitempty"`
 	SecondaryLabel string                      `json:"secondaryLabel,omitempty"`
+	Metrics        []energyFlowMetricConfig    `json:"metrics,omitempty"`
 	Color          string                      `json:"color,omitempty"`
 	Flow           float64                     `json:"flow,omitempty"`
 	Hover          string                      `json:"hover,omitempty"`
 	Editable       bool                        `json:"editable,omitempty"`
 	Measurements   []energyFlowMeasurementSlot `json:"measurements,omitempty"`
+}
+
+type energyFlowMetricConfig struct {
+	Label string `json:"label,omitempty"`
+	Value string `json:"value,omitempty"`
+	Unit  string `json:"unit,omitempty"`
 }
 
 type energyFlowMeasurementSlot struct {
@@ -4169,6 +4176,9 @@ type energyFlowConsumerConfig struct {
 	EnergyEntity      string                      `json:"energyEntity,omitempty"`
 	Secondary         string                      `json:"secondary,omitempty"`
 	SecondaryLabel    string                      `json:"secondaryLabel,omitempty"`
+	Primary           *energyFlowMetricConfig     `json:"primary,omitempty"`
+	Current           *energyFlowMetricConfig     `json:"current,omitempty"`
+	Metrics           []energyFlowMetricConfig    `json:"metrics,omitempty"`
 	Color             string                      `json:"color,omitempty"`
 	State             string                      `json:"state,omitempty"`
 	DataStatus        string                      `json:"dataStatus,omitempty"`
@@ -4286,6 +4296,24 @@ func joinEnergySecondaryValues(values ...string) string {
 	return strings.Join(parts, " · ")
 }
 
+func energyFlowMetric(label, formatted string) energyFlowMetricConfig {
+	formatted = strings.TrimSpace(formatted)
+	metric := energyFlowMetricConfig{Label: strings.TrimSpace(label), Value: formatted}
+	if split := strings.LastIndex(formatted, "\u00a0"); split > 0 {
+		metric.Value = formatted[:split]
+		metric.Unit = strings.TrimSpace(formatted[split+len("\u00a0"):])
+	}
+	return metric
+}
+
+func energyFlowMetricPtr(label, formatted string) *energyFlowMetricConfig {
+	metric := energyFlowMetric(label, formatted)
+	if metric.Value == "" || metric.Value == "–" {
+		return nil
+	}
+	return &metric
+}
+
 func energyConsumerAgeLabel(now, seen time.Time) string {
 	if seen.IsZero() {
 		return ""
@@ -4296,17 +4324,17 @@ func energyConsumerAgeLabel(now, seen time.Time) string {
 	}
 	switch {
 	case age < time.Minute:
-		return fmt.Sprintf("Stand vor %d Sek.", int(age/time.Second))
+		return fmt.Sprintf("vor %d Sek.", int(age/time.Second))
 	case age < time.Hour:
-		return fmt.Sprintf("Stand vor %d Min.", int(age/time.Minute))
+		return fmt.Sprintf("vor %d Min.", int(age/time.Minute))
 	case age < 24*time.Hour:
-		return fmt.Sprintf("Stand vor %d Std.", int(age/time.Hour))
+		return fmt.Sprintf("vor %d Std.", int(age/time.Hour))
 	default:
 		days := int(age / (24 * time.Hour))
 		if days == 1 {
-			return "Stand vor 1 Tag"
+			return "vor 1 Tag"
 		}
-		return fmt.Sprintf("Stand vor %d Tagen", days)
+		return fmt.Sprintf("vor %d Tagen", days)
 	}
 }
 
@@ -4547,6 +4575,7 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 	}
 	if reading, ok := energyFlowAssetMetric(metrics, homeAsset.ID, energy.MetricConsumerEnergy); ok {
 		cfg.Home.Secondary = reading.Value
+		cfg.Home.Metrics = append(cfg.Home.Metrics, energyFlowMetric(cfg.Home.SecondaryLabel, reading.Value))
 	}
 	if live.HasMain {
 		watts := math.Abs(energyPowerWatts(&live.Main))
@@ -4569,6 +4598,10 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 		})
 		if reading, ok := energyFlowAssetMetric(metrics, pvAsset.ID, energy.MetricConsumerEnergy); ok {
 			cfg.Producers[len(cfg.Producers)-1].Secondary = reading.Value
+			cfg.Producers[len(cfg.Producers)-1].Metrics = append(
+				cfg.Producers[len(cfg.Producers)-1].Metrics,
+				energyFlowMetric(cfg.Producers[len(cfg.Producers)-1].SecondaryLabel, reading.Value),
+			)
 		}
 	}
 	storageAsset := energyFlowNodeAsset(assets, tenantSlug, "storage")
@@ -4601,9 +4634,15 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 		}
 		if hasStorageSOC {
 			cfg.Storage.Secondary = storageSOC.Value
+			socLabel := cleanEnergyText(storageAsset.Metadata["secondary_label"], 60)
+			if socLabel == "" {
+				socLabel = "Ladestand"
+			}
+			cfg.Storage.Metrics = append(cfg.Storage.Metrics, energyFlowMetric(socLabel, storageSOC.Value))
 		}
 		if reading, ok := energyFlowAssetMetric(metrics, storageAsset.ID, energy.MetricConsumerEnergy); ok {
 			cfg.Storage.Secondary = joinEnergySecondaryValues(cfg.Storage.Secondary, reading.Value)
+			cfg.Storage.Metrics = append(cfg.Storage.Metrics, energyFlowMetric("Speicherenergie", reading.Value))
 		}
 	}
 	if live.HasGrid {
@@ -4621,6 +4660,7 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 		}
 		if reading, ok := energyFlowAssetMetric(metrics, gridAsset.ID, energy.MetricConsumerEnergy); ok {
 			cfg.Grid.Secondary = reading.Value
+			cfg.Grid.Metrics = append(cfg.Grid.Metrics, energyFlowMetric(cfg.Grid.SecondaryLabel, reading.Value))
 		}
 	}
 	consumerPower := map[string]energyMetricView{}
@@ -4680,6 +4720,8 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 		}
 		state := "Bereit · " + energyFlexibilityLabel(asset.Flexibility)
 		secondary := ""
+		var current *energyFlowMetricConfig
+		var primaryMetric *energyMetricView
 		kw := 0.0
 		active := false
 		dataStatus := ""
@@ -4704,16 +4746,20 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 			default:
 				if primary.Metric == energy.MetricConsumerPower {
 					watts := math.Abs(energyPowerWatts(&primary))
-					state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
+					state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW")
+					current = energyFlowMetricPtr("Jetzt", state)
 					if !primary.LastUpdated.IsZero() && now.Sub(primary.LastUpdated) > energyConsumerStaleAfter(asset) {
 						dataStatus = "stale"
 						dataLabel = "Veraltet"
 					} else {
 						kw = watts / 1000
 						active = watts >= 50
+						if active {
+							primaryMetric = &primary
+						}
 					}
 				} else {
-					state = primary.Value + " · Home Assistant"
+					state = primary.Value
 					if !primary.LastUpdated.IsZero() && now.Sub(primary.LastUpdated) > energyConsumerStaleAfter(asset) {
 						dataStatus = "stale"
 						dataLabel = "Veraltet"
@@ -4738,16 +4784,63 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 			}
 			dataStatus, dataLabel, age = "sleep", "", ""
 			kw, active = 0, false
+			primaryMetric = nil
 		}
 		secondaryLabel := energyAssetSecondaryLabel(asset, "consumer")
 		if _, hasSOC := consumerSOC[asset.ID]; hasSOC && strings.TrimSpace(asset.Metadata["secondary_label"]) == "" {
 			secondaryLabel = "Ladestand"
+		}
+		quietMetrics := make([]energyFlowMetricConfig, 0, 2)
+		if primaryMetric == nil && dataStatus != "unavailable" && dataStatus != "unknown" && dataStatus != "sleep" {
+			if reading, ok := consumerSOC[asset.ID]; ok && reading.SourceState == "" {
+				primaryMetric = &reading
+			} else if reading, ok := consumerEnergy[asset.ID]; ok && reading.SourceState == "" {
+				primaryMetric = &reading
+			} else if hasPrimary && primary.SourceState == "" {
+				primaryMetric = &primary
+			}
+		}
+		if reading, ok := consumerSOC[asset.ID]; ok && reading.SourceState == "" &&
+			(primaryMetric == nil || primaryMetric.Metric != energy.MetricBatterySOC) {
+			label := "Ladestand"
+			if custom := cleanEnergyText(asset.Metadata["secondary_label"], 60); custom != "" {
+				label = custom
+			}
+			quietMetrics = append(quietMetrics, energyFlowMetric(label, reading.Value))
+		}
+		if reading, ok := consumerEnergy[asset.ID]; ok && reading.SourceState == "" &&
+			(primaryMetric == nil || primaryMetric.Metric != energy.MetricConsumerEnergy) {
+			label := "Energie"
+			if _, hasSOC := consumerSOC[asset.ID]; !hasSOC {
+				label = secondaryLabel
+			}
+			if asset.Kind == energyFlowParkingKind {
+				label = "Ladeenergie"
+			}
+			quietMetrics = append(quietMetrics, energyFlowMetric(label, reading.Value))
+		}
+		var primaryDisplay *energyFlowMetricConfig
+		if primaryMetric != nil {
+			label := secondaryLabel
+			switch primaryMetric.Metric {
+			case energy.MetricConsumerPower:
+				if current != nil {
+					copy := *current
+					primaryDisplay = &copy
+				}
+			case energy.MetricBatterySOC:
+				label = secondaryLabel
+			}
+			if primaryDisplay == nil {
+				primaryDisplay = energyFlowMetricPtr(label, primaryMetric.Value)
+			}
 		}
 		cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 			ID: asset.ID, Icon: energyConsumerIcon(asset), Title: title,
 			Kind: asset.Kind, RatedPower: ratedPower, Flexibility: asset.Flexibility,
 			PowerEntity: measurementEntities[asset.ID]["power"], EnergyEntity: measurementEntities[asset.ID]["energy"],
 			Secondary: secondary, SecondaryLabel: secondaryLabel, Color: energyAssetFlowColor(asset),
+			Primary: primaryDisplay, Current: current, Metrics: quietMetrics,
 			State: state, DataStatus: dataStatus, DataLabel: dataLabel, Age: age,
 			StaleAfterMinutes: energyConsumerStaleOverrideMinutes(asset),
 			KW:                kw, Active: active, NodeType: "consumer", Deletable: true,
@@ -4760,6 +4853,9 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 		if parkingAsset.Metadata["hidden"] != "true" {
 			state := charging.ModeLabel
 			secondary := ""
+			var current *energyFlowMetricConfig
+			var primaryDisplay *energyFlowMetricConfig
+			quietMetrics := []energyFlowMetricConfig{}
 			kw := 0.0
 			active := false
 			dataStatus, dataLabel, age := "", "", ""
@@ -4781,26 +4877,41 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 					state, dataStatus = "Unbekannt", "unknown"
 				default:
 					watts := math.Abs(energyPowerWatts(&reading))
-					state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW") + " · Home Assistant"
+					state = formatEnergyValueUnit(formatEnergyFlowKW(watts), "kW")
+					current = energyFlowMetricPtr("Jetzt", state)
 					if !reading.LastUpdated.IsZero() && now.Sub(reading.LastUpdated) > energyConsumerStaleAfter(parkingAsset) {
 						dataStatus, dataLabel = "stale", "Veraltet"
 					} else {
 						kw = watts / 1000
 						active = kw > 0
+						if active {
+							primaryDisplay = energyFlowMetricPtr("Jetzt", state)
+						}
 					}
 				}
 				if energyReading, hasEnergy := consumerEnergy[parkingAsset.ID]; hasEnergy && energyReading.SourceState == "" {
 					secondary = energyReading.Value
+					if primaryDisplay == nil {
+						primaryDisplay = energyFlowMetricPtr("Ladeenergie", energyReading.Value)
+					} else {
+						quietMetrics = append(quietMetrics, energyFlowMetric("Ladeenergie", energyReading.Value))
+					}
 				}
 			} else if (charging.Mode == "surplus" || charging.Mode == "manual") && charging.PowerKW > 0.05 {
 				kw = charging.PowerKW
 				active = true
 				state = charging.ModeLabel + " mit " + formatEnergyValueUnit(formatEnergyFlowKW(kw*1000), "kW")
+				primaryDisplay = energyFlowMetricPtr("Jetzt", formatEnergyValueUnit(formatEnergyFlowKW(kw*1000), "kW"))
+			}
+			if primaryDisplay == nil && current != nil && dataStatus != "unavailable" && dataStatus != "unknown" {
+				copy := *current
+				primaryDisplay = &copy
 			}
 			cfg.Consumers = append(cfg.Consumers, energyFlowConsumerConfig{
 				ID: parkingAsset.ID, Icon: energyConsumerIcon(parkingAsset), Title: parkingAsset.Name,
 				Kind: "other", Flexibility: parkingAsset.Flexibility, NodeType: "parking", Deletable: true,
 				Secondary: secondary, SecondaryLabel: energyAssetSecondaryLabel(parkingAsset, "parking"), Color: energyAssetFlowColor(parkingAsset),
+				Primary: primaryDisplay, Current: current, Metrics: quietMetrics,
 				State: state, DataStatus: dataStatus, DataLabel: dataLabel, Age: age,
 				StaleAfterMinutes: energyConsumerStaleOverrideMinutes(parkingAsset),
 				KW:                kw, Active: active, Priority: energyConsumerPriority(parkingAsset),
@@ -6345,20 +6456,28 @@ func formatEnergyReading(value float64, unit string) string {
 	switch normalized {
 	case "w":
 		if value >= 1000 || value <= -1000 {
-			return formatEnergyValueUnit(formatEnergyCompact(value/1000, 2), "kW")
+			return formatEnergyValueUnit(formatEnergyDisplayCompact(value/1000, 2), "kW")
 		}
-		return formatEnergyValueUnit(formatEnergyCompact(value, 0), "W")
+		return formatEnergyValueUnit(formatEnergyDisplayCompact(value, 0), "W")
 	case "kw":
-		return formatEnergyValueUnit(formatEnergyCompact(value, 2), "kW")
+		return formatEnergyValueUnit(formatEnergyDisplayCompact(value, 2), "kW")
 	case "%":
-		return formatEnergyValueUnit(formatEnergyCompact(value, 1), "%")
+		return formatEnergyValueUnit(formatEnergyDisplayCompact(value, 1), "%")
 	case "kwh":
-		return formatEnergyValueUnit(formatEnergyCompact(value, 1), "kWh")
+		return formatEnergyValueUnit(formatEnergyDisplayCompact(value, 1), "kWh")
 	case "mwh":
-		return formatEnergyValueUnit(formatEnergyCompact(value, 2), "MWh")
+		return formatEnergyValueUnit(formatEnergyDisplayCompact(value, 2), "MWh")
 	default:
 		return formatEnergyNumber(value) + energyUnitSuffix(unit)
 	}
+}
+
+func formatEnergyDisplayCompact(value float64, precision int) string {
+	raw := view.FormatDecimal(value, precision)
+	if precision > 0 {
+		raw = strings.TrimRight(strings.TrimRight(raw, "0"), ",")
+	}
+	return raw
 }
 
 func formatEnergyCompact(value float64, precision int) string {

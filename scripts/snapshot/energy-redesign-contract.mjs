@@ -143,10 +143,17 @@ export async function assertEnergyTopContent(page, { label, width }) {
       consumer.active = false;
       delete consumer.dataStatus;
       delete consumer.dataLabel;
-      consumer.age = 'Stand vor 2 Min.';
-      consumer.secondary = '51 % · 66,2 kWh';
-      consumer.secondaryLabel = 'Energie';
+      consumer.age = 'vor 2 Min.';
+      consumer.current = { label: 'Jetzt', value: '0', unit: 'kW' };
+      consumer.primary = { label: 'Ladestand', value: '51', unit: '%' };
+      consumer.metrics = [{ label: 'Energie', value: '66,2', unit: 'kWh' }];
     });
+    config.consumers[0].current = { label: 'Jetzt', value: '3,6', unit: 'kW' };
+    config.consumers[0].primary = { label: 'Jetzt', value: '3,6', unit: 'kW' };
+    config.consumers[0].metrics = [
+      { label: 'Ladestand', value: '51', unit: '%' },
+      { label: 'Energie', value: '66,2', unit: 'kWh' },
+    ];
     config.consumers[0].kw = 3.6;
     config.consumers[0].active = true;
     flow._energyFlowUpdate(config);
@@ -157,12 +164,15 @@ export async function assertEnergyTopContent(page, { label, width }) {
     config.consumers[0].active = false;
     config.consumers[0].dataStatus = 'stale';
     config.consumers[0].dataLabel = 'Veraltet';
-    config.consumers[0].age = 'Stand vor 12 Min.';
+    config.consumers[0].current = { label: 'Jetzt', value: '0', unit: 'kW' };
+    config.consumers[0].primary = { label: 'Ladestand', value: '51', unit: '%' };
+    config.consumers[0].metrics = [{ label: 'Energie', value: '66,2', unit: 'kWh' }];
+    config.consumers[0].age = 'vor 12 Min.';
     flow._energyFlowUpdate(config);
     await paint();
 
     const card = root.querySelector('.energy-flow-big.data-stale');
-    const state = card?.querySelector('.energy-flow-state-copy');
+    const state = card?.querySelector('.energy-flow-current');
     const probe = document.createElement('span');
     probe.style.color = 'var(--soft)';
     root.appendChild(probe);
@@ -171,13 +181,16 @@ export async function assertEnergyTopContent(page, { label, width }) {
     const cardGeometry = [...root.querySelectorAll('.energy-flow-rail .energy-flow-big:not(.ghost)')].map((node) => {
       const cardBox = node.getBoundingClientRect();
       const cardStyle = getComputedStyle(node);
-      const value = node.querySelector('.energy-flow-secondary-copy');
+      const value = node.querySelector('.energy-flow-consumer-metrics, .energy-flow-primary');
       const valueBox = value?.getBoundingClientRect();
+      const railControls = node.querySelector('.rcol')?.getBoundingClientRect();
       return {
         title: node.querySelector('.energy-flow-copy > b')?.textContent?.trim() || '',
         height: cardBox.height,
         clientHeight: node.clientHeight,
         scrollHeight: node.scrollHeight,
+        innerRight: cardBox.right - Number.parseFloat(cardStyle.borderRightWidth || '0'),
+        railControlsRight: railControls?.right ?? null,
         innerBottom: cardBox.bottom - Number.parseFloat(cardStyle.borderBottomWidth || '0'),
         valueBottom: valueBox?.bottom ?? null,
       };
@@ -194,17 +207,27 @@ export async function assertEnergyTopContent(page, { label, width }) {
     await paint();
     return result;
   });
-  if (!staleContract || !/Veraltet/.test(staleContract.cardText) || !/Stand vor 12 Min\./.test(staleContract.cardText) ||
+  if (!staleContract || !/Veraltet/.test(staleContract.cardText) || !/vor 12 Min\./.test(staleContract.cardText) ||
       staleContract.stateColor !== staleContract.softColor ||
       staleContract.freshRibbons !== staleContract.staleRibbons + 1) {
     fail(label, 'staler Verbraucher ist nicht sichtbar markiert, gemutet oder aus dem aktiven Fluss entfernt', staleContract);
   }
   if (width === 1440) {
-    const clipped = staleContract.cardGeometry.filter(({ clientHeight, scrollHeight, innerBottom, valueBottom }) =>
-      scrollHeight > clientHeight || valueBottom === null || valueBottom > innerBottom + 0.25);
+    const clipped = staleContract.cardGeometry.filter(({ clientHeight, scrollHeight, innerRight, railControlsRight, innerBottom, valueBottom }) =>
+      scrollHeight > clientHeight || valueBottom === null || valueBottom > innerBottom + 0.25 ||
+      railControlsRight === null || railControlsRight > innerRight + 0.25);
     if (clipped.length) {
-      fail(label, 'Verbraucherkarten schneiden die Energiezeile bei 1440px ab', clipped);
+      fail(label, 'Verbraucherkarten schneiden Kennzahlen ab oder verlieren das Kartenmenü bei 1440px', clipped);
     }
+  }
+
+  const consumerCopy = await diagram.locator('.energy-flow-rail .energy-flow-big:not(.ghost)').allTextContents();
+  if (consumerCopy.some((text) => /Home Assistant|Stand vor/.test(text))) {
+    fail(label, 'Verbraucherkarten wiederholen die Live-Quelle oder die alte Altersformulierung', consumerCopy);
+  }
+  const raisedUnits = await diagram.locator('.energy-flow-tile span.u, .energy-flow-big span.u').count();
+  if (raisedUnits < 4) {
+    fail(label, 'Energiefluss verliert die hochgestellten, gemuteten Einheiten', { raisedUnits });
   }
 
   const mapping = diagram.locator('a[href*="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });

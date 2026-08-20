@@ -523,6 +523,11 @@ func TestStorageChargePowerIsExplicitlyConfigurableAndDisplayed(t *testing.T) {
 	if cfg.Storage == nil || cfg.Storage.Mode != "lädt" || cfg.Storage.Value != "2,4" || cfg.Storage.Label != "Hausspeicher" || cfg.Storage.Icon != "battery-charging" || cfg.Storage.Color != "#336699" || cfg.Storage.SecondaryLabel != "Akkustand" || cfg.Storage.Secondary != "85\u00a0% · 4,3\u00a0kWh" {
 		t.Fatalf("konfigurierte Ladeleistung wird nicht angezeigt: %+v", cfg.Storage)
 	}
+	if len(cfg.Storage.Metrics) != 2 ||
+		cfg.Storage.Metrics[0] != (energyFlowMetricConfig{Label: "Akkustand", Value: "85", Unit: "%"}) ||
+		cfg.Storage.Metrics[1] != (energyFlowMetricConfig{Label: "Speicherenergie", Value: "4,3", Unit: "kWh"}) {
+		t.Fatalf("Speicher trennt Ladestand und Energie nicht in ruhige Kennzahlen: %+v", cfg.Storage.Metrics)
+	}
 	if len(cfg.Storage.Measurements) != 5 {
 		t.Fatalf("Speicher braucht Netto-, Lade-, Entladeleistung und Ladestand: %+v", cfg.Storage.Measurements)
 	}
