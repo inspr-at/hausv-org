@@ -2126,8 +2126,8 @@ async function assertRoleActions(page, persona) {
 async function assertLogoutBackNavigation() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'resident@example.com');
-  await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
   const tenantRoot = new URL(page.url()).pathname.replace(/\/app(?:\/.*)?$/, '/');
+  await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
   const protectedHeading = page.getByRole('heading', { name: /Hallo Rita/ }).first();
   if (!(await protectedHeading.isVisible())) {
     fail('Abmelden/Zurück: geschützte Ausgangsseite fehlt');
