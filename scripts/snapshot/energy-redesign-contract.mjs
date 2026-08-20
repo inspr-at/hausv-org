@@ -127,6 +127,58 @@ export async function assertEnergyTopContent(page, label) {
     fail(label, 'Verbraucher-Spalte fehlt, hat keine fortlaufenden Prioritäten oder keine Hinzufügen-Kachel', { railTiles, railGhost, railPrios });
   }
 
+  // HAUSV-551 repro: exercise the actual renderer, not just the server JSON.
+  // A stale consumer keeps its last value visible but muted, gains the stale
+  // mark and age, and no longer contributes an active flow ribbon.
+  const staleContract = await diagram.evaluate(async (root) => {
+    const flow = root.querySelector('[data-energy-flow]');
+    const configNode = flow?.querySelector('script[type="application/json"]');
+    if (!flow || !configNode || typeof flow._energyFlowUpdate !== 'function') return null;
+    const config = JSON.parse(configNode.textContent || 'null');
+    if (!config?.consumers?.length) return null;
+    const paint = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    config.consumers.forEach((consumer) => {
+      consumer.kw = 0;
+      consumer.active = false;
+      delete consumer.dataStatus;
+      delete consumer.dataLabel;
+      delete consumer.age;
+    });
+    config.consumers[0].kw = 3.6;
+    config.consumers[0].active = true;
+    flow._energyFlowUpdate(config);
+    await paint();
+    const freshRibbons = root.querySelectorAll('svg.energy-flow-ribbons .energy-flow-band').length;
+
+    config.consumers[0].kw = 0;
+    config.consumers[0].active = false;
+    config.consumers[0].dataStatus = 'stale';
+    config.consumers[0].dataLabel = 'Veraltet';
+    config.consumers[0].age = 'Stand vor 12 Min.';
+    flow._energyFlowUpdate(config);
+    await paint();
+
+    const card = root.querySelector('.energy-flow-big.data-stale');
+    const state = card?.querySelector('.energy-flow-state-copy');
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--soft)';
+    root.appendChild(probe);
+    const softColor = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      cardText: card?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      stateColor: state ? getComputedStyle(state).color : '',
+      softColor,
+      freshRibbons,
+      staleRibbons: root.querySelectorAll('svg.energy-flow-ribbons .energy-flow-band').length,
+    };
+  });
+  if (!staleContract || !/Veraltet/.test(staleContract.cardText) || !/Stand vor 12 Min\./.test(staleContract.cardText) ||
+      staleContract.stateColor !== staleContract.softColor ||
+      staleContract.freshRibbons !== staleContract.staleRibbons + 1) {
+    fail(label, 'staler Verbraucher ist nicht sichtbar markiert, gemutet oder aus dem aktiven Fluss entfernt', staleContract);
+  }
+
   const mapping = diagram.locator('a[href*="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });
   if ((await mapping.count()) !== 1) {
     fail(label, 'bestehender Einstieg „Messwerte zuordnen“ fehlt im neuen Kopf');
