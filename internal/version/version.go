@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.1",
+			Date:     "20. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Anliegen-Orte und große Überschriften bleiben vollständig lesbar.",
+			Intro:    "Ortsangaben in der Anliegen-Liste bleiben kompakt, während große Seitentitel jetzt auch Buchstaben mit Unterlängen vollständig zeigen.",
+			Items: []NoteItem{
+				{Label: "Anliegen", Text: "Ort und Betreff teilen den verfügbaren Platz; lange Ortsangaben bleiben begrenzt und sind beim Darüberfahren vollständig sichtbar."},
+				{Label: "Seitentitel", Text: "Hausüberblick, Aushang und Termine zeigen Unterlängen in großen Überschriften ohne Beschnitt."},
+			},
+		},
+		{
 			Version:  "0.99.0",
 			Date:     "20. August 2026",
 			Kind:     "Oberfläche",

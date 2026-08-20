@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.1] - 2026-08-20
+
+### Stabilität verbessert
+
+- Hausüberblick: Ortsangaben in der Anliegen-Liste bleiben kompakt lesbar und lange Angaben sind beim Darüberfahren vollständig sichtbar.
+- Hausüberblick, Aushang und Termine: Buchstaben mit Unterlängen werden in den großen Überschriften vollständig dargestellt.
+
 ## [0.99.0] - 2026-08-20
 
 ### Portal vereinheitlicht

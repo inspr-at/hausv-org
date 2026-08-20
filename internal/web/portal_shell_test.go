@@ -240,6 +240,59 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	}
 }
 
+func TestSharedHeroTitlesLeaveRoomForDescenders(t *testing.T) {
+	portal := PortalPageData{
+		Title: "Portal", GreetingName: "Peggy", Dense: true,
+		HeroImageURL: "/assets/hausv-landing-hero.png",
+	}
+	pages := []struct {
+		name  string
+		title string
+		page  templ.Component
+	}{
+		{"home", "Hallo Peggy.", PortalPage(portal)},
+		{"announcements", "Aushang", AnnouncementsPage(AnnouncementsPageData{Portal: portal})},
+		{"events", "Termine", EventsPage(EventsPageData{Portal: portal})},
+	}
+
+	const descenderRule = ".portal-section-hero .portal-section-title h1{line-height:1.08;padding-bottom:.08em}"
+	for _, page := range pages {
+		t.Run(page.name, func(t *testing.T) {
+			html := renderComponent(t, page.page)
+			if !strings.Contains(html, descenderRule) {
+				t.Fatal("shared hero title must leave room below the baseline")
+			}
+			if !strings.Contains(html, page.title) {
+				t.Fatalf("shared hero is missing title %q", page.title)
+			}
+		})
+	}
+}
+
+func TestDenseIssueLocationsShareSpaceAndStayBounded(t *testing.T) {
+	const location = "Gemeinschaft · Heizungsraum, Tiefenbohrung unter der Wiese"
+	html := renderComponent(t, PortalPage(PortalPageData{
+		Title: "Portal", Dense: true,
+		Issues: []view.IssueView{{
+			ID: "issue-1", Status: "Neu", Title: "Wärmepumpe prüfen",
+			Location: location, DetailURL: "/app/anliegen/issue-1",
+		}},
+	}))
+
+	for _, rule := range []string{
+		".issues-card table{table-layout:fixed}",
+		".issues-card th:nth-child(2),.issues-card td:nth-child(2),.issues-card th:nth-child(3),.issues-card td:nth-child(3){width:auto}",
+		".place-text{display:-webkit-box;overflow:hidden;overflow-wrap:normal;word-break:normal;hyphens:auto;-webkit-box-orient:vertical;-webkit-line-clamp:2}",
+	} {
+		if !strings.Contains(html, rule) {
+			t.Errorf("dense issue table is missing bounded location rule %q", rule)
+		}
+	}
+	if !strings.Contains(html, `class="place-text" title="`+location+`">`+location+`</span>`) {
+		t.Fatal("dense issue location must retain its full value in a native tooltip")
+	}
+}
+
 func TestPortalPagesDoNotOwnSharedChromeCSS(t *testing.T) {
 	sources, err := filepath.Glob("*.templ")
 	if err != nil {
