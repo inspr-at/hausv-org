@@ -83,7 +83,7 @@ try {
       page.waitForURL(`**/${slug}/app?activated=1`),
       page.getByRole('button', { name: 'Portal jetzt aktivieren' }).click(),
     ]);
-    await page.getByText('QA Zuhause Browserlauf').first().waitFor();
+    await page.locator('[data-portal-shell]').waitFor();
 
     await page.goto(new URL('/start/connector', origin).href, { waitUntil: 'networkidle' });
     await page.getByText('Schritt 2 von 2').waitFor();
