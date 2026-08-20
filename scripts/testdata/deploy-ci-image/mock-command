@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Mock commands for scripts/test-deploy-from-ci-image.sh."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import sys
+
+
+HEAD = "a" * 40
+LIVE = "b" * 40
+IMAGE_ID = "sha256:" + ("1" * 64)
+
+
+def required(name: str) -> str:
+    value = os.environ.get(name, "")
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
+
+
+CASE = required("TEST_FIXTURE_CASE")
+STATE = Path(required("TEST_FIXTURE_STATE"))
+REPO = Path(required("TEST_FIXTURE_REPO"))
+LIVE_URL = required("HAUSV_DEPLOY_LIVE_URL")
+CONTAINER = required("HAUSV_DEPLOY_CONTAINER")
+APP_VERSION = (REPO / "VERSION").read_text(encoding="utf-8").strip()
+STATE.mkdir(parents=True, exist_ok=True)
+
+
+def log(command: str, args: list[str]) -> None:
+    with (STATE / "commands.log").open("a", encoding="utf-8") as handle:
+        parts = [command] + [str(arg) for arg in args]
+        handle.write("\t".join(parts) + "\n")
+
+
+def mock_git(args: list[str]) -> int:
+    if args == ["rev-parse", "--show-toplevel"]:
+        if CASE == "not_in_repo":
+            print("fatal: not a git repository", file=sys.stderr)
+            return 128
+        print(REPO)
+    elif args == ["rev-parse", f"{LIVE[:7]}^{{commit}}"]:
+        if CASE == "live_commit_missing":
+            print(f"fatal: ambiguous argument '{LIVE[:7]}^{{commit}}'", file=sys.stderr)
+            return 128
+        print(LIVE)
+    elif len(args) >= 3 and args[:2] == ["diff", "--quiet"]:
+        # Simulate migration change for specific test case
+        if CASE == "migrations_changed":
+            return 1
+        elif CASE == "git_diff_fail":
+            print("fatal: git diff failed", file=sys.stderr)
+            return 2
+        # Log that we checked migrations
+        log("git", ["diff", "--quiet", LIVE, "HEAD", "--", "internal/db/migrations"])
+        return 0
+    else:
+        print(f"unexpected git mock call: {args}", file=sys.stderr)
+        return 64
+    return 0
+
+
+def mock_docker(args: list[str]) -> int:
+    # Just log docker calls, don't execute them
+    log("docker", args)
+    return 0
+
+
+def mock_curl(args: list[str]) -> int:
+    # Mock curl to return appropriate responses
+    url = None
+    for i, arg in enumerate(args):
+        if not arg.startswith('-') and '://' in arg:
+            url = arg
+            break
+    
+    if url:
+        if url == LIVE_URL:
+            # Return a fake live page with version and commit
+            print(f"<html><body>Live: {APP_VERSION} ({LIVE[:7]})</body></html>")
+            return 0
+        elif 'healthz' in url:
+            # Return a fake health response
+            print('{"service": "hausv-org", "status": "ok"}')
+            return 0
+    
+    log("curl", args)
+    print(f"curl error: could not resolve host", file=sys.stderr)
+    return 6
+
+
+def main() -> int:
+    command = Path(sys.argv[0]).name
+    args = sys.argv[1:]
+    
+    if command == "git":
+        return mock_git(args)
+    elif command == "docker":
+        return mock_docker(args)
+    elif command == "curl":
+        return mock_curl(args)
+    else:
+        print(f"unexpected mock command: {command}", file=sys.stderr)
+        return 64
+
+
+if __name__ == "__main__":
+    sys.exit(main())
