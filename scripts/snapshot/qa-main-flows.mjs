@@ -1373,7 +1373,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
     { width: 1440, height: 900 },
   ]) {
   const routeChecks = [
-    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: 'aside.aside > details.guide' },
+    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: 'aside.aside > details.guide', guideOpen: true },
     { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside > details.guide' },
     { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside > details.aside-panel', guide: '.contacts-aside > details.aside-panel' },
     { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.file-details' },
@@ -1431,7 +1431,10 @@ async function assertResidentContentResponsiveMatrix(sizes = [
 
       if (route.guide) {
         const guide = page.locator(route.guide).first();
-        if (await guide.evaluate((node) => node.open)) fail(`${route.name} ${size.width}px: Lesehilfe verdrängt den Hauptinhalt`);
+        const guideOpen = await guide.evaluate((node) => node.open);
+        if (guideOpen !== Boolean(route.guideOpen)) {
+          fail(`${route.name} ${size.width}px: Ausgangszustand der Lesehilfe ist falsch`);
+        }
         // In the 2-column aside band a CLOSED guide must not be stretched to its neighbour's
         // height. The old check compared against 110px — the legacy panel's own height — so a
         // templ panel that is legitimately 118px tall when closed (padding + a 46px summary
