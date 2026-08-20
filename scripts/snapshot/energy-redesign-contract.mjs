@@ -626,7 +626,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       const y = Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
       return x > 1 && y > 1 ? { width: x, height: y } : null;
     };
-    const groups = ['.energy-heading', '.energy-health', '.energy-lead-side', '.energy-tariff', '.energy-billed', '.energy-flow-area'];
+    const groups = ['.energy-main > .portal-section-header', '.energy-health', '.energy-lead-side', '.energy-tariff', '.energy-billed', '.energy-flow-area'];
     const siblingOverlaps = [];
     for (const selector of groups) {
       const parent = document.querySelector(selector);
@@ -713,7 +713,7 @@ export async function assertEnergyTopGeometry(page, { label, width }) {
       }
     }
     const liveCard = document.querySelector('.energy-live');
-    const headingCopy = document.querySelector('.energy-heading-copy');
+    const headingCopy = document.querySelector('.energy-main > .portal-section-header .portal-section-header-copy');
     const headingAction = document.querySelector('.energy-heading-action');
     const modeState = document.querySelector('.energy-mode-state');
     const modeAction = document.querySelector('.energy-mode-action');

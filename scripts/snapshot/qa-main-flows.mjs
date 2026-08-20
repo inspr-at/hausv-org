@@ -2190,8 +2190,8 @@ async function assertEnergySafetyAndFlow(viewport) {
   } else {
     await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
   }
-  if (!(await page.locator('.energy-heading-breadcrumb').getByText('Musterweg 1, 1010 Wien', { exact: true }).count()) ||
-      !(await page.locator('.energy-heading-unit-row').getByText('Wohnung', { exact: false }).count()) ||
+  if (!(await page.locator('.portal-section-lede').getByText(/Wohnung.*Musterweg 1, 1010 Wien/, { exact: false }).count()) ||
+      !(await page.locator('.portal-section-identity').getByText('Mein Zuhause', { exact: true }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
@@ -2843,7 +2843,7 @@ async function assertEnergyGeometryMatrix() {
       const recommendationTrigger = live?.querySelector('[data-dialog="energy-recommendation-dialog"]');
       const strip = document.querySelector('.energy-mode-strip');
       const sidebar = document.querySelector('.sidebar');
-      const heading = document.querySelector('.energy-heading');
+      const heading = document.querySelector('.energy-main > .portal-section-header');
       const action = strip?.querySelector('.energy-mode-action');
       const modeState = strip?.querySelector('.energy-mode-state');
       const liveRect = rectOf(live);
