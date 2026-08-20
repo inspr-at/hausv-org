@@ -1526,7 +1526,7 @@ async function assertResidentContentClickFlows() {
   if (!(await page.locator('.empty-filter').isVisible())) fail('Aushang-Suche: verständlicher Kein-Treffer-Zustand fehlt');
   await page.getByRole('link', { name: 'Filter zurücksetzen' }).click();
   await page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && !url.search);
-  const announcement = page.locator('.announcement-entry').filter({ hasText: 'QA Hausinformation' }).first();
+  const announcement = page.locator('.announcement-card').filter({ hasText: 'QA Hausinformation' }).first();
   const announcementBody = announcement.locator('.announcement-body');
   if (!(await announcementBody.evaluate((node) => node.open))) await announcementBody.locator('summary').click();
   if (!(await announcementBody.locator('.announcement-body-content').isVisible())) fail('Aushang lesen: Inhalt bleibt verborgen');
