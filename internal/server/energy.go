@@ -4302,7 +4302,11 @@ func energyConsumerAgeLabel(now, seen time.Time) string {
 	case age < 24*time.Hour:
 		return fmt.Sprintf("Stand vor %d Std.", int(age/time.Hour))
 	default:
-		return fmt.Sprintf("Stand vor %d Tagen", int(age/(24*time.Hour)))
+		days := int(age / (24 * time.Hour))
+		if days == 1 {
+			return "Stand vor 1 Tag"
+		}
+		return fmt.Sprintf("Stand vor %d Tagen", days)
 	}
 }
 
