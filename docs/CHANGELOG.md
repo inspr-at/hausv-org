@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.6] - 2026-08-20
+
+### Energieansicht ruhiger gegliedert
+
+- Energie: Verbraucherkarten ordnen aktuelle Leistung, Ladestand und Energiezahlen klarer, ohne vorhandene Messwerte auszublenden.
+- Einheiten treten dezent hochgestellt zurück; größere Energiezahlen verwenden die gewohnte deutsche Tausendergliederung.
+- Aktualitätshinweise sind kürzer formuliert, während ältere Werte weiterhin sichtbar als veraltet gekennzeichnet bleiben.
+
 ## [0.99.5] - 2026-08-20
 
 ### Energieansicht verbessert

@@ -205,6 +205,27 @@ func TestEnergyTemplKeepsEveryLegacyActionAndHook(t *testing.T) {
 	}
 }
 
+func TestEnergyTemplRendersQuietRaisedUnits(t *testing.T) {
+	if got := energyValueNumber("4.890\u00a0kWh"); got != "4.890" {
+		t.Fatalf("energyValueNumber() = %q, want German-grouped number", got)
+	}
+	if got := energyValueUnit("4.890\u00a0kWh"); got != "kWh" {
+		t.Fatalf("energyValueUnit() = %q, want kWh", got)
+	}
+
+	html := renderComponent(t, EnergyValue("9,7\u00a0kW"))
+	for _, want := range []string{
+		`class="energy-value"`,
+		`aria-label="9,7`,
+		`class="u" aria-hidden="true"`,
+		"kW",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("raised energy value is missing %q: %s", want, html)
+		}
+	}
+}
+
 func TestEnergyTemplHidesEveryManagementControlWithoutThePermission(t *testing.T) {
 	data := energyFixture()
 	data.CanManageEnergy = false

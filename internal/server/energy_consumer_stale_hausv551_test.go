@@ -40,7 +40,7 @@ func TestConsumerReadingAgeAndStaleThresholdHAUSV551(t *testing.T) {
 		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, []energyMetricView{reading}, parkingLiveView{}, false, now),
 		asset.ID,
 	)
-	if fresh.Age != "Stand vor 2 Min." || fresh.DataStatus != "" || fresh.KW != 1.2 {
+	if fresh.Age != "vor 2 Min." || fresh.DataStatus != "" || fresh.KW != 1.2 {
 		t.Fatalf("fresh consumer reading = %+v", fresh)
 	}
 
@@ -49,7 +49,7 @@ func TestConsumerReadingAgeAndStaleThresholdHAUSV551(t *testing.T) {
 		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, []energyMetricView{reading}, parkingLiveView{}, false, now),
 		asset.ID,
 	)
-	if stale.Age != "Stand vor 11 Min." || stale.DataStatus != "stale" || stale.DataLabel != "Veraltet" || stale.KW != 0 || stale.Active {
+	if stale.Age != "vor 11 Min." || stale.DataStatus != "stale" || stale.DataLabel != "Veraltet" || stale.KW != 0 || stale.Active {
 		t.Fatalf("stale consumer reading = %+v", stale)
 	}
 
@@ -60,6 +60,51 @@ func TestConsumerReadingAgeAndStaleThresholdHAUSV551(t *testing.T) {
 	)
 	if overridden.DataStatus != "" || overridden.KW != 1.2 || overridden.StaleAfterMinutes != 30 {
 		t.Fatalf("consumer-specific stale threshold was not applied: %+v", overridden)
+	}
+}
+
+func TestConsumerCardHierarchyKeepsEveryAvailableReading(t *testing.T) {
+	now := time.Date(2026, 8, 20, 12, 0, 0, 0, time.Local)
+	asset := energy.Asset{
+		ID: "car", TenantSlug: "demo", Kind: "ev", Name: "Model X",
+		Metadata: map[string]string{},
+	}
+	metrics := []energyMetricView{
+		{AssetID: asset.ID, Metric: energy.MetricConsumerPower, Numeric: 0, Unit: "W", Value: formatEnergyReading(0, "W"), LastUpdated: now.Add(-9 * time.Hour)},
+		{AssetID: asset.ID, Metric: energy.MetricBatterySOC, Numeric: 51, Unit: "%", Value: formatEnergyReading(51, "%")},
+		{AssetID: asset.ID, Metric: energy.MetricConsumerEnergy, Numeric: 4890, Unit: "kWh", Value: formatEnergyReading(4890, "kWh")},
+	}
+
+	idle := energyConsumerHAUSV551(t,
+		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, metrics, parkingLiveView{}, false, now),
+		asset.ID,
+	)
+	if idle.State != "0\u00a0kW" || idle.Current == nil || idle.Current.Value != "0" || idle.Current.Unit != "kW" {
+		t.Fatalf("idle current power was not kept as quiet card context: %+v", idle)
+	}
+	if idle.Primary == nil || idle.Primary.Value != "51" || idle.Primary.Unit != "%" || idle.Primary.Label != "Ladestand" {
+		t.Fatalf("idle card did not promote the available state of charge: %+v", idle)
+	}
+	if len(idle.Metrics) != 1 || idle.Metrics[0].Label != "Energie" ||
+		idle.Metrics[0].Value != "4.890" || idle.Metrics[0].Unit != "kWh" {
+		t.Fatalf("idle card lost or misformatted its energy reading: %+v", idle)
+	}
+	if idle.DataLabel != "Veraltet" || idle.Age != "vor 9 Std." || strings.Contains(idle.State, "Home Assistant") {
+		t.Fatalf("idle card did not use the approved quiet stale copy: %+v", idle)
+	}
+
+	metrics[0].Numeric = 800
+	metrics[0].Value = formatEnergyReading(800, "W")
+	metrics[0].LastUpdated = now.Add(-time.Minute)
+	active := energyConsumerHAUSV551(t,
+		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, metrics, parkingLiveView{}, false, now),
+		asset.ID,
+	)
+	if active.Primary == nil || active.Primary.Value != "0,8" || active.Primary.Unit != "kW" || active.Primary.Label != "Jetzt" {
+		t.Fatalf("flowing power was not promoted to the primary line: %+v", active)
+	}
+	if len(active.Metrics) != 2 || active.Metrics[0].Label != "Ladestand" || active.Metrics[1].Label != "Energie" {
+		t.Fatalf("active card did not retain SOC and energy as quiet metrics: %+v", active)
 	}
 }
 
@@ -79,7 +124,7 @@ func TestConsumerUnavailableAndUnknownStayDistinctHAUSV551(t *testing.T) {
 				buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, []energyMetricView{reading}, parkingLiveView{}, false, now),
 				asset.ID,
 			)
-			if consumer.State != want || consumer.DataStatus != sourceState || consumer.Age != "Stand vor 3 Min." {
+			if consumer.State != want || consumer.DataStatus != sourceState || consumer.Age != "vor 3 Min." {
 				t.Fatalf("%s consumer = %+v", sourceState, consumer)
 			}
 		})
@@ -238,7 +283,7 @@ func TestConfiguredParkingReadingUsesAgeAndStaleThresholdHAUSV551(t *testing.T) 
 		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, nil, charging, false, now),
 		parkingID,
 	)
-	if consumer.Age != "Stand vor 11 Min." || consumer.DataStatus != "stale" || consumer.DataLabel != "Veraltet" ||
+	if consumer.Age != "vor 11 Min." || consumer.DataStatus != "stale" || consumer.DataLabel != "Veraltet" ||
 		consumer.KW != 0 || consumer.Active {
 		t.Fatalf("configured parking stale reading = %+v", consumer)
 	}
@@ -309,7 +354,7 @@ func TestConsumerStaleOverrideReproPersistsIntoRenderedCardHAUSV551(t *testing.T
 	for _, want := range []string{
 		`"dataStatus":"stale"`,
 		`"dataLabel":"Veraltet"`,
-		`"age":"Stand vor 12 Min."`,
+		`"age":"vor 12 Min."`,
 		`"staleAfterMinutes":5`,
 		`energy-flow-big.data-stale .energy-flow-state-copy`,
 		`energy-flow-data-label`,

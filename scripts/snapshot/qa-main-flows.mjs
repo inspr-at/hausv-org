@@ -2365,9 +2365,11 @@ async function assertEnergySafetyAndFlow(viewport) {
   await chart.getByRole('link', { name: 'Letzte 24 h' }).click();
   await page.waitForLoadState('networkidle');
   const visibleChart = chart.locator('svg.energy-chart-svg:visible');
+  const thresholdLegend = chart.locator('.energy-chart-legend .threshold').first();
   if (!(await visibleChart.locator('path.energy-chart-area.load').count()) ||
       !(await visibleChart.locator('line.energy-chart-threshold').count()) ||
-      !(await chart.getByText('Planungsgrenze 10\u00a0kW', { exact: false }).count())) {
+      !(await thresholdLegend.getByText('Planungsgrenze', { exact: false }).count()) ||
+      !(await thresholdLegend.locator('.energy-value[aria-label="10\u00a0kW"] .u').count())) {
     fail(`Energie ${viewport.name}: Verbrauchsfläche oder konfigurierbare 10-kW-Planungsgrenze fehlt`);
   }
   const scaleLabels = await visibleChart.locator('text.energy-chart-axis-label').allTextContents();
@@ -2583,18 +2585,18 @@ async function assertEnergySafetyAndFlow(viewport) {
     // Reihenfolge überlebt das Neuladen und wird danach zurückgestellt.
     const railTiles = page.locator('.energy-flow-rail .energy-flow-big:not(.ghost)');
     if ((await railTiles.count()) >= 2) {
-      const titlesBefore = await railTiles.locator('b').allTextContents();
+      const titlesBefore = await railTiles.locator('.energy-flow-copy > b').allTextContents();
       await railTiles.first().locator('button.drag').focus();
       const orderSaved = page.waitForResponse((response) =>
         response.url().includes('/app/energie/verbraucher/reihenfolge') && response.status() === 204);
       await page.keyboard.press('ArrowDown');
       await orderSaved;
-      const titlesAfter = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) b').allTextContents();
+      const titlesAfter = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) .energy-flow-copy > b').allTextContents();
       if (titlesAfter[0] !== titlesBefore[1] || titlesAfter[1] !== titlesBefore[0]) {
         fail(`Energie Desktop: Prioritäten-Umsortierung greift nicht (${titlesBefore} -> ${titlesAfter})`);
       }
       await page.reload({ waitUntil: 'networkidle' });
-      const titlesReloaded = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) b').allTextContents();
+      const titlesReloaded = await page.locator('.energy-flow-rail .energy-flow-big:not(.ghost) .energy-flow-copy > b').allTextContents();
       if (titlesReloaded[0] !== titlesAfter[0]) {
         fail(`Energie Desktop: Prioritäten-Reihenfolge überlebt das Neuladen nicht (${titlesReloaded})`);
       }

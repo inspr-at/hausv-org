@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.6",
+			Date:     "20. August 2026",
+			Kind:     "Energie",
+			Headline: "Energiewerte sind ruhiger und klarer geordnet.",
+			Intro:    "Die vorhandenen Messwerte bleiben vollständig sichtbar, während Zahlen, Einheiten und Aktualitätshinweise leichter zu erfassen sind.",
+			Items: []NoteItem{
+				{Label: "Verbraucherkarten", Text: "Aktuelle Leistung, Ladestand und Energiezahlen erhalten eine klare Reihenfolge mit zurückhaltenden Beschriftungen."},
+				{Label: "Zahlen und Einheiten", Text: "Einheiten stehen dezent hochgestellt; größere Energiezahlen verwenden die deutsche Tausendergliederung."},
+				{Label: "Aktualität", Text: "Veraltete Werte bleiben eindeutig markiert und nennen ihr Alter in kürzerer Form."},
+			},
+		},
+		{
 			Version:  "0.99.5",
 			Date:     "20. August 2026",
 			Kind:     "Energie",

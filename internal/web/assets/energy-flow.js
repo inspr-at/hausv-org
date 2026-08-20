@@ -62,14 +62,18 @@
     return holder;
   }
 
-  // value + tiny raised unit ("0,52" + "kW"); strings come pre-formatted.
-  function valueLine(parent, value, unit) {
-    var strong = el("strong", "", parent);
-    strong.textContent = value;
+  // Number + quiet raised unit ("0,52" + "kW"); strings come pre-formatted.
+  function appendValue(node, value, unit) {
+    node.appendChild(document.createTextNode(value || "–"));
     if (unit) {
-      var u = el("span", "u", strong);
+      var u = el("span", "u", node);
       u.textContent = "\u00a0" + unit;
     }
+  }
+
+  function valueLine(parent, value, unit, className) {
+    var strong = el("strong", className || "", parent);
+    appendValue(strong, value, unit);
     return strong;
   }
 
@@ -81,11 +85,32 @@
     return node;
   }
 
-  function secondaryLine(parent, label, value, className) {
-    if (!label && !value) return;
-    var line = el("span", className || "energy-flow-secondary", parent);
-    line.textContent = (label || "Weitere Kennzahl") + " · ";
-    el("b", "", line).textContent = value || "–";
+  function metricFromLegacy(label, formatted) {
+    if (!formatted || formatted === "–") return null;
+    var match = String(formatted).match(/^(.*?)(?:\u00a0|\s)(kWh|MWh|kW|W|%|€)$/);
+    return {
+      label: label || "Weitere Kennzahl",
+      value: match ? match[1] : formatted,
+      unit: match ? match[2] : "",
+    };
+  }
+
+  function metricList(metrics, fallbackLabel, fallbackValue) {
+    if (Array.isArray(metrics) && metrics.length) return metrics.filter(function (metric) { return metric && metric.value; });
+    var fallback = metricFromLegacy(fallbackLabel, fallbackValue);
+    return fallback ? [fallback] : [];
+  }
+
+  function quietMetrics(parent, metrics, fallbackLabel, fallbackValue, className) {
+    var values = metricList(metrics, fallbackLabel, fallbackValue);
+    if (!values.length) return;
+    var row = el("span", className || "energy-flow-quiet-row", parent);
+    values.forEach(function (metric) {
+      var item = el("span", "energy-flow-quiet-metric", row);
+      var value = el("b", "", item);
+      appendValue(value, metric.value, metric.unit);
+      el("small", "", item).textContent = metric.label || "Weitere Kennzahl";
+    });
   }
 
   function sinkBands(cfg) {
@@ -513,7 +538,7 @@
         node.dataset.edge = "producer-" + i;
         valueLine(node.lastChild, p.value, p.unit);
         el("span", "", node.lastChild).textContent = p.label;
-        secondaryLine(node.lastChild, p.secondaryLabel, p.secondary);
+        quietMetrics(node.lastChild, p.metrics, p.secondaryLabel, p.secondary);
         makeFlowNodeEditable(node, p);
         if (p.kw > 0) edges.push({ from: "producer-" + i, to: "hub", kw: p.kw, banded: true });
       });
@@ -525,7 +550,7 @@
         st.dataset.edge = "storage";
         valueLine(st.lastChild, cfg.storage.value, cfg.storage.unit);
         el("span", "", st.lastChild).textContent = cfg.storage.sub;
-        secondaryLine(st.lastChild, cfg.storage.secondaryLabel, cfg.storage.secondary);
+        quietMetrics(st.lastChild, cfg.storage.metrics, cfg.storage.secondaryLabel, cfg.storage.secondary);
         makeFlowNodeEditable(st, cfg.storage);
         if (cfg.storage.flow > 0) {
           if (cfg.storage.mode === "entlädt") edges.push({ from: "storage", to: "hub", kw: cfg.storage.flow, banded: true });
@@ -539,7 +564,7 @@
       hub.dataset.edge = "hub";
       valueLine(hub.lastChild, cfg.home.value, cfg.home.unit);
       el("span", "", hub.lastChild).textContent = cfg.home.label || "Hausverbrauch";
-      secondaryLine(hub.lastChild, cfg.home.secondaryLabel, cfg.home.secondary);
+      quietMetrics(hub.lastChild, cfg.home.metrics, cfg.home.secondaryLabel, cfg.home.secondary);
       makeFlowNodeEditable(hub, cfg.home);
 
       if (cfg.grid) {
@@ -549,7 +574,7 @@
         gr.dataset.edge = "grid";
         valueLine(gr.lastChild, cfg.grid.value, cfg.grid.unit);
         el("span", "", gr.lastChild).textContent = cfg.grid.label;
-        secondaryLine(gr.lastChild, cfg.grid.secondaryLabel, cfg.grid.secondary);
+        quietMetrics(gr.lastChild, cfg.grid.metrics, cfg.grid.secondaryLabel, cfg.grid.secondary);
         makeFlowNodeEditable(gr, cfg.grid);
         if (cfg.grid.kw > 0) {
           if (cfg.grid.dir === "import") edges.push({ from: "grid", to: "hub", kw: cfg.grid.kw, banded: true });
@@ -631,15 +656,28 @@
           glyph("pencil", "energy-flow-icon-edit", holder);
           var text = el("span", "energy-flow-copy", main);
           el("b", "", text).textContent = c.title;
+          var primary = c.primary && c.primary.value ? c.primary : null;
+          var current = c.current && c.current.value ? c.current : null;
+          var sameAsPrimary = Boolean(primary && current && primary.value === current.value && primary.unit === current.unit);
           var subtitles = el("span", "energy-flow-subtitles", text);
-          el("span", "energy-flow-state-copy", subtitles).textContent = c.state || "Bereit";
+          if (current && !sameAsPrimary) {
+            var currentCopy = el("span", "energy-flow-state-copy energy-flow-current", subtitles);
+            appendValue(currentCopy, current.value, current.unit);
+          } else if (!primary) {
+            el("span", "energy-flow-state-copy", subtitles).textContent = c.state || "Bereit";
+          }
           if (canEdit) el("span", "energy-flow-edit-copy", subtitles).textContent = "Klicken zum Bearbeiten";
           if (c.age) {
             var dataMeta = el("span", "energy-flow-data-meta", text);
             if (c.dataLabel) el("span", "energy-flow-data-label", dataMeta).textContent = c.dataLabel;
             el("span", "", dataMeta).textContent = c.age;
           }
-          if (c.secondary) secondaryLine(text, c.secondaryLabel, c.secondary, "energy-flow-secondary-copy");
+          if (primary) {
+            var primaryLine = el("span", "energy-flow-primary", text);
+            valueLine(primaryLine, primary.value, primary.unit);
+            if (primary.label) el("small", "energy-flow-primary-label", primaryLine).textContent = primary.label;
+          }
+          quietMetrics(text, c.metrics, c.secondaryLabel, c.secondary, "energy-flow-consumer-metrics");
           if (c.kw > 0) edges.push({ from: "hub", to: "consumer-" + i, kw: c.kw, stops: [{ at: 0, c: nodeColor(c.color, LOAD) }, { at: 1, c: nodeColor(c.color, LOAD) }] });
           var rcol = el("span", "rcol", t);
           el("span", "prio", rcol).textContent = String(i + 1);
