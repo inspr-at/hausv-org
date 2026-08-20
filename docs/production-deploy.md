@@ -75,9 +75,8 @@ HAUSV_DEPLOY_COMPOSE_DIR=/home/mba/Code/hausv-jhw22
 HAUSV_DEPLOY_COMPOSE_FILE=/home/mba/Code/hausv-jhw22/compose.yml
 HAUSV_DEPLOY_COMPOSE_PROJECT=hausv-jhw22
 HAUSV_DEPLOY_CONTAINER=hausv-org
-# /run/lock is root-owned and the deploy user cannot create there. The per-user
-# runtime dir is right: /tmp would let any process on the box hold the lock.
-HAUSV_DEPLOY_COMPOSE_LOCK=/run/user/1000/hausv-compose.lock
+# Shared with the backup snapshot timer, 0660 root:users.
+HAUSV_DEPLOY_COMPOSE_LOCK=/run/lock/compose-hausv.lock
 HAUSV_DEPLOY_DATA_DIR=/var/lib/csb1-docker/hausv-org
 HAUSV_DEPLOY_SNAPSHOT_ROOT=/var/backups/hausv-predeploy
 # The live tenant is jhw22. https://hausv.org/demo/ returns 404.
