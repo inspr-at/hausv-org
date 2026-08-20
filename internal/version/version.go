@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.98.11",
+			Date:     "20. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Termine-Seite: Seitenkopf mit Hausfoto stabilisiert.",
+			Intro:    "Der Seitenkopf der Termine-Seite zeigt jetzt das Hausfoto mit Linie und korrekt dargestelltem Kalender-Symbol – wie auf der Hausüberblick-Seite.",
+			Items: []NoteItem{
+				{Label: "Hausfoto", Text: "Das Hausfoto erscheint jetzt über der Termine-Liste mit Farbverlauf und Linie."},
+				{Label: "Kalender-Symbol", Text: `Das Kalender-Symbol neben "Termine" wird korrekt als Umriss dargestellt, nicht mehr als schwarzes Quadrat.`},
+			},
+		},
+		{
 			Version:  "0.98.10",
 			Date:     "19. August 2026",
 			Kind:     "Oberfläche",
