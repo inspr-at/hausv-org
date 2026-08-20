@@ -163,6 +163,30 @@ on csb1 once. The runner must have:
 3. GHCR authentication via `/run/agenix/csb1-hausv-ghcr-pull` token file;
 4. Access to the compose lock and compose directory.
 
+**Operator checklist for one-time runner setup:**
+
+1. On csb1, as user mba (never root), download the GitHub Actions runner tarball
+   for the hausv-org repository.
+2. Extract to a working directory (e.g., `~/actions-runner`).
+3. Run `./config.sh` with:
+   - Repository URL: `https://github.com/inspr-at/hausv-org`
+   - Runner name: descriptive (e.g., `csb1-hausv-prod`)
+   - Labels: `csb1-hausv` (required; the workflow matches this label)
+   - Work folder: default is fine
+   - Run as service: yes
+4. Install and start the systemd service as user mba (not root):
+   ```
+   sudo ./svc.sh install mba
+   sudo ./svc.sh start
+   ```
+5. Verify runner appears in GitHub repository Settings → Actions → Runners.
+6. **Critical**: Never run `docker compose down` on the entire csb1 hausv-jhw22
+   project. The runner only recreates the `hausv-org` service with
+   `--force-recreate --no-deps hausv-org`.
+
+Do not print or commit the runner registration token. Retrieve it from the
+GitHub repository settings when needed.
+
 **Manual dispatch:**
 
 To deploy a specific version and commit via the workflow:
