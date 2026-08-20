@@ -40,6 +40,8 @@ templ EventsPage(data EventsPageData) {
 templ EventsStyles() {
 	<style>.events-main{min-width:0;padding:var(--space-6)}
 		.events-main .page-top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+		.events-main .crumb{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}
+		.events-main .crumb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 		.events-main .page{max-width:1180px;margin:var(--space-5) auto 0}
 		.events-main .page-heading{display:flex;align-items:end;justify-content:space-between;gap:var(--space-5);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}
 		.events-main .page-heading h1{font-size:42px;line-height:1}
@@ -157,7 +159,7 @@ templ EventsStyles() {
 
 templ EventsContent(data EventsPageData) {
 	<main id="main-content" tabindex="-1" class="events-main">
-		<div class="page-top"><span class="crumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4"></path><path d="M4.5 6h15v14h-15z"></path><path d="M4.5 10h15"></path></svg><span>/</span><span>Termine</span></span>
+		<div class="page-top"><span class="crumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4M17 3v4"></path><path d="M4.5 6h15v14h-15z"></path><path d="M4.5 10h15"></path></svg><span>Termine</span></span>
 			if data.CanManageEvents {
 				@EventCreateButton("Termin erstellen")
 			}
