@@ -240,3 +240,80 @@ func TestConfiguredParkingReadingUsesAgeAndStaleThresholdHAUSV551(t *testing.T) 
 		t.Fatalf("configured parking stale reading = %+v", consumer)
 	}
 }
+
+func TestConsumerStaleOverrideReproPersistsIntoRenderedCardHAUSV551(t *testing.T) {
+	updated := time.Now().Add(-12 * time.Minute).UTC().Truncate(time.Second)
+	ha := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/states/sensor.sauna_power" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"entity_id":"sensor.sauna_power","state":"1200","attributes":{"friendly_name":"Sauna Leistung","device_class":"power","unit_of_measurement":"W"},"last_updated":%q}`,
+			updated.Format(time.RFC3339Nano))
+	}))
+	t.Cleanup(ha.Close)
+
+	a := consumerAppHAUSV422(t)
+	assets, err := a.energyStore.ListAssets("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sauna energy.Asset
+	for _, asset := range assets {
+		if asset.Kind == "sauna" {
+			sauna = asset
+			break
+		}
+	}
+	if sauna.ID == "" {
+		t.Fatal("seeded sauna missing")
+	}
+	if err := a.energyStore.UpsertMapping(energy.EntityMapping{
+		ID: energy.NewID("mapping"), TenantSlug: "demo", AssetID: sauna.ID,
+		EntityID: "sensor.sauna_power", Metric: energy.MetricConsumerPower,
+		Unit: "W", Confirmed: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	tenant := a.tenants["demo"]
+	tenant.HA = homeassistant.NewConfig(ha.URL, "fixture", "", "", "")
+	a.tenants["demo"] = tenant
+
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher", url.Values{
+		"asset_id": {sauna.ID}, "name": {sauna.Name}, "kind": {"sauna"},
+		"priority": {"1"}, "icon": {"flame"}, "flexibility": {"shift"},
+		"stale_after_minutes": {"5"},
+	})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("override save status=%d body=%s", response.Code, response.Body.String())
+	}
+	assets, err = a.energyStore.ListAssets("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, asset := range assets {
+		if asset.ID == sauna.ID && asset.Metadata["stale_after_minutes"] != "5" {
+			t.Fatalf("stale override did not persist: %+v", asset.Metadata)
+		}
+	}
+
+	page := authedRequest(t, a, "owner@example.com", "/demo/app/energie")
+	if page.Code != http.StatusOK {
+		t.Fatalf("energy page status=%d body=%s", page.Code, page.Body.String())
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		`"dataStatus":"stale"`,
+		`"dataLabel":"Veraltet"`,
+		`"age":"Stand vor 12 Min."`,
+		`"staleAfterMinutes":5`,
+		`energy-flow-big.data-stale .energy-flow-state-copy`,
+		`energy-flow-data-label`,
+		`Portal abgerufen vor 0&nbsp;s`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("rendered stale consumer card missing %q", want)
+		}
+	}
+}

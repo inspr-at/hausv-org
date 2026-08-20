@@ -219,7 +219,10 @@ func readHomeAssistant(ctx context.Context, client *http.Client, baseURL, tokenF
 			updated = state.Changed
 		}
 		if updated.IsZero() {
-			updated = time.Now().UTC()
+			// Freshness is part of the value contract. Omitting a reading is
+			// safer than inventing an update time that would make old data look
+			// current in the portal.
+			continue
 		}
 		readings = append(readings, Reading{
 			EntityID: strings.ToLower(strings.TrimSpace(state.EntityID)), State: strings.TrimSpace(state.State),
