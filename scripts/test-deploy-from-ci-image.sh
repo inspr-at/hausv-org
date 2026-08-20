@@ -57,7 +57,7 @@ fixture() {
         HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
         HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
         HAUSV_DEPLOY_VERIFY_SLEEP=0 \
-        bash "$test_repo/scripts/deploy-from-ci-image.sh" 0.99.0 aaaaaaa >"$output" 2>&1
+        bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa >"$output" 2>&1
     actual_status=$?
 
     if [ "$actual_status" -ne "$expected_status" ]; then
@@ -148,7 +148,7 @@ fixture_schema() {
         HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
         HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
         HAUSV_DEPLOY_VERIFY_SLEEP=0 \
-        bash "$test_repo/scripts/deploy-from-ci-image.sh" 0.99.0 aaaaaaa >"$output" 2>&1
+        bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa >"$output" 2>&1
     actual_status=$?
 
     if [ "$actual_status" -ne "$expected_status" ]; then
