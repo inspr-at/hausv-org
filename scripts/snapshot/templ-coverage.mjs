@@ -15,6 +15,52 @@ const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
 const t = `${baseURL}/${tenant}`;
 const ENERGY = { tenant: 'cockpit', email: 'cockpit-owner@example.com',
   routes: ['/app/energie', '/app/settings/home', '/app/zuhause/onboarding'] };
+const TITLE_VIEWPORTS = [
+  { name: 'desktop', width: 1440, height: 900 },
+  { name: 'mobile', width: 390, height: 844 },
+];
+
+async function compactTitleGeometry(page) {
+  const landing = await page.$('[data-portal-section-landing]');
+  if (!landing || await landing.getAttribute('data-portal-hero') !== 'false') return [];
+
+  const measurements = [];
+  for (const viewport of TITLE_VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    measurements.push(await page.evaluate((viewportName) => {
+      const title = document.querySelector('[data-portal-section-header] .portal-section-title h1');
+      if (!title) return { viewport: viewportName, error: 'shared compact H1 missing' };
+
+      const original = title.innerHTML;
+      title.textContent = 'gypq';
+      const baselineMarker = document.createElement('span');
+      baselineMarker.setAttribute('aria-hidden', 'true');
+      baselineMarker.style.cssText = 'display:inline-block;width:0;height:0;padding:0;margin:0;vertical-align:baseline';
+      title.append(baselineMarker);
+
+      const style = getComputedStyle(title);
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = `${style.fontStyle} ${style.fontVariant} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const glyphs = context.measureText('gypq');
+      const rect = title.getBoundingClientRect();
+      const baseline = baselineMarker.getBoundingClientRect().bottom;
+      const clipBottom = rect.bottom - parseFloat(style.borderBottomWidth || '0');
+      const inkBottom = baseline + glyphs.actualBoundingBoxDescent;
+      const clearance = clipBottom - inkBottom;
+      const measurement = {
+        viewport: viewportName,
+        clearance: Number(clearance.toFixed(3)),
+        lineHeight: style.lineHeight,
+        paddingBottom: style.paddingBottom,
+      };
+
+      title.innerHTML = original;
+      return measurement;
+    }, viewport.name));
+  }
+  return measurements;
+}
 
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
@@ -37,7 +83,8 @@ for (const r of ROUTES) {
   // when the seeded profile is incomplete, so without this the row silently
   // reports the onboarding page's renderer under the settings route's name.
   const landed = new URL(page.url()).pathname.replace(`/${tenant}`, '');
-  rows.push({ route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, ...info });
+  const titleGeometry = landed === r ? await compactTitleGeometry(page) : [];
+  rows.push({ route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, titleGeometry, ...info });
 }
 // The demo profile never completes onboarding, so these three only render as
 // themselves for the cockpit tenant. Measure them where they exist.
@@ -59,13 +106,17 @@ for (const r of ROUTES) {
     }));
     const landed = new URL(p2.url()).pathname.replace(`/${ENERGY.tenant}`, '');
     const i = rows.findIndex((x) => x.route === r);
-    const row = { route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, tenant: ENERGY.tenant, ...info };
+    const titleGeometry = landed === r ? await compactTitleGeometry(p2) : [];
+    const row = { route: r, landed, redirected: landed !== r, status: res ? res.status() : 0, tenant: ENERGY.tenant, titleGeometry, ...info };
     if (i >= 0) rows[i] = row; else rows.push(row);
   }
 }
 
 await browser.close();
 const wrongRenderer = rows.filter((r) => r.status === 200 && !r.templ);
+const clippedTitles = rows.flatMap((r) => r.titleGeometry
+  .filter((measurement) => measurement.error || measurement.clearance < 0)
+  .map((measurement) => ({ route: r.route, ...measurement })));
 const failed = rows.filter((r) => r.status !== 200 || !r.templ || r.redirected);
 console.log(`${'route'.padEnd(34)} ${'status'.padStart(6)}  renderer`);
 for (const r of rows) console.log(`${r.route.padEnd(30)} ${String(r.status).padStart(4)}  ${(r.templ ? 'templ' : 'WRONG').padEnd(7)} ${r.redirected ? '→ ' + r.landed + ' (NOT MEASURED)' : r.marker}`);
@@ -73,5 +124,8 @@ const red = rows.filter((r) => r.redirected);
 console.log(`\n${rows.filter((r) => r.templ && !r.redirected).length} templ · ${wrongRenderer.length} wrong renderer · ${red.length} redirected away and therefore unmeasured`);
 if (red.length) console.log(`unmeasured: ${red.map((r) => r.route + ' → ' + r.landed).join(', ')}`);
 if (wrongRenderer.length) console.log(`wrong renderer: ${wrongRenderer.map((r) => r.route).join(', ')}`);
+if (clippedTitles.length) {
+  console.log(`clipped compact titles: ${clippedTitles.map((r) => `${r.route} (${r.viewport}: ${r.error || `${r.clearance}px clearance`})`).join(', ')}`);
+}
 if (process.argv[3]) await writeFile(process.argv[3], JSON.stringify(rows, null, 2));
-if (failed.length) process.exit(1);
+if (failed.length || clippedTitles.length) process.exit(1);
