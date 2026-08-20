@@ -878,25 +878,24 @@ async function assertResponsiveAdminWidths() {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (phone) => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      // templ renders the announcements column as .feed; .announce-feed and .announce-group
-      // were the legacy renderer's names. .announcement-entry / .entry-head / .section-head /
-      // .archive-tools survived the switch unchanged.
+      // The feature body stays page-owned: .feed contains announcement cards,
+      // while shell/header geometry comes from the shared portal kit.
       const feed = document.querySelector('.feed');
       if (!feed) return { missing: true };
       const style = getComputedStyle(feed);
       const feedBox = feed.getBoundingClientRect();
       const contentLeft = feedBox.left + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.paddingLeft);
       const contentRight = feedBox.right - Number.parseFloat(style.borderRightWidth) - Number.parseFloat(style.paddingRight);
-      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, .announcement-entry')]
+      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, .announcement-card')]
         .filter((element) => element.getClientRects().length)
         .filter((element) => {
           const box = element.getBoundingClientRect();
           return box.left < contentLeft - 1 || box.right > contentRight + 1;
         })
         .map((element) => `${element.tagName.toLowerCase()}.${element.className}`);
-      const badHeads = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+      const badHeads = [...feed.querySelectorAll('.announcement-card .announcement-card-header')]
         .filter((head) => {
-          const entry = head.closest('.announcement-entry');
+          const entry = head.closest('.announcement-card');
           const entryStyle = getComputedStyle(entry);
           const entryBox = entry.getBoundingClientRect();
           const headBox = head.getBoundingClientRect();
@@ -911,7 +910,7 @@ async function assertResponsiveAdminWidths() {
           return box.left < -1 || box.right > window.innerWidth + 1;
         })
         .map((element) => (element.textContent || element.getAttribute('aria-label') || element.tagName).trim().slice(0, 50));
-      const headDisplays = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+      const headDisplays = [...feed.querySelectorAll('.announcement-card .announcement-card-header')]
         .map((head) => getComputedStyle(head).display);
       return {
         missing: false,
@@ -922,16 +921,16 @@ async function assertResponsiveAdminWidths() {
         badHeads,
         offscreenControls,
         phone,
-        headsAreGrid: headDisplays.length > 0 && headDisplays.every((display) => display === 'grid'),
+        headsStructured: headDisplays.length > 0 && headDisplays.every((display) => ['flex', 'grid'].includes(display)),
       };
-    // "Phone" is where the templ shell collapses to a single column and stacks entry heads
-    // as a grid: max-width 760px (portal.templ). The legacy renderer collapsed at 1180px and
+    // "Phone" is where the shared shell collapses to a single column:
+    // max-width 760px (portal.templ). The legacy renderer collapsed at 1180px and
     // this probe still carried that number, so it demanded phone layout at 768 and 1024 —
     // widths the current design deliberately keeps as tablet/desktop.
     }, width <= 760);
     if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
         result.clipped.length || result.badHeads || result.offscreenControls.length ||
-        (result.phone && (result.feedColumns !== 1 || !result.headsAreGrid))) {
+        (result.phone && (result.feedColumns !== 1 || !result.headsStructured))) {
       fail(`Aushang ${width}px: Inhalt oder Aktionen werden abgeschnitten (${JSON.stringify(result)})`);
     }
     if (width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
