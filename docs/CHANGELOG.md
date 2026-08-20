@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.4] - 2026-08-20
+
+### Energiedaten transparenter
+
+- Energie: Verbraucher zeigen, wie alt ihr Home-Assistant-Messwert ist, und kennzeichnen ältere Werte sichtbar.
+- Nicht verfügbare und unbekannte Messwerte bleiben unterscheidbar; schlafende Fahrzeuge zeigen den letzten Stand als Uhrzeit.
+- Für jeden Verbraucher kann die Zeitgrenze bei Bedarf passend zum Gerät eingestellt werden.
+
 ## [0.99.3] - 2026-08-20
 
 ### Stabilität verbessert

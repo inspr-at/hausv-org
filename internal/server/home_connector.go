@@ -218,7 +218,8 @@ func filterHomeConnectorReadings(input []homeconnector.Reading, selected []strin
 	}
 	out := make([]homeconnector.Reading, 0, len(selected))
 	for _, reading := range input {
-		if wanted[strings.ToLower(strings.TrimSpace(reading.EntityID))] {
+		if wanted[strings.ToLower(strings.TrimSpace(reading.EntityID))] ||
+			homeconnector.IsVehicleSleepReading(reading.EntityID, reading.State, reading.DisplayName) {
 			out = append(out, reading)
 		}
 	}
@@ -261,9 +262,15 @@ func validHomeConnectorReading(reading homeconnector.Reading, now time.Time) boo
 	state := strings.TrimSpace(reading.State)
 	unit := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(reading.Unit), " ", ""))
 	deviceClass := strings.ToLower(strings.TrimSpace(reading.DeviceClass))
-	if !strings.HasPrefix(entityID, "sensor.") || len(entityID) > 180 || len(state) == 0 || len(state) > 48 ||
+	if len(entityID) > 180 || len(state) == 0 || len(state) > 48 ||
 		len(reading.DisplayName) > 160 || len(reading.StateClass) > 32 || reading.LastUpdated.IsZero() ||
 		reading.LastUpdated.After(now.Add(5*time.Minute)) {
+		return false
+	}
+	if homeconnector.IsVehicleSleepReading(entityID, state, reading.DisplayName) {
+		return true
+	}
+	if !strings.HasPrefix(entityID, "sensor.") {
 		return false
 	}
 	allowedUnit := unit == "w" || unit == "kw" || unit == "mw" || unit == "wh" || unit == "kwh" || unit == "mwh" || unit == "%"
@@ -297,8 +304,9 @@ func (a *app) selectedHomeConnectorEntities(slug string) []string {
 	}
 	selected := make([]string, 0, len(mappings))
 	for _, mapping := range mappings {
-		if mapping.Confirmed && strings.HasPrefix(strings.ToLower(strings.TrimSpace(mapping.EntityID)), "sensor.") {
-			selected = append(selected, strings.ToLower(strings.TrimSpace(mapping.EntityID)))
+		entityID := strings.ToLower(strings.TrimSpace(mapping.EntityID))
+		if mapping.Confirmed && (strings.HasPrefix(entityID, "sensor.") || strings.HasPrefix(entityID, "binary_sensor.")) {
+			selected = append(selected, entityID)
 		}
 	}
 	sort.Strings(selected)

@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.4",
+			Date:     "20. August 2026",
+			Kind:     "Energie",
+			Headline: "Der Stand jedes Verbrauchers ist auf einen Blick nachvollziehbar.",
+			Intro:    "Verbraucher zeigen das Alter ihrer Home-Assistant-Werte und kennzeichnen ältere, nicht verfügbare oder unbekannte Angaben eindeutig.",
+			Items: []NoteItem{
+				{Label: "Aktualität", Text: "Jede Verbraucherkarte nennt den Stand des Messwerts; die Zeitgrenze kann pro Verbraucher angepasst werden."},
+				{Label: "Zustände", Text: "Nicht verfügbare und unbekannte Werte bleiben unterscheidbar, während schlafende Fahrzeuge die Uhrzeit ihres letzten Stands zeigen."},
+				{Label: "Live-Kopf", Text: "Die Aktualisierungszeit im Kopf bezeichnet ausdrücklich den letzten Portal-Abruf."},
+			},
+		},
+		{
 			Version:  "0.99.3",
 			Date:     "20. August 2026",
 			Kind:     "Oberfläche",

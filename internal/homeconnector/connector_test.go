@@ -154,6 +154,7 @@ func TestConnectorSendsCatalogThenOnlyPortalSelectedReadings(t *testing.T) {
 		_, _ = io.WriteString(w, `[`+
 			`{"entity_id":"sensor.grid_import_power","state":"1250","last_updated":"`+updated+`","attributes":{"friendly_name":"Netzbezug","unit_of_measurement":"W","device_class":"power","state_class":"measurement"}},`+
 			`{"entity_id":"sensor.pv_power","state":"2.2","last_updated":"`+updated+`","attributes":{"friendly_name":"PV","unit_of_measurement":"kW","device_class":"power","state_class":"measurement"}},`+
+			`{"entity_id":"sensor.no_timestamp_power","state":"900","attributes":{"friendly_name":"No timestamp","unit_of_measurement":"W","device_class":"power","state_class":"measurement"}},`+
 			`{"entity_id":"sensor.bedroom_temperature","state":"21","last_updated":"`+updated+`","attributes":{"unit_of_measurement":"°C","device_class":"temperature"}},`+
 			`{"entity_id":"switch.private_alarm","state":"on","last_updated":"`+updated+`","attributes":{}}]`)
 	}))
@@ -194,7 +195,7 @@ func TestConnectorSendsCatalogThenOnlyPortalSelectedReadings(t *testing.T) {
 		t.Fatalf("selected heartbeat=%+v", heartbeat.Readings)
 	}
 	encoded, _ := json.Marshal(pairRequest)
-	for _, forbidden := range []string{token, ha.URL, "sensor.bedroom_temperature", "switch.private_alarm"} {
+	for _, forbidden := range []string{token, ha.URL, "sensor.no_timestamp_power", "sensor.bedroom_temperature", "switch.private_alarm"} {
 		if strings.Contains(string(encoded), forbidden) {
 			t.Fatalf("catalog exposed %q: %s", forbidden, encoded)
 		}
