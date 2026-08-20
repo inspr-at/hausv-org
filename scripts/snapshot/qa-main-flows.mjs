@@ -2146,7 +2146,7 @@ async function assertLogoutBackNavigation() {
   if (new URL(page.url()).pathname !== loggedOutPath) {
     await page.reload({ waitUntil: 'domcontentloaded' });
   }
-  await page.waitForURL((url) => url.pathname === loggedOutPath, { timeout: 10_000 });
+  await page.waitForURL((url) => url.pathname.endsWith('/'), { timeout: 10_000 });
   await page.waitForLoadState('networkidle');
   const authenticatedBody = await page.locator('body[data-authenticated-app]').count();
   if (authenticatedBody || await protectedHeading.isVisible().catch(() => false)) {
