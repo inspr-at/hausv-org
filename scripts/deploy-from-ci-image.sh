@@ -78,15 +78,24 @@ activation_locked_remote_script() {
 }
 
 print_rollback() {
-    # $1 previous_tag, $2 image, $3 compose_command, $4 service
+    # $1 schema_changed, $2 previous_tag, $3 image, $4 compose_command, $5 service, $6 snapshot_dir
     local image_body
-    image_body="docker tag $1 $2 && $3 up -d --force-recreate --no-deps $4"
-    echo "image rollback command (must run under the project lock): $image_body"
-    echo "data/schema restore: not required; this release contains no migration change."
+    image_body="docker tag $2 $3 && $4 up -d --force-recreate --no-deps $5"
+    if [ "$1" = 1 ]; then
+        echo "data/schema restore required: do NOT run an image-only rollback against a possibly migrated database." >&2
+        echo "restore source: $6 (root-only, pre-deploy SQLite + blobs)." >&2
+        echo "locked recovery shell: ssh to the runner host and run: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
+        echo "inside that same locked shell, containment command: $4 stop -t 30 $5" >&2
+        echo "restore procedure: hausv-org docs/production-deploy.md → \"Schema rollback procedure\"; keep the locked shell open through verification, data replacement and recreation." >&2
+        echo "inside that same locked shell after the matching data restore: $image_body" >&2
+    else
+        echo "image rollback command (must run under the project lock): $image_body"
+        echo "data/schema restore: not required; this release contains no migration change."
+    fi
 }
 
 fail_after_change() {
-    # $1 message, $2 previous_tag, $3 image, $4 compose_command, $5 service
+    # $1 message, $2 schema_changed, $3 previous_tag, $4 image, $5 compose_command, $6 service, $7 snapshot_dir
     local message=$1
     shift
     echo "release FAILED: $message" >&2
@@ -140,6 +149,9 @@ mktemp_bin=${HAUSV_DEPLOY_MKTEMP_BIN:-/usr/bin/mktemp}
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 container=${HAUSV_DEPLOY_CONTAINER:-$service}
+data_dir=""
+snapshot_root=""
+snapshot_dir=""
 case $container in
     ""|*[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_CONTAINER must be a valid Docker container name" ;;
 esac
@@ -195,9 +207,13 @@ case $live_sha in
     *) fail_before_change "live commit $live_commit is ambiguous" ;;
 esac
 
-# Refuse deployment if migrations changed. This is the same fail-closed gate
-# as deploy.sh: a schema change requires an attended snapshot first, which
-# deploy-from-ci-image.sh does not support.
+# Resolve HEAD for snapshot metadata.
+head_sha=$(git rev-parse HEAD 2>/dev/null) \
+    || fail_before_change "cannot resolve HEAD"
+
+# Check whether migrations changed. When migrations changed, deployment requires
+# a fresh consistent snapshot before container replacement, captured atomically
+# under the project lock using the same helper as scripts/deploy.sh.
 schema_changed=0
 git diff --quiet "$live_sha" HEAD -- internal/db/migrations
 schema_diff_status=$?
@@ -208,7 +224,9 @@ case $schema_diff_status in
 esac
 
 if [ "$schema_changed" -eq 1 ]; then
-    fail_before_change "database migrations changed between $live_commit and HEAD; this script does not support schema migrations. Use scripts/deploy.sh for attended schema releases."
+    data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
+    snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
+    snapshot_dir="$snapshot_root/$app_version-$commit"
 fi
 
 ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
@@ -217,7 +235,13 @@ ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 release_tag="$image_repo:release-$app_version-$commit"
 
-# Preflight: verify the currently healthy service and that the release image exists remotely
+# Preflight: verify the currently healthy service and (for schema changes)
+# non-interactive root capability. The script runs locally on the runner, so
+# locked_remote_script evals the body directly instead of shipping it over SSH.
+sudo_probe=""
+if [ "$schema_changed" -eq 1 ]; then
+    sudo_probe="sudo -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
+fi
 preflight_body="\
     locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
     locked_open=\"\$(printf \"\\050\")\"; \
@@ -243,6 +267,8 @@ preflight_body="\
     test -f $compose_file; \
     compose_services=\"\$($compose_command config --services)\"; \
     printf '%s\n' \"\$compose_services\" | grep -Fx $service >/dev/null; \
+    $sudo_probe"
+preflight_body="$preflight_body \
     printf 'running-image-id=%s\n' \"\$running_image_id\""
 preflight_script=$(locked_remote_script "$preflight_body") \
     || fail_before_change "cannot encode the locked remote preflight"
@@ -259,11 +285,69 @@ fi
 echo "release candidate: $app_version ($commit)"
 echo "CI image: $release_tag"
 echo "live now: $live_version ($live_commit), health ok"
-echo "schema change: no (verified via git diff; deploy.sh required for schema migrations)"
+if [ "$schema_changed" -eq 1 ]; then
+    echo "schema change: yes — snapshot mandatory"
+else
+    echo "schema change: no"
+fi
 
 if [ "$dry_run" -eq 1 ]; then
     echo "[dry-run] all fail-closed preconditions passed; production was not changed."
+    if [ "$schema_changed" -eq 1 ]; then
+        echo "[dry-run] actual release will publish $snapshot_dir atomically before starting the new image."
+    fi
     exit 0
+fi
+
+if [ "$schema_changed" -eq 1 ]; then
+    snapshot_helper=$(< "$repo/scripts/create-predeploy-snapshot.py") \
+        || fail_before_change "cannot read the pre-deploy snapshot helper"
+    snapshot_body="\
+        test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running_image_id; \
+        test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
+        sudo -n /run/current-system/sw/bin/python3 - \
+        --source $data_dir \
+        --snapshot $snapshot_dir \
+        --compose-dir $compose_dir \
+        --compose-file $compose_file \
+        --compose-project $compose_project \
+        --service $service \
+        --source-version $live_version \
+        --source-commit $live_sha \
+        --target-version $app_version \
+        --target-commit $head_sha <<'HAUSV_PREDEPLOY_PY'
+$snapshot_helper
+HAUSV_PREDEPLOY_PY"
+    snapshot_script=$(locked_remote_script "$snapshot_body") \
+        || fail_before_change "cannot encode the locked pre-deploy snapshot"
+    if ! snapshot_proof=$(eval "$snapshot_script"); then
+        current_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null | tr -d '[:space:]')
+        if [ "$current_health" = healthy ]; then
+            echo "release refused: fresh consistent pre-deploy snapshot failed." >&2
+            echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
+        else
+            echo "release FAILED: pre-deploy snapshot recovery did not return HAUSV to healthy state (container=$current_health)." >&2
+            recovery_body="$compose_command up -d --force-recreate --no-deps $service"
+            if recovery_script=$(locked_remote_script "$recovery_body"); then
+                echo "mandatory recovery command: eval \"$recovery_script\"" >&2
+            else
+                echo "automatic mandatory recovery command unavailable: local transport encoding failed." >&2
+                echo "locked mandatory recovery shell: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
+                echo "inside that locked shell, mandatory recovery command: $recovery_body" >&2
+            fi
+            echo "after recovery, require Docker health=healthy before any retry; do not activate the new image." >&2
+        fi
+        exit 1
+    fi
+    if ! { [[ $snapshot_proof == *"snapshot-path=$snapshot_dir"* ]] \
+        && [[ $snapshot_proof == *"snapshot-integrity=ok"* ]] \
+        && [[ $snapshot_proof == *"service-health=healthy"* ]] \
+        && printf '%s' "$snapshot_proof" | grep -qE 'snapshot-created=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'; }; then
+        echo "release refused: snapshot command returned incomplete proof." >&2
+        echo "recovery verified by the helper: the current production service is healthy; no new image or schema was activated." >&2
+        exit 1
+    fi
+    echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
 fi
 
 preserve_body="\
@@ -328,7 +412,7 @@ case $activation_status in
     40) fail_before_change "activation transport setup failed before lock and retag; production was not changed by this release" ;;
     41) fail_before_change "activation lock was unavailable before retag; production was not changed by this release" ;;
     42) fail_before_change "activation identity changed before retag; production was not changed by this release" ;;
-    *) fail_after_change "container replacement failed" "$previous_tag" "$image" "$compose_command" "$service" ;;
+    *) fail_after_change "container replacement failed" "$schema_changed" "$previous_tag" "$image" "$compose_command" "$service" "$snapshot_dir" ;;
 esac
 
 post_ok=0
@@ -353,7 +437,7 @@ for _ in $(seq "$verify_attempts"); do
     sleep "$verify_sleep"
 done
 if [ "$post_ok" -ne 1 ]; then
-    fail_after_change "post-deploy health/version verification failed (container=$container_health, visible='$deployed')" "$previous_tag" "$image" "$compose_command" "$service"
+    fail_after_change "post-deploy health/version verification failed (container=$container_health, visible='$deployed')" "$schema_changed" "$previous_tag" "$image" "$compose_command" "$service" "$snapshot_dir"
 fi
 
 critical_pattern='application initialization failed|sqlite unavailable|migration .* failed|import to sqlite failed|not atomic|expired (audit|energy) data purge failed|panic|fatal'
@@ -365,10 +449,10 @@ startlog_script="\
     grep -F '\"msg\":\"listening\"' \"\$log_file\" >/dev/null; \
     if grep -qiE '$critical_pattern' \"\$log_file\"; then exit 1; fi"
 eval "$startlog_script" \
-    || fail_after_change "critical start-log check failed or the listening marker is missing" "$previous_tag" "$image" "$compose_command" "$service"
+    || fail_after_change "critical start-log check failed or the listening marker is missing" "$schema_changed" "$previous_tag" "$image" "$compose_command" "$service" "$snapshot_dir"
 
 echo "live version: $deployed ✓"
 echo "container health: $container_health ✓"
 echo "public health: ok ✓"
 echo "critical start logs: clean ✓"
-print_rollback "$previous_tag" "$image" "$compose_command" "$service"
+print_rollback "$schema_changed" "$previous_tag" "$image" "$compose_command" "$service" "$snapshot_dir"

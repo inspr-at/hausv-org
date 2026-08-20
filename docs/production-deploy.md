@@ -21,19 +21,23 @@ and blob snapshot before building the new image.
 
 ## Deployment paths
 
-### Mac-less automatic deployment (recommended for non-schema releases)
+### Mac-less automatic deployment (recommended for all releases)
 
 After a green CI run on `main`, the `.github/workflows/deploy.yml` workflow
 automatically triggers on a self-hosted runner (`csb1-hausv` label) on csb1.
 The runner:
 
 1. Checks out the repository at the exact green CI commit;
-2. Verifies migrations did not change vs. the live version;
-3. Pulls the CI-built image from GHCR;
-4. Swaps the production container under the project lock.
+2. Checks whether migrations changed vs. the live version;
+3. If migrations changed, takes a fresh consistent SQLite+blob snapshot (same
+   helper as deploy.sh) under the project lock before pull;
+4. Pulls the CI-built image from GHCR;
+5. Swaps the production container under the project lock.
 
-**Migration refuse:** If `internal/db/migrations` changed, deployment is refused
-before any pull or swap. Schema releases still require the attended Mac path.
+**Schema support:** When `internal/db/migrations` changes, the unattended script
+now captures the same pre-deploy snapshot that `scripts/deploy.sh` does. Snapshot
+failure refuses the release before pulling or swapping; production stays on the
+previous image.
 
 **No SSH secrets:** The runner runs locally on csb1 with host docker and GHCR
 credentials from `/run/agenix/csb1-hausv-ghcr-pull`. No SSH keys or GitHub
@@ -44,17 +48,19 @@ explicit `version` and `commit` inputs for manual or roll-forward deploys.
 
 **Concurrency:** One deploy at a time via `concurrency: deploy-production`.
 
-### Attended Mac deployment (required for schema releases)
+### Attended Mac deployment (for manual verification or break-glass)
 
-`scripts/deploy.sh` remains the attended path for schema-changing releases. It:
+`scripts/deploy.sh` remains the attended path for manual verification or
+break-glass operations. It:
 
 1. Runs preflight checks including migration diff;
 2. Creates a quiesced SQLite snapshot if migrations changed;
 3. Pulls the CI image and swaps the container over SSH;
 4. Provides rollback commands.
 
-Use this path when `internal/db/migrations` changes or when manual verification
-is required.
+Use this path when manual verification is required or when the unattended runner
+is unavailable. Schema releases no longer require this path: the unattended
+script now takes the same snapshot.
 
 ## Private deployment environment
 

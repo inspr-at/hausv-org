@@ -2,8 +2,10 @@ name: Deploy
 
 # Mac-less production deployment: after green main CI, a self-hosted runner
 # on csb1 runs scripts/deploy-from-ci-image.sh to pull the CI image from GHCR
-# and swap the production container. Schema migrations still require attended
-# deployment via scripts/deploy.sh (Mac path with snapshot support).
+# and swap the production container. When internal/db/migrations differs, the
+# unattended path takes the same pre-deploy snapshot as scripts/deploy.sh before
+# continuing the swap. scripts/deploy.sh remains the attended path for manual
+# verification or break-glass operations.
 
 on:
   workflow_run:
@@ -74,6 +76,8 @@ jobs:
           HAUSV_DEPLOY_COMPOSE_PROJECT: hausv-jhw22
           HAUSV_DEPLOY_CONTAINER: hausv-org
           HAUSV_DEPLOY_COMPOSE_LOCK: /run/lock/compose-hausv.lock
+          HAUSV_DEPLOY_DATA_DIR: /var/lib/csb1-docker/hausv-org
+          HAUSV_DEPLOY_SNAPSHOT_ROOT: /var/backups/hausv-predeploy
           HAUSV_DEPLOY_LIVE_URL: https://hausv.org/jhw22/
           HAUSV_DEPLOY_HEALTH_URL: https://hausv.org/healthz
           HAUSV_DEPLOY_FLOCK_BIN: /run/current-system/sw/bin/flock
