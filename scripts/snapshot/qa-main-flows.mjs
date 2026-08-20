@@ -2175,15 +2175,33 @@ async function assertEnergySafetyAndFlow(viewport) {
   // animation is not running — a stylesheet regression, a dropped keyframe, or a JS path
   // that stopped emitting .energy-flow-dots would all read as "present but frozen" here.
   // Only asserted when the diagram has flow edges at all (it does on this fixture).
+  //
+  // The real contract is "not frozen". When prefers-reduced-motion is on, the CSS correctly
+  // disables the animation, so the test must not require motion in that case. When reduced
+  // motion is off, pass if the diagram moved OR a running animation is present; fail only
+  // when both signals are absent (frozen). When reduced motion is on, fail only if an
+  // animation is still running (HAUSV-561).
   const motion = await live.evaluate(async (diagram) => {
     const dots = diagram.querySelector('.energy-flow-dots');
     if (!dots) return { present: false };
+    const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const read = () => getComputedStyle(dots).strokeDashoffset;
     const a = read(); await new Promise((r) => setTimeout(r, 400)); const b = read();
-    return { present: true, animationName: getComputedStyle(dots).animationName, running: (dots.getAnimations?.() || []).length, moved: a !== b, a, b };
+    return { present: true, prefersReducedMotion, animationName: getComputedStyle(dots).animationName, running: (dots.getAnimations?.() || []).length, moved: a !== b, a, b };
   });
-  if (motion.present && (motion.animationName !== 'energy-flow-dots' || !motion.running || !motion.moved)) {
-    fail(`Energie ${viewport.name}: Energiefluss animiert nicht (${JSON.stringify(motion)})`);
+  if (motion.present) {
+    const hasRunningAnimation = motion.animationName === 'energy-flow-dots' && motion.running > 0;
+    if (motion.prefersReducedMotion) {
+      // When reduced motion is on, the animation should be disabled. Fail if it's still running.
+      if (hasRunningAnimation) {
+        fail(`Energie ${viewport.name}: Energiefluss should not animate with prefers-reduced-motion (${JSON.stringify(motion)})`);
+      }
+    } else {
+      // When reduced motion is off, pass if moved OR animation is running. Fail if frozen (neither).
+      if (!motion.moved && !hasRunningAnimation) {
+        fail(`Energie ${viewport.name}: Energiefluss animiert nicht (${JSON.stringify(motion)})`);
+      }
+    }
   }
   const chart = page.locator('.energy-chart');
   if (!(await chart.getByRole('heading', { name: 'Letzte 24 Stunden' }).count()) ||
