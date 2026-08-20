@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.5",
+			Date:     "20. August 2026",
+			Kind:     "Energie",
+			Headline: "Verbraucherwerte bleiben vollständig lesbar.",
+			Intro:    "Energie- und Ladestandswerte haben auch zusammen mit Aktualitätshinweisen ausreichend Platz.",
+			Items: []NoteItem{
+				{Label: "Verbraucherkarten", Text: "Werte und Einheiten bleiben in jeder Karte vollständig sichtbar."},
+				{Label: "Zeitangaben", Text: "Bei genau einem Tag erscheint die passende Einzahl."},
+			},
+		},
+		{
 			Version:  "0.99.4",
 			Date:     "20. August 2026",
 			Kind:     "Energie",

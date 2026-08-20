@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.5] - 2026-08-20
+
+### Energieansicht verbessert
+
+- Energie: Verbraucherkarten zeigen Energie- und Ladestandswerte auch zusammen mit Aktualitätshinweisen vollständig.
+- Zeitangaben verwenden bei genau einem Tag die richtige Einzahl.
+
 ## [0.99.4] - 2026-08-20
 
 ### Energiedaten transparenter

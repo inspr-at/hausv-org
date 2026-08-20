@@ -81,7 +81,7 @@ export async function assertOwnerEnergySidebarOrder(page, label) {
   }
 }
 
-export async function assertEnergyTopContent(page, label) {
+export async function assertEnergyTopContent(page, { label, width }) {
   const diagram = page.locator('[data-energy-flow-diagram]');
   if ((await diagram.count()) !== 1 || !(await diagram.isVisible())) {
     fail(label, 'genau ein sichtbares [data-energy-flow-diagram] fehlt');
@@ -134,7 +134,8 @@ export async function assertEnergyTopContent(page, label) {
     const flow = root.querySelector('[data-energy-flow]');
     const configNode = flow?.querySelector('script[type="application/json"]');
     if (!flow || !configNode || typeof flow._energyFlowUpdate !== 'function') return null;
-    const config = JSON.parse(configNode.textContent || 'null');
+    const originalConfig = JSON.parse(configNode.textContent || 'null');
+    const config = structuredClone(originalConfig);
     if (!config?.consumers?.length) return null;
     const paint = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     config.consumers.forEach((consumer) => {
@@ -142,7 +143,9 @@ export async function assertEnergyTopContent(page, label) {
       consumer.active = false;
       delete consumer.dataStatus;
       delete consumer.dataLabel;
-      delete consumer.age;
+      consumer.age = 'Stand vor 2 Min.';
+      consumer.secondary = '51 % · 66,2 kWh';
+      consumer.secondaryLabel = 'Energie';
     });
     config.consumers[0].kw = 3.6;
     config.consumers[0].active = true;
@@ -165,18 +168,43 @@ export async function assertEnergyTopContent(page, label) {
     root.appendChild(probe);
     const softColor = getComputedStyle(probe).color;
     probe.remove();
-    return {
+    const cardGeometry = [...root.querySelectorAll('.energy-flow-rail .energy-flow-big:not(.ghost)')].map((node) => {
+      const cardBox = node.getBoundingClientRect();
+      const cardStyle = getComputedStyle(node);
+      const value = node.querySelector('.energy-flow-secondary-copy');
+      const valueBox = value?.getBoundingClientRect();
+      return {
+        title: node.querySelector('.energy-flow-copy > b')?.textContent?.trim() || '',
+        height: cardBox.height,
+        clientHeight: node.clientHeight,
+        scrollHeight: node.scrollHeight,
+        innerBottom: cardBox.bottom - Number.parseFloat(cardStyle.borderBottomWidth || '0'),
+        valueBottom: valueBox?.bottom ?? null,
+      };
+    });
+    const result = {
       cardText: card?.textContent?.replace(/\s+/g, ' ').trim() || '',
       stateColor: state ? getComputedStyle(state).color : '',
       softColor,
       freshRibbons,
       staleRibbons: root.querySelectorAll('svg.energy-flow-ribbons .energy-flow-band').length,
+      cardGeometry,
     };
+    flow._energyFlowUpdate(originalConfig);
+    await paint();
+    return result;
   });
   if (!staleContract || !/Veraltet/.test(staleContract.cardText) || !/Stand vor 12 Min\./.test(staleContract.cardText) ||
       staleContract.stateColor !== staleContract.softColor ||
       staleContract.freshRibbons !== staleContract.staleRibbons + 1) {
     fail(label, 'staler Verbraucher ist nicht sichtbar markiert, gemutet oder aus dem aktiven Fluss entfernt', staleContract);
+  }
+  if (width === 1440) {
+    const clipped = staleContract.cardGeometry.filter(({ clientHeight, scrollHeight, innerBottom, valueBottom }) =>
+      scrollHeight > clientHeight || valueBottom === null || valueBottom > innerBottom + 0.25);
+    if (clipped.length) {
+      fail(label, 'Verbraucherkarten schneiden die Energiezeile bei 1440px ab', clipped);
+    }
   }
 
   const mapping = diagram.locator('a[href*="/app/zuhause/onboarding"]').filter({ hasText: 'Messwerte zuordnen' });
@@ -841,7 +869,7 @@ export async function assertExistingEnergyChartBoundary(page, label) {
 
 export async function assertEnergyRedesignViewport(page, { label, width }) {
   await assertOwnerEnergySidebarOrder(page, label);
-  await assertEnergyTopContent(page, label);
+  await assertEnergyTopContent(page, { label, width });
   await assertExistingEnergyChartBoundary(page, label);
   await assertEnergyTopGeometry(page, { label, width });
   await assertEnergyFlowGeometry(page, { label, width });
