@@ -397,9 +397,9 @@ async function assertSidebarNavReachable() {
 // The templ shell renders it as details.context-switch in the sidebar and a mobile twin,
 // so those selectors matched nothing — and because CI runs only the energy subset of
 // these flows, this had been failing silently since the switch went live. What is worth
-// keeping is the BEHAVIOUR: switching portals updates URL, house name and role atomically,
-// and the switcher stays usable at phone width. Placement is a design decision, not a
-// contract, so it is no longer asserted here.
+// keeping is the BEHAVIOUR: switching portals updates URL, house name and the
+// account-footer role atomically, while switch rows themselves stay role-free.
+// The switcher also remains usable at phone width.
 async function assertPortalSwitcherAtomic() {
   const context = await trackedContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
   const page = await localLogin(context, 'multi@example.com');
@@ -416,10 +416,12 @@ async function assertPortalSwitcherAtomic() {
   await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
   const after = page.locator('aside.sidebar > header details.context-switch .context-current');
+  const accountRole = page.locator('aside.sidebar > footer.account small').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
       (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
-      !(await after.locator('small').textContent())?.includes('Admin')) {
-    fail(`Portalwechsel aktualisiert URL, Name oder Rolle nicht atomar (${page.url()})`);
+      (await after.locator('small').textContent())?.trim() !== 'Aktives Portal' ||
+      !(await accountRole.textContent())?.includes('Admin')) {
+    fail(`Portalwechsel aktualisiert URL, Name oder Account-Rolle nicht atomar (${page.url()})`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -433,7 +435,7 @@ async function assertPortalSwitcherAtomic() {
     fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
   }
   await closeContext(context);
-  process.stdout.write('  ✓ Portalwechsler · URL, Name und Rolle atomar · Desktop und Mobil\n');
+  process.stdout.write('  ✓ Portalwechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
 }
 
 async function assertSharedAppShellNavigation() {
