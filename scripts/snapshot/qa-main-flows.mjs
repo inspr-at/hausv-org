@@ -52,7 +52,7 @@ const portalChromeRoutes = [
   { path: '/app/anliegen/board', hero: false, boardContext: true },
   { path: '/app/abstimmungen', hero: false, action: 'Abstimmung anlegen' },
   { path: '/app/parking', hero: false, action: 'Mehr' },
-  { path: '/app/uebergaben', hero: false, action: 'Übergabe anlegen' },
+  { path: '/app/uebergaben', hero: false },
   { path: '/app/settings/users', hero: false },
   { path: '/app/audit', hero: false, action: 'Einstellungen' },
   { path: '/app/settings', hero: false },
