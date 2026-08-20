@@ -2127,13 +2127,14 @@ async function assertLogoutBackNavigation() {
   const context = await newContext({ width: 1440, height: 900 });
   const page = await localLogin(context, 'resident@example.com');
   await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
+  const tenantRoot = new URL(page.url()).pathname.replace(/\/app(?:\/.*)?$/, '/');
   const protectedHeading = page.getByRole('heading', { name: /Hallo Rita/ }).first();
   if (!(await protectedHeading.isVisible())) {
     fail('Abmelden/Zurück: geschützte Ausgangsseite fehlt');
   }
 
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/'),
+    page.waitForURL((url) => url.pathname === tenantRoot),
     page.getByRole('button', { name: 'Abmelden' }).click(),
   ]);
   loginStorageStates.delete(`${baseURL}|resident@example.com`);
@@ -2142,7 +2143,7 @@ async function assertLogoutBackNavigation() {
   }
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
-  await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+  await page.waitForURL((url) => url.pathname === tenantRoot, { timeout: 10_000 });
   await page.waitForLoadState('networkidle');
   const authenticatedBody = await page.locator('body[data-authenticated-app]').count();
   if (authenticatedBody || await protectedHeading.isVisible().catch(() => false)) {
