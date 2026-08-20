@@ -168,11 +168,20 @@ export async function assertEnergyTopContent(page, { label, width }) {
     config.consumers[0].primary = { label: 'Ladestand', value: '51', unit: '%' };
     config.consumers[0].metrics = [{ label: 'Energie', value: '66,2', unit: 'kWh' }];
     config.consumers[0].age = 'vor 12 Min.';
+    if (config.consumers[1]) {
+      delete config.consumers[1].current;
+      config.consumers[1].primary = { label: 'Energie', value: '4.890,6', unit: 'kWh' };
+      config.consumers[1].metrics = [];
+      config.consumers[1].secondary = '4.890,6\u00a0kWh';
+      config.consumers[1].secondaryLabel = 'Energie';
+    }
     flow._energyFlowUpdate(config);
     await paint();
 
     const card = root.querySelector('.energy-flow-big.data-stale');
     const state = card?.querySelector('.energy-flow-current');
+    const consumerCards = root.querySelectorAll('.energy-flow-rail .energy-flow-big:not(.ghost)');
+    const soleEnergyCard = consumerCards[1];
     const probe = document.createElement('span');
     probe.style.color = 'var(--soft)';
     root.appendChild(probe);
@@ -202,6 +211,9 @@ export async function assertEnergyTopContent(page, { label, width }) {
       freshRibbons,
       staleRibbons: root.querySelectorAll('svg.energy-flow-ribbons .energy-flow-band').length,
       cardGeometry,
+      distinctMetricRows: card?.querySelectorAll('.energy-flow-consumer-metrics .energy-flow-quiet-metric').length ?? -1,
+      soleEnergyPrimary: soleEnergyCard?.querySelector('.energy-flow-primary')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      soleEnergyQuietRows: soleEnergyCard?.querySelectorAll('.energy-flow-consumer-metrics').length ?? -1,
     };
     flow._energyFlowUpdate(originalConfig);
     await paint();
@@ -211,6 +223,11 @@ export async function assertEnergyTopContent(page, { label, width }) {
       staleContract.stateColor !== staleContract.softColor ||
       staleContract.freshRibbons !== staleContract.staleRibbons + 1) {
     fail(label, 'staler Verbraucher ist nicht sichtbar markiert, gemutet oder aus dem aktiven Fluss entfernt', staleContract);
+  }
+  if (staleContract.distinctMetricRows !== 1 ||
+      !/51\s*%/.test(staleContract.cardText) || !/66,2\s*kWh/.test(staleContract.cardText) ||
+      !/4\.890,6\s*kWh/.test(staleContract.soleEnergyPrimary) || staleContract.soleEnergyQuietRows !== 0) {
+    fail(label, 'einzelne kWh werden doppelt oder echte Zusatzkennzahlen werden unterdrückt', staleContract);
   }
   if (width === 1440) {
     const clipped = staleContract.cardGeometry.filter(({ clientHeight, scrollHeight, innerRight, railControlsRight, innerBottom, valueBottom }) =>

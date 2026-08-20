@@ -4178,7 +4178,7 @@ type energyFlowConsumerConfig struct {
 	SecondaryLabel    string                      `json:"secondaryLabel,omitempty"`
 	Primary           *energyFlowMetricConfig     `json:"primary,omitempty"`
 	Current           *energyFlowMetricConfig     `json:"current,omitempty"`
-	Metrics           []energyFlowMetricConfig    `json:"metrics,omitempty"`
+	Metrics           []energyFlowMetricConfig    `json:"metrics"`
 	Color             string                      `json:"color,omitempty"`
 	State             string                      `json:"state,omitempty"`
 	DataStatus        string                      `json:"dataStatus,omitempty"`

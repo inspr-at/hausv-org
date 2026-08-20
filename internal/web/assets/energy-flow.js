@@ -96,7 +96,7 @@
   }
 
   function metricList(metrics, fallbackLabel, fallbackValue) {
-    if (Array.isArray(metrics) && metrics.length) return metrics.filter(function (metric) { return metric && metric.value; });
+    if (Array.isArray(metrics)) return metrics.filter(function (metric) { return metric && metric.value; });
     var fallback = metricFromLegacy(fallbackLabel, fallbackValue);
     return fallback ? [fallback] : [];
   }
