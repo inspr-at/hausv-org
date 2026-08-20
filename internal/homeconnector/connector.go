@@ -250,7 +250,7 @@ func allowedEnergyReading(entityID, state, displayName, unit, deviceClass string
 	if len(entityID) > 180 || len(strings.TrimSpace(state)) > 48 {
 		return false
 	}
-	if allowedVehicleSleepReading(entityID, state, displayName) {
+	if IsVehicleSleepReading(entityID, state, displayName) {
 		return true
 	}
 	if !strings.HasPrefix(entityID, "sensor.") {
@@ -263,7 +263,11 @@ func allowedEnergyReading(entityID, state, displayName, unit, deviceClass string
 	return allowedUnit && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
 }
 
-func allowedVehicleSleepReading(entityID, state, displayName string) bool {
+// IsVehicleSleepReading recognizes only an explicit vehicle sleep signal.
+// Requiring both the sleep marker and a vehicle marker keeps unrelated home
+// state (for example bedroom or presence sensors) outside the connector's
+// deliberately narrow disclosure boundary.
+func IsVehicleSleepReading(entityID, state, displayName string) bool {
 	entityID = strings.ToLower(strings.TrimSpace(entityID))
 	if !strings.HasPrefix(entityID, "sensor.") && !strings.HasPrefix(entityID, "binary_sensor.") {
 		return false
@@ -271,6 +275,18 @@ func allowedVehicleSleepReading(entityID, state, displayName string) bool {
 	name := strings.ToLower(entityID + " " + strings.TrimSpace(displayName))
 	if !strings.Contains(name, "sleep") && !strings.Contains(name, "asleep") &&
 		!strings.Contains(name, "schlaf") && !strings.Contains(name, "schläf") {
+		return false
+	}
+	normalizedName := strings.NewReplacer("_", " ", "-", " ", ".", " ", "/", " ").Replace(name)
+	vehicleNamed := strings.Contains(normalizedName, "model x") || strings.Contains(normalizedName, "model y")
+	for _, field := range strings.Fields(normalizedName) {
+		switch field {
+		case "vehicle", "fahrzeug", "auto", "car", "ev", "tesla", "enyaq", "etron",
+			"ioniq", "kona", "leaf", "zoe", "taycan":
+			vehicleNamed = true
+		}
+	}
+	if !vehicleNamed {
 		return false
 	}
 	switch strings.ToLower(strings.TrimSpace(state)) {
@@ -292,7 +308,7 @@ func selectHeartbeatReadings(heartbeat Heartbeat, selected []string) Heartbeat {
 	}
 	filtered := make([]Reading, 0, len(selected))
 	for _, reading := range heartbeat.Readings {
-		if wanted[reading.EntityID] {
+		if wanted[reading.EntityID] || IsVehicleSleepReading(reading.EntityID, reading.State, reading.DisplayName) {
 			filtered = append(filtered, reading)
 		}
 	}

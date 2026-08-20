@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -163,5 +164,79 @@ func TestPortalAcceptsExplicitVehicleSleepSignalHAUSV551(t *testing.T) {
 	reading.EntityID, reading.DisplayName = "binary_sensor.front_door", "Front door"
 	if validHomeConnectorReading(reading, now) {
 		t.Fatal("unrelated binary sensor was accepted as energy data")
+	}
+	reading.EntityID, reading.DisplayName = "binary_sensor.bedroom_sleeping", "Bedroom sleeping"
+	if validHomeConnectorReading(reading, now) {
+		t.Fatal("non-vehicle sleep sensor was accepted as energy data")
+	}
+}
+
+func TestConnectorFilterRetainsVehicleSleepDiscoveryHAUSV551(t *testing.T) {
+	input := []homeconnector.Reading{
+		{EntityID: "sensor.house_power", State: "1200", DisplayName: "House power"},
+		{EntityID: "binary_sensor.model_x_asleep", State: "on", DisplayName: "Model X Asleep"},
+		{EntityID: "binary_sensor.bedroom_sleeping", State: "on", DisplayName: "Bedroom sleeping"},
+	}
+	got := filterHomeConnectorReadings(input, []string{"sensor.house_power"})
+	if len(got) != 2 || got[0].EntityID != "sensor.house_power" || got[1].EntityID != "binary_sensor.model_x_asleep" {
+		t.Fatalf("connector discovery filter = %+v", got)
+	}
+}
+
+func TestDeletingVehicleRemovesEveryMeasurementMappingHAUSV551(t *testing.T) {
+	a := consumerAppHAUSV422(t)
+	asset := energy.Asset{
+		ID: "vehicle-delete", TenantSlug: "demo", Kind: "ev", Name: "Model X",
+		Confirmed: true, Metadata: map[string]string{},
+	}
+	if err := a.energyStore.UpsertAsset(asset); err != nil {
+		t.Fatal(err)
+	}
+	for metric, entityID := range map[string]string{
+		energy.MetricConsumerPower: "sensor.model_x_power",
+		energy.MetricBatterySOC:    "sensor.model_x_soc",
+		energy.MetricConsumerSleep: "binary_sensor.model_x_asleep",
+	} {
+		if err := a.energyStore.UpsertMapping(energy.EntityMapping{
+			ID: energy.NewID("mapping"), TenantSlug: "demo", AssetID: asset.ID,
+			EntityID: entityID, Metric: metric, Confirmed: true,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	response := authedFormRequest(t, a, "owner@example.com", "/demo/app/energie/verbraucher/entfernen", url.Values{"asset_id": {asset.ID}})
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("delete status=%d body=%s", response.Code, response.Body.String())
+	}
+	mappings, err := a.energyStore.ListMappings("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mapping := range mappings {
+		if mapping.AssetID == asset.ID {
+			t.Fatalf("vehicle mapping survived delete: %+v", mapping)
+		}
+	}
+}
+
+func TestConfiguredParkingReadingUsesAgeAndStaleThresholdHAUSV551(t *testing.T) {
+	now := time.Date(2026, 8, 20, 12, 0, 0, 0, time.Local)
+	parkingID := energyFlowNodeID("demo", "parking")
+	asset := energy.Asset{
+		ID: parkingID, TenantSlug: "demo", Kind: energyFlowParkingKind, Name: "Parkplatz",
+		Metadata: map[string]string{},
+	}
+	charging := parkingLiveView{
+		Available: true, Mode: "manual", ModeLabel: "Normalladen",
+		PowerKW: 3.6, PowerEntity: "sensor.parking_power",
+		PowerLastUpdated: now.Add(-11 * time.Minute),
+	}
+	consumer := energyConsumerHAUSV551(t,
+		buildEnergyFlowConfigAt("demo", energyLiveView{}, []energy.Asset{asset}, nil, nil, charging, false, now),
+		parkingID,
+	)
+	if consumer.Age != "Stand vor 11 Min." || consumer.DataStatus != "stale" || consumer.DataLabel != "Veraltet" ||
+		consumer.KW != 0 || consumer.Active {
+		t.Fatalf("configured parking stale reading = %+v", consumer)
 	}
 }

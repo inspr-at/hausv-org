@@ -573,36 +573,38 @@ type ParkingMonthDetailView struct {
 // source, battery context and the surplus/normal split for today and the
 // running month.
 type ParkingLiveView struct {
-	Available       bool
-	Enabled         bool
-	ShadowMode      bool
-	StaleData       bool
-	Mode            string // surplus | manual | off | idle
-	ModeLabel       string
-	ModeClass       string
-	ModeDetail      string
-	RateLabel       string
-	PlugOn          bool
-	PowerLabel      string
-	PowerKW         float64
-	PowerEntity     string
-	EnergyEntity    string
-	FeedInLabel     string
-	BatterySOCLabel string
-	BatteryClass    string // full | partial | low
-	BatteryHint     string
-	SessionSince    string
-	SessionKWh      string
-	SessionCost     string
-	HasSession      bool
-	TodaySplit      ParkingSplitView
-	MonthSplit      ParkingSplitView
-	CanToggle       bool
-	ToggleOn        bool
-	AutoPaused      bool
-	Sessions        []ChargingSessionView
-	HasSessions     bool
-	Admin           ParkingChargingAdminStrip
+	Available        bool
+	Enabled          bool
+	ShadowMode       bool
+	StaleData        bool
+	Mode             string // surplus | manual | off | idle
+	ModeLabel        string
+	ModeClass        string
+	ModeDetail       string
+	RateLabel        string
+	PlugOn           bool
+	PowerLabel       string
+	PowerKW          float64
+	PowerEntity      string
+	EnergyEntity     string
+	PowerSourceState string
+	PowerLastUpdated time.Time
+	FeedInLabel      string
+	BatterySOCLabel  string
+	BatteryClass     string // full | partial | low
+	BatteryHint      string
+	SessionSince     string
+	SessionKWh       string
+	SessionCost      string
+	HasSession       bool
+	TodaySplit       ParkingSplitView
+	MonthSplit       ParkingSplitView
+	CanToggle        bool
+	ToggleOn         bool
+	AutoPaused       bool
+	Sessions         []ChargingSessionView
+	HasSessions      bool
+	Admin            ParkingChargingAdminStrip
 }
 
 // ParkingSplitView is one two-tone surplus/normal bar.

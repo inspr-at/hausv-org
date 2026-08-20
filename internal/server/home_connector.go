@@ -218,7 +218,8 @@ func filterHomeConnectorReadings(input []homeconnector.Reading, selected []strin
 	}
 	out := make([]homeconnector.Reading, 0, len(selected))
 	for _, reading := range input {
-		if wanted[strings.ToLower(strings.TrimSpace(reading.EntityID))] {
+		if wanted[strings.ToLower(strings.TrimSpace(reading.EntityID))] ||
+			homeconnector.IsVehicleSleepReading(reading.EntityID, reading.State, reading.DisplayName) {
 			out = append(out, reading)
 		}
 	}
@@ -266,7 +267,7 @@ func validHomeConnectorReading(reading homeconnector.Reading, now time.Time) boo
 		reading.LastUpdated.After(now.Add(5*time.Minute)) {
 		return false
 	}
-	if validHomeConnectorSleepReading(entityID, state, reading.DisplayName) {
+	if homeconnector.IsVehicleSleepReading(entityID, state, reading.DisplayName) {
 		return true
 	}
 	if !strings.HasPrefix(entityID, "sensor.") {
@@ -276,24 +277,6 @@ func validHomeConnectorReading(reading homeconnector.Reading, now time.Time) boo
 	value, parseErr := strconv.ParseFloat(strings.ReplaceAll(state, ",", "."), 64)
 	allowedState := (parseErr == nil && !math.IsNaN(value) && !math.IsInf(value, 0)) || strings.EqualFold(state, "unknown") || strings.EqualFold(state, "unavailable")
 	return allowedUnit && allowedState && (deviceClass == "power" || deviceClass == "energy" || deviceClass == "battery")
-}
-
-func validHomeConnectorSleepReading(entityID, state, displayName string) bool {
-	if !strings.HasPrefix(entityID, "sensor.") && !strings.HasPrefix(entityID, "binary_sensor.") {
-		return false
-	}
-	name := strings.ToLower(entityID + " " + strings.TrimSpace(displayName))
-	if !strings.Contains(name, "sleep") && !strings.Contains(name, "asleep") &&
-		!strings.Contains(name, "schlaf") && !strings.Contains(name, "schläf") {
-		return false
-	}
-	switch strings.ToLower(strings.TrimSpace(state)) {
-	case "on", "off", "true", "false", "1", "0", "sleep", "sleeping", "asleep",
-		"schläft", "awake", "online", "unknown", "unavailable":
-		return true
-	default:
-		return false
-	}
 }
 
 func validHomeConnectorReadingSet(readings []homeconnector.Reading, now time.Time) bool {

@@ -17,6 +17,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
+	"github.com/inspr-at/hausv-org/internal/homeconnector"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -2630,18 +2631,11 @@ func energyVehicleSleepState(raw string) (bool, bool) {
 }
 
 func energyVehicleSleepSignal(state homeassistant.EntityState) bool {
-	entityID := strings.ToLower(strings.TrimSpace(state.EntityID))
-	if !strings.HasPrefix(entityID, "sensor.") && !strings.HasPrefix(entityID, "binary_sensor.") {
-		return false
-	}
-	name := strings.ToLower(entityID + " " + haAttribute(state.Attributes, "friendly_name"))
-	if !strings.Contains(name, "sleep") && !strings.Contains(name, "asleep") &&
-		!strings.Contains(name, "schlaf") && !strings.Contains(name, "schläf") {
-		return false
-	}
-	_, known := energyVehicleSleepState(state.State)
-	return known || strings.EqualFold(strings.TrimSpace(state.State), "unknown") ||
-		strings.EqualFold(strings.TrimSpace(state.State), "unavailable")
+	return homeconnector.IsVehicleSleepReading(
+		state.EntityID,
+		state.State,
+		haAttribute(state.Attributes, "friendly_name"),
+	)
 }
 
 func consumerMeasurementKind(state homeassistant.EntityState) string {
@@ -3481,7 +3475,7 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 			return
 		}
 		for _, mapping := range mappings {
-			if mapping.AssetID == assetID && (mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy) {
+			if mapping.AssetID == assetID {
 				_, _ = a.energyFor(ac).DeleteMapping(ac.tenant.Slug, mapping.ID)
 			}
 		}
@@ -3506,10 +3500,7 @@ func (a *app) deleteEnergyConsumer(w http.ResponseWriter, r *http.Request, ac au
 			return
 		}
 		for _, mapping := range mappings {
-			if mapping.AssetID != assetID {
-				continue
-			}
-			if mapping.Metric == energy.MetricConsumerPower || mapping.Metric == energy.MetricConsumerEnergy {
+			if mapping.AssetID == assetID {
 				_, _ = a.energyFor(ac).DeleteMapping(ac.tenant.Slug, mapping.ID)
 			}
 		}
@@ -4768,7 +4759,16 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 			kw := 0.0
 			active := false
 			dataStatus, dataLabel, age := "", "", ""
-			if reading, ok := consumerPower[parkingAsset.ID]; ok {
+			reading, hasReading := consumerPower[parkingAsset.ID]
+			if !hasReading && (!charging.PowerLastUpdated.IsZero() || charging.PowerSourceState != "") {
+				reading = energyMetricView{
+					AssetID: parkingAsset.ID, Metric: energy.MetricConsumerPower,
+					Numeric: charging.PowerKW, Unit: "kW",
+					SourceState: charging.PowerSourceState, LastUpdated: charging.PowerLastUpdated,
+				}
+				hasReading = true
+			}
+			if hasReading {
 				age = energyConsumerAgeLabel(now, reading.LastUpdated)
 				switch reading.SourceState {
 				case "unavailable":
