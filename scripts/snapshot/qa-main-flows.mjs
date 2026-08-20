@@ -452,9 +452,8 @@ async function assertSharedAppShellNavigation() {
       fail(`App-Shell ${width}px: Sprunglink ist nicht das erste Tastaturziel`);
     }
     await page.keyboard.press('Enter');
-    // The skip link now focuses whichever <main> is actually rendered at this width and
-    // writes THAT element's id into the fragment (#main-content on desktop,
-    // #mobile-main-content on phones). Wait for focus to land, not for one fixed hash.
+    // The shared landing is the one focus target at every width. Wait for focus
+    // to land instead of sampling the hash during the browser's focus update.
     await page.waitForFunction(() => document.activeElement && document.activeElement.hasAttribute('data-skip-target'));
     const skipResult = await page.evaluate(() => {
       const m = document.getElementById('main-content');
@@ -469,7 +468,7 @@ async function assertSharedAppShellNavigation() {
         })() : null,
       };
     });
-    if (!['main-content', 'mobile-main-content'].includes(skipResult.active)) {
+    if (skipResult.active !== 'main-content') {
       fail(`App-Shell ${width}px: Sprunglink fokussiert den Inhalt nicht (${JSON.stringify(skipResult)})`);
     }
 
@@ -598,7 +597,7 @@ async function assertSharedAppShellNavigation() {
         active: document.activeElement?.id || '',
       };
     });
-    if (outsideResult.open || outsideResult.active !== 'mobile-main-content') {
+    if (outsideResult.open || outsideResult.active !== 'main-content') {
       fail(`App-Shell ${width}px: Außenklick schließt nicht ohne Fokusdiebstahl (${JSON.stringify(outsideResult)})`);
     }
 
