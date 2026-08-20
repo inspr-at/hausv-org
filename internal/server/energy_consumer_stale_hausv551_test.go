@@ -155,8 +155,8 @@ func TestConsumerStaleOverrideValidationHAUSV551(t *testing.T) {
 func TestPortalAcceptsExplicitVehicleSleepSignalHAUSV551(t *testing.T) {
 	now := time.Date(2026, 8, 20, 12, 0, 0, 0, time.UTC)
 	reading := homeconnector.Reading{
-		EntityID: "binary_sensor.model_x_asleep", State: "on",
-		DisplayName: "Model X Asleep", LastUpdated: now,
+		EntityID: "binary_sensor.vehicle_model_x_asleep", State: "on",
+		DisplayName: "Vehicle Model X Asleep", LastUpdated: now,
 	}
 	if !validHomeConnectorReading(reading, now) {
 		t.Fatal("explicit vehicle sleep signal was rejected by portal validation")
@@ -174,11 +174,11 @@ func TestPortalAcceptsExplicitVehicleSleepSignalHAUSV551(t *testing.T) {
 func TestConnectorFilterRetainsVehicleSleepDiscoveryHAUSV551(t *testing.T) {
 	input := []homeconnector.Reading{
 		{EntityID: "sensor.house_power", State: "1200", DisplayName: "House power"},
-		{EntityID: "binary_sensor.model_x_asleep", State: "on", DisplayName: "Model X Asleep"},
+		{EntityID: "binary_sensor.vehicle_model_x_asleep", State: "on", DisplayName: "Vehicle Model X Asleep"},
 		{EntityID: "binary_sensor.bedroom_sleeping", State: "on", DisplayName: "Bedroom sleeping"},
 	}
 	got := filterHomeConnectorReadings(input, []string{"sensor.house_power"})
-	if len(got) != 2 || got[0].EntityID != "sensor.house_power" || got[1].EntityID != "binary_sensor.model_x_asleep" {
+	if len(got) != 2 || got[0].EntityID != "sensor.house_power" || got[1].EntityID != "binary_sensor.vehicle_model_x_asleep" {
 		t.Fatalf("connector discovery filter = %+v", got)
 	}
 }
@@ -192,11 +192,14 @@ func TestDeletingVehicleRemovesEveryMeasurementMappingHAUSV551(t *testing.T) {
 	if err := a.energyStore.UpsertAsset(asset); err != nil {
 		t.Fatal(err)
 	}
-	for metric, entityID := range map[string]string{
+	seeded := map[string]string{
 		energy.MetricConsumerPower: "sensor.model_x_power",
 		energy.MetricBatterySOC:    "sensor.model_x_soc",
-		energy.MetricConsumerSleep: "binary_sensor.model_x_asleep",
-	} {
+		energy.MetricConsumerSleep: "binary_sensor.vehicle_model_x_asleep",
+	}
+	seededEntities := map[string]bool{}
+	for metric, entityID := range seeded {
+		seededEntities[entityID] = true
 		if err := a.energyStore.UpsertMapping(energy.EntityMapping{
 			ID: energy.NewID("mapping"), TenantSlug: "demo", AssetID: asset.ID,
 			EntityID: entityID, Metric: metric, Confirmed: true,
@@ -213,8 +216,8 @@ func TestDeletingVehicleRemovesEveryMeasurementMappingHAUSV551(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, mapping := range mappings {
-		if mapping.AssetID == asset.ID {
-			t.Fatalf("vehicle mapping survived delete: %+v", mapping)
+		if seededEntities[mapping.EntityID] {
+			t.Fatalf("vehicle mapping entity survived delete: %+v", mapping)
 		}
 	}
 }

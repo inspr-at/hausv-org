@@ -281,11 +281,10 @@ func IsVehicleSleepReading(entityID, state, displayName string) bool {
 		return false
 	}
 	normalizedName := strings.NewReplacer("_", " ", "-", " ", ".", " ", "/", " ").Replace(name)
-	vehicleNamed := strings.Contains(normalizedName, "model x") || strings.Contains(normalizedName, "model y")
+	vehicleNamed := false
 	for _, field := range strings.Fields(normalizedName) {
 		switch field {
-		case "vehicle", "fahrzeug", "auto", "car", "ev", "tesla", "enyaq", "etron",
-			"ioniq", "kona", "leaf", "zoe", "taycan":
+		case "vehicle", "fahrzeug", "auto", "car", "ev", "tesla":
 			vehicleNamed = true
 		}
 	}
