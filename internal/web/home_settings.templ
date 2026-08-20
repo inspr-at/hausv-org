@@ -46,15 +46,16 @@ templ HomeSettingsContent(data HomeSettingsPageData) {
 }
 
 templ HomeSettingsTitle(data HomeSettingsPageData) {
-	<h1 data-home-identity="editor-heading" data-home-display-name aria-label={ data.HomeIdentity.AriaLabel }>{ data.HouseholdName }</h1>
+	<div data-home-identity="editor-heading" aria-label={ data.HomeIdentity.AriaLabel }>
+		<h1 data-home-display-name>{ data.HouseholdName }</h1>
+		if data.HasHomeUnit {
+			<p class="home-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
+		}
+	</div>
 }
 
-templ HomeSettingsLede(data HomeSettingsPageData) {
-	if data.HasHomeUnit {
-		<p><span class="home-unit" data-home-unit-label>{ data.HomeUnitLabel }</span> · Anzeigename, Art und Zuordnung an einem Ort.</p>
-	} else {
-		<p>Anzeigename, Art und Zuordnung an einem Ort.</p>
-	}
+templ HomeSettingsLede(_ HomeSettingsPageData) {
+	<p>Anzeigename, Art und Zuordnung an einem Ort.</p>
 }
 
 templ HomeSettingsHeaderAction(data HomeSettingsPageData) {

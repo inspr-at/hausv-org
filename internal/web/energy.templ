@@ -292,15 +292,16 @@ templ EnergyLanding(data EnergyPageData) {
 }
 
 templ EnergySectionTitle(data EnergyPageData) {
-	<h1 data-home-identity="energy-heading" data-home-display-name aria-label={ data.HomeIdentity.AriaLabel }>{ data.HouseholdName }</h1>
+	<div data-home-identity="energy-heading" aria-label={ data.HomeIdentity.AriaLabel }>
+		<h1 data-home-display-name>{ data.HouseholdName }</h1>
+		if data.HasHomeUnit {
+			<p class="energy-heading-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
+		}
+	</div>
 }
 
 templ EnergySectionLede(data EnergyPageData) {
-	if data.HasHomeUnit {
-		<p><span data-home-unit-label>{ data.HomeUnitLabel }</span> · { data.HomeTypeLabel } · { data.Portal.Address }</p>
-	} else {
-		<p>{ data.HomeTypeLabel } · { data.Portal.Address }</p>
-	}
+	<p class="energy-heading-context">{ data.HomeTypeLabel } · { data.Portal.Address }</p>
 }
 
 templ EnergyHeaderAction(data EnergyPageData) {
