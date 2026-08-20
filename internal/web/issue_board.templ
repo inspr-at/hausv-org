@@ -41,23 +41,13 @@ type IssueTriagePageData struct {
 
 templ IssueBoardPage(data IssueBoardPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssueBoardStyles(), templ.Attributes{"data-templ-issue-board": true}) {
-		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
-		@PortalMobileHeader(data.Portal, "Anliegen")
-		<div class="shell">
-			@PortalSidebar(data.Portal)
-			@IssueBoardContent(data)
-		</div>
+		@PortalShell(data.Portal, "Anliegen", IssueBoardContent(data))
 	}
 }
 
 templ IssueTriagePage(data IssueTriagePageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js"}, IssueTriageStyles(), templ.Attributes{"data-templ-issue-triage": true}) {
-		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
-		<div class="shell">
-			@PortalSidebar(data.Portal)
-			@IssueTriageContent(data)
-		</div>
-		@PortalMobileHeader(data.Portal, "Anliegen")
+		@PortalShell(data.Portal, "Anliegen", IssueTriageContent(data))
 	}
 }
 
@@ -103,40 +93,56 @@ templ IssueTriageBlock() {
 }
 
 templ IssueBoardContent(data IssueBoardPageData) {
-	<main class="issues-main" id="main-content" tabindex="-1">
-		<header class="page-head">
-			<div><p class="eyebrow">Verwaltung</p><h1>Anliegen bearbeiten</h1><p class="lede">Offene Meldungen priorisieren und in den nächsten Schritt bringen.</p></div>
-			<div class="page-actions">
-				if data.IsServiceProvider && data.CalendarFeedURL != "" {
-					<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
-				}
-				<a class="button" href="/app/anliegen">Zurück zu Anliegen</a>
-			</div>
-		</header>
-		if len(data.ServiceProviderContacts) > 0 {
-			<datalist id="service-provider-contacts">
-				for _, contact := range data.ServiceProviderContacts {
-					<option value={ contact.Email }>{ contact.Label }</option>
-				}
-			</datalist>
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Anliegen",
+			Class: "issues-main issue-board-main",
+			Identity: PortalSectionIdentityData{Label: "Verwaltung", Icon: "issue"},
+		},
+		PortalSectionTitle("Anliegen bearbeiten"),
+		PortalSectionLede("Offene Meldungen priorisieren und in den nächsten Schritt bringen."),
+		IssueBoardHeaderAction(data),
+		nil,
+		IssueBoardContext(),
+		IssueBoardBody(data),
+	)
+}
+
+templ IssueBoardHeaderAction(data IssueBoardPageData) {
+	if data.IsServiceProvider && data.CalendarFeedURL != "" {
+		<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
+	}
+}
+
+templ IssueBoardContext() {
+	<a href="/app/anliegen">← Zurück zu Anliegen</a>
+}
+
+templ IssueBoardBody(data IssueBoardPageData) {
+	if len(data.ServiceProviderContacts) > 0 {
+		<datalist id="service-provider-contacts">
+			for _, contact := range data.ServiceProviderContacts {
+				<option value={ contact.Email }>{ contact.Label }</option>
+			}
+		</datalist>
+	}
+	<section class="board-panel" id="issue-manage" aria-label="Anliegen im Haus">
+		if data.TotalIssueCount > 0 {
+			@IssueBoardToolbar(data)
 		}
-		<section class="board-panel" id="issue-manage" aria-label="Anliegen im Haus">
-			if data.TotalIssueCount > 0 {
-				@IssueBoardToolbar(data)
-			}
-			if len(data.Issues) > 0 {
-				<div class="issue-list">
-					for _, issue := range data.Issues {
-						@IssueWorkCard(issue)
-					}
-				</div>
-			} else if data.TotalIssueCount > 0 {
-				@IssueBoardFilterBlank(data)
-			} else {
-				@IssueBoardBlank(data)
-			}
-		</section>
-	</main>
+		if len(data.Issues) > 0 {
+			<div class="issue-list">
+				for _, issue := range data.Issues {
+					@IssueWorkCard(issue)
+				}
+			</div>
+		} else if data.TotalIssueCount > 0 {
+			@IssueBoardFilterBlank(data)
+		} else {
+			@IssueBoardBlank(data)
+		}
+	</section>
 }
 
 templ IssueBoardToolbar(data IssueBoardPageData) {

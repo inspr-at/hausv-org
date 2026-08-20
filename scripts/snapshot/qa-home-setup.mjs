@@ -83,7 +83,7 @@ try {
       page.waitForURL(`**/${slug}/app?activated=1`),
       page.getByRole('button', { name: 'Portal jetzt aktivieren' }).click(),
     ]);
-    await page.getByText('QA Zuhause Browserlauf').first().waitFor();
+    await page.locator('[data-portal-shell]').waitFor();
 
     await page.goto(new URL('/start/connector', origin).href, { waitUntil: 'networkidle' });
     await page.getByText('Schritt 2 von 2').waitFor();
@@ -121,7 +121,7 @@ try {
     process.stdout.write('  ✓ Reservierung, echte E-Mail, Aktivierung und lokale Kopplung im Browser\n');
   } else {
     await page.goto(new URL(`/${slug}/app`, origin).href, { waitUntil: 'networkidle' });
-    await page.getByText('QA Zuhause Browserlauf').first().waitFor();
+    await page.locator('[data-portal-shell]').waitFor();
     await page.goto(new URL('/start/connector', origin).href, { waitUntil: 'networkidle' });
     await page.getByText('Verbunden und bereit').waitFor();
 

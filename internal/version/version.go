@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.0",
+			Date:     "20. August 2026",
+			Kind:     "Oberfläche",
+			Headline: "Ein gemeinsamer Rahmen für alle Portalbereiche.",
+			Intro:    "Navigation, Seitenkopf und Abstände sind in allen Hauptbereichen einheitlich. Titelbilder erscheinen gezielt nur dort, wo sie Orientierung geben.",
+			Items: []NoteItem{
+				{Label: "Einheitlich", Text: "Seitenleiste, mobile Navigation und Kopfzeile folgen überall demselben Aufbau."},
+				{Label: "Titelbilder", Text: "Hausüberblick, Aushang und Termine verwenden dasselbe bündige Hausfoto mit ruhigem Farbverlauf."},
+				{Label: "Aktionen", Text: "Aktionen im Seitenkopf sind zurückhaltend umrandet; wichtige Schritte im Inhalt bleiben deutlich hervorgehoben."},
+			},
+		},
+		{
 			Version:  "0.98.11",
 			Date:     "20. August 2026",
 			Kind:     "Oberfläche",

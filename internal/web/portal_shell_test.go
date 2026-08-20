@@ -139,6 +139,152 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 	}
 }
 
+func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
+	portal := PortalPageData{
+		Title: "Portal", HouseName: "Haus am Park", Address: "Parkgasse 1",
+		GreetingName: "Ada", Today: "Donnerstag, 20. August", DisplayName: "Ada Beispiel",
+		Initials: "AB", Role: "Verwaltung", HeroImageURL: "/assets/hausv-landing-hero.png",
+		MapURL: "https://www.openstreetmap.org/", Dense: true,
+		CanUseResidentAreas: true, CanViewEnergy: true, CanManageIssues: true,
+		CanCreateResidentIssue: true, CanSeeParking: true, CanManageHandovers: true,
+		CanManageUsers: true, CanViewAudit: true,
+		Modules: PortalModules{
+			Energy: true, Announcements: true, Events: true, Contacts: true,
+			Documents: true, Issues: true, Votes: true, Parking: true,
+			Handovers: true, Users: true, Audit: true, Help: true,
+		},
+		Map: PortalMap{Configured: true, Tiles: []PortalMapTile{{
+			URL: "/map-tiles/17/1/2.png", Style: "left:0;top:0",
+		}}},
+		Contexts: []PortalContext{
+			{TenantSlug: "park", HouseName: "Haus am Park", Role: "Verwaltung", Current: true},
+			{TenantSlug: "see", HouseName: "Haus am See", Role: "Bewohner"},
+		},
+	}
+
+	type landing struct {
+		route, name, action string
+		hero                bool
+		component           templ.Component
+	}
+	landings := []landing{
+		{"/app", "Hausüberblick", "Anliegen melden", true, PortalPage(portal)},
+		{"/app/energie", "Mein Zuhause", "Zuhause bearbeiten", false, EnergyPage(EnergyPageData{Portal: portal, HouseholdName: "Dachwohnung", HomeTypeLabel: "Wohnung", CanManageHomeIdentity: true})},
+		{"/app/announcements", "Aushang", "Aushang erstellen", true, AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: "test", CanManageAnnouncements: true})},
+		{"/app/events", "Termine", "Termin erstellen", true, EventsPage(EventsPageData{Portal: portal, AssetVersion: "test", CanManageEvents: true})},
+		{"/app/kontakte", "Kontakte", "Kontakt hinzufügen", false, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", CanManageContacts: true})},
+		{"/app/dokumente", "Dokumente", "Hochladen", false, DocumentsPage(DocumentsPageData{Portal: portal, AssetVersion: "test", CanManageDocuments: true, HasAnyDocuments: true})},
+		{"/app/anliegen", "Anliegen für Bewohner", "Triage-Board", false, IssuesPage(IssuesPageData{Portal: portal, AssetVersion: "test", CanManageIssues: true})},
+		{"/app/anliegen/board", "Anliegen-Board", "Kalender abonnieren", false, IssueBoardPage(IssueBoardPageData{Portal: portal, AssetVersion: "test", IsServiceProvider: true, CalendarFeedURL: "/calendar.ics"})},
+		{"/app/abstimmungen", "Abstimmungen", "Abstimmung anlegen", false, BallotsPage(BallotsPageData{Portal: portal, AssetVersion: "test", CanManageVotes: true, HasBallots: true})},
+		{"/app/parking", "Parkplatznutzung", "Mehr", false, ParkingPage(ParkingPageData{Portal: portal, AssetVersion: "test", StatementYear: 2026})},
+		{"/app/uebergaben", "Übergaben", "Übergabe anlegen", false, HandoversPage(HandoversPageData{Portal: portal, AssetVersion: "test", HasHandovers: true})},
+		{"/app/settings/users", "Benutzer & Rechte", "", false, UserSettingsPage(UserSettingsPageData{Portal: portal, AssetVersion: "test"})},
+		{"/app/audit", "Verlauf", "Einstellungen", false, AuditPage(AuditPageData{Portal: portal, AuditPageTitle: "Verlauf", AuditLede: "Änderungen nachvollziehen."})},
+		{"/app/settings", "Einstellungen", "", false, SettingsHubPage(SettingsHubPageData{Portal: portal})},
+		{"/app/hilfe", "Hilfe", "", false, HelpPage(HelpPageData{Portal: portal})},
+	}
+
+	for _, page := range landings {
+		t.Run(page.route, func(t *testing.T) {
+			html := renderComponent(t, page.component)
+			for _, marker := range []string{
+				`data-portal-shell`, `data-portal-section-landing`,
+				`data-portal-section-header`, `class="sidebar"`,
+				`class="side-map`, `class="side-address-label"`, `class="account"`,
+			} {
+				if !strings.Contains(html, marker) {
+					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)
+				}
+			}
+			if got := strings.Count(html, `data-portal-section-hero`); got != boolInt(page.hero) {
+				t.Errorf("shared hero count = %d, want %d", got, boolInt(page.hero))
+			}
+			if !strings.Contains(html, `data-portal-hero="`+portalBool(page.hero)+`"`) {
+				t.Errorf("hero contract is not declared as %t", page.hero)
+			}
+
+			header := portalTestElement(html, `data-portal-section-header`, "</header>")
+			if page.action != "" && !strings.Contains(header, page.action) {
+				t.Errorf("header action %q is missing", page.action)
+			}
+			if strings.Contains(header, `class="button primary"`) {
+				t.Errorf("header action is filled; header actions must use outline .button")
+			}
+
+			mobile := portalTestElement(html, `class="mobile-head"`, "</header>")
+			for _, role := range []string{"Verwaltung</small>", "Bewohner</small>"} {
+				if strings.Contains(mobile, role) {
+					t.Errorf("mobile chrome exposes role %q", role)
+				}
+			}
+			if !strings.Contains(html, `<footer class="account"`) || !strings.Contains(html, `<small>Verwaltung</small>`) {
+				t.Error("the signed-in role must remain in the account footer")
+			}
+		})
+	}
+
+	home := renderComponent(t, PortalPage(portal))
+	if !strings.Contains(home, ".portal-section-landing{--portal-content-width:1180px;min-width:0;min-height:100vh;padding:0}") {
+		t.Error("hero landings must start flush without inherited top padding")
+	}
+	energy := renderComponent(t, EnergyPage(EnergyPageData{Portal: portal}))
+	for _, contract := range []string{
+		".energy-mode-strip{container-type:inline-size;container-name:energy-strip;",
+		"display:flex;flex-wrap:wrap;",
+		"@container energy-strip (max-width:920px)",
+	} {
+		if !strings.Contains(energy, contract) {
+			t.Errorf("energy strip lost HAUSV-558 contract %q", contract)
+		}
+	}
+}
+
+func TestPortalPagesDoNotOwnSharedChromeCSS(t *testing.T) {
+	sources, err := filepath.Glob("*.templ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source == "portal.templ" || source == "templ_example.templ" {
+			continue
+		}
+		body, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, clone := range []string{
+			".home-hero", ".page-head", ".page-top", ".page-heading", ".crumb",
+			".lede{", ".page-actions", ".shell{", ".sidebar{", ".mobile-head{",
+			".mobile-identity",
+		} {
+			if bytes.Contains(body, []byte(clone)) {
+				t.Errorf("%s still owns shared chrome selector %s", source, clone)
+			}
+		}
+	}
+}
+
+func portalTestElement(html, marker, closing string) string {
+	markerAt := strings.Index(html, marker)
+	if markerAt < 0 {
+		return ""
+	}
+	start := strings.LastIndex(html[:markerAt], "<")
+	end := strings.Index(html[markerAt:], closing)
+	if start < 0 || end < 0 {
+		return ""
+	}
+	return html[start : markerAt+end+len(closing)]
+}
+
+func boolInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
 func TestContactsFlashDistinguishesSuccessAndFailure(t *testing.T) {
 	portal := PortalPageData{Title: "Kontakte"}
 	// Keyed on ContactOK, the value the server actually computes — not inferred

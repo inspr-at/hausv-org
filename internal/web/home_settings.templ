@@ -29,12 +29,41 @@ templ HomeSettingsPage(data HomeSettingsPageData) {
 }
 
 templ HomeSettingsContent(data HomeSettingsPageData) {
-	<main class="settings-main home-identity" id="main-content" tabindex="-1" data-templ-home-settings>
-		<header class="page-head"><div data-home-identity="editor-heading" aria-label={ data.HomeIdentity.AriaLabel }><span class="eyebrow"><a href="/app/settings">Einstellungen</a> / Mein Zuhause</span><h1 data-home-display-name>{ data.HouseholdName }</h1>
-			if data.HasHomeUnit {
-				<p class="home-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
-			}
-		<p>Anzeigename, Art und Zuordnung an einem Ort.</p></div><a class="button ghost" href={ templ.SafeURL(data.BackURL) }>{ data.BackLabel }</a></header>
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Zuhause",
+			Class: "settings-main home-identity",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Mein Zuhause", Icon: "home", URL: "/app/settings"},
+		},
+		HomeSettingsTitle(data),
+		HomeSettingsLede(data),
+		HomeSettingsHeaderAction(data),
+		nil,
+		nil,
+		HomeSettingsBody(data),
+	)
+}
+
+templ HomeSettingsTitle(data HomeSettingsPageData) {
+	<div data-home-identity="editor-heading" aria-label={ data.HomeIdentity.AriaLabel }>
+		<h1 data-home-display-name>{ data.HouseholdName }</h1>
+		if data.HasHomeUnit {
+			<p class="home-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
+		}
+	</div>
+}
+
+templ HomeSettingsLede(_ HomeSettingsPageData) {
+	<p>Anzeigename, Art und Zuordnung an einem Ort.</p>
+}
+
+templ HomeSettingsHeaderAction(data HomeSettingsPageData) {
+	<a class="button" href={ templ.SafeURL(data.BackURL) }>{ data.BackLabel }</a>
+}
+
+templ HomeSettingsBody(data HomeSettingsPageData) {
+	<div data-templ-home-settings>
 		if data.Saved {
 			@SettingsFlash("Der Anzeigename von „Mein Zuhause“ wurde gespeichert.", true)
 		}
@@ -83,7 +112,7 @@ templ HomeSettingsContent(data HomeSettingsPageData) {
 				<footer class="form-actions"><a class="button ghost" href={ templ.SafeURL(data.BackURL) }>Abbrechen</a><button class="button primary" type="submit">Änderungen speichern</button></footer>
 			</form>
 		</section>
-	</main>
+	</div>
 }
 
 templ HomeTypeOption(value, label, description, selected string) {

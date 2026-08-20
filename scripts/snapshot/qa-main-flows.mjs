@@ -41,6 +41,24 @@ const routes = [
   { path: '/app/energie', heading: 'QA Zuhause', content: 'Nur beobachten' },
 ];
 
+const portalChromeRoutes = [
+  { path: '/app', hero: true, action: 'Anliegen melden' },
+  { path: '/app/energie', hero: false, action: 'Zuhause bearbeiten', energy: true },
+  { path: '/app/announcements', hero: true, action: 'Aushang erstellen' },
+  { path: '/app/events', hero: true, action: 'Termin erstellen' },
+  { path: '/app/kontakte', hero: false, action: 'Kontakt hinzufügen' },
+  { path: '/app/dokumente', hero: false, action: 'Hochladen' },
+  { path: '/app/anliegen', hero: false, action: 'Triage-Board' },
+  { path: '/app/anliegen/board', hero: false, boardContext: true },
+  { path: '/app/abstimmungen', hero: false, action: 'Abstimmung anlegen' },
+  { path: '/app/parking', hero: false, action: 'Mehr' },
+  { path: '/app/uebergaben', hero: false },
+  { path: '/app/settings/users', hero: false },
+  { path: '/app/audit', hero: false, action: 'Einstellungen' },
+  { path: '/app/settings', hero: false },
+  { path: '/app/hilfe', hero: false },
+];
+
 const executableCandidates = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
   ...(process.env.CI === 'true' ? [] : [
@@ -259,6 +277,87 @@ async function newContext(viewport) {
   });
 }
 
+async function assertPortalChromeKit() {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
+
+  for (const route of portalChromeRoutes) {
+    const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) {
+      fail(`Portal-Chrome ${route.path}: Status ${response?.status() ?? 0}`);
+    }
+    const result = await page.evaluate((expected) => {
+      const shell = document.querySelector('[data-portal-shell]');
+      const landing = document.querySelector('[data-portal-section-landing]');
+      const header = landing?.querySelector('[data-portal-section-header]');
+      const hero = landing?.querySelector(':scope > [data-portal-section-hero]');
+      const landingRect = landing?.getBoundingClientRect();
+      const heroRect = hero?.getBoundingClientRect();
+      const headerButtons = [...(header?.querySelectorAll('.button') || [])];
+      const sidebar = shell?.querySelector('aside.sidebar');
+      const mobileIdentity = document.querySelector('.mobile-head .mobile-identity small')?.textContent?.trim() || '';
+      const switchRows = [...document.querySelectorAll('.context-switch .context-current small, .context-switch .context-menu button small')]
+        .map((node) => node.textContent?.trim() || '');
+      const strip = landing?.querySelector(':scope > .energy-mode-strip');
+      const stripStyle = strip ? getComputedStyle(strip) : null;
+      return {
+        shell: Boolean(shell),
+        landing: Boolean(landing),
+        header: Boolean(header),
+        declaredHero: landing?.getAttribute('data-portal-hero'),
+        heroCount: landing?.querySelectorAll('[data-portal-section-hero]').length || 0,
+        heroGap: heroRect && landingRect ? Math.round(heroRect.top - landingRect.top) : null,
+        actionTexts: headerButtons.map((button) => button.textContent?.trim() || ''),
+        primaryActions: headerButtons.filter((button) => button.classList.contains('primary')).length,
+        wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
+        sidebarMap: Boolean(sidebar?.querySelector('.side-map')),
+        sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
+        sidebarAccount: Boolean(sidebar?.querySelector('footer.account small')),
+        mobileIdentity,
+        switchRows,
+        boardContext: Boolean(landing?.querySelector('.portal-section-context a[href$="/app/anliegen"]')),
+        energyStrip: Boolean(strip),
+        energyFlexWrap: stripStyle?.flexWrap || '',
+        energyContainerType: stripStyle?.containerType || '',
+        expected,
+      };
+    }, route);
+
+    if (!result.shell || !result.landing || !result.header) {
+      fail(`Portal-Chrome ${route.path}: Shared kit fehlt (${JSON.stringify(result)})`);
+    }
+    if (result.declaredHero !== String(route.hero) || result.heroCount !== (route.hero ? 1 : 0)) {
+      fail(`Portal-Chrome ${route.path}: Hero-Vertrag verletzt (${JSON.stringify(result)})`);
+    }
+    if (route.hero && result.heroGap !== 0) {
+      fail(`Portal-Chrome ${route.path}: Hero beginnt mit ${result.heroGap}px Abstand`);
+    }
+    if (route.action && !result.actionTexts.some((text) => text.includes(route.action))) {
+      fail(`Portal-Chrome ${route.path}: Header-Aktion „${route.action}“ fehlt`);
+    }
+    if (result.primaryActions || result.wrappedActions) {
+      fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
+    }
+    if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccount) {
+      fail(`Portal-Chrome ${route.path}: Sidebar-Invarianten verletzt (${JSON.stringify(result)})`);
+    }
+    if (/\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(result.mobileIdentity) ||
+        result.switchRows.some((row) => /\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(row))) {
+      fail(`Portal-Chrome ${route.path}: Rolle außerhalb des Account-Footers (${JSON.stringify(result)})`);
+    }
+    if (route.boardContext && !result.boardContext) {
+      fail(`Portal-Chrome ${route.path}: Board-Zurücklink fehlt im Kontext-Slot`);
+    }
+    if (route.energy && (!result.energyStrip || result.energyFlexWrap !== 'wrap' ||
+        !result.energyContainerType.includes('inline-size'))) {
+      fail(`Portal-Chrome ${route.path}: Energie-Strip-Wrap verloren (${JSON.stringify(result)})`);
+    }
+  }
+
+  await closeContext(context);
+  process.stdout.write('  ✓ Gemeinsames Portal-Chrome · 14 Navigationseinträge + Anliegen-Board\n');
+}
+
 // Eine überlaufende Seitenleiste ist auf einem Screenshot unsichtbar: die Seite
 // sieht richtig aus, der Eintrag fehlt einfach. Genau das war der Fall — bei
 // 900 Pixel Fensterhöhe, der verbreitetsten Notebook-Größe, waren "Verlauf" und
@@ -298,9 +397,9 @@ async function assertSidebarNavReachable() {
 // The templ shell renders it as details.context-switch in the sidebar and a mobile twin,
 // so those selectors matched nothing — and because CI runs only the energy subset of
 // these flows, this had been failing silently since the switch went live. What is worth
-// keeping is the BEHAVIOUR: switching portals updates URL, house name and role atomically,
-// and the switcher stays usable at phone width. Placement is a design decision, not a
-// contract, so it is no longer asserted here.
+// keeping is the BEHAVIOUR: switching portals updates URL, house name and the
+// account-footer role atomically, while switch rows themselves stay role-free.
+// The switcher also remains usable at phone width.
 async function assertPortalSwitcherAtomic() {
   const context = await trackedContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
   const page = await localLogin(context, 'multi@example.com');
@@ -317,10 +416,12 @@ async function assertPortalSwitcherAtomic() {
   await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
   const after = page.locator('aside.sidebar > header details.context-switch .context-current');
+  const accountRole = page.locator('aside.sidebar > footer.account small').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
       (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
-      !(await after.locator('small').textContent())?.includes('Admin')) {
-    fail(`Portalwechsel aktualisiert URL, Name oder Rolle nicht atomar (${page.url()})`);
+      (await after.locator('small').textContent())?.trim() !== 'Aktives Portal' ||
+      !(await accountRole.textContent())?.includes('Admin')) {
+    fail(`Portalwechsel aktualisiert URL, Name oder Account-Rolle nicht atomar (${page.url()})`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -334,7 +435,7 @@ async function assertPortalSwitcherAtomic() {
     fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
   }
   await closeContext(context);
-  process.stdout.write('  ✓ Portalwechsler · URL, Name und Rolle atomar · Desktop und Mobil\n');
+  process.stdout.write('  ✓ Portalwechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
 }
 
 async function assertSharedAppShellNavigation() {
@@ -351,9 +452,8 @@ async function assertSharedAppShellNavigation() {
       fail(`App-Shell ${width}px: Sprunglink ist nicht das erste Tastaturziel`);
     }
     await page.keyboard.press('Enter');
-    // The skip link now focuses whichever <main> is actually rendered at this width and
-    // writes THAT element's id into the fragment (#main-content on desktop,
-    // #mobile-main-content on phones). Wait for focus to land, not for one fixed hash.
+    // The shared landing is the one focus target at every width. Wait for focus
+    // to land instead of sampling the hash during the browser's focus update.
     await page.waitForFunction(() => document.activeElement && document.activeElement.hasAttribute('data-skip-target'));
     const skipResult = await page.evaluate(() => {
       const m = document.getElementById('main-content');
@@ -368,7 +468,7 @@ async function assertSharedAppShellNavigation() {
         })() : null,
       };
     });
-    if (!['main-content', 'mobile-main-content'].includes(skipResult.active)) {
+    if (skipResult.active !== 'main-content') {
       fail(`App-Shell ${width}px: Sprunglink fokussiert den Inhalt nicht (${JSON.stringify(skipResult)})`);
     }
 
@@ -497,7 +597,7 @@ async function assertSharedAppShellNavigation() {
         active: document.activeElement?.id || '',
       };
     });
-    if (outsideResult.open || outsideResult.active !== 'mobile-main-content') {
+    if (outsideResult.open || outsideResult.active !== 'main-content') {
       fail(`App-Shell ${width}px: Außenklick schließt nicht ohne Fokusdiebstahl (${JSON.stringify(outsideResult)})`);
     }
 
@@ -778,25 +878,24 @@ async function assertResponsiveAdminWidths() {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (phone) => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      // templ renders the announcements column as .feed; .announce-feed and .announce-group
-      // were the legacy renderer's names. .announcement-entry / .entry-head / .section-head /
-      // .archive-tools survived the switch unchanged.
+      // The feature body stays page-owned: .feed contains announcement cards,
+      // while shell/header geometry comes from the shared portal kit.
       const feed = document.querySelector('.feed');
       if (!feed) return { missing: true };
       const style = getComputedStyle(feed);
       const feedBox = feed.getBoundingClientRect();
       const contentLeft = feedBox.left + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.paddingLeft);
       const contentRight = feedBox.right - Number.parseFloat(style.borderRightWidth) - Number.parseFloat(style.paddingRight);
-      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, .announcement-entry')]
+      const clipped = [...feed.querySelectorAll(':scope > .section-head, :scope > .archive-tools, .announcement-card')]
         .filter((element) => element.getClientRects().length)
         .filter((element) => {
           const box = element.getBoundingClientRect();
           return box.left < contentLeft - 1 || box.right > contentRight + 1;
         })
         .map((element) => `${element.tagName.toLowerCase()}.${element.className}`);
-      const badHeads = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+      const badHeads = [...feed.querySelectorAll('.announcement-card .announcement-card-header')]
         .filter((head) => {
-          const entry = head.closest('.announcement-entry');
+          const entry = head.closest('.announcement-card');
           const entryStyle = getComputedStyle(entry);
           const entryBox = entry.getBoundingClientRect();
           const headBox = head.getBoundingClientRect();
@@ -811,7 +910,7 @@ async function assertResponsiveAdminWidths() {
           return box.left < -1 || box.right > window.innerWidth + 1;
         })
         .map((element) => (element.textContent || element.getAttribute('aria-label') || element.tagName).trim().slice(0, 50));
-      const headDisplays = [...feed.querySelectorAll('.announcement-entry .entry-head')]
+      const headDisplays = [...feed.querySelectorAll('.announcement-card .announcement-card-header')]
         .map((head) => getComputedStyle(head).display);
       return {
         missing: false,
@@ -822,16 +921,16 @@ async function assertResponsiveAdminWidths() {
         badHeads,
         offscreenControls,
         phone,
-        headsAreGrid: headDisplays.length > 0 && headDisplays.every((display) => display === 'grid'),
+        headsStructured: headDisplays.length > 0 && headDisplays.every((display) => ['flex', 'grid'].includes(display)),
       };
-    // "Phone" is where the templ shell collapses to a single column and stacks entry heads
-    // as a grid: max-width 760px (portal.templ). The legacy renderer collapsed at 1180px and
+    // "Phone" is where the shared shell collapses to a single column:
+    // max-width 760px (portal.templ). The legacy renderer collapsed at 1180px and
     // this probe still carried that number, so it demanded phone layout at 768 and 1024 —
     // widths the current design deliberately keeps as tablet/desktop.
     }, width <= 760);
     if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
         result.clipped.length || result.badHeads || result.offscreenControls.length ||
-        (result.phone && (result.feedColumns !== 1 || !result.headsAreGrid))) {
+        (result.phone && (result.feedColumns !== 1 || !result.headsStructured))) {
       fail(`Aushang ${width}px: Inhalt oder Aktionen werden abgeschnitten (${JSON.stringify(result)})`);
     }
     if (width === 390 && process.env.HV_QA_SCREENSHOT_DIR) {
@@ -1274,7 +1373,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
     { width: 1440, height: 900 },
   ]) {
   const routeChecks = [
-    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: 'aside.aside > details.guide' },
+    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: 'aside.aside > details.guide', guideOpen: true },
     { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside > details.guide' },
     { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside > details.aside-panel', guide: '.contacts-aside > details.aside-panel' },
     { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.file-details' },
@@ -1332,7 +1431,10 @@ async function assertResidentContentResponsiveMatrix(sizes = [
 
       if (route.guide) {
         const guide = page.locator(route.guide).first();
-        if (await guide.evaluate((node) => node.open)) fail(`${route.name} ${size.width}px: Lesehilfe verdrängt den Hauptinhalt`);
+        const guideOpen = await guide.evaluate((node) => node.open);
+        if (guideOpen !== Boolean(route.guideOpen)) {
+          fail(`${route.name} ${size.width}px: Ausgangszustand der Lesehilfe ist falsch`);
+        }
         // In the 2-column aside band a CLOSED guide must not be stretched to its neighbour's
         // height. The old check compared against 110px — the legacy panel's own height — so a
         // templ panel that is legitimately 118px tall when closed (padding + a 46px summary
@@ -1424,7 +1526,7 @@ async function assertResidentContentClickFlows() {
   if (!(await page.locator('.empty-filter').isVisible())) fail('Aushang-Suche: verständlicher Kein-Treffer-Zustand fehlt');
   await page.getByRole('link', { name: 'Filter zurücksetzen' }).click();
   await page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && !url.search);
-  const announcement = page.locator('.announcement-entry').filter({ hasText: 'QA Hausinformation' }).first();
+  const announcement = page.locator('.announcement-card').filter({ hasText: 'QA Hausinformation' }).first();
   const announcementBody = announcement.locator('.announcement-body');
   if (!(await announcementBody.evaluate((node) => node.open))) await announcementBody.locator('summary').click();
   if (!(await announcementBody.locator('.announcement-body-content').isVisible())) fail('Aushang lesen: Inhalt bleibt verborgen');
@@ -2031,16 +2133,20 @@ async function assertLogoutBackNavigation() {
   }
 
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/'),
+    page.waitForURL((url) => url.pathname.endsWith('/')),
     page.getByRole('button', { name: 'Abmelden' }).click(),
   ]);
+  const loggedOutPath = new URL(page.url()).pathname;
   loginStorageStates.delete(`${baseURL}|resident@example.com`);
   if (!(await page.getByRole('heading', { name: 'Anmelden' }).isVisible())) {
     fail('Abmelden/Zurück: Loginseite nach Abmeldung fehlt');
   }
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
-  await page.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+  if (new URL(page.url()).pathname !== loggedOutPath) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  }
+  await page.waitForURL((url) => url.pathname.endsWith('/'), { timeout: 10_000 });
   await page.waitForLoadState('networkidle');
   const authenticatedBody = await page.locator('body[data-authenticated-app]').count();
   if (authenticatedBody || await protectedHeading.isVisible().catch(() => false)) {
@@ -2084,8 +2190,8 @@ async function assertEnergySafetyAndFlow(viewport) {
   } else {
     await assertHomeIdentityPair(page, 'nav', 'QA Zuhause', 'Einheit 12', `Navigation ${viewport.name}`);
   }
-  if (!(await page.locator('.energy-heading-breadcrumb').getByText('Musterweg 1, 1010 Wien', { exact: true }).count()) ||
-      !(await page.locator('.energy-heading-unit-row').getByText('Wohnung', { exact: false }).count()) ||
+  if (!(await page.locator('.portal-section-lede').getByText(/Wohnung.*Musterweg 1, 1010 Wien/, { exact: false }).count()) ||
+      !(await page.locator('.portal-section-identity').getByText('Mein Zuhause', { exact: true }).count()) ||
       !(await page.getByRole('link', { name: 'Zuhause bearbeiten' }).count())) {
     fail(`Energie ${viewport.name}: Name, offizielle Wohnung oder sichtbarer Bearbeitungsweg fehlt`);
   }
@@ -2737,7 +2843,7 @@ async function assertEnergyGeometryMatrix() {
       const recommendationTrigger = live?.querySelector('[data-dialog="energy-recommendation-dialog"]');
       const strip = document.querySelector('.energy-mode-strip');
       const sidebar = document.querySelector('.sidebar');
-      const heading = document.querySelector('.energy-heading');
+      const heading = document.querySelector('.energy-main > .portal-section-header');
       const action = strip?.querySelector('.energy-mode-action');
       const modeState = strip?.querySelector('.energy-mode-state');
       const liveRect = rectOf(live);
@@ -3059,6 +3165,7 @@ try {
         await createIssue('owner@example.com', 'QA Eigentümeranliegen');
       }
       await seedManagedContent();
+      await assertPortalChromeKit();
       await assertResidentContentResponsiveMatrix(ciCore ? [
         { width: 390, height: 844 },
         { width: 768, height: 1024 },
