@@ -3437,8 +3437,10 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if !strings.Contains(body, `calm-main`) || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the calm templ overview instead of the old banner")
 	}
-	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 1 {
-		t.Fatalf("responsive portal shells should expose the create path, got %d", got)
+	// The shared hero owns the desktop action; the fixed mobile quick action
+	// keeps the same destination for thumb reach.
+	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 2 {
+		t.Fatalf("desktop hero and mobile quick action should expose the create path, got %d", got)
 	}
 	for _, want := range []string{`.portal-home-landing.calm-main`, `.disclosures{`, `.utility-links{`} {
 		if !strings.Contains(body, want) {
