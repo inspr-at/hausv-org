@@ -46,9 +46,11 @@ def mock_git(args: list[str]) -> int:
             print(f"fatal: ambiguous argument '{LIVE[:7]}^{{commit}}'", file=sys.stderr)
             return 128
         print(LIVE)
+    elif args == ["rev-parse", "HEAD"]:
+        print(HEAD)
     elif len(args) >= 3 and args[:2] == ["diff", "--quiet"]:
-        # Simulate migration change for specific test case
-        if CASE == "migrations_changed":
+        # Simulate migration change for specific test cases
+        if CASE in ("migrations_changed", "migrations_changed_no_data", "schema_dry_run", "schema_incomplete_proof"):
             return 1
         elif CASE == "git_diff_fail":
             print("fatal: git diff failed", file=sys.stderr)
@@ -63,7 +65,38 @@ def mock_git(args: list[str]) -> int:
 
 
 def mock_docker(args: list[str]) -> int:
-    # Just log docker calls, don't execute them
+    # Mock basic docker inspect calls needed for preflight
+    if len(args) >= 4 and args[:2] == ["inspect", "--format"]:
+        if "{{if .State.Health}}" in args[2]:
+            # Health check
+            print("healthy")
+            return 0
+        elif "{{.Image}}" in args[2]:
+            # Image ID
+            print(IMAGE_ID)
+            return 0
+        elif "{{.Id}}" in args[2]:
+            # Image ID (alternate format)
+            print(IMAGE_ID)
+            return 0
+        elif "{{index .Config.Labels" in args[2]:
+            # Compose labels
+            if "compose.project" in args[2]:
+                print(os.environ.get("HAUSV_DEPLOY_COMPOSE_PROJECT", "hausv"))
+            elif "compose.service" in args[2]:
+                print("hausv-org")
+            return 0
+    elif args[:2] == ["image", "inspect"]:
+        # Image exists check
+        return 0
+    elif len(args) >= 2 and args[0] == "compose":
+        # Compose commands
+        if "config" in args and "--services" in args:
+            print("hausv-org")
+            return 0
+        return 0
+    
+    # Just log other docker calls
     log("docker", args)
     return 0
 
