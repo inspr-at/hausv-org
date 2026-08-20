@@ -3420,7 +3420,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Heute wartet nichts auf Sie.", "Heute ist nichts zu erledigen", "Alles im Blick", `class="calm-main"`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
+	for _, want := range []string{"Heute wartet nichts auf Sie.", "Heute ist nichts zu erledigen", "Alles im Blick", `calm-main`, `data-portal-section-landing`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
@@ -3434,13 +3434,13 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if strings.Contains(body, `class="empty-state"`) || strings.Contains(body, "Noch keine Beiträge") {
 		t.Fatal("calm portal should not stack empty states")
 	}
-	if !strings.Contains(body, `class="calm-main"`) || strings.Contains(body, `class="banner"`) {
+	if !strings.Contains(body, `calm-main`) || strings.Contains(body, `class="banner"`) {
 		t.Fatal("portal should use the calm templ overview instead of the old banner")
 	}
 	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 1 {
 		t.Fatalf("responsive portal shells should expose the create path, got %d", got)
 	}
-	for _, want := range []string{`.calm-main{`, `.disclosures{`, `.utility-links{`} {
+	for _, want := range []string{`.portal-home-landing.calm-main`, `.disclosures{`, `.utility-links{`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portal stylesheet should contain focused dashboard selector %q", want)
 		}
