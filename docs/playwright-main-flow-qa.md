@@ -81,25 +81,26 @@ mit `HV_QA_HEADLESS=false` sichtbar gestartet werden; die spezialisierten
 Lebenszyklen bleiben headless. In CI bleibt auch der Basislauf zwingend
 headless.
 
-## Verpflichtendes CI-Gate
+## Required CI gate
 
-Der parallele Blacksmith-Job `Focused browser smoke test` führt bei jedem Push auf
-`main` und bei jedem Pull Request denselben Orchestrator headless aus. Ein
-Fehler macht den Workflow rot. `HV_QA_CI_CORE=true` verkleinert nur die breite
-Rollen-/Routen-Grundmatrix; die spezialisierten öffentlichen, Bewohner-,
-Übergabe-, Dokument-, Einstellungs- und Parkplatz-Lebenszyklen bleiben Teil des
-Gates. Mit vollständig erfundenen, lokalen Daten prüft es:
+The parallel Blacksmith job `Full browser flow suite` runs this complete
+orchestrator headlessly on every pull request and every push to `main`. The job
+does not set the focused energy, fast, landing-only, or reduced role-matrix
+flags. A failure therefore makes every role/route pass and every specialist
+public, resident, handover, document, settings, parking, and HAUSV Home
+lifecycle fail closed in CI.
 
-- Anmeldung als Bewohner und Admin;
-- Hausüberblick, Anliegen und Bewohnerinhalte auf Desktop und Mobil;
-- das geführte Energie-Onboarding sowie den vollständigen HAUSV-Home-Start von
-  der Reservierung bis zur dauerhaften lokalen Verbindung;
-- Abmelden mit anschließendem Browser-Zurück ohne wieder sichtbare
-  Portal-Inhalte;
-- öffentliche Anmeldung/Karte, Übergabe, Dokumente/E-Rechnung sowie
-  Einstellungen/Parkplatz in ihren gezielten Breitenmatrizen;
-- echte Schreib-/Downloadwege, Rollenverbote, primäre Aktionen, Touch-Ziele,
-  Browserfehler und horizontalen Überlauf.
+The suite uses only invented local data and verifies:
+
+- login for residents, owners, managers, and admins;
+- the home overview, issues, and resident content on desktop and mobile;
+- guided energy onboarding and HAUSV Home activation through a persistent
+  local connector;
+- logout followed by browser Back without protected content reappearing;
+- public login/map, handover, document/e-invoice, settings, and parking flows
+  across their targeted viewport matrices;
+- real writes and downloads, role denials, primary actions, touch targets,
+  browser errors, and horizontal overflow.
 
 Das private Repository bietet im aktuellen GitHub-Tarif weder Branch Protection
 noch Rulesets; Push oder Merge werden daher nicht von GitHub selbst gesperrt.
@@ -109,19 +110,18 @@ Blacksmith für exakt den auszurollenden Commit. Ein roter Browserjob verhindert
 damit fail-closed das Deployment. Der vollständige Releasevertrag steht in
 `docs/production-deploy.md`.
 
-Der gleiche Lauf lässt sich lokal so reproduzieren:
+Run the same gate locally with:
 
 ```fish
 npm --prefix scripts/snapshot exec -- playwright install chromium
 set -lx CI true
 set -lx HV_QA_HEADLESS true
-set -lx HV_QA_CI_CORE true
 set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa
 scripts/qa-main-flows.sh
 ```
 
-Mit `CI=true` verwendet der lokale Nachweis wie Blacksmith das zu Playwright
-gehörende Chromium statt eines eventuell installierten System-Chrome.
+With `CI=true`, the local run uses Playwright's pinned Chromium, as Blacksmith
+does, instead of a system browser.
 
 Das Artefaktverzeichnis enthält Build-, Fake-Home-Assistant-, Fake-SMTP-, App-, Basis-,
 Public/Auth-, Übergabe-, Dokument-, Einstellungs-/Parkplatz- und

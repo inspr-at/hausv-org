@@ -54,7 +54,7 @@ function watchPage(page) {
     // Chromium reports a successful navigation-to-download handoff as an
     // aborted page request. The paired Playwright download event is verified
     // separately, so this one specific abort is expected.
-    if (/^\/app\/dokumente\/[^/]+\/download$/.test(path) && error.includes('ERR_ABORTED')) return;
+    if (/^\/(?:[^/]+\/)?app\/dokumente\/[^/]+\/download$/.test(path) && error.includes('ERR_ABORTED')) return;
     browserEvents.push(`requestfailed ${path}: ${error}`);
   });
 }
@@ -86,10 +86,10 @@ async function localLogin(context, email = 'admin@example.com') {
   }
   const page = await context.newPage();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  const details = page.locator('details:has(form[action="/auth/request"])');
+  const details = page.locator('details:has(form[action$="/auth/request"])');
   if (await details.count()) await details.evaluate((element) => { element.open = true; });
   await page.locator('input[name="email"]').fill(email);
-  await page.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const link = page.locator('a.dev-link');
   await link.waitFor({ state: 'visible' });
   const href = await link.getAttribute('href');
@@ -140,16 +140,17 @@ async function capture(page, name, fullPage = true) {
 async function ensureUnit() {
   const context = await newContext(1024);
   const page = await localLogin(context);
-  await page.goto(`${baseURL}/app/settings/building#units`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/app/settings/building?section=units`, { waitUntil: 'networkidle' });
   if (!(await page.getByText('Einheit 12', { exact: true }).count())) {
+    await page.getByRole('link', { name: 'Einheit hinzufügen', exact: true }).click();
     const panel = page.locator('#unit-add');
-    if (!(await panel.evaluate((element) => element.open))) await panel.locator('summary').click();
+    await panel.waitFor({ state: 'visible' });
     const form = panel.locator('form');
     await form.locator('input[name="label"]').fill('Einheit 12');
     await form.locator('input[name="owner_emails"]').fill('owner@example.com');
     await form.locator('input[name="renter_emails"]').fill('resident@example.com');
-    await form.getByRole('button', { name: 'Einheit anlegen' }).click();
-    await page.waitForURL(/unit=saved/);
+    await panel.getByRole('button', { name: 'Einheit anlegen' }).click();
+    await page.waitForURL(/\/app\/settings\/building/);
   }
   await closeContext(context);
 }
@@ -263,7 +264,8 @@ async function capturePublicReview(token, state) {
     const publicAttachment = page.getByRole('link', { name: /wohnzimmer-qa\.png/ });
     await publicAttachment.waitFor();
     const attachmentHref = await publicAttachment.getAttribute('href');
-    if (!attachmentHref?.startsWith(`/handover/${token}/attachments/`)) {
+    const attachmentPath = attachmentHref ? new URL(attachmentHref, page.url()).pathname : '';
+    if (!attachmentPath.includes(`/handover/${token}/attachments/`)) {
       fail(`${state} öffentlich ${width}: Anhang ist nicht an den Bestätigungslink gebunden`);
     }
     const attachmentResponse = await page.request.get(new URL(attachmentHref, baseURL).href);
@@ -305,13 +307,17 @@ async function assertConfirmedTokenReadOnly(token) {
 
   const attachmentHref = await page.locator('.handover-public-file').first().getAttribute('href');
   if (!attachmentHref) fail('Bestätigter Link verliert den tokengebundenen Anhang');
-  const attachmentID = attachmentHref.split('/').at(-1);
-  const directGuess = await context.request.get(`${baseURL}/app/attachments/${attachmentID}`, { maxRedirects: 0 });
+  const attachmentPath = new URL(attachmentHref, page.url()).pathname;
+  const attachmentID = attachmentPath.split('/').at(-1);
+  const handoverBasePath = attachmentPath.split('/attachments/')[0];
+  const handoverMarker = handoverBasePath.indexOf('/handover/');
+  const tenantPrefix = handoverMarker >= 0 ? handoverBasePath.slice(0, handoverMarker) : '';
+  const directGuess = await context.request.get(`${baseURL}${tenantPrefix}/app/attachments/${attachmentID}`, { maxRedirects: 0 });
   if (directGuess.status() === 200) fail('Öffentlicher Nutzer konnte den Anhang ohne Bestätigungstoken direkt öffnen');
-  const unrelatedGuess = await context.request.get(`${baseURL}/handover/${token}/attachments/not-this-handover`, { maxRedirects: 0 });
+  const unrelatedGuess = await context.request.get(`${baseURL}${handoverBasePath}/attachments/not-this-handover`, { maxRedirects: 0 });
   if (unrelatedGuess.status() !== 404) fail(`Bestätigungstoken akzeptiert fremde Anhang-ID (${unrelatedGuess.status()})`);
 
-  const repeated = await context.request.post(`${baseURL}/handover/${token}`, {
+  const repeated = await context.request.post(`${baseURL}${handoverBasePath}`, {
     form: { confirm: 'yes', name: 'Andere Person', note: 'darf nichts ändern' },
     headers: { Origin: new URL(baseURL).origin },
     maxRedirects: 0,

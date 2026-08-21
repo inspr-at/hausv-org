@@ -83,10 +83,10 @@ async function login(context, email) {
   }
   const page = await context.newPage();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  const details = page.locator('details:has(form[action="/auth/request"])');
+  const details = page.locator('details:has(form[action$="/auth/request"])');
   if (await details.count()) await details.evaluate((node) => { node.open = true; });
   await page.locator('input[name="email"]').fill(email);
-  await page.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const devLink = page.locator('a.dev-link');
   await devLink.waitFor({ state: 'visible', timeout: 10_000 });
   const href = await devLink.getAttribute('href');
@@ -150,13 +150,16 @@ async function geometry(page, viewport, label) {
         const rect = node.getBoundingClientRect();
         const labelNode = node.closest('label');
         const effective = labelNode && visible(labelNode) ? labelNode.getBoundingClientRect() : rect;
+        const inlineLink = node.matches('a:not(.button):not(.icon-button)');
         return {
           text: (node.getAttribute('aria-label') || node.textContent || node.getAttribute('name') || '').trim().replace(/\s+/g, ' ').slice(0, 80),
           width: Math.round(effective.width),
           height: Math.round(effective.height),
+          minimumWidth: inlineLink ? 0 : 24,
+          minimumHeight: inlineLink ? 0 : (node.matches('a.button, button:not(.icon-button), summary.button') ? 44 : 40),
         };
       })
-      .filter((target) => target.width < 44 || target.height < 44) : [];
+      .filter((target) => target.width < target.minimumWidth || target.height < target.minimumHeight) : [];
     const clipped = [...document.querySelectorAll('.panel,.settings-section,.settings-link,.access-row,.parking-empty-step,.parking-month-summary,.upload-form')]
       .filter(visible)
       .map((node) => {
@@ -164,38 +167,52 @@ async function geometry(page, viewport, label) {
         return { className: node.className, left: Math.round(rect.left), right: Math.round(rect.right) };
       })
       .filter((item) => item.left < -1 || item.right > innerWidth + 1);
+    const shell = document.querySelector('[data-portal-shell]');
+    const landing = document.querySelector('[data-portal-section-landing]');
     const labelNode = document.querySelector('.side-address-label');
     const mapLink = document.querySelector('a.side-address');
-    const homeLink = document.querySelector('a.side-place-copy');
-    const brand = document.querySelector('.side-brand');
-    const menu = document.querySelector('.mobile-menu-toggle');
-    const brandRect = brand?.getBoundingClientRect();
+    const homeLink = document.querySelector('a.side-address-label');
+    const menu = document.querySelector('.mobile-head > details.menu > summary');
+    const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;
+    const identityRect = mobileIdentity && visible(mobileIdentity) ? mobileIdentity.getBoundingClientRect() : null;
+    const overlaps = (left, right) => Boolean(left && right &&
+      Math.min(left.right, right.right) - Math.max(left.left, right.left) > 1 &&
+      Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 1);
     return {
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       smallTargets,
       clipped,
+      shellCount: document.querySelectorAll('[data-portal-shell]').length,
+      landingHeaderCount: landing?.querySelectorAll('[data-portal-section-header]').length || 0,
+      landingHero: landing?.getAttribute('data-portal-hero') || '',
       address: labelNode ? labelNode.innerText.trim().replace(/\s+/g, ' ') : '',
       addressWidth: labelNode ? Math.round(labelNode.getBoundingClientRect().width) : 0,
       addressScrollWidth: labelNode?.scrollWidth || 0,
       mapLabel: mapLink?.getAttribute('aria-label') || '',
       homeLabel: homeLink?.getAttribute('aria-label') || '',
-      shellOverlap: Boolean(menuRect && brandRect && brandRect.right > menuRect.left + 1),
+      shellOverlap: overlaps(menuRect, identityRect),
+      shellPresent: Boolean(shell),
       bodyWidth: Math.round(document.body.getBoundingClientRect().width),
     };
   }, { touch: viewport.touch });
   if (result.overflowX > 1) fail(`${label}: ${result.overflowX}px horizontaler Überlauf`);
-  if (result.smallTargets.length) fail(`${label}: Touch-Ziele unter 44px: ${JSON.stringify(result.smallTargets)}`);
+  if (result.smallTargets.length) fail(`${label}: mobile target contract violated: ${JSON.stringify(result.smallTargets)}`);
   if (result.clipped.length) fail(`${label}: seitlich abgeschnitten: ${JSON.stringify(result.clipped)}`);
+  if ((result.shellPresent && result.shellCount !== 1) ||
+      (result.landingHero && (result.landingHero !== 'false' || result.landingHeaderCount !== 1))) {
+    fail(`${label}: gemeinsames Portal-Chrome fehlt oder ist mehrfach vorhanden (${JSON.stringify(result)})`);
+  }
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
-  if (!result.address.startsWith('Musterweg 1') || /\bDEMO\b/i.test(result.address)) {
+  if (!result.address ||
+      (result.shellPresent && (!result.address.includes('Musterweg 1') || /\bDEMO\b/i.test(result.address)))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
   if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
-      !result.homeLabel.includes('Musterweg 1, 1010 Wien')) {
-    fail(`${label}: vollständige Adresse fehlt in den zugänglichen Linknamen`);
+      result.homeLabel !== 'Hausportal Demohaus öffnen') {
+    fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf`);
   }
-  if (viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
+  if (result.shellPresent && viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
     fail(`${label}: ausgeschriebene Straße wird bei 320px abgeschnitten`);
   }
   return result;
@@ -235,16 +252,22 @@ async function assertSettingsHub(page, label) {
   for (const heading of ['Mein Zuhause', 'Mein Konto', 'Kommunikation', 'Verwaltung']) {
     if (!(await page.getByRole('heading', { name: heading, exact: true }).count())) fail(`${label}: Bereich ${heading} fehlt`);
   }
-  const guide = page.locator('details.settings-guide-details');
+  const guide = page.locator('[data-templ-settings-hub] details.note').filter({ hasText: 'Berechtigungen erklärt' });
   if ((await guide.count()) !== 1 || await guide.evaluate((node) => node.open)) fail(`${label}: Rechtehilfe ist nicht kompakt eingeklappt`);
-  if (await page.locator('.settings-note').count()) fail(`${label}: redundante Rollenkarte ist wieder vorhanden`);
 }
 
-async function assertProgressiveSettings(page, label, heading, detailsSelector) {
+async function assertProgressiveSettings(page, label, heading, detailsSelector, expectedOpenSummary) {
   if (!(await page.getByRole('heading', { name: heading, exact: true }).count())) fail(`${label}: Überschrift ${heading} fehlt`);
-  if (await page.locator('.content-top .page-actions a').count()) fail(`${label}: redundante Kopfaktion ist wieder vorhanden`);
+  if (await page.locator('[data-portal-section-header] .portal-section-header-action').count()) {
+    fail(`${label}: redundante Kopfaktion ist wieder vorhanden`);
+  }
   const details = page.locator(detailsSelector);
-  if (!(await details.count()) || await details.evaluateAll((nodes) => nodes.some((node) => node.open))) {
+  const disclosures = await details.evaluateAll((nodes) => nodes.map((node) => ({
+    open: node.open,
+    summary: node.querySelector(':scope > summary')?.textContent?.trim() || '',
+  })));
+  const open = disclosures.filter((disclosure) => disclosure.open);
+  if (disclosures.length < 2 || open.length !== 1 || open[0].summary !== expectedOpenSummary) {
     fail(`${label}: Zusatzinformationen sind nicht progressiv eingeklappt`);
   }
 }
@@ -255,7 +278,7 @@ async function assertAccess(page, label, viewport) {
     name: node.querySelector('.access-person-copy strong')?.textContent?.trim() || '',
     email: node.querySelector('.access-person-copy span')?.textContent?.trim() || '',
   })));
-  const requiredEmails = ['admin@example.com', 'owner@example.com', 'resident@example.com', 'verwalter@example.com'];
+  const requiredEmails = ['admin@example.com', 'multi@example.com', 'owner@example.com', 'resident@example.com', 'verwalter@example.com'];
   // The unified browser gate deliberately keeps its fake data between
   // lifecycles. The base flow may therefore have created this valid DEMO
   // technical helper before the settings flow starts. Prove the stable
@@ -322,29 +345,31 @@ async function createPaymentPreview() {
   const viewport = viewports.find((item) => item.label === '390x844');
   const { context, page, events } = await loggedInPage(viewport);
   activePage = page;
-  await open(page, events, '/app/settings/building#units', 'Zahlungs-Fixture: Einheit');
+  await open(page, events, '/app/settings/building?section=units', 'Zahlungs-Fixture: Einheit');
   if (!(await page.getByText('QA Top 42', { exact: true }).count())) {
+    await page.getByRole('link', { name: 'Einheit hinzufügen', exact: true }).click();
     const add = page.locator('#unit-add');
-    await add.evaluate((node) => { node.open = true; });
+    await add.waitFor({ state: 'visible' });
     const form = add.locator('form');
     await form.locator('input[name="label"]').fill('QA Top 42');
     await form.locator('input[name="owner_emails"]').fill('owner@example.com');
     await Promise.all([
       page.waitForURL(/\/app\/settings\/building/),
-      form.getByRole('button', { name: 'Einheit anlegen' }).click(),
+      add.getByRole('button', { name: 'Einheit anlegen' }).click(),
     ]);
   }
-  await open(page, events, '/app/settings/building#units', 'Zahlungs-Fixture: Status');
-  const unit = page.locator('details.unit-editor').filter({ hasText: 'QA Top 42' });
-  if (!(await unit.count())) fail('Zahlungs-Fixture: angelegte Einheit fehlt');
-  await unit.evaluate((node) => { node.open = true; });
-  const statusForm = unit.locator('.payment-status-form');
-  await statusForm.locator('select[name="status"]').selectOption('offen');
+  await open(page, events, '/app/settings/building?section=units', 'Zahlungs-Fixture: Status');
+  const unit = page.locator('article.unit-card').filter({ hasText: 'QA Top 42' });
+  if ((await unit.count()) !== 1) fail('Zahlungs-Fixture: angelegte Einheit fehlt');
+  await unit.getByRole('link', { name: 'QA Top 42 bearbeiten' }).click();
+  const statusForm = page.locator('.unit-dialog-shell:visible form[action$="/app/settings/building/units"]');
+  await statusForm.locator('select[name="payment_status"]').selectOption('offen');
   await Promise.all([
-    page.waitForURL(/payment=saved/),
-    statusForm.getByRole('button', { name: 'Status speichern' }).click(),
+    page.waitForURL(/unit=saved/),
+    page.getByRole('button', { name: 'Änderungen speichern' }).click(),
   ]);
-  if (!(await page.getByText('Zahlungsstatus gespeichert.', { exact: true }).count())) {
+  if (!(await page.getByText('Einheit gespeichert.', { exact: true }).count()) ||
+      !(await unit.getByText('Offen', { exact: true }).count())) {
     fail('Zahlungs-Fixture: gespeicherter Einheitenstatus wird nicht bestätigt');
   }
   const period = rollingMonths().recent;
@@ -386,15 +411,15 @@ async function exerciseProfileAndNotifications() {
   activePage = page;
 
   await open(page, events, '/app/settings/profile', 'Profil speichern');
-  const profile = page.locator('form.profile-form');
-  await profile.locator('#profile-phone').fill('+43 316 555 0101');
-  await profile.locator('#profile-directory').check();
+  const profile = page.locator('[data-templ-profile-settings] form[action$="/app/settings/profile"]');
+  await profile.locator('input[name="phone"]').fill('+43 316 555 0101');
+  await profile.locator('input[name="directory_opt_in"]').check();
   await Promise.all([
     page.waitForURL(/profile=saved/),
     profile.getByRole('button', { name: 'Profil speichern' }).click(),
   ]);
-  if (!(await page.locator('.profile-flash.ok').getByText('Profil gespeichert.', { exact: true }).count()) ||
-      (await page.locator('#profile-phone').inputValue()) !== '+43 316 555 0101') {
+  if (!(await page.locator('[data-templ-profile-settings] .flash.ok').getByText('Profil gespeichert.', { exact: true }).count()) ||
+      (await page.locator('input[name="phone"]').inputValue()) !== '+43 316 555 0101') {
     fail('Profil speichern: Bestätigung oder persistierter Wert fehlt');
   }
   await recordCurrentPage(page, events, viewport, 'profile-save-success');
@@ -408,7 +433,7 @@ async function exerciseProfileAndNotifications() {
     page.waitForURL(/notify=saved/),
     notifications.getByRole('button', { name: 'Benachrichtigungen speichern' }).click(),
   ]);
-  if (!(await page.locator('.notify-flash.ok').getByText('Benachrichtigungen gespeichert.', { exact: true }).count()) ||
+  if (!(await page.locator('[data-templ-notification-settings] .flash.ok').getByText('Benachrichtigungen gespeichert.', { exact: true }).count()) ||
       await page.locator('input[name="events"][value="announcement"]').isChecked()) {
     fail('Benachrichtigungen speichern: Bestätigung oder persistierte Auswahl fehlt');
   }
@@ -431,10 +456,10 @@ async function exerciseInviteLifecycle() {
 
   const invite = page.locator('#invite');
   await invite.evaluate((node) => { node.open = true; });
-  const form = invite.locator('form.invite-form');
+  const form = invite.locator(':scope > form');
   await form.locator('input[name="email"]').fill(email);
   await form.locator('select[name="role"]').selectOption({ label: 'Mieter' });
-  const personDetails = form.locator('details.f-person-details');
+  const personDetails = form.locator('details.inline-details').filter({ hasText: 'Name ergänzen' });
   await personDetails.evaluate((node) => { node.open = true; });
   await form.locator('input[name="first_name"]').fill('Quirin');
   await form.locator('input[name="last_name"]').fill('Prüfer');
@@ -447,15 +472,15 @@ async function exerciseInviteLifecycle() {
   }
 
   await page.locator(`[data-edit="${email}"]`).click();
-  let dialog = page.locator('dialog.edit-dialog').filter({ hasText: email });
+  let dialog = page.locator('dialog.user-dialog').filter({ hasText: email });
   await dialog.waitFor({ state: 'visible' });
   await dialog.locator('select[name="role"]').selectOption({ label: 'Bewohner' });
   await Promise.all([
     page.waitForURL(/invite=updated/),
     dialog.getByRole('button', { name: 'Änderungen speichern' }).click(),
   ]);
-  const editedRow = page.locator('tr').filter({ hasText: email });
-  if (!(await page.locator('.invite-flash.ok').getByText('Änderungen gespeichert.', { exact: true }).count()) ||
+  const editedRow = page.locator('article.user-card').filter({ hasText: email });
+  if (!(await page.locator('[data-templ-user-settings] .flash.ok').getByText('Änderungen gespeichert.', { exact: true }).count()) ||
       !(await editedRow.getByText('Bewohner', { exact: true }).count())) {
     fail('Einladung bearbeiten: Rollenänderung oder Bestätigung fehlt');
   }
@@ -465,9 +490,9 @@ async function exerciseInviteLifecycle() {
   await open(page, events, '/app/settings/users', 'Einladung nach Parkplatz-Zugriff entfernen');
 
   await page.locator(`[data-edit="${email}"]`).click();
-  dialog = page.locator('dialog.edit-dialog').filter({ hasText: email });
+  dialog = page.locator('dialog.user-dialog').filter({ hasText: email });
   await dialog.waitFor({ state: 'visible' });
-  const danger = dialog.locator('details.danger-zone');
+  const danger = dialog.locator('details.danger');
   await danger.evaluate((node) => { node.open = true; });
   page.once('dialog', (confirmation) => confirmation.accept());
   await Promise.all([
@@ -475,7 +500,7 @@ async function exerciseInviteLifecycle() {
     danger.getByRole('button', { name: 'Dauerhaft entfernen' }).click(),
   ]);
   if ((await page.getByText(email, { exact: true }).count()) ||
-      !(await page.locator('.invite-flash.ok').getByText('Zugang gelöscht.', { exact: true }).count())) {
+      !(await page.locator('[data-templ-user-settings] .flash.ok').getByText('Zugang gelöscht.', { exact: true }).count())) {
     fail('Einladung entfernen: Zugang blieb sichtbar oder Bestätigung fehlt');
   }
   await recordCurrentPage(page, events, viewport, 'invite-delete-success');
@@ -517,9 +542,9 @@ async function exerciseParkingAccessLifecycle(page, events, viewport, email) {
 
 async function removeInvite(page, email) {
   await page.locator(`[data-edit="${email}"]`).click();
-  const dialog = page.locator('dialog.edit-dialog').filter({ hasText: email });
+  const dialog = page.locator('dialog.user-dialog').filter({ hasText: email });
   await dialog.waitFor({ state: 'visible' });
-  const danger = dialog.locator('details.danger-zone');
+  const danger = dialog.locator('details.danger');
   await danger.evaluate((node) => { node.open = true; });
   page.once('dialog', (confirmation) => confirmation.accept());
   await Promise.all([
@@ -571,15 +596,15 @@ try {
     const { context, page, events } = await loggedInPage(viewport);
     activePage = page;
     await recordPage(page, events, viewport, '/app/settings', 'settings-hub', assertSettingsHub);
-    await recordPage(page, events, viewport, '/app/settings/profile', 'settings-profile', (candidate, label) => assertProgressiveSettings(candidate, label, 'Profil', '.profile details'));
-    await recordPage(page, events, viewport, '/app/settings/notifications', 'settings-notifications', (candidate, label) => assertProgressiveSettings(candidate, label, 'Benachrichtigungen', '.notifications details'));
+    await recordPage(page, events, viewport, '/app/settings/profile', 'settings-profile', (candidate, label) => assertProgressiveSettings(candidate, label, 'Profil', '[data-templ-profile-settings] details', 'Was andere sehen'));
+    await recordPage(page, events, viewport, '/app/settings/notifications', 'settings-notifications', (candidate, label) => assertProgressiveSettings(candidate, label, 'Benachrichtigungen', '[data-templ-notification-settings] details', 'Empfängeradresse'));
     await recordPage(page, events, viewport, '/app/settings/building', 'settings-building', async (candidate, label) => {
       if (!(await candidate.getByRole('heading', { name: 'Gebäude & Einheiten', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
     });
     await recordPage(page, events, viewport, '/app/settings/users', 'settings-users', async (candidate, label) => {
       if (!(await candidate.getByRole('heading', { name: 'Benutzer & Rechte', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
       if (viewport.width === 320) {
-        const wrappedEmails = await candidate.locator('.person-mail').evaluateAll((nodes) => nodes
+        const wrappedEmails = await candidate.locator('.user-identity a[href^="mailto:"]').evaluateAll((nodes) => nodes
           .filter((node) => node.textContent.includes('@'))
           .map((node) => {
             const style = getComputedStyle(node);

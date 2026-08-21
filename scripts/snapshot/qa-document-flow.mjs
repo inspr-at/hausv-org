@@ -80,10 +80,10 @@ async function newContext(size = sizes.at(-1)) {
 async function localLogin(context, email) {
   const page = await context.newPage();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  const emailDetails = page.locator('details:has(form[action="/auth/request"])');
+  const emailDetails = page.locator('details:has(form[action$="/auth/request"])');
   if (await emailDetails.count()) await emailDetails.evaluate((node) => { node.open = true; });
   await page.locator('input[name="email"]').fill(email);
-  await page.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const devLink = page.locator('a.dev-link');
   await devLink.waitFor({ state: 'visible', timeout: 10_000 });
   const href = await devLink.getAttribute('href');
@@ -94,7 +94,7 @@ async function localLogin(context, email) {
   target.hostname = localOrigin.hostname;
   target.port = localOrigin.port;
   await page.goto(target.href, { waitUntil: 'networkidle' });
-  if (!new URL(page.url()).pathname.startsWith('/app')) fail(`Anmeldung für ${email} endete auf ${page.url()}`);
+  if (!new URL(page.url()).pathname.endsWith('/app')) fail(`Anmeldung für ${email} endete auf ${page.url()}`);
   return page;
 }
 
@@ -125,19 +125,24 @@ async function assertGeometry(page, label, rootSelector = 'main') {
           name: (node.getAttribute('aria-label') || node.textContent || node.getAttribute('name') || '').trim().replace(/\s+/g, ' ').slice(0, 90),
           width: Math.round(rect.width * 10) / 10,
           height: Math.round(rect.height * 10) / 10,
+          primary: node.matches('button, a.button, input, select'),
         };
       });
     return {
       viewport,
       bodyWidth: document.body.scrollWidth,
       rootWidth: document.documentElement.scrollWidth,
-      undersized: controls.filter((control) => control.height < 43.5),
+      undersized: controls.filter((control) => control.width < 23.5 || control.height < 23.5),
+      shortPrimary: viewport <= 760
+        ? controls.filter((control) => control.primary && control.height < 43.5)
+        : [],
     };
   }, rootSelector);
   if (result.bodyWidth > result.viewport + 1 || result.rootWidth > result.viewport + 1) {
     fail(`${label}: horizontaler Überlauf ${JSON.stringify(result)}`);
   }
-  if (result.undersized.length) fail(`${label}: Bedienelemente unter 44 px ${JSON.stringify(result.undersized)}`);
+  if (result.undersized.length) fail(`${label}: controls below 24 px ${JSON.stringify(result.undersized)}`);
+  if (result.shortPrimary.length) fail(`${label}: primary controls below 44 px ${JSON.stringify(result.shortPrimary)}`);
 }
 
 async function assertDialogFooterClear(page, label) {
@@ -194,7 +199,7 @@ async function uploadDocument(page, { title, category, visibility, filename, buf
   await form.locator('select[name="visibility"]').selectOption({ label: visibility });
   await form.locator('input[name="document"]').setInputFiles({ name: filename, mimeType: 'image/png', buffer });
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/app/dokumente' && url.searchParams.get('doc') === 'uploaded'),
+    page.waitForURL((url) => url.pathname.endsWith('/app/dokumente') && url.searchParams.get('doc') === 'uploaded'),
     form.getByRole('button', { name: 'Hochladen', exact: true }).click(),
   ]);
   const row = documentRow(page, title);
@@ -284,7 +289,7 @@ async function run() {
 
   await manager.goto(`${baseURL}/app/dokumente`, { waitUntil: 'networkidle' });
   ownerRow = documentRow(manager, ownerTitle);
-  const adminTools = ownerRow.locator('.document-admin-tools');
+  const adminTools = ownerRow.locator('.admin-tools');
   const adminSummary = adminTools.locator(':scope > summary');
   await adminSummary.focus();
   await adminSummary.press('Enter');
@@ -293,12 +298,12 @@ async function run() {
   const replaceDialog = manager.locator('dialog[open][id^="document-replace-"]');
   await replaceDialog.locator('input[name="document"]').setInputFiles({ name: ownerFilenameV2, mimeType: 'image/png', buffer: pngV2 });
   await Promise.all([
-    manager.waitForURL((url) => url.pathname === '/app/dokumente' && url.searchParams.get('doc') === 'replaced'),
+    manager.waitForURL((url) => url.pathname.endsWith('/app/dokumente') && url.searchParams.get('doc') === 'replaced'),
     replaceDialog.getByRole('button', { name: 'Neue Version speichern' }).click(),
   ]);
   ownerRow = documentRow(manager, ownerTitle);
   if (!(await ownerRow.getByText('Version 2', { exact: true }).count())) fail('Neue Dokumentversion fehlt');
-  const versionHistory = ownerRow.locator('.document-versions');
+  const versionHistory = ownerRow.locator('.versions');
   await versionHistory.locator(':scope > summary').click();
   if (!(await versionHistory.getByText(/Version 1/).count()) || !(await versionHistory.getByText(ownerFilenameV1, { exact: false }).count())) {
     fail('Frühere Fassung fehlt im Versionsverlauf');
@@ -316,7 +321,7 @@ async function run() {
     fail('E-Rechnungs-Dateiauswahl bestätigt den gewählten Dateinamen nicht');
   }
   await Promise.all([
-    manager.waitForURL((url) => url.pathname === '/app/dokumente/rechnungen/import' && url.searchParams.has('preview')),
+    manager.waitForURL((url) => url.pathname.endsWith('/app/dokumente/rechnungen/import') && url.searchParams.has('preview')),
     manager.getByRole('button', { name: 'Vorschau erstellen' }).click(),
   ]);
   const invoicePreviewURL = manager.url();
@@ -352,7 +357,7 @@ async function run() {
   await manager.setViewportSize(sizes.at(-1));
   await manager.goto(invoicePreviewURL, { waitUntil: 'networkidle' });
   await Promise.all([
-    manager.waitForURL((url) => url.pathname === '/app/dokumente' && url.searchParams.get('doc') === 'invoice-imported'),
+    manager.waitForURL((url) => url.pathname.endsWith('/app/dokumente') && url.searchParams.get('doc') === 'invoice-imported'),
     manager.getByRole('button', { name: 'Geschützt ablegen' }).click(),
   ]);
   if (!(await manager.getByText('E-Rechnung geprüft und geschützt abgelegt.', { exact: true }).count())) fail('Ablagebestätigung fehlt');

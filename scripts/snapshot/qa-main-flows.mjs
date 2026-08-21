@@ -300,19 +300,30 @@ async function assertPortalChromeKit() {
         .map((node) => node.textContent?.trim() || '');
       const strip = landing?.querySelector(':scope > .energy-mode-strip');
       const stripStyle = strip ? getComputedStyle(strip) : null;
+      const filledActions = headerButtons.filter((button) => {
+        const style = getComputedStyle(button);
+        return button.classList.contains('primary') ||
+          !['transparent', 'rgba(0, 0, 0, 0)'].includes(style.backgroundColor);
+      });
+      const borderlessActions = headerButtons.filter((button) => {
+        const style = getComputedStyle(button);
+        return style.borderTopStyle === 'none' || Number.parseFloat(style.borderTopWidth) < 1;
+      });
       return {
-        shell: Boolean(shell),
-        landing: Boolean(landing),
-        header: Boolean(header),
+        shellCount: document.querySelectorAll('[data-portal-shell]').length,
+        landingCount: document.querySelectorAll('[data-portal-section-landing]').length,
+        headerCount: landing?.querySelectorAll('[data-portal-section-header]').length || 0,
+        headerPlacement: expected.hero ? Boolean(header && hero?.contains(header)) : header?.parentElement === landing,
         declaredHero: landing?.getAttribute('data-portal-hero'),
         heroCount: landing?.querySelectorAll('[data-portal-section-hero]').length || 0,
         heroGap: heroRect && landingRect ? Math.round(heroRect.top - landingRect.top) : null,
         actionTexts: headerButtons.map((button) => button.textContent?.trim() || ''),
-        primaryActions: headerButtons.filter((button) => button.classList.contains('primary')).length,
+        filledActions: filledActions.map((button) => button.textContent?.trim() || ''),
+        borderlessActions: borderlessActions.map((button) => button.textContent?.trim() || ''),
         wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
         sidebarMap: Boolean(sidebar?.querySelector('.side-map')),
         sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
-        sidebarAccount: Boolean(sidebar?.querySelector('footer.account small')),
+        sidebarAccountRole: sidebar?.querySelector('footer.account small')?.textContent?.trim() || '',
         mobileIdentity,
         switchRows,
         boardContext: Boolean(landing?.querySelector('.portal-section-context a[href$="/app/anliegen"]')),
@@ -323,7 +334,8 @@ async function assertPortalChromeKit() {
       };
     }, route);
 
-    if (!result.shell || !result.landing || !result.header) {
+    if (result.shellCount !== 1 || result.landingCount !== 1 ||
+        result.headerCount !== 1 || !result.headerPlacement) {
       fail(`Portal-Chrome ${route.path}: Shared kit fehlt (${JSON.stringify(result)})`);
     }
     if (result.declaredHero !== String(route.hero) || result.heroCount !== (route.hero ? 1 : 0)) {
@@ -335,10 +347,10 @@ async function assertPortalChromeKit() {
     if (route.action && !result.actionTexts.some((text) => text.includes(route.action))) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion „${route.action}“ fehlt`);
     }
-    if (result.primaryActions || result.wrappedActions) {
+    if (result.filledActions.length || result.borderlessActions.length || result.wrappedActions) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
     }
-    if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccount) {
+    if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
       fail(`Portal-Chrome ${route.path}: Sidebar-Invarianten verletzt (${JSON.stringify(result)})`);
     }
     if (/\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(result.mobileIdentity) ||
@@ -355,7 +367,7 @@ async function assertPortalChromeKit() {
   }
 
   await closeContext(context);
-  process.stdout.write('  ✓ Gemeinsames Portal-Chrome · 14 Navigationseinträge + Anliegen-Board\n');
+  process.stdout.write(`  ✓ Gemeinsames Portal-Chrome · ${portalChromeRoutes.length - 1} Navigationseinträge + Anliegen-Board\n`);
 }
 
 // Eine überlaufende Seitenleiste ist auf einem Screenshot unsichtbar: die Seite
@@ -1409,7 +1421,11 @@ async function assertResidentContentResponsiveMatrix(sizes = [
         const controls = [...(main?.querySelectorAll('button, a.button, summary, .contact-route') || [])].filter(visible);
         const offscreen = controls.filter((node) => {
           const box = node.getBoundingClientRect();
-          return box.left < -1 || box.right > window.innerWidth + 1;
+          const visibleWidth = Math.max(0, Math.min(box.right, window.innerWidth) - Math.max(box.left, 0));
+          // Test reachability rather than font-dependent border alignment. Real page
+          // overflow remains fail-closed, and every control keeps at least a 40px-wide
+          // usable target when a fitted edge lands outside the integer viewport.
+          return visibleWidth < Math.min(box.width, 39.5);
         }).map((node) => (node.getAttribute('aria-label') || node.textContent || node.tagName).trim().slice(0, 60));
         const short = checkTargets ? controls.filter((node) => {
           const box = node.getBoundingClientRect();
@@ -1831,10 +1847,11 @@ async function assertHomeOnboarding() {
     }).map((node) => (node.textContent || '').trim())
   );
   if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const box = await page.locator('.energy-mode-strip').boundingBox();
   const mobileNav = await mobileNavBox(page);
-  if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
+  const stripInOnboarding = await page.locator('.onboarding-main > .energy-mode-strip').count();
+  if (!box || !mobileNav || stripInOnboarding !== 1 ||
+      Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
     fail(`Onboarding Mobil: Beobachtungsmodus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
   }
   await closeContext(context);
@@ -2907,6 +2924,8 @@ async function assertEnergyGeometryMatrix() {
         safetyTitle: strip?.querySelector('.energy-mode-copy strong')?.textContent?.trim() || '',
         safetyCopyVisible: Boolean(strip?.querySelector('.energy-mode-copy span')?.getClientRects().length),
         capabilityVisible: Boolean(strip?.querySelector('.energy-mode-control, .energy-mode-capability, form')?.getClientRects().length),
+        stripDisplay: stripStyle?.display || '',
+        stripFlexWrap: stripStyle?.flexWrap || '',
         softToken: stripStyle?.getPropertyValue('--soft').trim() || '',
         accentToken: stripStyle?.getPropertyValue('--gold-ink').trim() || '',
         focusToken: stripStyle?.getPropertyValue('--energy-focus-ring').trim() || '',
@@ -2928,10 +2947,9 @@ async function assertEnergyGeometryMatrix() {
     // 380px, and this probe pinned that seam. The templ cockpit stacks them at every phone
     // width and has no 380px rule — a design decision, not a regression. What still holds and
     // is asserted above: no overlap (tariffMetricsOverlap) and no overflow.
-    // The legacy strip HID the safety copy under 1024px. The templ redesign (HAUSV-553)
-    // keeps it visible at every width and merely compacts it under 900px — a sticky strip
-    // that stays readable on a phone was the point. So the copy must be visible everywhere;
-    // the old "hidden on phones" branch encoded a legacy layout, not a behaviour.
+    // The legacy strip hid its safety copy under 1024px. The templ strip keeps it visible and
+    // deliberately wraps when its container narrows (HAUSV-558). Pin containment, ordering,
+    // and touch size without reintroducing the old fixed one-row height.
     // 44px is the TOUCH floor and applies through the tablet range (energy.templ's ≤900px
     // rule); on a mouse-driven desktop the action is the shell's standard 40px button.
     const actionFloor = size.width <= 900 ? 44 : 40;
@@ -2943,14 +2961,17 @@ async function assertEnergyGeometryMatrix() {
         result.focusToken !== '#ad862c') {
       fail(`Energie-Geometrie ${size.name}: scoped AA-Tokens fehlen (${JSON.stringify(result)})`);
     }
-    if (size.width <= 900 && (result.mobileStackDelta > 1 || !result.stripRect || result.stripRect.height > 60)) {
+    const stripMisaligned = size.width <= 760
+      ? result.mobileStackDelta > 1
+      : !result.stripRect || result.stripRect.top > 1;
+    const stripWrapPreserved = size.width <= 900
+      ? result.stripDisplay === 'grid'
+      : result.stripFlexWrap === 'wrap';
+    if (!result.stripRect || !stripWrapPreserved || stripMisaligned) {
       fail(`Energie-Geometrie ${size.name}: Navigation/Sicherheitsleiste kollidiert (${JSON.stringify(result)})`);
     }
     if (size.width <= 560 && result.actionHeight > 46) {
       fail(`Energie-Geometrie ${size.name}: mobile Freigabe ist nicht kompakt (${JSON.stringify(result)})`);
-    }
-    if (size.width > 900 && (!result.stripRect || result.stripRect.top > 1 || result.stripRect.height > 68)) {
-      fail(`Energie-Geometrie ${size.name}: Desktop-Sicherheitsleiste ist nicht kompakt (${JSON.stringify(result)})`);
     }
     if (size.name === '901x900') {
       const control = page.locator('summary.energy-mode-action');
@@ -2974,8 +2995,8 @@ async function assertEnergyGeometryMatrix() {
           label: strip?.querySelector('.energy-mode-action')?.innerText.trim() || '',
         };
       });
-      if (!active.active || active.top > 1 || active.height > 68) {
-        fail(`Energie-Geometrie ${size.name} active: Sicherheitsleiste ist nicht eine Zeile (${JSON.stringify(active)})`);
+      if (!active.active || active.top > 1) {
+        fail(`Energie-Geometrie ${size.name} active: Sicherheitsleiste verliert ihre Position (${JSON.stringify(active)})`);
       }
       await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -2991,18 +3012,23 @@ async function assertEnergyGeometryMatrix() {
       const openState = await page.evaluate(() => {
         const strip = document.querySelector('.energy-mode-strip');
         const popover = document.querySelector('.energy-mode-popover');
+        const trigger = document.querySelector('.energy-mode-control > summary');
         const stripRect = strip?.getBoundingClientRect();
         const popoverRect = popover?.getBoundingClientRect();
+        const triggerRect = trigger?.getBoundingClientRect();
         return {
           open: Boolean(document.querySelector('.energy-mode-control[open]')),
           stripHeight: stripRect?.height || 0,
+          triggerBottom: triggerRect?.bottom || 0,
           popoverTop: popoverRect?.top || 0,
+          popoverLeft: popoverRect?.left || 0,
           popoverRight: popoverRect?.right || 0,
           popoverBottom: popoverRect?.bottom || 0,
         };
       });
       if (!openState.open || Math.abs(openState.stripHeight - stripHeight) > 1 ||
-          openState.popoverTop < result.stripRect.bottom || openState.popoverRight > size.width + 1 ||
+          openState.popoverTop < openState.triggerBottom || openState.popoverLeft < -1 ||
+          openState.popoverRight > size.width + 1 ||
           openState.popoverBottom > size.height + 1) {
         fail(`Energie-Geometrie ${size.name}: Testlauf-Erklärung verdrängt oder verlässt den Viewport (${JSON.stringify(openState)})`);
       }

@@ -111,11 +111,11 @@ jobs:
           govulncheck ./...
 
   browser-role-qa:
-    name: Focused browser smoke test
+    name: Full browser flow suite
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    # Keep the delivery loop short while rapid human review is active. Remove
-    # the focused flags below to restore the broad resident/admin matrix.
-    timeout-minutes: 10
+    # The specialist lifecycles and broad role/route matrix must stay in the
+    # required gate; a focused energy subset previously hid stale shell flows.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -151,13 +151,10 @@ jobs:
         working-directory: scripts/snapshot
         run: node verify-versions.mjs --strict
 
-      - name: Run focused headless energy smoke test
+      - name: Run full headless browser flow suite
         env:
           CI: "true"
           HV_QA_HEADLESS: "true"
-          HV_QA_ENERGY_ONLY: "true"
-          HV_QA_FAST: "true"
-          HV_QA_LANDING_ONLY: "true"
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
         run: bash scripts/qa-main-flows.sh
 

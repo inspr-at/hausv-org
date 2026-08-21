@@ -119,7 +119,8 @@ async function verifyLoggedOutMap(page, viewport) {
     src: element.getAttribute('data-map-tile'),
     background: getComputedStyle(element).backgroundImage,
   })));
-  if (tileSources.length < 2 || tileSources.some((tile) => !tile.src?.startsWith('/map-tiles/') || !tile.background.includes(tile.src))) {
+  if (tileSources.length < 2 || tileSources.some((tile) =>
+    !/^\/(?:[^/]+\/)?map-tiles\//.test(tile.src || '') || !tile.background.includes(tile.src))) {
     throw new Error(`Login ${viewport.name}: location card is not backed by local map tiles ${JSON.stringify(tileSources)}`);
   }
 
@@ -219,15 +220,18 @@ async function captureViewport(viewport) {
   await screenshot(page, `${screenshotPrefix}-landing-full-${viewport.name}`, true);
   const landing = await metrics(page);
   const primaryCTA = await page.locator('.landing-hero .landing-button.primary').boundingBox();
-  if (!primaryCTA || primaryCTA.height < 44 || primaryCTA.y + primaryCTA.height > viewport.height + 1) {
-    throw new Error(`Landing ${viewport.name}: primary CTA is not fully reachable in the first viewport`);
+  const hero = await page.locator('.landing-hero').boundingBox();
+  if (!primaryCTA || !hero || primaryCTA.height < 44 || primaryCTA.x < -1 ||
+      primaryCTA.x + primaryCTA.width > viewport.width + 1 ||
+      primaryCTA.y < hero.y - 1 || primaryCTA.y + primaryCTA.height > hero.y + hero.height + 1) {
+    throw new Error(`Landing ${viewport.name}: primary CTA is not contained and reachable in the hero`);
   }
   if (landing.overflow || landing.outside.length || landing.shortPrimaryControls.length) {
     throw new Error(`Landing ${viewport.name}: invalid geometry ${JSON.stringify(landing)}`);
   }
-  const contactHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
-  if (!contactHref?.startsWith('mailto:')) throw new Error(`Landing ${viewport.name}: primary contact action is not ready`);
-  for (const id of ['produkte', 'sicherheit', 'modelle', 'impressum', 'kontakt']) {
+  const productHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
+  if (productHref !== '#produkte') throw new Error(`Landing ${viewport.name}: primary product action is not ready`);
+  for (const id of ['produkte', 'leistungen', 'sicherheit', 'preise', 'impressum', 'kontakt']) {
     if (!(await page.locator(`#${id}`).count())) throw new Error(`Landing ${viewport.name}: #${id} destination is missing`);
   }
 
@@ -248,7 +252,7 @@ async function captureViewport(viewport) {
   const productDetails = page.locator('details.landing-more');
   await productDetails.locator('summary').click();
   await screenshot(page, `${screenshotPrefix}-landing-product-details-${viewport.name}`);
-  if (!(await productDetails.getByRole('heading', { name: 'Keine eigene Verrechnung' }).isVisible())) {
+  if (!(await productDetails.getByRole('heading', { name: 'Kein Verrechnungssystem' }).isVisible())) {
     throw new Error(`Landing ${viewport.name}: product disclosure does not open`);
   }
   await productDetails.locator('summary').click();
@@ -291,7 +295,7 @@ async function captureViewport(viewport) {
 
   const email = page.locator('input[name="email"]');
   await email.fill(viewport.email);
-  await page.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   await page.locator('a.dev-link').waitFor({ state: 'visible' });
   const devHref = await page.locator('a.dev-link').getAttribute('href');
   await screenshot(page, `${screenshotPrefix}-login-link-ready-${viewport.name}`);
@@ -301,7 +305,7 @@ async function captureViewport(viewport) {
   if (!readyAction || readyAction.height < 44 || readyAction.y + readyAction.height > viewport.height + 1) {
     throw new Error(`Login ${viewport.name}: prepared-login action is not fully reachable`);
   }
-  if ((await page.locator('form[action="/auth/request"]:visible').count()) !== 0) {
+  if ((await page.locator('form[action$="/auth/request"]:visible').count()) !== 0) {
     throw new Error(`Login ${viewport.name}: resend form competes with prepared-login action`);
   }
   const readyText = await page.locator('#login').innerText();
@@ -322,9 +326,10 @@ async function captureViewport(viewport) {
   const privacyContext = await newContext(viewport);
   const privacyPage = await privacyContext.newPage();
   await privacyPage.goto(tenantOrigin(), { waitUntil: 'networkidle' });
+  const privacyRootPath = new URL(privacyPage.url()).pathname;
   await Promise.all([
-    privacyPage.waitForURL((url) => url.pathname === '/datenschutz'),
-    privacyPage.locator('footer a[href="/datenschutz"]').click(),
+    privacyPage.waitForURL((url) => url.pathname.endsWith('/datenschutz')),
+    privacyPage.locator('footer a[href$="/datenschutz"]').click(),
   ]);
   if (!(await privacyPage.getByRole('heading', { name: 'Datenschutz' }).count())) {
     throw new Error(`Privacy ${viewport.name}: heading is missing`);
@@ -334,7 +339,7 @@ async function captureViewport(viewport) {
   const privacy = await metrics(privacyPage);
   if (privacy.overflow || privacy.outside.length) throw new Error(`Privacy ${viewport.name}: invalid geometry ${JSON.stringify(privacy)}`);
   await privacyPage.goBack({ waitUntil: 'networkidle' });
-  if (new URL(privacyPage.url()).pathname !== '/') throw new Error(`Privacy ${viewport.name}: browser Back does not return to login`);
+  if (new URL(privacyPage.url()).pathname !== privacyRootPath) throw new Error(`Privacy ${viewport.name}: browser Back does not return to login`);
   await privacyContext.close();
 
   const consumedContext = await newContext(viewport);
@@ -387,14 +392,17 @@ async function captureViewport(viewport) {
   const noJSPage = await noJSContext.newPage();
   await noJSPage.goto(publicOrigin(), { waitUntil: 'networkidle' });
   if (viewport.width <= 900) {
-    if ((await noJSPage.locator('#landing-navigation a:visible').count()) !== 4) {
+    const noJSNavigation = await noJSPage.locator('#landing-navigation a:visible').evaluateAll(
+      (links) => links.map((link) => link.getAttribute('href')),
+    );
+    if (JSON.stringify(noJSNavigation) !== JSON.stringify(['#produkte', '#leistungen', '#sicherheit', '#preise', '#impressum'])) {
       throw new Error(`Landing ${viewport.name}: no-JS navigation is not fully reachable`);
     }
     await screenshot(noJSPage, `${screenshotPrefix}-landing-no-js-menu-${viewport.name}`);
   }
   await noJSPage.goto(tenantOrigin(), { waitUntil: 'networkidle' });
   await noJSPage.locator('input[name="email"]').fill(viewport.email);
-  await noJSPage.locator('form[action="/auth/request"] button[type="submit"]').click();
+  await noJSPage.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const noJS = {
     url: new URL(noJSPage.url()).pathname + new URL(noJSPage.url()).search,
     devLinkVisible: await noJSPage.locator('a.dev-link').isVisible(),
@@ -404,7 +412,8 @@ async function captureViewport(viewport) {
   await screenshot(noJSPage, `${screenshotPrefix}-login-no-js-link-ready-${viewport.name}`);
   await noJSContext.close();
 
-  if (back.email !== viewport.email || firstUse !== '/app' || used.url !== '/?login=expired#login' || invalid.url !== '/?login=expired#login') {
+  if (back.email !== viewport.email || !firstUse.endsWith('/app') ||
+      !used.url.endsWith('/?login=expired#login') || !invalid.url.endsWith('/?login=expired#login')) {
     throw new Error(`Login ${viewport.name}: auth navigation contract failed`);
   }
   report.push({ viewport, landing, login, locationMap, mapFailureFallback, keyboard, linkReady, back, privacy, firstUse, used, invalid, denied, reduced, noJS });
