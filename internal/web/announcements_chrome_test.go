@@ -20,8 +20,13 @@ func TestAnnouncementsPageKeepsFeatureCSSAndUsesSharedChrome(t *testing.T) {
 
 	html := renderComponent(t, AnnouncementsPage(data))
 
+	// Check that the external portal shell CSS is linked (contains .portal-section-landing, .portal-section-hero, etc.)
+	if !strings.Contains(html, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`) {
+		t.Error("Announcements page is missing external portal shell CSS link")
+	}
+
 	// Feature-body rules stay local. Landing/header/hero geometry belongs to
-	// portal.templ and must not drift back into this page.
+	// portal-shell.css (external) and must not drift back into this page.
 	requiredRules := []string{
 		".eyebrow{",
 		".button.primary{",
@@ -33,8 +38,6 @@ func TestAnnouncementsPageKeepsFeatureCSSAndUsesSharedChrome(t *testing.T) {
 		".dialog-head{",
 		".dialog-close{",
 		".dialog-body{",
-		".portal-section-landing{",
-		".portal-section-hero{",
 	}
 
 	for _, rule := range requiredRules {
