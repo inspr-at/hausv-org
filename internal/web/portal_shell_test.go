@@ -260,7 +260,7 @@ func TestSharedSectionTitlesLeaveRoomForDescenders(t *testing.T) {
 
 	// The descender rule is now in the external portal-shell.css file (HAUSV-549)
 	const descenderRule = ".portal-section-title h1{min-width:0;max-width:100%;margin:0;overflow:hidden;font-family:var(--font-serif);font-size:42px;font-weight:600;line-height:1.08;padding-bottom:.08em;"
-	
+
 	// Verify the external CSS file contains the descender rule
 	cssContent, err := os.ReadFile("assets/portal-shell.css")
 	if err != nil {
@@ -405,9 +405,10 @@ func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
 		t.Error("PortalBaseStyles must be emitted BEFORE the page styles, so page rules keep winning")
 	}
 	// The portal shell CSS is now an external file loaded via <link> tag.
-	// The link tag should be in <head> before the inline page styles to ensure proper cascade order.
-	if shellLink > page {
-		t.Error("portal-shell.css link must be in <head> BEFORE inline page styles to ensure proper load order")
+	// The link tag must be AFTER inline page styles to ensure the shell rules win (HAUSV-563).
+	// This mimics the old PortalShellStyles() position.
+	if shellLink < page {
+		t.Error("portal-shell.css link must be AFTER inline page styles (to win in cascade), but still in <head>")
 	}
 }
 
