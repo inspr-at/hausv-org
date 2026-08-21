@@ -655,6 +655,15 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		}
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
+	detailsUpdate, detailsProvided, err := issueDetailsFromForm(r.Form)
+	if err != nil {
+		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		return
+	}
+	if detailsProvided && !canManage {
+		http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
 	var uploadedEstimates []attachmentRecord
 	if len(estimateHeaders) > 0 {
 		uploadedEstimates, err = ac.repositories.attachments.CreateUploaded("issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
@@ -668,6 +677,10 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		Status:                status,
 		Priority:              priority,
 		AssigneeEmail:         assignee,
+		Body:                  detailsUpdate.Body,
+		LocationType:          detailsUpdate.LocationType,
+		LocationDetail:        detailsUpdate.LocationDetail,
+		UpdateDetails:         detailsProvided,
 		ServiceProposal:       proposal.Text,
 		ServiceProposedStart:  proposal.Start,
 		ServiceProposedEnd:    proposal.End,
@@ -922,6 +935,40 @@ func issueEstimateFromForm(values url.Values) (int64, string, bool, error) {
 		return 0, "", true, fmt.Errorf("estimate note too long")
 	}
 	return amount, note, true, nil
+}
+
+type issueDetailsInput struct {
+	Body           string
+	LocationType   string
+	LocationDetail string
+}
+
+func issueDetailsFromForm(values url.Values) (issueDetailsInput, bool, error) {
+	if values == nil {
+		return issueDetailsInput{}, false, nil
+	}
+	if values.Get("update_details") != "1" {
+		return issueDetailsInput{}, false, nil
+	}
+	body := strings.TrimSpace(values.Get("body"))
+	locationType := normalizeIssueLocation(values.Get("location_type"))
+	locationDetail := strings.TrimSpace(values.Get("location_detail"))
+	
+	if body == "" || len([]rune(body)) > 4000 {
+		return issueDetailsInput{}, true, fmt.Errorf("invalid body")
+	}
+	if locationType == "" {
+		return issueDetailsInput{}, true, fmt.Errorf("invalid location_type")
+	}
+	if len([]rune(locationDetail)) > 160 {
+		return issueDetailsInput{}, true, fmt.Errorf("location_detail too long")
+	}
+	
+	return issueDetailsInput{
+		Body:           body,
+		LocationType:   locationType,
+		LocationDetail: locationDetail,
+	}, true, nil
 }
 
 func issuePhotoHeader(r *http.Request) (*multipart.FileHeader, bool) {
@@ -1231,6 +1278,7 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			ID:                    item.ID,
 			Title:                 item.Title,
 			Body:                  item.Body,
+			Description:           view.TruncateIssueDescription(item.Body),
 			Author:                author,
 			AuthorEmail:           item.AuthorEmail,
 			Category:              item.Category,
@@ -1247,6 +1295,8 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			AssigneeEmail:         item.AssigneeEmail,
 			HasAssignee:           item.AssigneeEmail != "",
 			Location:              issueLocationLabel(item.LocationType, item.LocationDetail),
+			LocationType:          item.LocationType,
+			LocationDetail:        item.LocationDetail,
 			CreatedAt:             formatLocalDateTime(item.CreatedAt),
 			CanComment:            canManage || canResidentAct || canServiceAct,
 			CanClose:              canResidentAct && canResidentTransition(status, issueStatusDone),
