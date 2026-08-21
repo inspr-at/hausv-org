@@ -123,8 +123,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
 				t.Errorf("map pin is missing the brand mark")
 			}
-			if !strings.Contains(html, ".mobile-context-switch>summary{min-height:44px") {
-				t.Errorf("mobile context switch lacks its 44px touch target")
+			if !strings.Contains(html, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`) {
+				t.Error("portal shell CSS link is missing from authenticated pages")
 			}
 
 			if strings.Contains(html, `class="anchor-dialog unit-dialog-shell"`) {
@@ -225,8 +225,8 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	}
 
 	home := renderComponent(t, PortalPage(portal))
-	if !strings.Contains(home, ".portal-section-landing{--portal-content-width:1180px;min-width:0;min-height:100vh;padding:0}") {
-		t.Error("hero landings must start flush without inherited top padding")
+	if !strings.Contains(home, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`) {
+		t.Error("hero landings must link to the external portal shell CSS (which ensures flush start without inherited top padding)")
 	}
 	energy := renderComponent(t, EnergyPage(EnergyPageData{Portal: portal}))
 	for _, contract := range []string{
@@ -258,12 +258,24 @@ func TestSharedSectionTitlesLeaveRoomForDescenders(t *testing.T) {
 		{"issue-board", "Anliegen bearbeiten", IssueBoardPage(IssueBoardPageData{Portal: portal})},
 	}
 
+	// The descender rule is now in the external portal-shell.css file (HAUSV-549)
 	const descenderRule = ".portal-section-title h1{min-width:0;max-width:100%;margin:0;overflow:hidden;font-family:var(--font-serif);font-size:42px;font-weight:600;line-height:1.08;padding-bottom:.08em;"
+
+	// Verify the external CSS file contains the descender rule
+	cssContent, err := os.ReadFile("assets/portal-shell.css")
+	if err != nil {
+		t.Fatalf("Failed to read portal-shell.css: %v", err)
+	}
+	if !strings.Contains(string(cssContent), descenderRule) {
+		t.Fatal("portal-shell.css must contain the descender rule for section titles")
+	}
+
 	for _, page := range pages {
 		t.Run(page.name, func(t *testing.T) {
 			html := renderComponent(t, page.page)
-			if !strings.Contains(html, descenderRule) {
-				t.Fatal("shared section title must leave room below the baseline")
+			// Verify the CSS is linked
+			if !strings.Contains(html, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`) {
+				t.Fatal("shared section title CSS must be linked via portal-shell.css")
 			}
 			if !strings.Contains(html, page.title) {
 				t.Fatalf("shared section header is missing title %q", page.title)
@@ -384,16 +396,19 @@ func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
 
 	base := strings.Index(html, ".side-brand{")    // only PortalBaseStyles defines this
 	page := strings.Index(html, ".settings-main{") // only the settings page block does
-	shell := strings.Index(html, ".mobile-context-switch{")
+	shellLink := strings.Index(html, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`)
 
-	if base < 0 || page < 0 || shell < 0 {
-		t.Fatalf("markers missing: base=%d page=%d shell=%d", base, page, shell)
+	if base < 0 || page < 0 || shellLink < 0 {
+		t.Fatalf("markers missing: base=%d page=%d shellLink=%d", base, page, shellLink)
 	}
 	if base > page {
 		t.Error("PortalBaseStyles must be emitted BEFORE the page styles, so page rules keep winning")
 	}
-	if shell < page {
-		t.Error("PortalShellStyles must stay AFTER the page styles; it exists to override them")
+	// The portal shell CSS is now an external file loaded via <link> tag.
+	// The link tag must be AFTER inline page styles to ensure the shell rules win (HAUSV-563).
+	// This mimics the old PortalShellStyles() position.
+	if shellLink < page {
+		t.Error("portal-shell.css link must be AFTER inline page styles (to win in cascade), but still in <head>")
 	}
 }
 

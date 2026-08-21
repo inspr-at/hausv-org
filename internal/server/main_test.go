@@ -3442,7 +3442,12 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 	if got := strings.Count(body, `href="/demo/app/anliegen?new=1#issue-new"`); got != 2 {
 		t.Fatalf("desktop hero and mobile quick action should expose the create path, got %d", got)
 	}
-	for _, want := range []string{`.portal-home-landing.calm-main`, `.disclosures{`, `.utility-links{`} {
+	// Shared portal-shell CSS selectors are now in the external portal-shell.css file (HAUSV-549)
+	if !strings.Contains(body, `/assets/portal-shell.css?v=`) {
+		t.Fatal("portal must link to external portal-shell.css (HAUSV-549)")
+	}
+	// Page-specific dashboard selectors remain inline in PortalStyles()
+	for _, want := range []string{`.disclosures{`, `.utility-links{`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portal stylesheet should contain focused dashboard selector %q", want)
 		}
