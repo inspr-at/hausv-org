@@ -1081,7 +1081,7 @@ func TruncateIssueDescription(body string) string {
 	if len(runes) <= 100 {
 		return clean
 	}
-	
+
 	// Find a word boundary near position 100
 	cutPoint := 100
 	for i := cutPoint; i > 60 && i < len(runes); i-- {
@@ -1090,7 +1090,7 @@ func TruncateIssueDescription(body string) string {
 			break
 		}
 	}
-	
+
 	return strings.TrimSpace(string(runes[:cutPoint])) + "…"
 }
 

@@ -953,7 +953,7 @@ func issueDetailsFromForm(values url.Values) (issueDetailsInput, bool, error) {
 	body := strings.TrimSpace(values.Get("body"))
 	locationType := normalizeIssueLocation(values.Get("location_type"))
 	locationDetail := strings.TrimSpace(values.Get("location_detail"))
-	
+
 	if body == "" || len([]rune(body)) > 4000 {
 		return issueDetailsInput{}, true, fmt.Errorf("invalid body")
 	}
@@ -963,7 +963,7 @@ func issueDetailsFromForm(values url.Values) (issueDetailsInput, bool, error) {
 	if len([]rune(locationDetail)) > 160 {
 		return issueDetailsInput{}, true, fmt.Errorf("location_detail too long")
 	}
-	
+
 	return issueDetailsInput{
 		Body:           body,
 		LocationType:   locationType,

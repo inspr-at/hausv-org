@@ -42,7 +42,7 @@ func TestPortalIssuesTableShowsBeschreibungNotBodyInOrt(t *testing.T) {
 		placeStart := strings.Index(body, `class="place"`)
 		placeEnd := strings.Index(body[placeStart:], "</td>")
 		placeCell := body[placeStart : placeStart+placeEnd]
-		
+
 		if strings.Contains(placeCell, "fällt nicht richtig ins Schloss") {
 			t.Fatal("Ort column must not contain Body text")
 		}
@@ -64,7 +64,7 @@ func TestPortalIssuesTableShowsBeschreibungNotBodyInOrt(t *testing.T) {
 	descStart := strings.Index(body, `class="description"`)
 	descEnd := strings.Index(body[descStart:], "</td>")
 	descCell := body[descStart : descStart+descEnd]
-	
+
 	// Extract just the displayed text (between the last ">" and "</span>")
 	spanStart := strings.Index(descCell, `<span class="description-text"`)
 	if spanStart == -1 {
@@ -76,7 +76,7 @@ func TestPortalIssuesTableShowsBeschreibungNotBodyInOrt(t *testing.T) {
 		t.Fatalf("Could not parse description text in cell: %s", descCell)
 	}
 	displayedText := descCell[spanStart+textStart+1 : spanStart+textEnd]
-	
+
 	if !strings.Contains(displayedText, "Die Haustür fällt nicht richtig ins Schloss") {
 		t.Fatalf("Beschreibung must contain start of Body text, got: %q", displayedText)
 	}
