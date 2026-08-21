@@ -322,6 +322,20 @@ func (s *SQLIssueStore) updateWorkflow(tenant TenantRef, id string, update Issue
 			updated.EstimateUpdatedAt = time.Time{}
 		}
 	}
+	if update.UpdateDetails {
+		body := strings.TrimSpace(update.Body)
+		locationType := NormalizeIssueLocation(update.LocationType)
+		locationDetail := strings.TrimSpace(update.LocationDetail)
+		if body != "" && len([]rune(body)) <= 4000 {
+			updated.Body = body
+		}
+		if locationType != "" {
+			updated.LocationType = locationType
+		}
+		if len([]rune(locationDetail)) <= 160 {
+			updated.LocationDetail = locationDetail
+		}
+	}
 	if status != IssueStatusDone {
 		updated.ResolutionConfirmedBy = ""
 		updated.ResolutionConfirmedAt = time.Time{}

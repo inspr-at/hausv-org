@@ -249,6 +249,7 @@ type IssueView struct {
 	ID                      string
 	Title                   string
 	Body                    string
+	Description             string
 	Author                  string
 	AuthorEmail             string
 	Category                string
@@ -265,6 +266,8 @@ type IssueView struct {
 	AssigneeEmail           string
 	HasAssignee             bool
 	Location                string
+	LocationType            string
+	LocationDetail          string
 	CreatedAt               string
 	CanComment              bool
 	CanClose                bool
@@ -1068,6 +1071,27 @@ func IssueLocationLabel(locationType string, detail string) string {
 		return label
 	}
 	return label + " · " + detail
+}
+
+// TruncateIssueDescription truncates body text for the Beschreibung column,
+// keeping approximately 100 chars and breaking on word boundaries.
+func TruncateIssueDescription(body string) string {
+	clean := strings.Join(strings.Fields(body), " ")
+	runes := []rune(clean)
+	if len(runes) <= 100 {
+		return clean
+	}
+
+	// Find a word boundary near position 100
+	cutPoint := 100
+	for i := cutPoint; i > 60 && i < len(runes); i-- {
+		if runes[i] == ' ' {
+			cutPoint = i
+			break
+		}
+	}
+
+	return strings.TrimSpace(string(runes[:cutPoint])) + "…"
 }
 
 func IssueStatusClass(status string) string {

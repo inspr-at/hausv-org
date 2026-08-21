@@ -121,6 +121,10 @@ type IssueWorkflowUpdate struct {
 	Status                string
 	Priority              string
 	AssigneeEmail         string
+	Body                  string
+	LocationType          string
+	LocationDetail        string
+	UpdateDetails         bool
 	ServiceProposal       string
 	ServiceProposedStart  time.Time
 	ServiceProposedEnd    time.Time
@@ -592,6 +596,20 @@ func (s *IssueStore) updateWorkflow(tenant TenantRef, id string, update IssueWor
 				updated.EstimateAmountCents = 0
 				updated.EstimateUpdatedBy = ""
 				updated.EstimateUpdatedAt = time.Time{}
+			}
+		}
+		if update.UpdateDetails {
+			body := strings.TrimSpace(update.Body)
+			locationType := NormalizeIssueLocation(update.LocationType)
+			locationDetail := strings.TrimSpace(update.LocationDetail)
+			if body != "" && len([]rune(body)) <= 4000 {
+				updated.Body = body
+			}
+			if locationType != "" {
+				updated.LocationType = locationType
+			}
+			if len([]rune(locationDetail)) <= 160 {
+				updated.LocationDetail = locationDetail
 			}
 		}
 		if status != IssueStatusDone {
