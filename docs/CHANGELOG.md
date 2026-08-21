@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.8] - 2026-08-21
+
+### Kontakte und Anliegen verbessert
+
+- Kontakte: Leere Hinzufügen-Formulare bleiben geschlossen; optionale Felder zeigen eine Öffnen-Markierung.
+- Hausüberblick: Anliegen-Liste zeigt Beschreibung gekürzt und Ortsangabe ausschließlich als Ort mit Zeilenumbruch.
+
 ## [0.99.7] - 2026-08-20
 
 ### Energiewerte eindeutiger dargestellt

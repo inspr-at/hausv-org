@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.8",
+			Date:     "21. August 2026",
+			Kind:     "Stabilität",
+			Headline: "Kontakte und Anliegen kompakter.",
+			Intro:    "Formulare bleiben geschlossen, wenn keine Eingabe erfolgt ist, und optionale Felder sind deutlicher gekennzeichnet.",
+			Items: []NoteItem{
+				{Label: "Kontakte", Text: "Leere Hinzufügen-Formulare bleiben geschlossen; optionale Felder zeigen eine Öffnen-Markierung."},
+				{Label: "Hausüberblick", Text: "Anliegen-Liste: Beschreibung ist gekürzt, Ortsangabe zeigt ausschließlich den Ort mit Zeilenumbruch."},
+			},
+		},
+		{
 			Version:  "0.99.7",
 			Date:     "20. August 2026",
 			Kind:     "Energie",
