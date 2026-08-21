@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.9",
+			Date:     "21. August 2026",
+			Kind:     "Stabilität",
+			Headline: "Portal-Shell zwischenspeicherbar.",
+			Intro:    "Das Portal-Stylesheet wird mit Versionsnummer ausgeliefert und kann vom Browser effizienter zwischengespeichert werden.",
+			Items: []NoteItem{
+				{Label: "Portal-Shell", Text: "Stylesheet ist nun versioniert zwischenspeicherbar, während Gestaltung und Inhalte unverändert bleiben."},
+			},
+		},
+		{
 			Version:  "0.99.8",
 			Date:     "21. August 2026",
 			Kind:     "Stabilität",
