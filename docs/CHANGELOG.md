@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.9] - 2026-08-21
+
+### Stabilität verbessert
+
+- Portal-Shell: Stylesheet ist nun versioniert zwischenspeicherbar, während Gestaltung und Inhalte unverändert bleiben.
+
 ## [0.99.8] - 2026-08-21
 
 ### Kontakte und Anliegen verbessert
