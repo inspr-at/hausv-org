@@ -1,8 +1,23 @@
 # Production deployment
 
-Production infrastructure is not part of this repository. Hostnames, paths and
-operator details are supplied through a private deployment environment. Do not
-commit a populated environment file.
+## Architecture
+
+**Product repository:** This repository (`hausv-org`) contains the HAUSV product
+code, deployment scripts, and versioned documentation.
+
+**Private instance repository:** The private repository `hausv-jhw22` contains the
+compose configuration and instance-specific settings for the csb1 production
+deployment. It lives at `/home/mba/Code/hausv-jhw22` on csb1. The normal entry
+point from that repository is `scripts/deploy-product.sh ../hausv-org`, which
+calls the fail-closed product deploy scripts in this repository.
+
+**PPM runbook:** The operator index and deployment checklist for csb1 lives in PPM
+Knowledge as runbook `csb1-deploy-rollback`. This document contains the detailed
+commands and technical reference.
+
+Production infrastructure hostnames, paths and operator details are supplied
+through a private deployment environment. Do not commit a populated environment
+file.
 
 ## Release contract
 
