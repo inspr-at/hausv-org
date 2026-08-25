@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hausüberblick · Parkgasse 12 · Verwaltung</title>
+  <style>
+    :root {
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb; --panel-soft:#fbf8f0;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
+      --nav:#172019; --nav-2:#20291f;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+      --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px;
+      --radius-xs:7px; --radius-sm:8px; --radius-md:10px; --radius-lg:12px; --radius-xl:14px; --radius-pill:999px;
+      --shadow-panel:0 12px 30px rgba(32,37,31,.04);
+      --shadow-dialog:0 28px 70px rgba(0,0,0,.34);
+      --shadow-md:0 18px 44px rgba(32,37,31,.08);
+      font-family: var(--font-sans);
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body { 
+      min-width: 320px; 
+      max-width: 768px;
+      background: var(--paper); 
+      color: var(--ink); 
+      font-family: var(--font-sans);
+      padding-bottom: 132px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-serif); font-weight: 600; }
+    
+    /* Mobile content */
+    .mobile-content { 
+      display: block; 
+      padding: var(--space-5) var(--space-4) var(--space-6);
+    }
+    
+    .mobile-content .greeting h1 { 
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    
+    .greeting p {
+      margin-top: var(--space-2);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    
+    /* Task card */
+    .task-card { 
+      margin-top: var(--space-5); 
+      padding: var(--space-4); 
+      background: var(--panel); 
+      border: 1px solid var(--line); 
+      border-radius: var(--radius-md); 
+      box-shadow: var(--shadow-panel);
+    }
+    
+    .eyebrow { 
+      color: var(--gold-ink); 
+      font-size: 9px; 
+      font-weight: 800; 
+      letter-spacing: .13em; 
+      text-transform: uppercase;
+    }
+    
+    .task-card h2 { 
+      margin-top: 6px; 
+      font-size: 24px; 
+      line-height: 1.08;
+    }
+    
+    .task-card p { 
+      margin-top: var(--space-2); 
+      color: var(--muted); 
+      font-size: 12px;
+    }
+    
+    .primary { 
+      min-height: 48px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      margin-top: var(--space-4); 
+      background: var(--gold); 
+      color: var(--panel); 
+      border-radius: var(--radius-sm); 
+      font-size: 14px; 
+      font-weight: 750;
+      text-decoration: none;
+    }
+    
+    /* Counts */
+    .counts { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: var(--space-2); 
+      margin-top: var(--space-4);
+    }
+    
+    .count-tile { 
+      min-height: 72px; 
+      display: grid; 
+      place-content: center; 
+      text-align: center; 
+      background: var(--panel-soft); 
+      border: 1px solid var(--line); 
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .count-tile strong { 
+      display: block; 
+      font-family: var(--font-serif); 
+      font-size: 27px; 
+      font-weight: 500; 
+      line-height: 1;
+    }
+    
+    .count-tile span { 
+      display: block; 
+      margin-top: 7px; 
+      color: var(--muted); 
+      font-size: 7px; 
+      font-weight: 800; 
+      letter-spacing: .08em; 
+      text-transform: uppercase;
+    }
+    
+    /* Mobile sections */
+    .mobile-section { 
+      margin-top: var(--space-5);
+    }
+    
+    .mobile-section > h2 { 
+      margin-bottom: var(--space-3); 
+      font-size: 21px;
+    }
+    
+    .mobile-list { 
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      background: var(--panel); 
+      border: 1px solid var(--line); 
+      border-radius: var(--radius-sm); 
+      list-style: none;
+    }
+    
+    .mobile-list li + li { 
+      border-top: 1px solid var(--line);
+    }
+    
+    .mobile-event, .mobile-notice { 
+      min-height: 63px; 
+      display: grid; 
+      grid-template-columns: 42px 1fr 12px; 
+      align-items: center; 
+      gap: var(--space-3); 
+      padding: var(--space-2) var(--space-3);
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .mobile-notice { 
+      grid-template-columns: 9px 1fr 12px;
+    }
+    
+    .date-chip { 
+      width: 42px; 
+      height: 42px; 
+      display: grid; 
+      place-content: center; 
+      background: var(--leaf); 
+      color: var(--panel); 
+      border-radius: var(--radius-sm); 
+      text-align: center;
+    }
+    
+    .date-chip strong { 
+      font-family: var(--font-serif); 
+      font-size: 20px; 
+      font-weight: 500; 
+      line-height: .8;
+    }
+    
+    .date-chip span { 
+      margin-top: 5px; 
+      font-size: 7px; 
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    
+    .item-copy strong, .item-copy span { 
+      display: block;
+    }
+    
+    .item-copy strong { 
+      overflow: hidden; 
+      font-size: 11px; 
+      text-overflow: ellipsis; 
+      white-space: nowrap;
+    }
+    
+    .item-copy span { 
+      margin-top: 3px; 
+      color: var(--muted); 
+      font-size: 9px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    
+    .chevron { 
+      color: var(--muted); 
+      font-size: 20px;
+    }
+    
+    .dot { 
+      display: inline-block; 
+      width: 8px; 
+      height: 8px; 
+      background: var(--soft); 
+      border-radius: var(--radius-pill);
+    }
+    
+    .dot.gold { background: var(--gold); }
+    
+    /* More data */
+    .more-data { 
+      margin-top: var(--space-2);
+    }
+    
+    .more-data > summary { 
+      min-height: 34px; 
+      display: grid; 
+      place-content: center; 
+      color: var(--muted); 
+      cursor: pointer; 
+      font-size: 11px; 
+      list-style: none; 
+      text-decoration: underline; 
+      text-underline-offset: 3px;
+    }
+    
+    .more-data > summary::-webkit-details-marker { 
+      display: none;
+    }
+    
+    .more-data .mobile-list { 
+      margin-top: var(--space-2);
+    }
+    
+    /* Thumb zone */
+    .thumb-zone { 
+      position: fixed; 
+      z-index: 10; 
+      right: 0; 
+      bottom: 0; 
+      left: 0; 
+      display: block; 
+      padding: var(--space-2) var(--space-3) max(var(--space-2), env(safe-area-inset-bottom)); 
+      background: var(--paper);
+    }
+    
+    .report { 
+      min-height: 48px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: var(--space-2); 
+      background: var(--gold); 
+      color: var(--panel); 
+      border-radius: var(--radius-sm); 
+      font-size: 14px; 
+      font-weight: 800; 
+      box-shadow: var(--shadow-md);
+      text-decoration: none;
+    }
+    
+    .tabs { 
+      min-height: 62px; 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      margin-top: var(--space-2); 
+      background: var(--panel); 
+      border: 1px solid var(--line); 
+      border-radius: var(--radius-md); 
+      box-shadow: var(--shadow-panel);
+    }
+    
+    .tabs > a { 
+      display: grid; 
+      place-content: center; 
+      gap: 3px; 
+      text-align: center; 
+      color: var(--muted); 
+      font-size: 9px; 
+      font-weight: 700;
+      text-decoration: none;
+    }
+    
+    .tabs > a.active { 
+      color: var(--gold);
+    }
+    
+    .tab-icon svg { 
+      display: block; 
+      width: 20px; 
+      height: 20px; 
+      margin: auto; 
+      fill: none; 
+      stroke: currentColor; 
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="mobile-content">
+    
+    <!-- Greeting -->
+    <div class="greeting">
+      <h1>Hallo Frau Bachmeier.</h1>
+      <p>Dienstag, 25. August 2026</p>
+    </div>
+    
+    <!-- Task card -->
+    <article class="task-card">
+      <p class="eyebrow">Jetzt zu erledigen</p>
+      <h2>Kellerlicht im Stiegenhaus defekt</h2>
+      <p>Die Leuchte im ersten Kellergeschoß fällt seit 8 Tagen immer wieder aus</p>
+      <a class="primary" href="/app/anliegen/1">Anliegen ansehen</a>
+    </article>
+    
+    <!-- Counts -->
+    <nav class="counts" aria-label="Kennzahlen">
+      <a class="count-tile" href="/app/anliegen/board">
+        <strong>3</strong>
+        <span>Anliegen</span>
+      </a>
+      <a class="count-tile" href="/app/events">
+        <strong>2</strong>
+        <span>Termine</span>
+      </a>
+      <a class="count-tile" href="/app/announcements">
+        <strong>1</strong>
+        <span>Aushang</span>
+      </a>
+    </nav>
+    
+    <!-- Events section -->
+    <section class="mobile-section">
+      <h2>Nächste Termine</h2>
+      <ol class="mobile-list">
+        <li>
+          <a class="mobile-event" href="/app/events">
+            <time class="date-chip">
+              <strong>28</strong>
+              <span>Aug</span>
+            </time>
+            <span class="item-copy">
+              <strong>Wartung Heizungsanlage</strong>
+              <span>09:00 – 12:00 · Heizraum</span>
+            </span>
+            <span class="chevron" aria-hidden="true">›</span>
+          </a>
+        </li>
+        <li>
+          <a class="mobile-event" href="/app/events">
+            <time class="date-chip">
+              <strong>03</strong>
+              <span>Sep</span>
+            </time>
+            <span class="item-copy">
+              <strong>Beiratssitzung</strong>
+              <span>18:30 · Gemeinschaftsraum</span>
+            </span>
+            <span class="chevron" aria-hidden="true">›</span>
+          </a>
+        </li>
+      </ol>
+    </section>
+    
+    <!-- Announcements section -->
+    <section class="mobile-section">
+      <h2>Am Aushang</h2>
+      <ul class="mobile-list">
+        <li>
+          <a class="mobile-notice" href="/app/announcements">
+            <span class="dot gold"></span>
+            <span class="item-copy">
+              <strong>Reinigung Dachrinnen: Termin verschoben</strong>
+              <span>Hausverwaltung · vor 2 Stunden</span>
+            </span>
+            <span class="chevron" aria-hidden="true">›</span>
+          </a>
+        </li>
+      </ul>
+      <details class="more-data">
+        <summary>Alle 3 Beiträge</summary>
+        <ul class="mobile-list">
+          <li>
+            <a class="mobile-notice" href="/app/announcements">
+              <span class="dot"></span>
+              <span class="item-copy">
+                <strong>Neue Regelung für Müllraum-Nutzung</strong>
+                <span>Beirat · vor 1 Woche</span>
+              </span>
+              <span class="chevron" aria-hidden="true">›</span>
+            </a>
+          </li>
+          <li>
+            <a class="mobile-notice" href="/app/announcements">
+              <span class="dot"></span>
+              <span class="item-copy">
+                <strong>Einladung: Sommerfest im Innenhof</strong>
+                <span>Bewohnervertreter · vor 2 Wochen</span>
+              </span>
+              <span class="chevron" aria-hidden="true">›</span>
+            </a>
+          </li>
+        </ul>
+      </details>
+    </section>
+    
+  </div>
+  
+  <!-- Thumb zone with action button and tabs -->
+  <div class="thumb-zone" aria-label="Schnellzugriff">
+    <a class="report" href="/app/anliegen?new=1#issue-new">
+      <span aria-hidden="true">＋</span>
+      Anliegen melden
+    </a>
+    <nav class="tabs" aria-label="Hauptbereiche">
+      <a class="active" href="/app" aria-current="page">
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 11.5 12 4l9 7.5"></path>
+            <path d="M5.5 10.5V20h13v-9.5"></path>
+            <path d="M9.5 20v-5h5v5"></path>
+          </svg>
+        </span>
+        <span>Haus</span>
+      </a>
+      <a href="/app/announcements">
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5h16v13H7l-3 3z"></path>
+            <path d="M8 9h8M8 13h6"></path>
+          </svg>
+        </span>
+        <span>Aushang</span>
+      </a>
+      <a href="/app/events">
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 3v4M17 3v4"></path>
+            <path d="M4.5 6h15v14h-15z"></path>
+            <path d="M4.5 10h15"></path>
+          </svg>
+        </span>
+        <span>Termine</span>
+      </a>
+      <a href="/app/settings">
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+          </svg>
+        </span>
+        <span>Mehr</span>
+      </a>
+    </nav>
+  </div>
+
+</body>
+</html>
