@@ -12,6 +12,7 @@ import (
 type UnitRepository interface {
 	SetUnits(units []Unit) error
 	UpsertUnit(origID string, item Unit) (duplicate bool, err error)
+	UpdateParties(updates []UnitPartyUpdate) (unknownUnit bool, err error)
 	DeleteUnit(id string) (removed bool, removedUnit Unit, err error)
 	List() []Unit
 	UnitCount() int
@@ -39,6 +40,7 @@ type boundUnitRepository struct {
 type unitBackend interface {
 	setTenantUnits(tenant TenantRef, units []Unit) error
 	upsertUnit(tenant TenantRef, origID string, item Unit) (duplicate bool, err error)
+	updateUnitParties(tenant TenantRef, updates []UnitPartyUpdate) (unknownUnit bool, err error)
 	deleteUnit(tenant TenantRef, id string) (removed bool, removedUnit Unit, err error)
 	listTenant(tenant TenantRef) []Unit
 	unitCount(tenant TenantRef) int
@@ -63,6 +65,10 @@ func (r *boundUnitRepository) SetUnits(units []Unit) error {
 
 func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error) {
 	return r.storage.upsertUnit(r.tenant, origID, item)
+}
+
+func (r *boundUnitRepository) UpdateParties(updates []UnitPartyUpdate) (bool, error) {
+	return r.storage.updateUnitParties(r.tenant, updates)
 }
 
 func (r *boundUnitRepository) DeleteUnit(id string) (bool, Unit, error) {
@@ -243,6 +249,48 @@ func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (b
 	}
 	if err := s.replaceTenantTx(tx, tenant, mine); err != nil {
 		return false, err
+	}
+	return false, tx.Commit()
+}
+
+func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdate) (bool, error) {
+	if s == nil || len(updates) == 0 {
+		return false, nil
+	}
+	normalized := normalizeUnitPartyUpdates(updates)
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	units, err := tenantUnitsTx(tx, tenant)
+	if err != nil {
+		return false, err
+	}
+	indexes := map[string]int{}
+	for index, item := range units {
+		indexes[NormalizeUnitID(item.ID)] = index
+	}
+	for id := range normalized {
+		if _, found := indexes[id]; !found {
+			return true, nil
+		}
+	}
+	for id, update := range normalized {
+		item := units[indexes[id]]
+		if update.SetOwners {
+			item.OwnerEmails = NormalizeEmailList(update.OwnerEmails)
+		}
+		if update.SetRenters {
+			item.RenterEmails = NormalizeEmailList(update.RenterEmails)
+		}
+		blob, err := json.Marshal(item)
+		if err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID); err != nil {
+			return false, err
+		}
 	}
 	return false, tx.Commit()
 }

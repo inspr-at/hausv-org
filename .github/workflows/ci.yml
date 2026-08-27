@@ -198,7 +198,7 @@ jobs:
           npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund
           npm --prefix scripts/snapshot exec -- playwright install --with-deps chromium
 
-      # Cheap and self-contained: one boot, 20 routes x 18 widths. Asserts that
+      # Cheap and self-contained: one boot, 21 routes x 18 widths. Asserts that
       # every route has exactly one navigation at every width, that it sits at
       # the top, and that all routes agree on which shell they are in. Six
       # routes once rendered their only navigation below the fold and every

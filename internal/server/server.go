@@ -500,6 +500,8 @@ const (
 	auditActionUnitDelete              = store.AuditActionUnitDelete
 	auditActionUnitPayment             = store.AuditActionUnitPayment
 	auditActionUnitSave                = store.AuditActionUnitSave
+	auditActionAnnualPeriodSave        = store.AuditActionAnnualPeriodSave
+	auditActionAnnualPartiesImport     = store.AuditActionAnnualPartiesImport
 	auditActionVoteCast                = store.AuditActionVoteCast
 	auditActionVoteClose               = store.AuditActionVoteClose
 	auditActionVoteCreate              = store.AuditActionVoteCreate
@@ -775,6 +777,7 @@ type app struct {
 	inviteStore              profileStorage
 	identityStore            *store.SQLIdentityStore
 	activityStore            activityStorage
+	annualStatementPeriods   store.AnnualStatementPeriodStorage
 	unitStore                unitStorage
 	unitPaymentStore         unitPaymentStatusStorage
 	issueStore               issueStorage
@@ -1121,6 +1124,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/parking/charging/telegram/unlink", a.authedAction(capabilityManageParking, a.unlinkTelegramChat))
 	mux.HandleFunc("GET /app/audit", a.page(a.auditLog))
 	mux.HandleFunc("GET /app/settings", a.page(a.settingsHub))
+	mux.HandleFunc("GET /app/settings/annual-statement", a.page(a.annualStatementPage))
+	mux.HandleFunc("POST /app/settings/annual-statement/periods", a.action(a.saveAnnualStatementPeriod))
+	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
 	mux.HandleFunc("GET /app/settings/modules", a.authed(capabilityManageBuilding, a.portalModuleSettings))
 	mux.HandleFunc("POST /app/settings/modules", a.authedAction(capabilityManageBuilding, a.updatePortalModules))
 	mux.HandleFunc("GET /app/settings/home", a.page(a.withEnergyLifecycleOperation(a.homeIdentitySettings)))
@@ -1172,18 +1178,19 @@ type tenantPathContextKey struct{}
 // for this request. It is deliberately unexported and can only be constructed
 // together with a resolvedTenantRequest by tenantPaths.
 type requestRepositories struct {
-	announcementReads store.AnnouncementReadRepository
-	announcements     store.AnnouncementRepository
-	attachments       store.AttachmentRepository
-	contacts          store.ContactBookRepository
-	documents         store.DocumentRepository
-	events            store.EventRepository
-	handovers         store.HandoverRepository
-	identity          store.IdentityRepository
-	issues            store.IssueRepository
-	unitPayments      store.UnitPaymentStatusRepository
-	units             store.UnitRepository
-	votes             store.VoteRepository
+	annualStatementPeriods store.AnnualStatementPeriodRepository
+	announcementReads      store.AnnouncementReadRepository
+	announcements          store.AnnouncementRepository
+	attachments            store.AttachmentRepository
+	contacts               store.ContactBookRepository
+	documents              store.DocumentRepository
+	events                 store.EventRepository
+	handovers              store.HandoverRepository
+	identity               store.IdentityRepository
+	issues                 store.IssueRepository
+	unitPayments           store.UnitPaymentStatusRepository
+	units                  store.UnitRepository
+	votes                  store.VoteRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1197,6 +1204,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	repositories := requestRepositories{}
 	if a == nil {
 		return repositories
+	}
+	if a.annualStatementPeriods != nil {
+		repositories.annualStatementPeriods, _ = store.BindAnnualStatementPeriodRepository(a.annualStatementPeriods, tenant)
 	}
 	if a.announcementReadStore != nil {
 		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant)
@@ -1673,6 +1683,7 @@ func newApp() (*app, error) {
 	// are a no-op, and they are what migrates a fresh environment. A failing
 	// import aborts the boot rather than quietly starting on an empty store.
 	sqlActivity := newSQLActivityStore(tenantDB)
+	sqlAnnualStatementPeriods := store.NewSQLAnnualStatementPeriodStore(tenantDB)
 	sqlProfileOverlay := newSQLProfileOverlayStore(tenantDB)
 	sqlNotification := newSQLNotificationPrefStore(tenantDB)
 	sqlUnitPayment := newSQLUnitPaymentStatusStore(tenantDB)
@@ -1743,6 +1754,7 @@ func newApp() (*app, error) {
 	}
 
 	var activityBackend activityStorage = sqlActivity
+	var annualStatementPeriodBackend store.AnnualStatementPeriodStorage = sqlAnnualStatementPeriods
 	var profileBackend profileOverlayStorage = sqlProfileOverlay
 	var notificationBackend notificationPrefStorage = sqlNotification
 	var unitPaymentBackend unitPaymentStatusStorage = sqlUnitPayment
@@ -1841,6 +1853,7 @@ func newApp() (*app, error) {
 		inviteStore:              inviteBackend,
 		identityStore:            identity,
 		activityStore:            activityBackend,
+		annualStatementPeriods:   annualStatementPeriodBackend,
 		unitStore:                unitBackend,
 		unitPaymentStore:         unitPaymentBackend,
 		issueStore:               issueBackend,

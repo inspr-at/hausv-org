@@ -32,7 +32,7 @@ const ROUTES = [
   ['onboarding', '/app/zuhause/onboarding'],
   ['settings', '/app/settings'], ['settings-profile', '/app/settings/profile'],
   ['settings-notifications', '/app/settings/notifications'],
-  ['settings-building', '/app/settings/building'], ['settings-users', '/app/settings/users'], ['audit', '/app/audit'],
+  ['settings-building', '/app/settings/building'], ['settings-annual-statement', '/app/settings/annual-statement'], ['settings-users', '/app/settings/users'], ['audit', '/app/audit'],
 ];
 
 const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');

@@ -63,6 +63,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"ParkingPage", ParkingPage(ParkingPageData{Portal: portal, AssetVersion: assetVersion, IsAdmin: true, CanManageParkingPayments: true, StatementYear: 2026}), "data-templ-parking", []string{"attachments.js"}},
 		{"OnboardingPage", OnboardingPage(OnboardingPageData{Portal: portal, Step: 2, Progress: 40, CanControlEnergy: true}), "data-templ-onboarding", nil},
 		{"SettingsHubPage", SettingsHubPage(SettingsHubPageData{Portal: portal}), "data-templ-settings", nil},
+		{"AnnualStatementPage", AnnualStatementPage(AnnualStatementPageData{Portal: portal, EstateName: "Haus am Park", EstateAddress: "Parkgasse 1"}), "data-templ-settings", nil},
 		{"ProfileSettingsPage", ProfileSettingsPage(ProfileSettingsPageData{Portal: portal}), "data-templ-settings", nil},
 		{"NotificationSettingsPage", NotificationSettingsPage(NotificationSettingsPageData{Portal: portal}), "data-templ-settings", nil},
 		{"BuildingSettingsPage", BuildingSettingsPage(BuildingSettingsPageData{Portal: portal, AssetVersion: assetVersion, BuildingSection: "units", Units: []view.BuildingUnitView{{ID: "1", Label: "Top 1"}}}), "data-templ-settings", []string{"attachments.js", "building-settings.js"}},

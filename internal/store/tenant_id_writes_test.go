@@ -177,6 +177,10 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err != nil {
 		t.Fatalf("units: %v", err)
 	}
+	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
+	if _, err := periods.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
+		t.Fatalf("annual statement period: %v", err)
+	}
 	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), tenant)
 	if _, err := payments.Set(UnitPaymentStatus{UnitID: "u1", Status: UnitPaymentStatusPaid, UpdatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("unit payment status: %v", err)

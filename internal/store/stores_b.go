@@ -35,6 +35,8 @@ const (
 	AuditActionUnitSave            = "building.unit.save"
 	AuditActionUnitDelete          = "building.unit.delete"
 	AuditActionUnitPayment         = "building.unit.payment"
+	AuditActionAnnualPeriodSave    = "annual-statement.period.save"
+	AuditActionAnnualPartiesImport = "annual-statement.parties.import"
 	AuditActionParkingSettings     = "parking.settings"
 	AuditActionParkingMonth        = "parking.month"
 	AuditActionParkingReminder     = "parking.reminder"
@@ -202,6 +204,16 @@ type Unit struct {
 	MiteigentumsanteilPPM int      `json:"miteigentumsanteil"`
 	OwnerEmails           []string `json:"owner_emails,omitempty"`
 	RenterEmails          []string `json:"renter_emails,omitempty"`
+}
+
+// UnitPartyUpdate changes only the reusable owner/renter assignments of an
+// existing unit. The Set flags distinguish "leave unchanged" from "clear".
+type UnitPartyUpdate struct {
+	UnitID       string
+	OwnerEmails  []string
+	RenterEmails []string
+	SetOwners    bool
+	SetRenters   bool
 }
 
 const (
@@ -968,6 +980,54 @@ func (s *UnitStore) deleteUnit(tenant TenantRef, id string) (removed bool, remov
 	s.data.Units = kept
 	SortUnits(s.data.Units)
 	return true, removedUnit, s.saveLocked()
+}
+
+func (s *UnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdate) (unknownUnit bool, err error) {
+	if s == nil || len(updates) == 0 {
+		return false, nil
+	}
+	tenantSlug := textutil.Slug(tenant.Slug)
+	if tenantSlug == "" {
+		return false, nil
+	}
+	normalized := normalizeUnitPartyUpdates(updates)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	indexes := map[string]int{}
+	for index, item := range s.data.Units {
+		if textutil.Slug(item.TenantSlug) == tenantSlug {
+			indexes[NormalizeUnitID(item.ID)] = index
+		}
+	}
+	for id := range normalized {
+		if _, found := indexes[id]; !found {
+			return true, nil
+		}
+	}
+	for id, update := range normalized {
+		index := indexes[id]
+		if update.SetOwners {
+			s.data.Units[index].OwnerEmails = NormalizeEmailList(update.OwnerEmails)
+		}
+		if update.SetRenters {
+			s.data.Units[index].RenterEmails = NormalizeEmailList(update.RenterEmails)
+		}
+	}
+	SortUnits(s.data.Units)
+	return false, s.saveLocked()
+}
+
+func normalizeUnitPartyUpdates(updates []UnitPartyUpdate) map[string]UnitPartyUpdate {
+	out := map[string]UnitPartyUpdate{}
+	for _, update := range updates {
+		id := NormalizeUnitID(update.UnitID)
+		if id == "" {
+			continue
+		}
+		update.UnitID = id
+		out[id] = update
+	}
+	return out
 }
 
 func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
