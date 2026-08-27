@@ -44,15 +44,26 @@ The runner:
 
 1. Checks out the repository at the exact green CI commit;
 2. Checks whether migrations changed vs. the live version;
-3. If migrations changed, takes a fresh consistent SQLite+blob snapshot (same
-   helper as deploy.sh) under the project lock before pull;
-4. Pulls the CI-built image from GHCR;
+3. Preserves the live image and pulls the CI-built image from GHCR without
+   changing the running container;
+4. If migrations changed, runs that green image's restricted snapshot command
+   with read-only data and a dedicated writable backup bind mount under the
+   project lock;
 5. Swaps the production container under the project lock.
 
 **Schema support:** When `internal/db/migrations` changes, the unattended script
-now captures the same pre-deploy snapshot that `scripts/deploy.sh` does. Snapshot
-failure refuses the release before pulling or swapping; production stays on the
-previous image.
+now captures the same SQLite+blob recovery scope as `scripts/deploy.sh`. The
+runner needs no sudo access: Docker performs the two explicit host bind mounts,
+the snapshot container has no network, and the live service is automatically
+recovered before the script can fail. Snapshot failure refuses the release
+before swapping; production stays on the previous image.
+
+The versioned published snapshot is write-once. An interrupted, unpublished
+`.staging` directory for that same version is removed by the next snapshot
+attempt. Snapshot recovery allows up to 100 seconds by default for the old
+container to pass Docker health checks; override the positive attempt count
+with `HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS` when the shared two-second polling
+interval is changed.
 
 **No SSH secrets:** The runner runs locally on csb1 with host docker and GHCR
 credentials from `/run/agenix/csb1-hausv-ghcr-pull`. No SSH keys or GitHub
@@ -115,9 +126,9 @@ configured Compose service. It may differ from the stable service name
 
 Optional overrides:
 
-csb1 is NixOS: **there is no `/usr/bin`**, so the three binary overrides are
-required there, not optional. The defaults below are FHS paths and fail with
-`No such file or directory`.
+The image override remains optional. csb1 is NixOS: **there is no `/usr/bin`**,
+so the three executable-path overrides are required there. Their defaults are
+FHS paths and fail with `No such file or directory`.
 
 ```sh
 HAUSV_DEPLOY_IMAGE=ghcr.io/inspr-at/hausv-org:latest
@@ -175,32 +186,24 @@ on csb1.
 
 **Runner setup:**
 
-The human registers a repository self-hosted runner labeled `csb1-hausv` as mba
-on csb1 once. The runner must have:
+The repository runner is declared in nixcfg at
+`hosts/csb1/hausv-github-runner.nix` and runs as mba. It must have:
 
 1. `csb1-hausv` label;
 2. Access to host docker socket;
 3. GHCR authentication via `/run/agenix/csb1-hausv-ghcr-pull` token file;
-4. Access to the compose lock and compose directory.
+4. Access to the compose lock and compose directory;
+5. Docker socket access, with the HAUSV data and pre-deploy snapshot bind-source
+   directories already present on the host. The runner process does not need
+   direct filesystem access to those root-only directories.
 
 **Operator checklist for one-time runner setup:**
 
-1. On csb1, as user mba (never root), download the GitHub Actions runner tarball
-   for the hausv-org repository.
-2. Extract to a working directory (e.g., `~/actions-runner`).
-3. Run `./config.sh` with:
-   - Repository URL: `https://github.com/inspr-at/hausv-org`
-   - Runner name: descriptive (e.g., `csb1-hausv-prod`)
-   - Labels: `csb1-hausv` (required; the workflow matches this label)
-   - Work folder: default is fine
-   - Run as service: yes
-4. Install and start the systemd service as user mba (not root):
-   ```
-   sudo ./svc.sh install mba
-   sudo ./svc.sh start
-   ```
-5. Verify runner appears in GitHub repository Settings → Actions → Runners.
-6. **Critical**: Never run `docker compose down` on the entire csb1 hausv-jhw22
+1. Apply the reviewed declarative nixcfg configuration through the normal host
+   change process.
+2. Verify `github-runner-csb1-hausv.service` is active and the runner appears in
+   GitHub repository Settings → Actions → Runners.
+3. **Critical**: Never run `docker compose down` on the entire csb1 hausv-jhw22
    project. The runner only recreates the `hausv-org` service with
    `--force-recreate --no-deps hausv-org`.
 

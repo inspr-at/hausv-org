@@ -20,12 +20,13 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$test_root/bin" || exit 1
-for command_name in git docker curl; do
+for command_name in git docker curl flock; do
     ln -s "$test_mock" "$test_root/bin/$command_name" || exit 1
 done
 
-# Create mock flock/base64/mktemp that actually work for the local script
-for bin_name in flock base64 mktemp; do
+# Create base64/mktemp links that actually work for the local script. flock is
+# mocked above so this fixture remains deterministic on macOS, which lacks it.
+for bin_name in base64 mktemp; do
     if command -v "$bin_name" >/dev/null 2>&1; then
         ln -s "$(command -v "$bin_name")" "$test_root/bin/$bin_name" || exit 1
     fi
@@ -57,12 +58,14 @@ fixture() {
         HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
         HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
         HAUSV_DEPLOY_VERIFY_SLEEP=0 \
+        HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS=1 \
         bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa >"$output" 2>&1
     actual_status=$?
 
     if [ "$actual_status" -ne "$expected_status" ]; then
         echo "FAIL $case_name: exit $actual_status, expected $expected_status" >&2
         command cat "$output" >&2
+        [ ! -f "$state/commands.log" ] || command cat "$state/commands.log" >&2
         exit 1
     fi
     if ! grep -qF -- "$expected_text" "$output"; then
@@ -112,31 +115,31 @@ fi
 
 # Fixtures for the new snapshot support: dry-run behavior and full path validation
 
-# Test dry-run with no schema change (must not invoke sudo or snapshot)
-# This fails at preflight (docker not fully mocked) but verifies schema logic
-fixture no_schema_dry_run_check 1 "local preflight failed"
-# Verify no sudo probe was added for non-schema case
-if grep -qF -- "sudo" "$test_root/no_schema_dry_run_check/output.txt"; then
-    echo "FAIL no_schema_dry_run_check: invoked sudo for non-schema dry-run" >&2
-    exit 1
-fi
-
 # Test with schema change and snapshot env vars
 fixture_schema() {
     local case_name=$1 expected_status=$2 expected_text=$3
+    local mode=${4:-dry-run}
+    local snapshot_attempts=${5:-1}
     local state=$test_root/$case_name
     mkdir -p "$state"
     local output=$state/output.txt
     local fixture_path=$test_root/bin:$PATH
     local actual_status
+    local deploy_args=(9.99.0 aaaaaaa)
+    if [ "$mode" != release ]; then
+        deploy_args+=(--dry-run)
+    fi
+    mkdir -p "$state/compose"
+    : > "$state/compose/compose.yml"
+    : > "$state/ghcr-token"
 
     env \
         PATH="$fixture_path" \
         TEST_FIXTURE_CASE="$case_name" \
         TEST_FIXTURE_STATE="$state" \
         TEST_FIXTURE_REPO="$test_repo" \
-        HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
-        HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
+        HAUSV_DEPLOY_COMPOSE_DIR="$state/compose" \
+        HAUSV_DEPLOY_COMPOSE_FILE="$state/compose/compose.yml" \
         HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
         HAUSV_DEPLOY_CONTAINER=hausv-demo \
         HAUSV_DEPLOY_COMPOSE_LOCK="$state/compose.lock" \
@@ -145,10 +148,12 @@ fixture_schema() {
         HAUSV_DEPLOY_FLOCK_BIN="$test_root/bin/flock" \
         HAUSV_DEPLOY_BASE64_BIN="$test_root/bin/base64" \
         HAUSV_DEPLOY_MKTEMP_BIN="$test_root/bin/mktemp" \
+        HAUSV_DEPLOY_GHCR_TOKEN_FILE="$state/ghcr-token" \
         HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
         HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
         HAUSV_DEPLOY_VERIFY_SLEEP=0 \
-        bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa >"$output" 2>&1
+        HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS="$snapshot_attempts" \
+        bash "$test_repo/scripts/deploy-from-ci-image.sh" "${deploy_args[@]}" >"$output" 2>&1
     actual_status=$?
 
     if [ "$actual_status" -ne "$expected_status" ]; then
@@ -165,8 +170,62 @@ fixture_schema() {
     echo "ok $case_name"
 }
 
-# Test with schema change and preflight failure (verifies sudo probe was configured)
-# Preflight will fail but the sudo probe should have been added to the script
-fixture_schema schema_with_snapshot 1 "local preflight failed"
+# A schema-changing dry run reaches every read-only precondition without sudo.
+fixture_schema schema_with_snapshot 0 "all fail-closed preconditions passed"
+if grep -qF -- "sudo" "$test_root/schema_with_snapshot/commands.log"; then
+    echo "FAIL schema_with_snapshot: unattended schema preflight still invoked sudo" >&2
+    exit 1
+fi
+
+# The non-dry schema fixture reaches the candidate-image snapshot command,
+# verifies its Docker confinement, restarts the old service, and only then
+# activates and verifies the release.
+fixture_schema schema_release_success 0 "live version: 9.99.0 (aaaaaaa)" release 3
+if ! grep -qF -- $'docker\trun\t--rm\t--user\t0:0\t--network\tnone\t--read-only' \
+    "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: restricted snapshot container did not run" >&2
+    exit 1
+fi
+if ! grep -qF -- $'\tsha256:2222222222222222222222222222222222222222222222222222222222222222\tpredeploy-snapshot\t' \
+    "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: snapshot did not use the pinned release image ID" >&2
+    exit 1
+fi
+snapshot_stop_line=$(grep -n $'docker\tcompose\t.*\tstop\t-t\t30\thausv-org$' \
+    "$test_root/schema_release_success/commands.log" | cut -d: -f1)
+snapshot_run_line=$(grep -n $'^docker\trun\t' \
+    "$test_root/schema_release_success/commands.log" | cut -d: -f1)
+snapshot_start_line=$(grep -n $'docker\tcompose\t.*\tstart\thausv-org$' \
+    "$test_root/schema_release_success/commands.log" | cut -d: -f1)
+if [ -z "$snapshot_stop_line" ] || [ -z "$snapshot_run_line" ] || [ -z "$snapshot_start_line" ] \
+    || [ "$snapshot_stop_line" -ge "$snapshot_run_line" ] \
+    || [ "$snapshot_run_line" -ge "$snapshot_start_line" ]; then
+    echo "FAIL schema_release_success: snapshot stop/run/start ordering is not atomic" >&2
+    exit 1
+fi
+if grep -qE -- $'--cap-add\t(CHOWN|FOWNER|DAC_READ_SEARCH)' \
+    "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: snapshot container has unnecessary capabilities" >&2
+    exit 1
+fi
+if grep -qF -- "sudo" "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: schema release still invoked sudo" >&2
+    exit 1
+fi
+
+# A failed snapshot container must recreate the old service under the same
+# lock and refuse before the release tag can become latest.
+fixture_schema schema_snapshot_container_fail 1 \
+    "recovery verified: the current production service is healthy" release
+if ! grep -qE -- $'^docker\tcompose\t.*\tup\t-d\t--force-recreate\t--no-deps\thausv-org$' \
+    "$test_root/schema_snapshot_container_fail/commands.log"; then
+    echo "FAIL schema_snapshot_container_fail: old service was not recovered" >&2
+    exit 1
+fi
+if grep -qE -- $'^docker\ttag\tsha256:2222222222222222222222222222222222222222222222222222222222222222\t.*:latest$' \
+    "$test_root/schema_snapshot_container_fail/commands.log"; then
+    echo "FAIL schema_snapshot_container_fail: failed snapshot activated the release image" >&2
+    exit 1
+fi
 
 echo "$test_passed deploy-from-ci-image fixtures passed."

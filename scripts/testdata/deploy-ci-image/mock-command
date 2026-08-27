@@ -4,13 +4,15 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import subprocess
 import sys
+from pathlib import Path
 
 
 HEAD = "a" * 40
 LIVE = "b" * 40
-IMAGE_ID = "sha256:" + ("1" * 64)
+LIVE_IMAGE_ID = "sha256:" + ("1" * 64)
+RELEASE_IMAGE_ID = "sha256:" + ("2" * 64)
 
 
 def required(name: str) -> str:
@@ -35,6 +37,14 @@ def log(command: str, args: list[str]) -> None:
         handle.write("\t".join(parts) + "\n")
 
 
+def count(name: str) -> int:
+    path = STATE / f"{name}.count"
+    current = int(path.read_text(encoding="utf-8")) if path.exists() else 0
+    current += 1
+    path.write_text(str(current), encoding="utf-8")
+    return current
+
+
 def mock_git(args: list[str]) -> int:
     if args == ["rev-parse", "--show-toplevel"]:
         if CASE == "not_in_repo":
@@ -50,7 +60,15 @@ def mock_git(args: list[str]) -> int:
         print(HEAD)
     elif len(args) >= 3 and args[:2] == ["diff", "--quiet"]:
         # Simulate migration change for specific test cases
-        if CASE in ("migrations_changed", "migrations_changed_no_data", "schema_dry_run", "schema_incomplete_proof"):
+        if CASE in (
+            "migrations_changed",
+            "migrations_changed_no_data",
+            "schema_dry_run",
+            "schema_incomplete_proof",
+            "schema_with_snapshot",
+            "schema_release_success",
+            "schema_snapshot_container_fail",
+        ):
             return 1
         elif CASE == "git_diff_fail":
             print("fatal: git diff failed", file=sys.stderr)
@@ -66,18 +84,35 @@ def mock_git(args: list[str]) -> int:
 
 def mock_docker(args: list[str]) -> int:
     # Mock basic docker inspect calls needed for preflight
-    if len(args) >= 4 and args[:2] == ["inspect", "--format"]:
+    if len(args) >= 5 and args[:3] == ["image", "inspect", "--format"]:
+        if CASE in ("schema_with_snapshot", "schema_release_success", "schema_snapshot_container_fail"):
+            target = args[-1]
+            activated = (STATE / "activated").exists()
+            if ":release-" in target or target == RELEASE_IMAGE_ID:
+                print(RELEASE_IMAGE_ID)
+            elif target.endswith(":latest") and activated:
+                print(RELEASE_IMAGE_ID)
+            else:
+                print(LIVE_IMAGE_ID)
+        return 0
+    elif len(args) >= 4 and args[:2] == ["inspect", "--format"]:
         if "{{if .State.Health}}" in args[2]:
             # Health check
+            if CASE == "schema_release_success" \
+                    and (STATE / "snapshot_started").exists() \
+                    and not (STATE / "activated").exists() \
+                    and count("snapshot_health") <= 2:
+                print("starting")
+                return 0
             print("healthy")
             return 0
         elif "{{.Image}}" in args[2]:
             # Image ID
-            print(IMAGE_ID)
+            print(RELEASE_IMAGE_ID if (STATE / "activated").exists() else LIVE_IMAGE_ID)
             return 0
         elif "{{.Id}}" in args[2]:
             # Image ID (alternate format)
-            print(IMAGE_ID)
+            print(LIVE_IMAGE_ID)
             return 0
         elif "{{index .Config.Labels" in args[2]:
             # Compose labels
@@ -89,11 +124,52 @@ def mock_docker(args: list[str]) -> int:
     elif args[:2] == ["image", "inspect"]:
         # Image exists check
         return 0
+    elif args and args[0] == "run":
+        log("docker", args)
+        required = (
+            "--user", "0:0", "--network", "none", "--read-only",
+            "--cap-drop", "ALL", "--cap-add", "DAC_OVERRIDE",
+            "--security-opt", "no-new-privileges",
+            "predeploy-snapshot", "--source", "/source", "--snapshot",
+            "/snapshots/9.99.0-aaaaaaa",
+        )
+        if any(value not in args for value in required):
+            print("snapshot container is missing a required confinement argument", file=sys.stderr)
+            return 64
+        command_index = args.index("predeploy-snapshot")
+        if command_index == 0 or args[command_index - 1] != RELEASE_IMAGE_ID:
+            print("snapshot did not run from the pinned release image ID", file=sys.stderr)
+            return 64
+        mounts = [args[index + 1] for index, value in enumerate(args[:-1]) if value == "--mount"]
+        if not any("dst=/source,readonly" in mount for mount in mounts):
+            print("snapshot source is not mounted read-only", file=sys.stderr)
+            return 64
+        if not any("dst=/snapshots" in mount for mount in mounts):
+            print("snapshot destination is not mounted", file=sys.stderr)
+            return 64
+        if CASE == "schema_snapshot_container_fail":
+            return 1
+        print("snapshot-path=/snapshots/9.99.0-aaaaaaa")
+        print("snapshot-created=2026-08-27T12:00:00Z")
+        print("snapshot-integrity=ok")
+        return 0
     elif len(args) >= 2 and args[0] == "compose":
         # Compose commands
+        log("docker", args)
         if "config" in args and "--services" in args:
             print("hausv-org")
             return 0
+        if "start" in args:
+            (STATE / "snapshot_started").write_text("yes", encoding="utf-8")
+        return 0
+    elif args and args[0] == "logs":
+        print('{"msg":"listening"}')
+        return 0
+    elif args and args[0] in ("login", "pull", "tag"):
+        log("docker", args)
+        if args[0] == "tag" and len(args) == 3 \
+                and args[1] == RELEASE_IMAGE_ID and args[2].endswith(":latest"):
+            (STATE / "activated").write_text("yes", encoding="utf-8")
         return 0
     
     # Just log other docker calls
@@ -111,8 +187,11 @@ def mock_curl(args: list[str]) -> int:
     
     if url:
         if url == LIVE_URL:
-            # Return a fake live page with version and commit
-            print(f"<html><body>Live: {APP_VERSION} ({LIVE[:7]})</body></html>")
+            # First read is the live release; later reads verify the target.
+            if count("page") <= 2:
+                print(f"<html><body>Live: {APP_VERSION} ({LIVE[:7]})</body></html>")
+            else:
+                print(f"<html><body>Live: 9.99.0 ({HEAD[:7]})</body></html>")
             return 0
         elif 'healthz' in url:
             # Return a fake health response
@@ -134,6 +213,14 @@ def main() -> int:
         return mock_docker(args)
     elif command == "curl":
         return mock_curl(args)
+    elif command == "flock":
+        log("flock", args)
+        if len(args) >= 8 and args[:4] == ["-E", "41", "-w", "300"]:
+            return subprocess.run(args[5:], check=False).returncode
+        if len(args) >= 6 and args[:2] == ["-w", "300"]:
+            return subprocess.run(args[3:], check=False).returncode
+        print(f"unexpected flock mock call: {args}", file=sys.stderr)
+        return 64
     else:
         print(f"unexpected mock command: {command}", file=sys.stderr)
         return 64
