@@ -182,7 +182,7 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("annual statement period: %v", err)
 	}
 	costTypes, _ := BindAnnualStatementCostTypeRepository(NewSQLAnnualStatementCostTypeStore(lanes), tenant)
-	if _, err := costTypes.Save(AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
+	if _, err := costTypes.Save(AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("annual statement cost type: %v", err)
 	}
 	payments, _ := BindUnitPaymentStatusRepository(NewSQLUnitPaymentStatusStore(lanes), tenant)

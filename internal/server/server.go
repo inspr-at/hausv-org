@@ -503,6 +503,7 @@ const (
 	auditActionAnnualPeriodSave        = store.AuditActionAnnualPeriodSave
 	auditActionAnnualPartiesImport     = store.AuditActionAnnualPartiesImport
 	auditActionAnnualCostTypeSave      = store.AuditActionAnnualCostTypeSave
+	auditActionAnnualBasesSave         = store.AuditActionAnnualBasesSave
 	auditActionVoteCast                = store.AuditActionVoteCast
 	auditActionVoteClose               = store.AuditActionVoteClose
 	auditActionVoteCreate              = store.AuditActionVoteCreate
@@ -1132,6 +1133,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/cost-types", a.action(a.saveAnnualStatementCostType))
 	mux.HandleFunc("POST /app/settings/annual-statement/periods", a.action(a.saveAnnualStatementPeriod))
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
+	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/confirm", a.action(a.confirmAnnualStatementReceiptSuggestion))
 	mux.HandleFunc("GET /app/settings/modules", a.authed(capabilityManageBuilding, a.portalModuleSettings))

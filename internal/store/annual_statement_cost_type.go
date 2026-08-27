@@ -12,11 +12,38 @@ import (
 // AnnualStatementCostType is one tenant-owned catalogue entry. Allocation
 // keys, receipts and calculations deliberately remain outside this slice.
 type AnnualStatementCostType struct {
-	Key         string    `json:"key"`
-	Name        string    `json:"name"`
-	Allocatable bool      `json:"allocatable"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	UpdatedBy   string    `json:"updated_by"`
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Allocatable bool   `json:"allocatable"`
+	// AllocationKey is the Verteilerschlüssel used to split an allocatable
+	// cost type across units (HAUSV-577). It is required exactly when the
+	// cost type is allocatable and empty otherwise.
+	AllocationKey string    `json:"allocation_key"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	UpdatedBy     string    `json:"updated_by"`
+}
+
+// Allocation keys. Nutzwert reuses the Miteigentumsanteil already recorded on
+// each unit (§ 32 WEG default). Fläche and Personen read the per-unit bases
+// recorded for the statement. Verbrauch will read measured values once
+// HAUSV-578 wires them; until then every unit counts as unmapped for it.
+const (
+	AllocationKeyNutzwert  = "nutzwert"
+	AllocationKeyFlaeche   = "flaeche"
+	AllocationKeyPersonen  = "personen"
+	AllocationKeyVerbrauch = "verbrauch"
+)
+
+// AllocationKeys lists the supported keys in display order.
+var AllocationKeys = []string{AllocationKeyNutzwert, AllocationKeyFlaeche, AllocationKeyPersonen, AllocationKeyVerbrauch}
+
+func ValidAllocationKey(key string) bool {
+	for _, known := range AllocationKeys {
+		if key == known {
+			return true
+		}
+	}
+	return false
 }
 
 type AnnualStatementCostTypeRepository interface {
@@ -64,11 +91,11 @@ func (r *boundAnnualStatementCostTypeRepository) List() []AnnualStatementCostTyp
 var annualStatementCostTypeKeyPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
 
 var defaultAnnualStatementCostTypes = []AnnualStatementCostType{
-	{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true},
-	{Key: "muellabfuhr", Name: "Müllabfuhr", Allocatable: true},
-	{Key: "hausbetreuung", Name: "Hausbetreuung", Allocatable: true},
-	{Key: "gebaeudeversicherung", Name: "Gebäudeversicherung", Allocatable: true},
-	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true},
+	{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+	{Key: "muellabfuhr", Name: "Müllabfuhr", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+	{Key: "hausbetreuung", Name: "Hausbetreuung", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+	{Key: "gebaeudeversicherung", Name: "Gebäudeversicherung", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
 }
 
 // MemoryAnnualStatementCostTypeStore is used by isolated server tests.
@@ -154,10 +181,10 @@ func (s *SQLAnnualStatementCostTypeStore) ensureAnnualStatementCostTypeDefaults(
 	updatedBy = strings.ToLower(strings.TrimSpace(updatedBy))
 	for _, starter := range defaultAnnualStatementCostTypes {
 		if _, err := tx.Exec(
-			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, updated_at, updated_by)
-			 VALUES($1,$2,$3,$4,$5,$6,$7)
+			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, allocation_key, updated_at, updated_by)
+			 VALUES($1,$2,$3,$4,$5,$6,$7,$8)
 			 ON CONFLICT(tenant_slug, key) DO NOTHING`,
-			tenant.ID, tenant.Slug, starter.Key, starter.Name, starter.Allocatable, now, updatedBy,
+			tenant.ID, tenant.Slug, starter.Key, starter.Name, starter.Allocatable, starter.AllocationKey, now, updatedBy,
 		); err != nil {
 			return err
 		}
@@ -177,9 +204,9 @@ func (s *SQLAnnualStatementCostTypeStore) saveAnnualStatementCostType(tenant Ten
 	defer tx.Rollback()
 	result, err := tx.Exec(
 		`UPDATE annual_statement_cost_types
-		 SET name=$1, allocatable=$2, updated_at=$3, updated_by=$4
-		 WHERE tenant_id=$5 AND key=$6`,
-		costType.Name, costType.Allocatable, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy,
+		 SET name=$1, allocatable=$2, allocation_key=$3, updated_at=$4, updated_by=$5
+		 WHERE tenant_id=$6 AND key=$7`,
+		costType.Name, costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy,
 		tenant.ID, costType.Key,
 	)
 	if err != nil {
@@ -191,9 +218,9 @@ func (s *SQLAnnualStatementCostTypeStore) saveAnnualStatementCostType(tenant Ten
 	}
 	if affected == 0 {
 		if _, err := tx.Exec(
-			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, updated_at, updated_by)
-			 VALUES($1,$2,$3,$4,$5,$6,$7)`,
-			tenant.ID, tenant.Slug, costType.Key, costType.Name, costType.Allocatable,
+			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, allocation_key, updated_at, updated_by)
+			 VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+			tenant.ID, tenant.Slug, costType.Key, costType.Name, costType.Allocatable, costType.AllocationKey,
 			costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy,
 		); err != nil {
 			return AnnualStatementCostType{}, err
@@ -204,7 +231,7 @@ func (s *SQLAnnualStatementCostTypeStore) saveAnnualStatementCostType(tenant Ten
 
 func (s *SQLAnnualStatementCostTypeStore) listAnnualStatementCostTypes(tenant TenantRef) []AnnualStatementCostType {
 	rows, err := s.db.For(tenant).Query(
-		`SELECT key, name, allocatable, updated_at, updated_by
+		`SELECT key, name, allocatable, allocation_key, updated_at, updated_by
 		 FROM annual_statement_cost_types WHERE tenant_id=$1 ORDER BY name, key`, tenant.ID)
 	if err != nil {
 		return nil
@@ -214,7 +241,7 @@ func (s *SQLAnnualStatementCostTypeStore) listAnnualStatementCostTypes(tenant Te
 	for rows.Next() {
 		var costType AnnualStatementCostType
 		var updatedAt string
-		if err := rows.Scan(&costType.Key, &costType.Name, &costType.Allocatable, &updatedAt, &costType.UpdatedBy); err != nil {
+		if err := rows.Scan(&costType.Key, &costType.Name, &costType.Allocatable, &costType.AllocationKey, &updatedAt, &costType.UpdatedBy); err != nil {
 			continue
 		}
 		costType.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
@@ -226,6 +253,10 @@ func (s *SQLAnnualStatementCostTypeStore) listAnnualStatementCostTypes(tenant Te
 func normalizeAnnualStatementCostType(costType AnnualStatementCostType) AnnualStatementCostType {
 	costType.Key = strings.ToLower(strings.TrimSpace(costType.Key))
 	costType.Name = strings.TrimSpace(costType.Name)
+	costType.AllocationKey = strings.ToLower(strings.TrimSpace(costType.AllocationKey))
+	if !costType.Allocatable {
+		costType.AllocationKey = ""
+	}
 	costType.UpdatedBy = strings.ToLower(strings.TrimSpace(costType.UpdatedBy))
 	if costType.UpdatedAt.IsZero() {
 		costType.UpdatedAt = time.Now().UTC()
@@ -241,6 +272,9 @@ func validateAnnualStatementCostType(costType AnnualStatementCostType) error {
 	}
 	if costType.Name == "" || len([]rune(costType.Name)) > 120 {
 		return fmt.Errorf("invalid annual statement cost type name")
+	}
+	if costType.Allocatable && !ValidAllocationKey(costType.AllocationKey) {
+		return fmt.Errorf("allocatable annual statement cost type needs one allocation key")
 	}
 	return nil
 }

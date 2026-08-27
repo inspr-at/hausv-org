@@ -326,7 +326,7 @@ func seedFull(t *testing.T) *source {
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000},
 		}))
 		costTypes, _ := store.BindAnnualStatementCostTypeRepository(store.NewSQLAnnualStatementCostTypeStore(src.lanes), tenant)
-		if _, err := costTypes.Save(store.AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
+		if _, err := costTypes.Save(store.AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: store.AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement cost type: %v", slug, err)
 		}
 		periods, _ := store.BindAnnualStatementPeriodRepository(store.NewSQLAnnualStatementPeriodStore(src.lanes), tenant)
