@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.11",
+			Date:     "27. August 2026",
+			Kind:     "Jahresabrechnung",
+			Headline: "Grunddaten für die Jahresabrechnung sind vorbereitet.",
+			Intro:    "Verwalter können Abrechnungsperioden je Liegenschaft speichern und Parteien aus einer Tabelle bestehenden Einheiten zuordnen.",
+			Items: []NoteItem{
+				{Label: "Abrechnungsperioden", Text: "Gespeicherte Abrechnungsperioden lassen sich für weitere Arbeitsschritte wiederverwenden."},
+				{Label: "Tabellenimport", Text: "Wohnungseigentümer und Mietverhältnisse werden ausschließlich vorhandenen Einheiten zugeordnet; unbekannte Einheiten werden nicht neu angelegt."},
+			},
+		},
+		{
 			Version:  "0.99.10",
 			Date:     "27. August 2026",
 			Kind:     "Angebote",
