@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.11] - 2026-08-27
+
+### Jahresabrechnung vorbereitet
+
+- Abrechnungsperioden: Verwalter können Abrechnungsperioden je Liegenschaft speichern und für weitere Arbeitsschritte wiederverwenden.
+- Tabellenimport: Wohnungseigentümer und Mietverhältnisse werden bestehenden Einheiten zugeordnet; unbekannte Einheiten werden nicht neu angelegt.
+
 ## [0.99.10] - 2026-08-27
 
 ### Angebote klarer vergleichbar
