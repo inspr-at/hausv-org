@@ -19,10 +19,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$test_root/bin" || exit 1
-for command_name in git docker curl sudo flock; do
+mkdir -p "$test_root/bin" "$test_root/wrappers" || exit 1
+for command_name in git docker curl flock; do
     ln -s "$test_mock" "$test_root/bin/$command_name" || exit 1
 done
+ln -s "$test_mock" "$test_root/wrappers/sudo" || exit 1
 
 # Create base64/mktemp links that actually work for the local script. flock is
 # mocked above so this fixture remains deterministic on macOS, which lacks it.
@@ -116,7 +117,7 @@ fi
 # Test with schema change and snapshot env vars
 fixture_schema() {
     local case_name=$1 expected_status=$2 expected_text=$3
-    local sudo_bin=${4:-$test_root/bin/sudo}
+    local sudo_bin=${4:-$test_root/wrappers/sudo}
     local state=$test_root/$case_name
     mkdir -p "$state"
     local output=$state/output.txt
@@ -163,7 +164,7 @@ fixture_schema() {
 
 # A schema-changing dry run reaches and uses the configured elevation command.
 fixture_schema schema_with_snapshot 0 "all fail-closed preconditions passed"
-if ! grep -qF -- "sudo"$'\t'"$test_root/bin/sudo"$'\t-n\t/run/current-system/sw/bin/python3\t-c\timport sqlite3' \
+if ! grep -qF -- "sudo"$'\t'"$test_root/wrappers/sudo"$'\t-n\t/run/current-system/sw/bin/python3\t-c\timport sqlite3' \
     "$test_root/schema_with_snapshot/commands.log"; then
     echo "FAIL schema_with_snapshot: configured sudo binary was not used for the snapshot preflight" >&2
     exit 1
