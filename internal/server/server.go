@@ -4258,6 +4258,16 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			return
 		}
 	}
+	// The unit form knows nothing about the annual-statement bases
+	// (HAUSV-577); an edit must carry them over instead of wiping them.
+	if origID != "" {
+		for _, existing := range ac.repositories.units.List() {
+			if normalizeUnitID(existing.ID) == origID {
+				item = store.CarryAllocationBases(existing, item)
+				break
+			}
+		}
+	}
 	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
 	// whole-slice overwrite (HAUSV-145).
 	duplicate, err := ac.repositories.units.UpsertUnit(origID, item)

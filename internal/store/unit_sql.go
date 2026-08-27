@@ -305,7 +305,10 @@ func (s *SQLUnitStore) updateUnitAllocationBases(tenant TenantRef, updates []Uni
 	if s == nil || len(updates) == 0 {
 		return false, nil
 	}
-	normalized := normalizeUnitAllocationBasisUpdates(updates)
+	normalized, malformed := normalizeUnitAllocationBasisUpdates(updates)
+	if malformed {
+		return true, nil
+	}
 	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
@@ -327,7 +330,9 @@ func (s *SQLUnitStore) updateUnitAllocationBases(tenant TenantRef, updates []Uni
 	for id, update := range normalized {
 		item := units[indexes[id]]
 		item.UsableAreaM2Hundredths = update.UsableAreaM2Hundredths
+		item.UsableAreaRecorded = update.UsableAreaRecorded
 		item.Persons = update.Persons
+		item.PersonsRecorded = update.PersonsRecorded
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return false, err

@@ -7,12 +7,14 @@ import (
 	"io"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -45,7 +47,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		}
 		costTypeViews = append(costTypeViews, web.AnnualStatementCostTypeView{
 			Key: costType.Key, Name: costType.Name, Allocatable: costType.Allocatable,
-			AllocationKey: costType.AllocationKey, AllocationKeyLabel: annualStatementAllocationKeyLabel(costType.AllocationKey),
+			AllocationKey: costType.AllocationKey,
 		})
 	}
 	periods := ac.repositories.annualStatementPeriods.List()
@@ -158,23 +160,25 @@ func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.
 		http.Redirect(w, r, "/app/settings/annual-statement?bases=invalid", http.StatusSeeOther)
 		return
 	}
-	updates := make([]store.UnitAllocationBasisUpdate, 0, len(r.Form["unit_id"]))
-	for index, unitID := range r.Form["unit_id"] {
-		area, areaOK := parseAnnualStatementArea(formValueAt(r.Form["usable_area_m2"], index))
-		persons, personsOK := parseAnnualStatementCount(formValueAt(r.Form["persons"], index))
-		if !areaOK || !personsOK {
-			http.Redirect(w, r, "/app/settings/annual-statement?bases=invalid", http.StatusSeeOther)
-			return
-		}
-		updates = append(updates, store.UnitAllocationBasisUpdate{UnitID: unitID, UsableAreaM2Hundredths: area, Persons: persons})
-	}
-	if len(updates) == 0 {
+	// All or nothing: the three parallel arrays must line up, every row must
+	// name a unit, every value must parse. Any defect rejects the whole
+	// submit before the store is touched, so nothing is written or audited.
+	updates, ok := annualStatementBasisUpdatesFromForm(r.Form)
+	if !ok {
 		http.Redirect(w, r, "/app/settings/annual-statement?bases=invalid", http.StatusSeeOther)
+		return
+	}
+	// The page submits every unit of the tenant in one form. A submit whose
+	// unit set differs from the current one comes from a stale page (a unit
+	// was added, renamed or removed meanwhile) and is rejected as a whole;
+	// the store's partial update is deliberately not exposed here.
+	if !annualStatementBasisUpdatesCoverUnits(updates, ac.repositories.units.List()) {
+		http.Redirect(w, r, "/app/settings/annual-statement?bases=stale", http.StatusSeeOther)
 		return
 	}
 	unknownUnit, err := ac.repositories.units.UpdateAllocationBases(updates)
 	if unknownUnit {
-		http.Redirect(w, r, "/app/settings/annual-statement?bases=unknown-unit", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/settings/annual-statement?bases=stale", http.StatusSeeOther)
 		return
 	}
 	if err != nil {
@@ -190,50 +194,89 @@ func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.
 	http.Redirect(w, r, "/app/settings/annual-statement?bases=saved#verteilerschluessel", http.StatusSeeOther)
 }
 
-func formValueAt(values []string, index int) string {
-	if index < len(values) {
-		return values[index]
+func annualStatementBasisUpdatesFromForm(values url.Values) ([]store.UnitAllocationBasisUpdate, bool) {
+	unitIDs, areas, persons := values["unit_id"], values["usable_area_m2"], values["persons"]
+	if len(unitIDs) == 0 || len(areas) != len(unitIDs) || len(persons) != len(unitIDs) {
+		return nil, false
 	}
-	return ""
+	updates := make([]store.UnitAllocationBasisUpdate, 0, len(unitIDs))
+	seen := map[string]struct{}{}
+	for index, rawID := range unitIDs {
+		unitID := normalizeUnitID(rawID)
+		if _, duplicate := seen[unitID]; unitID == "" || duplicate {
+			return nil, false
+		}
+		seen[unitID] = struct{}{}
+		area, areaRecorded, areaOK := parseAnnualStatementArea(areas[index])
+		count, countRecorded, countOK := parseAnnualStatementCount(persons[index])
+		if !areaOK || !countOK {
+			return nil, false
+		}
+		updates = append(updates, store.UnitAllocationBasisUpdate{
+			UnitID: unitID, UsableAreaM2Hundredths: area, UsableAreaRecorded: areaRecorded, Persons: count, PersonsRecorded: countRecorded,
+		})
+	}
+	return updates, true
 }
 
-// parseAnnualStatementArea accepts "72,5", "72.50" or "" (not recorded) and
-// returns hundredths of a square metre. More than two decimals, negatives and
-// implausible sizes are rejected rather than rounded.
-func parseAnnualStatementArea(raw string) (int, bool) {
+// annualStatementBasisUpdatesCoverUnits is true when the submitted rows name
+// exactly the tenant's current units — no extra, no missing.
+func annualStatementBasisUpdatesCoverUnits(updates []store.UnitAllocationBasisUpdate, units []store.Unit) bool {
+	if len(updates) != len(units) {
+		return false
+	}
+	current := make(map[string]struct{}, len(units))
+	for _, item := range units {
+		current[normalizeUnitID(item.ID)] = struct{}{}
+	}
+	for _, update := range updates {
+		if _, found := current[update.UnitID]; !found {
+			return false
+		}
+	}
+	return true
+}
+
+// parseAnnualStatementArea accepts "72,5", "72.50", "0" (recorded, no
+// Nutzfläche) or "" (not recorded) and returns hundredths of a square metre.
+// More than two decimals, negatives and implausible sizes are rejected rather
+// than rounded.
+func parseAnnualStatementArea(raw string) (hundredths int, recorded bool, ok bool) {
 	raw = strings.ReplaceAll(strings.TrimSpace(raw), ",", ".")
 	if raw == "" {
-		return 0, true
+		return 0, false, true
 	}
 	whole, fraction, _ := strings.Cut(raw, ".")
 	if whole == "" {
 		whole = "0"
 	}
 	if len(fraction) > 2 {
-		return 0, false
+		return 0, false, false
 	}
 	fraction += strings.Repeat("0", 2-len(fraction))
 	metres, err := strconv.Atoi(whole)
-	if err != nil || metres < 0 || metres > 100_000 {
-		return 0, false
+	if err != nil || metres < 0 || metres > 99_999 {
+		return 0, false, false
 	}
-	hundredths, err := strconv.Atoi(fraction)
-	if err != nil || hundredths < 0 {
-		return 0, false
+	cents, err := strconv.Atoi(fraction)
+	if err != nil || cents < 0 {
+		return 0, false, false
 	}
-	return metres*100 + hundredths, true
+	return metres*100 + cents, true, true
 }
 
-func parseAnnualStatementCount(raw string) (int, bool) {
+// parseAnnualStatementCount distinguishes "" (not recorded) from "0" (recorded,
+// no persons — a Stellplatz or a vacant flat still takes part in the key).
+func parseAnnualStatementCount(raw string) (count int, recorded bool, ok bool) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return 0, true
+		return 0, false, true
 	}
 	count, err := strconv.Atoi(raw)
 	if err != nil || count < 0 || count > 10_000 {
-		return 0, false
+		return 0, false, false
 	}
-	return count, true
+	return count, true, true
 }
 
 func annualStatementAllocationKeyLabel(key string) string {
@@ -264,17 +307,25 @@ func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, un
 	for _, costType := range costTypes {
 		names[costType.Key] = costType.Name
 	}
-	view := web.AnnualStatementAllocationView{KeyOptions: annualStatementAllocationKeyOptions()}
+	out := web.AnnualStatementAllocationView{KeyOptions: annualStatementAllocationKeyOptions()}
 	for _, unit := range units {
-		view.Bases = append(view.Bases, web.AnnualStatementUnitBasisView{
+		out.Bases = append(out.Bases, web.AnnualStatementUnitBasisView{
 			ID: unit.ID, Label: unit.Label, Share: formatMiteigentumsanteil(unit.MiteigentumsanteilPPM),
-			UsableArea: formatAnnualStatementArea(unit.UsableAreaM2Hundredths), Persons: formatAnnualStatementCount(unit.Persons),
+			UsableArea: formatAnnualStatementArea(unit.UsableAreaM2Hundredths, unit.UsableAreaRecorded), Persons: formatAnnualStatementCount(unit.Persons, unit.PersonsRecorded),
 		})
 	}
+	keylessNames := []string{}
+	for _, key := range store.AnnualStatementCostTypesWithoutKey(costTypes) {
+		keylessNames = append(keylessNames, names[key])
+	}
+	out.KeylessCostTypes = strings.Join(keylessNames, ", ")
 	for _, preview := range store.AnnualStatementAllocationPreviews(costTypes, units) {
 		previewView := web.AnnualStatementAllocationPreviewView{
 			Key: preview.Key, Label: annualStatementAllocationKeyLabel(preview.Key), Blocked: preview.Blocked,
 			UnmappedUnits: strings.Join(preview.UnmappedUnits, ", "), Sourceless: preview.Key == store.AllocationKeyVerbrauch,
+		}
+		if preview.Key == store.AllocationKeyNutzwert && !preview.Blocked && preview.BasisTotal != store.MiteigentumsanteilTotalPPM {
+			previewView.TotalNotice = "Die Miteigentumsanteile summieren sich auf " + view.FormatDecimal(float64(preview.BasisTotal), 0) + " statt 1.000.000. Die Anteile beziehen sich auf diese Summe; prüfen Sie, ob eine Einheit fehlt oder ein Anteil noch nicht hinterlegt ist."
 		}
 		costTypeNames := make([]string, 0, len(preview.CostTypeKeys))
 		for _, key := range preview.CostTypeKeys {
@@ -283,41 +334,41 @@ func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, un
 		previewView.CostTypes = strings.Join(costTypeNames, ", ")
 		for _, share := range preview.Shares {
 			previewView.Shares = append(previewView.Shares, web.AnnualStatementUnitShareView{
-				Label: share.Label, Basis: formatAnnualStatementBasis(preview.Key, share.Basis), Share: formatAnnualStatementShare(share.SharePPM), Mapped: share.Mapped,
+				Label: share.Label, Basis: formatAnnualStatementBasis(preview.Key, share.Basis, share.Mapped), Share: formatAnnualStatementShare(share.SharePPM, share.Mapped && !preview.Blocked), Mapped: share.Mapped,
 			})
 		}
-		view.Previews = append(view.Previews, previewView)
+		out.Previews = append(out.Previews, previewView)
 		if preview.Blocked {
-			view.BlockedCount++
+			out.BlockedCount++
 		}
 	}
-	view.RunReady = len(view.Previews) > 0 && view.BlockedCount == 0
-	return view
+	out.RunReady = len(out.Previews) > 0 && !store.AnnualStatementRunBlocked(costTypes, units)
+	return out
 }
 
-func formatAnnualStatementArea(hundredths int) string {
-	if hundredths <= 0 {
+func formatAnnualStatementArea(hundredths int, recorded bool) string {
+	if !recorded || hundredths < 0 {
 		return ""
 	}
 	return strings.Replace(fmt.Sprintf("%d.%02d", hundredths/100, hundredths%100), ".", ",", 1)
 }
 
-func formatAnnualStatementCount(count int) string {
-	if count <= 0 {
+func formatAnnualStatementCount(count int, recorded bool) string {
+	if !recorded || count < 0 {
 		return ""
 	}
 	return strconv.Itoa(count)
 }
 
-func formatAnnualStatementBasis(key string, basis int) string {
-	if basis <= 0 {
+func formatAnnualStatementBasis(key string, basis int, mapped bool) string {
+	if !mapped {
 		return "fehlt"
 	}
 	switch key {
 	case store.AllocationKeyNutzwert:
 		return formatMiteigentumsanteil(basis)
 	case store.AllocationKeyFlaeche:
-		return formatAnnualStatementArea(basis) + " m²"
+		return formatAnnualStatementArea(basis, true) + " m²"
 	case store.AllocationKeyPersonen:
 		return strconv.Itoa(basis)
 	default:
@@ -326,9 +377,10 @@ func formatAnnualStatementBasis(key string, basis int) string {
 }
 
 // formatAnnualStatementShare renders parts per million as a percentage with
-// two decimals, e.g. 333334 → "33,33 %".
-func formatAnnualStatementShare(ppm int) string {
-	if ppm <= 0 {
+// two decimals, e.g. 333334 → "33,33 %". A mapped unit with a zero basis
+// (0 Personen) is a real "0,00 %"; an unmapped or blocked one shows no share.
+func formatAnnualStatementShare(ppm int, mapped bool) string {
+	if !mapped || ppm < 0 {
 		return "–"
 	}
 	return strings.Replace(fmt.Sprintf("%d.%02d %%", ppm/10_000, (ppm%10_000)/100), ".", ",", 1)
@@ -338,8 +390,8 @@ func annualStatementBasesMessage(status string) (string, bool) {
 	switch strings.TrimSpace(status) {
 	case "saved":
 		return "Verteilerbasis je Einheit gespeichert.", true
-	case "unknown-unit":
-		return "Eine Einheit ist nicht mehr vorhanden. Es wurde nichts gespeichert.", false
+	case "stale":
+		return "Die Einheiten haben sich seit dem Laden der Seite geändert. Bitte die Seite neu laden; es wurde nichts gespeichert.", false
 	case "invalid":
 		return "Nutzfläche (m², max. zwei Nachkommastellen) und Personen (ganze Zahl) prüfen. Es wurde nichts gespeichert.", false
 	case "error":

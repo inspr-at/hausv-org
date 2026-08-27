@@ -323,8 +323,11 @@ func seedFull(t *testing.T) *source {
 		must(t, slug+" units", units.SetUnits([]store.Unit{
 			{ID: "top-1", Label: "Top 1", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"resident@example.com"}},
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
-			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000},
+			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))
+		if unknown, err := units.UpdateAllocationBases([]store.UnitAllocationBasisUpdate{{UnitID: "top-1", UsableAreaM2Hundredths: 7_250, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true}}); err != nil || unknown {
+			t.Fatalf("%s allocation bases: unknown=%t err=%v", slug, unknown, err)
+		}
 		costTypes, _ := store.BindAnnualStatementCostTypeRepository(store.NewSQLAnnualStatementCostTypeStore(src.lanes), tenant)
 		if _, err := costTypes.Save(store.AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: store.AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement cost type: %v", slug, err)
