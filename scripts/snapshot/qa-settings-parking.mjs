@@ -602,10 +602,14 @@ try {
       if (!(await candidate.getByRole('heading', { name: 'Gebäude & Einheiten', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
     });
     await recordPage(page, events, viewport, '/app/settings/annual-statement', 'settings-annual-statement', async (candidate, label) => {
-      if (!(await candidate.getByRole('heading', { name: 'Grunddaten der Jahresabrechnung', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
-      for (const text of ['Liegenschaft', 'Abrechnungsjahr', 'Wohnungseigentümer', 'Mietverhältnis']) {
+      if (!(await candidate.getByRole('heading', { name: 'Jahresabrechnung vorbereiten', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
+      for (const text of ['Liegenschaft', 'Kostenartenkatalog', 'Abrechnungsjahr', 'Wohnungseigentümer', 'Mietverhältnis']) {
         if (!(await candidate.getByText(text, { exact: true }).count())) fail(`${label}: ${text} fehlt`);
       }
+      for (const name of ['Grundsteuer', 'Müllabfuhr', 'Hausbetreuung', 'Gebäudeversicherung', 'Gartenpflege']) {
+        if (!(await candidate.locator(`.cost-type-card input[name="name"][value="${name}"]`).count())) fail(`${label}: ${name} fehlt`);
+      }
+      if (!(await candidate.getByText('keine rechtliche Beurteilung', { exact: false }).count())) fail(`${label}: rechtliche Abgrenzung fehlt`);
       if (!(await candidate.getByText('Eine unbekannte Einheit bricht den gesamten Import ab.', { exact: false }).count())) fail(`${label}: Importgrenze fehlt`);
     });
     await recordPage(page, events, viewport, '/app/settings/users', 'settings-users', async (candidate, label) => {

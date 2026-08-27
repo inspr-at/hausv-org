@@ -1,0 +1,259 @@
+package store
+
+import (
+	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+)
+
+// AnnualStatementCostType is one tenant-owned catalogue entry. Allocation
+// keys, receipts and calculations deliberately remain outside this slice.
+type AnnualStatementCostType struct {
+	Key         string    `json:"key"`
+	Name        string    `json:"name"`
+	Allocatable bool      `json:"allocatable"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UpdatedBy   string    `json:"updated_by"`
+}
+
+type AnnualStatementCostTypeRepository interface {
+	EnsureDefaults(updatedBy string) error
+	Save(costType AnnualStatementCostType) (AnnualStatementCostType, error)
+	List() []AnnualStatementCostType
+}
+
+type AnnualStatementCostTypeStorage interface {
+	annualStatementCostTypeStorage()
+}
+
+type annualStatementCostTypeBackend interface {
+	ensureAnnualStatementCostTypeDefaults(tenant TenantRef, updatedBy string) error
+	saveAnnualStatementCostType(tenant TenantRef, costType AnnualStatementCostType) (AnnualStatementCostType, error)
+	listAnnualStatementCostTypes(tenant TenantRef) []AnnualStatementCostType
+}
+
+type boundAnnualStatementCostTypeRepository struct {
+	storage annualStatementCostTypeBackend
+	tenant  TenantRef
+}
+
+func BindAnnualStatementCostTypeRepository(storage AnnualStatementCostTypeStorage, tenant TenantRef) (AnnualStatementCostTypeRepository, bool) {
+	backend, ok := storage.(annualStatementCostTypeBackend)
+	resolved, tenantOK := validTenantRef(tenant)
+	if !ok || !tenantOK {
+		return nil, false
+	}
+	return &boundAnnualStatementCostTypeRepository{storage: backend, tenant: resolved}, true
+}
+
+func (r *boundAnnualStatementCostTypeRepository) EnsureDefaults(updatedBy string) error {
+	return r.storage.ensureAnnualStatementCostTypeDefaults(r.tenant, updatedBy)
+}
+
+func (r *boundAnnualStatementCostTypeRepository) Save(costType AnnualStatementCostType) (AnnualStatementCostType, error) {
+	return r.storage.saveAnnualStatementCostType(r.tenant, costType)
+}
+
+func (r *boundAnnualStatementCostTypeRepository) List() []AnnualStatementCostType {
+	return r.storage.listAnnualStatementCostTypes(r.tenant)
+}
+
+var annualStatementCostTypeKeyPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
+
+var defaultAnnualStatementCostTypes = []AnnualStatementCostType{
+	{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true},
+	{Key: "muellabfuhr", Name: "Müllabfuhr", Allocatable: true},
+	{Key: "hausbetreuung", Name: "Hausbetreuung", Allocatable: true},
+	{Key: "gebaeudeversicherung", Name: "Gebäudeversicherung", Allocatable: true},
+	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true},
+}
+
+// MemoryAnnualStatementCostTypeStore is used by isolated server tests.
+// Production uses SQLAnnualStatementCostTypeStore.
+type MemoryAnnualStatementCostTypeStore struct {
+	mu     sync.Mutex
+	byHome map[string]map[string]AnnualStatementCostType
+}
+
+func NewMemoryAnnualStatementCostTypeStore() *MemoryAnnualStatementCostTypeStore {
+	return &MemoryAnnualStatementCostTypeStore{byHome: map[string]map[string]AnnualStatementCostType{}}
+}
+
+func (*MemoryAnnualStatementCostTypeStore) annualStatementCostTypeStorage() {}
+
+func (s *MemoryAnnualStatementCostTypeStore) ensureAnnualStatementCostTypeDefaults(tenant TenantRef, updatedBy string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.byHome == nil {
+		s.byHome = map[string]map[string]AnnualStatementCostType{}
+	}
+	if s.byHome[tenant.ID] == nil {
+		s.byHome[tenant.ID] = map[string]AnnualStatementCostType{}
+	}
+	for _, starter := range defaultAnnualStatementCostTypes {
+		if _, exists := s.byHome[tenant.ID][starter.Key]; exists {
+			continue
+		}
+		starter.UpdatedAt = time.Now().UTC()
+		starter.UpdatedBy = strings.ToLower(strings.TrimSpace(updatedBy))
+		s.byHome[tenant.ID][starter.Key] = starter
+	}
+	return nil
+}
+
+func (s *MemoryAnnualStatementCostTypeStore) saveAnnualStatementCostType(tenant TenantRef, costType AnnualStatementCostType) (AnnualStatementCostType, error) {
+	costType = normalizeAnnualStatementCostType(costType)
+	if err := validateAnnualStatementCostType(costType); err != nil {
+		return AnnualStatementCostType{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.byHome == nil {
+		s.byHome = map[string]map[string]AnnualStatementCostType{}
+	}
+	if s.byHome[tenant.ID] == nil {
+		s.byHome[tenant.ID] = map[string]AnnualStatementCostType{}
+	}
+	s.byHome[tenant.ID][costType.Key] = costType
+	return costType, nil
+}
+
+func (s *MemoryAnnualStatementCostTypeStore) listAnnualStatementCostTypes(tenant TenantRef) []AnnualStatementCostType {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]AnnualStatementCostType, 0, len(s.byHome[tenant.ID]))
+	for _, costType := range s.byHome[tenant.ID] {
+		out = append(out, costType)
+	}
+	sortAnnualStatementCostTypes(out)
+	return out
+}
+
+// SQLAnnualStatementCostTypeStore persists catalogue entries in
+// annual_statement_cost_types.
+type SQLAnnualStatementCostTypeStore struct {
+	db *TenantDB
+}
+
+func NewSQLAnnualStatementCostTypeStore(db *TenantDB) *SQLAnnualStatementCostTypeStore {
+	return &SQLAnnualStatementCostTypeStore{db: db}
+}
+
+func (*SQLAnnualStatementCostTypeStore) annualStatementCostTypeStorage() {}
+
+func (s *SQLAnnualStatementCostTypeStore) ensureAnnualStatementCostTypeDefaults(tenant TenantRef, updatedBy string) error {
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	updatedBy = strings.ToLower(strings.TrimSpace(updatedBy))
+	for _, starter := range defaultAnnualStatementCostTypes {
+		if _, err := tx.Exec(
+			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, updated_at, updated_by)
+			 VALUES($1,$2,$3,$4,$5,$6,$7)
+			 ON CONFLICT(tenant_slug, key) DO NOTHING`,
+			tenant.ID, tenant.Slug, starter.Key, starter.Name, starter.Allocatable, now, updatedBy,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *SQLAnnualStatementCostTypeStore) saveAnnualStatementCostType(tenant TenantRef, costType AnnualStatementCostType) (AnnualStatementCostType, error) {
+	costType = normalizeAnnualStatementCostType(costType)
+	if err := validateAnnualStatementCostType(costType); err != nil {
+		return AnnualStatementCostType{}, err
+	}
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return AnnualStatementCostType{}, err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec(
+		`UPDATE annual_statement_cost_types
+		 SET name=$1, allocatable=$2, updated_at=$3, updated_by=$4
+		 WHERE tenant_id=$5 AND key=$6`,
+		costType.Name, costType.Allocatable, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy,
+		tenant.ID, costType.Key,
+	)
+	if err != nil {
+		return AnnualStatementCostType{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return AnnualStatementCostType{}, err
+	}
+	if affected == 0 {
+		if _, err := tx.Exec(
+			`INSERT INTO annual_statement_cost_types(tenant_id, tenant_slug, key, name, allocatable, updated_at, updated_by)
+			 VALUES($1,$2,$3,$4,$5,$6,$7)`,
+			tenant.ID, tenant.Slug, costType.Key, costType.Name, costType.Allocatable,
+			costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy,
+		); err != nil {
+			return AnnualStatementCostType{}, err
+		}
+	}
+	return costType, tx.Commit()
+}
+
+func (s *SQLAnnualStatementCostTypeStore) listAnnualStatementCostTypes(tenant TenantRef) []AnnualStatementCostType {
+	rows, err := s.db.For(tenant).Query(
+		`SELECT key, name, allocatable, updated_at, updated_by
+		 FROM annual_statement_cost_types WHERE tenant_id=$1 ORDER BY name, key`, tenant.ID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := []AnnualStatementCostType{}
+	for rows.Next() {
+		var costType AnnualStatementCostType
+		var updatedAt string
+		if err := rows.Scan(&costType.Key, &costType.Name, &costType.Allocatable, &updatedAt, &costType.UpdatedBy); err != nil {
+			continue
+		}
+		costType.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
+		out = append(out, costType)
+	}
+	return out
+}
+
+func normalizeAnnualStatementCostType(costType AnnualStatementCostType) AnnualStatementCostType {
+	costType.Key = strings.ToLower(strings.TrimSpace(costType.Key))
+	costType.Name = strings.TrimSpace(costType.Name)
+	costType.UpdatedBy = strings.ToLower(strings.TrimSpace(costType.UpdatedBy))
+	if costType.UpdatedAt.IsZero() {
+		costType.UpdatedAt = time.Now().UTC()
+	} else {
+		costType.UpdatedAt = costType.UpdatedAt.UTC()
+	}
+	return costType
+}
+
+func validateAnnualStatementCostType(costType AnnualStatementCostType) error {
+	if !annualStatementCostTypeKeyPattern.MatchString(costType.Key) {
+		return fmt.Errorf("invalid annual statement cost type key")
+	}
+	if costType.Name == "" || len([]rune(costType.Name)) > 120 {
+		return fmt.Errorf("invalid annual statement cost type name")
+	}
+	return nil
+}
+
+func sortAnnualStatementCostTypes(costTypes []AnnualStatementCostType) {
+	sort.Slice(costTypes, func(i, j int) bool {
+		left, right := strings.ToLower(costTypes[i].Name), strings.ToLower(costTypes[j].Name)
+		if left == right {
+			return costTypes[i].Key < costTypes[j].Key
+		}
+		return left < right
+	})
+}
+
+var _ AnnualStatementCostTypeStorage = (*MemoryAnnualStatementCostTypeStore)(nil)
+var _ AnnualStatementCostTypeStorage = (*SQLAnnualStatementCostTypeStore)(nil)

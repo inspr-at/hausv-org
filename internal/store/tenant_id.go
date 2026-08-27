@@ -55,6 +55,7 @@ type tenantIDTable struct {
 // tenant_id column. It matches expectedTenantTables in internal/db/postgres_test.go;
 // the two are cross-checked by TestTenantIDTablesMatchTheMigratedSchema.
 var tenantIDTables = []tenantIDTable{
+	{name: "annual_statement_cost_types", slugColumn: "tenant_slug"},
 	{name: "annual_statement_periods", slugColumn: "tenant_slug"},
 	{name: "announcement_reads", slugColumn: "tenant_slug"},
 	{name: "announcements", slugColumn: "tenant_slug"},
