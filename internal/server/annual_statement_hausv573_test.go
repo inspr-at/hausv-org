@@ -25,6 +25,11 @@ func TestAnnualStatementManagerFlowAndRoleGate(t *testing.T) {
 	}).Code; got != http.StatusForbidden {
 		t.Fatalf("resident POST status = %d, want 403", got)
 	}
+	if got := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/annual-statement/cost-types", url.Values{
+		"key": {"wasser"}, "name": {"Wasser"}, "allocation": {"allocatable"},
+	}).Code; got != http.StatusForbidden {
+		t.Fatalf("resident cost type POST status = %d, want 403", got)
+	}
 	if got := authedMultipartFileRequest(t, a, "resident@example.com", "/demo/app/settings/annual-statement/parties/import", nil, "parties_file", "parteien.csv", []byte(
 		"Einheit,Rolle,E-Mail\nTop 1,Wohnungseigentümer,resident@example.com\n",
 	)).Code; got != http.StatusForbidden {
@@ -39,10 +44,33 @@ func TestAnnualStatementManagerFlowAndRoleGate(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("manager page status = %d", page.Code)
 	}
-	for _, want := range []string{"Grunddaten der Jahresabrechnung", "Liegenschaft", "Einheiten und Parteien", "Wohnungseigentümer", "Mietverhältnis", "Abrechnungsjahr", "WEG Portal", "Top 1", "old-owner@example.com"} {
+	for _, want := range []string{"Jahresabrechnung vorbereiten", "Liegenschaft", "Kostenartenkatalog", "Grundsteuer", "Müllabfuhr", "Hausbetreuung", "Gebäudeversicherung", "Gartenpflege", "Umlagefähig", "Nicht umlagefähig", "Einheiten und Parteien", "Wohnungseigentümer", "Mietverhältnis", "Abrechnungsjahr", "WEG Portal", "Top 1", "old-owner@example.com"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("annual statement page missing %q", want)
 		}
+	}
+	if got := testRepositories(a, "demo").annualStatementCostTypes.List(); len(got) != 5 {
+		t.Fatalf("starter cost type catalogue = %+v, want 5 entries", got)
+	}
+
+	costTypeSaved := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/cost-types", url.Values{
+		"key": {"wasser_abwasser"}, "name": {"Wasser und Abwasser"}, "allocation": {"not_allocatable"},
+	})
+	if costTypeSaved.Code != http.StatusSeeOther || costTypeSaved.Header().Get("Location") != "/demo/app/settings/annual-statement?cost-type=saved" {
+		t.Fatalf("cost type save status=%d location=%q", costTypeSaved.Code, costTypeSaved.Header().Get("Location"))
+	}
+	costTypes := testRepositories(a, "demo").annualStatementCostTypes.List()
+	if len(costTypes) != 6 {
+		t.Fatalf("stored cost types = %+v, want 6 entries", costTypes)
+	}
+	foundCustom := false
+	for _, costType := range costTypes {
+		if costType.Key == "wasser_abwasser" {
+			foundCustom = costType.Name == "Wasser und Abwasser" && !costType.Allocatable
+		}
+	}
+	if !foundCustom {
+		t.Fatalf("stored cost types missing non-allocatable custom entry: %+v", costTypes)
 	}
 
 	saved := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/periods", url.Values{

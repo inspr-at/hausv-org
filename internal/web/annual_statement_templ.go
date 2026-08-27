@@ -26,21 +26,32 @@ type AnnualStatementUnitView struct {
 	RenterSummary string
 }
 
+type AnnualStatementCostTypeView struct {
+	Key         string
+	Name        string
+	Allocatable bool
+}
+
 type AnnualStatementPageData struct {
-	Portal        PortalPageData
-	EstateName    string
-	EstateAddress string
-	Periods       []AnnualStatementPeriodView
-	HasPeriods    bool
-	Year          int
-	StartsOn      string
-	EndsOn        string
-	PeriodMsg     string
-	PeriodOK      bool
-	ImportMsg     string
-	ImportOK      bool
-	Units         []AnnualStatementUnitView
-	HasUnits      bool
+	Portal                   PortalPageData
+	EstateName               string
+	EstateAddress            string
+	Periods                  []AnnualStatementPeriodView
+	HasPeriods               bool
+	Year                     int
+	StartsOn                 string
+	EndsOn                   string
+	PeriodMsg                string
+	PeriodOK                 bool
+	ImportMsg                string
+	ImportOK                 bool
+	CostTypes                []AnnualStatementCostTypeView
+	CostTypeCount            int
+	AllocatableCostTypeCount int
+	CostTypeMsg              string
+	CostTypeOK               bool
+	Units                    []AnnualStatementUnitView
+	HasUnits                 bool
 }
 
 func AnnualStatementPage(data AnnualStatementPageData) templ.Component {
@@ -100,8 +111,8 @@ func AnnualStatementContent(data AnnualStatementPageData) templ.Component {
 				Class:     "settings-main",
 				Identity:  PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "document", URL: "/app/settings"},
 			},
-			PortalSectionTitle("Grunddaten der Jahresabrechnung"),
-			PortalSectionLede("Liegenschaft, Einheiten, Parteien und Abrechnungsperiode vorbereiten."),
+			PortalSectionTitle("Jahresabrechnung vorbereiten"),
+			PortalSectionLede("Liegenschaft, Kostenarten, Einheiten, Parteien und Abrechnungsperiode vorbereiten."),
 			AnnualStatementHeaderAction(),
 			nil,
 			nil,
@@ -179,7 +190,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(data.EstateName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 67, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 78, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -192,7 +203,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(data.EstateAddress)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 67, Col: 207}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 78, Col: 207}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -205,7 +216,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualStatementYear(data.Year))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 68, Col: 229}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 79, Col: 229}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 		if templ_7745c5c3_Err != nil {
@@ -218,7 +229,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.StartsOn)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 68, Col: 340}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 79, Col: 340}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 		if templ_7745c5c3_Err != nil {
@@ -231,7 +242,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.EndsOn)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 68, Col: 424}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 79, Col: 424}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 		if templ_7745c5c3_Err != nil {
@@ -254,7 +265,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var10 templ.SafeURL
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(period.Year)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 73, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -267,7 +278,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(period.Selected))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 73, Col: 156}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 156}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 				if templ_7745c5c3_Err != nil {
@@ -288,7 +299,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(annualStatementYear(period.Year))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 73, Col: 261}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 261}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -301,7 +312,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(period.DateRange)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 73, Col: 297}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 297}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -317,7 +328,123 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</section><section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class=\"button ghost\" href=\"/app/settings/building?section=units\">Einheiten verwalten</a></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</section><section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class=\"scope management\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var14 string
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.CostTypeCount))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 90, Col: 255}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " Kostenarten</span></header>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = SettingsFlash(data.CostTypeMsg, data.CostTypeOK).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"metrics\"><span><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var15 string
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.AllocatableCostTypeCount))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 92, Col: 83}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</strong><small>umlagefähig</small></span><span><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var16 string
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.CostTypeCount - data.AllocatableCostTypeCount))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 92, Col: 208}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</strong><small>nicht umlagefähig</small></span></div><p class=\"notice\">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p><div class=\"cost-type-list\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, costType := range data.CostTypes {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<form class=\"cost-type-card\" method=\"post\" action=\"/app/settings/annual-statement/cost-types\"><input type=\"hidden\" name=\"key\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var17 string
+			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(costType.Key)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 96, Col: 151}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\"><label>Bezeichnung<input name=\"name\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var18 string
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(costType.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 96, Col: 213}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" maxlength=\"120\" required></label><label>Schlüssel<span class=\"readonly\"><code>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(costType.Key)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 96, Col: 310}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</code></span></label><label>Umlagefähigkeit<select name=\"allocation\" required><option value=\"allocatable\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if costType.Allocatable {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " selected")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, ">Umlagefähig</option><option value=\"not_allocatable\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if !costType.Allocatable {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, " selected")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, ">Nicht umlagefähig</option></select></label><button class=\"button ghost\" type=\"submit\">Speichern</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div><details class=\"inline-details\"><summary>Weitere Kostenart hinzufügen</summary><form method=\"post\" action=\"/app/settings/annual-statement/cost-types\"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class=\"form-grid three\"><label>Bezeichnung<input name=\"name\" maxlength=\"120\" placeholder=\"z. B. Wasser und Abwasser\" required></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name=\"key\" maxlength=\"64\" pattern=\"[a-z0-9][a-z0-9_-]{0,63}\" placeholder=\"wasser_abwasser\" required></label><label>Umlagefähigkeit<select name=\"allocation\" required><option value=\"allocatable\">Umlagefähig</option><option value=\"not_allocatable\">Nicht umlagefähig</option></select></label></div><div class=\"form-actions\"><button class=\"button primary\" type=\"submit\">Kostenart hinzufügen</button></div></form></details></section><section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class=\"button ghost\" href=\"/app/settings/building?section=units\">Einheiten verwalten</a></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -326,12 +453,12 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.HasUnits {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"unit-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"unit-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, unit := range data.Units {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<article class=\"unit-card\"><span class=\"unit-kind\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<article class=\"unit-card\"><span class=\"unit-kind\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -339,100 +466,100 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span><div class=\"unit-title\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</span><div class=\"unit-title\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var14 string
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Label)
+				var templ_7745c5c3_Var20 string
+				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 127}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 127}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</strong><small>")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(unit.TypeLabel)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 161}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</small></div><div class=\"assignment\"><small>Wohnungseigentümer</small><strong>")
+				var templ_7745c5c3_Var21 string
+				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(unit.TypeLabel)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 161}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(unit.OwnerSummary)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 262}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</small></div><div class=\"assignment\"><small>Wohnungseigentümer</small><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>Mietverhältnis</small><strong>")
+				var templ_7745c5c3_Var22 string
+				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(unit.OwnerSummary)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 262}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var17 string
-				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(unit.RenterSummary)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 331}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</strong><small>Mietverhältnis</small><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</strong></div><div></div><a class=\"icon-button\" href=\"")
+				var templ_7745c5c3_Var23 string
+				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(unit.RenterSummary)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 331}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var18 templ.SafeURL
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/settings/building?section=units#unit-" + unit.ID))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 458}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</strong></div><div></div><a class=\"icon-button\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" aria-label=\"")
+				var templ_7745c5c3_Var24 templ.SafeURL
+				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/settings/building?section=units#unit-" + unit.ID))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 458}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var19 string
-				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label + " bearbeiten")
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 84, Col: 500}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" aria-label=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\">✎</a></article>")
+				var templ_7745c5c3_Var25 string
+				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label + " bearbeiten")
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 107, Col: 500}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\">✎</a></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<section class=\"empty\"><h3>Noch keine Einheiten</h3><p>Legen Sie Einheiten zuerst in den Gebäudeeinstellungen an. Ein Import erzeugt keine Einheiten.</p><a class=\"button\" href=\"/app/settings/building?section=units#unit-add\">Einheit hinzufügen</a></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<section class=\"empty\"><h3>Noch keine Einheiten</h3><p>Legen Sie Einheiten zuerst in den Gebäudeeinstellungen an. Ein Import erzeugt keine Einheiten.</p><a class=\"button\" href=\"/app/settings/building?section=units#unit-add\">Einheit hinzufügen</a></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<details class=\"inline-details\"><summary>Parteien aus Tabelle übernehmen <small>CSV</small></summary><form method=\"post\" action=\"/app/settings/annual-statement/parties/import\" enctype=\"multipart/form-data\"><p>Spalten: <strong>Einheit</strong>, <strong>Rolle</strong>, <strong>E-Mail</strong>. Als Rolle werden „Wohnungseigentümer“ und „Mietverhältnis“ akzeptiert.</p><p class=\"notice\">Nur vorhandene Einheiten werden zugeordnet. Eine unbekannte Einheit bricht den gesamten Import ab.</p><label>CSV-Datei<input type=\"file\" name=\"parties_file\" accept=\".csv,text/csv\" required></label><button class=\"button primary\" type=\"submit\">Parteien übernehmen</button></form></details></section></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<details class=\"inline-details\"><summary>Parteien aus Tabelle übernehmen <small>CSV</small></summary><form method=\"post\" action=\"/app/settings/annual-statement/parties/import\" enctype=\"multipart/form-data\"><p>Spalten: <strong>Einheit</strong>, <strong>Rolle</strong>, <strong>E-Mail</strong>. Als Rolle werden „Wohnungseigentümer“ und „Mietverhältnis“ akzeptiert.</p><p class=\"notice\">Nur vorhandene Einheiten werden zugeordnet. Eine unbekannte Einheit bricht den gesamten Import ab.</p><label>CSV-Datei<input type=\"file\" name=\"parties_file\" accept=\".csv,text/csv\" required></label><button class=\"button primary\" type=\"submit\">Parteien übernehmen</button></form></details></section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

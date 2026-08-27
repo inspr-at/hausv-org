@@ -37,6 +37,7 @@ const (
 	AuditActionUnitPayment         = "building.unit.payment"
 	AuditActionAnnualPeriodSave    = "annual-statement.period.save"
 	AuditActionAnnualPartiesImport = "annual-statement.parties.import"
+	AuditActionAnnualCostTypeSave  = "annual-statement.cost-type.save"
 	AuditActionParkingSettings     = "parking.settings"
 	AuditActionParkingMonth        = "parking.month"
 	AuditActionParkingReminder     = "parking.reminder"

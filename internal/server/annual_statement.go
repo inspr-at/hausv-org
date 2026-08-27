@@ -19,13 +19,29 @@ import (
 const maxAnnualStatementPartyImportBytes = 1 << 20
 
 func (a *app) annualStatementPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	tenant, _, _, _, ok := a.buildingSettingsContext(w, ac)
+	tenant, actorEmail, _, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
 		return
 	}
-	if ac.repositories.annualStatementPeriods == nil || ac.repositories.units == nil {
+	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.units == nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+	if err := ac.repositories.annualStatementCostTypes.EnsureDefaults(actorEmail); err != nil {
+		logError("annual statement cost type defaults failed", err, "tenant", tenant.Slug)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	costTypes := ac.repositories.annualStatementCostTypes.List()
+	costTypeViews := make([]web.AnnualStatementCostTypeView, 0, len(costTypes))
+	allocatableCount := 0
+	for _, costType := range costTypes {
+		if costType.Allocatable {
+			allocatableCount++
+		}
+		costTypeViews = append(costTypeViews, web.AnnualStatementCostTypeView{
+			Key: costType.Key, Name: costType.Name, Allocatable: costType.Allocatable,
+		})
 	}
 	periods := ac.repositories.annualStatementPeriods.List()
 	selectedYear, _ := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("year")))
@@ -59,14 +75,49 @@ func (a *app) annualStatementPage(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	periodMsg, periodOK := annualStatementPeriodMessage(r.URL.Query().Get("period"))
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
+	costTypeMsg, costTypeOK := annualStatementCostTypeMessage(r.URL.Query().Get("cost-type"))
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
 		Periods: periodViews, HasPeriods: len(periodViews) > 0,
 		Year: formYear, StartsOn: startsOn, EndsOn: endsOn,
 		PeriodMsg: periodMsg, PeriodOK: periodOK, ImportMsg: importMsg, ImportOK: importOK,
+		CostTypes: costTypeViews, CostTypeCount: len(costTypeViews), AllocatableCostTypeCount: allocatableCount,
+		CostTypeMsg: costTypeMsg, CostTypeOK: costTypeOK,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 	}))
+}
+
+func (a *app) saveAnnualStatementCostType(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	allocation := strings.TrimSpace(r.FormValue("allocation"))
+	if ac.repositories.annualStatementCostTypes == nil || (allocation != "allocatable" && allocation != "not_allocatable") {
+		http.Redirect(w, r, "/app/settings/annual-statement?cost-type=invalid", http.StatusSeeOther)
+		return
+	}
+	costType := store.AnnualStatementCostType{
+		Key: r.FormValue("key"), Name: r.FormValue("name"), Allocatable: allocation == "allocatable",
+		UpdatedAt: time.Now().UTC(), UpdatedBy: actorEmail,
+	}
+	saved, err := ac.repositories.annualStatementCostTypes.Save(costType)
+	if err != nil {
+		http.Redirect(w, r, "/app/settings/annual-statement?cost-type=invalid", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
+		Action: auditActionAnnualCostTypeSave, TargetType: "annual-statement-cost-type", TargetID: saved.Key,
+		Summary: "Kostenart gespeichert",
+		Details: map[string]string{"key": saved.Key, "name": saved.Name, "allocatable": strconv.FormatBool(saved.Allocatable)},
+	})
+	http.Redirect(w, r, "/app/settings/annual-statement?cost-type=saved", http.StatusSeeOther)
 }
 
 func (a *app) saveAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -286,6 +337,17 @@ func annualStatementPeriodMessage(status string) (string, bool) {
 		return "Die Abrechnungsperiode wurde gespeichert.", true
 	case "invalid":
 		return "Bitte Abrechnungsjahr und Zeitraum vollständig und chronologisch eingeben.", false
+	default:
+		return "", false
+	}
+}
+
+func annualStatementCostTypeMessage(status string) (string, bool) {
+	switch status {
+	case "saved":
+		return "Die Kostenart wurde gespeichert.", true
+	case "invalid":
+		return "Bitte Bezeichnung, Schlüssel und Umlagefähigkeit vollständig angeben. Der Schlüssel darf Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche enthalten.", false
 	default:
 		return "", false
 	}

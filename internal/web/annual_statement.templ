@@ -18,6 +18,12 @@ type AnnualStatementUnitView struct {
 	RenterSummary string
 }
 
+type AnnualStatementCostTypeView struct {
+	Key         string
+	Name        string
+	Allocatable bool
+}
+
 type AnnualStatementPageData struct {
 	Portal        PortalPageData
 	EstateName    string
@@ -31,6 +37,11 @@ type AnnualStatementPageData struct {
 	PeriodOK      bool
 	ImportMsg     string
 	ImportOK      bool
+	CostTypes     []AnnualStatementCostTypeView
+	CostTypeCount int
+	AllocatableCostTypeCount int
+	CostTypeMsg   string
+	CostTypeOK    bool
 	Units         []AnnualStatementUnitView
 	HasUnits      bool
 }
@@ -47,8 +58,8 @@ templ AnnualStatementContent(data AnnualStatementPageData) {
 			Class: "settings-main",
 			Identity: PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "document", URL: "/app/settings"},
 		},
-		PortalSectionTitle("Grunddaten der Jahresabrechnung"),
-		PortalSectionLede("Liegenschaft, Einheiten, Parteien und Abrechnungsperiode vorbereiten."),
+		PortalSectionTitle("Jahresabrechnung vorbereiten"),
+		PortalSectionLede("Liegenschaft, Kostenarten, Einheiten, Parteien und Abrechnungsperiode vorbereiten."),
 		AnnualStatementHeaderAction(),
 		nil,
 		nil,
@@ -74,6 +85,18 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 					}
 				</nav>
 			}
+		</section>
+
+		<section class="panel workspace"><header class="workspace-head"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class="scope management">{ strconv.Itoa(data.CostTypeCount) } Kostenarten</span></header>
+			@SettingsFlash(data.CostTypeMsg, data.CostTypeOK)
+			<div class="metrics"><span><strong>{ strconv.Itoa(data.AllocatableCostTypeCount) }</strong><small>umlagefähig</small></span><span><strong>{ strconv.Itoa(data.CostTypeCount - data.AllocatableCostTypeCount) }</strong><small>nicht umlagefähig</small></span></div>
+			<p class="notice">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p>
+			<div class="cost-type-list">
+				for _, costType := range data.CostTypes {
+					<form class="cost-type-card" method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="key" value={ costType.Key }/><label>Bezeichnung<input name="name" value={ costType.Name } maxlength="120" required/></label><label>Schlüssel<span class="readonly"><code>{ costType.Key }</code></span></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable" selected?={ costType.Allocatable }>Umlagefähig</option><option value="not_allocatable" selected?={ !costType.Allocatable }>Nicht umlagefähig</option></select></label><button class="button ghost" type="submit">Speichern</button></form>
+				}
+			</div>
+			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid three"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
 		</section>
 
 		<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>

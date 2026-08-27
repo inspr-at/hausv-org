@@ -80,6 +80,7 @@ var TableOrder = []string{
 	"telegram_link_codes",
 	// Tenant-bound tables that depend only on tenant.
 	"house_memberships",
+	"annual_statement_cost_types",
 	"annual_statement_periods",
 	"unit_payment_status",
 	"contacts",
