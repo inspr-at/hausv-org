@@ -416,31 +416,33 @@ const PageTemplates = `
        One panel language for the whole page: hairline border, 12px radius,
        hairline dividers instead of gaps, so every row shares an edge. */
     .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
-    .product-paths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
-    .product-path { min-width: 0; display: grid; grid-template-rows: auto auto 1fr auto; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: clamp(24px,3vw,34px); background: var(--panel); box-shadow: var(--shadow-panel); }
+    .product-paths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: stretch; gap: 18px; }
+    .product-path { min-width: 0; display: grid; grid-template-rows: 78px 134px 150px 68px 48px; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 30px 24px; background: var(--panel); box-shadow: var(--shadow-panel); }
     .product-path.free { border-color: rgba(79,91,80,.32); }
     .product-path.home { border-color: rgba(47,107,74,.42); }
     .product-path.professional { border-color: rgba(200,153,63,.5); }
-    .product-path-head { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 16px; align-items: center; }
-    .product-path-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); }
+    .product-path-head { min-width: 0; display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 14px; align-items: center; }
+    .product-path-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: rgba(47,107,74,.1); color: var(--leaf); }
     .product-path.free .product-path-icon { background: rgba(79,91,80,.09); color: var(--muted); }
     .product-path.professional .product-path-icon { background: rgba(200,153,63,.13); color: var(--gold-ink); }
-    .product-path-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .product-path-kicker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-    .product-path h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(27px,2.5vw,35px); font-weight: 600; line-height: 1.05; }
-    .product-path > p { margin: 22px 0 0; color: var(--muted); font-size: 16px; line-height: 1.58; }
-    .product-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin: 24px 0 0; padding: 0; list-style: none; }
-    .product-capabilities li { min-height: 44px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 10px 0; font-size: 14px; font-weight: 760; }
-    .product-capabilities li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
+    .product-path-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .product-path-kicker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+    .product-path h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(24px,1.75vw,25px); font-weight: 600; line-height: 1.05; }
+    .product-path > p { margin: 0; padding-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.52; text-wrap: pretty; }
+    .product-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(2,66px); column-gap: 16px; margin: 0; padding: 0; list-style: none; }
+    .product-capabilities li { min-width: 0; display: grid; grid-template-columns: 18px minmax(0,1fr); align-items: start; gap: 8px; border-top: 1px solid var(--line); padding: 11px 0; font-size: 13px; font-weight: 780; line-height: 1.4; }
+    .product-capabilities li::before { content: "✓"; width: 18px; height: 1.4em; display: grid; place-items: center; align-self: start; color: var(--leaf); font-weight: 900; }
     .product-path.free .product-capabilities li::before { color: var(--muted); }
     .product-path.professional .product-capabilities li::before { color: var(--gold-ink); }
-    .product-path-status { margin-top: 22px; display: flex; align-items: center; gap: 9px; color: var(--soft); font-size: 12px; font-weight: 800; }
-    .product-path-status::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(200,153,63,.12); }
-    .product-path-status a { color: inherit; text-underline-offset: 3px; }
-    .product-path-footer { margin-top: 22px; display: grid; gap: 14px; align-content: end; }
-    .product-path-footer .product-path-status { margin-top: 0; }
+    .product-path-price { min-width: 0; display: grid; align-content: center; border-top: 1px solid var(--line); }
+    .product-path-price strong { font-family: var(--font-serif); font-size: 18px; font-weight: 650; line-height: 1.15; }
+    .product-path-price span { margin-top: 4px; color: var(--soft); font-size: 12px; font-weight: 780; line-height: 1.3; }
     .product-path-start { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); padding: 11px 16px; background: var(--leaf); color: #fff; text-decoration: none; font-size: 14px; font-weight: 900; }
     .product-path-start:hover { background: #24563b; }
+    .product-path.free .product-path-start { border: 1px solid rgba(79,91,80,.38); background: transparent; color: var(--ink); }
+    .product-path.free .product-path-start:hover { border-color: var(--muted); background: rgba(79,91,80,.08); }
+    .product-path.professional .product-path-start { background: var(--gold-ink); }
+    .product-path.professional .product-path-start:hover { background: #72551e; }
     .feature-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
     .feature-card { min-width: 0; display: grid; grid-template-columns: 168px minmax(0,1fr); min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
     .feature-card:nth-child(1), .feature-card:nth-child(9) { border-color: rgba(47,107,74,.42); }
@@ -527,6 +529,13 @@ const PageTemplates = `
        900: the nav collapses. 640: everything stacks. */
     @media (max-width: 1100px) {
       .section-head { grid-template-columns: minmax(0,1fr) minmax(0,320px); }
+      .product-paths { grid-template-columns: minmax(0,1fr); }
+      .product-path { grid-template-rows: auto; }
+      .product-path-head { min-height: 72px; }
+      .product-path > p { padding-top: 16px; }
+      .product-capabilities { grid-template-rows: repeat(2,minmax(58px,auto)); margin-top: 20px; }
+      .product-path-price { min-height: 64px; margin-top: 4px; }
+      .product-path-start { margin-top: 4px; }
       .feature-card { grid-template-columns: 140px minmax(0,1fr); }
       .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .trust-line { padding-top: 24px; }
@@ -550,7 +559,7 @@ const PageTemplates = `
       .landing-copy { padding-top: 64px; }
       .section-head { grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
       .section h2 { max-width: 24ch; }
-      .product-paths, .offer-grid { grid-template-columns: minmax(0,1fr); }
+      .offer-grid { grid-template-columns: minmax(0,1fr); }
       .imprint-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       /* Three cards in two columns would leave a half-width orphan. */
       .imprint-card:last-child { grid-column: 1 / -1; }
@@ -666,28 +675,31 @@ const PageTemplates = `
       <div class="section-head">
         <div>
           <p class="section-kicker">Drei Produkte</p>
-          <h2>Passend zur Art, wie Sie verwalten.</h2>
+          <h2>Ein Portal. Drei Wege zum besseren Hausalltag.</h2>
         </div>
-        <p class="section-lead">Vom freien Self-Hosting über die bequeme Selbstverwaltung bis zum professionellen Betrieb: Sie wählen den passenden Weg.</p>
+        <p class="section-lead">Rollen, Dokumente, Anliegen, Aushänge, Energie und Messwerte mit nachvollziehbarem Verlauf: Sie wählen nur noch Betrieb und Betreuung.</p>
       </div>
       <div class="product-paths">
         <article class="product-path free" id="free">
-          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><div><span class="product-path-kicker">Open Source · Self-Hosted</span><h3>HAUSV Free</h3></div></header>
-          <p>Die freie Open-Source-Lösung für alle, die HAUSV selbst betreiben und vollständig in der eigenen technischen Verantwortung halten möchten.</p>
-          <ul class="product-capabilities"><li>Für immer kostenlos</li><li>Frei selbst betreiben</li><li>GNU AGPL-3.0</li><li>Community-Support</li></ul>
-          <span class="product-path-status">Öffentliche Veröffentlichung mit Version 1.0</span>
+          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><div><span class="product-path-kicker">Quelloffen · selbst betrieben</span><h3>HAUSV Free</h3></div></header>
+          <p>Das volle Hausportal für technisch versierte WEGs – frei, anpassbar und vollständig auf der eigenen Infrastruktur betrieben.</p>
+          <ul class="product-capabilities"><li>Volle Rollen &amp; Rechte</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
+          <div class="product-path-price"><strong>0&nbsp;€ für immer</strong><span>GNU AGPL-3.0 · Quellcode ab Version 1.0</span></div>
+          <a class="product-path-start js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV Free im Eigenbetrieb" data-mail-reveal="false">Eigenbetrieb vormerken</a>
         </article>
         <article class="product-path home" id="home">
-          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für die Selbstverwaltung</span><h3>HAUSV Home</h3></div></header>
-          <p>Der gehostete Einstieg für Eigentümer und Hausgemeinschaften, die Kommunikation, Aufgaben und Energie selbst übersichtlich organisieren möchten.</p>
-          <ul class="product-capabilities"><li>Hosted Service</li><li>Einfach selbst verwalten</li><li>E-Mail-Support</li><li>12 Monate kostenlos</li></ul>
-          <div class="product-path-footer"><span class="product-path-status">Danach 12&nbsp;€ pro Jahr</span><a class="product-path-start" href="/start">HAUSV Home starten</a></div>
+          <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg></span><div><span class="product-path-kicker">Für selbstverwaltete WEGs</span><h3>HAUSV Home</h3></div></header>
+          <p>Das volle Hausportal für Eigentümer und selbstverwaltete WEGs – sicher gehostet und ohne technischen Aufwand startklar.</p>
+          <ul class="product-capabilities"><li>Rollen für Ihre WEG</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
+          <div class="product-path-price"><strong>12 Monate kostenlos</strong><span>danach 12&nbsp;€ pro Jahr</span></div>
+          <a class="product-path-start" href="/start">HAUSV Home starten</a>
         </article>
         <article class="product-path professional" id="professional">
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V5l6-3 6 3v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg></span><div><span class="product-path-kicker">Für Hausverwaltungen</span><h3>HAUSV Professional</h3></div></header>
-          <p>Für professionelle Verwalter, die ihre Prozesse digital, nachvollziehbar und mit klar getrennten Rollen abbilden wollen – hosted oder im eigenen Betrieb.</p>
-          <ul class="product-capabilities"><li>Hosted oder Self-Hosted</li><li>Mandanten &amp; Berechtigungen</li><li>Telefon- &amp; E-Mail-Support</li><li>25 Einheiten kostenlos</li></ul>
-          <span class="product-path-status">Danach 3&nbsp;€ je Einheit und Monat</span>
+          <p>Das volle Hausportal für professionelle Verwaltungen mit mehreren WEGs – gehostet oder auf der eigenen Infrastruktur betrieben.</p>
+          <ul class="product-capabilities"><li>Mehrere WEGs &amp; Rollen</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
+          <div class="product-path-price"><strong>25 Einheiten kostenlos</strong><span>danach 0,12&nbsp;€ je Einheit / Monat · ohne Grundgebühr</span></div>
+          <a class="product-path-start js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV Professional kennenlernen" data-mail-reveal="false">Professional anfragen</a>
         </article>
       </div>
       <div class="shared-core" aria-label="Gemeinsamer Vertrauenskern">
@@ -775,7 +787,7 @@ const PageTemplates = `
           <span class="offer-label">Hausverwaltungen</span>
           <h3>HAUSV Professional</h3>
           <ul><li>Hosted oder Self-Hosted</li><li>Für professionelle Hausverwaltungen</li><li>Telefon- und E-Mail-Support inklusive</li><li>Die ersten 25 Einheiten kostenlos</li></ul>
-          <div class="offer-price"><strong>3&nbsp;€ je Einheit / Monat</strong><span>ab der 26. verwalteten Einheit</span></div>
+          <div class="offer-price"><strong>0,12&nbsp;€ je Einheit / Monat</strong><span>ab der 26. verwalteten Einheit · ohne Grundgebühr</span></div>
         </article>
       </div>
       <div class="open-source-note">
