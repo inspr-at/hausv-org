@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.99.10",
+			Date:     "27. August 2026",
+			Kind:     "Angebote",
+			Headline: "Produktkarten sind klarer vergleichbar.",
+			Intro:    "Drei Handlungsoptionen, gleich hohe Kartenbereiche und eine kräftigere Vergleichsmatrix erleichtern die Auswahl des passenden Angebots.",
+			Items: []NoteItem{
+				{Label: "Professional", Text: "Nach 25 kostenlosen Einheiten kostet jede weitere Einheit 0,12 € – ohne Mindestumfang von 375 Einheiten."},
+			},
+		},
+		{
 			Version:  "0.99.9",
 			Date:     "21. August 2026",
 			Kind:     "Stabilität",
