@@ -1481,18 +1481,22 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Parken, Laden und anbinden",
 		"hello [at] hausv [dot] org",
 		"wahlweise hosted oder selbst betrieben",
-		"Open-Source-Lösung",
 		"quelloffen",
 		"AGPL-3.0",
 		"0&nbsp;€ für immer",
-		"Öffentliche Veröffentlichung mit Version 1.0",
+		"Quellcode ab Version 1.0",
+		"Volle Rollen &amp; Rechte",
+		"Dokumente &amp; Aushänge",
+		"Anliegen mit Verlauf",
+		"Energie &amp; Messwerte",
 		"E-Mail-Support",
-		"Telefon- &amp; E-Mail-Support",
+		"Telefon- und E-Mail-Support",
 		"Quellcode-Veröffentlichung mit Version 1.0",
 		"12 Monate kostenlos",
 		"12&nbsp;€ pro Jahr",
 		"25 Einheiten kostenlos",
-		"3&nbsp;€ je Einheit und Monat",
+		"0,12&nbsp;€ je Einheit / Monat",
+		"ohne Grundgebühr",
 		"Hosted oder Self-Hosted",
 		"Home Assistant",
 		"CAMT und ebInterface",
@@ -1521,18 +1525,23 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Gespräch anfragen",
 		`href="/start"`,
 		"HAUSV Home starten",
+		"Eigenbetrieb vormerken",
+		"Professional anfragen",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
 	}
 	if got := strings.Count(body, `class="product-path `); got != 3 {
 		t.Fatalf("product path count = %d, want 3", got)
+	}
+	if got := strings.Count(body, `class="product-path-start`); got != 3 {
+		t.Fatalf("product CTA count = %d, want 3", got)
 	}
 	if got := strings.Count(body, `class="feature-card"`); got != 10 {
 		t.Fatalf("feature card count = %d, want 10", got)
