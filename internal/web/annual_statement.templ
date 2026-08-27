@@ -24,6 +24,22 @@ type AnnualStatementCostTypeView struct {
 	Allocatable bool
 }
 
+type AnnualStatementReceiptDocumentView struct {
+	ID    string
+	Label string
+}
+
+type AnnualStatementReceiptSuggestionView struct {
+	DocumentID       string
+	Amount           string
+	AmountCents      string
+	InvoiceDate      string
+	InvoiceDateValue string
+	CostTypeKey      string
+	CostTypeName     string
+	Confirmed        bool
+}
+
 type AnnualStatementPageData struct {
 	Portal        PortalPageData
 	EstateName    string
@@ -42,8 +58,15 @@ type AnnualStatementPageData struct {
 	AllocatableCostTypeCount int
 	CostTypeMsg   string
 	CostTypeOK    bool
-	Units         []AnnualStatementUnitView
-	HasUnits      bool
+	ReceiptDocuments      []AnnualStatementReceiptDocumentView
+	HasReceiptDocuments   bool
+	ReceiptSuggesterReady bool
+	ReceiptMsg            string
+	ReceiptOK             bool
+	ReceiptSuggestion     AnnualStatementReceiptSuggestionView
+	HasReceiptSuggestion  bool
+	Units                  []AnnualStatementUnitView
+	HasUnits               bool
 }
 
 templ AnnualStatementPage(data AnnualStatementPageData) {
@@ -97,6 +120,33 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 				}
 			</div>
 			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid three"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
+		</section>
+
+		<section class="panel workspace"><header class="workspace-head"><div><h2>Belegdaten vorschlagen</h2><p>Ein vorhandenes PDF oder Bild wird ausschließlich auf dem freigegebenen Host geprüft.</p></div><span class="scope management">Optional</span></header>
+			@SettingsFlash(data.ReceiptMsg, data.ReceiptOK)
+			<p class="notice">Vorschläge ändern keine Abrechnungsdaten. Erst eine ausdrückliche Bestätigung übernimmt die erkannten Werte in den nächsten Arbeitsschritt.</p>
+			if !data.ReceiptSuggesterReady {
+				<p class="notice"><strong>Automatische Erkennung derzeit geschlossen.</strong> Es ist kein freigegebener Inferenzdienst in Österreich oder der EU eingerichtet. Es werden keine Belegdaten versendet.</p>
+			}
+			if data.HasReceiptDocuments {
+				<form method="post" action="/app/settings/annual-statement/receipts/suggest"><label>Beleg aus Dokumenten<select name="document_id" required>
+					<option value="">Dokument auswählen</option>
+					for _, document := range data.ReceiptDocuments {
+						<option value={ document.ID } selected?={ document.ID == data.ReceiptSuggestion.DocumentID }>{ document.Label }</option>
+					}
+				</select></label><button class="button primary" type="submit" disabled?={ !data.ReceiptSuggesterReady }>Betrag, Datum und Kostenart vorschlagen</button></form>
+			} else {
+				<section class="empty"><h3>Noch kein geeigneter Beleg</h3><p>Legen Sie zuerst ein PDF oder Bild in den bestehenden Dokumenten ab.</p><a class="button" href="/app/dokumente">Zu den Dokumenten</a></section>
+			}
+			if data.HasReceiptSuggestion {
+				<header class="subhead"><div><h3>Erkannte Angaben</h3><p>Bitte mit dem Originalbeleg vergleichen.</p></div></header>
+				<div class="form-grid three"><label>Betrag<span class="readonly"><strong>{ data.ReceiptSuggestion.Amount }</strong></span></label><label>Rechnungsdatum<span class="readonly"><strong>{ data.ReceiptSuggestion.InvoiceDate }</strong></span></label><label>Kostenart<span class="readonly"><strong>{ data.ReceiptSuggestion.CostTypeName }</strong></span></label></div>
+				if data.ReceiptSuggestion.Confirmed {
+					<p class="notice"><strong>Vorschlag bestätigt.</strong> Es wurde noch kein Beleg gespeichert; die Belegerfassung folgt in einem eigenen Arbeitsschritt.</p>
+				} else {
+					<form method="post" action="/app/settings/annual-statement/receipts/confirm"><input type="hidden" name="document_id" value={ data.ReceiptSuggestion.DocumentID }/><input type="hidden" name="amount_cents" value={ data.ReceiptSuggestion.AmountCents }/><input type="hidden" name="invoice_date" value={ data.ReceiptSuggestion.InvoiceDateValue }/><input type="hidden" name="cost_type_key" value={ data.ReceiptSuggestion.CostTypeKey }/><div class="form-actions"><button class="button primary" type="submit">Vorschlag ausdrücklich bestätigen</button></div></form>
+				}
+			}
 		</section>
 
 		<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
