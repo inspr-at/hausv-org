@@ -73,6 +73,23 @@ func TestUnitStorageParity(t *testing.T) {
 			if got := s.MembersForUnit("nope"); got.Found {
 				t.Fatalf("unknown unit must not be found: %+v", got)
 			}
+			if unknown, err := s.UpdateParties([]UnitPartyUpdate{
+				{UnitID: "top-1", OwnerEmails: []string{"new@example.com"}, SetOwners: true},
+				{UnitID: "missing", RenterEmails: []string{"nobody@example.com"}, SetRenters: true},
+			}); err != nil || !unknown {
+				t.Fatalf("unknown party update: unknown=%v err=%v", unknown, err)
+			}
+			if got := s.MembersForUnit("top-1"); len(got.Owners) != 1 || got.Owners[0] != "a@example.com" {
+				t.Fatalf("rejected party update changed existing unit: %+v", got)
+			}
+			if unknown, err := s.UpdateParties([]UnitPartyUpdate{{
+				UnitID: "top-1", OwnerEmails: []string{"NEW@example.com", "new@example.com"}, RenterEmails: []string{"tenant@example.com"}, SetOwners: true, SetRenters: true,
+			}}); err != nil || unknown {
+				t.Fatalf("party update: unknown=%v err=%v", unknown, err)
+			}
+			if got := s.MembersForUnit("top-1"); len(got.Owners) != 1 || got.Owners[0] != "new@example.com" || len(got.Renters) != 1 || got.Renters[0] != "tenant@example.com" || got.Unit.MiteigentumsanteilPPM != 400000 {
+				t.Fatalf("updated parties = %+v", got)
+			}
 
 			// Upsert: create a new unit.
 			if dup, err := s.UpsertUnit("", Unit{ID: "top-3", Label: "Top 3"}); err != nil || dup {

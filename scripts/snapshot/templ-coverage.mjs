@@ -9,7 +9,7 @@ const ROUTES = [
   '/app/dokumente', '/app/abstimmungen', '/app/uebergaben', '/app/kontakte', '/app/hilfe',
   '/app/energie', '/app/parking', '/app/zuhause/onboarding',
   '/app/settings', '/app/settings/profile', '/app/settings/notifications',
-  '/app/settings/building', '/app/settings/users', '/app/settings/home', '/app/audit',
+  '/app/settings/building', '/app/settings/annual-statement', '/app/settings/users', '/app/settings/home', '/app/audit',
 ];
 const tenant = (process.env.DEFAULT_TENANT || 'demo').replace(/^\/+|\/+$/g, '');
 const t = `${baseURL}/${tenant}`;

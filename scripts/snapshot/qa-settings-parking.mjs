@@ -601,6 +601,13 @@ try {
     await recordPage(page, events, viewport, '/app/settings/building', 'settings-building', async (candidate, label) => {
       if (!(await candidate.getByRole('heading', { name: 'Gebäude & Einheiten', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
     });
+    await recordPage(page, events, viewport, '/app/settings/annual-statement', 'settings-annual-statement', async (candidate, label) => {
+      if (!(await candidate.getByRole('heading', { name: 'Grunddaten der Jahresabrechnung', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
+      for (const text of ['Liegenschaft', 'Abrechnungsjahr', 'Wohnungseigentümer', 'Mietverhältnis']) {
+        if (!(await candidate.getByText(text, { exact: true }).count())) fail(`${label}: ${text} fehlt`);
+      }
+      if (!(await candidate.getByText('Eine unbekannte Einheit bricht den gesamten Import ab.', { exact: false }).count())) fail(`${label}: Importgrenze fehlt`);
+    });
     await recordPage(page, events, viewport, '/app/settings/users', 'settings-users', async (candidate, label) => {
       if (!(await candidate.getByRole('heading', { name: 'Benutzer & Rechte', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
       if (viewport.width === 320) {

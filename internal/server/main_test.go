@@ -6085,6 +6085,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("activity store: %v", err)
 	}
+	annualStatementPeriods := storepkg.NewMemoryAnnualStatementPeriodStore()
 	unitStore, err := newUnitStore("")
 	if err != nil {
 		t.Fatalf("unit store: %v", err)
@@ -6155,6 +6156,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		tenantHeroDir:            filepath.Join(t.TempDir(), "tenant-heroes"),
 		inviteStore:              inviteStore,
 		activityStore:            activityStore,
+		annualStatementPeriods:   annualStatementPeriods,
 		unitStore:                unitStore,
 		unitPaymentStore:         unitPaymentStore,
 		issueStore:               issueStore,

@@ -325,6 +325,10 @@ func seedFull(t *testing.T) *source {
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000},
 		}))
+		periods, _ := store.BindAnnualStatementPeriodRepository(store.NewSQLAnnualStatementPeriodStore(src.lanes), tenant)
+		if _, err := periods.Save(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
+			t.Fatalf("%s annual statement period: %v", slug, err)
+		}
 		payments, _ := store.BindUnitPaymentStatusRepository(store.NewSQLUnitPaymentStatusStore(src.lanes), tenant)
 		if _, err := payments.Set(store.UnitPaymentStatus{TenantSlug: slug, UnitID: "top-1", Status: store.UnitPaymentStatusPaid, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s payment: %v", slug, err)

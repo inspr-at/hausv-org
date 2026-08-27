@@ -170,6 +170,7 @@ templ SettingsHubBody(data SettingsHubPageData) {
 				<section class="settings-group panel span-all"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p></div><span class="scope management">Verwaltungsrechte</span></header><nav class="settings-links management-links">
 					if data.CanManageBuilding {
 						@SettingsLink("home", "Gebäude & Einheiten", "Hausdaten und Einheiten pflegen", "/app/settings/building")
+						@SettingsLink("document", "Jahresabrechnung", "Grunddaten, Einheiten und Abrechnungsperiode", "/app/settings/annual-statement")
 						@SettingsLink("settings", "Portalbereiche", "Menüpunkte und Funktionen ein- oder ausblenden", "/app/settings/modules")
 					}
 					if data.Portal.Modules.Users && data.Portal.CanManageUsers {
