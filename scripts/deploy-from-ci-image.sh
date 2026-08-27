@@ -146,7 +146,6 @@ compose_lock_dir=${compose_lock%/*}
 flock_bin=${HAUSV_DEPLOY_FLOCK_BIN:-/usr/bin/flock}
 base64_bin=${HAUSV_DEPLOY_BASE64_BIN:-/usr/bin/base64}
 mktemp_bin=${HAUSV_DEPLOY_MKTEMP_BIN:-/usr/bin/mktemp}
-sudo_bin=""
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 container=${HAUSV_DEPLOY_CONTAINER:-$service}
@@ -160,6 +159,7 @@ live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL)
 health_url=${HAUSV_DEPLOY_HEALTH_URL:-${live_url%/}/healthz}
 verify_attempts=15
 verify_sleep=2
+snapshot_verify_attempts=50
 if [ -n "${HAUSV_DEPLOY_VERIFY_ATTEMPTS+x}" ]; then
     printf '%s' "$HAUSV_DEPLOY_VERIFY_ATTEMPTS" | grep -qE '^[1-9][0-9]*$' \
         || fail_before_change "HAUSV_DEPLOY_VERIFY_ATTEMPTS must be a positive integer"
@@ -169,6 +169,11 @@ if [ -n "${HAUSV_DEPLOY_VERIFY_SLEEP+x}" ]; then
     printf '%s' "$HAUSV_DEPLOY_VERIFY_SLEEP" | grep -qE '^[0-9]+$' \
         || fail_before_change "HAUSV_DEPLOY_VERIFY_SLEEP must be a non-negative integer"
     verify_sleep=$HAUSV_DEPLOY_VERIFY_SLEEP
+fi
+if [ -n "${HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS+x}" ]; then
+    printf '%s' "$HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS" | grep -qE '^[1-9][0-9]*$' \
+        || fail_before_change "HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS must be a positive integer"
+    snapshot_verify_attempts=$HAUSV_DEPLOY_SNAPSHOT_VERIFY_ATTEMPTS
 fi
 
 for required in docker curl git; do
@@ -228,16 +233,20 @@ if [ "$schema_changed" -eq 1 ]; then
     data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
     snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
     snapshot_dir="$snapshot_root/$app_version-$commit"
-    sudo_bin=${HAUSV_DEPLOY_SUDO_BIN:-/usr/bin/sudo}
-    case $sudo_bin in
+    case $data_dir in
         /*) ;;
-        *) fail_before_change "HAUSV_DEPLOY_SUDO_BIN must be an absolute path" ;;
+        *) fail_before_change "HAUSV_DEPLOY_DATA_DIR must be an absolute path" ;;
     esac
-    case $sudo_bin in
-        *[!A-Za-z0-9_./-]*) fail_before_change "HAUSV_DEPLOY_SUDO_BIN contains unsupported path characters" ;;
+    case $data_dir in
+        *[!A-Za-z0-9_./-]*) fail_before_change "HAUSV_DEPLOY_DATA_DIR contains unsupported path characters" ;;
     esac
-    [ -f "$sudo_bin" ] && [ -x "$sudo_bin" ] \
-        || fail_before_change "HAUSV_DEPLOY_SUDO_BIN is not an executable file: $sudo_bin"
+    case $snapshot_root in
+        /*) ;;
+        *) fail_before_change "HAUSV_DEPLOY_SNAPSHOT_ROOT must be an absolute path" ;;
+    esac
+    case $snapshot_root in
+        *[!A-Za-z0-9_./-]*) fail_before_change "HAUSV_DEPLOY_SNAPSHOT_ROOT contains unsupported path characters" ;;
+    esac
 fi
 
 ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
@@ -246,13 +255,8 @@ ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 release_tag="$image_repo:release-$app_version-$commit"
 
-# Preflight: verify the currently healthy service and (for schema changes)
-# non-interactive root capability. The script runs locally on the runner, so
-# locked_remote_script evals the body directly instead of shipping it over SSH.
-sudo_probe=""
-if [ "$schema_changed" -eq 1 ]; then
-    sudo_probe="$(shell_quote "$sudo_bin") -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
-fi
+# Preflight verifies the currently healthy service. The script runs locally on
+# the runner, so locked_remote_script evals the body instead of using SSH.
 preflight_body="\
     locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
     locked_open=\"\$(printf \"\\050\")\"; \
@@ -277,8 +281,7 @@ preflight_body="\
     test -d $compose_dir; \
     test -f $compose_file; \
     compose_services=\"\$($compose_command config --services)\"; \
-    printf '%s\n' \"\$compose_services\" | grep -Fx $service >/dev/null; \
-    $sudo_probe"
+    printf '%s\n' \"\$compose_services\" | grep -Fx $service >/dev/null;"
 preflight_body="$preflight_body \
     printf 'running-image-id=%s\n' \"\$running_image_id\""
 preflight_script=$(locked_remote_script "$preflight_body") \
@@ -308,57 +311,6 @@ if [ "$dry_run" -eq 1 ]; then
         echo "[dry-run] actual release will publish $snapshot_dir atomically before starting the new image."
     fi
     exit 0
-fi
-
-if [ "$schema_changed" -eq 1 ]; then
-    snapshot_helper=$(< "$repo/scripts/create-predeploy-snapshot.py") \
-        || fail_before_change "cannot read the pre-deploy snapshot helper"
-    snapshot_body="\
-        test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running_image_id; \
-        test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
-        $(shell_quote "$sudo_bin") -n /run/current-system/sw/bin/python3 - \
-        --source $data_dir \
-        --snapshot $snapshot_dir \
-        --compose-dir $compose_dir \
-        --compose-file $compose_file \
-        --compose-project $compose_project \
-        --service $service \
-        --source-version $live_version \
-        --source-commit $live_sha \
-        --target-version $app_version \
-        --target-commit $head_sha <<'HAUSV_PREDEPLOY_PY'
-$snapshot_helper
-HAUSV_PREDEPLOY_PY"
-    snapshot_script=$(locked_remote_script "$snapshot_body") \
-        || fail_before_change "cannot encode the locked pre-deploy snapshot"
-    if ! snapshot_proof=$(eval "$snapshot_script"); then
-        current_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null | tr -d '[:space:]')
-        if [ "$current_health" = healthy ]; then
-            echo "release refused: fresh consistent pre-deploy snapshot failed." >&2
-            echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
-        else
-            echo "release FAILED: pre-deploy snapshot recovery did not return HAUSV to healthy state (container=$current_health)." >&2
-            recovery_body="$compose_command up -d --force-recreate --no-deps $service"
-            if recovery_script=$(locked_remote_script "$recovery_body"); then
-                echo "mandatory recovery command: eval \"$recovery_script\"" >&2
-            else
-                echo "automatic mandatory recovery command unavailable: local transport encoding failed." >&2
-                echo "locked mandatory recovery shell: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
-                echo "inside that locked shell, mandatory recovery command: $recovery_body" >&2
-            fi
-            echo "after recovery, require Docker health=healthy before any retry; do not activate the new image." >&2
-        fi
-        exit 1
-    fi
-    if ! { [[ $snapshot_proof == *"snapshot-path=$snapshot_dir"* ]] \
-        && [[ $snapshot_proof == *"snapshot-integrity=ok"* ]] \
-        && [[ $snapshot_proof == *"service-health=healthy"* ]] \
-        && printf '%s' "$snapshot_proof" | grep -qE 'snapshot-created=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'; }; then
-        echo "release refused: snapshot command returned incomplete proof." >&2
-        echo "recovery verified by the helper: the current production service is healthy; no new image or schema was activated." >&2
-        exit 1
-    fi
-    echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
 fi
 
 preserve_body="\
@@ -391,6 +343,93 @@ docker pull "$release_tag" \
     || fail_before_change "CI image pull failed; the live image and container were not changed"
 docker image inspect "$release_tag" >/dev/null \
     || fail_before_change "CI image is not available after pull"
+expected_release_image_id=$(docker image inspect --format '{{.Id}}' "$release_tag") \
+    || fail_before_change "cannot resolve the pulled CI image identity"
+if [ "${#expected_release_image_id}" -ne 71 ] \
+    || ! printf '%s' "$expected_release_image_id" \
+        | grep -qE '^sha256:[0-9a-f]{64}$'; then
+    fail_before_change "pulled CI image returned invalid identity proof"
+fi
+
+if [ "$schema_changed" -eq 1 ]; then
+    snapshot_name="$app_version-$commit"
+    container_snapshot="/snapshots/$snapshot_name"
+    source_mount=$(shell_quote "type=bind,src=$data_dir,dst=/source,readonly")
+    snapshot_mount=$(shell_quote "type=bind,src=$snapshot_root,dst=/snapshots")
+    snapshot_body="
+recovery_required=0
+recover_snapshot_service() {
+    if [ \"\$recovery_required\" = 1 ]; then
+        recovery_required=0
+        $compose_command up -d --force-recreate --no-deps $service >/dev/null 2>&1 || true
+    fi
+}
+trap recover_snapshot_service EXIT HUP INT TERM
+test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running_image_id
+test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id
+test \"\$(docker image inspect --format '{{.Id}}' $release_tag)\" = $expected_release_image_id
+recovery_required=1
+$compose_command stop -t 30 $service
+docker run --rm \
+    --user 0:0 \
+    --network none \
+    --read-only \
+    --cap-drop ALL \
+    --cap-add DAC_OVERRIDE \
+    --security-opt no-new-privileges \
+    --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+    --mount $source_mount \
+    --mount $snapshot_mount \
+    $expected_release_image_id predeploy-snapshot \
+    --source /source \
+    --snapshot $container_snapshot \
+    --source-version $live_version \
+    --source-commit $live_sha \
+    --target-version $app_version \
+    --target-commit $head_sha
+$compose_command start $service
+snapshot_health=none
+snapshot_attempt=0
+while [ \"\$snapshot_attempt\" -lt $snapshot_verify_attempts ]; do
+    snapshot_health=\"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container 2>/dev/null | tr -d '[:space:]')\"
+    [ \"\$snapshot_health\" = healthy ] && break
+    snapshot_attempt=\$((snapshot_attempt + 1))
+    sleep $verify_sleep
+done
+test \"\$snapshot_health\" = healthy
+recovery_required=0
+trap - EXIT HUP INT TERM
+printf 'snapshot-host-path=%s\nservice-health=healthy\n' $snapshot_dir"
+    snapshot_script=$(locked_remote_script "$snapshot_body") \
+        || fail_before_change "cannot encode the locked pre-deploy snapshot"
+    if ! snapshot_proof=$(eval "$snapshot_script"); then
+        current_health=none
+        for _ in $(seq "$snapshot_verify_attempts"); do
+            current_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null | tr -d '[:space:]')
+            [ "$current_health" = healthy ] && break
+            sleep "$verify_sleep"
+        done
+        if [ "$current_health" = healthy ]; then
+            echo "release refused: fresh consistent pre-deploy snapshot failed." >&2
+            echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
+        else
+            echo "release FAILED: pre-deploy snapshot recovery did not return HAUSV to healthy state (container=$current_health)." >&2
+            echo "locked mandatory recovery shell: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
+            echo "inside that locked shell, mandatory recovery command: $compose_command up -d --force-recreate --no-deps $service" >&2
+        fi
+        exit 1
+    fi
+    if ! { [[ $snapshot_proof == *"snapshot-path=$container_snapshot"* ]] \
+        && [[ $snapshot_proof == *"snapshot-host-path=$snapshot_dir"* ]] \
+        && [[ $snapshot_proof == *"snapshot-integrity=ok"* ]] \
+        && [[ $snapshot_proof == *"service-health=healthy"* ]] \
+        && printf '%s' "$snapshot_proof" | grep -qE 'snapshot-created=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'; }; then
+        echo "release refused: snapshot command returned incomplete proof." >&2
+        echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
+        exit 1
+    fi
+    echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
+fi
 
 echo "replacing the production container…"
 activate_body="\
@@ -401,7 +440,7 @@ activate_body="\
     compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $container)\" || exit 42; \
     compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $container)\" || exit 42; \
     if [ -z \"\$running_image_id\" ] \
-        || [ -z \"\$release_image_id\" ] \
+        || [ \"\$release_image_id\" != $expected_release_image_id ] \
         || [ \"\$running_image_id\" != $expected_running_image_id ] \
         || [ \"\$latest_image_id\" != $expected_running_image_id ] \
         || [ \"\$previous_image_id\" != $expected_running_image_id ] \
@@ -411,7 +450,7 @@ activate_body="\
         || [ \"\$compose_service_label\" != $service ]; then \
         exit 42; \
     fi; \
-    docker tag $release_tag $image || exit 43; \
+    docker tag $expected_release_image_id $image || exit 43; \
     test \"\$(docker image inspect --format '{{.Id}}' $image)\" = \"\$release_image_id\" || exit 43; \
     $compose_command up -d --force-recreate --no-deps $service || exit 43"
 activate_script=$(activation_locked_remote_script "$activate_body") \

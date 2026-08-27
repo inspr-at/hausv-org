@@ -76,6 +76,14 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "predeploy-snapshot" {
+		if err := runPredeploySnapshot(os.Args[2:], os.Stdout, os.Stderr); err != nil {
+			slog.Error("pre-deploy snapshot failed", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		target := "http://127.0.0.1:8080/healthz"
 		if len(os.Args) > 2 {
