@@ -19,6 +19,10 @@ import (
 const maxAnnualStatementPartyImportBytes = 1 << 20
 
 func (a *app) annualStatementPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "", false)
+}
+
+func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, ac authCtx, receiptSuggestion web.AnnualStatementReceiptSuggestionView, receiptMsg string, receiptOK bool) {
 	tenant, actorEmail, _, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
 		return
@@ -76,6 +80,17 @@ func (a *app) annualStatementPage(w http.ResponseWriter, r *http.Request, ac aut
 	periodMsg, periodOK := annualStatementPeriodMessage(r.URL.Query().Get("period"))
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
 	costTypeMsg, costTypeOK := annualStatementCostTypeMessage(r.URL.Query().Get("cost-type"))
+	receiptDocuments := []web.AnnualStatementReceiptDocumentView{}
+	if ac.repositories.documents != nil {
+		for _, document := range ac.repositories.documents.ListCurrent() {
+			if annualStatementReceiptContentTypeSupported(document.ContentType) {
+				receiptDocuments = append(receiptDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: document.Title + " · " + document.Filename})
+			}
+		}
+	}
+	if receiptMsg == "" {
+		receiptMsg, receiptOK = annualStatementReceiptMessage(r.URL.Query().Get("receipt"))
+	}
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
@@ -84,6 +99,10 @@ func (a *app) annualStatementPage(w http.ResponseWriter, r *http.Request, ac aut
 		PeriodMsg: periodMsg, PeriodOK: periodOK, ImportMsg: importMsg, ImportOK: importOK,
 		CostTypes: costTypeViews, CostTypeCount: len(costTypeViews), AllocatableCostTypeCount: allocatableCount,
 		CostTypeMsg: costTypeMsg, CostTypeOK: costTypeOK,
+		ReceiptDocuments: receiptDocuments, HasReceiptDocuments: len(receiptDocuments) > 0,
+		ReceiptSuggesterReady: a.annualStatementReceiptSuggester != nil,
+		ReceiptMsg:            receiptMsg, ReceiptOK: receiptOK,
+		ReceiptSuggestion: receiptSuggestion, HasReceiptSuggestion: receiptSuggestion.DocumentID != "",
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 	}))
 }

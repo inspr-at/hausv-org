@@ -813,6 +813,8 @@ type app struct {
 	mapPreviewMu             sync.Mutex
 	mapPreviewTiles          map[string]map[mapTileKey]time.Time
 
+	annualStatementReceiptSuggester annualStatementReceiptSuggester
+
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
 	chargingConfirmTimeout time.Duration
@@ -1130,6 +1132,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/cost-types", a.action(a.saveAnnualStatementCostType))
 	mux.HandleFunc("POST /app/settings/annual-statement/periods", a.action(a.saveAnnualStatementPeriod))
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
+	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
+	mux.HandleFunc("POST /app/settings/annual-statement/receipts/confirm", a.action(a.confirmAnnualStatementReceiptSuggestion))
 	mux.HandleFunc("GET /app/settings/modules", a.authed(capabilityManageBuilding, a.portalModuleSettings))
 	mux.HandleFunc("POST /app/settings/modules", a.authedAction(capabilityManageBuilding, a.updatePortalModules))
 	mux.HandleFunc("GET /app/settings/home", a.page(a.withEnergyLifecycleOperation(a.homeIdentitySettings)))
