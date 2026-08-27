@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HAUSV-521: Hausüberblick Rebuild – Fassung Vergleich</title>
+  <style>
+    :root {
+      --ink:#20251f; --muted:#6b6f63; --soft:#9a9485;
+      --line:#e7e0d2; --paper:#f7f3ea; --panel:#fffefb; --panel-soft:#fbf8f0;
+      --gold:#c8993f; --gold-ink:#8a7b3f; --gold-light:#e7c574; --leaf:#2f6b4a;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+      --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px;
+      --radius-xs:7px; --radius-sm:8px; --radius-md:10px; --radius-lg:12px;
+      --shadow-panel:0 12px 30px rgba(32,37,31,.04);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: var(--space-5);
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    h1, h2, h3 { font-family: var(--font-serif); font-weight: 600; margin: 0 0 var(--space-3); }
+    h1 { font-size: 32px; line-height: 1.1; }
+    h2 { font-size: 24px; margin-top: var(--space-6); }
+    h3 { font-size: 18px; margin-top: var(--space-5); }
+    p { margin: 0 0 var(--space-3); }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .intro {
+      max-width: 800px;
+      margin-bottom: var(--space-6);
+      padding: var(--space-5);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-panel);
+    }
+    
+    .intro code {
+      padding: 2px 6px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+    }
+    
+    .intro ul {
+      margin: var(--space-3) 0;
+      padding-left: var(--space-5);
+    }
+    
+    .intro li {
+      margin-bottom: var(--space-2);
+    }
+    
+    .fassung {
+      margin-bottom: var(--space-6);
+      padding: var(--space-5);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-panel);
+    }
+    
+    .fassung-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3);
+      border-bottom: 2px solid var(--gold);
+    }
+    
+    .fassung-header h2 {
+      margin: 0;
+      color: var(--gold-ink);
+    }
+    
+    .fassung-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    
+    .fassung-description {
+      margin-bottom: var(--space-4);
+      color: var(--muted);
+    }
+    
+    .fassung-content {
+      display: grid;
+      gap: var(--space-4);
+    }
+    
+    .screenshot-frame {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: white;
+    }
+    
+    .screenshot-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    
+    .screenshot-label {
+      padding: var(--space-2) var(--space-3);
+      background: var(--panel-soft);
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold-ink);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    
+    .file-links {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--line);
+    }
+    
+    .file-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 6px 12px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xs);
+      color: var(--gold-ink);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .file-link:hover {
+      background: var(--gold);
+      color: var(--panel);
+      border-color: var(--gold);
+    }
+    
+    .key-features {
+      margin-top: var(--space-4);
+      padding: var(--space-4);
+      background: var(--panel-soft);
+      border-radius: var(--radius-sm);
+    }
+    
+    .key-features h4 {
+      margin: 0 0 var(--space-2);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--gold-ink);
+    }
+    
+    .key-features ul {
+      margin: 0;
+      padding-left: var(--space-5);
+    }
+    
+    .key-features li {
+      margin-bottom: var(--space-2);
+      font-size: 13px;
+    }
+    
+    .gap-log {
+      margin-top: var(--space-6);
+      padding: var(--space-5);
+      background: rgba(231,197,116,.1);
+      border: 1px solid rgba(200,153,63,.3);
+      border-radius: var(--radius-md);
+    }
+    
+    .gap-log h3 {
+      margin-top: 0;
+      color: var(--gold-ink);
+    }
+    
+    .gap-log p {
+      color: var(--muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body id="HAUSV-521">
+  
+  <div class="container">
+    
+    <h1>HAUSV-521: Hausüberblick Rebuild – Stufe 2</h1>
+    
+    <div class="intro">
+      <p><strong>Zielsetzung:</strong> HTML-Rebuild des Hausüberblicks mit zwei Dichte-Fassungen – dicht für Verwalter/Admin, ruhig für Eigentümer/Beirat/Bewohner – plus eine mobile Komposition.</p>
+      
+      <p><strong>Status:</strong> Draft – nur HTML + PNG. Keine TEMPL-Integration, keine live-CSS-Änderung, kein Deployment.</p>
+      
+      <p><strong>Technische Entscheidungen:</strong></p>
+      <ul>
+        <li>Tokens ausschließlich aus <code>internal/web/web.go</code> – keine neuen Farben, Radien oder Schatten</li>
+        <li>Reale deutsche/österreichische WEG-Texte – kein Lorem Ipsum</li>
+        <li>Gleiche Daten in beiden Fassungen – nur Darstellungsdichte unterscheidet sich</li>
+        <li>Genehmigte Chrome-Elemente: Full-width Hero + Hairline, flush Sidebar Map, quiet Portal Dropdown, Rolle im Account Footer</li>
+      </ul>
+    </div>
+    
+    <!-- Dense Fassung -->
+    <div class="fassung" id="dense">
+      <div class="fassung-header">
+        <h2>Fassung: Dicht (Dense)</h2>
+        <div class="fassung-meta">Für Verwalter / Admin</div>
+      </div>
+      
+      <p class="fassung-description">
+        Kennzahlenzeile im Hero, vollständige Anliegen-Tabelle mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit. Termine und Aushang als kompakte Cards in der Seitenspalte. Energie-Status als horizontaler Strip. Alles auf einen Blick.
+      </p>
+      
+      <div class="fassung-content">
+        <div class="screenshot-frame">
+          <div class="screenshot-label">Desktop (1440 × 900)</div>
+          <img src="hausueberblick-dense.png" alt="Dense Fassung Desktop" loading="lazy">
+        </div>
+        
+        <div class="key-features">
+          <h4>Kernelemente</h4>
+          <ul>
+            <li><strong>Hero:</strong> Begrüßung "Hallo Frau Bachmeier" + Datum + 3 Metriken (Anliegen, Termine, Aushang) + "Anliegen melden" Button</li>
+            <li><strong>Anliegen-Tabelle:</strong> 6 Spalten, Status-Dots (gold = Neu, green = In Arbeit), Beschreibung gekürzt, Ort mit Zeilenumbruch, Alter mit Überfällig-Markierung</li>
+            <li><strong>Termine (Side):</strong> Nächste 2 Termine mit Datums-Chip (Tag + Monat), Titel, Uhrzeit, Ort</li>
+            <li><strong>Aushang (Side):</strong> 3 Einträge mit Dot (gold = ungelesen), Titel, Kategorie, Zeitstempel</li>
+            <li><strong>Energie-Strip:</strong> Hausname + Status-Text + "Details anzeigen" Link</li>
+            <li><strong>Utility Links:</strong> Kontakte, Dokumente, Abstimmungen, Parking, Übergaben, Benutzer & Rechte, Verlauf, Einstellungen, Hilfe</li>
+          </ul>
+        </div>
+        
+        <div class="file-links">
+          <a href="hausueberblick-dense.html" class="file-link">📄 HTML</a>
+          <a href="hausueberblick-dense.png" class="file-link">🖼️ PNG</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quiet Fassung -->
+    <div class="fassung" id="quiet">
+      <div class="fassung-header">
+        <h2>Fassung: Ruhig (Quiet)</h2>
+        <div class="fassung-meta">Für Eigentümer / Beirat / Bewohner</div>
+      </div>
+      
+      <p class="fassung-description">
+        Ein Satz beantwortet: "Betrifft mich etwas?" – dann Accordion-Module, die bei Bedarf öffnen. Anliegen, Termine und Aushang in kollabsierbaren Boxen. Energie-Status als dezenter Fußzeilenlink. Ruhiger Einstieg statt dichte Info-Wand.
+      </p>
+      
+      <div class="fassung-content">
+        <div class="screenshot-frame">
+          <div class="screenshot-label">Desktop (1440 × 900)</div>
+          <img src="hausueberblick-quiet.png" alt="Quiet Fassung Desktop" loading="lazy">
+        </div>
+        
+        <div class="key-features">
+          <h4>Kernelemente</h4>
+          <ul>
+            <li><strong>Hero:</strong> Begrüßung "Hallo Herr Bauer" + Datum – keine Metriken-Zeile</li>
+            <li><strong>Answer:</strong> Großer Satz "Drei Dinge warten auf Sie" (dynamisch: 0, 1, 2 oder 3)</li>
+            <li><strong>Anliegen-Modul:</strong> Kollabierbar, Zusammenfassung "3 offen", beim Öffnen reduzierte Zeilen (Betreff, Ort, Alter), mehr als 3 → "Alle anzeigen" Details</li>
+            <li><strong>Termine-Modul:</strong> Grüner Dot, "2 Termine", Datums-Badge + Titel + Uhrzeit + Ort</li>
+            <li><strong>Aushang-Modul:</strong> Grauer Dot (gold bei ungelesen), "1 neue Beiträge", Titel + Kategorie + Zeitstempel</li>
+            <li><strong>Quiet Home Footer:</strong> Energie-Status-Text + Link, kein Strip</li>
+            <li><strong>Utility Links:</strong> Kontakte, Dokumente, Abstimmungen, Einstellungen, Hilfe</li>
+          </ul>
+        </div>
+        
+        <div class="file-links">
+          <a href="hausueberblick-quiet.html" class="file-link">📄 HTML</a>
+          <a href="hausueberblick-quiet.png" class="file-link">🖼️ PNG</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile Composition -->
+    <div class="fassung" id="mobile">
+      <div class="fassung-header">
+        <h2>Mobile Komposition</h2>
+        <div class="fassung-meta">390 × 844</div>
+      </div>
+      
+      <p class="fassung-description">
+        Eine mobile Komposition der gleichen Blöcke: Task Card mit primärem Anliegen, Count Tiles, Events-Liste (erste 2 + "Alle anzeigen"), Aushang-Liste (erster + Details-Toggle). Unten: "Anliegen melden" FAB + Tab-Navigation (Haus, Aushang, Termine, Mehr).
+      </p>
+      
+      <div class="fassung-content">
+        <div class="screenshot-frame">
+          <div class="screenshot-label">Mobile (390 × 844)</div>
+          <img src="hausueberblick-mobile.png" alt="Mobile Komposition" loading="lazy">
+        </div>
+        
+        <div class="key-features">
+          <h4>Kernelemente</h4>
+          <ul>
+            <li><strong>Greeting:</strong> "Hallo Frau Bachmeier" + Datum</li>
+            <li><strong>Task Card:</strong> "Jetzt zu erledigen" Eyebrow + Titel des wichtigsten Anliegens + Beschreibung + "Anliegen ansehen" Button</li>
+            <li><strong>Count Tiles:</strong> 3 × Kachel (Anliegen, Termine, Aushang) mit großer Zahl + Label</li>
+            <li><strong>Nächste Termine:</strong> 2 Termine mit Datums-Chip, Titel, Uhrzeit, Ort, Chevron</li>
+            <li><strong>Am Aushang:</strong> Erster Beitrag sichtbar, dann "Alle 3 Beiträge" Details-Toggle</li>
+            <li><strong>Thumb Zone:</strong> "Anliegen melden" FAB (gold) + 4 Tabs (Haus active, Aushang, Termine, Mehr)</li>
+          </ul>
+        </div>
+        
+        <div class="file-links">
+          <a href="hausueberblick-mobile.html" class="file-link">📄 HTML</a>
+          <a href="hausueberblick-mobile.png" class="file-link">🖼️ PNG</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Gap Log -->
+    <div class="gap-log" id="gap-log">
+      <h3>Gap Log: Nicht platzierte Capabilities</h3>
+      <p>Alle aktuellen Hausüberblick-Funktionen wurden in beiden Fassungen abgebildet. Keine Lücken identifiziert.</p>
+    </div>
+    
+    <footer style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; text-align: center;">
+      <p>HAUSV-521 Stufe 2 – HTML + PNG Snapshots – <a href="#HAUSV-521" style="color: var(--gold-ink);">Zum Anfang</a></p>
+    </footer>
+    
+  </div>
+
+</body>
+</html>

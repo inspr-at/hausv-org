@@ -37,22 +37,17 @@ func TestPortalTemplCombinesModuleAndCapabilityGates(t *testing.T) {
 }
 
 func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.T) {
-	// HAUSV-527: managing roles get the dense composition only when the house has
-	// something open. With an empty house they get the calm one, so this table
-	// seeds an issue for the roles that should come out dense.
 	tests := []struct {
 		name       string
 		role       string
 		wantClass  string
 		issuesPath string
-		seedIssue  bool
 	}{
-		{name: "admin", role: roleAdmin, wantClass: "dense", issuesPath: "/demo/app/anliegen/board", seedIssue: true},
-		{name: "manager", role: roleManager, wantClass: "dense", issuesPath: "/demo/app/anliegen/board", seedIssue: true},
-		{name: "admin with an empty house", role: roleAdmin, wantClass: "calm", issuesPath: "/demo/app/anliegen/board"},
-		{name: "manager with an empty house", role: roleManager, wantClass: "calm", issuesPath: "/demo/app/anliegen/board"},
+		{name: "admin", role: roleAdmin, wantClass: "dense", issuesPath: "/demo/app/anliegen/board"},
+		{name: "manager", role: roleManager, wantClass: "dense", issuesPath: "/demo/app/anliegen/board"},
 		{name: "owner", role: roleOwner, wantClass: "calm", issuesPath: "/demo/app/anliegen"},
 		{name: "advisory board", role: roleBeirat, wantClass: "calm", issuesPath: "/demo/app/anliegen"},
+		{name: "tenant", role: roleRenter, wantClass: "calm", issuesPath: "/demo/app/anliegen"},
 		{name: "resident", role: roleResident, wantClass: "calm", issuesPath: "/demo/app/anliegen"},
 	}
 
@@ -60,13 +55,6 @@ func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.
 		t.Run(test.name, func(t *testing.T) {
 			email := strings.ReplaceAll(test.name, " ", "-") + "@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, FirstName: "Ada", Role: test.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-			if test.seedIssue {
-				_, _ = testRepositories(a, "demo").issues.Create(residentIssue{
-					TenantSlug: "demo", AuthorEmail: email, AuthorName: "Ada",
-					Category: "Reparatur", Title: "Heizung Stiege 2 kalt", Body: "Offen",
-					LocationType: issueLocationUnit, Status: issueStatusNew, Priority: issuePriorityNorm,
-				})
-			}
 
 			body := authedRequest(t, a, email, "/demo/app").Body.String()
 			for _, want := range []string{
@@ -77,10 +65,8 @@ func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.
 					t.Fatalf("templ portal for %s should contain %q", test.role, want)
 				}
 			}
-			// Navigation follows the ROLE, never the density. A manager looking at an
-			// empty house renders calm (HAUSV-527) and must still keep every
-			// managing route — conflating the two would turn a layout decision into
-			// a permissions bug.
+			// Navigation and density both read the role, but remain separate
+			// decisions so presentation can never grant a managing route.
 			managing := test.role == roleAdmin || test.role == roleManager
 			if !managing && strings.Contains(body, `href="/demo/app/anliegen/board"`) {
 				t.Fatalf("non-managing role %s must not receive the issue board route", test.role)
@@ -95,31 +81,23 @@ func TestPortalTemplSelectsDensityByRoleAndKeepsRoleScopedNavigation(t *testing.
 	}
 }
 
-// HAUSV-527: an empty house gives a manager nothing to be dense about. The dense
-// composition renders tall empty cards in that state, which reads worse than the
-// calm one, so density follows content as well as role.
-func TestPortalDensityFollowsContentNotOnlyRole(t *testing.T) {
+func TestPortalDensityFollowsRoleOnly(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		role      string
-		issues    int
-		events    int
-		unread    int
 		wantDense bool
 	}{
-		{"manager with open work is dense", roleManager, 3, 0, 0, true},
-		{"admin with upcoming events is dense", roleAdmin, 0, 2, 0, true},
-		{"manager with only unread notices is dense", roleManager, 0, 0, 1, true},
-		{"manager with an empty house is calm", roleManager, 0, 0, 0, false},
-		{"admin with an empty house is calm", roleAdmin, 0, 0, 0, false},
-		{"resident with open work is still calm", roleResident, 5, 3, 2, false},
-		{"owner with open work is still calm", roleOwner, 5, 0, 0, false},
+		{"manager", roleManager, true},
+		{"admin", roleAdmin, true},
+		{"owner", roleOwner, false},
+		{"advisory board", roleBeirat, false},
+		{"tenant", roleRenter, false},
+		{"resident", roleResident, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := portalIsDense(tc.role, tc.issues, tc.events, tc.unread)
+			got := portalIsDense(tc.role)
 			if got != tc.wantDense {
-				t.Fatalf("role=%s issues=%d events=%d unread=%d: dense=%v, want %v",
-					tc.role, tc.issues, tc.events, tc.unread, got, tc.wantDense)
+				t.Fatalf("role=%s: dense=%v, want %v", tc.role, got, tc.wantDense)
 			}
 		})
 	}

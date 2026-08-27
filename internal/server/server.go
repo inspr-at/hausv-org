@@ -2252,19 +2252,11 @@ func parseBallotReminderBeforeMinutes(rawMinutes string, rawHours string) (int, 
 	return minutes, nil
 }
 
-// portalIsDense decides which composition the Hausüberblick uses.
-//
-// HAUSV-527: density follows content as well as role. Managing roles get the
-// dense composition because they come to the screen to work, but an empty house
-// gives them nothing to be dense about — the dense layout then renders tall
-// empty cards, which reads worse than the calm one and loses the reassurance the
-// previous page carried. Residents never get it: a wall of maintenance tickets
-// that are not theirs is intimidating, not useful.
-func portalIsDense(role string, openIssues, upcomingEvents, unreadAnnouncements int) bool {
-	if role != roleManager && role != roleAdmin {
-		return false
-	}
-	return openIssues > 0 || upcomingEvents > 0 || unreadAnnouncements > 0
+// portalIsDense selects the approved HAUSV-571 desktop composition. Density is
+// a presentation decision based only on role; data and permissions stay the
+// same inputs for both compositions.
+func portalIsDense(role string) bool {
+	return role == roleManager || role == roleAdmin
 }
 
 func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -2413,11 +2405,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
 	portalEvents := eventViews(signals.events, now)
 	portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
-	// HAUSV-527: density follows content as well as role. An empty house gives a
-	// manager nothing to be dense about — the dense composition then renders tall
-	// empty cards, which reads worse than the calm one and loses the reassurance
-	// the old page carried. Calm for everyone when nothing is waiting.
-	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
+	portalDense := portalIsDense(role)
 
 	a.renderPortalTempl(w, r, web.PortalPageData{
 		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,

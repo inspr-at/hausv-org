@@ -308,6 +308,25 @@ func TestDenseIssueLocationsShareSpaceAndStayBounded(t *testing.T) {
 	}
 }
 
+func TestPortalPhoneCompositionOverridesTheSharedDesktopHideRule(t *testing.T) {
+	html := renderComponent(t, PortalPage(PortalPageData{Title: "Portal"}))
+	for _, rule := range []string{
+		".portal-home-landing .mobile-content{display:block",
+		".portal-home-landing .thumb-zone{position:fixed",
+	} {
+		if !strings.Contains(html, rule) {
+			t.Fatalf("portal phone composition is missing its page-scoped display rule %q", rule)
+		}
+	}
+	css, err := os.ReadFile("assets/portal-shell.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(css), ".portal-home-landing.dense-main .portal-section-content,.portal-home-landing.calm-main .portal-section-content{width:100%;padding:0}") {
+		t.Fatal("shared shell CSS does not remove desktop composition padding at the phone breakpoint")
+	}
+}
+
 func TestPortalPagesDoNotOwnSharedChromeCSS(t *testing.T) {
 	sources, err := filepath.Glob("*.templ")
 	if err != nil {
