@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.99.10] - 2026-08-27
+
+### Angebote klarer vergleichbar
+
+- Produktkarten: Drei klare Handlungsoptionen, gleich hohe Kartenbereiche und eine kräftigere Vergleichsmatrix erleichtern die Auswahl.
+- Professional: Nach 25 kostenlosen Einheiten kostet jede weitere Einheit 0,12 € – ohne Mindestumfang von 375 Einheiten.
+
 ## [0.99.9] - 2026-08-21
 
 ### Stabilität verbessert
