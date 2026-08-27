@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import subprocess
 import sys
+from pathlib import Path
 
 
 HEAD = "a" * 40
@@ -50,7 +51,14 @@ def mock_git(args: list[str]) -> int:
         print(HEAD)
     elif len(args) >= 3 and args[:2] == ["diff", "--quiet"]:
         # Simulate migration change for specific test cases
-        if CASE in ("migrations_changed", "migrations_changed_no_data", "schema_dry_run", "schema_incomplete_proof"):
+        if CASE in (
+            "migrations_changed",
+            "migrations_changed_no_data",
+            "schema_dry_run",
+            "schema_incomplete_proof",
+            "schema_with_snapshot",
+            "schema_missing_sudo",
+        ):
             return 1
         elif CASE == "git_diff_fail":
             print("fatal: git diff failed", file=sys.stderr)
@@ -66,7 +74,11 @@ def mock_git(args: list[str]) -> int:
 
 def mock_docker(args: list[str]) -> int:
     # Mock basic docker inspect calls needed for preflight
-    if len(args) >= 4 and args[:2] == ["inspect", "--format"]:
+    if len(args) >= 5 and args[:3] == ["image", "inspect", "--format"]:
+        if CASE in ("schema_with_snapshot", "no_schema_sudo_absent"):
+            print(IMAGE_ID)
+        return 0
+    elif len(args) >= 4 and args[:2] == ["inspect", "--format"]:
         if "{{if .State.Health}}" in args[2]:
             # Health check
             print("healthy")
@@ -134,6 +146,15 @@ def main() -> int:
         return mock_docker(args)
     elif command == "curl":
         return mock_curl(args)
+    elif command == "sudo":
+        log("sudo", [sys.argv[0], *args])
+        return 0
+    elif command == "flock":
+        log("flock", args)
+        if len(args) >= 6 and args[:2] == ["-w", "300"]:
+            return subprocess.run(args[3:], check=False).returncode
+        print(f"unexpected flock mock call: {args}", file=sys.stderr)
+        return 64
     else:
         print(f"unexpected mock command: {command}", file=sys.stderr)
         return 64

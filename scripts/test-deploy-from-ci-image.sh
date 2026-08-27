@@ -20,12 +20,13 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$test_root/bin" || exit 1
-for command_name in git docker curl; do
+for command_name in git docker curl sudo flock; do
     ln -s "$test_mock" "$test_root/bin/$command_name" || exit 1
 done
 
-# Create mock flock/base64/mktemp that actually work for the local script
-for bin_name in flock base64 mktemp; do
+# Create base64/mktemp links that actually work for the local script. flock is
+# mocked above so this fixture remains deterministic on macOS, which lacks it.
+for bin_name in base64 mktemp; do
     if command -v "$bin_name" >/dev/null 2>&1; then
         ln -s "$(command -v "$bin_name")" "$test_root/bin/$bin_name" || exit 1
     fi
@@ -112,31 +113,25 @@ fi
 
 # Fixtures for the new snapshot support: dry-run behavior and full path validation
 
-# Test dry-run with no schema change (must not invoke sudo or snapshot)
-# This fails at preflight (docker not fully mocked) but verifies schema logic
-fixture no_schema_dry_run_check 1 "local preflight failed"
-# Verify no sudo probe was added for non-schema case
-if grep -qF -- "sudo" "$test_root/no_schema_dry_run_check/output.txt"; then
-    echo "FAIL no_schema_dry_run_check: invoked sudo for non-schema dry-run" >&2
-    exit 1
-fi
-
 # Test with schema change and snapshot env vars
 fixture_schema() {
     local case_name=$1 expected_status=$2 expected_text=$3
+    local sudo_bin=${4:-$test_root/bin/sudo}
     local state=$test_root/$case_name
     mkdir -p "$state"
     local output=$state/output.txt
     local fixture_path=$test_root/bin:$PATH
     local actual_status
+    mkdir -p "$state/compose"
+    : > "$state/compose/compose.yml"
 
     env \
         PATH="$fixture_path" \
         TEST_FIXTURE_CASE="$case_name" \
         TEST_FIXTURE_STATE="$state" \
         TEST_FIXTURE_REPO="$test_repo" \
-        HAUSV_DEPLOY_COMPOSE_DIR="/srv/hausv/compose" \
-        HAUSV_DEPLOY_COMPOSE_FILE="/srv/hausv/compose/docker-compose.yml" \
+        HAUSV_DEPLOY_COMPOSE_DIR="$state/compose" \
+        HAUSV_DEPLOY_COMPOSE_FILE="$state/compose/compose.yml" \
         HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
         HAUSV_DEPLOY_CONTAINER=hausv-demo \
         HAUSV_DEPLOY_COMPOSE_LOCK="$state/compose.lock" \
@@ -145,10 +140,11 @@ fixture_schema() {
         HAUSV_DEPLOY_FLOCK_BIN="$test_root/bin/flock" \
         HAUSV_DEPLOY_BASE64_BIN="$test_root/bin/base64" \
         HAUSV_DEPLOY_MKTEMP_BIN="$test_root/bin/mktemp" \
+        HAUSV_DEPLOY_SUDO_BIN="$sudo_bin" \
         HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
         HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
         HAUSV_DEPLOY_VERIFY_SLEEP=0 \
-        bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa >"$output" 2>&1
+        bash "$test_repo/scripts/deploy-from-ci-image.sh" 9.99.0 aaaaaaa --dry-run >"$output" 2>&1
     actual_status=$?
 
     if [ "$actual_status" -ne "$expected_status" ]; then
@@ -165,8 +161,30 @@ fixture_schema() {
     echo "ok $case_name"
 }
 
-# Test with schema change and preflight failure (verifies sudo probe was configured)
-# Preflight will fail but the sudo probe should have been added to the script
-fixture_schema schema_with_snapshot 1 "local preflight failed"
+# A schema-changing dry run reaches and uses the configured elevation command.
+fixture_schema schema_with_snapshot 0 "all fail-closed preconditions passed"
+if ! grep -qF -- "sudo"$'\t'"$test_root/bin/sudo"$'\t-n\t/run/current-system/sw/bin/python3\t-c\timport sqlite3' \
+    "$test_root/schema_with_snapshot/commands.log"; then
+    echo "FAIL schema_with_snapshot: configured sudo binary was not used for the snapshot preflight" >&2
+    exit 1
+fi
+
+# A schema-changing release must fail before preflight when the configured
+# elevation entrypoint is unavailable. Non-schema releases never resolve it.
+fixture_schema schema_missing_sudo 1 "HAUSV_DEPLOY_SUDO_BIN is not an executable file" "$test_root/bin/missing-sudo"
+if [ -f "$test_root/schema_missing_sudo/commands.log" ] \
+    && grep -qE -- $'^(sudo|flock)\t|^docker\t(pull|tag)\t' \
+        "$test_root/schema_missing_sudo/commands.log"; then
+    echo "FAIL schema_missing_sudo: preflight ran without the configured snapshot elevation command" >&2
+    exit 1
+fi
+
+# A non-schema release neither validates nor invokes the snapshot-only sudo
+# entrypoint, even when the configured path does not exist.
+fixture_schema no_schema_sudo_absent 0 "all fail-closed preconditions passed" "$test_root/bin/missing-sudo"
+if grep -qF -- $'sudo\t' "$test_root/no_schema_sudo_absent/commands.log"; then
+    echo "FAIL no_schema_sudo_absent: invoked sudo without a schema change" >&2
+    exit 1
+fi
 
 echo "$test_passed deploy-from-ci-image fixtures passed."

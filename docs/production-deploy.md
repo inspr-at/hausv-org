@@ -115,15 +115,17 @@ configured Compose service. It may differ from the stable service name
 
 Optional overrides:
 
-csb1 is NixOS: **there is no `/usr/bin`**, so the three binary overrides are
-required there, not optional. The defaults below are FHS paths and fail with
-`No such file or directory`.
+The image override remains optional. csb1 is NixOS: **there is no `/usr/bin`**,
+so the four executable-path overrides are required there. Their defaults are
+FHS paths and fail with `No such file or directory`.
 
 ```sh
 HAUSV_DEPLOY_IMAGE=ghcr.io/inspr-at/hausv-org:latest
 HAUSV_DEPLOY_FLOCK_BIN=/run/current-system/sw/bin/flock
 HAUSV_DEPLOY_BASE64_BIN=/run/current-system/sw/bin/base64
 HAUSV_DEPLOY_MKTEMP_BIN=/run/current-system/sw/bin/mktemp
+# The runner service PATH excludes NixOS setuid wrappers.
+HAUSV_DEPLOY_SUDO_BIN=/run/wrappers/bin/sudo
 ```
 
 ## GHCR authentication

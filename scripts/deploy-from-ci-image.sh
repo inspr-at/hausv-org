@@ -146,6 +146,7 @@ compose_lock_dir=${compose_lock%/*}
 flock_bin=${HAUSV_DEPLOY_FLOCK_BIN:-/usr/bin/flock}
 base64_bin=${HAUSV_DEPLOY_BASE64_BIN:-/usr/bin/base64}
 mktemp_bin=${HAUSV_DEPLOY_MKTEMP_BIN:-/usr/bin/mktemp}
+sudo_bin=""
 compose_command="docker compose --project-directory $compose_dir -p $compose_project -f $compose_file"
 service=hausv-org
 container=${HAUSV_DEPLOY_CONTAINER:-$service}
@@ -227,6 +228,16 @@ if [ "$schema_changed" -eq 1 ]; then
     data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
     snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
     snapshot_dir="$snapshot_root/$app_version-$commit"
+    sudo_bin=${HAUSV_DEPLOY_SUDO_BIN:-/usr/bin/sudo}
+    case $sudo_bin in
+        /*) ;;
+        *) fail_before_change "HAUSV_DEPLOY_SUDO_BIN must be an absolute path" ;;
+    esac
+    case $sudo_bin in
+        *[!A-Za-z0-9_./-]*) fail_before_change "HAUSV_DEPLOY_SUDO_BIN contains unsupported path characters" ;;
+    esac
+    [ -f "$sudo_bin" ] && [ -x "$sudo_bin" ] \
+        || fail_before_change "HAUSV_DEPLOY_SUDO_BIN is not an executable file: $sudo_bin"
 fi
 
 ghcr_token_file=${HAUSV_DEPLOY_GHCR_TOKEN_FILE:-/run/agenix/csb1-hausv-ghcr-pull}
@@ -240,7 +251,7 @@ release_tag="$image_repo:release-$app_version-$commit"
 # locked_remote_script evals the body directly instead of shipping it over SSH.
 sudo_probe=""
 if [ "$schema_changed" -eq 1 ]; then
-    sudo_probe="sudo -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
+    sudo_probe="$(shell_quote "$sudo_bin") -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
 fi
 preflight_body="\
     locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
@@ -305,7 +316,7 @@ if [ "$schema_changed" -eq 1 ]; then
     snapshot_body="\
         test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running_image_id; \
         test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id; \
-        sudo -n /run/current-system/sw/bin/python3 - \
+        $(shell_quote "$sudo_bin") -n /run/current-system/sw/bin/python3 - \
         --source $data_dir \
         --snapshot $snapshot_dir \
         --compose-dir $compose_dir \

@@ -83,5 +83,8 @@ jobs:
           HAUSV_DEPLOY_FLOCK_BIN: /run/current-system/sw/bin/flock
           HAUSV_DEPLOY_BASE64_BIN: /run/current-system/sw/bin/base64
           HAUSV_DEPLOY_MKTEMP_BIN: /run/current-system/sw/bin/mktemp
+          # NixOS exposes the setuid sudo-rs entrypoint through wrappers, which
+          # is intentionally outside the runner service's package-only PATH.
+          HAUSV_DEPLOY_SUDO_BIN: /run/wrappers/bin/sudo
         run: |
           bash scripts/deploy-from-ci-image.sh "${{ steps.params.outputs.version }}" "${{ steps.params.outputs.commit }}"
