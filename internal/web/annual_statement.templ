@@ -70,6 +70,15 @@ type AnnualStatementReceiptDocumentView struct {
 	Label string
 }
 
+type AnnualStatementReceiptView struct {
+	ID            string
+	DocumentTitle string
+	Amount        string
+	AmountValue   string
+	InvoiceDate   string
+	CostTypeName  string
+}
+
 type AnnualStatementReceiptSuggestionView struct {
 	DocumentID       string
 	Amount           string
@@ -106,6 +115,8 @@ type AnnualStatementPageData struct {
 	ReceiptOK             bool
 	ReceiptSuggestion     AnnualStatementReceiptSuggestionView
 	HasReceiptSuggestion  bool
+	Receipts              []AnnualStatementReceiptView
+	HasReceipts           bool
 	Units                  []AnnualStatementUnitView
 	HasUnits               bool
 	Allocation             AnnualStatementAllocationView
@@ -252,10 +263,40 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 				<header class="subhead"><div><h3>Erkannte Angaben</h3><p>Bitte mit dem Originalbeleg vergleichen.</p></div></header>
 				<div class="form-grid three"><label>Betrag<span class="readonly"><strong>{ data.ReceiptSuggestion.Amount }</strong></span></label><label>Rechnungsdatum<span class="readonly"><strong>{ data.ReceiptSuggestion.InvoiceDate }</strong></span></label><label>Kostenart<span class="readonly"><strong>{ data.ReceiptSuggestion.CostTypeName }</strong></span></label></div>
 				if data.ReceiptSuggestion.Confirmed {
-					<p class="notice"><strong>Vorschlag bestätigt.</strong> Es wurde noch kein Beleg gespeichert; die Belegerfassung folgt in einem eigenen Arbeitsschritt.</p>
+					<p class="notice"><strong>Beleg gespeichert.</strong> Die erkannten Angaben wurden dem Originaldokument zugeordnet.</p>
 				} else {
-					<form method="post" action="/app/settings/annual-statement/receipts/confirm"><input type="hidden" name="document_id" value={ data.ReceiptSuggestion.DocumentID }/><input type="hidden" name="amount_cents" value={ data.ReceiptSuggestion.AmountCents }/><input type="hidden" name="invoice_date" value={ data.ReceiptSuggestion.InvoiceDateValue }/><input type="hidden" name="cost_type_key" value={ data.ReceiptSuggestion.CostTypeKey }/><div class="form-actions"><button class="button primary" type="submit">Vorschlag ausdrücklich bestätigen</button></div></form>
+					<form method="post" action="/app/settings/annual-statement/receipts/confirm"><input type="hidden" name="document_id" value={ data.ReceiptSuggestion.DocumentID }/><input type="hidden" name="amount_cents" value={ data.ReceiptSuggestion.AmountCents }/><input type="hidden" name="invoice_date" value={ data.ReceiptSuggestion.InvoiceDateValue }/><input type="hidden" name="cost_type_key" value={ data.ReceiptSuggestion.CostTypeKey }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><div class="form-actions"><button class="button primary" type="submit">Vorschlag ausdrücklich bestätigen und Beleg speichern</button></div></form>
 				}
+			}
+		</section>
+
+		<section class="panel workspace"><header class="workspace-head"><div><h2>Belege</h2><p>Originaldokumente mit Betrag, Rechnungsdatum, Kostenart und Abrechnungsperiode verknüpfen.</p></div><span class="scope management">Verwaltung</span></header>
+			<p class="notice">Ein Beleg verwendet das Original aus Dokumente. Beim Entfernen der Zuordnung bleibt die Originaldatei in Dokumente erhalten.</p>
+			if data.HasPeriods && len(data.CostTypes) > 0 {
+				<form method="post" action="/app/settings/annual-statement/receipts" enctype="multipart/form-data"><fieldset><legend>Beleg erfassen</legend><div class="form-grid"><label>Vorhandenes Dokument<select name="document_id"><option value="">Dokument auswählen</option>
+					for _, document := range data.ReceiptDocuments {
+						<option value={ document.ID }>{ document.Label }</option>
+					}
+				</select></label><label>Oder neue Originaldatei<input type="file" name="receipt_file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"/></label><label>Abrechnungsjahr<select name="year" required>
+					for _, period := range data.Periods {
+						<option value={ annualStatementYear(period.Year) } selected?={ period.Selected }>{ annualStatementYear(period.Year) }</option>
+					}
+				</select></label><label>Kostenart<select name="cost_type_key" required><option value="">Kostenart auswählen</option>
+					for _, costType := range data.CostTypes {
+						<option value={ costType.Key }>{ costType.Name }</option>
+					}
+				</select></label><label>Betrag <small>Euro, zwei Dezimalstellen</small><input name="amount" inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 128,40" required/></label><label>Rechnungsdatum<input type="date" name="invoice_date" required/></label></div><div class="form-actions"><button class="button primary" type="submit">Beleg speichern</button></div></fieldset></form>
+			} else {
+				<p class="notice">Legen Sie zuerst eine Abrechnungsperiode und eine Kostenart an.</p>
+			}
+			if data.HasReceipts {
+				<header class="subhead"><div><h3>Belege im Abrechnungsjahr { annualStatementYear(data.Year) }</h3><p>Beträge können korrigiert werden, ohne die Originaldatei zu ersetzen.</p></div></header><div class="cost-type-list">
+					for _, receipt := range data.Receipts {
+						<article class="cost-type-card"><label>Dokument<span class="readonly"><strong>{ receipt.DocumentTitle }</strong></span></label><label>Betrag<span class="readonly"><strong>{ receipt.Amount }</strong></span></label><label>Rechnungsdatum<span class="readonly">{ receipt.InvoiceDate }</span></label><label>Kostenart<span class="readonly">{ receipt.CostTypeName }</span></label><form method="post" action="/app/settings/annual-statement/receipts/update-amount"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><label>Betrag korrigieren <small>Euro</small><input name="amount" value={ receipt.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" required/></label><button class="button ghost" type="submit">Betrag korrigieren</button></form><form method="post" action="/app/settings/annual-statement/receipts/delete"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button ghost" type="submit">Zuordnung entfernen</button><small>Die Originaldatei bleibt in Dokumente.</small></form></article>
+					}
+				</div>
+			} else {
+				<section class="empty"><h3>Noch keine Belege zugeordnet</h3><p>Wählen Sie ein vorhandenes Original aus Dokumente oder laden Sie hier einen Beleg hoch.</p><a class="button ghost" href="/app/dokumente">Zu den Dokumenten</a></section>
 			}
 		</section>
 

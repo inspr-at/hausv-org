@@ -6115,6 +6115,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 	if err != nil {
 		t.Fatalf("document store: %v", err)
 	}
+	annualStatementReceipts := storepkg.NewMemoryAnnualStatementReceiptStore(annualStatementPeriods, annualStatementCostTypes, documentStore)
 	handoverStore, err := newHandoverStore("")
 	if err != nil {
 		t.Fatalf("handover store: %v", err)
@@ -6159,6 +6160,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		activityStore:            activityStore,
 		annualStatementCostTypes: annualStatementCostTypes,
 		annualStatementPeriods:   annualStatementPeriods,
+		annualStatementReceipts:  annualStatementReceipts,
 		unitStore:                unitStore,
 		unitPaymentStore:         unitPaymentStore,
 		issueStore:               issueStore,

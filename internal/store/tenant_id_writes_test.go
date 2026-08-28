@@ -197,10 +197,18 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("ballot: %v", err)
 	}
 	documents, _ := BindDocumentRepository(NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs")), tenant)
-	if _, err := documents.CreateGenerated(DocumentRecord{
+	receiptDocument, err := documents.CreateGenerated(DocumentRecord{
 		Title: "D", Category: "Protokoll", Visibility: "alle", UploadedBy: "a@example.com",
-	}, "d.pdf", "application/pdf", []byte("%PDF-1.4 x"), now); err != nil {
+	}, "d.pdf", "application/pdf", []byte("%PDF-1.4 x"), now)
+	if err != nil {
 		t.Fatalf("document: %v", err)
+	}
+	receipts, _ := BindAnnualStatementReceiptRepository(NewSQLAnnualStatementReceiptStore(lanes), tenant)
+	if _, err := receipts.Create(AnnualStatementReceipt{
+		DocumentID: receiptDocument.ID, PeriodYear: 2026, CostTypeKey: "grundsteuer", AmountCents: 12345,
+		InvoiceDate: "2026-06-30", CreatedAt: now, CreatedBy: "a@example.com",
+	}); err != nil {
+		t.Fatalf("annual statement receipt: %v", err)
 	}
 	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, filepath.Join(fileDir, "att")), tenant)
 	if _, err := attachments.CreateUploaded("issue", "i1", "a@example.com",
