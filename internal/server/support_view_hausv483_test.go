@@ -231,6 +231,52 @@ func TestSupportViewChooserIsVisibleOnlyWithExplicitPermission(t *testing.T) {
 	}
 }
 
+func TestSupportViewLegacyIssueDetailLoadsBannerStylesWithoutPublicLeak(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug:   "demo",
+		AuthorEmail:  "resident@example.com",
+		AuthorName:   "Rita Resident",
+		Category:     "Reparatur",
+		Title:        "Tür klemmt",
+		Body:         "Bitte prüfen.",
+		LocationType: issueLocationCommon,
+	})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	token, _ := startSupportViewForResident(t, a)
+	page := supportViewGet(t, a, token, "/app/anliegen/"+issue.ID)
+	if page.Code != http.StatusOK {
+		t.Fatalf("legacy support issue status=%d body=%s", page.Code, page.Body.String())
+	}
+	body := page.Body.String()
+	stylesheet := `/assets/support-view.css?v=`
+	for _, want := range []string{
+		stylesheet,
+		`class="support-view-banner legacy-support-view-banner"`,
+		`data-support-view-banner`,
+		`class="app-shell"`,
+		`id="main-content" tabindex="-1" class="app-main"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("legacy support issue missing %q", want)
+		}
+	}
+	if strings.Count(body, stylesheet) != 1 || strings.Index(body, stylesheet) > strings.Index(body, "</head>") {
+		t.Fatalf("legacy support stylesheet must appear exactly once in head")
+	}
+
+	public := httptest.NewRecorder()
+	a.handler().ServeHTTP(public, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil))
+	if public.Code != http.StatusOK {
+		t.Fatalf("public home status=%d body=%s", public.Code, public.Body.String())
+	}
+	if strings.Contains(public.Body.String(), stylesheet) {
+		t.Fatal("public home must not load the authenticated support-view stylesheet")
+	}
+}
+
 func TestSupportViewUsesTargetPermissionsBlocksWritesAndExitsSafely(t *testing.T) {
 	a := newSupportViewTestApp(t, true)
 	token, parentExpiry := startSupportViewForResident(t, a)
@@ -318,6 +364,102 @@ func TestExpiredSupportViewRestoresAdminAndAuditsEndBeforeAnyPage(t *testing.T) 
 	ends := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionSupportViewEnd, Limit: 10})
 	if len(ends) != 1 || ends[0].Details["reason"] != "expired" || ends[0].ActorEmail != "admin@example.com" {
 		t.Fatalf("expired support audit=%+v", ends)
+	}
+}
+
+func TestInvalidSupportViewTerminatesTokenAndRestoresOnlyValidActorContext(t *testing.T) {
+	tests := []struct {
+		name        string
+		invalidate  func(*app)
+		wantReason  string
+		wantRestore bool
+	}{
+		{
+			name: "support permission revoked",
+			invalidate: func(a *app) {
+				profile := a.profiles["admin@example.com"]
+				profile.Permissions = nil
+				a.profiles[profile.Email] = profile
+			},
+			wantReason:  "actor_permission_revoked",
+			wantRestore: true,
+		},
+		{
+			name: "target role changed",
+			invalidate: func(a *app) {
+				profile := a.profiles["resident@example.com"]
+				profile.Role = roleOwner
+				a.profiles[profile.Email] = profile
+			},
+			wantReason:  "target_role_changed",
+			wantRestore: true,
+		},
+		{
+			name: "target deactivated",
+			invalidate: func(a *app) {
+				profile := a.profiles["resident@example.com"]
+				profile.Deactivated = true
+				a.profiles[profile.Email] = profile
+			},
+			wantReason:  "target_deactivated",
+			wantRestore: true,
+		},
+		{
+			name: "actor context invalid",
+			invalidate: func(a *app) {
+				profile := a.profiles["admin@example.com"]
+				profile.Role = roleManager
+				a.profiles[profile.Email] = profile
+			},
+			wantReason:  "actor_context_invalid",
+			wantRestore: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := newSupportViewTestApp(t, true)
+			token, parentExpiry := startSupportViewForResident(t, a)
+			test.invalidate(a)
+
+			result := supportViewGet(t, a, token, "/app")
+			if result.Code != http.StatusSeeOther {
+				t.Fatalf("invalid support status=%d body=%s", result.Code, result.Body.String())
+			}
+			if _, ok := a.sessions.GetSession(token); ok {
+				t.Fatal("invalid support token remains usable")
+			}
+			cookies := result.Result().Cookies()
+			if len(cookies) != 1 || cookies[0].Name != "weg_session" {
+				t.Fatalf("invalid support cookies=%+v", cookies)
+			}
+			if test.wantRestore {
+				restored, ok := a.sessions.GetSession(cookies[0].Value)
+				if !ok || restored.Email != "admin@example.com" || restored.Role != roleAdmin || restored.SupportTargetEmail != "" || restored.ExpiresAt != parentExpiry {
+					t.Fatalf("restored actor session=%+v ok=%v", restored, ok)
+				}
+				if test.wantReason == supportViewEndActorPermissionRevoked {
+					reentry := supportViewPost(t, a, cookies[0].Value, "/app/support-view/start", url.Values{
+						"tenant": {"demo"}, "target_email": {"resident@example.com"}, "target_role": {roleResident},
+					})
+					if reentry.Code != http.StatusForbidden || len(reentry.Result().Cookies()) != 0 {
+						t.Fatalf("permission-revoked actor re-entered support view: status=%d cookies=%+v", reentry.Code, reentry.Result().Cookies())
+					}
+					if current, ok := a.sessions.GetSession(cookies[0].Value); !ok || current.SupportTargetEmail != "" {
+						t.Fatalf("permission-revoked parent session changed after denied re-entry: %+v ok=%v", current, ok)
+					}
+				}
+			} else {
+				if cookies[0].Value != "" || cookies[0].MaxAge >= 0 {
+					t.Fatalf("invalid actor context must clear cookie: %+v", cookies[0])
+				}
+			}
+			ends := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionSupportViewEnd, Limit: 10})
+			if len(ends) != 1 || ends[0].ActorEmail != "admin@example.com" || ends[0].ActorRole != roleAdmin ||
+				ends[0].TargetID != "resident@example.com" || ends[0].Details["target_role"] != roleResident ||
+				ends[0].Details["reason"] != test.wantReason {
+				t.Fatalf("invalid support end audit=%+v", ends)
+			}
+		})
 	}
 }
 

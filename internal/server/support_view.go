@@ -11,6 +11,15 @@ import (
 
 const supportViewTTL = 15 * time.Minute
 
+const (
+	supportViewEndExpired                = "expired"
+	supportViewEndActorContextInvalid    = "actor_context_invalid"
+	supportViewEndActorPermissionRevoked = "actor_permission_revoked"
+	supportViewEndTargetContextInvalid   = "target_context_invalid"
+	supportViewEndTargetRoleChanged      = "target_role_changed"
+	supportViewEndTargetDeactivated      = "target_deactivated"
+)
+
 type supportViewContext struct {
 	ActorEmail  string
 	ActorRole   string
@@ -65,28 +74,44 @@ func (a *app) sessionForRequest(r *http.Request) (auth.Session, bool) {
 }
 
 func (a *app) supportSessionAllowed(session auth.Session) bool {
+	return a.supportSessionEndReason(session) == ""
+}
+
+// supportSessionEndReason classifies every live invalidation without putting
+// profile values into the reason. Authentication calls it before currentUser
+// so a support token can never linger after the actor or target changes.
+func (a *app) supportSessionEndReason(session auth.Session) string {
 	if session.SupportTargetEmail == "" || session.SupportTargetRole == "" {
-		return false
+		return supportViewEndTargetContextInvalid
 	}
 	if session.SupportExpiresAt <= time.Now().Unix() {
-		return false
+		return supportViewEndExpired
 	}
 	if !a.ownPortalContextAllowed(session.Email, session.TenantSlug, session.Role, session.AuthMethod) {
-		return false
+		return supportViewEndActorContextInvalid
 	}
 	actor := a.profileForTenant(session.Email, session.TenantSlug)
 	if normalizeRole(session.Role) != roleAdmin || !actor.HasPermission(permissionSupportView) {
-		return false
+		return supportViewEndActorPermissionRevoked
 	}
-	if session.SupportTargetEmail == session.Email || !a.isAllowed(session.SupportTargetEmail, session.TenantSlug) {
-		return false
+	if session.SupportTargetEmail == session.Email {
+		return supportViewEndTargetContextInvalid
 	}
 	target, ok := a.directoryProfile(session.SupportTargetEmail)
 	if !ok || !target.HasTenant(session.TenantSlug) {
-		return false
+		return supportViewEndTargetContextInvalid
 	}
 	target = target.ForTenant(session.TenantSlug)
-	return !target.Deactivated && normalizeRole(target.Role) == normalizeRole(session.SupportTargetRole)
+	if target.Deactivated {
+		return supportViewEndTargetDeactivated
+	}
+	if !a.isAllowed(session.SupportTargetEmail, session.TenantSlug) {
+		return supportViewEndTargetContextInvalid
+	}
+	if normalizeRole(target.Role) != normalizeRole(session.SupportTargetRole) {
+		return supportViewEndTargetRoleChanged
+	}
+	return ""
 }
 
 func setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time, secure bool) {
@@ -185,7 +210,10 @@ func (a *app) endSupportView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ac, ok := a.authenticate(w, r)
-	if !ok || ac.supportView == nil {
+	if !ok {
+		return
+	}
+	if ac.supportView == nil {
 		http.Error(w, "Keine aktive Supportansicht.", http.StatusForbidden)
 		return
 	}
@@ -211,21 +239,28 @@ func (a *app) endSupportView(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, strings.TrimRight(a.baseURL, "/")+ac.tenant.PublicURL("/app/settings/users"), http.StatusSeeOther)
 }
 
-func (a *app) expireSupportView(w http.ResponseWriter, r *http.Request, session auth.Session) {
-	parentExpiresAt := time.Unix(session.ExpiresAt, 0)
-	token, expiresAt, err := a.sessions.PutSession(session.Email, session.TenantSlug, session.AuthMethod, session.Role, parentExpiresAt)
-	if err == nil {
-		setSessionCookie(w, token, expiresAt, a.sessionSecure)
-	} else {
-		http.SetCookie(w, &http.Cookie{Name: "weg_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: a.sessionSecure, SameSite: http.SameSiteLaxMode})
-	}
+func (a *app) terminateSupportView(w http.ResponseWriter, r *http.Request, session auth.Session, reason string) {
 	if cookie, cookieErr := r.Cookie("weg_session"); cookieErr == nil {
 		a.sessions.Delete(cookie.Value)
 	}
-	a.recordSupportViewEnd(session, "expired")
+
+	restored := false
+	parentExpiresAt := time.Unix(session.ExpiresAt, 0)
+	if parentExpiresAt.After(time.Now()) && a.ownPortalContextAllowed(session.Email, session.TenantSlug, session.Role, session.AuthMethod) {
+		if token, expiresAt, err := a.sessions.PutSession(session.Email, session.TenantSlug, session.AuthMethod, session.Role, parentExpiresAt); err == nil {
+			setSessionCookie(w, token, expiresAt, a.sessionSecure)
+			restored = true
+		}
+	}
+	if !restored {
+		http.SetCookie(w, &http.Cookie{Name: "weg_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: a.sessionSecure, SameSite: http.SameSiteLaxMode})
+	}
+	a.recordSupportViewEnd(session, reason)
 	target := "/"
-	if tenant, ok := a.tenantBySlug(session.TenantSlug); ok {
-		target = tenant.PublicURL("/app")
+	if restored {
+		if tenant, ok := a.tenantBySlug(session.TenantSlug); ok {
+			target = tenant.PublicURL("/app")
+		}
 	}
 	http.Redirect(w, r, strings.TrimRight(a.baseURL, "/")+target, http.StatusSeeOther)
 }

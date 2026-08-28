@@ -1097,6 +1097,7 @@ async function createIssue(email, title, { verifyResidentAttachmentTarget = fals
   await form.locator('[data-issue-step="describe"] [data-issue-next]').click();
   await form.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/anliegen\/.+\?created=1$/);
+  const issuePath = new URL(page.url()).pathname;
   if (!(await page.getByText(title, { exact: true }).count())) fail(`Anliegen „${title}“ wurde nicht sichtbar gespeichert`);
   if (verifyResidentAttachmentTarget) {
     const deleteTargets = page.locator('.issue-resident-report .attachment-delete button');
@@ -1109,6 +1110,70 @@ async function createIssue(email, title, { verifyResidentAttachmentTarget = fals
     }
   }
   await closeContext(context);
+  return issuePath;
+}
+
+async function assertLegacySupportViewGeometry(issuePath) {
+  for (const viewport of [
+    { name: 'Desktop', size: { width: 1440, height: 900 }, mobile: false },
+    { name: 'Mobil', size: { width: 390, height: 844 }, mobile: true },
+  ]) {
+    const context = await newContext(viewport.size);
+    const page = await localLogin(context, 'admin@example.com');
+    await page.goto(`${baseURL}/app/settings/users`, { waitUntil: 'networkidle' });
+    const target = page.locator('form.support-view-target').filter({ hasText: 'resident@example.com' });
+    if ((await target.count()) !== 1) {
+      fail(`Supportansicht ${viewport.name}: Bewohner-Ziel fehlt oder ist mehrfach vorhanden`);
+    }
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/app')),
+      target.getByRole('button', { name: 'Portal anzeigen' }).click(),
+    ]);
+    const response = await page.goto(new URL(issuePath, baseURL).href, { waitUntil: 'networkidle' });
+    if (!response || response.status() !== 200) {
+      fail(`Supportansicht ${viewport.name}: Legacy-Anliegen Status ${response?.status() ?? 0}`);
+    }
+    const result = await page.evaluate(() => {
+      const banner = document.querySelector('.legacy-support-view-banner');
+      const main = document.querySelector('main.app-main');
+      const content = main?.querySelector('.content-top, h1');
+      const bannerRect = banner?.getBoundingClientRect();
+      const mainRect = main?.getBoundingClientRect();
+      const contentRect = content?.getBoundingClientRect();
+      const style = banner ? getComputedStyle(banner) : null;
+      return {
+        stylesheetCount: document.querySelectorAll('head link[href*="/assets/support-view.css?v="]').length,
+        bannerCount: document.querySelectorAll('.legacy-support-view-banner').length,
+        position: style?.position || '',
+        left: bannerRect?.left ?? -1,
+        right: bannerRect?.right ?? -1,
+        top: bannerRect?.top ?? -1,
+        bottom: bannerRect?.bottom ?? -1,
+        mainLeft: mainRect?.left ?? -1,
+        contentTop: contentRect?.top ?? -1,
+        viewportWidth: innerWidth,
+        overflowX: document.documentElement.scrollWidth - innerWidth,
+        buttonHeight: banner?.querySelector('button')?.getBoundingClientRect().height ?? 0,
+      };
+    });
+    if (result.stylesheetCount !== 1 || result.bannerCount !== 1 || result.position !== 'fixed' ||
+        result.overflowX > 1 || result.contentTop < result.bottom - 1) {
+      fail(`Supportansicht ${viewport.name}: Banner-/Layout-Vertrag verletzt (${JSON.stringify(result)})`);
+    }
+    if ((!viewport.mobile && (result.left < 250 || result.left > 280 || result.mainLeft < 250 ||
+        Math.abs(result.right - result.viewportWidth) > 1)) ||
+        (viewport.mobile && (Math.abs(result.left) > 1 || Math.abs(result.right - result.viewportWidth) > 1 ||
+        result.top < 60 || result.buttonHeight < 43.5))) {
+      fail(`Supportansicht ${viewport.name}: responsive Geometrie verletzt (${JSON.stringify(result)})`);
+    }
+    if (artifactDir) {
+      const screenshotsDir = join(artifactDir, 'support-view');
+      mkdirSync(screenshotsDir, { recursive: true });
+      await page.screenshot({ path: join(screenshotsDir, `legacy-issue-${viewport.name.toLowerCase()}.png`), fullPage: true });
+    }
+    await closeContext(context);
+    process.stdout.write(`  ✓ Supportansicht Legacy-Anliegen · ${viewport.name}\n`);
+  }
 }
 
 async function assertResidentIssueProgressiveEnhancement() {
@@ -3188,7 +3253,8 @@ try {
         });
       }
       await assertResidentIssueProgressiveEnhancement();
-      await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
+      const residentIssuePath = await createIssue('resident@example.com', 'QA Bewohneranliegen', { verifyResidentAttachmentTarget: true });
+      await assertLegacySupportViewGeometry(residentIssuePath);
       if (!ciCore) {
         await createIssue('owner@example.com', 'QA Eigentümeranliegen');
       }

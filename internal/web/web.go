@@ -133,7 +133,6 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
-	<link rel="stylesheet" href="/assets/support-view.css?v={{.AssetVersion}}">
   <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
   <style>
     :root {
@@ -4002,6 +4001,7 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   {{template "appStyles" .}}
+  <link rel="stylesheet" href="/assets/support-view.css?v={{.AssetVersion}}">
   <noscript><style>
     @media (max-width: 900px) { .mobile-menu-toggle { display: none; } .side-nav, .side-foot { display: grid; } }
   </style></noscript>

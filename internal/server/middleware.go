@@ -120,9 +120,11 @@ type authedHandler func(http.ResponseWriter, *http.Request, authCtx)
 // and require the session's tenant to match. On failure it redirects to "/" (the
 // exact behaviour of the old inline guard) and reports false.
 func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, bool) {
-	if session, ok := a.sessionForRequest(r); ok && session.SupportTargetEmail != "" && time.Now().Unix() >= session.SupportExpiresAt {
-		a.expireSupportView(w, r, session)
-		return authCtx{}, false
+	if session, ok := a.sessionForRequest(r); ok && session.SupportTargetEmail != "" {
+		if reason := a.supportSessionEndReason(session); reason != "" {
+			a.terminateSupportView(w, r, session, reason)
+			return authCtx{}, false
+		}
 	}
 	if a.closedServiceProviderSession(r) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
