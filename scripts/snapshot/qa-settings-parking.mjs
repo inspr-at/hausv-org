@@ -603,13 +603,15 @@ try {
     });
     await recordPage(page, events, viewport, '/app/settings/annual-statement', 'settings-annual-statement', async (candidate, label) => {
       if (!(await candidate.getByRole('heading', { name: 'Jahresabrechnung vorbereiten', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
-      for (const text of ['Liegenschaft', 'Kostenartenkatalog', 'Belegdaten vorschlagen', 'Abrechnungsjahr', 'Wohnungseigentümer', 'Mietverhältnis']) {
+      for (const text of ['Liegenschaft', 'Kostenartenkatalog', 'Verteilerschlüssel', 'Vorschau der Anteile', 'Belegdaten vorschlagen', 'Abrechnungsjahr', 'Wohnungseigentümer', 'Mietverhältnis']) {
         if (!(await candidate.getByText(text, { exact: true }).count())) fail(`${label}: ${text} fehlt`);
       }
       for (const name of ['Grundsteuer', 'Müllabfuhr', 'Hausbetreuung', 'Gebäudeversicherung', 'Gartenpflege']) {
         if (!(await candidate.locator(`.cost-type-card input[name="name"][value="${name}"]`).count())) fail(`${label}: ${name} fehlt`);
       }
       if (!(await candidate.getByText('keine rechtliche Beurteilung', { exact: false }).count())) fail(`${label}: rechtliche Abgrenzung fehlt`);
+      if (!(await candidate.locator('.cost-type-card select[name="allocation_key"] option[value="nutzwert"][selected]').count())) fail(`${label}: Verteilerschlüssel Nutzwert fehlt`);
+      if (!(await candidate.getByText('erfindet keinen', { exact: false }).count())) fail(`${label}: Nutzwert-Grenze fehlt`);
       if (!(await candidate.getByText('Automatische Erkennung derzeit geschlossen.', { exact: false }).count())) fail(`${label}: geschlossener Inferenzvertrag fehlt`);
       if (!(await candidate.getByText('Es werden keine Belegdaten versendet.', { exact: false }).count())) fail(`${label}: Datenschutzgrenze fehlt`);
       if (!(await candidate.getByText('Eine unbekannte Einheit bricht den gesamten Import ab.', { exact: false }).count())) fail(`${label}: Importgrenze fehlt`);

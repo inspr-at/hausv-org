@@ -19,9 +19,50 @@ type AnnualStatementUnitView struct {
 }
 
 type AnnualStatementCostTypeView struct {
-	Key         string
-	Name        string
-	Allocatable bool
+	Key           string
+	Name          string
+	Allocatable   bool
+	AllocationKey string
+}
+
+type AnnualStatementAllocationKeyOption struct {
+	Key   string
+	Label string
+}
+
+type AnnualStatementUnitBasisView struct {
+	ID         string
+	Label      string
+	Share      string
+	UsableArea string
+	Persons    string
+}
+
+type AnnualStatementUnitShareView struct {
+	Label  string
+	Basis  string
+	Share  string
+	Mapped bool
+}
+
+type AnnualStatementAllocationPreviewView struct {
+	Key           string
+	Label         string
+	CostTypes     string
+	Shares        []AnnualStatementUnitShareView
+	Blocked       bool
+	Sourceless    bool
+	UnmappedUnits string
+	TotalNotice   string
+}
+
+type AnnualStatementAllocationView struct {
+	KeyOptions       []AnnualStatementAllocationKeyOption
+	Bases            []AnnualStatementUnitBasisView
+	Previews         []AnnualStatementAllocationPreviewView
+	BlockedCount     int
+	KeylessCostTypes string
+	RunReady         bool
 }
 
 type AnnualStatementReceiptDocumentView struct {
@@ -67,6 +108,9 @@ type AnnualStatementPageData struct {
 	HasReceiptSuggestion  bool
 	Units                  []AnnualStatementUnitView
 	HasUnits               bool
+	Allocation             AnnualStatementAllocationView
+	BasesMsg               string
+	BasesOK                bool
 }
 
 templ AnnualStatementPage(data AnnualStatementPageData) {
@@ -116,10 +160,76 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			<p class="notice">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p>
 			<div class="cost-type-list">
 				for _, costType := range data.CostTypes {
-					<form class="cost-type-card" method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="key" value={ costType.Key }/><label>Bezeichnung<input name="name" value={ costType.Name } maxlength="120" required/></label><label>Schlüssel<span class="readonly"><code>{ costType.Key }</code></span></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable" selected?={ costType.Allocatable }>Umlagefähig</option><option value="not_allocatable" selected?={ !costType.Allocatable }>Nicht umlagefähig</option></select></label><button class="button ghost" type="submit">Speichern</button></form>
+					<form class="cost-type-card" method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="key" value={ costType.Key }/><label>Bezeichnung<input name="name" value={ costType.Name } maxlength="120" required/></label><label>Schlüssel<span class="readonly"><code>{ costType.Key }</code></span></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable" selected?={ costType.Allocatable }>Umlagefähig</option><option value="not_allocatable" selected?={ !costType.Allocatable }>Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key"><option value="" selected?={ costType.AllocationKey == "" }>Kein Schlüssel</option>
+						for _, option := range data.Allocation.KeyOptions {
+							<option value={ option.Key } selected?={ option.Key == costType.AllocationKey }>{ option.Label }</option>
+						}
+					</select></label><button class="button ghost" type="submit">Speichern</button></form>
 				}
 			</div>
-			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid three"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
+			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key">
+					for _, option := range data.Allocation.KeyOptions {
+						<option value={ option.Key }>{ option.Label }</option>
+					}
+				</select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
+		</section>
+
+		<section class="panel workspace" id="verteilerschluessel"><header class="workspace-head"><div><h2>Verteilerschlüssel</h2><p>Jede umlagefähige Kostenart wird nach genau einem Schlüssel auf die Einheiten verteilt. Die Vorschau zeigt die Anteile vor dem Abrechnungslauf.</p></div>
+			if data.Allocation.RunReady {
+				<span class="scope personal">Lauf möglich</span>
+			} else {
+				<span class="scope management">Lauf blockiert</span>
+			}
+		</header>
+			@SettingsFlash(data.BasesMsg, data.BasesOK)
+			<p class="notice">Nutzwert übernimmt den Miteigentumsanteil aus den Einheiten und erfindet keinen. Nutzfläche und Personen werden hier je Einheit hinterlegt. Verbrauch folgt aus den Messwerten in einem eigenen Arbeitsschritt. Eine Einheit ohne Wert blockiert den Lauf für diesen Schlüssel.</p>
+			if data.Allocation.KeylessCostTypes != "" {
+				<p class="notice"><strong>Ohne Verteilerschlüssel:</strong> { data.Allocation.KeylessCostTypes }. Jede umlagefähige Kostenart braucht genau einen Schlüssel; bis dahin ist der Lauf blockiert.</p>
+			}
+			if data.HasUnits {
+				<form method="post" action="/app/settings/annual-statement/allocation-bases"><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
+					for _, basis := range data.Allocation.Bases {
+						<div class="cost-type-card"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label></div>
+					}
+				</div><div class="form-actions"><button class="button primary" type="submit">Verteilerbasis speichern</button></div></form>
+			} else {
+				<section class="empty"><h3>Noch keine Einheiten</h3><p>Ohne Einheiten gibt es keine Anteile. Legen Sie Einheiten zuerst in den Gebäudeeinstellungen an.</p><a class="button" href="/app/settings/building?section=units#unit-add">Einheit hinzufügen</a></section>
+			}
+			if len(data.Allocation.Previews) > 0 {
+				<header class="subhead"><div><h3>Vorschau der Anteile</h3><p>Je verwendetem Schlüssel. Intern wird auf Millionstel exakt verteilt; die Anzeige rundet auf zwei Nachkommastellen.</p></div></header>
+				for _, preview := range data.Allocation.Previews {
+					<article class="inline-details allocation-preview" data-allocation-key={ preview.Key }><header class="subhead"><div><strong>{ preview.Label }</strong><p>Kostenarten: { preview.CostTypes }</p></div>
+						if preview.Blocked {
+							<span class="scope management">Blockiert</span>
+						} else {
+							<span class="scope personal">Vollständig</span>
+						}
+					</header>
+					if preview.Sourceless {
+						<p class="notice"><strong>Noch keine Verbrauchswerte.</strong> Die Zuordnung aus Messwerten folgt in einem eigenen Arbeitsschritt; bis dahin blockiert dieser Schlüssel den Lauf.</p>
+					} else if preview.Blocked && preview.UnmappedUnits != "" {
+						<p class="notice"><strong>Ohne Wert:</strong> { preview.UnmappedUnits }. Der Abrechnungslauf ist für diesen Schlüssel blockiert, bis jede Einheit einen Wert hat.</p>
+					} else if preview.Blocked {
+						<p class="notice"><strong>Keine Basis:</strong> Für diesen Schlüssel ist nichts zu verteilen. Der Abrechnungslauf ist blockiert.</p>
+					}
+					if preview.TotalNotice != "" {
+						<p class="notice"><strong>Hinweis:</strong> { preview.TotalNotice }</p>
+					}
+					<div class="unit-list">
+						for _, share := range preview.Shares {
+							<div class="cost-type-card"><label>Einheit<span class="readonly"><strong>{ share.Label }</strong></span></label><label>Basis<span class="readonly">{ share.Basis }</span></label><label>Anteil<span class="readonly"><strong>{ share.Share }</strong></span></label>
+								if share.Mapped {
+									<span class="scope personal">zugeordnet</span>
+								} else {
+									<span class="scope management">fehlt</span>
+								}
+							</div>
+						}
+					</div></article>
+				}
+			} else {
+				<p class="notice">Keine umlagefähige Kostenart verwendet derzeit einen Schlüssel.</p>
+			}
 		</section>
 
 		<section class="panel workspace"><header class="workspace-head"><div><h2>Belegdaten vorschlagen</h2><p>Ein vorhandenes PDF oder Bild wird ausschließlich auf dem freigegebenen Host geprüft.</p></div><span class="scope management">Optional</span></header>

@@ -63,6 +63,7 @@ func TestAnnualStatementCostTypeStorage(t *testing.T) {
 			}
 			created.Name = "Aufzugsrücklage"
 			created.Allocatable = true
+			created.AllocationKey = AllocationKeyFlaeche
 			if _, err := demo.Save(created); err != nil {
 				t.Fatalf("update cost type: %v", err)
 			}

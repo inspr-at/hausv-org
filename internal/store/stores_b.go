@@ -38,6 +38,7 @@ const (
 	AuditActionAnnualPeriodSave    = "annual-statement.period.save"
 	AuditActionAnnualPartiesImport = "annual-statement.parties.import"
 	AuditActionAnnualCostTypeSave  = "annual-statement.cost-type.save"
+	AuditActionAnnualBasesSave     = "annual-statement.allocation-bases.save"
 	AuditActionParkingSettings     = "parking.settings"
 	AuditActionParkingMonth        = "parking.month"
 	AuditActionParkingReminder     = "parking.reminder"
@@ -197,14 +198,46 @@ type UnitStoreData struct {
 }
 
 type Unit struct {
-	ID                    string   `json:"id"`
-	TenantSlug            string   `json:"tenant"`
-	Label                 string   `json:"label"`
-	UnitType              string   `json:"unit_type,omitempty"`
-	BillableWeightPPM     int      `json:"billable_weight_ppm,omitempty"`
-	MiteigentumsanteilPPM int      `json:"miteigentumsanteil"`
-	OwnerEmails           []string `json:"owner_emails,omitempty"`
-	RenterEmails          []string `json:"renter_emails,omitempty"`
+	ID                    string `json:"id"`
+	TenantSlug            string `json:"tenant"`
+	Label                 string `json:"label"`
+	UnitType              string `json:"unit_type,omitempty"`
+	BillableWeightPPM     int    `json:"billable_weight_ppm,omitempty"`
+	MiteigentumsanteilPPM int    `json:"miteigentumsanteil"`
+	// UsableAreaM2Hundredths and Persons are the per-unit allocation bases for
+	// the Fläche and Personen keys (HAUSV-577). Zero means "not recorded"; a
+	// statement run must never treat it as a real value.
+	// The allocation bases (HAUSV-577) are only meaningful together with
+	// their Recorded flag: a blank entry is "not recorded" and blocks the
+	// key, whereas an explicitly recorded 0 (a Stellplatz without
+	// Nutzfläche, a vacant flat without persons) is mapped with a zero share.
+	UsableAreaM2Hundredths int      `json:"usable_area_m2_hundredths,omitempty"`
+	UsableAreaRecorded     bool     `json:"usable_area_recorded,omitempty"`
+	Persons                int      `json:"persons,omitempty"`
+	PersonsRecorded        bool     `json:"persons_recorded,omitempty"`
+	OwnerEmails            []string `json:"owner_emails,omitempty"`
+	RenterEmails           []string `json:"renter_emails,omitempty"`
+}
+
+// UnitAllocationBasisUpdate changes only the allocation bases of an existing
+// unit. Ownership, type and Miteigentumsanteil stay untouched.
+type UnitAllocationBasisUpdate struct {
+	UnitID                 string
+	UsableAreaM2Hundredths int
+	UsableAreaRecorded     bool
+	Persons                int
+	PersonsRecorded        bool
+}
+
+// CarryAllocationBases copies the statement bases from an existing unit onto
+// a freshly built replacement so that editing label, type or parties in the
+// building settings does not silently wipe them.
+func CarryAllocationBases(existing Unit, item Unit) Unit {
+	item.UsableAreaM2Hundredths = existing.UsableAreaM2Hundredths
+	item.UsableAreaRecorded = existing.UsableAreaRecorded
+	item.Persons = existing.Persons
+	item.PersonsRecorded = existing.PersonsRecorded
+	return item
 }
 
 // UnitPartyUpdate changes only the reusable owner/renter assignments of an
@@ -1016,6 +1049,66 @@ func (s *UnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdat
 	}
 	SortUnits(s.data.Units)
 	return false, s.saveLocked()
+}
+
+func (s *UnitStore) updateUnitAllocationBases(tenant TenantRef, updates []UnitAllocationBasisUpdate) (unknownUnit bool, err error) {
+	if s == nil || len(updates) == 0 {
+		return false, nil
+	}
+	tenantSlug := textutil.Slug(tenant.Slug)
+	if tenantSlug == "" {
+		return false, nil
+	}
+	normalized, malformed := normalizeUnitAllocationBasisUpdates(updates)
+	if malformed {
+		return true, nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	indexes := map[string]int{}
+	for index, item := range s.data.Units {
+		if textutil.Slug(item.TenantSlug) == tenantSlug {
+			indexes[NormalizeUnitID(item.ID)] = index
+		}
+	}
+	for id := range normalized {
+		if _, found := indexes[id]; !found {
+			return true, nil
+		}
+	}
+	for id, update := range normalized {
+		index := indexes[id]
+		s.data.Units[index].UsableAreaM2Hundredths = update.UsableAreaM2Hundredths
+		s.data.Units[index].UsableAreaRecorded = update.UsableAreaRecorded
+		s.data.Units[index].Persons = update.Persons
+		s.data.Units[index].PersonsRecorded = update.PersonsRecorded
+	}
+	return false, s.saveLocked()
+}
+
+// normalizeUnitAllocationBasisUpdates clamps negative bases to "not recorded"
+// and reports a blank ID as malformed so the whole submit fails closed; unlike
+// party updates, a basis row without a unit is never something to skip. The
+// last update per unit wins.
+func normalizeUnitAllocationBasisUpdates(updates []UnitAllocationBasisUpdate) (map[string]UnitAllocationBasisUpdate, bool) {
+	out := map[string]UnitAllocationBasisUpdate{}
+	for _, update := range updates {
+		id := NormalizeUnitID(update.UnitID)
+		if id == "" {
+			return nil, true
+		}
+		update.UnitID = id
+		update.UsableAreaM2Hundredths = max(update.UsableAreaM2Hundredths, 0)
+		if !update.UsableAreaRecorded {
+			update.UsableAreaM2Hundredths = 0
+		}
+		update.Persons = max(update.Persons, 0)
+		if !update.PersonsRecorded {
+			update.Persons = 0
+		}
+		out[id] = update
+	}
+	return out, false
 }
 
 func normalizeUnitPartyUpdates(updates []UnitPartyUpdate) map[string]UnitPartyUpdate {
@@ -2041,7 +2134,8 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionEnergyRecommend, AuditActionEnergyMeasureAdd, AuditActionEnergyMeasureEdit,
 		AuditActionEnergyCaretaker, AuditActionEnergyInvite, AuditActionEnergyMaintSave,
 		AuditActionEnergyMaintDone, AuditActionEnergyTariff, AuditActionEnergyExport,
-		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete:
+		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete,
+		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave:
 		return raw
 	default:
 		return ""
@@ -2181,6 +2275,12 @@ func NormalizeUnits(raw []Unit, fallbackTenant string) []Unit {
 		}
 		if item.MiteigentumsanteilPPM < 0 {
 			item.MiteigentumsanteilPPM = 0
+		}
+		if item.UsableAreaM2Hundredths < 0 || !item.UsableAreaRecorded {
+			item.UsableAreaM2Hundredths = 0
+		}
+		if item.Persons < 0 || !item.PersonsRecorded {
+			item.Persons = 0
 		}
 		item.UnitType = NormalizeUnitType(item.UnitType)
 		if item.UnitType == "" {

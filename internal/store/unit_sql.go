@@ -13,6 +13,7 @@ type UnitRepository interface {
 	SetUnits(units []Unit) error
 	UpsertUnit(origID string, item Unit) (duplicate bool, err error)
 	UpdateParties(updates []UnitPartyUpdate) (unknownUnit bool, err error)
+	UpdateAllocationBases(updates []UnitAllocationBasisUpdate) (unknownUnit bool, err error)
 	DeleteUnit(id string) (removed bool, removedUnit Unit, err error)
 	List() []Unit
 	UnitCount() int
@@ -41,6 +42,7 @@ type unitBackend interface {
 	setTenantUnits(tenant TenantRef, units []Unit) error
 	upsertUnit(tenant TenantRef, origID string, item Unit) (duplicate bool, err error)
 	updateUnitParties(tenant TenantRef, updates []UnitPartyUpdate) (unknownUnit bool, err error)
+	updateUnitAllocationBases(tenant TenantRef, updates []UnitAllocationBasisUpdate) (unknownUnit bool, err error)
 	deleteUnit(tenant TenantRef, id string) (removed bool, removedUnit Unit, err error)
 	listTenant(tenant TenantRef) []Unit
 	unitCount(tenant TenantRef) int
@@ -69,6 +71,10 @@ func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error)
 
 func (r *boundUnitRepository) UpdateParties(updates []UnitPartyUpdate) (bool, error) {
 	return r.storage.updateUnitParties(r.tenant, updates)
+}
+
+func (r *boundUnitRepository) UpdateAllocationBases(updates []UnitAllocationBasisUpdate) (bool, error) {
+	return r.storage.updateUnitAllocationBases(r.tenant, updates)
 }
 
 func (r *boundUnitRepository) DeleteUnit(id string) (bool, Unit, error) {
@@ -284,6 +290,49 @@ func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUp
 		if update.SetRenters {
 			item.RenterEmails = NormalizeEmailList(update.RenterEmails)
 		}
+		blob, err := json.Marshal(item)
+		if err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID); err != nil {
+			return false, err
+		}
+	}
+	return false, tx.Commit()
+}
+
+func (s *SQLUnitStore) updateUnitAllocationBases(tenant TenantRef, updates []UnitAllocationBasisUpdate) (bool, error) {
+	if s == nil || len(updates) == 0 {
+		return false, nil
+	}
+	normalized, malformed := normalizeUnitAllocationBasisUpdates(updates)
+	if malformed {
+		return true, nil
+	}
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	units, err := tenantUnitsTx(tx, tenant)
+	if err != nil {
+		return false, err
+	}
+	indexes := map[string]int{}
+	for index, item := range units {
+		indexes[NormalizeUnitID(item.ID)] = index
+	}
+	for id := range normalized {
+		if _, found := indexes[id]; !found {
+			return true, nil
+		}
+	}
+	for id, update := range normalized {
+		item := units[indexes[id]]
+		item.UsableAreaM2Hundredths = update.UsableAreaM2Hundredths
+		item.UsableAreaRecorded = update.UsableAreaRecorded
+		item.Persons = update.Persons
+		item.PersonsRecorded = update.PersonsRecorded
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return false, err

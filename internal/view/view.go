@@ -1362,6 +1362,14 @@ func AuditActionLabel(action string) string {
 		return "Energie-Messverlauf gelöscht"
 	case store.AuditActionEnergyProfileDelete:
 		return "Energieprofil gelöscht"
+	case store.AuditActionAnnualPeriodSave:
+		return "Abrechnungsperiode gespeichert"
+	case store.AuditActionAnnualPartiesImport:
+		return "Parteien aus Tabelle übernommen"
+	case store.AuditActionAnnualCostTypeSave:
+		return "Kostenart gespeichert"
+	case store.AuditActionAnnualBasesSave:
+		return "Verteilerbasis je Einheit gespeichert"
 	default:
 		return action
 	}
