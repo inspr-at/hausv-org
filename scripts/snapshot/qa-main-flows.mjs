@@ -1114,12 +1114,18 @@ async function createIssue(email, title, { verifyResidentAttachmentTarget = fals
 }
 
 async function assertLegacySupportViewGeometry(issuePath) {
+  const context = await newContext({ width: 1440, height: 900 });
+  const page = await localLogin(context, 'admin@example.com');
   for (const viewport of [
     { name: 'Desktop', size: { width: 1440, height: 900 }, mobile: false },
+    { name: 'Desktop-Seam', size: { width: 901, height: 720 }, mobile: false },
+    { name: 'Mobil-Seam-900', size: { width: 900, height: 720 }, mobile: true },
+    { name: 'Mobil-Seam-761', size: { width: 761, height: 720 }, mobile: true },
+    { name: 'Mobil-Seam-760', size: { width: 760, height: 720 }, mobile: true },
     { name: 'Mobil', size: { width: 390, height: 844 }, mobile: true },
+    { name: 'Mobil-Schmal', size: { width: 320, height: 720 }, mobile: true },
   ]) {
-    const context = await newContext(viewport.size);
-    const page = await localLogin(context, 'admin@example.com');
+    await page.setViewportSize(viewport.size);
     await page.goto(`${baseURL}/app/settings/users`, { waitUntil: 'networkidle' });
     const target = page.locator('form.support-view-target').filter({ hasText: 'resident@example.com' });
     if ((await target.count()) !== 1) {
@@ -1133,7 +1139,7 @@ async function assertLegacySupportViewGeometry(issuePath) {
     if (!response || response.status() !== 200) {
       fail(`Supportansicht ${viewport.name}: Legacy-Anliegen Status ${response?.status() ?? 0}`);
     }
-    const result = await page.evaluate(() => {
+    const measure = () => page.evaluate(() => {
       const banner = document.querySelector('.legacy-support-view-banner');
       const main = document.querySelector('main.app-main');
       const content = main?.querySelector('.content-top, h1');
@@ -1156,7 +1162,8 @@ async function assertLegacySupportViewGeometry(issuePath) {
         buttonHeight: banner?.querySelector('button')?.getBoundingClientRect().height ?? 0,
       };
     });
-    if (result.stylesheetCount !== 1 || result.bannerCount !== 1 || result.position !== 'fixed' ||
+    const result = await measure();
+    if (result.stylesheetCount !== 1 || result.bannerCount !== 1 || result.position !== 'sticky' ||
         result.overflowX > 1 || result.contentTop < result.bottom - 1) {
       fail(`Supportansicht ${viewport.name}: Banner-/Layout-Vertrag verletzt (${JSON.stringify(result)})`);
     }
@@ -1171,9 +1178,29 @@ async function assertLegacySupportViewGeometry(issuePath) {
       mkdirSync(screenshotsDir, { recursive: true });
       await page.screenshot({ path: join(screenshotsDir, `legacy-issue-${viewport.name.toLowerCase()}.png`), fullPage: true });
     }
-    await closeContext(context);
+    await page.locator('.legacy-support-view-banner strong').evaluate((node) => {
+      node.textContent = 'Portal anzeigen als Bewohnerin mit einem außergewöhnlich langen Doppelnamen · Bewohnerin';
+    });
+    await page.locator('.legacy-support-view-banner span').evaluate((node) => {
+      node.textContent = 'Schreibgeschützt · die echte Admin-Identität bleibt bei jedem Zugriff vollständig protokolliert';
+    });
+    const longCopyResult = await measure();
+    if (longCopyResult.overflowX > 1 || longCopyResult.contentTop < longCopyResult.bottom - 1 ||
+        longCopyResult.buttonHeight < (viewport.mobile ? 43.5 : 37.5)) {
+      fail(`Supportansicht ${viewport.name}: Langtext überlappt den Inhalt (${JSON.stringify(longCopyResult)})`);
+    }
+    if (artifactDir) {
+      const screenshotsDir = join(artifactDir, 'support-view');
+      mkdirSync(screenshotsDir, { recursive: true });
+      await page.screenshot({ path: join(screenshotsDir, `legacy-issue-${viewport.name.toLowerCase()}-long-copy.png`), fullPage: true });
+    }
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/app/settings/users')),
+      page.getByRole('button', { name: 'Supportansicht beenden' }).click(),
+    ]);
     process.stdout.write(`  ✓ Supportansicht Legacy-Anliegen · ${viewport.name}\n`);
   }
+  await closeContext(context);
 }
 
 async function assertResidentIssueProgressiveEnhancement() {
