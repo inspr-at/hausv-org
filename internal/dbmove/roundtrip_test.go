@@ -308,7 +308,8 @@ func seedFull(t *testing.T) *source {
 		if _, _, err := documents.Replace(first.ID, "admin@example.com", uploadFrom("hausordnung-v2.png", onePixelPNG), now.Add(time.Hour)); err != nil {
 			t.Fatalf("%s document replace: %v", slug, err)
 		}
-		if _, err := documents.CreateGenerated(store.DocumentRecord{TenantSlug: slug, Title: "Protokoll", Category: "Protokoll", Visibility: "alle", UploadedBy: "admin@example.com"}, "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 Protokoll der Versammlung"), now); err != nil {
+		receiptDocument, err := documents.CreateGenerated(store.DocumentRecord{TenantSlug: slug, Title: "Protokoll", Category: "Protokoll", Visibility: "alle", UploadedBy: "admin@example.com"}, "protokoll.pdf", "application/pdf", []byte("%PDF-1.4 Protokoll der Versammlung"), now)
+		if err != nil {
 			t.Fatalf("%s generated document: %v", slug, err)
 		}
 
@@ -335,6 +336,13 @@ func seedFull(t *testing.T) *source {
 		periods, _ := store.BindAnnualStatementPeriodRepository(store.NewSQLAnnualStatementPeriodStore(src.lanes), tenant)
 		if _, err := periods.Save(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement period: %v", slug, err)
+		}
+		receipts, _ := store.BindAnnualStatementReceiptRepository(store.NewSQLAnnualStatementReceiptStore(src.lanes), tenant)
+		if _, err := receipts.Create(store.AnnualStatementReceipt{
+			DocumentID: receiptDocument.ID, PeriodYear: 2026, CostTypeKey: "grundsteuer", AmountCents: 45678,
+			InvoiceDate: "2026-07-31", CreatedAt: now, CreatedBy: "verwalter@example.com",
+		}); err != nil {
+			t.Fatalf("%s annual statement receipt: %v", slug, err)
 		}
 		payments, _ := store.BindUnitPaymentStatusRepository(store.NewSQLUnitPaymentStatusStore(src.lanes), tenant)
 		if _, err := payments.Set(store.UnitPaymentStatus{TenantSlug: slug, UnitID: "top-1", Status: store.UnitPaymentStatusPaid, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {

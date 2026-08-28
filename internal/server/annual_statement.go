@@ -29,7 +29,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	if !ok {
 		return
 	}
-	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.units == nil {
+	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.annualStatementReceipts == nil || ac.repositories.units == nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -86,11 +86,45 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
 	costTypeMsg, costTypeOK := annualStatementCostTypeMessage(r.URL.Query().Get("cost-type"))
 	receiptDocuments := []web.AnnualStatementReceiptDocumentView{}
+	documentByID := map[string]store.DocumentRecord{}
 	if ac.repositories.documents != nil {
 		for _, document := range ac.repositories.documents.ListCurrent() {
-			if annualStatementReceiptContentTypeSupported(document.ContentType) {
+			documentByID[document.ID] = document
+		}
+		usedDocuments := map[string]bool{}
+		for _, receipt := range ac.repositories.annualStatementReceipts.List() {
+			usedDocuments[receipt.DocumentID] = true
+		}
+		for _, document := range ac.repositories.documents.ListCurrent() {
+			if annualStatementReceiptContentTypeSupported(document.ContentType) && !usedDocuments[document.ID] {
 				receiptDocuments = append(receiptDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: document.Title + " · " + document.Filename})
 			}
+		}
+	}
+	costTypeNames := map[string]string{}
+	for _, costType := range costTypes {
+		costTypeNames[costType.Key] = costType.Name
+	}
+	receiptViews := []web.AnnualStatementReceiptView{}
+	if selectedYear != 0 {
+		for _, receipt := range ac.repositories.annualStatementReceipts.ListByPeriod(selectedYear) {
+			documentTitle := "Dokument " + receipt.DocumentID
+			if document, found := documentByID[receipt.DocumentID]; found {
+				documentTitle = document.Title + " · " + document.Filename
+			} else if ac.repositories.documents != nil {
+				if document, found := ac.repositories.documents.Get(receipt.DocumentID); found {
+					documentTitle = document.Title + " · " + document.Filename
+				}
+			}
+			invoiceDate := receipt.InvoiceDate
+			if parsed, err := time.Parse("2006-01-02", receipt.InvoiceDate); err == nil {
+				invoiceDate = parsed.Format("02.01.2006")
+			}
+			receiptViews = append(receiptViews, web.AnnualStatementReceiptView{
+				ID: receipt.ID, DocumentTitle: documentTitle,
+				Amount: formatAnnualStatementReceiptAmount(receipt.AmountCents), AmountValue: formatAnnualStatementReceiptAmountValue(receipt.AmountCents),
+				InvoiceDate: invoiceDate, CostTypeName: costTypeNames[receipt.CostTypeKey],
+			})
 		}
 	}
 	if receiptMsg == "" {
@@ -108,6 +142,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		ReceiptSuggesterReady: a.annualStatementReceiptSuggester != nil,
 		ReceiptMsg:            receiptMsg, ReceiptOK: receiptOK,
 		ReceiptSuggestion: receiptSuggestion, HasReceiptSuggestion: receiptSuggestion.DocumentID != "",
+		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 		Allocation: allocation, BasesMsg: basesMsg, BasesOK: basesOK,
 	}))

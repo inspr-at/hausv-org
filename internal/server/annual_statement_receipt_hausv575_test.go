@@ -25,7 +25,7 @@ func (s *fixedAnnualStatementReceiptSuggester) Suggest(_ context.Context, input 
 	return s.suggestion, nil
 }
 
-func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationWithoutWriting(t *testing.T) {
+func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriting(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
@@ -46,14 +46,20 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationWithoutWrit
 	}}
 	a.annualStatementReceiptSuggester = suggester
 	repositories := testRepositories(a, "demo")
+	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+	}); err != nil {
+		t.Fatalf("save period: %v", err)
+	}
 	periodsBefore := repositories.annualStatementPeriods.List()
 	costTypesBefore := repositories.annualStatementCostTypes.List()
+	receiptsBefore := repositories.annualStatementReceipts.List()
 
 	if got := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}}).Code; got != http.StatusForbidden {
 		t.Fatalf("resident suggestion status = %d, want 403", got)
 	}
 	if got := authedFormRequest(t, a, "resident@example.com", "/demo/app/settings/annual-statement/receipts/confirm", url.Values{
-		"document_id": {document.ID}, "amount_cents": {"384216"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"},
+		"document_id": {document.ID}, "amount_cents": {"384216"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"}, "year": {"2026"},
 	}).Code; got != http.StatusForbidden {
 		t.Fatalf("resident confirmation status = %d, want 403", got)
 	}
@@ -67,23 +73,26 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationWithoutWrit
 			t.Fatalf("suggestion page missing %q", want)
 		}
 	}
-	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore)
+	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore, receiptsBefore)
 
 	tampered := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/confirm", url.Values{
-		"document_id": {document.ID}, "amount_cents": {"1"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"},
+		"document_id": {document.ID}, "amount_cents": {"1"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"}, "year": {"2026"},
 	})
 	if tampered.Code != http.StatusOK || !strings.Contains(tampered.Body.String(), "stimmt nicht mehr mit dem sicheren Vorschlag überein") || strings.Contains(tampered.Body.String(), "<strong>Vorschlag bestätigt.</strong>") {
 		t.Fatalf("tampered confirmation did not fail closed: status=%d", tampered.Code)
 	}
-	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore)
+	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore, receiptsBefore)
 
 	confirmed := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/confirm", url.Values{
-		"document_id": {document.ID}, "amount_cents": {"384216"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"},
+		"document_id": {document.ID}, "amount_cents": {"384216"}, "invoice_date": {"2026-01-31"}, "cost_type_key": {"hausbetreuung"}, "year": {"2026"},
 	})
-	if confirmed.Code != http.StatusOK || !strings.Contains(confirmed.Body.String(), "Vorschlag ausdrücklich bestätigt.") || !strings.Contains(confirmed.Body.String(), "Es wurde noch kein Beleg gespeichert") {
+	if confirmed.Code != http.StatusOK || !strings.Contains(confirmed.Body.String(), "Vorschlag bestätigt und Beleg gespeichert.") || strings.Contains(confirmed.Body.String(), "Es wurde noch kein Beleg gespeichert") {
 		t.Fatalf("explicit confirmation was not rendered: status=%d", confirmed.Code)
 	}
-	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore)
+	receipts := repositories.annualStatementReceipts.List()
+	if len(receipts) != 1 || receipts[0].DocumentID != document.ID || receipts[0].PeriodYear != 2026 || receipts[0].AmountCents != 384216 || receipts[0].InvoiceDate != "2026-01-31" || receipts[0].CostTypeKey != "hausbetreuung" {
+		t.Fatalf("confirmed receipt = %+v", receipts)
+	}
 	if suggester.calls != 3 {
 		t.Fatalf("suggester calls = %d, want preview plus two trusted re-checks", suggester.calls)
 	}
@@ -123,6 +132,7 @@ func TestAnnualStatementReceiptSuggestionFailsClosedWhenAnyFieldIsUncertain(t *t
 	repositories := testRepositories(a, "demo")
 	periodsBefore := repositories.annualStatementPeriods.List()
 	costTypesBefore := repositories.annualStatementCostTypes.List()
+	receiptsBefore := repositories.annualStatementReceipts.List()
 
 	response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}})
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Keine verlässlichen Vorschläge erkannt. Es wurde nichts übernommen.") {
@@ -131,7 +141,7 @@ func TestAnnualStatementReceiptSuggestionFailsClosedWhenAnyFieldIsUncertain(t *t
 	if strings.Contains(response.Body.String(), `action="/demo/app/settings/annual-statement/receipts/confirm"`) || strings.Contains(response.Body.String(), "3.842,16 €") {
 		t.Fatal("uncertain response exposed a confirmable suggestion")
 	}
-	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore)
+	assertAnnualStatementReceiptDidNotWrite(t, repositories, periodsBefore, costTypesBefore, receiptsBefore)
 }
 
 func TestAnnualStatementReceiptSuggestionIsClosedWithoutApprovedHost(t *testing.T) {
@@ -142,12 +152,15 @@ func TestAnnualStatementReceiptSuggestionIsClosedWithoutApprovedHost(t *testing.
 	}
 }
 
-func assertAnnualStatementReceiptDidNotWrite(t *testing.T, repositories requestRepositories, periodsBefore []storepkg.AnnualStatementPeriod, costTypesBefore []storepkg.AnnualStatementCostType) {
+func assertAnnualStatementReceiptDidNotWrite(t *testing.T, repositories requestRepositories, periodsBefore []storepkg.AnnualStatementPeriod, costTypesBefore []storepkg.AnnualStatementCostType, receiptsBefore []storepkg.AnnualStatementReceipt) {
 	t.Helper()
 	if got := repositories.annualStatementPeriods.List(); !reflect.DeepEqual(got, periodsBefore) {
 		t.Fatalf("receipt suggestion changed periods: before=%+v after=%+v", periodsBefore, got)
 	}
 	if got := repositories.annualStatementCostTypes.List(); !reflect.DeepEqual(got, costTypesBefore) {
 		t.Fatalf("receipt suggestion changed cost types: before=%+v after=%+v", costTypesBefore, got)
+	}
+	if got := repositories.annualStatementReceipts.List(); !reflect.DeepEqual(got, receiptsBefore) {
+		t.Fatalf("receipt suggestion wrote receipts: before=%+v after=%+v", receiptsBefore, got)
 	}
 }

@@ -1370,6 +1370,12 @@ func AuditActionLabel(action string) string {
 		return "Kostenart gespeichert"
 	case store.AuditActionAnnualBasesSave:
 		return "Verteilerbasis je Einheit gespeichert"
+	case store.AuditActionAnnualReceiptCreate:
+		return "Beleg erfasst"
+	case store.AuditActionAnnualReceiptAmount:
+		return "Belegbetrag korrigiert"
+	case store.AuditActionAnnualReceiptDelete:
+		return "Belegzuordnung entfernt"
 	default:
 		return action
 	}

@@ -504,6 +504,9 @@ const (
 	auditActionAnnualPartiesImport     = store.AuditActionAnnualPartiesImport
 	auditActionAnnualCostTypeSave      = store.AuditActionAnnualCostTypeSave
 	auditActionAnnualBasesSave         = store.AuditActionAnnualBasesSave
+	auditActionAnnualReceiptCreate     = store.AuditActionAnnualReceiptCreate
+	auditActionAnnualReceiptAmount     = store.AuditActionAnnualReceiptAmount
+	auditActionAnnualReceiptDelete     = store.AuditActionAnnualReceiptDelete
 	auditActionVoteCast                = store.AuditActionVoteCast
 	auditActionVoteClose               = store.AuditActionVoteClose
 	auditActionVoteCreate              = store.AuditActionVoteCreate
@@ -781,6 +784,7 @@ type app struct {
 	activityStore            activityStorage
 	annualStatementCostTypes store.AnnualStatementCostTypeStorage
 	annualStatementPeriods   store.AnnualStatementPeriodStorage
+	annualStatementReceipts  store.AnnualStatementReceiptStorage
 	unitStore                unitStorage
 	unitPaymentStore         unitPaymentStatusStorage
 	issueStore               issueStorage
@@ -1136,6 +1140,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/confirm", a.action(a.confirmAnnualStatementReceiptSuggestion))
+	mux.HandleFunc("POST /app/settings/annual-statement/receipts", a.action(a.createAnnualStatementReceipt))
+	mux.HandleFunc("POST /app/settings/annual-statement/receipts/update-amount", a.action(a.updateAnnualStatementReceiptAmount))
+	mux.HandleFunc("POST /app/settings/annual-statement/receipts/delete", a.action(a.deleteAnnualStatementReceipt))
 	mux.HandleFunc("GET /app/settings/modules", a.authed(capabilityManageBuilding, a.portalModuleSettings))
 	mux.HandleFunc("POST /app/settings/modules", a.authedAction(capabilityManageBuilding, a.updatePortalModules))
 	mux.HandleFunc("GET /app/settings/home", a.page(a.withEnergyLifecycleOperation(a.homeIdentitySettings)))
@@ -1189,6 +1196,7 @@ type tenantPathContextKey struct{}
 type requestRepositories struct {
 	annualStatementCostTypes store.AnnualStatementCostTypeRepository
 	annualStatementPeriods   store.AnnualStatementPeriodRepository
+	annualStatementReceipts  store.AnnualStatementReceiptRepository
 	announcementReads        store.AnnouncementReadRepository
 	announcements            store.AnnouncementRepository
 	attachments              store.AttachmentRepository
@@ -1220,6 +1228,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.annualStatementPeriods != nil {
 		repositories.annualStatementPeriods, _ = store.BindAnnualStatementPeriodRepository(a.annualStatementPeriods, tenant)
+	}
+	if a.annualStatementReceipts != nil {
+		repositories.annualStatementReceipts, _ = store.BindAnnualStatementReceiptRepository(a.annualStatementReceipts, tenant)
 	}
 	if a.announcementReadStore != nil {
 		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant)
@@ -1698,6 +1709,7 @@ func newApp() (*app, error) {
 	sqlActivity := newSQLActivityStore(tenantDB)
 	sqlAnnualStatementCostTypes := store.NewSQLAnnualStatementCostTypeStore(tenantDB)
 	sqlAnnualStatementPeriods := store.NewSQLAnnualStatementPeriodStore(tenantDB)
+	sqlAnnualStatementReceipts := store.NewSQLAnnualStatementReceiptStore(tenantDB)
 	sqlProfileOverlay := newSQLProfileOverlayStore(tenantDB)
 	sqlNotification := newSQLNotificationPrefStore(tenantDB)
 	sqlUnitPayment := newSQLUnitPaymentStatusStore(tenantDB)
@@ -1770,6 +1782,7 @@ func newApp() (*app, error) {
 	var activityBackend activityStorage = sqlActivity
 	var annualStatementCostTypeBackend store.AnnualStatementCostTypeStorage = sqlAnnualStatementCostTypes
 	var annualStatementPeriodBackend store.AnnualStatementPeriodStorage = sqlAnnualStatementPeriods
+	var annualStatementReceiptBackend store.AnnualStatementReceiptStorage = sqlAnnualStatementReceipts
 	var profileBackend profileOverlayStorage = sqlProfileOverlay
 	var notificationBackend notificationPrefStorage = sqlNotification
 	var unitPaymentBackend unitPaymentStatusStorage = sqlUnitPayment
@@ -1870,6 +1883,7 @@ func newApp() (*app, error) {
 		activityStore:            activityBackend,
 		annualStatementCostTypes: annualStatementCostTypeBackend,
 		annualStatementPeriods:   annualStatementPeriodBackend,
+		annualStatementReceipts:  annualStatementReceiptBackend,
 		unitStore:                unitBackend,
 		unitPaymentStore:         unitPaymentBackend,
 		issueStore:               issueBackend,
