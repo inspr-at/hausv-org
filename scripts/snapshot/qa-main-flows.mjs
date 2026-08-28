@@ -1122,6 +1122,8 @@ async function assertLegacySupportViewGeometry(issuePath) {
     { name: 'Mobil-Seam-900', size: { width: 900, height: 720 }, mobile: true },
     { name: 'Mobil-Seam-761', size: { width: 761, height: 720 }, mobile: true },
     { name: 'Mobil-Seam-760', size: { width: 760, height: 720 }, mobile: true },
+    { name: 'Mobil-Stack-Seam-481', size: { width: 481, height: 720 }, mobile: true },
+    { name: 'Mobil-Stack-Seam-480', size: { width: 480, height: 720 }, mobile: true },
     { name: 'Mobil', size: { width: 390, height: 844 }, mobile: true },
     { name: 'Mobil-Schmal', size: { width: 320, height: 720 }, mobile: true },
   ]) {
@@ -1146,6 +1148,9 @@ async function assertLegacySupportViewGeometry(issuePath) {
       const bannerRect = banner?.getBoundingClientRect();
       const mainRect = main?.getBoundingClientRect();
       const contentRect = content?.getBoundingClientRect();
+      const strongRect = banner?.querySelector('strong')?.getBoundingClientRect();
+      const spanRect = banner?.querySelector('span')?.getBoundingClientRect();
+      const formRect = banner?.querySelector('form')?.getBoundingClientRect();
       const style = banner ? getComputedStyle(banner) : null;
       return {
         stylesheetCount: document.querySelectorAll('head link[href*="/assets/support-view.css?v="]').length,
@@ -1159,6 +1164,10 @@ async function assertLegacySupportViewGeometry(issuePath) {
         contentTop: contentRect?.top ?? -1,
         viewportWidth: innerWidth,
         overflowX: document.documentElement.scrollWidth - innerWidth,
+        copyWidth: strongRect?.width ?? 0,
+        formWidth: formRect?.width ?? 0,
+        formTop: formRect?.top ?? -1,
+        detailBottom: spanRect?.bottom ?? -1,
         buttonHeight: banner?.querySelector('button')?.getBoundingClientRect().height ?? 0,
       };
     });
@@ -1173,6 +1182,10 @@ async function assertLegacySupportViewGeometry(issuePath) {
         result.top < 60 || result.buttonHeight < 43.5))) {
       fail(`Supportansicht ${viewport.name}: responsive Geometrie verletzt (${JSON.stringify(result)})`);
     }
+    if (viewport.size.width <= 480 && (result.copyWidth < viewport.size.width - 26 ||
+        result.formWidth < viewport.size.width - 26 || result.formTop < result.detailBottom - 1)) {
+      fail(`Supportansicht ${viewport.name}: schmale Kopie/Aktion ist nicht gestapelt (${JSON.stringify(result)})`);
+    }
     if (artifactDir) {
       const screenshotsDir = join(artifactDir, 'support-view');
       mkdirSync(screenshotsDir, { recursive: true });
@@ -1186,7 +1199,10 @@ async function assertLegacySupportViewGeometry(issuePath) {
     });
     const longCopyResult = await measure();
     if (longCopyResult.overflowX > 1 || longCopyResult.contentTop < longCopyResult.bottom - 1 ||
-        longCopyResult.buttonHeight < (viewport.mobile ? 43.5 : 37.5)) {
+        longCopyResult.buttonHeight < (viewport.mobile ? 43.5 : 37.5) ||
+        (viewport.size.width <= 480 && (longCopyResult.copyWidth < viewport.size.width - 26 ||
+          longCopyResult.formWidth < viewport.size.width - 26 ||
+          longCopyResult.formTop < longCopyResult.detailBottom - 1))) {
       fail(`Supportansicht ${viewport.name}: Langtext überlappt den Inhalt (${JSON.stringify(longCopyResult)})`);
     }
     if (artifactDir) {
