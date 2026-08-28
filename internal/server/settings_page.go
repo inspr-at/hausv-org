@@ -133,6 +133,8 @@ func (a *app) renderBuildingSettingsTempl(w http.ResponseWriter, r *http.Request
 }
 
 func (a *app) renderUserSettingsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data map[string]any) {
+	actor := a.profileForTenant(ac.realEmail, ac.tenant.Slug)
+	canStartSupportView := ac.supportView == nil && normalizeRole(ac.realRole) == roleAdmin && actor.HasPermission(permissionSupportView)
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.UserSettingsPage(web.UserSettingsPageData{
 		Portal:                       a.settingsPortalContext(ac, "Benutzer & Rechte", "users"),
 		AssetVersion:                 version.AssetVersion(),
@@ -146,5 +148,8 @@ func (a *app) renderUserSettingsTempl(w http.ResponseWriter, r *http.Request, ac
 		InviteOK:                     data["InviteOK"].(bool),
 		IsAdmin:                      ac.can(capabilityPlatformAdmin),
 		ServiceProviderAccessEnabled: a.serviceAccessEnabled,
+		CanStartSupportView:          canStartSupportView,
+		CanGrantSupportView:          ac.supportView == nil && normalizeRole(ac.realRole) == roleAdmin,
+		SupportTargets:               data["SupportTargets"].([]userRow),
 	}))
 }

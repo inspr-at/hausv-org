@@ -90,6 +90,7 @@ func (a *app) eventsPortalContext(ac authCtx) web.PortalPageData {
 	canUseResidentAreas := roleCanUseResidentAreas(role)
 	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
 	return web.PortalPageData{
+		SupportView:         supportViewPortalData(ac),
 		Title:               "Termine · " + houseDisplayName(tenant) + " · " + role,
 		TenantSlug:          tenant.Slug,
 		HouseName:           houseDisplayName(tenant),

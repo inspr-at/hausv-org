@@ -86,6 +86,7 @@ func (a *app) documentsPortalContext(ac authCtx) web.PortalPageData {
 		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
+		SupportView:         supportViewPortalData(ac),
 		Title:               "Dokumente · " + houseDisplayName(ac.tenant) + " · " + ac.role,
 		TenantSlug:          ac.tenant.Slug,
 		HouseName:           houseDisplayName(ac.tenant),

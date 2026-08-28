@@ -1231,6 +1231,8 @@ func AuditActionOptions(selected string) []SelectOption {
 	options := []SelectOption{{Value: "", Label: "Alle Aktionen", Selected: selected == ""}}
 	for _, action := range []string{
 		store.AuditActionLogin,
+		store.AuditActionSupportViewStart,
+		store.AuditActionSupportViewEnd,
 		store.AuditActionInviteCreate,
 		store.AuditActionInviteUpdate,
 		store.AuditActionInviteDelete,
@@ -1278,6 +1280,10 @@ func AuditActionLabel(action string) string {
 	switch store.NormalizeAuditAction(action) {
 	case store.AuditActionLogin:
 		return "Anmeldung"
+	case store.AuditActionSupportViewStart:
+		return "Supportansicht gestartet"
+	case store.AuditActionSupportViewEnd:
+		return "Supportansicht beendet"
 	case store.AuditActionInviteCreate:
 		return "Einladung angelegt"
 	case store.AuditActionInviteUpdate:
@@ -1939,6 +1945,7 @@ type UserRow struct {
 	PermissionList         []string
 	ParkingChecked         bool
 	EnergyCaretakerChecked bool
+	SupportViewChecked     bool
 	OutstandingBalance     string
 	HasOutstanding         bool
 	AuthLabel              string
@@ -2272,6 +2279,8 @@ func PermissionLabelList(permissions []string) []string {
 			labels = append(labels, "Parkplatznutzung")
 		case store.PermissionEnergyCaretaker:
 			labels = append(labels, "Technische Vertrauensperson")
+		case store.PermissionSupportView:
+			labels = append(labels, "Supportansicht")
 		default:
 			labels = append(labels, permission)
 		}

@@ -56,6 +56,13 @@ type PortalPageData struct {
 	Areas                                             []PortalArea
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
+	SupportView                                       SupportViewData
+}
+
+type SupportViewData struct {
+	Active     string
+	TargetName string
+	TargetRole string
 }
 
 type PortalSectionIdentityData struct {
@@ -85,6 +92,7 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			@PortalBaseStyles()
 			@styles
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
+			<link rel="stylesheet" href={ "/assets/support-view.css?v=" + assetVersion }/>
 		</head>
 		<body data-authenticated-app { bodyAttributes... }>
 			{ children... }
@@ -98,9 +106,16 @@ templ PortalShell(data PortalPageData, pageLabel string, content templ.Component
 	<div class="shell" data-portal-shell>
 		@PortalSidebar(data)
 		<div class="portal-shell-content">
+			if data.SupportView.Active != "" {
+				@SupportViewBanner(data.SupportView)
+			}
 			@content
 		</div>
 	</div>
+}
+
+templ SupportViewBanner(data SupportViewData) {
+	<aside class="support-view-banner" data-support-view-banner aria-label="Aktive Supportansicht"><strong>Portal anzeigen als { data.TargetName } · { data.TargetRole }</strong><span>Schreibgeschützt · echte Admin-Identität bleibt protokolliert</span><form method="post" action="/app/support-view/end"><button type="submit">Supportansicht beenden</button></form></aside>
 }
 
 templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, status, context, content templ.Component) {

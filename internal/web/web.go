@@ -133,6 +133,7 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
+	<link rel="stylesheet" href="/assets/support-view.css?v={{.AssetVersion}}">
   <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
   <style>
     :root {
@@ -4009,6 +4010,7 @@ const PageTemplates = `
   <a class="skip-link" href="#main-content">Zum Inhalt springen</a>
   <div class="app-shell">
     {{template "sidebar" .}}
+	{{if .SupportView}}<aside class="support-view-banner legacy-support-view-banner" data-support-view-banner aria-label="Aktive Supportansicht"><strong>Portal anzeigen als {{.SupportView.TargetName}} · {{.SupportView.TargetRole}}</strong><span>Schreibgeschützt · echte Admin-Identität bleibt protokolliert</span><form method="post" action="/app/support-view/end"><button type="submit">Supportansicht beenden</button></form></aside>{{end}}
     {{template "releaseHistoryDialog" .}}
 {{end}}
 

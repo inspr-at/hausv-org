@@ -36,6 +36,7 @@ func (a *app) auditPortalContext(ac authCtx, title string) web.PortalPageData {
 		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
 	}
 	return web.PortalPageData{
+		SupportView:         supportViewPortalData(ac),
 		Title:               title + " · " + houseDisplayName(ac.tenant) + " · " + ac.role,
 		TenantSlug:          ac.tenant.Slug,
 		HouseName:           houseDisplayName(ac.tenant),

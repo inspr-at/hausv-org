@@ -584,6 +584,9 @@ func (a *app) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, err := r.Cookie("weg_session"); err == nil {
+		if session, ok := a.sessions.GetSession(c.Value); ok && session.SupportTargetEmail != "" {
+			a.recordSupportViewEnd(session, "logout")
+		}
 		a.sessions.Delete(c.Value)
 	}
 	http.SetCookie(w, &http.Cookie{

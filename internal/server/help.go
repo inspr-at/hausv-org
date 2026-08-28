@@ -160,6 +160,7 @@ func (a *app) helpPortalContext(ac authCtx) web.PortalPageData {
 		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
 	}
 	return web.PortalPageData{
+		SupportView:         supportViewPortalData(ac),
 		Title:               "Hilfe · " + houseDisplayName(tenant) + " · " + role,
 		TenantSlug:          tenant.Slug,
 		HouseName:           houseDisplayName(tenant),

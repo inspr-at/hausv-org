@@ -82,6 +82,9 @@ func requestLogRoute(r *http.Request) string {
 type authCtx struct {
 	email        string
 	role         string
+	realEmail    string
+	realRole     string
+	supportView  *supportViewContext
 	tenant       tenantConfig
 	tenantRef    store.TenantRef
 	repositories requestRepositories
@@ -117,6 +120,10 @@ type authedHandler func(http.ResponseWriter, *http.Request, authCtx)
 // and require the session's tenant to match. On failure it redirects to "/" (the
 // exact behaviour of the old inline guard) and reports false.
 func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, bool) {
+	if session, ok := a.sessionForRequest(r); ok && session.SupportTargetEmail != "" && time.Now().Unix() >= session.SupportExpiresAt {
+		a.expireSupportView(w, r, session)
+		return authCtx{}, false
+	}
 	if a.closedServiceProviderSession(r) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return authCtx{}, false
@@ -132,7 +139,22 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+	realEmail, realRole := email, role
+	var supportView *supportViewContext
+	if session, sessionOK := a.sessionForRequest(r); sessionOK && session.SupportTargetEmail != "" {
+		realEmail, realRole = session.Email, session.Role
+		target := a.profileForTenant(session.SupportTargetEmail, tenant.Slug)
+		supportView = &supportViewContext{
+			ActorEmail:  session.Email,
+			ActorRole:   session.Role,
+			TargetEmail: session.SupportTargetEmail,
+			TargetName:  target.DisplayName(),
+			TargetRole:  session.SupportTargetRole,
+			StartedAt:   time.Unix(session.SupportStartedAt, 0),
+			ExpiresAt:   time.Unix(session.SupportExpiresAt, 0),
+		}
+	}
+	return authCtx{email: email, role: role, realEmail: realEmail, realRole: realRole, supportView: supportView, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
 }
 
 func (a *app) closedServiceProviderSession(r *http.Request) bool {
@@ -206,6 +228,10 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 		}
 		if !sameOriginPost(r) {
 			http.Error(w, "Bad request", http.StatusForbidden)
+			return
+		}
+		if ac.supportView != nil {
+			http.Error(w, "Die Supportansicht ist schreibgeschützt. Beenden Sie die Ansicht, um Änderungen vorzunehmen.", http.StatusForbidden)
 			return
 		}
 		h(w, r, ac)

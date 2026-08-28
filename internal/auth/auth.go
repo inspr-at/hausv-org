@@ -49,11 +49,15 @@ type SessionStore struct {
 }
 
 type Session struct {
-	Email      string `json:"email"`
-	TenantSlug string `json:"tenant_slug"`
-	AuthMethod string `json:"auth_method"`
-	Role       string `json:"role,omitempty"`
-	ExpiresAt  int64  `json:"expires_at"`
+	Email              string `json:"email"`
+	TenantSlug         string `json:"tenant_slug"`
+	AuthMethod         string `json:"auth_method"`
+	Role               string `json:"role,omitempty"`
+	ExpiresAt          int64  `json:"expires_at"`
+	SupportTargetEmail string `json:"support_target_email,omitempty"`
+	SupportTargetRole  string `json:"support_target_role,omitempty"`
+	SupportStartedAt   int64  `json:"support_started_at,omitempty"`
+	SupportExpiresAt   int64  `json:"support_expires_at,omitempty"`
 }
 
 type OidcLogin struct {
@@ -188,8 +192,36 @@ func (s *SessionStore) PutSession(email string, tenantSlug string, authMethod st
 		Role:       store.NormalizeRole(role),
 		ExpiresAt:  expiresAt.Unix(),
 	}
+	return s.putSession(item, expiresAt)
+}
+
+// PutSupportView issues a short-lived, signed view of another user's exact
+// tenant role while retaining the real authenticated identity in Email/Role.
+// The caller must validate the explicit support permission and target
+// membership before calling it. The ordinary session expiry remains the cookie
+// expiry; SupportExpiresAt is the stricter viewing window, so a deliberate or
+// automatic exit can restore the original login without extending it.
+func (s *SessionStore) PutSupportView(email string, tenantSlug string, authMethod string, role string, targetEmail string, targetRole string, startedAt time.Time, supportExpiresAt time.Time, parentExpiresAt time.Time) (string, time.Time, error) {
+	item := Session{
+		Email:              textutil.Email(email),
+		TenantSlug:         textutil.Slug(tenantSlug),
+		AuthMethod:         store.NormalizeAuthMethod(authMethod),
+		Role:               store.NormalizeRole(role),
+		ExpiresAt:          parentExpiresAt.Unix(),
+		SupportTargetEmail: textutil.Email(targetEmail),
+		SupportTargetRole:  store.NormalizeRole(targetRole),
+		SupportStartedAt:   startedAt.Unix(),
+		SupportExpiresAt:   supportExpiresAt.Unix(),
+	}
+	return s.putSession(item, parentExpiresAt)
+}
+
+func (s *SessionStore) putSession(item Session, expiresAt time.Time) (string, time.Time, error) {
 	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() {
 		return "", time.Time{}, fmt.Errorf("invalid session")
+	}
+	if !validSupportSession(item) {
+		return "", time.Time{}, fmt.Errorf("invalid support session")
 	}
 	payload, err := json.Marshal(item)
 	if err != nil {
@@ -278,10 +310,21 @@ func (s *SessionStore) verify(token string) (Session, bool) {
 	item.TenantSlug = textutil.Slug(item.TenantSlug)
 	item.AuthMethod = store.NormalizeAuthMethod(item.AuthMethod)
 	item.Role = store.NormalizeRole(item.Role)
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() {
+	item.SupportTargetEmail = textutil.Email(item.SupportTargetEmail)
+	item.SupportTargetRole = store.NormalizeRole(item.SupportTargetRole)
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() || !validSupportSession(item) {
 		return Session{}, false
 	}
 	return item, true
+}
+
+func validSupportSession(item Session) bool {
+	if item.SupportTargetEmail == "" && item.SupportTargetRole == "" && item.SupportStartedAt == 0 && item.SupportExpiresAt == 0 {
+		return true
+	}
+	return item.SupportTargetEmail != "" && item.SupportTargetRole != "" && validSessionRole(item.SupportTargetRole) &&
+		item.Role != "" && item.SupportStartedAt > 0 && item.SupportStartedAt < item.SupportExpiresAt &&
+		item.SupportExpiresAt <= item.ExpiresAt
 }
 
 func validSessionRole(role string) bool {

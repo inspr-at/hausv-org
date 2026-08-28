@@ -494,6 +494,8 @@ const (
 	auditActionEventDelete             = store.AuditActionEventDelete
 	auditActionLogin                   = store.AuditActionLogin
 	auditActionContextSwitch           = store.AuditActionContextSwitch
+	auditActionSupportViewStart        = store.AuditActionSupportViewStart
+	auditActionSupportViewEnd          = store.AuditActionSupportViewEnd
 	auditActionParkingMonth            = store.AuditActionParkingMonth
 	auditActionParkingReminder         = store.AuditActionParkingReminder
 	auditActionParkingSettings         = store.AuditActionParkingSettings
@@ -704,6 +706,7 @@ const (
 	permissionEnergyConfigure     = store.PermissionEnergyConfigure
 	permissionEnergyControl       = store.PermissionEnergyControl
 	permissionEnergyCaretaker     = store.PermissionEnergyCaretaker
+	permissionSupportView         = store.PermissionSupportView
 	authMethodEmail               = store.AuthMethodEmail
 	authMethodOIDC                = store.AuthMethodOIDC
 	issueStatusNew                = store.IssueStatusNew
@@ -1044,6 +1047,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
 	mux.HandleFunc("POST /app/context", a.action(a.switchPortalContext))
+	mux.HandleFunc("POST /app/support-view/start", a.authedAction(capabilityPlatformAdmin, a.startSupportView))
+	mux.HandleFunc("POST /app/support-view/end", a.endSupportView)
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
 	mux.HandleFunc("POST /app/hilfe/connector/pairing", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/revoke", a.action(a.revokeAppHomeConnector))
@@ -2473,6 +2478,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
 
 	a.renderPortalTempl(w, r, web.PortalPageData{
+		SupportView:            supportViewPortalData(ac),
 		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
 		TenantSlug:             tenant.Slug,
 		HouseName:              houseDisplayName(tenant),
@@ -4985,6 +4991,12 @@ func notificationPreferencesFromForm(values url.Values) notificationPreferences 
 
 func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	users := a.userRows(ac.tenantRef)
+	supportTargets := make([]userRow, 0, len(users))
+	for _, user := range users {
+		if normalizeEmail(user.Email) != normalizeEmail(ac.realEmail) && user.Status != "Deaktiviert" {
+			supportTargets = append(supportTargets, user)
+		}
+	}
 	activeUsers, invitedUsers, deactivatedUsers := userStatusCounts(users)
 	inviteMsg, inviteOK := inviteMessage(r.URL.Query().Get("invite"))
 	pageData := map[string]any{
@@ -4998,6 +5010,7 @@ func (a *app) userSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"UsersEmpty":        emptyState("Noch keine Zugänge", "Sobald eine Person eingeladen ist, erscheint sie hier mit Rolle und Zugangsstatus."),
 		"InviteMsg":         inviteMsg,
 		"InviteOK":          inviteOK,
+		"SupportTargets":    supportTargets,
 		"ActivePage":        "users",
 	}
 	a.renderUserSettingsTempl(w, r, ac, pageData)
@@ -5110,6 +5123,10 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		a.redirectInvite(w, r, "forbidden_role")
 		return
 	}
+	permissions := parsePermissionForm(r.Form)
+	if normalizeRole(ac.realRole) != roleAdmin {
+		permissions = setPermission(permissions, permissionSupportView, false)
+	}
 	profile := userProfile{
 		Email:       inviteEmail,
 		Title:       strings.TrimSpace(r.FormValue("title")),
@@ -5118,7 +5135,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Role:        inviteRole,
 		Status:      "Eingeladen",
 		Tenants:     []string{tenant.Slug},
-		Permissions: parsePermissionForm(r.Form),
+		Permissions: permissions,
 		AuthMethods: parseAuthMethodForm(r.Form),
 	}
 
@@ -5299,6 +5316,9 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	updated.Role = newRole
 	updated.Permissions = parsePermissionForm(r.Form)
+	if normalizeRole(ac.realRole) != roleAdmin {
+		updated.Permissions = setPermission(updated.Permissions, permissionSupportView, effectiveProfile.HasPermission(permissionSupportView))
+	}
 	updated.AuthMethods = parseAuthMethodForm(r.Form)
 	updated.Deactivated = newDeactivated
 	if len(updated.Tenants) == 0 {
@@ -5533,6 +5553,7 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 		"SidebarMap":             sidebarMapForTenant(ac.tenant),
 		"Email":                  ac.email,
 		"Role":                   ac.role,
+		"SupportView":            ac.supportView,
 		"PortalContexts":         portalContexts,
 		"CanSwitchPortalContext": len(portalContexts) > 1,
 		"IsAdmin":                isAdmin,
@@ -5936,11 +5957,7 @@ func (a *app) publicBaseURL(r *http.Request, tenant tenantConfig) string {
 }
 
 func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
-	c, err := r.Cookie("weg_session")
-	if err != nil {
-		return "", "", "", false
-	}
-	session, ok := a.sessions.GetSession(c.Value)
+	session, ok := a.sessionForRequest(r)
 	if !ok {
 		return "", "", "", false
 	}
@@ -5953,6 +5970,12 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 			return "", "", "", false
 		}
 		role = session.Role
+	}
+	if session.SupportTargetEmail != "" {
+		if !a.supportSessionAllowed(session) {
+			return "", "", "", false
+		}
+		return session.SupportTargetEmail, session.SupportTargetRole, session.TenantSlug, true
 	}
 	return session.Email, role, session.TenantSlug, true
 }
@@ -7069,6 +7092,7 @@ func userRowFrom(p userProfile) userRow {
 		PermissionList:         permissionLabelList(p.Permissions),
 		ParkingChecked:         p.HasPermission(permissionParking),
 		EnergyCaretakerChecked: p.HasPermission(permissionEnergyCaretaker),
+		SupportViewChecked:     p.HasPermission(permissionSupportView),
 		AuthLabel:              authMethodsLabel(p.AuthMethods),
 		AuthList:               authMethodsLabelList(p.AuthMethods),
 		EmailAuthChecked:       p.AllowsAuthMethod(authMethodEmail),
@@ -7153,6 +7177,7 @@ func parsePermissionForm(values url.Values) []string {
 		permissionEnergyConfigure: {},
 		permissionEnergyControl:   {},
 		permissionEnergyCaretaker: {},
+		permissionSupportView:     {},
 	}
 	out := []string{}
 	for _, permission := range normalizePermissions(values["permissions"]) {

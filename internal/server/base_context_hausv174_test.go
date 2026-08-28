@@ -23,8 +23,11 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 	}
 
 	got := a.baseContext(ac)
-	if len(got) != 19 {
-		t.Fatalf("baseContext keys = %d, want 19: %#v", len(got), got)
+	if len(got) != 20 {
+		t.Fatalf("baseContext keys = %d, want 20: %#v", len(got), got)
+	}
+	if got["SupportView"] != (*supportViewContext)(nil) {
+		t.Fatalf("ordinary session support view = %#v", got["SupportView"])
 	}
 	if got["Tenant"] != ac.tenant || got["Email"] != ac.email || got["Role"] != ac.role {
 		t.Fatalf("baseContext identity = %#v", got)
