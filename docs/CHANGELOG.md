@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [0.100.0] - 2026-08-29
+
+### Supportansicht sicher eingeführt
+
+- Supportansicht: Berechtigte Administratoren können das Portal einer Person kurzzeitig und schreibgeschützt in deren tatsächlicher Rolle ansehen.
+- Nachvollziehbarkeit: Der gelbe Hinweis bleibt auf allen Portalansichten sichtbar; Zugriffe werden weiterhin der echten Admin-Identität zugeordnet.
+- Sicherheit: Änderungen sind während der Supportansicht gesperrt, und Sitzungen enden bei Ablauf, Abmeldung, erneuter Anmeldung oder geänderten Berechtigungen zuverlässig.
+
 ## [0.99.11] - 2026-08-27
 
 ### Jahresabrechnung vorbereitet

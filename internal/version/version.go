@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "0.100.0",
+			Date:     "29. August 2026",
+			Kind:     "Support",
+			Headline: "Die Supportansicht bleibt sicher und nachvollziehbar.",
+			Intro:    "Berechtigte Administratoren können ein Portal kurzzeitig in der tatsächlichen Rolle einer Person ansehen, ohne darin Änderungen auszuführen.",
+			Items: []NoteItem{
+				{Label: "Schreibgeschützt", Text: "Ein sichtbarer Hinweis begleitet die gesamte Supportansicht; Änderungen bleiben gesperrt."},
+				{Label: "Echte Identität", Text: "Dokument- und Dateizugriffe werden weiterhin der angemeldeten Admin-Person zugeordnet."},
+				{Label: "Sitzungsende", Text: "Ablauf, Abmeldung, erneute Anmeldung und geänderte Berechtigungen beenden die Supportansicht zuverlässig."},
+			},
+		},
+		{
 			Version:  "0.99.11",
 			Date:     "27. August 2026",
 			Kind:     "Jahresabrechnung",

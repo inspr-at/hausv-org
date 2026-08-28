@@ -231,7 +231,7 @@ func (a *app) activateHomePortal(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Portal konnte nicht aktiviert werden", http.StatusInternalServerError)
 		return
 	}
-	if err := a.startSession(w, reservation.OwnerEmail, portal.Slug, authMethodEmail); err != nil {
+	if err := a.startSession(w, r, reservation.OwnerEmail, portal.Slug, authMethodEmail); err != nil {
 		logWarn("home portal session failed", "error_type", "session")
 		http.Error(w, "Portal wurde aktiviert. Bitte melden Sie sich über Ihren Portalpfad an.", http.StatusInternalServerError)
 		return

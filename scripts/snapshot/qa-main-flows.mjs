@@ -1137,6 +1137,7 @@ async function assertLegacySupportViewGeometry(issuePath) {
       page.waitForURL((url) => url.pathname.endsWith('/app')),
       target.getByRole('button', { name: 'Portal anzeigen' }).click(),
     ]);
+    await assertTemplSupportViewGeometry(page, viewport, { variant: 'resident' });
     const response = await page.goto(new URL(issuePath, baseURL).href, { waitUntil: 'networkidle' });
     if (!response || response.status() !== 200) {
       fail(`Supportansicht ${viewport.name}: Legacy-Anliegen Status ${response?.status() ?? 0}`);
@@ -1214,9 +1215,124 @@ async function assertLegacySupportViewGeometry(issuePath) {
       page.waitForURL((url) => url.pathname.endsWith('/app/settings/users')),
       page.getByRole('button', { name: 'Supportansicht beenden' }).click(),
     ]);
+    const managerTarget = page.locator('form.support-view-target').filter({ hasText: 'verwalter@example.com' });
+    if ((await managerTarget.count()) !== 1) {
+      fail(`Supportansicht ${viewport.name}: Verwalter-Ziel für dichten templ-Hausüberblick fehlt oder ist mehrfach vorhanden`);
+    }
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/app')),
+      managerTarget.getByRole('button', { name: 'Portal anzeigen' }).click(),
+    ]);
+    await assertTemplSupportViewGeometry(page, viewport, { requireDense: true, variant: 'manager-dense' });
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith('/app/settings/users')),
+      page.getByRole('button', { name: 'Supportansicht beenden' }).click(),
+    ]);
     process.stdout.write(`  ✓ Supportansicht Legacy-Anliegen · ${viewport.name}\n`);
   }
   await closeContext(context);
+}
+
+async function assertTemplSupportViewGeometry(page, viewport, { requireDense = false, variant = 'portal' } = {}) {
+  const portalMobile = viewport.size.width <= 760;
+  if ((await page.locator('.portal-home-landing').count()) !== 1 ||
+      (requireDense && (await page.locator('.portal-home-landing.dense-main').count()) !== 1)) {
+    fail(`Supportansicht ${viewport.name}: dichter templ-Hausüberblick fehlt oder ist mehrfach vorhanden`);
+  }
+  const measure = () => page.evaluate(() => {
+    const shell = document.querySelector('[data-portal-shell]');
+    const shellContent = shell?.querySelector(':scope > .portal-shell-content');
+    const banner = shellContent?.querySelector(':scope > [data-support-view-banner]');
+    const main = shellContent?.querySelector(':scope > main.portal-home-landing');
+    const mobileHead = document.querySelector('body > .mobile-head');
+    const shellRect = shell?.getBoundingClientRect();
+    const contentRect = shellContent?.getBoundingClientRect();
+    const bannerRect = banner?.getBoundingClientRect();
+    const mainRect = main?.getBoundingClientRect();
+    const mobileHeadRect = mobileHead?.getBoundingClientRect();
+    const mobileContent = main?.querySelector('.mobile-content');
+    const mobileContentRect = mobileContent?.getBoundingClientRect();
+    const desktopContent = main?.querySelector('.portal-home-desktop');
+    const desktopContentRect = desktopContent?.getBoundingClientRect();
+    const strongRect = banner?.querySelector('strong')?.getBoundingClientRect();
+    const spanRect = banner?.querySelector('span')?.getBoundingClientRect();
+    const formRect = banner?.querySelector('form')?.getBoundingClientRect();
+    return {
+      shellCount: document.querySelectorAll('[data-portal-shell]').length,
+      bannerCount: shellContent?.querySelectorAll(':scope > [data-support-view-banner]').length ?? 0,
+      homeCount: shellContent?.querySelectorAll(':scope > main.portal-home-landing').length ?? 0,
+      denseHomeCount: shellContent?.querySelectorAll(':scope > main.portal-home-landing.dense-main').length ?? 0,
+      shellLeft: shellRect?.left ?? -1,
+      shellRight: shellRect?.right ?? -1,
+      contentLeft: contentRect?.left ?? -1,
+      contentRight: contentRect?.right ?? -1,
+      bannerLeft: bannerRect?.left ?? -1,
+      bannerRight: bannerRect?.right ?? -1,
+      bannerTop: bannerRect?.top ?? -1,
+      bannerBottom: bannerRect?.bottom ?? -1,
+      mainLeft: mainRect?.left ?? -1,
+      mainRight: mainRect?.right ?? -1,
+      mainTop: mainRect?.top ?? -1,
+      mainBottom: mainRect?.bottom ?? -1,
+      mobileHeadBottom: mobileHeadRect?.bottom ?? 0,
+      mobileContentDisplay: mobileContent ? getComputedStyle(mobileContent).display : '',
+      mobileContentHeight: mobileContentRect?.height ?? 0,
+      mobileTaskCount: mobileContent?.querySelectorAll('.task-card').length ?? 0,
+      desktopContentDisplay: desktopContent ? getComputedStyle(desktopContent).display : '',
+      desktopContentHeight: desktopContentRect?.height ?? 0,
+      viewportWidth: innerWidth,
+      viewportHeight: innerHeight,
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+      copyWidth: strongRect?.width ?? 0,
+      formWidth: formRect?.width ?? 0,
+      formTop: formRect?.top ?? -1,
+      detailBottom: spanRect?.bottom ?? -1,
+      buttonHeight: banner?.querySelector('button')?.getBoundingClientRect().height ?? 0,
+    };
+  });
+  const assertGeometry = (result, longCopy) => {
+    if (result.shellCount !== 1 || result.bannerCount !== 1 || result.homeCount !== 1 ||
+        (requireDense && result.denseHomeCount !== 1) ||
+        result.overflowX > 1 || result.mainTop < result.bannerBottom - 1 ||
+        Math.abs(result.bannerLeft - result.contentLeft) > 1 || Math.abs(result.bannerRight - result.contentRight) > 1 ||
+        Math.abs(result.mainLeft - result.contentLeft) > 1 || Math.abs(result.mainRight - result.contentRight) > 1) {
+      fail(`Supportansicht templ-Hausüberblick ${viewport.name}${longCopy ? ' Langtext' : ''}: Shell-/Banner-Vertrag verletzt (${JSON.stringify(result)})`);
+    }
+    if (!portalMobile && (result.contentLeft < 205 || (requireDense && result.mainBottom > result.viewportHeight + 1) ||
+        result.desktopContentDisplay === 'none' || result.desktopContentHeight < 100 ||
+        Math.abs(result.contentRight - result.viewportWidth) > 1)) {
+      fail(`Supportansicht templ-Hausüberblick ${viewport.name}${longCopy ? ' Langtext' : ''}: dichter Desktop-Inhalt passt nicht in den Viewport (${JSON.stringify(result)})`);
+    }
+    if (portalMobile && (Math.abs(result.contentLeft) > 1 || Math.abs(result.contentRight - result.viewportWidth) > 1 ||
+        result.bannerTop < result.mobileHeadBottom - 1 || result.buttonHeight < 43.5 ||
+        result.mobileContentDisplay === 'none' || result.mobileContentHeight < 100 || result.mobileTaskCount !== 1)) {
+      fail(`Supportansicht templ-Hausüberblick ${viewport.name}${longCopy ? ' Langtext' : ''}: mobile Geometrie verletzt (${JSON.stringify(result)})`);
+    }
+    if (viewport.size.width <= 480 && (result.copyWidth < viewport.size.width - 26 ||
+        result.formWidth < viewport.size.width - 26 || result.formTop < result.detailBottom - 1)) {
+      fail(`Supportansicht templ-Hausüberblick ${viewport.name}${longCopy ? ' Langtext' : ''}: schmale Kopie/Aktion ist nicht gestapelt (${JSON.stringify(result)})`);
+    }
+  };
+
+  assertGeometry(await measure(), false);
+  if (artifactDir) {
+    const screenshotsDir = join(artifactDir, 'support-view');
+    mkdirSync(screenshotsDir, { recursive: true });
+    await page.screenshot({ path: join(screenshotsDir, `templ-home-${variant}-${viewport.name.toLowerCase()}.png`), fullPage: true });
+  }
+  await page.locator('[data-support-view-banner] strong').evaluate((node) => {
+    node.textContent = 'Portal anzeigen als Bewohnerin mit einem außergewöhnlich langen Doppelnamen · Bewohnerin';
+  });
+  await page.locator('[data-support-view-banner] span').evaluate((node) => {
+    node.textContent = 'Schreibgeschützt · die echte Admin-Identität bleibt bei jedem Zugriff vollständig protokolliert';
+  });
+  assertGeometry(await measure(), true);
+  if (artifactDir) {
+    const screenshotsDir = join(artifactDir, 'support-view');
+    mkdirSync(screenshotsDir, { recursive: true });
+    await page.screenshot({ path: join(screenshotsDir, `templ-home-${variant}-${viewport.name.toLowerCase()}-long-copy.png`), fullPage: true });
+  }
+  process.stdout.write(`  ✓ Supportansicht templ-Hausüberblick · ${variant} · ${viewport.name}\n`);
 }
 
 async function assertResidentIssueProgressiveEnhancement() {

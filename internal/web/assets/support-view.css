@@ -24,6 +24,22 @@
   color: #5f4818;
   font-weight: 800;
 }
+@media (min-width: 761px) {
+  /* The dense home normally owns exactly one viewport. When a support banner
+     precedes it, make both rows share that viewport instead of silently
+     pushing the fixed-height home below the fold. */
+  .portal-shell-content:has(> .support-view-banner + .portal-home-landing.dense-main) {
+    height: 100vh;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .portal-shell-content:has(> .support-view-banner + .portal-home-landing.dense-main) > .portal-home-landing.dense-main {
+    height: auto;
+    min-height: 0;
+  }
+}
 @media (max-width: 760px) {
   .support-view-banner {
     top: 74px;

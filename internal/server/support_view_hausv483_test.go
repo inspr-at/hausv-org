@@ -231,6 +231,88 @@ func TestSupportViewChooserIsVisibleOnlyWithExplicitPermission(t *testing.T) {
 	}
 }
 
+func TestNonAdminCannotGrantOrSilentlyClearSupportViewPermission(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+
+	created := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users", url.Values{
+		"email":        {"new-resident@example.com"},
+		"role":         {roleResident},
+		"permissions":  {permissionParking, permissionSupportView},
+		"auth_methods": {authMethodEmail},
+	})
+	if created.Code != http.StatusSeeOther {
+		t.Fatalf("manager create status=%d body=%s", created.Code, created.Body.String())
+	}
+	createdProfile, ok := a.inviteStore.Get("new-resident@example.com")
+	if !ok || createdProfile.ForTenant("demo").HasPermission(permissionSupportView) {
+		t.Fatalf("manager granted support-view on create: %+v ok=%v", createdProfile, ok)
+	}
+	if !createdProfile.ForTenant("demo").HasPermission(permissionParking) {
+		t.Fatalf("unrelated submitted permission was lost on create: %+v", createdProfile)
+	}
+
+	if _, err := a.inviteStore.Add(userProfile{
+		Email: "existing-grant@example.com", Role: roleResident, Tenants: []string{"demo"},
+		Permissions: []string{permissionSupportView}, AuthMethods: defaultAuthMethods(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/users")
+	if page.Code != http.StatusOK || strings.Contains(page.Body.String(), `value="support-view"`) {
+		t.Fatalf("manager page exposed support-view grant control: status=%d", page.Code)
+	}
+	edited := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/users/edit", url.Values{
+		"orig_email":   {"existing-grant@example.com"},
+		"email":        {"existing-grant@example.com"},
+		"role":         {roleResident},
+		"permissions":  {permissionParking},
+		"auth_methods": {authMethodEmail},
+	})
+	if edited.Code != http.StatusSeeOther {
+		t.Fatalf("manager edit status=%d body=%s", edited.Code, edited.Body.String())
+	}
+	editedProfile, ok := a.inviteStore.Get("existing-grant@example.com")
+	if !ok || !editedProfile.ForTenant("demo").HasPermission(permissionSupportView) {
+		t.Fatalf("hidden support-view grant was silently cleared: %+v ok=%v", editedProfile, ok)
+	}
+	if !editedProfile.ForTenant("demo").HasPermission(permissionParking) {
+		t.Fatalf("ordinary manager edit did not retain submitted permission: %+v", editedProfile)
+	}
+}
+
+func TestReloginEndsAndRevokesExistingSupportViewSession(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+	startedAt := time.Now().UTC().Add(-time.Minute).Truncate(time.Second)
+	parentExpiry := time.Now().UTC().Add(time.Hour).Truncate(time.Second)
+	supportToken, _, err := a.sessions.PutSupportView(
+		"admin@example.com", "demo", authMethodEmail, roleAdmin,
+		"resident@example.com", roleResident, startedAt, time.Now().UTC().Add(10*time.Minute), parentExpiry,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/auth/verify", nil)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: supportToken})
+	result := httptest.NewRecorder()
+	if err := a.startSession(result, req, "admin@example.com", "demo", authMethodEmail); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := a.sessions.GetSession(supportToken); ok {
+		t.Fatal("re-login left the replaced support token valid")
+	}
+	ordinaryCookie := sessionCookieFrom(t, result)
+	ordinary, ok := a.sessions.GetSession(ordinaryCookie.Value)
+	if !ok || ordinary.Email != "admin@example.com" || ordinary.Role != "" || ordinary.SupportTargetEmail != "" {
+		t.Fatalf("re-login session=%+v ok=%v", ordinary, ok)
+	}
+	ends := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionSupportViewEnd, Limit: 10})
+	if len(ends) != 1 || ends[0].ActorEmail != "admin@example.com" || ends[0].ActorRole != roleAdmin ||
+		ends[0].TargetID != "resident@example.com" || ends[0].Details["target_role"] != roleResident ||
+		ends[0].Details["reason"] != "relogin" {
+		t.Fatalf("re-login support end audit=%+v", ends)
+	}
+}
+
 func TestSupportViewLegacyIssueDetailLoadsBannerStylesWithoutPublicLeak(t *testing.T) {
 	a := newSupportViewTestApp(t, true)
 	issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{

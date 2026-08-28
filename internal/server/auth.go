@@ -290,7 +290,7 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.startSession(w, email, tenantSlug, authMethodEmail); errors.Is(err, errServiceProviderAccessClosed) {
+	if err := a.startSession(w, r, email, tenantSlug, authMethodEmail); errors.Is(err, errServiceProviderAccessClosed) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	} else if err != nil {
@@ -527,7 +527,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, tenant.PublicURL("/?denied=1"), http.StatusSeeOther)
 		return
 	}
-	if err := a.startSession(w, email, tenant.Slug, authMethodOIDC); err != nil {
+	if err := a.startSession(w, r, email, tenant.Slug, authMethodOIDC); err != nil {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
@@ -541,13 +541,27 @@ func (a *app) oidcRedirectURL() string {
 	return a.oidc.RedirectURL(a.baseURL)
 }
 
-func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug string, authMethod string) error {
+func (a *app) startSession(w http.ResponseWriter, r *http.Request, email string, tenantSlug string, authMethod string) error {
 	if a.serviceProviderAccessClosedFor(tenantSlug, email) {
 		return errServiceProviderAccessClosed
 	}
 	token, expiresAt, err := a.sessions.Put(email, tenantSlug, authMethod, a.sessionTTL)
 	if err != nil {
 		return err
+	}
+	// A completed login rotates any presented session. In particular, a login
+	// from an active support view must close that view explicitly: otherwise the
+	// replaced browser cookie hides a still-valid support token with no matching
+	// end audit. Tokens abandoned without another request cannot produce an end
+	// event without a background session registry; their signed parent expiry is
+	// still bounded, and support access fails at SupportExpiresAt on presentation.
+	if r != nil {
+		if currentCookie, cookieErr := r.Cookie("weg_session"); cookieErr == nil {
+			if current, ok := a.sessions.GetSession(currentCookie.Value); ok && current.SupportTargetEmail != "" {
+				a.recordSupportViewEnd(current, "relogin")
+			}
+			a.sessions.Delete(currentCookie.Value)
+		}
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "weg_session",
