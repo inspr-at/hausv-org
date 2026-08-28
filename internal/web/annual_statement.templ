@@ -214,7 +214,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			if data.HasUnits {
 				<form method="post" action="/app/settings/annual-statement/allocation-bases"><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
 					for _, basis := range data.Allocation.Bases {
-						<div class="cost-type-card"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label></div>
+						<div class="allocation-row"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label></div>
 					}
 				</div><div class="form-actions"><button class="button primary" type="submit">Verteilerbasis speichern</button></div></form>
 			} else {
@@ -242,7 +242,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 					}
 					<div class="unit-list">
 						for _, share := range preview.Shares {
-							<div class="cost-type-card"><label>Einheit<span class="readonly"><strong>{ share.Label }</strong></span></label><label>Basis<span class="readonly">{ share.Basis }</span></label><label>Anteil<span class="readonly"><strong>{ share.Share }</strong></span></label>
+							<div class="allocation-row"><label>Einheit<span class="readonly"><strong>{ share.Label }</strong></span></label><label>Basis<span class="readonly">{ share.Basis }</span></label><label>Anteil<span class="readonly"><strong>{ share.Share }</strong></span></label>
 								if share.Mapped {
 									<span class="scope personal">zugeordnet</span>
 								} else {
