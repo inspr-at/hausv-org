@@ -90,6 +90,16 @@ type AnnualStatementReceiptSuggestionView struct {
 	Confirmed        bool
 }
 
+type AnnualStatementPrepaymentView struct {
+	UnitID        string
+	UnitLabel     string
+	AmountValue   string
+	Paid          string
+	Allocated     string
+	Balance       string
+	Recorded      bool
+}
+
 type AnnualStatementPageData struct {
 	Portal        PortalPageData
 	EstateName    string
@@ -122,6 +132,10 @@ type AnnualStatementPageData struct {
 	Allocation             AnnualStatementAllocationView
 	BasesMsg               string
 	BasesOK                bool
+	Prepayments            []AnnualStatementPrepaymentView
+	PrepaymentMsg          string
+	PrepaymentOK           bool
+	SettlementReady        bool
 }
 
 templ AnnualStatementPage(data AnnualStatementPageData) {
@@ -240,6 +254,32 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 				}
 			} else {
 				<p class="notice">Keine umlagefähige Kostenart verwendet derzeit einen Schlüssel.</p>
+			}
+		</section>
+
+		<section class="panel workspace" id="vorauszahlungen"><header class="workspace-head"><div><h2>Vorauszahlungen &amp; Akonto</h2><p>Akonto je Einheit für die gewählte Abrechnungsperiode erfassen und mit den derzeit zugeteilten Belegen vergleichen.</p></div><span class="scope management">Arbeitsvorschau</span></header>
+			@SettingsFlash(data.PrepaymentMsg, data.PrepaymentOK)
+			<p class="notice">Die Zuordnung ist eine Arbeitsvorschau aus den derzeit erfassten Belegen und Verteilerschlüsseln. Der versionierte Abrechnungslauf folgt in einem eigenen Arbeitsschritt.</p>
+			if data.HasPeriods && data.HasUnits {
+				<div class="unit-list">
+					for _, item := range data.Prepayments {
+						<form class="inline-details" method="post" action="/app/settings/annual-statement/prepayments"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><input type="hidden" name="unit_id" value={ item.UnitID }/><header class="subhead"><div><strong>{ item.UnitLabel }</strong><p>Akonto-Gesamtbetrag im Abrechnungsjahr { annualStatementYear(data.Year) }</p></div></header><div class="form-grid"><label>Akonto <small>Euro, Gesamtbetrag</small><input name="amount" value={ item.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 1200,00" required/></label><label>Vorausgezahlt<span class="readonly"><strong>{ item.Paid }</strong></span></label><label>Zugeteilt<span class="readonly">
+							if data.SettlementReady {
+								<strong>{ item.Allocated }</strong>
+							} else {
+								<strong>noch nicht berechenbar</strong>
+							}
+						</span></label><label>Saldo<span class="readonly">
+							if data.SettlementReady && item.Recorded {
+								<strong>{ item.Balance }</strong>
+							} else {
+								<strong>—</strong>
+							}
+						</span></label></div><div class="form-actions"><button class="button ghost" type="submit">Akonto speichern</button></div></form>
+					}
+				</div>
+			} else {
+				<p class="notice">Legen Sie zuerst eine Abrechnungsperiode und Einheiten an.</p>
 			}
 		</section>
 
