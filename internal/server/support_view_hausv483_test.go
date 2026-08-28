@@ -25,6 +25,10 @@ func newSupportViewTestApp(t *testing.T, supportPermission bool) *app {
 		Email: "resident@example.com", FirstName: "Rita", LastName: "Resident", Role: roleResident,
 		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(), Status: "Aktiv",
 	}
+	a.profiles["manager@example.com"] = userProfile{
+		Email: "manager@example.com", FirstName: "Mara", LastName: "Manager", Role: roleManager,
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(), Status: "Aktiv",
+	}
 	return a
 }
 
@@ -40,6 +44,10 @@ func supportViewPost(t *testing.T, a *app, token string, path string, values url
 }
 
 func startSupportViewForResident(t *testing.T, a *app) (string, int64) {
+	return startSupportViewForTarget(t, a, "resident@example.com", roleResident)
+}
+
+func startSupportViewForTarget(t *testing.T, a *app, targetEmail string, targetRole string) (string, int64) {
 	t.Helper()
 	parentExpiry := time.Now().Add(50 * time.Minute).Truncate(time.Second)
 	oldToken, _, err := a.sessions.PutSession("admin@example.com", "demo", authMethodEmail, roleAdmin, parentExpiry)
@@ -47,7 +55,7 @@ func startSupportViewForResident(t *testing.T, a *app) (string, int64) {
 		t.Fatal(err)
 	}
 	rr := supportViewPost(t, a, oldToken, "/app/support-view/start", url.Values{
-		"tenant": {"demo"}, "target_email": {"resident@example.com"}, "target_role": {roleResident},
+		"tenant": {"demo"}, "target_email": {targetEmail}, "target_role": {targetRole},
 	})
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("start status = %d: %s", rr.Code, rr.Body.String())
@@ -57,6 +65,119 @@ func startSupportViewForResident(t *testing.T, a *app) (string, int64) {
 		t.Fatal("starting support view must revoke the ordinary session")
 	}
 	return cookie.Value, parentExpiry.Unix()
+}
+
+func supportViewGet(t *testing.T, a *app, token string, path string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "http://hausv.org/demo"+path, nil)
+	req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+	rr := httptest.NewRecorder()
+	a.handler().ServeHTTP(rr, req)
+	return rr
+}
+
+func assertSupportAndOrdinaryReadAudits(t *testing.T, events []auditEvent, ordinaryEmail string, ordinaryRole string) {
+	t.Helper()
+	if len(events) != 2 {
+		t.Fatalf("read audit events = %+v, want support and ordinary access", events)
+	}
+	seenSupport := false
+	seenOrdinary := false
+	for _, event := range events {
+		switch event.ActorEmail {
+		case "admin@example.com":
+			seenSupport = true
+			if event.ActorRole != roleAdmin || event.Details["support_target_email"] != ordinaryEmail || event.Details["support_target_role"] != ordinaryRole {
+				t.Fatalf("support read audit = %+v", event)
+			}
+		case ordinaryEmail:
+			seenOrdinary = true
+			if event.ActorRole != ordinaryRole || event.Details["support_target_email"] != "" || event.Details["support_target_role"] != "" {
+				t.Fatalf("ordinary read audit = %+v", event)
+			}
+		default:
+			t.Fatalf("read audit attributed to unexpected actor: %+v", event)
+		}
+	}
+	if !seenSupport || !seenOrdinary {
+		t.Fatalf("read audit actors support=%v ordinary=%v events=%+v", seenSupport, seenOrdinary, events)
+	}
+}
+
+func TestSupportViewReadAuditsUseRealAdminAndTargetContext(t *testing.T) {
+	t.Run("resident document and attachment", func(t *testing.T) {
+		a := newSupportViewTestApp(t, true)
+		document, err := documentRepositoryForTest(a, "demo").Create(documentRecord{
+			TenantSlug: "demo",
+			Title:      "Hausordnung",
+			Category:   documentCategoryRules,
+			Visibility: documentVisibilityAllResidents,
+			UploadedBy: "admin@example.com",
+		}, testMultipartHeader(t, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% support audit\n")), time.Now())
+		if err != nil {
+			t.Fatalf("create document: %v", err)
+		}
+		issue, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+			TenantSlug:   "demo",
+			AuthorEmail:  "resident@example.com",
+			AuthorName:   "Rita Resident",
+			Category:     "Reparatur",
+			Title:        "Tür klemmt",
+			Body:         "Bitte prüfen.",
+			LocationType: issueLocationCommon,
+		})
+		if err != nil {
+			t.Fatalf("create issue: %v", err)
+		}
+		attachments, err := attachmentRepositoryForTest(a, "demo").CreateUploaded("issue", issue.ID, "resident@example.com", []uploadedFile{
+			testMultipartHeader(t, "attachments", "tuer.png", minimalPNG()),
+		}, time.Now())
+		if err != nil || len(attachments) != 1 {
+			t.Fatalf("create attachment = %+v err=%v", attachments, err)
+		}
+
+		token, _ := startSupportViewForResident(t, a)
+		if rr := supportViewGet(t, a, token, "/app/dokumente/"+document.ID+"/download"); rr.Code != http.StatusOK {
+			t.Fatalf("support document download status=%d body=%s", rr.Code, rr.Body.String())
+		}
+		if rr := supportViewGet(t, a, token, "/app/attachments/"+attachments[0].ID+"/preview"); rr.Code != http.StatusOK {
+			t.Fatalf("support attachment preview status=%d body=%s", rr.Code, rr.Body.String())
+		}
+		if rr := authedRequest(t, a, "resident@example.com", "/demo/app/dokumente/"+document.ID+"/download"); rr.Code != http.StatusOK {
+			t.Fatalf("ordinary document download status=%d", rr.Code)
+		}
+		if rr := authedRequest(t, a, "resident@example.com", "/demo/app/attachments/"+attachments[0].ID+"/preview"); rr.Code != http.StatusOK {
+			t.Fatalf("ordinary attachment preview status=%d", rr.Code)
+		}
+
+		assertSupportAndOrdinaryReadAudits(t, a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentDownload, Limit: 10}), "resident@example.com", roleResident)
+		assertSupportAndOrdinaryReadAudits(t, a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionAttachmentView, Limit: 10}), "resident@example.com", roleResident)
+	})
+
+	t.Run("manager handover protocol", func(t *testing.T) {
+		a := newSupportViewTestApp(t, true)
+		item, err := testRepositories(a, "demo").handovers.Create(handoverRecord{
+			ID:           "handover-support-audit",
+			TenantSlug:   "demo",
+			UnitID:       "top-1",
+			Title:        "Übergabe Top 1",
+			HandoverType: "Nutzerwechsel",
+			CreatedBy:    "manager@example.com",
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		})
+		if err != nil {
+			t.Fatalf("create handover: %v", err)
+		}
+		token, _ := startSupportViewForTarget(t, a, "manager@example.com", roleManager)
+		if rr := supportViewGet(t, a, token, "/app/uebergaben/"+item.ID+"/protokoll"); rr.Code != http.StatusOK {
+			t.Fatalf("support handover protocol status=%d body=%s", rr.Code, rr.Body.String())
+		}
+		if rr := authedRequest(t, a, "manager@example.com", "/demo/app/uebergaben/"+item.ID+"/protokoll"); rr.Code != http.StatusOK {
+			t.Fatalf("ordinary handover protocol status=%d", rr.Code)
+		}
+		assertSupportAndOrdinaryReadAudits(t, a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentDownload, Limit: 10}), "manager@example.com", roleManager)
+	})
 }
 
 func TestSupportViewRequiresSeparatePermissionAndExactTargetRole(t *testing.T) {

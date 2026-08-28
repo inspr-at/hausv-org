@@ -28,6 +28,31 @@ func supportViewPortalData(ac authCtx) web.SupportViewData {
 	return web.SupportViewData{Active: "active", TargetName: ac.supportView.TargetName, TargetRole: ac.supportView.TargetRole}
 }
 
+// recordAuthenticatedReadAudit keeps authorization on the effective support
+// target while attributing the resulting read access to the real signed-in
+// principal. The target context is deliberately limited to identity and role;
+// no document or attachment content is added here.
+func (a *app) recordAuthenticatedReadAudit(ac authCtx, event auditEvent) {
+	event.ActorEmail = ac.realEmail
+	event.ActorRole = ac.realRole
+	if event.ActorEmail == "" {
+		event.ActorEmail = ac.email
+	}
+	if event.ActorRole == "" {
+		event.ActorRole = ac.role
+	}
+	if ac.supportView != nil {
+		details := make(map[string]string, len(event.Details)+2)
+		for key, value := range event.Details {
+			details[key] = value
+		}
+		details["support_target_email"] = ac.supportView.TargetEmail
+		details["support_target_role"] = ac.supportView.TargetRole
+		event.Details = details
+	}
+	a.recordAudit(event)
+}
+
 func (a *app) sessionForRequest(r *http.Request) (auth.Session, bool) {
 	if a == nil || a.sessions == nil || r == nil {
 		return auth.Session{}, false

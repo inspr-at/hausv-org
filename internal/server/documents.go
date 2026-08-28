@@ -252,10 +252,8 @@ func (a *app) downloadDocument(w http.ResponseWriter, r *http.Request, ac authCt
 	if item.ContentType != "" {
 		w.Header().Set("Content-Type", item.ContentType)
 	}
-	a.recordAudit(auditEvent{
+	a.recordAuthenticatedReadAudit(ac, auditEvent{
 		TenantSlug: tenant.Slug,
-		ActorEmail: email,
-		ActorRole:  role,
 		Action:     auditActionDocumentDownload,
 		TargetType: "document",
 		TargetID:   item.ID,
@@ -356,10 +354,8 @@ func (a *app) serveAttachment(w http.ResponseWriter, r *http.Request, ac authCtx
 		if variant == "preview" {
 			access = "Vorschau"
 		}
-		a.recordAudit(auditEvent{
+		a.recordAuthenticatedReadAudit(ac, auditEvent{
 			TenantSlug: tenant.Slug,
-			ActorEmail: email,
-			ActorRole:  role,
 			Action:     auditActionAttachmentView,
 			TargetType: "attachment",
 			TargetID:   item.ID,
