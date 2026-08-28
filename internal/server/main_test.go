@@ -1478,7 +1478,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Abstimmungen mit Verlauf",
 		"Kontakte, Rollen und Rechte",
 		"Live-Energie verständlich",
-		"Parken, Laden und anbinden",
+		"Parken, Laden und Anbinden",
 		"hello [at] hausv [dot] org",
 		"wahlweise hosted oder selbst betrieben",
 		"quelloffen",
@@ -1531,6 +1531,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, "Parken, Laden und anbinden") {
+		t.Fatal("landing must not render the former lowercase integration heading")
 	}
 	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
