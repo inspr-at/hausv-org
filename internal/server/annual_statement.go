@@ -29,7 +29,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	if !ok {
 		return
 	}
-	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.annualStatementReceipts == nil || ac.repositories.units == nil {
+	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.annualStatementAkontos == nil || ac.repositories.annualStatementReceipts == nil || ac.repositories.units == nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -106,8 +106,10 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		costTypeNames[costType.Key] = costType.Name
 	}
 	receiptViews := []web.AnnualStatementReceiptView{}
+	selectedReceipts := []store.AnnualStatementReceipt{}
 	if selectedYear != 0 {
-		for _, receipt := range ac.repositories.annualStatementReceipts.ListByPeriod(selectedYear) {
+		selectedReceipts = ac.repositories.annualStatementReceipts.ListByPeriod(selectedYear)
+		for _, receipt := range selectedReceipts {
 			documentTitle := "Dokument " + receipt.DocumentID
 			if document, found := documentByID[receipt.DocumentID]; found {
 				documentTitle = document.Title + " · " + document.Filename
@@ -130,6 +132,33 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	if receiptMsg == "" {
 		receiptMsg, receiptOK = annualStatementReceiptMessage(r.URL.Query().Get("receipt"))
 	}
+	prepayments := map[string]store.AnnualStatementPrepayment{}
+	if selectedYear != 0 {
+		for _, item := range ac.repositories.annualStatementAkontos.ListByPeriod(selectedYear) {
+			prepayments[item.UnitID] = item
+		}
+	}
+	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units)
+	allocatedByUnit := map[string]int64{}
+	for _, item := range settlement {
+		allocatedByUnit[item.UnitID] = item.AllocatedCents
+	}
+	prepaymentViews := make([]web.AnnualStatementPrepaymentView, 0, len(units))
+	for _, unit := range units {
+		item, recorded := prepayments[unit.ID]
+		allocated := allocatedByUnit[unit.ID]
+		view := web.AnnualStatementPrepaymentView{
+			UnitID: unit.ID, UnitLabel: unit.Label, Recorded: recorded,
+			Paid: "nicht erfasst", Allocated: formatAnnualStatementMoney(allocated),
+			Balance: formatAnnualStatementBalance(item.AmountCents - allocated),
+		}
+		if recorded {
+			view.AmountValue = formatAnnualStatementReceiptAmountValue(item.AmountCents)
+			view.Paid = formatAnnualStatementMoney(item.AmountCents)
+		}
+		prepaymentViews = append(prepaymentViews, view)
+	}
+	prepaymentMsg, prepaymentOK := annualStatementPrepaymentMessage(r.URL.Query().Get("prepayment"))
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
@@ -145,7 +174,110 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 		Allocation: allocation, BasesMsg: basesMsg, BasesOK: basesOK,
+		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
 	}))
+}
+
+func (a *app) saveAnnualStatementPrepayment(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil || ac.repositories.annualStatementAkontos == nil || ac.repositories.annualStatementPeriods == nil {
+		http.Redirect(w, r, annualStatementPrepaymentRedirect(0, "invalid"), http.StatusSeeOther)
+		return
+	}
+	year, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("year")))
+	redirectYear := annualStatementPrepaymentDisplayYear(year, ac.repositories.annualStatementPeriods.List())
+	amount, amountOK := parseAnnualStatementPrepaymentAmount(r.FormValue("amount"))
+	if !amountOK {
+		http.Redirect(w, r, annualStatementPrepaymentRedirect(redirectYear, "invalid"), http.StatusSeeOther)
+		return
+	}
+	saved, previous, err := ac.repositories.annualStatementAkontos.Save(store.AnnualStatementPrepayment{
+		PeriodYear: year, UnitID: r.FormValue("unit_id"), AmountCents: amount, UpdatedBy: actorEmail,
+	})
+	if err != nil {
+		logError("annual statement prepayment save failed", err, "tenant", tenant.Slug, "year", year)
+		http.Redirect(w, r, annualStatementPrepaymentRedirect(redirectYear, "invalid"), http.StatusSeeOther)
+		return
+	}
+	previousAmount := ""
+	if previous != nil {
+		previousAmount = strconv.FormatInt(previous.AmountCents, 10)
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
+		Action: auditActionAnnualPrepaymentSave, TargetType: "annual-statement-prepayment", TargetID: strconv.Itoa(saved.PeriodYear) + ":" + saved.UnitID,
+		Summary: "Vorauszahlung gespeichert", Details: map[string]string{
+			"period_year": strconv.Itoa(saved.PeriodYear), "unit_id": saved.UnitID,
+			"previous_amount_cents": previousAmount, "new_amount_cents": strconv.FormatInt(saved.AmountCents, 10),
+		},
+	})
+	http.Redirect(w, r, annualStatementPrepaymentRedirect(saved.PeriodYear, "saved"), http.StatusSeeOther)
+}
+
+func parseAnnualStatementPrepaymentAmount(raw string) (int64, bool) {
+	raw = strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
+	parts := strings.Split(raw, ".")
+	if len(parts) != 2 || parts[0] == "" || len(parts[1]) != 2 {
+		return 0, false
+	}
+	euros, eurosErr := strconv.ParseInt(parts[0], 10, 64)
+	cents, centsErr := strconv.ParseInt(parts[1], 10, 64)
+	if eurosErr != nil || centsErr != nil || euros < 0 || cents < 0 || cents > 99 || euros > (int64(^uint64(0)>>1)-cents)/100 {
+		return 0, false
+	}
+	return euros*100 + cents, true
+}
+
+func annualStatementPrepaymentDisplayYear(requested int, periods []store.AnnualStatementPeriod) int {
+	for _, period := range periods {
+		if period.Year == requested {
+			return requested
+		}
+	}
+	if len(periods) > 0 {
+		return periods[0].Year
+	}
+	return 0
+}
+
+func annualStatementPrepaymentRedirect(year int, status string) string {
+	return "/app/settings/annual-statement?year=" + strconv.Itoa(year) + "&prepayment=" + status + "#vorauszahlungen"
+}
+
+func annualStatementPrepaymentMessage(status string) (string, bool) {
+	switch strings.TrimSpace(status) {
+	case "saved":
+		return "Vorauszahlung gespeichert.", true
+	case "invalid":
+		return "Vorauszahlung konnte nicht gespeichert werden. Bitte Abrechnungsjahr, Einheit und Betrag prüfen.", false
+	default:
+		return "", false
+	}
+}
+
+func formatAnnualStatementMoney(cents int64) string {
+	negative := cents < 0
+	if negative {
+		cents = -cents
+	}
+	formatted := formatAnnualStatementReceiptAmount(cents)
+	if negative {
+		return "−" + formatted
+	}
+	return formatted
+}
+
+func formatAnnualStatementBalance(cents int64) string {
+	if cents < 0 {
+		return "Nachzahlung " + formatAnnualStatementMoney(-cents)
+	}
+	if cents > 0 {
+		return "Guthaben " + formatAnnualStatementMoney(cents)
+	}
+	return "Ausgeglichen"
 }
 
 func (a *app) saveAnnualStatementCostType(w http.ResponseWriter, r *http.Request, ac authCtx) {
