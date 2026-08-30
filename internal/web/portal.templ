@@ -249,7 +249,7 @@ templ PortalSidebar(data PortalPageData) {
 							<small>{ data.Address }</small>
 						</a>
 						if len(data.Contexts) > 1 {
-							<details class="context-switch"><summary><span aria-hidden="true">⌄</span></summary><div class="context-menu">
+							<details class="context-switch"><summary aria-label="Portal wechseln">Portal wechseln<span class="context-switch-chevron" aria-hidden="true">⌄</span></summary><div class="context-menu">
 								for _, context := range data.Contexts {
 									if context.Current {
 										<span class="context-current"><strong>{ context.HouseName }</strong><small>Aktives Portal</small></span>
@@ -343,7 +343,7 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 
 templ PortalMobileContextSwitch(data PortalPageData) {
 	if len(data.Contexts) > 1 {
-		<details class="context-switch mobile-context-switch"><summary>Portal wechseln</summary><div class="context-menu">
+		<details class="context-switch mobile-context-switch"><summary aria-label="Portal wechseln">Portal wechseln<span class="context-switch-chevron" aria-hidden="true">⌄</span></summary><div class="context-menu">
 			for _, context := range data.Contexts {
 				if context.Current {
 					<span class="context-current"><strong>{ context.HouseName }</strong><small>Aktives Portal</small></span>
