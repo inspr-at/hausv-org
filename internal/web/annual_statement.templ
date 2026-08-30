@@ -308,7 +308,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 				<p class="notice"><strong>Automatische Erkennung derzeit geschlossen.</strong> Es ist kein freigegebener Inferenzdienst in Österreich oder der EU eingerichtet. Es werden keine Belegdaten versendet.</p>
 			}
 			if data.HasReceiptDocuments {
-				<form method="post" action="/app/settings/annual-statement/receipts/suggest"><label>Beleg aus Dokumenten<select name="document_id" required>
+				<form method="post" action="/app/settings/annual-statement/receipts/suggest"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><label>Beleg aus Dokumenten<select name="document_id" required>
 					<option value="">Dokument auswählen</option>
 					for _, document := range data.ReceiptDocuments {
 						<option value={ document.ID } selected?={ document.ID == data.ReceiptSuggestion.DocumentID }>{ document.Label }</option>

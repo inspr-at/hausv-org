@@ -190,7 +190,7 @@ func TestHAUSV576SuggestDoesNotPersistAndConfirmPersistsExactlyOne(t *testing.T)
 	a.annualStatementReceiptSuggester = &fixedAnnualStatementReceiptSuggester{suggestion: annualStatementReceiptSuggestion{
 		AmountCents: 9900, InvoiceDate: "2026-06-01", CostTypeKey: "grundsteuer", AmountCertain: true, DateCertain: true, CostTypeCertain: true,
 	}}
-	preview := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}})
+	preview := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}, "year": {"2026"}})
 	if preview.Code != http.StatusOK || len(repositories.annualStatementReceipts.List()) != 0 {
 		t.Fatalf("suggest status=%d receipts=%+v", preview.Code, repositories.annualStatementReceipts.List())
 	}
