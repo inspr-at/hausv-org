@@ -1,9 +1,13 @@
 package store
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 	"time"
+
+	appdb "github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 )
 
 func TestAnnualStatementPeriodStorage(t *testing.T) {
@@ -147,16 +151,49 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 	}
 }
 
-func TestAnnualStatementSaveWithStructureRollsBackPeriodWhenSnapshotInsertFails(t *testing.T) {
-	database, lanes := testLanes(t)
-	repository, ok := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), testTenantRef("demo"))
+func TestAnnualStatementSaveWithStructureRollsBackPeriodWhenSnapshotInsertFailsSQLite(t *testing.T) {
+	lanes, handle := testTenantDB(t)
+	database, ok := handle.(*sql.DB)
 	if !ok {
-		t.Fatal("bind repository")
+		t.Fatal("explicit SQLite handle is not *sql.DB")
 	}
+	seedFixtureTenants(t, database)
+	installSQLitePeriodStructureFailure(t, database)
+	assertAnnualStatementStructureFailureRollsBack(t, database, lanes)
+}
+
+func TestAnnualStatementSaveWithStructureRollsBackPeriodWhenSnapshotInsertFailsPostgres(t *testing.T) {
+	if dbtest.Backend() != appdb.BackendPostgres {
+		t.Skip("PostgreSQL rollback proof runs in the PostgreSQL store-test lane")
+	}
+	database, lanes := testLanes(t)
+	if _, err := database.Exec(`CREATE FUNCTION fail_period_structure() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'injected period snapshot failure'; END;
+		$$`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`CREATE TRIGGER fail_period_structure
+		BEFORE INSERT ON annual_statement_period_cost_types
+		FOR EACH ROW EXECUTE FUNCTION fail_period_structure()`); err != nil {
+		t.Fatal(err)
+	}
+	assertAnnualStatementStructureFailureRollsBack(t, database, lanes)
+}
+
+func installSQLitePeriodStructureFailure(t *testing.T, database *sql.DB) {
+	t.Helper()
 	if _, err := database.Exec(`CREATE TRIGGER fail_period_structure
 		BEFORE INSERT ON annual_statement_period_cost_types
 		BEGIN SELECT RAISE(ABORT, 'injected period snapshot failure'); END`); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func assertAnnualStatementStructureFailureRollsBack(t *testing.T, database *sql.DB, lanes *TenantDB) {
+	t.Helper()
+	repository, ok := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), testTenantRef("demo"))
+	if !ok {
+		t.Fatal("bind repository")
 	}
 	_, err := repository.SaveWithStructure(AnnualStatementPeriod{
 		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",

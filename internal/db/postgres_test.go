@@ -235,8 +235,24 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 			t.Fatalf("seed prerequisite %s: %v", table, err)
 		}
 	}
+	// The period-scoped structure tables deliberately have a composite foreign
+	// key to their period. Seed that relationship explicitly; a one-column
+	// smoke row would test the FK instead of the RLS behavior this fixture owns.
+	if _, err := tx.Exec(`INSERT INTO annual_statement_periods(tenant_id,tenant_slug,year)
+		VALUES($1,'rls-fixture',2026)`, tenantA); err != nil {
+		t.Fatalf("seed prerequisite annual_statement_periods: %v", err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(tenant_id,tenant_slug,period_year,key)
+		VALUES($1,'rls-fixture',2026,'rls-fixture')`, tenantA); err != nil {
+		t.Fatalf("seed annual_statement_period_cost_types: %v", err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_period_unit_bases(tenant_id,tenant_slug,period_year,unit_id)
+		VALUES($1,'rls-fixture',2026,'rls-fixture')`, tenantA); err != nil {
+		t.Fatalf("seed annual_statement_period_unit_bases: %v", err)
+	}
 	for _, table := range tables {
-		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" {
+		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" ||
+			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" {
 			continue
 		}
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {
