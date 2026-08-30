@@ -60,15 +60,22 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		formYear = time.Now().Year()
 	}
 	startsOn, endsOn := "", ""
+	followup := web.AnnualStatementFollowupView{}
 	periodViews := make([]web.AnnualStatementPeriodView, 0, len(periods))
 	for _, period := range periods {
 		selected := period.Year == selectedYear
 		if selected {
 			startsOn, endsOn = period.StartsOn, period.EndsOn
+			if next, nextOK := annualStatementFollowupPeriod(period, actorEmail); nextOK {
+				followup = web.AnnualStatementFollowupView{
+					SourceYear: period.Year, Year: next.Year, DateRange: annualStatementDateRange(next.StartsOn, next.EndsOn),
+					Deadline: annualStatementDeadline(next.EndsOn), Available: true,
+				}
+			}
 		}
 		periodViews = append(periodViews, web.AnnualStatementPeriodView{
 			Year: period.Year, StartsOn: period.StartsOn, EndsOn: period.EndsOn,
-			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Selected: selected,
+			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualStatementDeadline(period.EndsOn), Selected: selected,
 		})
 	}
 	units := ac.repositories.units.List()
@@ -164,7 +171,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
 		Periods: periodViews, HasPeriods: len(periodViews) > 0,
 		Year: formYear, StartsOn: startsOn, EndsOn: endsOn,
-		PeriodMsg: periodMsg, PeriodOK: periodOK, ImportMsg: importMsg, ImportOK: importOK,
+		PeriodMsg: periodMsg, PeriodOK: periodOK, Followup: followup, ImportMsg: importMsg, ImportOK: importOK,
 		CostTypes: costTypeViews, CostTypeCount: len(costTypeViews), AllocatableCostTypeCount: allocatableCount,
 		CostTypeMsg: costTypeMsg, CostTypeOK: costTypeOK,
 		ReceiptDocuments: receiptDocuments, HasReceiptDocuments: len(receiptDocuments) > 0,
@@ -604,6 +611,97 @@ func (a *app) saveAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, 
 	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(year)+"&period=saved", http.StatusSeeOther)
 }
 
+func (a *app) cloneNextAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil || ac.repositories.annualStatementPeriods == nil {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid#perioden", http.StatusSeeOther)
+		return
+	}
+	sourceYear, err := strconv.Atoi(strings.TrimSpace(r.FormValue("source_year")))
+	periods := ac.repositories.annualStatementPeriods.List()
+	var source store.AnnualStatementPeriod
+	found := false
+	for _, period := range periods {
+		if period.Year == sourceYear {
+			source, found = period, true
+			break
+		}
+	}
+	target, valid := annualStatementFollowupPeriod(source, actorEmail)
+	if err != nil || !found || !valid {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid#perioden", http.StatusSeeOther)
+		return
+	}
+	saved, created, err := ac.repositories.annualStatementPeriods.Create(target)
+	if err != nil {
+		logError("annual statement follow-up period save failed", err, "tenant", tenant.Slug, "source_year", sourceYear, "target_year", target.Year)
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(sourceYear)+"&period=error#perioden", http.StatusSeeOther)
+		return
+	}
+	if !created {
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(target.Year)+"&period=exists#perioden", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
+		Action: auditActionAnnualPeriodSave, TargetType: "annual-statement-period", TargetID: strconv.Itoa(saved.Year),
+		Summary: "Folgeperiode aus Vorlage erstellt",
+		Details: map[string]string{
+			"source_year": strconv.Itoa(sourceYear), "year": strconv.Itoa(saved.Year),
+			"starts_on": saved.StartsOn, "ends_on": saved.EndsOn, "copied_amounts": "false",
+		},
+	})
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(saved.Year)+"&period=cloned#perioden", http.StatusSeeOther)
+}
+
+func annualStatementFollowupPeriod(source store.AnnualStatementPeriod, updatedBy string) (store.AnnualStatementPeriod, bool) {
+	if source.Year < 1 || source.Year >= 9999 {
+		return store.AnnualStatementPeriod{}, false
+	}
+	startsOn, startsOK := annualStatementShiftDate(source.StartsOn, 12)
+	endsOn, endsOK := annualStatementShiftDate(source.EndsOn, 12)
+	if !startsOK || !endsOK {
+		return store.AnnualStatementPeriod{}, false
+	}
+	return store.AnnualStatementPeriod{
+		Year: source.Year + 1, StartsOn: startsOn, EndsOn: endsOn,
+		UpdatedAt: time.Now().UTC(), UpdatedBy: updatedBy,
+	}, true
+}
+
+func annualStatementShiftDate(raw string, months int) (string, bool) {
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return "", false
+	}
+	totalMonths := int(parsed.Month()) - 1 + months
+	year := parsed.Year() + totalMonths/12
+	monthIndex := totalMonths % 12
+	if monthIndex < 0 {
+		year--
+		monthIndex += 12
+	}
+	month := time.Month(monthIndex + 1)
+	lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	day := parsed.Day()
+	if day > lastDay {
+		day = lastDay
+	}
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02"), true
+}
+
+func annualStatementDeadline(endsOn string) string {
+	deadline, ok := annualStatementShiftDate(endsOn, 6)
+	if !ok {
+		return "–"
+	}
+	parsed, _ := time.Parse("2006-01-02", deadline)
+	return parsed.Format("02.01.2006")
+}
+
 func (a *app) importAnnualStatementParties(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
@@ -788,8 +886,14 @@ func annualStatementPeriodMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
 		return "Die Abrechnungsperiode wurde gespeichert.", true
+	case "cloned":
+		return "Vorlage übernommen. Belege, Beträge und Akonto wurden nicht kopiert.", true
+	case "exists":
+		return "Das Folgejahr ist bereits vorhanden und wurde nicht überschrieben.", false
 	case "invalid":
 		return "Bitte Abrechnungsjahr und Zeitraum vollständig und chronologisch eingeben.", false
+	case "error":
+		return "Das Folgejahr konnte nicht angelegt werden.", false
 	default:
 		return "", false
 	}

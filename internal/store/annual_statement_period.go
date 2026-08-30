@@ -20,6 +20,7 @@ type AnnualStatementPeriod struct {
 }
 
 type AnnualStatementPeriodRepository interface {
+	Create(period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	Save(period AnnualStatementPeriod) (AnnualStatementPeriod, error)
 	List() []AnnualStatementPeriod
 }
@@ -29,6 +30,7 @@ type AnnualStatementPeriodStorage interface {
 }
 
 type annualStatementPeriodBackend interface {
+	createAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	saveAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, error)
 	listAnnualStatementPeriods(tenant TenantRef) []AnnualStatementPeriod
 }
@@ -51,6 +53,10 @@ func (r *boundAnnualStatementPeriodRepository) Save(period AnnualStatementPeriod
 	return r.storage.saveAnnualStatementPeriod(r.tenant, period)
 }
 
+func (r *boundAnnualStatementPeriodRepository) Create(period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error) {
+	return r.storage.createAnnualStatementPeriod(r.tenant, period)
+}
+
 func (r *boundAnnualStatementPeriodRepository) List() []AnnualStatementPeriod {
 	return r.storage.listAnnualStatementPeriods(r.tenant)
 }
@@ -67,6 +73,26 @@ func NewMemoryAnnualStatementPeriodStore() *MemoryAnnualStatementPeriodStore {
 }
 
 func (*MemoryAnnualStatementPeriodStore) annualStatementPeriodStorage() {}
+
+func (s *MemoryAnnualStatementPeriodStore) createAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error) {
+	period = normalizeAnnualStatementPeriod(period)
+	if err := validateAnnualStatementPeriod(period); err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.byHome == nil {
+		s.byHome = map[string]map[int]AnnualStatementPeriod{}
+	}
+	if s.byHome[tenant.ID] == nil {
+		s.byHome[tenant.ID] = map[int]AnnualStatementPeriod{}
+	}
+	if _, exists := s.byHome[tenant.ID][period.Year]; exists {
+		return AnnualStatementPeriod{}, false, nil
+	}
+	s.byHome[tenant.ID][period.Year] = period
+	return period, true, nil
+}
 
 func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, error) {
 	period = normalizeAnnualStatementPeriod(period)
@@ -106,6 +132,28 @@ func NewSQLAnnualStatementPeriodStore(db *TenantDB) *SQLAnnualStatementPeriodSto
 }
 
 func (*SQLAnnualStatementPeriodStore) annualStatementPeriodStorage() {}
+
+func (s *SQLAnnualStatementPeriodStore) createAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error) {
+	period = normalizeAnnualStatementPeriod(period)
+	if err := validateAnnualStatementPeriod(period); err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	result, err := s.db.For(tenant).Exec(
+		`INSERT INTO annual_statement_periods(tenant_id, tenant_slug, year, starts_on, ends_on, updated_at, updated_by)
+		 VALUES($1,$2,$3,$4,$5,$6,$7)
+		 ON CONFLICT(tenant_slug, year) DO NOTHING`,
+		tenant.ID, tenant.Slug, period.Year, period.StartsOn, period.EndsOn,
+		period.UpdatedAt.Format(time.RFC3339Nano), period.UpdatedBy,
+	)
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	return period, affected == 1, nil
+}
 
 func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, error) {
 	period = normalizeAnnualStatementPeriod(period)

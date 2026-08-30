@@ -44,11 +44,18 @@ func TestAnnualStatementPeriodStorage(t *testing.T) {
 			if _, err := demo.Save(AnnualStatementPeriod{Year: 2025, StartsOn: "2025-04-01", EndsOn: "2026-03-31"}); err != nil {
 				t.Fatalf("save cross-calendar period: %v", err)
 			}
+			if _, created, err := demo.Create(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-03-01", EndsOn: "2027-02-28"}); err != nil || created {
+				t.Fatalf("create must not overwrite existing period: created=%t err=%v", created, err)
+			}
+			createdNext, inserted, err := demo.Create(AnnualStatementPeriod{Year: 2027, StartsOn: "2027-01-01", EndsOn: "2027-12-31", UpdatedBy: "manager@example.com"})
+			if err != nil || !inserted || createdNext.Year != 2027 {
+				t.Fatalf("create new period = %+v created=%t err=%v", createdNext, inserted, err)
+			}
 			if _, err := demo.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-02-01", EndsOn: "2027-01-31", UpdatedBy: "manager@example.com"}); err != nil {
 				t.Fatalf("update: %v", err)
 			}
 			got := demo.List()
-			if len(got) != 2 || got[0].Year != 2026 || got[0].StartsOn != "2026-02-01" || got[1].Year != 2025 {
+			if len(got) != 3 || got[0].Year != 2027 || got[1].Year != 2026 || got[1].StartsOn != "2026-02-01" || got[2].Year != 2025 {
 				t.Fatalf("list = %+v", got)
 			}
 			if otherPeriods := other.List(); len(otherPeriods) != 0 {

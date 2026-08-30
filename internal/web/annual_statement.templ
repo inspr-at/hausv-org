@@ -7,7 +7,16 @@ type AnnualStatementPeriodView struct {
 	StartsOn  string
 	EndsOn    string
 	DateRange string
+	Deadline  string
 	Selected  bool
+}
+
+type AnnualStatementFollowupView struct {
+	SourceYear int
+	Year       int
+	DateRange  string
+	Deadline   string
+	Available  bool
 }
 
 type AnnualStatementUnitView struct {
@@ -111,6 +120,7 @@ type AnnualStatementPageData struct {
 	EndsOn        string
 	PeriodMsg     string
 	PeriodOK      bool
+	Followup      AnnualStatementFollowupView
 	ImportMsg     string
 	ImportOK      bool
 	CostTypes     []AnnualStatementCostTypeView
@@ -165,7 +175,7 @@ templ AnnualStatementHeaderAction() {
 
 templ AnnualStatementBody(data AnnualStatementPageData) {
 	<div data-templ-annual-statement>
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
+		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
 				<form method="post" action="/app/settings/annual-statement/periods"><fieldset><legend>Abrechnungsperiode</legend><label>Abrechnungsjahr<input type="number" name="year" min="1" max="9999" value={ annualStatementYear(data.Year) } required/></label><div class="form-grid"><label>Von<input type="date" name="starts_on" value={ data.StartsOn } required/></label><label>Bis<input type="date" name="ends_on" value={ data.EndsOn } required/></label></div><button class="button primary" type="submit">Abrechnungsperiode speichern</button></fieldset></form>
@@ -173,9 +183,16 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			if data.HasPeriods {
 				<header class="subhead"><div><h3>Gespeicherte Abrechnungsjahre</h3><p>Für spätere Arbeitsschritte wiederverwendbar.</p></div></header><nav class="settings-links">
 					for _, period := range data.Periods {
-						<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(period.Year)) } aria-current={ portalAriaCurrent(period.Selected) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>{ annualStatementYear(period.Year) }</strong><small>{ period.DateRange }</small></span><b>›</b></a>
+						<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(period.Year)) } aria-current={ portalAriaCurrent(period.Selected) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>{ annualStatementYear(period.Year) }</strong><small>{ period.DateRange } · Erinnerung { period.Deadline }</small></span><b>›</b></a>
 					}
 				</nav>
+			}
+			if data.Followup.Available {
+				<article class="inline-details"><header class="subhead"><div><h3>Folgejahr { annualStatementYear(data.Followup.Year) } vorbereiten</h3><p>{ data.Followup.DateRange }</p></div><span class="scope management">Vorlage</span></header>
+					<p>Der bestehende Kostenartenkatalog und seine Verteilerschlüssel werden weiterverwendet. Belege, Beträge, Vorauszahlungen und Abrechnungsergebnisse werden nicht kopiert.</p>
+					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach § 34 Abs. 1 WEG aus dem gespeicherten Periodenende mit sechs Monaten berechnet. Das ist eine Arbeitserinnerung und keine Rechtsberatung; Vereinbarungen und Einzelfall bitte prüfen.</p>
+					<form method="post" action="/app/settings/annual-statement/periods/next"><input type="hidden" name="source_year" value={ annualStatementYear(data.Followup.SourceYear) }/><button class="button primary" type="submit">Folgejahr als Vorlage anlegen</button></form>
+				</article>
 			}
 		</section>
 
