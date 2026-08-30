@@ -29,8 +29,8 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	// The existing page initializes the HAUSV-574 catalogue before a document
-	// can be selected. The suggestion requests below must not change it.
+	// Rendering is read-only. The period's catalogue is initialized explicitly
+	// below before suggestion requests, which must not change it.
 	if response := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement"); response.Code != http.StatusOK {
 		t.Fatalf("annual statement page status = %d", response.Code)
 	}
@@ -51,6 +51,7 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	}); err != nil {
 		t.Fatalf("save period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	periodsBefore := repositories.annualStatementPeriods.List()
 	costTypesBefore := repositories.annualStatementCostTypes.List()
 	receiptsBefore := repositories.annualStatementReceipts.List()
@@ -95,6 +96,16 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	}
 	if suggester.calls != 3 {
 		t.Fatalf("suggester calls = %d, want preview plus two trusted re-checks", suggester.calls)
+	}
+}
+
+func seedAnnualStatementPeriodStructure(t *testing.T, repositories requestRepositories, year int) {
+	t.Helper()
+	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repositories.annualStatementPeriods.EnsureStructure(year, repositories.annualStatementCostTypes.List(), repositories.units.List(), "manager@example.com"); err != nil {
+		t.Fatal(err)
 	}
 }
 

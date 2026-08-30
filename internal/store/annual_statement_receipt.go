@@ -363,7 +363,11 @@ func annualStatementReceiptReferencesValid(receipt AnnualStatementReceipt, perio
 		return false
 	}
 	costTypeFound := false
-	for _, costType := range costTypes.List() {
+	periodCostTypes := costTypes.List()
+	if structure, found := periods.Structure(receipt.PeriodYear); found {
+		periodCostTypes = structure.CostTypes
+	}
+	for _, costType := range periodCostTypes {
 		if costType.Key == receipt.CostTypeKey {
 			costTypeFound = true
 			break
@@ -381,7 +385,11 @@ func sqlAnnualStatementReceiptReferencesValid(tx *sql.Tx, tenant TenantRef, rece
 	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM annual_statement_periods WHERE tenant_id=$1 AND year=$2)`, tenant.ID, receipt.PeriodYear).Scan(&periodExists); err != nil {
 		return false, err
 	}
-	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM annual_statement_cost_types WHERE tenant_id=$1 AND key=$2)`, tenant.ID, receipt.CostTypeKey).Scan(&costTypeExists); err != nil {
+	if err := tx.QueryRow(`SELECT CASE
+		WHEN EXISTS(SELECT 1 FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2)
+		THEN EXISTS(SELECT 1 FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 AND key=$3)
+		ELSE EXISTS(SELECT 1 FROM annual_statement_cost_types WHERE tenant_id=$1 AND key=$3)
+		END`, tenant.ID, receipt.PeriodYear, receipt.CostTypeKey).Scan(&costTypeExists); err != nil {
 		return false, err
 	}
 	var raw string

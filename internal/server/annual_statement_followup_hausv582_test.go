@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 	if err := testUnitRepository(t, a, "demo").SetUnits([]unit{{
 		ID: "top-1", Label: "Top 1", UnitType: unitTypeResidential, MiteigentumsanteilPPM: 1_000_000,
+		OwnerEmails: []string{"owner@example.com"}, UsableAreaM2Hundredths: 7_500, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true,
 	}}); err != nil {
 		t.Fatal(err)
 	}
@@ -28,6 +30,20 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 		t.Fatal(err)
 	}
 	costTypesBefore := repositories.annualStatementCostTypes.List()
+	if err := repositories.annualStatementPeriods.EnsureStructure(2026, costTypesBefore, repositories.units.List(), "manager@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	structureBeforeGET, ok := repositories.annualStatementPeriods.Structure(2026)
+	if !ok {
+		t.Fatal("source structure missing before GET")
+	}
+	if page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement?year=2026"); page.Code != http.StatusOK {
+		t.Fatalf("source page status=%d", page.Code)
+	}
+	structureAfterGET, ok := repositories.annualStatementPeriods.Structure(2026)
+	if !ok || !reflect.DeepEqual(structureBeforeGET, structureAfterGET) || !reflect.DeepEqual(costTypesBefore, repositories.annualStatementCostTypes.List()) {
+		t.Fatalf("GET mutated structure/catalog: before=%+v after=%+v", structureBeforeGET, structureAfterGET)
+	}
 	if _, _, err := repositories.annualStatementAkontos.Save(storepkg.AnnualStatementPrepayment{
 		PeriodYear: 2026, UnitID: "top-1", AmountCents: 12_345, UpdatedBy: "manager@example.com",
 	}); err != nil {
@@ -70,6 +86,41 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionAnnualPeriodSave, Limit: 20})
 	if len(events) != 1 || events[0].TargetID != "2027" || events[0].Details["source_year"] != "2026" || events[0].Details["copied_amounts"] != "false" {
 		t.Fatalf("follow-up audit = %+v", events)
+	}
+	if response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/cost-types", url.Values{
+		"period_year": {"2027"}, "key": {"grundsteuer"}, "name": {"Grundsteuer Zieljahr"},
+		"allocation": {"allocatable"}, "allocation_key": {storepkg.AllocationKeyPersonen},
+	}); response.Code != http.StatusSeeOther {
+		t.Fatalf("target cost type edit status=%d", response.Code)
+	}
+	if response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/allocation-bases", url.Values{
+		"period_year": {"2027"}, "unit_id": {"top-1"}, "usable_area_m2": {"90,00"}, "persons": {"4"},
+	}); response.Code != http.StatusSeeOther {
+		t.Fatalf("target basis edit status=%d", response.Code)
+	}
+	sourceStructure, sourceOK := repositories.annualStatementPeriods.Structure(2026)
+	targetStructure, targetOK := repositories.annualStatementPeriods.Structure(2027)
+	if !sourceOK || !targetOK {
+		t.Fatalf("period structures missing: source=%t target=%t", sourceOK, targetOK)
+	}
+	sourceCostTypes, targetCostTypes := map[string]storepkg.AnnualStatementCostType{}, map[string]storepkg.AnnualStatementCostType{}
+	for _, item := range sourceStructure.CostTypes {
+		sourceCostTypes[item.Key] = item
+	}
+	for _, item := range targetStructure.CostTypes {
+		targetCostTypes[item.Key] = item
+	}
+	if sourceCostTypes["grundsteuer"].Name == targetCostTypes["grundsteuer"].Name || sourceCostTypes["grundsteuer"].AllocationKey == targetCostTypes["grundsteuer"].AllocationKey {
+		t.Fatalf("target cost-type edit leaked into source: source=%+v target=%+v", sourceStructure.CostTypes, targetStructure.CostTypes)
+	}
+	if len(sourceStructure.UnitBases) != 1 || len(targetStructure.UnitBases) != 1 ||
+		sourceStructure.UnitBases[0].UsableAreaM2Hundredths != 7_500 || sourceStructure.UnitBases[0].Persons != 2 ||
+		targetStructure.UnitBases[0].UsableAreaM2Hundredths != 9_000 || targetStructure.UnitBases[0].Persons != 4 {
+		t.Fatalf("target basis edit leaked into source: source=%+v target=%+v", sourceStructure.UnitBases, targetStructure.UnitBases)
+	}
+	canonical := repositories.units.List()[0]
+	if canonical.OwnerEmails[0] != "owner@example.com" || canonical.UsableAreaM2Hundredths != 7_500 || canonical.Persons != 2 {
+		t.Fatalf("period edit mutated canonical unit/party data: %+v", canonical)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement?year=2027&period=cloned")
 	for _, want := range []string{

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -60,6 +61,73 @@ func TestAnnualStatementPeriodStorage(t *testing.T) {
 			}
 			if otherPeriods := other.List(); len(otherPeriods) != 0 {
 				t.Fatalf("other tenant saw %+v", otherPeriods)
+			}
+		})
+	}
+}
+
+func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T) {
+	backends := map[string]func(t *testing.T) AnnualStatementPeriodStorage{
+		"memory": func(t *testing.T) AnnualStatementPeriodStorage { return NewMemoryAnnualStatementPeriodStore() },
+		"sql": func(t *testing.T) AnnualStatementPeriodStorage {
+			_, lanes := testLanes(t)
+			return NewSQLAnnualStatementPeriodStore(lanes)
+		},
+	}
+	for name, build := range backends {
+		t.Run(name, func(t *testing.T) {
+			storage := build(t)
+			demo, _ := BindAnnualStatementPeriodRepository(storage, testTenantRef("demo"))
+			other, _ := BindAnnualStatementPeriodRepository(storage, testTenantRef("other"))
+			if _, err := demo.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
+				t.Fatal(err)
+			}
+			costTypes := []AnnualStatementCostType{{
+				Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedBy: "manager@example.com",
+			}}
+			units := []Unit{{
+				ID: "top-1", Label: "Top 1", MiteigentumsanteilPPM: 1_000_000,
+				UsableAreaM2Hundredths: 7_500, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true,
+			}}
+			if err := demo.EnsureStructure(2026, costTypes, units, "manager@example.com"); err != nil {
+				t.Fatal(err)
+			}
+			sourceBefore, ok := demo.Structure(2026)
+			if !ok {
+				t.Fatal("source structure missing")
+			}
+			targetPeriod := AnnualStatementPeriod{Year: 2027, StartsOn: "2027-01-01", EndsOn: "2027-12-31", UpdatedBy: "manager@example.com"}
+			if _, created, err := demo.CloneStructure(2026, targetPeriod); err != nil || !created {
+				t.Fatalf("clone: created=%t err=%v", created, err)
+			}
+			if _, err := demo.SaveStructureCostType(2027, AnnualStatementCostType{
+				Key: "grundsteuer", Name: "Grundsteuer Zieljahr", Allocatable: true, AllocationKey: AllocationKeyPersonen, UpdatedBy: "manager@example.com",
+			}); err != nil {
+				t.Fatal(err)
+			}
+			if err := demo.SaveStructureUnitBases(2027, []AnnualStatementPeriodUnitBasis{{
+				UnitID: "top-1", MiteigentumsanteilPPM: 900_000, UsableAreaM2Hundredths: 9_000, UsableAreaRecorded: true, Persons: 4, PersonsRecorded: true,
+			}}); err != nil {
+				t.Fatal(err)
+			}
+			sourceAfter, ok := demo.Structure(2026)
+			if !ok || !reflect.DeepEqual(sourceBefore, sourceAfter) {
+				t.Fatalf("target edits changed source: before=%+v after=%+v", sourceBefore, sourceAfter)
+			}
+			targetEdited, _ := demo.Structure(2027)
+			if len(targetEdited.UnitBases) != 1 || targetEdited.UnitBases[0].MiteigentumsanteilPPM != 900_000 {
+				t.Fatalf("target Nutzwert basis was not independently editable: %+v", targetEdited.UnitBases)
+			}
+			targetBeforeDuplicate, _ := demo.Structure(2027)
+			if _, created, err := demo.CloneStructure(2026, targetPeriod); err != nil || created {
+				t.Fatalf("duplicate clone: created=%t err=%v", created, err)
+			}
+			targetAfterDuplicate, _ := demo.Structure(2027)
+			if !reflect.DeepEqual(targetBeforeDuplicate, targetAfterDuplicate) {
+				t.Fatalf("duplicate clone partially overwrote target: before=%+v after=%+v", targetBeforeDuplicate, targetAfterDuplicate)
+			}
+			if _, found := other.Structure(2026); found {
+				t.Fatal("other tenant saw demo period structure")
 			}
 		})
 	}

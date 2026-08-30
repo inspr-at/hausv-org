@@ -234,8 +234,12 @@ func annualStatementReceiptFieldsReferenceExisting(receipt store.AnnualStatement
 	for _, period := range repositories.annualStatementPeriods.List() {
 		periodFound = periodFound || period.Year == receipt.PeriodYear
 	}
+	costTypes := repositories.annualStatementCostTypes.List()
+	if structure, found := repositories.annualStatementPeriods.Structure(receipt.PeriodYear); found {
+		costTypes = structure.CostTypes
+	}
 	costTypeFound := false
-	for _, costType := range repositories.annualStatementCostTypes.List() {
+	for _, costType := range costTypes {
 		costTypeFound = costTypeFound || costType.Key == strings.TrimSpace(receipt.CostTypeKey)
 	}
 	return periodFound && costTypeFound

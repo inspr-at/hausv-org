@@ -337,6 +337,9 @@ func seedFull(t *testing.T) *source {
 		if _, err := periods.Save(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement period: %v", slug, err)
 		}
+		if err := periods.EnsureStructure(2026, costTypes.List(), units.List(), "verwalter@example.com"); err != nil {
+			t.Fatalf("%s annual statement period structure: %v", slug, err)
+		}
 		prepayments, _ := store.BindAnnualStatementPrepaymentRepository(store.NewSQLAnnualStatementPrepaymentStore(src.lanes), tenant)
 		if _, _, err := prepayments.Save(store.AnnualStatementPrepayment{PeriodYear: 2026, UnitID: "top-1", AmountCents: 12_550, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement prepayment: %v", slug, err)

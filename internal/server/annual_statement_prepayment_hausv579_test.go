@@ -26,6 +26,9 @@ func TestAnnualStatementPrepaymentsArePeriodBoundAuditedAndCompared(t *testing.T
 	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
 		t.Fatal(err)
 	}
+	if err := repositories.annualStatementPeriods.EnsureStructure(2026, repositories.annualStatementCostTypes.List(), repositories.units.List(), "manager@example.com"); err != nil {
+		t.Fatal(err)
+	}
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
 		Title: "Grundsteuer", Category: storepkg.DocumentCategoryBilling, Visibility: storepkg.DocumentVisibilityManagerOnly, UploadedBy: "manager@example.com",
 	}, "grundsteuer.pdf", "application/pdf", []byte("%PDF-1.4 receipt"), time.Now())
@@ -79,7 +82,7 @@ func TestAnnualStatementPrepaymentsArePeriodBoundAuditedAndCompared(t *testing.T
 	if top2 < 0 || !strings.Contains(page.Body.String()[top2:], "nicht erfasst") {
 		t.Fatal("unit without a recorded Akonto must not be shown as 0,00 € paid")
 	}
-	if _, err := repositories.annualStatementCostTypes.Save(storepkg.AnnualStatementCostType{
+	if _, err := repositories.annualStatementPeriods.SaveStructureCostType(2026, storepkg.AnnualStatementCostType{
 		Key: "wasser", Name: "Wasser", Allocatable: true, AllocationKey: storepkg.AllocationKeyPersonen, UpdatedBy: "manager@example.com",
 	}); err != nil {
 		t.Fatal(err)

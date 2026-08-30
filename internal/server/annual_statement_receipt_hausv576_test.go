@@ -23,6 +23,7 @@ func TestHAUSV576ManagerReceiptCRUDRetainsOriginalDocument(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
 		Title: "Wasserrechnung April", Category: documentCategoryBilling, Visibility: documentVisibilityManagerOnly, UploadedBy: "manager@example.com",
 	}, "wasser-april.pdf", "application/pdf", []byte("%PDF-1.4 original receipt"), time.Now())
@@ -103,6 +104,7 @@ func TestHAUSV576ReceiptUploadCreatesDocumentThenReceipt(t *testing.T) {
 	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
 		t.Fatalf("period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	documentsBefore := len(repositories.documents.List())
 	response := authedMultipartFilesRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts", map[string]string{
 		"year": "2026", "cost_type_key": "grundsteuer", "amount": "77,15", "invoice_date": "2026-05-15",
@@ -137,6 +139,7 @@ func TestHAUSV576InvalidReceiptSubmitWritesNothingOrAudit(t *testing.T) {
 	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
 		t.Fatalf("period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
 		Title: "Valid original", Category: documentCategoryBilling, Visibility: documentVisibilityManagerOnly, UploadedBy: "manager@example.com",
 	}, "valid.pdf", "application/pdf", []byte("%PDF-1.4 valid original"), time.Now())
@@ -177,6 +180,7 @@ func TestHAUSV576SuggestDoesNotPersistAndConfirmPersistsExactlyOne(t *testing.T)
 	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
 		t.Fatalf("period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
 		Title: "Vorgeschlagener Beleg", Category: documentCategoryBilling, Visibility: documentVisibilityManagerOnly, UploadedBy: "manager@example.com",
 	}, "vorschlag.pdf", "application/pdf", []byte("%PDF-1.4 fixture receipt"), time.Now())
