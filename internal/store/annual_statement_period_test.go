@@ -96,6 +96,20 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 			if !ok {
 				t.Fatal("source structure missing")
 			}
+			if _, err := demo.SaveWithStructure(AnnualStatementPeriod{
+				Year: 2026, StartsOn: "2026-02-01", EndsOn: "2027-01-31", UpdatedBy: "manager@example.com",
+			}, []AnnualStatementCostType{{
+				Key: "changed", Name: "Must not replace snapshot", Allocatable: true, AllocationKey: AllocationKeyPersonen, UpdatedBy: "manager@example.com",
+			}}, []Unit{{ID: "top-1", MiteigentumsanteilPPM: 42}}); err != nil {
+				t.Fatal(err)
+			}
+			sourceAfterPeriodEdit, ok := demo.Structure(2026)
+			if !ok || !reflect.DeepEqual(sourceBefore, sourceAfterPeriodEdit) {
+				t.Fatalf("editing period dates replaced its snapshot: before=%+v after=%+v", sourceBefore, sourceAfterPeriodEdit)
+			}
+			if periods := demo.List(); len(periods) != 1 || periods[0].StartsOn != "2026-02-01" || periods[0].EndsOn != "2027-01-31" {
+				t.Fatalf("period dates were not updated while preserving snapshot: %+v", periods)
+			}
 			targetPeriod := AnnualStatementPeriod{Year: 2027, StartsOn: "2027-01-01", EndsOn: "2027-12-31", UpdatedBy: "manager@example.com"}
 			if _, created, err := demo.CloneStructure(2026, targetPeriod); err != nil || !created {
 				t.Fatalf("clone: created=%t err=%v", created, err)
@@ -130,5 +144,38 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 				t.Fatal("other tenant saw demo period structure")
 			}
 		})
+	}
+}
+
+func TestAnnualStatementSaveWithStructureRollsBackPeriodWhenSnapshotInsertFails(t *testing.T) {
+	database, lanes := testLanes(t)
+	repository, ok := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), testTenantRef("demo"))
+	if !ok {
+		t.Fatal("bind repository")
+	}
+	if _, err := database.Exec(`CREATE TRIGGER fail_period_structure
+		BEFORE INSERT ON annual_statement_period_cost_types
+		BEGIN SELECT RAISE(ABORT, 'injected period snapshot failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	_, err := repository.SaveWithStructure(AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+	}, []AnnualStatementCostType{{
+		Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedBy: "manager@example.com",
+	}}, []Unit{{ID: "top-1", MiteigentumsanteilPPM: 1_000_000}})
+	if err == nil {
+		t.Fatal("injected snapshot failure unexpectedly succeeded")
+	}
+	if periods := repository.List(); len(periods) != 0 {
+		t.Fatalf("failed snapshot initialization left orphan periods: %+v", periods)
+	}
+	for _, table := range []string{"annual_statement_periods", "annual_statement_period_cost_types", "annual_statement_period_unit_bases"} {
+		var count int
+		if err := database.QueryRow(`SELECT COUNT(*) FROM ` + table).Scan(&count); err != nil {
+			t.Fatal(err)
+		}
+		if count != 0 {
+			t.Fatalf("failed snapshot initialization left %d rows in %s", count, table)
+		}
 	}
 }

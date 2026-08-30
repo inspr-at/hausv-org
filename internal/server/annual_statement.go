@@ -696,11 +696,7 @@ func (a *app) saveAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, 
 		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
 		return
 	}
-	if _, err := ac.repositories.annualStatementPeriods.Save(period); err != nil {
-		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
-		return
-	}
-	if err := ac.repositories.annualStatementPeriods.EnsureStructure(year, ac.repositories.annualStatementCostTypes.List(), ac.repositories.units.List(), actorEmail); err != nil {
+	if _, err := ac.repositories.annualStatementPeriods.SaveWithStructure(period, ac.repositories.annualStatementCostTypes.List(), ac.repositories.units.List()); err != nil {
 		logError("annual statement period structure save failed", err, "tenant", tenant.Slug, "year", year)
 		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
 		return

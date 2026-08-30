@@ -48,6 +48,7 @@ type AnnualStatementPeriodRepository interface {
 	SaveStructureCostType(year int, costType AnnualStatementCostType) (AnnualStatementCostType, error)
 	SaveStructureUnitBases(year int, bases []AnnualStatementPeriodUnitBasis) error
 	Save(period AnnualStatementPeriod) (AnnualStatementPeriod, error)
+	SaveWithStructure(period AnnualStatementPeriod, costTypes []AnnualStatementCostType, units []Unit) (AnnualStatementPeriod, error)
 	List() []AnnualStatementPeriod
 }
 
@@ -63,6 +64,7 @@ type annualStatementPeriodBackend interface {
 	saveAnnualStatementPeriodCostType(tenant TenantRef, year int, costType AnnualStatementCostType) (AnnualStatementCostType, error)
 	saveAnnualStatementPeriodUnitBases(tenant TenantRef, year int, bases []AnnualStatementPeriodUnitBasis) error
 	saveAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, error)
+	saveAnnualStatementPeriodWithStructure(tenant TenantRef, period AnnualStatementPeriod, costTypes []AnnualStatementCostType, units []Unit) (AnnualStatementPeriod, error)
 	listAnnualStatementPeriods(tenant TenantRef) []AnnualStatementPeriod
 }
 
@@ -82,6 +84,10 @@ func BindAnnualStatementPeriodRepository(storage AnnualStatementPeriodStorage, t
 
 func (r *boundAnnualStatementPeriodRepository) Save(period AnnualStatementPeriod) (AnnualStatementPeriod, error) {
 	return r.storage.saveAnnualStatementPeriod(r.tenant, period)
+}
+
+func (r *boundAnnualStatementPeriodRepository) SaveWithStructure(period AnnualStatementPeriod, costTypes []AnnualStatementCostType, units []Unit) (AnnualStatementPeriod, error) {
+	return r.storage.saveAnnualStatementPeriodWithStructure(r.tenant, period, costTypes, units)
 }
 
 func (r *boundAnnualStatementPeriodRepository) Create(period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error) {
@@ -256,6 +262,38 @@ func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant Tena
 		s.byHome[tenant.ID] = map[int]AnnualStatementPeriod{}
 	}
 	s.byHome[tenant.ID][period.Year] = period
+	return period, nil
+}
+
+func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementPeriodWithStructure(tenant TenantRef, period AnnualStatementPeriod, costTypes []AnnualStatementCostType, units []Unit) (AnnualStatementPeriod, error) {
+	period = normalizeAnnualStatementPeriod(period)
+	if err := validateAnnualStatementPeriod(period); err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.byHome == nil {
+		s.byHome = map[string]map[int]AnnualStatementPeriod{}
+	}
+	if s.byHome[tenant.ID] == nil {
+		s.byHome[tenant.ID] = map[int]AnnualStatementPeriod{}
+	}
+	if _, exists := s.byHome[tenant.ID][period.Year]; exists {
+		s.byHome[tenant.ID][period.Year] = period
+		return period, nil
+	}
+	structure, err := normalizeAnnualStatementPeriodStructure(costTypes, units, period.UpdatedBy)
+	if err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	if s.structures == nil {
+		s.structures = map[string]map[int]AnnualStatementPeriodStructure{}
+	}
+	if s.structures[tenant.ID] == nil {
+		s.structures[tenant.ID] = map[int]AnnualStatementPeriodStructure{}
+	}
+	s.byHome[tenant.ID][period.Year] = period
+	s.structures[tenant.ID][period.Year] = cloneAnnualStatementPeriodStructure(structure)
 	return period, nil
 }
 
@@ -525,6 +563,55 @@ func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant TenantR
 		period.UpdatedAt.Format(time.RFC3339Nano), period.UpdatedBy,
 	); err != nil {
 		return AnnualStatementPeriod{}, err
+	}
+	return period, tx.Commit()
+}
+
+func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriodWithStructure(tenant TenantRef, period AnnualStatementPeriod, costTypes []AnnualStatementCostType, units []Unit) (AnnualStatementPeriod, error) {
+	period = normalizeAnnualStatementPeriod(period)
+	if err := validateAnnualStatementPeriod(period); err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec(`UPDATE annual_statement_periods
+		SET starts_on=$1,ends_on=$2,updated_at=$3,updated_by=$4
+		WHERE tenant_id=$5 AND year=$6`, period.StartsOn, period.EndsOn, period.UpdatedAt.Format(time.RFC3339Nano), period.UpdatedBy, tenant.ID, period.Year)
+	if err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	if affected > 0 {
+		return period, tx.Commit()
+	}
+	structure, err := normalizeAnnualStatementPeriodStructure(costTypes, units, period.UpdatedBy)
+	if err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_periods(
+		tenant_id,tenant_slug,year,starts_on,ends_on,updated_at,updated_by)
+		VALUES($1,$2,$3,$4,$5,$6,$7)`, tenant.ID, tenant.Slug, period.Year, period.StartsOn, period.EndsOn,
+		period.UpdatedAt.Format(time.RFC3339Nano), period.UpdatedBy); err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	for _, costType := range structure.CostTypes {
+		if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, period.Year, costType.Key, costType.Name,
+			costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			return AnnualStatementPeriod{}, err
+		}
+	}
+	for _, basis := range structure.UnitBases {
+		if err := insertAnnualStatementPeriodUnitBasis(tx, tenant, period.Year, basis); err != nil {
+			return AnnualStatementPeriod{}, err
+		}
 	}
 	return period, tx.Commit()
 }
