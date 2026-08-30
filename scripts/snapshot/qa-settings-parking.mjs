@@ -611,6 +611,26 @@ try {
       }
       if (!(await candidate.getByText('keine rechtliche Beurteilung', { exact: false }).count())) fail(`${label}: rechtliche Abgrenzung fehlt`);
       if (!(await candidate.locator('.cost-type-card select[name="allocation_key"] option[value="nutzwert"][selected]').count())) fail(`${label}: Verteilerschlüssel Nutzwert fehlt`);
+      // HAUSV-590: direct children must fit their own grid. On wide desktop,
+      // each cost-type card and allocation row also stays on exactly one row
+      // with one track per visible child.
+      const gridDefects = await candidate.locator('.cost-type-list > form.cost-type-card, .allocation-row').evaluateAll((cards, desktop) => cards.flatMap((card, index) => {
+        const children = [...card.children].filter((node) => node.tagName !== 'INPUT' || node.type !== 'hidden');
+        const tracks = getComputedStyle(card).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length;
+        const box = card.getBoundingClientRect();
+        const problems = [];
+        for (const child of children) {
+          const rect = child.getBoundingClientRect();
+          if (rect.right > box.right + 1 || rect.left < box.left - 1) problems.push(`${card.className}#${index}: ${child.tagName.toLowerCase()} ragt über die Karte hinaus`);
+        }
+        if (desktop) {
+          if (tracks !== children.length) problems.push(`${card.className}#${index}: ${children.length} Elemente auf ${tracks} Spalten`);
+          const bottoms = children.map((child) => Math.round(child.getBoundingClientRect().bottom));
+          if (Math.max(...bottoms) - Math.min(...bottoms) > 2) problems.push(`${card.className}#${index}: Elemente stehen nicht in einer Zeile (${bottoms.join('/')})`);
+        }
+        return problems;
+      }), viewport.width >= 1200);
+      if (gridDefects.length) fail(`${label}: ${gridDefects.join('; ')}`);
       if (!(await candidate.getByText('erfindet keinen', { exact: false }).count())) fail(`${label}: Nutzwert-Grenze fehlt`);
       if (!(await candidate.getByText('Automatische Erkennung derzeit geschlossen.', { exact: false }).count())) fail(`${label}: geschlossener Inferenzvertrag fehlt`);
       if (!(await candidate.getByText('Es werden keine Belegdaten versendet.', { exact: false }).count())) fail(`${label}: Datenschutzgrenze fehlt`);

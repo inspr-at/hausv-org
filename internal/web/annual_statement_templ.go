@@ -680,7 +680,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, basis := range data.Allocation.Bases {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"cost-type-card\"><input type=\"hidden\" name=\"unit_id\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"allocation-row\"><input type=\"hidden\" name=\"unit_id\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -877,7 +877,7 @@ func AnnualStatementBody(data AnnualStatementPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for _, share := range preview.Shares {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<div class=\"cost-type-card\"><label>Einheit<span class=\"readonly\"><strong>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<div class=\"allocation-row\"><label>Einheit<span class=\"readonly\"><strong>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
