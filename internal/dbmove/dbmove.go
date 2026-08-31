@@ -82,6 +82,7 @@ var TableOrder = []string{
 	"house_memberships",
 	"annual_statement_cost_types",
 	"annual_statement_periods",
+	"annual_statement_consumption_evidence",
 	"annual_statement_prepayments",
 	"annual_statement_receipts",
 	"unit_payment_status",

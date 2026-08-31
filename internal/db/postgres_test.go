@@ -24,7 +24,7 @@ const (
 )
 
 var expectedTenantTables = []string{
-	"announcement_reads", "announcements", "annual_statement_cost_types", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "attachments", "ballots", "contacts", "documents",
+	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "attachments", "ballots", "contacts", "documents",
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
