@@ -436,15 +436,25 @@ async function assertPortalSwitcherAtomic() {
     fail(`Portalwechsel aktualisiert URL, Name oder Account-Rolle nicht atomar (${page.url()})`);
   }
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  const mobileGeometry = await page.evaluate(() => ({
-    overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-    // On a phone the sidebar copy is inside the closed hamburger; the mobile twin is what
-    // must be reachable without opening anything.
-    switcherVisible: Boolean(document.querySelector('.mobile-context-switch > summary')?.getClientRects().length),
-  }));
-  if (mobileGeometry.overflow || !mobileGeometry.switcherVisible) {
-    fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const menu = page.locator('.mobile-head > details.menu');
+    if ((await menu.getAttribute('open')) === null) await menu.locator(':scope > summary').click();
+    const mobileGeometry = await page.evaluate(() => {
+      const summary = document.querySelector('.mobile-context-switch > summary');
+      const box = summary?.getBoundingClientRect();
+      const style = summary ? getComputedStyle(summary) : null;
+      return {
+        overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        switcherVisible: Boolean(summary?.getClientRects().length),
+        switcherContained: Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1),
+        oneLine: style?.whiteSpace === 'nowrap' && style?.textOverflow === 'ellipsis',
+      };
+    });
+    if (mobileGeometry.overflow || !mobileGeometry.switcherVisible ||
+        !mobileGeometry.switcherContained || !mobileGeometry.oneLine) {
+      fail(`Portalwechsler ist bei ${width}px nicht als eine Zeile stabil (${JSON.stringify(mobileGeometry)})`);
+    }
   }
   await closeContext(context);
   process.stdout.write('  ✓ Portalwechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
