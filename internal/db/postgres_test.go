@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ const (
 )
 
 var expectedTenantTables = []string{
-	"announcement_reads", "announcements", "annual_statement_cost_types", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "attachments", "ballots", "contacts", "documents",
+	"announcement_reads", "announcements", "annual_statement_cost_types", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "attachments", "ballots", "contacts", "documents",
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
@@ -122,6 +123,127 @@ func TestPostgresTargetSchemaAndRLS(t *testing.T) {
 	assertTenantLaneCannotWriteAnotherTenantsRow(t, database)
 	assertNoGovernedRowCanExistWithoutAnIdentity(t, database, tables)
 	assertPreTenantReservationBelongsToNobodyUntilAdopted(t, database)
+}
+
+func TestPostgresAnnualStatementPeriodStructureMigrationBackfillsLegacyCatalogs(t *testing.T) {
+	baseDSN := strings.TrimSpace(os.Getenv("HAUSV_TEST_POSTGRES_DSN"))
+	if baseDSN == "" {
+		if os.Getenv("HAUSV_TEST_POSTGRES_REQUIRED") == "true" {
+			t.Fatal("HAUSV_TEST_POSTGRES_DSN is required when HAUSV_TEST_POSTGRES_REQUIRED=true")
+		}
+		t.Skip("set HAUSV_TEST_POSTGRES_DSN to exercise the PostgreSQL period-snapshot migration")
+	}
+	cfg := Config{
+		Backend: BackendPostgres, DSN: isolatedPostgresSchema(t, baseDSN),
+		ConnectTimeout: 3 * time.Second, StatementTimeout: 10 * time.Second,
+		MaxOpenConns: 1, MaxIdleConns: 1,
+	}
+	database, err := OpenConfig(t.Context(), cfg)
+	if err != nil {
+		t.Fatalf("open initial postgres schema: %v", err)
+	}
+	// 0012 is currently the last PostgreSQL migration. Rewind only that
+	// migration so the fixture has the exact legacy schema and the production
+	// runner, not test-only SQL, performs the backfill on reopen.
+	if _, err := database.Exec(`DROP TABLE annual_statement_period_unit_bases, annual_statement_period_cost_types`); err != nil {
+		t.Fatalf("rewind period structure tables: %v", err)
+	}
+	if _, err := database.Exec(`DELETE FROM schema_migrations WHERE version='0012_annual_statement_period_structure.sql'`); err != nil {
+		t.Fatalf("rewind period structure migration record: %v", err)
+	}
+	if _, err := database.Exec(`INSERT INTO tenant(tenant_id,slug,name) VALUES
+		($1,'legacy-empty','Legacy Empty'),($2,'legacy-custom','Legacy Custom')`, tenantA, tenantB); err != nil {
+		t.Fatalf("seed legacy tenants: %v", err)
+	}
+	tx, err := database.BeginTx(t.Context(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(`SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_periods(
+		tenant_slug,tenant_id,year,starts_on,ends_on,updated_at,updated_by) VALUES
+		('legacy-empty',$1,2026,'2026-01-01','2026-12-31','2026-08-30T00:00:00Z','legacy@example.com'),
+		('legacy-empty',$1,2025,'2025-01-01','2025-12-31','2025-08-30T00:00:00Z','older@example.com'),
+		('legacy-custom',$2,2026,'2026-01-01','2026-12-31','2026-08-29T00:00:00Z','period@example.com')`, tenantA, tenantB); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_cost_types(
+		tenant_slug,tenant_id,key,name,allocatable,allocation_key,updated_at,updated_by) VALUES
+		('legacy-custom',$1,'grundsteuer','Grundsteuer individuell',false,'','2026-08-29T00:00:00Z','custom@example.com'),
+		('legacy-custom',$1,'sonderkosten','Sonderkosten',true,'personen','2026-08-29T01:00:00Z','custom@example.com')`, tenantB); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(`INSERT INTO units(tenant_slug,tenant_id,id,data) VALUES
+		('legacy-empty',$1,'top-1','{"id":"top-1","tenant":"legacy-empty","label":"Top 1","miteigentumsanteil":1000000,"usable_area_m2_hundredths":7500,"usable_area_recorded":true,"persons":2,"persons_recorded":true}')`, tenantA); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	database, err = OpenConfig(t.Context(), cfg)
+	if err != nil {
+		t.Fatalf("reapply period structure migration: %v", err)
+	}
+	t.Cleanup(func() { _ = database.Close() })
+	assertPostgresMigratedAnnualStatementCostTypes(t, database, tenantA, 2026, legacyDefaultAnnualStatementCostTypes("2026-08-30T00:00:00Z", "legacy@example.com"))
+	assertPostgresMigratedAnnualStatementCostTypes(t, database, tenantA, 2025, legacyDefaultAnnualStatementCostTypes("2025-08-30T00:00:00Z", "older@example.com"))
+	assertPostgresMigratedAnnualStatementCostTypes(t, database, tenantB, 2026, customizedAnnualStatementCostTypes)
+	tx, err = BeginTenantTx(t.Context(), database, tenantA, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	var mutableCatalogRows, mea, area, persons int
+	var areaRecorded, personsRecorded bool
+	if err := tx.QueryRow(`SELECT count(*) FROM annual_statement_cost_types WHERE tenant_id=$1`, tenantA).Scan(&mutableCatalogRows); err != nil {
+		t.Fatal(err)
+	}
+	if mutableCatalogRows != 0 {
+		t.Fatalf("migration persisted %d default rows into the empty mutable catalog", mutableCatalogRows)
+	}
+	if err := tx.QueryRow(`SELECT miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
+		FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=2026 AND unit_id='top-1'`, tenantA).
+		Scan(&mea, &area, &areaRecorded, &persons, &personsRecorded); err != nil {
+		t.Fatal(err)
+	}
+	if mea != 1_000_000 || area != 7_500 || !areaRecorded || persons != 2 || !personsRecorded {
+		t.Fatalf("backfilled unit basis = mea=%d area=%d/%t persons=%d/%t", mea, area, areaRecorded, persons, personsRecorded)
+	}
+}
+
+func assertPostgresMigratedAnnualStatementCostTypes(t *testing.T, database *sql.DB, tenantID string, year int, want []migratedAnnualStatementCostType) {
+	t.Helper()
+	tx, err := BeginTenantTx(t.Context(), database, tenantID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query(`SELECT key,name,allocatable,allocation_key,updated_at,updated_by
+		FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY key`, tenantID, year)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	got := []migratedAnnualStatementCostType{}
+	for rows.Next() {
+		var item migratedAnnualStatementCostType
+		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &item.UpdatedAt, &item.UpdatedBy); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, item)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("period cost types for %s/%d = %+v, want %+v", tenantID, year, got, want)
+	}
 }
 
 func isolatedPostgresSchema(t *testing.T, dsn string) string {
@@ -235,8 +357,24 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 			t.Fatalf("seed prerequisite %s: %v", table, err)
 		}
 	}
+	// The period-scoped structure tables deliberately have a composite foreign
+	// key to their period. Seed that relationship explicitly; a one-column
+	// smoke row would test the FK instead of the RLS behavior this fixture owns.
+	if _, err := tx.Exec(`INSERT INTO annual_statement_periods(tenant_id,tenant_slug,year)
+		VALUES($1,'rls-fixture',2026)`, tenantA); err != nil {
+		t.Fatalf("seed prerequisite annual_statement_periods: %v", err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(tenant_id,tenant_slug,period_year,key)
+		VALUES($1,'rls-fixture',2026,'rls-fixture')`, tenantA); err != nil {
+		t.Fatalf("seed annual_statement_period_cost_types: %v", err)
+	}
+	if _, err := tx.Exec(`INSERT INTO annual_statement_period_unit_bases(tenant_id,tenant_slug,period_year,unit_id)
+		VALUES($1,'rls-fixture',2026,'rls-fixture')`, tenantA); err != nil {
+		t.Fatalf("seed annual_statement_period_unit_bases: %v", err)
+	}
 	for _, table := range tables {
-		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" {
+		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" ||
+			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" {
 			continue
 		}
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {

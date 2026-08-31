@@ -46,7 +46,13 @@ func (a *app) suggestAnnualStatementReceipt(w http.ResponseWriter, r *http.Reque
 		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "Der Beleg konnte nicht sicher geprüft werden. Es wurde nichts übernommen.", false)
 		return
 	}
-	view, status := a.trustedAnnualStatementReceiptSuggestion(r.Context(), ac, r.FormValue("document_id"))
+	periodYear, err := strconv.Atoi(strings.TrimSpace(r.FormValue("year")))
+	if err != nil || periodYear < 1 || periodYear > 9999 {
+		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "Der Beleg konnte nicht sicher geprüft werden. Es wurde nichts übernommen.", false)
+		return
+	}
+	selectAnnualStatementRequestYear(r, periodYear)
+	view, status := a.trustedAnnualStatementReceiptSuggestion(r.Context(), ac, r.FormValue("document_id"), periodYear)
 	if status != annualStatementReceiptSuggestionReady {
 		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, annualStatementReceiptSuggestionStatusMessage(status), false)
 		return
@@ -63,7 +69,11 @@ func (a *app) confirmAnnualStatementReceiptSuggestion(w http.ResponseWriter, r *
 		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "Die Bestätigung konnte nicht sicher geprüft werden. Es wurde nichts übernommen.", false)
 		return
 	}
-	view, status := a.trustedAnnualStatementReceiptSuggestion(r.Context(), ac, r.FormValue("document_id"))
+	periodYear, yearErr := strconv.Atoi(strings.TrimSpace(r.FormValue("year")))
+	if yearErr == nil && periodYear > 0 && periodYear <= 9999 {
+		selectAnnualStatementRequestYear(r, periodYear)
+	}
+	view, status := a.trustedAnnualStatementReceiptSuggestion(r.Context(), ac, r.FormValue("document_id"), periodYear)
 	if status != annualStatementReceiptSuggestionReady ||
 		r.FormValue("amount_cents") != view.AmountCents ||
 		r.FormValue("invoice_date") != view.InvoiceDateValue ||
@@ -71,9 +81,8 @@ func (a *app) confirmAnnualStatementReceiptSuggestion(w http.ResponseWriter, r *
 		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "Die Bestätigung stimmt nicht mehr mit dem sicheren Vorschlag überein. Es wurde nichts übernommen.", false)
 		return
 	}
-	periodYear, err := strconv.Atoi(strings.TrimSpace(r.FormValue("year")))
 	amountCents, amountErr := strconv.ParseInt(view.AmountCents, 10, 64)
-	if err != nil || amountErr != nil || ac.repositories.annualStatementReceipts == nil {
+	if yearErr != nil || amountErr != nil || ac.repositories.annualStatementReceipts == nil {
 		a.renderAnnualStatementPage(w, r, ac, web.AnnualStatementReceiptSuggestionView{}, "Der Beleg konnte nicht gespeichert werden. Es wurde nichts übernommen.", false)
 		return
 	}
@@ -234,8 +243,12 @@ func annualStatementReceiptFieldsReferenceExisting(receipt store.AnnualStatement
 	for _, period := range repositories.annualStatementPeriods.List() {
 		periodFound = periodFound || period.Year == receipt.PeriodYear
 	}
+	costTypes := repositories.annualStatementCostTypes.List()
+	if structure, found := repositories.annualStatementPeriods.Structure(receipt.PeriodYear); found {
+		costTypes = structure.CostTypes
+	}
 	costTypeFound := false
-	for _, costType := range repositories.annualStatementCostTypes.List() {
+	for _, costType := range costTypes {
 		costTypeFound = costTypeFound || costType.Key == strings.TrimSpace(receipt.CostTypeKey)
 	}
 	return periodFound && costTypeFound
@@ -299,11 +312,15 @@ const (
 	annualStatementReceiptSuggestionReady
 )
 
-func (a *app) trustedAnnualStatementReceiptSuggestion(ctx context.Context, ac authCtx, documentID string) (web.AnnualStatementReceiptSuggestionView, annualStatementReceiptSuggestionStatus) {
+func (a *app) trustedAnnualStatementReceiptSuggestion(ctx context.Context, ac authCtx, documentID string, periodYear int) (web.AnnualStatementReceiptSuggestionView, annualStatementReceiptSuggestionStatus) {
 	if a.annualStatementReceiptSuggester == nil {
 		return web.AnnualStatementReceiptSuggestionView{}, annualStatementReceiptSuggestionUnavailable
 	}
-	if ac.repositories.documents == nil || ac.repositories.annualStatementCostTypes == nil {
+	if ac.repositories.documents == nil || ac.repositories.annualStatementPeriods == nil {
+		return web.AnnualStatementReceiptSuggestionView{}, annualStatementReceiptSuggestionInvalid
+	}
+	structure, found := ac.repositories.annualStatementPeriods.Structure(periodYear)
+	if !found {
 		return web.AnnualStatementReceiptSuggestionView{}, annualStatementReceiptSuggestionInvalid
 	}
 	document, ok := ac.repositories.documents.Get(strings.TrimSpace(documentID))
@@ -334,7 +351,7 @@ func (a *app) trustedAnnualStatementReceiptSuggestion(ctx context.Context, ac au
 		return web.AnnualStatementReceiptSuggestionView{}, annualStatementReceiptSuggestionUncertain
 	}
 	var selectedCostType store.AnnualStatementCostType
-	for _, costType := range ac.repositories.annualStatementCostTypes.List() {
+	for _, costType := range structure.CostTypes {
 		if costType.Key == strings.TrimSpace(suggestion.CostTypeKey) {
 			selectedCostType = costType
 			break
@@ -349,6 +366,12 @@ func (a *app) trustedAnnualStatementReceiptSuggestion(ctx context.Context, ac au
 		InvoiceDate: invoiceDate.Format("02.01.2006"), InvoiceDateValue: invoiceDate.Format("2006-01-02"),
 		CostTypeKey: selectedCostType.Key, CostTypeName: selectedCostType.Name,
 	}, annualStatementReceiptSuggestionReady
+}
+
+func selectAnnualStatementRequestYear(r *http.Request, year int) {
+	query := r.URL.Query()
+	query.Set("year", strconv.Itoa(year))
+	r.URL.RawQuery = query.Encode()
 }
 
 func annualStatementReceiptContentTypeSupported(contentType string) bool {
