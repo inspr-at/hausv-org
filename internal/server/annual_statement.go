@@ -543,14 +543,19 @@ func formatAnnualStatementBasis(key string, basis int, mapped bool) string {
 	}
 }
 
-// formatAnnualStatementShare renders parts per million as a percentage with
-// two decimals, e.g. 333334 → "33,33 %". A mapped unit with a zero basis
-// (0 Personen) is a real "0,00 %"; an unmapped or blocked one shows no share.
+// formatAnnualStatementShare renders parts per million as a percentage
+// rounded to the nearest hundredth of a percent (half up). The underlying
+// ppm allocation stays exact; only its visible representation is rounded.
+// A mapped unit with a zero basis (0 Personen) is a real "0,00 %"; an
+// unmapped or blocked one shows no share.
 func formatAnnualStatementShare(ppm int, mapped bool) string {
 	if !mapped || ppm < 0 {
 		return "–"
 	}
-	return strings.Replace(fmt.Sprintf("%d.%02d %%", ppm/10_000, (ppm%10_000)/100), ".", ",", 1)
+	// One hundredth of a percent is 100 ppm. Adding half that unit before
+	// integer division gives the required half-up rule and carries naturally.
+	hundredths := (ppm + 50) / 100
+	return strings.Replace(fmt.Sprintf("%d.%02d %%", hundredths/100, hundredths%100), ".", ",", 1)
 }
 
 func annualStatementBasesMessage(status string) (string, bool) {
