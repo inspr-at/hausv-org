@@ -20,10 +20,12 @@ func TestAnnualStatementPrepaymentsArePeriodBoundAuditedAndCompared(t *testing.T
 		t.Fatal(err)
 	}
 	repositories := testRepositories(a, "demo")
-	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
+	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
 		t.Fatal(err)
 	}
-	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
+	if _, err := repositories.annualStatementPeriods.SaveWithStructure(storepkg.AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+	}, repositories.annualStatementCostTypes.List(), repositories.units.List()); err != nil {
 		t.Fatal(err)
 	}
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
@@ -79,7 +81,7 @@ func TestAnnualStatementPrepaymentsArePeriodBoundAuditedAndCompared(t *testing.T
 	if top2 < 0 || !strings.Contains(page.Body.String()[top2:], "nicht erfasst") {
 		t.Fatal("unit without a recorded Akonto must not be shown as 0,00 € paid")
 	}
-	if _, err := repositories.annualStatementCostTypes.Save(storepkg.AnnualStatementCostType{
+	if _, err := repositories.annualStatementPeriods.SaveStructureCostType(2026, storepkg.AnnualStatementCostType{
 		Key: "wasser", Name: "Wasser", Allocatable: true, AllocationKey: storepkg.AllocationKeyPersonen, UpdatedBy: "manager@example.com",
 	}); err != nil {
 		t.Fatal(err)

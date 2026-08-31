@@ -49,8 +49,8 @@ func TestAnnualStatementManagerFlowAndRoleGate(t *testing.T) {
 			t.Fatalf("annual statement page missing %q", want)
 		}
 	}
-	if got := testRepositories(a, "demo").annualStatementCostTypes.List(); len(got) != 5 {
-		t.Fatalf("starter cost type catalogue = %+v, want 5 entries", got)
+	if got := testRepositories(a, "demo").annualStatementCostTypes.List(); len(got) != 0 {
+		t.Fatalf("GET persisted starter cost types = %+v, want no write", got)
 	}
 
 	costTypeSaved := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/cost-types", url.Values{

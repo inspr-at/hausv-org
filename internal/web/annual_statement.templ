@@ -7,7 +7,16 @@ type AnnualStatementPeriodView struct {
 	StartsOn  string
 	EndsOn    string
 	DateRange string
+	Deadline  string
 	Selected  bool
+}
+
+type AnnualStatementFollowupView struct {
+	SourceYear int
+	Year       int
+	DateRange  string
+	Deadline   string
+	Available  bool
 }
 
 type AnnualStatementUnitView struct {
@@ -107,10 +116,12 @@ type AnnualStatementPageData struct {
 	Periods       []AnnualStatementPeriodView
 	HasPeriods    bool
 	Year          int
+	StructureYear int
 	StartsOn      string
 	EndsOn        string
 	PeriodMsg     string
 	PeriodOK      bool
+	Followup      AnnualStatementFollowupView
 	ImportMsg     string
 	ImportOK      bool
 	CostTypes     []AnnualStatementCostTypeView
@@ -165,7 +176,7 @@ templ AnnualStatementHeaderAction() {
 
 templ AnnualStatementBody(data AnnualStatementPageData) {
 	<div data-templ-annual-statement>
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
+		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
 				<form method="post" action="/app/settings/annual-statement/periods"><fieldset><legend>Abrechnungsperiode</legend><label>Abrechnungsjahr<input type="number" name="year" min="1" max="9999" value={ annualStatementYear(data.Year) } required/></label><div class="form-grid"><label>Von<input type="date" name="starts_on" value={ data.StartsOn } required/></label><label>Bis<input type="date" name="ends_on" value={ data.EndsOn } required/></label></div><button class="button primary" type="submit">Abrechnungsperiode speichern</button></fieldset></form>
@@ -173,9 +184,16 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			if data.HasPeriods {
 				<header class="subhead"><div><h3>Gespeicherte Abrechnungsjahre</h3><p>Für spätere Arbeitsschritte wiederverwendbar.</p></div></header><nav class="settings-links">
 					for _, period := range data.Periods {
-						<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(period.Year)) } aria-current={ portalAriaCurrent(period.Selected) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>{ annualStatementYear(period.Year) }</strong><small>{ period.DateRange }</small></span><b>›</b></a>
+						<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(period.Year)) } aria-current={ portalAriaCurrent(period.Selected) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>{ annualStatementYear(period.Year) }</strong><small>{ period.DateRange } · Erinnerung { period.Deadline }</small></span><b>›</b></a>
 					}
 				</nav>
+			}
+			if data.Followup.Available {
+				<article class="inline-details"><header class="subhead"><div><h3>Folgejahr { annualStatementYear(data.Followup.Year) } vorbereiten</h3><p>{ data.Followup.DateRange }</p></div><span class="scope management">Vorlage</span></header>
+					<p>Der Kostenartenkatalog, seine Verteilerschlüssel und Verteilerbasen werden als unabhängig bearbeitbare Vorlage übernommen. Einheiten und Parteien bleiben zentral gepflegt. Belege, Beträge, Vorauszahlungen und Abrechnungsergebnisse werden nicht kopiert.</p>
+					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach § 34 Abs. 1 WEG aus dem gespeicherten Periodenende mit sechs Monaten berechnet. Das ist eine Arbeitserinnerung und keine Rechtsberatung; Vereinbarungen und Einzelfall bitte prüfen.</p>
+					<form method="post" action="/app/settings/annual-statement/periods/next"><input type="hidden" name="source_year" value={ annualStatementYear(data.Followup.SourceYear) }/><button class="button primary" type="submit">Folgejahr als Vorlage anlegen</button></form>
+				</article>
 			}
 		</section>
 
@@ -185,14 +203,14 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			<p class="notice">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p>
 			<div class="cost-type-list">
 				for _, costType := range data.CostTypes {
-					<form class="cost-type-card" method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="key" value={ costType.Key }/><label>Bezeichnung<input name="name" value={ costType.Name } maxlength="120" required/></label><label>Schlüssel<span class="readonly"><code>{ costType.Key }</code></span></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable" selected?={ costType.Allocatable }>Umlagefähig</option><option value="not_allocatable" selected?={ !costType.Allocatable }>Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key"><option value="" selected?={ costType.AllocationKey == "" }>Kein Schlüssel</option>
+					<form class="cost-type-card" method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><input type="hidden" name="key" value={ costType.Key }/><label>Bezeichnung<input name="name" value={ costType.Name } maxlength="120" required/></label><label>Schlüssel<span class="readonly"><code>{ costType.Key }</code></span></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable" selected?={ costType.Allocatable }>Umlagefähig</option><option value="not_allocatable" selected?={ !costType.Allocatable }>Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key"><option value="" selected?={ costType.AllocationKey == "" }>Kein Schlüssel</option>
 						for _, option := range data.Allocation.KeyOptions {
 							<option value={ option.Key } selected?={ option.Key == costType.AllocationKey }>{ option.Label }</option>
 						}
 					</select></label><button class="button ghost" type="submit">Speichern</button></form>
 				}
 			</div>
-			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key">
+			<details class="inline-details"><summary>Weitere Kostenart hinzufügen</summary><form method="post" action="/app/settings/annual-statement/cost-types"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><p>Der Schlüssel bleibt eindeutig und wird später zur technischen Zuordnung verwendet.</p><div class="form-grid"><label>Bezeichnung<input name="name" maxlength="120" placeholder="z. B. Wasser und Abwasser" required/></label><label>Schlüssel <small>Kleinbuchstaben ohne Leerzeichen</small><input name="key" maxlength="64" pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="wasser_abwasser" required/></label><label>Umlagefähigkeit<select name="allocation" required><option value="allocatable">Umlagefähig</option><option value="not_allocatable">Nicht umlagefähig</option></select></label><label>Verteilerschlüssel<select name="allocation_key">
 					for _, option := range data.Allocation.KeyOptions {
 						<option value={ option.Key }>{ option.Label }</option>
 					}
@@ -207,12 +225,12 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			}
 		</header>
 			@SettingsFlash(data.BasesMsg, data.BasesOK)
-			<p class="notice">Nutzwert übernimmt den Miteigentumsanteil aus den Einheiten und erfindet keinen. Nutzfläche und Personen werden hier je Einheit hinterlegt. Verbrauch folgt aus den Messwerten in einem eigenen Arbeitsschritt. Eine Einheit ohne Wert blockiert den Lauf für diesen Schlüssel.</p>
+			<p class="notice">Nutzwert, Nutzfläche und Personen sind für das gewählte Abrechnungsjahr eingefroren; beim ersten Anlegen stammen sie aus den Einheiten und das System erfindet keinen Wert. Verbrauch folgt aus den Messwerten in einem eigenen Arbeitsschritt. Eine Einheit ohne Wert blockiert den Lauf für diesen Schlüssel.</p>
 			if data.Allocation.KeylessCostTypes != "" {
 				<p class="notice"><strong>Ohne Verteilerschlüssel:</strong> { data.Allocation.KeylessCostTypes }. Jede umlagefähige Kostenart braucht genau einen Schlüssel; bis dahin ist der Lauf blockiert.</p>
 			}
 			if data.HasUnits {
-				<form method="post" action="/app/settings/annual-statement/allocation-bases"><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
+				<form method="post" action="/app/settings/annual-statement/allocation-bases"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
 					for _, basis := range data.Allocation.Bases {
 						<div class="allocation-row"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label></div>
 					}
@@ -290,7 +308,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 				<p class="notice"><strong>Automatische Erkennung derzeit geschlossen.</strong> Es ist kein freigegebener Inferenzdienst in Österreich oder der EU eingerichtet. Es werden keine Belegdaten versendet.</p>
 			}
 			if data.HasReceiptDocuments {
-				<form method="post" action="/app/settings/annual-statement/receipts/suggest"><label>Beleg aus Dokumenten<select name="document_id" required>
+				<form method="post" action="/app/settings/annual-statement/receipts/suggest"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><label>Beleg aus Dokumenten<select name="document_id" required>
 					<option value="">Dokument auswählen</option>
 					for _, document := range data.ReceiptDocuments {
 						<option value={ document.ID } selected?={ document.ID == data.ReceiptSuggestion.DocumentID }>{ document.Label }</option>
@@ -317,11 +335,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 					for _, document := range data.ReceiptDocuments {
 						<option value={ document.ID }>{ document.Label }</option>
 					}
-				</select></label><label>Oder neue Originaldatei<input type="file" name="receipt_file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"/></label><label>Abrechnungsjahr<select name="year" required>
-					for _, period := range data.Periods {
-						<option value={ annualStatementYear(period.Year) } selected?={ period.Selected }>{ annualStatementYear(period.Year) }</option>
-					}
-				</select></label><label>Kostenart<select name="cost_type_key" required><option value="">Kostenart auswählen</option>
+				</select></label><label>Oder neue Originaldatei<input type="file" name="receipt_file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"/></label><label>Abrechnungsjahr<input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><span class="readonly"><strong>{ annualStatementYear(data.Year) }</strong></span></label><label>Kostenart<select name="cost_type_key" required><option value="">Kostenart auswählen</option>
 					for _, costType := range data.CostTypes {
 						<option value={ costType.Key }>{ costType.Name }</option>
 					}

@@ -98,6 +98,18 @@ var defaultAnnualStatementCostTypes = []AnnualStatementCostType{
 	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
 }
 
+// AnnualStatementDefaultCostTypes returns the read-only starter catalogue for
+// presentation before a manager creates the first period. Persisting these
+// defaults is an explicit write-path concern; rendering must not mutate state.
+func AnnualStatementDefaultCostTypes(updatedBy string) []AnnualStatementCostType {
+	updatedBy = strings.ToLower(strings.TrimSpace(updatedBy))
+	out := append([]AnnualStatementCostType(nil), defaultAnnualStatementCostTypes...)
+	for index := range out {
+		out[index].UpdatedBy = updatedBy
+	}
+	return out
+}
+
 // MemoryAnnualStatementCostTypeStore is used by isolated server tests.
 // Production uses SQLAnnualStatementCostTypeStore.
 type MemoryAnnualStatementCostTypeStore struct {
