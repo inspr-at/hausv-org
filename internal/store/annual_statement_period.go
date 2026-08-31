@@ -150,7 +150,14 @@ func (s *MemoryAnnualStatementPeriodStore) createAnnualStatementPeriod(tenant Te
 	if _, exists := s.byHome[tenant.ID][period.Year]; exists {
 		return AnnualStatementPeriod{}, false, nil
 	}
+	if s.structures == nil {
+		s.structures = map[string]map[int]AnnualStatementPeriodStructure{}
+	}
+	if s.structures[tenant.ID] == nil {
+		s.structures[tenant.ID] = map[int]AnnualStatementPeriodStructure{}
+	}
 	s.byHome[tenant.ID][period.Year] = period
+	s.structures[tenant.ID][period.Year] = annualStatementCompatibilityStructure(period)
 	return period, true, nil
 }
 
@@ -261,7 +268,17 @@ func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant Tena
 	if s.byHome[tenant.ID] == nil {
 		s.byHome[tenant.ID] = map[int]AnnualStatementPeriod{}
 	}
+	_, exists := s.byHome[tenant.ID][period.Year]
 	s.byHome[tenant.ID][period.Year] = period
+	if !exists {
+		if s.structures == nil {
+			s.structures = map[string]map[int]AnnualStatementPeriodStructure{}
+		}
+		if s.structures[tenant.ID] == nil {
+			s.structures[tenant.ID] = map[int]AnnualStatementPeriodStructure{}
+		}
+		s.structures[tenant.ID][period.Year] = annualStatementCompatibilityStructure(period)
+	}
 	return period, nil
 }
 
@@ -512,7 +529,12 @@ func (s *SQLAnnualStatementPeriodStore) createAnnualStatementPeriod(tenant Tenan
 	if err := validateAnnualStatementPeriod(period); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
-	result, err := s.db.For(tenant).Exec(
+	tx, err := s.db.For(tenant).Begin()
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	defer tx.Rollback()
+	result, err := tx.Exec(
 		`INSERT INTO annual_statement_periods(tenant_id, tenant_slug, year, starts_on, ends_on, updated_at, updated_by)
 		 VALUES($1,$2,$3,$4,$5,$6,$7)
 		 ON CONFLICT(tenant_slug, year) DO NOTHING`,
@@ -526,7 +548,16 @@ func (s *SQLAnnualStatementPeriodStore) createAnnualStatementPeriod(tenant Tenan
 	if err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
-	return period, affected == 1, nil
+	if affected == 0 {
+		return period, false, nil
+	}
+	if err := insertAnnualStatementPeriodCostTypes(tx, tenant, period.Year, annualStatementCompatibilityStructure(period).CostTypes); err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	return period, true, nil
 }
 
 func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, error) {
@@ -562,6 +593,9 @@ func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriod(tenant TenantR
 		tenant.ID, tenant.Slug, period.Year, period.StartsOn, period.EndsOn,
 		period.UpdatedAt.Format(time.RFC3339Nano), period.UpdatedBy,
 	); err != nil {
+		return AnnualStatementPeriod{}, err
+	}
+	if err := insertAnnualStatementPeriodCostTypes(tx, tenant, period.Year, annualStatementCompatibilityStructure(period).CostTypes); err != nil {
 		return AnnualStatementPeriod{}, err
 	}
 	return period, tx.Commit()
@@ -641,6 +675,18 @@ type annualStatementPeriodExecer interface {
 	Exec(query string, args ...any) (sql.Result, error)
 }
 
+func insertAnnualStatementPeriodCostTypes(exec annualStatementPeriodExecer, tenant TenantRef, year int, costTypes []AnnualStatementCostType) error {
+	for _, costType := range costTypes {
+		if _, err := exec.Exec(`INSERT INTO annual_statement_period_cost_types(
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, year, costType.Key, costType.Name,
+			costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func insertAnnualStatementPeriodUnitBasis(exec annualStatementPeriodExecer, tenant TenantRef, year int, basis AnnualStatementPeriodUnitBasis) error {
 	_, err := exec.Exec(`INSERT INTO annual_statement_period_unit_bases(
 		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
@@ -680,6 +726,20 @@ func normalizeAnnualStatementPeriodStructure(costTypes []AnnualStatementCostType
 		return AnnualStatementPeriodStructure{}, err
 	}
 	return structure, nil
+}
+
+// annualStatementCompatibilityStructure is the write-time bridge for callers
+// that still use Save/Create without supplying an explicit catalogue. Before
+// persisted catalogues existed, those callers saw the starter rows read-only.
+// Freezing them while the period is written keeps later reads pure and gives
+// the compatibility period the same immutable semantics as SaveWithStructure.
+func annualStatementCompatibilityStructure(period AnnualStatementPeriod) AnnualStatementPeriodStructure {
+	costTypes := AnnualStatementDefaultCostTypes(period.UpdatedBy)
+	for index := range costTypes {
+		costTypes[index].UpdatedAt = period.UpdatedAt
+	}
+	sortAnnualStatementCostTypes(costTypes)
+	return AnnualStatementPeriodStructure{CostTypes: costTypes}
 }
 
 func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBasis) ([]AnnualStatementPeriodUnitBasis, error) {

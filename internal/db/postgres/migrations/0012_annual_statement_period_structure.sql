@@ -78,6 +78,28 @@ SELECT p.tenant_slug, p.tenant_id, p.year, c.key, c.name, c.allocatable,
 FROM annual_statement_periods p
 JOIN annual_statement_cost_types c ON c.tenant_id = p.tenant_id;
 
+-- Legacy pages displayed the starter catalogue without writing it. Freeze the
+-- exact five starter rows only when the tenant's mutable catalogue is wholly
+-- empty. A single customized row makes that catalogue authoritative, so it is
+-- copied exactly above and is neither overwritten nor augmented here.
+INSERT INTO annual_statement_period_cost_types(
+    tenant_slug, tenant_id, period_year, key, name, allocatable,
+    allocation_key, updated_at, updated_by
+)
+SELECT p.tenant_slug, p.tenant_id, p.year, defaults.key, defaults.name, true,
+       'nutzwert', p.updated_at, p.updated_by
+FROM annual_statement_periods p
+CROSS JOIN (VALUES
+    ('grundsteuer', 'Grundsteuer'),
+    ('muellabfuhr', 'Müllabfuhr'),
+    ('hausbetreuung', 'Hausbetreuung'),
+    ('gebaeudeversicherung', 'Gebäudeversicherung'),
+    ('gartenpflege', 'Gartenpflege')
+) AS defaults(key, name)
+WHERE NOT EXISTS (
+    SELECT 1 FROM annual_statement_cost_types c WHERE c.tenant_id = p.tenant_id
+);
+
 INSERT INTO annual_statement_period_unit_bases(
     tenant_slug, tenant_id, period_year, unit_id, miteigentumsanteil_ppm,
     usable_area_m2_hundredths, usable_area_recorded, persons, persons_recorded

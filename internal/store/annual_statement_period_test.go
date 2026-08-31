@@ -83,9 +83,6 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 			storage := build(t)
 			demo, _ := BindAnnualStatementPeriodRepository(storage, testTenantRef("demo"))
 			other, _ := BindAnnualStatementPeriodRepository(storage, testTenantRef("other"))
-			if _, err := demo.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
-				t.Fatal(err)
-			}
 			costTypes := []AnnualStatementCostType{{
 				Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedBy: "manager@example.com",
 			}}
@@ -93,7 +90,9 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 				ID: "top-1", Label: "Top 1", MiteigentumsanteilPPM: 1_000_000,
 				UsableAreaM2Hundredths: 7_500, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true,
 			}}
-			if err := demo.EnsureStructure(2026, costTypes, units, "manager@example.com"); err != nil {
+			if _, err := demo.SaveWithStructure(AnnualStatementPeriod{
+				Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+			}, costTypes, units); err != nil {
 				t.Fatal(err)
 			}
 			sourceBefore, ok := demo.Structure(2026)
@@ -146,6 +145,51 @@ func TestAnnualStatementPeriodStructureCloneIsIndependentAndAtomic(t *testing.T)
 			}
 			if _, found := other.Structure(2026); found {
 				t.Fatal("other tenant saw demo period structure")
+			}
+		})
+	}
+}
+
+func TestAnnualStatementPeriodCompatibilitySaveInstallsImmutableDefaults(t *testing.T) {
+	backends := map[string]func(t *testing.T) AnnualStatementPeriodStorage{
+		"memory": func(t *testing.T) AnnualStatementPeriodStorage { return NewMemoryAnnualStatementPeriodStore() },
+		"sql": func(t *testing.T) AnnualStatementPeriodStorage {
+			_, lanes := testLanes(t)
+			return NewSQLAnnualStatementPeriodStore(lanes)
+		},
+	}
+	createdAt := time.Date(2026, 8, 30, 11, 0, 0, 0, time.UTC)
+	for name, build := range backends {
+		t.Run(name, func(t *testing.T) {
+			repository, ok := BindAnnualStatementPeriodRepository(build(t), testTenantRef("demo"))
+			if !ok {
+				t.Fatal("bind repository")
+			}
+			if _, err := repository.Save(AnnualStatementPeriod{
+				Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: createdAt, UpdatedBy: "Legacy@Example.com",
+			}); err != nil {
+				t.Fatal(err)
+			}
+			structureBefore, found := repository.Structure(2026)
+			if !found {
+				t.Fatal("compatibility save left the period without a structure")
+			}
+			wantCostTypes := AnnualStatementDefaultCostTypes("legacy@example.com")
+			for index := range wantCostTypes {
+				wantCostTypes[index].UpdatedAt = createdAt
+			}
+			sortAnnualStatementCostTypes(wantCostTypes)
+			if !reflect.DeepEqual(structureBefore.CostTypes, wantCostTypes) || len(structureBefore.UnitBases) != 0 {
+				t.Fatalf("compatibility structure = %+v, want defaults %+v and no invented unit bases", structureBefore, wantCostTypes)
+			}
+			if _, err := repository.Save(AnnualStatementPeriod{
+				Year: 2026, StartsOn: "2026-02-01", EndsOn: "2027-01-31", UpdatedBy: "other@example.com",
+			}); err != nil {
+				t.Fatal(err)
+			}
+			structureAfter, found := repository.Structure(2026)
+			if !found || !reflect.DeepEqual(structureAfter, structureBefore) {
+				t.Fatalf("period update replaced immutable compatibility snapshot: before=%+v after=%+v", structureBefore, structureAfter)
 			}
 		})
 	}

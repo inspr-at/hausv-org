@@ -21,16 +21,13 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 		t.Fatal(err)
 	}
 	repositories := testRepositories(a, "demo")
-	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{
-		Year: 2026, StartsOn: "2026-04-01", EndsOn: "2027-03-31", UpdatedBy: "manager@example.com",
-	}); err != nil {
-		t.Fatal(err)
-	}
 	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
 		t.Fatal(err)
 	}
 	costTypesBefore := repositories.annualStatementCostTypes.List()
-	if err := repositories.annualStatementPeriods.EnsureStructure(2026, costTypesBefore, repositories.units.List(), "manager@example.com"); err != nil {
+	if _, err := repositories.annualStatementPeriods.SaveWithStructure(storepkg.AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-04-01", EndsOn: "2027-03-31", UpdatedBy: "manager@example.com",
+	}, costTypesBefore, repositories.units.List()); err != nil {
 		t.Fatal(err)
 	}
 	structureBeforeGET, ok := repositories.annualStatementPeriods.Structure(2026)
@@ -130,6 +127,33 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("follow-up page missing %q", want)
 		}
+	}
+}
+
+func TestAnnualStatementLegacyMemoryPeriodGETUsesPreinstalledDefaultsWithoutWrites(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	repositories := testRepositories(a, "demo")
+	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	structureBefore, found := repositories.annualStatementPeriods.Structure(2026)
+	if !found || len(structureBefore.CostTypes) != len(storepkg.AnnualStatementDefaultCostTypes("manager@example.com")) {
+		t.Fatalf("compatibility write did not preinstall the legacy defaults: found=%t structure=%+v", found, structureBefore)
+	}
+	if got := repositories.annualStatementCostTypes.List(); len(got) != 0 {
+		t.Fatalf("compatibility write mutated the empty global catalog: %+v", got)
+	}
+	for attempt := 0; attempt < 2; attempt++ {
+		page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement?year=2026")
+		if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Grundsteuer") || !strings.Contains(page.Body.String(), "Müllabfuhr") {
+			t.Fatalf("legacy period GET %d: status=%d body=%q", attempt+1, page.Code, page.Body.String())
+		}
+	}
+	structureAfter, found := repositories.annualStatementPeriods.Structure(2026)
+	if !found || !reflect.DeepEqual(structureAfter, structureBefore) || len(repositories.annualStatementCostTypes.List()) != 0 {
+		t.Fatalf("GET lazily mutated period/global structure: before=%+v after=%+v", structureBefore, structureAfter)
 	}
 }
 

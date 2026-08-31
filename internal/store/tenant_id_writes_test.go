@@ -178,15 +178,12 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("units: %v", err)
 	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
-	if _, err := periods.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
-		t.Fatalf("annual statement period: %v", err)
-	}
 	costTypes, _ := BindAnnualStatementCostTypeRepository(NewSQLAnnualStatementCostTypeStore(lanes), tenant)
 	if _, err := costTypes.Save(AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("annual statement cost type: %v", err)
 	}
-	if err := periods.EnsureStructure(2026, costTypes.List(), units.List(), "a@example.com"); err != nil {
-		t.Fatalf("annual statement period structure: %v", err)
+	if _, err := periods.SaveWithStructure(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "a@example.com"}, costTypes.List(), units.List()); err != nil {
+		t.Fatalf("annual statement period: %v", err)
 	}
 	prepayments, _ := BindAnnualStatementPrepaymentRepository(NewSQLAnnualStatementPrepaymentStore(lanes), tenant)
 	if _, _, err := prepayments.Save(AnnualStatementPrepayment{PeriodYear: 2026, UnitID: "u1", AmountCents: 12345, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {

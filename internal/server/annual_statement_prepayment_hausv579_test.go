@@ -20,13 +20,12 @@ func TestAnnualStatementPrepaymentsArePeriodBoundAuditedAndCompared(t *testing.T
 		t.Fatal(err)
 	}
 	repositories := testRepositories(a, "demo")
-	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
-		t.Fatal(err)
-	}
 	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
 		t.Fatal(err)
 	}
-	if err := repositories.annualStatementPeriods.EnsureStructure(2026, repositories.annualStatementCostTypes.List(), repositories.units.List(), "manager@example.com"); err != nil {
+	if _, err := repositories.annualStatementPeriods.SaveWithStructure(storepkg.AnnualStatementPeriod{
+		Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com",
+	}, repositories.annualStatementCostTypes.List(), repositories.units.List()); err != nil {
 		t.Fatal(err)
 	}
 	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
