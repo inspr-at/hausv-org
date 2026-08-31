@@ -185,6 +185,13 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if _, err := periods.SaveWithStructure(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "a@example.com"}, costTypes.List(), units.List()); err != nil {
 		t.Fatalf("annual statement period: %v", err)
 	}
+	consumption, _ := BindAnnualStatementConsumptionRepository(NewSQLAnnualStatementConsumptionStore(lanes), tenant)
+	if _, inserted, err := consumption.Append(AnnualStatementConsumptionEvidence{
+		UnitID: "u1", CostTypeKey: "heizung", SourceKind: ConsumptionSourceEntity,
+		SourceID: "sensor.u1_heat", MeasuredAt: now, ValueMicros: 123, MeasurementUnit: "kWh", ReceivedAt: now,
+	}); err != nil || !inserted {
+		t.Fatalf("annual statement consumption: inserted=%t err=%v", inserted, err)
+	}
 	prepayments, _ := BindAnnualStatementPrepaymentRepository(NewSQLAnnualStatementPrepaymentStore(lanes), tenant)
 	if _, _, err := prepayments.Save(AnnualStatementPrepayment{PeriodYear: 2026, UnitID: "u1", AmountCents: 12345, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
 		t.Fatalf("annual statement prepayment: %v", err)

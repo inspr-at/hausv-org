@@ -339,6 +339,15 @@ func seedFull(t *testing.T) *source {
 		}, costTypes.List(), units.List()); err != nil {
 			t.Fatalf("%s annual statement period: %v", slug, err)
 		}
+		consumption, _ := store.BindAnnualStatementConsumptionRepository(store.NewSQLAnnualStatementConsumptionStore(src.lanes), tenant)
+		for _, evidence := range []store.AnnualStatementConsumptionEvidence{
+			{UnitID: "top-1", CostTypeKey: "heizung", SourceKind: store.ConsumptionSourceEntity, SourceID: "sensor." + slug + "_heat", MeasuredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), ValueMicros: 1_000_000, MeasurementUnit: "kWh", ReceivedAt: now},
+			{UnitID: "top-1", CostTypeKey: "heizung", SourceKind: store.ConsumptionSourceEntity, SourceID: "sensor." + slug + "_heat", MeasuredAt: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC), ValueMicros: 1_250_000, MeasurementUnit: "kWh", ReceivedAt: now},
+		} {
+			if _, inserted, err := consumption.Append(evidence); err != nil || !inserted {
+				t.Fatalf("%s annual statement consumption: inserted=%t err=%v", slug, inserted, err)
+			}
+		}
 		prepayments, _ := store.BindAnnualStatementPrepaymentRepository(store.NewSQLAnnualStatementPrepaymentStore(src.lanes), tenant)
 		if _, _, err := prepayments.Save(store.AnnualStatementPrepayment{PeriodYear: 2026, UnitID: "top-1", AmountCents: 12_550, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s annual statement prepayment: %v", slug, err)
@@ -997,6 +1006,10 @@ func TestReadPathsAgreeAfterMove(t *testing.T) {
 		}},
 		{"homeConnectorReadings.List", func(l *store.TenantDB) (any, error) {
 			return store.NewSQLHomeConnectorReadingStore(l).List("stadtpark-home")
+		}},
+		{"annualStatementConsumption.ConsumptionVector", func(l *store.TenantDB) (any, error) {
+			r, _ := store.BindAnnualStatementConsumptionRepository(store.NewSQLAnnualStatementConsumptionStore(l), demo)
+			return r.ConsumptionVector(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31"}, "heizung", []string{"top-1"}, time.UTC)
 		}},
 	}
 	compared := 0
