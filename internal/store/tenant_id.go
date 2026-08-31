@@ -57,6 +57,8 @@ type tenantIDTable struct {
 var tenantIDTables = []tenantIDTable{
 	{name: "annual_statement_consumption_evidence", slugColumn: "tenant_slug"},
 	{name: "annual_statement_cost_types", slugColumn: "tenant_slug"},
+	{name: "annual_statement_period_cost_types", slugColumn: "tenant_slug"},
+	{name: "annual_statement_period_unit_bases", slugColumn: "tenant_slug"},
 	{name: "annual_statement_periods", slugColumn: "tenant_slug"},
 	{name: "annual_statement_prepayments", slugColumn: "tenant_slug"},
 	{name: "annual_statement_receipts", slugColumn: "tenant_slug"},

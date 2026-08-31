@@ -56,11 +56,11 @@ func TestAnnualStatementReceiptStorage(t *testing.T) {
 			periods, _ := BindAnnualStatementPeriodRepository(stores.periods, demoTenant)
 			costTypes, _ := BindAnnualStatementCostTypeRepository(stores.costTypes, demoTenant)
 			documents, _ := BindDocumentRepository(stores.documents, demoTenant)
-			if _, err := periods.Save(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
-				t.Fatalf("period: %v", err)
-			}
 			if _, err := costTypes.Save(AnnualStatementCostType{Key: "wasser", Name: "Wasser", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedBy: "manager@example.com"}); err != nil {
 				t.Fatalf("cost type: %v", err)
+			}
+			if _, err := periods.SaveWithStructure(AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}, costTypes.List(), nil); err != nil {
+				t.Fatalf("period: %v", err)
 			}
 			document, err := documents.CreateGenerated(DocumentRecord{
 				Title: "Wasserrechnung", Category: DocumentCategoryBilling, Visibility: DocumentVisibilityManagerOnly, UploadedBy: "manager@example.com",

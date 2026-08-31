@@ -334,7 +334,9 @@ func seedFull(t *testing.T) *source {
 			t.Fatalf("%s annual statement cost type: %v", slug, err)
 		}
 		periods, _ := store.BindAnnualStatementPeriodRepository(store.NewSQLAnnualStatementPeriodStore(src.lanes), tenant)
-		if _, err := periods.Save(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
+		if _, err := periods.SaveWithStructure(store.AnnualStatementPeriod{
+			Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com",
+		}, costTypes.List(), units.List()); err != nil {
 			t.Fatalf("%s annual statement period: %v", slug, err)
 		}
 		consumption, _ := store.BindAnnualStatementConsumptionRepository(store.NewSQLAnnualStatementConsumptionStore(src.lanes), tenant)
