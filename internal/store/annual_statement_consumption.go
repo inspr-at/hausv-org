@@ -30,8 +30,9 @@ const (
 )
 
 var (
-	ErrAnnualStatementConsumptionConflict     = errors.New("annual statement consumption evidence conflict")
-	ErrAnnualStatementConsumptionInvalidQuery = errors.New("invalid annual statement consumption query")
+	ErrAnnualStatementConsumptionConflict        = errors.New("annual statement consumption evidence conflict")
+	ErrAnnualStatementConsumptionInvalidEvidence = errors.New("invalid annual statement consumption evidence")
+	ErrAnnualStatementConsumptionInvalidQuery    = errors.New("invalid annual statement consumption query")
 )
 
 // AnnualStatementConsumptionEvidence is one immutable cumulative meter fact.
@@ -138,7 +139,11 @@ func annualStatementConsumptionQuery(period AnnualStatementPeriod, costTypeKey s
 		expected = append(expected, unitID)
 	}
 	sort.Strings(expected)
-	return start, lastDay.AddDate(0, 0, 1), expected, nil
+	endExclusive := lastDay.AddDate(0, 0, 1)
+	if !annualStatementConsumptionUnixNanoRepresentable(start) || !annualStatementConsumptionUnixNanoRepresentable(endExclusive) {
+		return time.Time{}, time.Time{}, nil, ErrAnnualStatementConsumptionInvalidQuery
+	}
+	return start, endExclusive, expected, nil
 }
 
 func buildAnnualStatementConsumptionVector(periodYear int, costTypeKey string, expected []string, start, endExclusive time.Time, evidence []AnnualStatementConsumptionEvidence) AnnualStatementConsumptionVector {
@@ -202,6 +207,18 @@ func buildAnnualStatementConsumptionVector(periodYear int, costTypeKey string, e
 			UnitID: unitID, ValueMicros: items[endIndex].ValueMicros - items[startIndex].ValueMicros,
 			MeasurementUnit: items[startIndex].MeasurementUnit,
 		})
+	}
+	if len(vector.Gaps) == 0 {
+		measurementUnits := map[string]bool{}
+		for _, unit := range vector.Units {
+			measurementUnits[unit.MeasurementUnit] = true
+		}
+		if len(measurementUnits) != 1 {
+			vector.Gaps = make([]AnnualStatementConsumptionGap, 0, len(expected))
+			for _, unitID := range expected {
+				vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapAmbiguousMeasurementUnit})
+			}
+		}
 	}
 	if len(vector.Gaps) > 0 {
 		vector.Units = nil
@@ -285,11 +302,15 @@ func NewJSONAnnualStatementConsumptionStore(path string) (*JSONAnnualStatementCo
 	seen := map[string]bool{}
 	for index, record := range store.data.Evidence {
 		tenant, ok := validTenantRef(TenantRef{ID: record.TenantID, Slug: record.TenantSlug})
-		persistedKey := record.Evidence.SourceKey
+		persisted := record.Evidence
+		if persisted.ReceivedAt.IsZero() {
+			return nil, fmt.Errorf("%w: invalid persisted data", ErrAnnualStatementConsumptionInvalidEvidence)
+		}
 		normalized, normalizeErr := normalizeAnnualStatementConsumptionEvidence(record.Evidence)
 		key := tenant.ID + "\x00" + normalized.SourceKey
-		if !ok || normalizeErr != nil || persistedKey != normalized.SourceKey || seen[key] {
-			return nil, fmt.Errorf("invalid annual statement consumption data")
+		if !ok || normalizeErr != nil || record.TenantID != tenant.ID || record.TenantSlug != tenant.Slug ||
+			persisted != normalized || seen[key] {
+			return nil, fmt.Errorf("%w: invalid persisted data", ErrAnnualStatementConsumptionInvalidEvidence)
 		}
 		seen[key] = true
 		store.data.Evidence[index] = annualStatementConsumptionRecord{TenantID: tenant.ID, TenantSlug: tenant.Slug, Evidence: normalized}
@@ -438,11 +459,22 @@ func normalizeAnnualStatementConsumptionEvidence(evidence AnnualStatementConsump
 	}
 	if evidence.UnitID == "" || !annualStatementCostTypeKeyPattern.MatchString(evidence.CostTypeKey) ||
 		(evidence.SourceKind != ConsumptionSourceEntity && evidence.SourceKind != ConsumptionSourceAsset) ||
-		evidence.SourceID == "" || len(evidence.SourceID) > 255 || evidence.MeasuredAt.IsZero() || evidence.ValueMicros < 0 {
-		return AnnualStatementConsumptionEvidence{}, fmt.Errorf("invalid annual statement consumption evidence")
+		evidence.SourceID == "" || len(evidence.SourceID) > 255 || evidence.MeasuredAt.IsZero() || evidence.ValueMicros < 0 ||
+		!annualStatementConsumptionUnixNanoRepresentable(evidence.MeasuredAt) || !annualStatementConsumptionUnixNanoRepresentable(evidence.ReceivedAt) {
+		return AnnualStatementConsumptionEvidence{}, ErrAnnualStatementConsumptionInvalidEvidence
 	}
 	evidence.SourceKey = annualStatementConsumptionSourceKey(evidence)
 	return evidence, nil
+}
+
+var (
+	annualStatementConsumptionUnixNanoMinimum = time.Unix(0, -1<<63).UTC()
+	annualStatementConsumptionUnixNanoMaximum = time.Unix(0, 1<<63-1).UTC()
+)
+
+func annualStatementConsumptionUnixNanoRepresentable(value time.Time) bool {
+	value = value.UTC()
+	return !value.IsZero() && !value.Before(annualStatementConsumptionUnixNanoMinimum) && !value.After(annualStatementConsumptionUnixNanoMaximum)
 }
 
 func canonicalConsumptionMeasurementUnit(raw string) string {

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -346,4 +347,111 @@ func TestAnnualStatementConsumptionJSONAndSQLiteRoundTrips(t *testing.T) {
 		repository, _ = BindAnnualStatementConsumptionRepository(NewSQLAnnualStatementConsumptionStore(NewTenantDB(scoped)), testTenantRef("demo"))
 		assertVector(t, repository)
 	})
+}
+
+func TestAnnualStatementConsumptionRejectsTimesOutsideUnixNanoRange(t *testing.T) {
+	location := mustViennaLocation(t)
+	validAt := time.Date(2026, 1, 1, 0, 0, 0, 0, location)
+	tooEarly := time.Date(1600, 1, 1, 0, 0, 0, 0, time.UTC)
+	tooLate := time.Date(2500, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	for name, storage := range annualStatementConsumptionBackends(t) {
+		t.Run(name, func(t *testing.T) {
+			repository, _ := BindAnnualStatementConsumptionRepository(storage, testTenantRef("demo"))
+			for _, evidence := range []AnnualStatementConsumptionEvidence{
+				func() AnnualStatementConsumptionEvidence {
+					item := consumptionEvidence("top-1", "heizung", "sensor.too_early", tooEarly, 1, "kWh")
+					item.ReceivedAt = validAt
+					return item
+				}(),
+				func() AnnualStatementConsumptionEvidence {
+					item := consumptionEvidence("top-1", "heizung", "sensor.too_late", tooLate, 1, "kWh")
+					item.ReceivedAt = validAt
+					return item
+				}(),
+				func() AnnualStatementConsumptionEvidence {
+					item := consumptionEvidence("top-1", "heizung", "sensor.received_too_late", validAt, 1, "kWh")
+					item.ReceivedAt = tooLate
+					return item
+				}(),
+			} {
+				if _, _, err := repository.Append(evidence); !errors.Is(err, ErrAnnualStatementConsumptionInvalidEvidence) {
+					t.Fatalf("append time error = %v, want typed invalid evidence", err)
+				}
+			}
+
+			for _, period := range []AnnualStatementPeriod{
+				{Year: 1600, StartsOn: "1600-01-01", EndsOn: "1600-12-31"},
+				{Year: 2500, StartsOn: "2500-01-01", EndsOn: "2500-12-31"},
+			} {
+				if _, err := repository.ConsumptionVector(period, "heizung", []string{"top-1"}, location); !errors.Is(err, ErrAnnualStatementConsumptionInvalidQuery) {
+					t.Fatalf("out-of-range period error = %v, want typed invalid query", err)
+				}
+			}
+		})
+	}
+}
+
+func TestAnnualStatementConsumptionJSONRejectsNonCanonicalPersistedEvidence(t *testing.T) {
+	tenant := testTenantRef("demo")
+	at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	canonical, err := normalizeAnnualStatementConsumptionEvidence(consumptionEvidence("top-1", "heizung", "sensor.json", at, 1, "kWh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for name, mutate := range map[string]func(*AnnualStatementConsumptionEvidence){
+		"missing received_at": func(evidence *AnnualStatementConsumptionEvidence) {
+			evidence.ReceivedAt = time.Time{}
+		},
+		"non-canonical mapped unit": func(evidence *AnnualStatementConsumptionEvidence) {
+			evidence.UnitID = " TOP-1 "
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			evidence := canonical
+			mutate(&evidence)
+			raw, err := json.Marshal(annualStatementConsumptionJSONData{Evidence: []annualStatementConsumptionRecord{{
+				TenantID: tenant.ID, TenantSlug: tenant.Slug, Evidence: evidence,
+			}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "consumption.json")
+			if err := os.WriteFile(path, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := NewJSONAnnualStatementConsumptionStore(path); !errors.Is(err, ErrAnnualStatementConsumptionInvalidEvidence) {
+				t.Fatalf("non-canonical persisted evidence error = %v, want typed invalid evidence", err)
+			}
+		})
+	}
+}
+
+func TestAnnualStatementConsumptionVectorRejectsMixedUnitsAcrossExpectedUnits(t *testing.T) {
+	location := mustViennaLocation(t)
+	period := AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31"}
+	start := time.Date(2026, 1, 1, 0, 0, 0, 0, location)
+	endExclusive := time.Date(2027, 1, 1, 0, 0, 0, 0, location)
+
+	for name, storage := range annualStatementConsumptionBackends(t) {
+		t.Run(name, func(t *testing.T) {
+			repository, _ := BindAnnualStatementConsumptionRepository(storage, testTenantRef("demo"))
+			appendConsumption(t, repository, consumptionEvidence("top-1", "heizung", "sensor.top_1", start, 1_000_000, "kWh"))
+			appendConsumption(t, repository, consumptionEvidence("top-1", "heizung", "sensor.top_1", endExclusive, 1_500_000, "kWh"))
+			appendConsumption(t, repository, consumptionEvidence("top-2", "heizung", "sensor.top_2", start, 2_000_000, "MWh"))
+			appendConsumption(t, repository, consumptionEvidence("top-2", "heizung", "sensor.top_2", endExclusive, 2_500_000, "MWh"))
+
+			vector, err := repository.ConsumptionVector(period, "heizung", []string{"top-2", "top-1"}, location)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(vector.Units) != 0 || !reflect.DeepEqual(vector.Gaps, []AnnualStatementConsumptionGap{
+				{UnitID: "top-1", Reason: ConsumptionGapAmbiguousMeasurementUnit},
+				{UnitID: "top-2", Reason: ConsumptionGapAmbiguousMeasurementUnit},
+			}) {
+				t.Fatalf("mixed-unit vector did not fail value-free: %+v", vector)
+			}
+		})
+	}
 }
