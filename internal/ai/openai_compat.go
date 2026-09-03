@@ -179,12 +179,19 @@ func parseSuggestion(responseBody []byte, in TriageInput, model, promptHash stri
 	if err := json.Unmarshal([]byte(raw), &answer); err != nil {
 		return TriageSuggestion{}, fmt.Errorf("ai: decode triage answer: %w", err)
 	}
-	if !containsCategory(in.Categories, answer.Category) {
+	// Models paraphrase the vocabulary's casing ("hoch", "Reparatur"); the
+	// catalogue spelling is authoritative, so match case-insensitively and
+	// store the canonical key.
+	category, ok := canonicalCategory(in.Categories, answer.Category)
+	if !ok {
 		return TriageSuggestion{}, fmt.Errorf("ai: unknown category %q", answer.Category)
 	}
-	if !validPriority(answer.Priority) {
+	answer.Category = category
+	priority, ok := canonicalPriority(answer.Priority)
+	if !ok {
 		return TriageSuggestion{}, fmt.Errorf("ai: unknown priority %q", answer.Priority)
 	}
+	answer.Priority = priority
 	if answer.House != "" && !containsHouse(in.Houses, answer.House) {
 		return TriageSuggestion{}, fmt.Errorf("ai: unknown house %q", answer.House)
 	}
@@ -268,11 +275,31 @@ func containsTemplate(items []TemplateHint, value string) bool {
 	return false
 }
 
+var priorities = []string{"Niedrig", "Mittel", "Hoch", "Dringend"}
+
 func validPriority(value string) bool {
-	switch value {
-	case "Niedrig", "Mittel", "Hoch", "Dringend":
-		return true
-	default:
-		return false
+	_, ok := canonicalPriority(value)
+	return ok
+}
+
+// canonicalPriority maps any casing of a known priority to its catalogue spelling.
+func canonicalPriority(value string) (string, bool) {
+	value = strings.TrimSpace(value)
+	for _, known := range priorities {
+		if strings.EqualFold(known, value) {
+			return known, true
+		}
 	}
+	return "", false
+}
+
+// canonicalCategory maps any casing of a known category key to the catalogue key.
+func canonicalCategory(items []CategoryRule, value string) (string, bool) {
+	value = strings.TrimSpace(value)
+	for _, item := range items {
+		if strings.EqualFold(item.Key, value) {
+			return item.Key, true
+		}
+	}
+	return "", false
 }

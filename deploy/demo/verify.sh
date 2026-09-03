@@ -51,17 +51,15 @@ verwaltung_page() {
 }
 
 inbox_count() {
-    local page compact lede text
+    # The sidebar carries the open count as a badge on the Posteingang item;
+    # a seeded demo must show at least one open item there.
+    local page compact item
     page=$(curl --fail --silent --show-error --cookie "$cookie_jar" "$base_url/app/verwaltung/posteingang")
     compact=$(printf '%s' "$page" | tr '\n' ' ')
-    case $compact in
-        *'<div class="portal-section-lede">'*) ;;
-        *) return 1 ;;
-    esac
-    lede=${compact#*'<div class="portal-section-lede">'}
-    lede=${lede%%'</div>'*}
-    text=$(printf '%s' "$lede" | sed 's/<[^>]*>/ /g')
-    printf '%s' "$text" | grep -Eq '(^|[^0-9])[1-9][0-9]*([^0-9]|$)'
+    item=${compact#*'href="/app/verwaltung/posteingang"'}
+    [ "$item" != "$compact" ] || return 1
+    item=${item%%'</a>'*}
+    printf '%s' "$item" | grep -Eq 'class="nav-badge">[1-9][0-9]*<'
 }
 
 check 'healthz' healthcheck

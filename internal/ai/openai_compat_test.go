@@ -93,6 +93,26 @@ func TestSuggestRejectsUnknownCategory(t *testing.T) {
 	}
 }
 
+// OpenRouter models answer with the vocabulary in their own casing ("hoch",
+// "Reparatur"); the live demo rejected every such answer. The catalogue
+// spelling wins, and the suggestion carries it.
+func TestSuggestNormalisesVocabularyCase(t *testing.T) {
+	t.Parallel()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		answer := strings.Replace(validAnswerJSON(), `"priority":"Hoch"`, `"priority":" hoch"`, 1)
+		answer = strings.Replace(answer, `"category":"reparatur"`, `"category":"Reparatur"`, 1)
+		writeCompletion(t, w, answer)
+	})
+
+	suggestion, err := newTestSuggester(handler).Suggest(context.Background(), testInput())
+	if err != nil {
+		t.Fatalf("Suggest: %v", err)
+	}
+	if suggestion.Priority != "Hoch" || suggestion.Category != "reparatur" {
+		t.Fatalf("priority=%q category=%q; want catalogue spelling", suggestion.Priority, suggestion.Category)
+	}
+}
+
 func TestSuggestFillsMissingConfidenceWithZero(t *testing.T) {
 	t.Parallel()
 	answer := `{"category":"reparatur","priority":"Hoch","house":"haus-a","unit":"Top 7","assignee":"vera","template_key":"antwort","reply":"Danke.","actions":[],"confidence":{"category":1},"reasoning":"Die Meldung nennt einen Schaden."}`
