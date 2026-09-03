@@ -335,3 +335,39 @@ HAUSV_MAIL_DELIVERY_NOTICE=Accurate transactional mail disclosure
 
 These values are public legal disclosures, not secrets, but remain deployment
 configuration because they differ between self-hosted and managed instances.
+
+## Demo-Instanz
+
+`deploy/demo/` is a self-contained Docker Compose bundle for a **non-production
+demo**. It runs only the committed Musterstadt fixture data on port `8098` by
+default; do not use it for real homes, people, documents, or production data.
+
+From the repository root, prepare the two host-side configuration files and
+start the demo:
+
+```sh
+cp deploy/demo/demo.env.example deploy/demo/demo.env
+cp deploy/demo/secrets.env.example deploy/demo/secrets.env
+chmod 600 deploy/demo/secrets.env
+docker compose -f deploy/demo/docker-compose.yml up -d --build
+deploy/demo/seed.sh
+```
+
+`deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
+fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
+only its named data volume, starts it again, and seeds it. Confirm the running
+instance with `deploy/demo/verify.sh`.
+
+Put the OpenRouter API key only in `deploy/demo/secrets.env` as `AI_API_KEY`;
+that file is ignored by Git and must remain mode `600` on the Docker host. Set a
+separate, high-entropy `SESSION_KEY` there too. `demo.env` contains the committed
+fixture configuration and defaults to OpenRouter's inexpensive structured-output
+model.
+
+For a reverse proxy, point the upstream at `http://127.0.0.1:8098` (or the
+chosen `HAUSV_DEMO_PORT`) and set `BASE_URL` in `demo.env` to the public HTTPS
+URL before exposing it. The current `LOCAL_DEV_LOGIN` is intentionally enabled
+only when `BASE_URL` uses `localhost`, `127.0.0.1`, or `::1`; a public proxy
+therefore needs a real mail/OIDC login configuration, or a separately reviewed
+explicit demo-login switch in the server. Never expose the localhost dev-login
+flow as a production authentication mechanism.

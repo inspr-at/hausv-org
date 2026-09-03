@@ -1,0 +1,29 @@
+services:
+  hausv-demo:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${HAUSV_DEMO_VERSION:-demo}
+        GIT_COMMIT: ${HAUSV_DEMO_COMMIT:-dev}
+    image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
+    # A fresh Docker-managed volume is root-owned; the demo initializes /data.
+    user: "0:0"
+    ports:
+      - "${HAUSV_DEMO_PORT:-8098}:8080"
+    env_file:
+      - ./demo.env
+      - ./secrets.env
+    volumes:
+      - hausv-demo-data:/data
+      - ../../scripts/demo/seed:/seed:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/hausv-org", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  hausv-demo-data:

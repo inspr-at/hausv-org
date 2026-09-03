@@ -5,6 +5,7 @@
 /weg-portal
 *.log
 *.env
+/deploy/demo/*.env
 *.env.local
 local-*.jpg
 tmp/
