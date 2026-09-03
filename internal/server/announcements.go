@@ -70,17 +70,6 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 func (a *app) announcementPortalContext(ac authCtx) web.PortalPageData {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	modules := a.portalModulesFor(ac.tenant.Slug)
-	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
-	portalContexts := make([]web.PortalContext, 0, len(contexts))
-	for _, context := range contexts {
-		portalContexts = append(portalContexts, web.PortalContext{
-			TenantSlug: context.TenantSlug,
-			HouseName:  context.HouseName,
-			Address:    context.Address,
-			Role:       context.Role,
-			Current:    context.Current,
-		})
-	}
 	openIssues := 0
 	if a.issueStore != nil {
 		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
@@ -110,7 +99,7 @@ func (a *app) announcementPortalContext(ac authCtx) web.PortalPageData {
 		CanViewAudit:        canViewAudit(ac.actor(), ac.resource()),
 		Issues:              make([]view.IssueView, openIssues),
 		UnreadAnnouncements: 0,
-		Contexts:            portalContexts,
+		Shell:               a.portalShellData(&ac),
 		ReleaseNotes:        version.Notes(),
 	}
 }

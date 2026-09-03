@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 type portalContextView struct {
@@ -15,6 +16,63 @@ type portalContextView struct {
 	Address    string
 	Role       string
 	Current    bool
+}
+
+// portalShellData is the single assembly point for the shared house shell. It
+// keeps cross-house issue reads tenant-bound and separates managed houses from
+// the personal portal contexts shown by "Portal wechseln".
+func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
+	shell := web.PortalShellData{Ready: true}
+	if a == nil || ac == nil {
+		return shell
+	}
+
+	shell.RoleLabel = ac.role
+	managed := a.managedTenants(ac)
+	managedSlugs := make(map[string]bool, len(managed))
+	for index, tenant := range managed {
+		managedSlugs[tenant.Config.Slug] = true
+		openIssues := 0
+		if a.issueStore != nil {
+			openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Ref, ac.email, tenant.Role))
+		}
+		current := tenant.Config.Slug == ac.tenant.Slug
+		if current {
+			shell.CurrentHousePosition = index + 1
+		}
+		shell.ManagedHouses = append(shell.ManagedHouses, web.PortalHouse{
+			Slug: tenant.Config.Slug, Name: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
+			Role: tenant.Role, OpenIssueCount: openIssues, Current: current,
+		})
+	}
+
+	organisation, hasOrganisation := a.organisationFor(ac)
+	shell.IsOrganisationMember = len(managed) > 1 || hasOrganisation && len(managed) > 0
+	if shell.IsOrganisationMember {
+		shell.OrganisationName = strings.TrimSpace(organisation.Name)
+		if shell.OrganisationName == "" {
+			shell.OrganisationName = "Verwaltung"
+		}
+		shell.ShowInboxNav = hasOrganisation
+		if hasOrganisation {
+			shell.InboxOpenCount = a.inboxOpenCount(ac)
+		}
+		shell.CanManageOrganisationSettings = a.isOrganisationAdmin(ac)
+		shell.IsVerwaltung = shell.CanManageOrganisationSettings || len(managed) > 1
+	}
+
+	for _, context := range a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role) {
+		// Other managed community houses belong to the Liegenschaft picker. The
+		// current portal remains so a personal Home portal can be offered beside it.
+		if managedSlugs[context.TenantSlug] && !context.Current {
+			continue
+		}
+		shell.PortalContexts = append(shell.PortalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug, HouseName: context.HouseName, Address: context.Address,
+			Role: context.Role, Current: context.Current,
+		})
+	}
+	return shell
 }
 
 func (a *app) portalContextsFor(email string, currentTenant string, currentRole string) []portalContextView {

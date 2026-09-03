@@ -2522,17 +2522,6 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		data["OpenIssues"] = len(signals.openIssues)
 		data["HasOpenIssues"] = len(signals.openIssues) > 0
 	}
-	contexts := a.portalContextsFor(email, tenant.Slug, role)
-	portalContexts := make([]web.PortalContext, 0, len(contexts))
-	for _, context := range contexts {
-		portalContexts = append(portalContexts, web.PortalContext{
-			TenantSlug: context.TenantSlug,
-			HouseName:  context.HouseName,
-			Address:    context.Address,
-			Role:       context.Role,
-			Current:    context.Current,
-		})
-	}
 	areas := portalAreaViews(modules, canResidentAreas, canSeeParking, canManagePortalHandovers, canManagePortalUsers, openBallots)
 	portalAreas := make([]web.PortalArea, 0, len(areas))
 	for _, area := range areas {
@@ -2562,11 +2551,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// empty cards, which reads worse than the calm one and loses the reassurance
 	// the old page carried. Calm for everyone when nothing is waiting.
 	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
-	_, showInboxNav := a.organisationFor(&ac)
-	inboxOpenCount := 0
-	if showInboxNav {
-		inboxOpenCount = a.inboxOpenCount(&ac)
-	}
+	shell := a.portalShellData(&ac)
 
 	a.renderPortalTempl(w, r, web.PortalPageData{
 		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
@@ -2594,9 +2579,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		CanManageHandovers:     canManagePortalHandovers,
 		CanManageUsers:         canManagePortalUsers,
 		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-		ShowVerwaltungNav:      a.showVerwaltungNav(ac),
-		ShowInboxNav:           showInboxNav,
-		InboxOpenCount:         inboxOpenCount,
+		ShowVerwaltungNav:      shell.IsOrganisationMember,
+		ShowInboxNav:           shell.ShowInboxNav,
+		InboxOpenCount:         shell.InboxOpenCount,
 		RolePreview:            rolePreviewPortalData(&ac),
 		RolePreviewChoices:     a.rolePreviewChoices(&ac),
 		Flash:                  rolePreviewFlash(r),
@@ -2610,7 +2595,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Energy:                 energy,
 		HasEnergy:              hasEnergyCard,
 		Areas:                  portalAreas,
-		Contexts:               portalContexts,
+		Contexts:               shell.PortalContexts,
+		Shell:                  shell,
 		ReleaseNotes:           version.Notes(),
 	})
 }
