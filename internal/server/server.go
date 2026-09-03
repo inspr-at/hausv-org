@@ -2519,6 +2519,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		energy = web.PortalEnergy{}
 	}
 	portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
+	for i := range portalIssues {
+		portalIssues[i].AssigneeName = portalIssues[i].AssigneeEmail
+		if profile, ok := a.directoryProfile(portalIssues[i].AssigneeEmail); ok {
+			portalIssues[i].AssigneeName = profile.DisplayName()
+		}
+	}
 	portalEvents := eventViews(signals.events, now)
 	portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
 	// HAUSV-527: density follows content as well as role. An empty house gives a

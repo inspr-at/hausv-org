@@ -77,6 +77,30 @@ func TestRolePreviewStartRequiresRealAdminHAUSV605(t *testing.T) {
 	}
 }
 
+func TestPortalIssueAssigneeUsesDisplayNameHAUSV605(t *testing.T) {
+	const email = "vera@example.com"
+	a := newTestPortalApp(t, userProfile{
+		Email: email, FirstName: "Vera", LastName: "Verwalter", Role: roleAdmin,
+		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
+	})
+	repository := testRequestRepositories(t, a, "demo").issues
+	if _, err := repository.Create(store.ResidentIssue{
+		AuthorEmail: "resident@example.com", AuthorName: "Resi Dent", Category: "Reparatur",
+		Title: "Lift steckt wieder", Body: "Der Lift bleibt stehen.", LocationType: store.IssueLocationCommon,
+		Status: store.IssueStatusNew, AssigneeEmail: email,
+	}); err != nil {
+		t.Fatalf("seed assigned issue: %v", err)
+	}
+
+	page := rolePreviewTestRequest(t, a, http.MethodGet, "/demo/app", nil, rolePreviewTestSession(t, a, email, roleAdmin))
+	if page.Code != http.StatusOK {
+		t.Fatalf("portal status = %d: %s", page.Code, page.Body.String())
+	}
+	if !strings.Contains(page.Body.String(), `<td title="vera@example.com">Vera Verwalter</td>`) {
+		t.Fatalf("portal issue assignee did not use the profile display name: %s", page.Body.String())
+	}
+}
+
 func TestRolePreviewExpiryRestoresSessionAndAuditsHAUSV605(t *testing.T) {
 	const email = "admin@example.com"
 	a := newTestPortalApp(t, userProfile{Email: email, Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
