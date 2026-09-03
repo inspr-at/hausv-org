@@ -57,6 +57,7 @@ type PortalPageData struct {
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
 	ShowVerwaltungNav                                 bool
+	ShowInboxNav                                      bool
 	InboxOpenCount                                    int
 	RolePreview                                       *RolePreviewState
 	RolePreviewChoices                                []RolePreviewChoice
@@ -297,7 +298,9 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 		if data.ShowVerwaltungNav {
 			<span class="nav-organisation">
 				@PortalNavItem("home", "Portfolio", "/app/verwaltung", false, 0, icons)
-				@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, data.InboxOpenCount, icons)
+				if data.ShowInboxNav {
+					@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, data.InboxOpenCount, icons)
+				}
 			</span>
 		}
 		if data.CanUseResidentAreas {

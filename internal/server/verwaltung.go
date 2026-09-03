@@ -97,6 +97,31 @@ func (a *app) organisationFor(ac *authCtx) (config.OrganisationConfig, bool) {
 	return lookup(managed[0].Config)
 }
 
+func (a *app) isOrganisationAdmin(ac *authCtx) bool {
+	if a == nil || ac == nil || ac.preview != nil {
+		return false
+	}
+	email := normalizeEmail(ac.email)
+	if _, ok := a.admins[email]; ok {
+		return true
+	}
+	organisation, ok := a.organisationFor(ac)
+	if !ok {
+		return false
+	}
+	found := false
+	for slug, tenant := range a.tenants {
+		if normalizeSlug(tenant.Organisation) != normalizeSlug(organisation.Key) {
+			continue
+		}
+		found = true
+		if normalizeRole(a.roleFor(email, slug)) != roleAdmin {
+			return false
+		}
+	}
+	return found
+}
+
 func (a *app) showVerwaltungNav(ac authCtx) bool {
 	if ac.preview != nil {
 		return false
@@ -111,6 +136,7 @@ func (a *app) showVerwaltungNav(ac authCtx) bool {
 func (a *app) verwaltungShell(ac *authCtx, active string) web.VerwaltungShell {
 	managed := a.managedTenants(ac)
 	organisationName := "Verwaltung"
+	_, hasOrganisation := a.organisationFor(ac)
 	if organisation, ok := a.organisationFor(ac); ok {
 		organisationName = organisation.Name
 	}
@@ -135,18 +161,23 @@ func (a *app) verwaltungShell(ac *authCtx, active string) web.VerwaltungShell {
 			TenantSlug: context.TenantSlug, HouseName: context.HouseName, Address: context.Address, Role: context.Role, Current: context.Current,
 		})
 	}
-	return web.VerwaltungShell{
-		OrganisationName: organisationName,
-		RoleLabel:        roleLabel,
-		DisplayName:      profile.DisplayName(),
-		Initials:         profile.Initials(),
-		Active:           active,
-		InboxOpenCount:   a.inboxOpenCount(ac),
-		Houses:           houses,
-		Contexts:         portalContexts,
-		DisplayVersion:   version.DisplayVersion(version.Version),
-		ReleaseNotes:     version.Notes(),
+	shell := web.VerwaltungShell{
+		OrganisationName:  organisationName,
+		RoleLabel:         roleLabel,
+		DisplayName:       profile.DisplayName(),
+		Initials:          profile.Initials(),
+		Active:            active,
+		ShowInboxNav:      hasOrganisation,
+		CanManageSettings: a.isOrganisationAdmin(ac),
+		Houses:            houses,
+		Contexts:          portalContexts,
+		DisplayVersion:    version.DisplayVersion(version.Version),
+		ReleaseNotes:      version.Notes(),
 	}
+	if hasOrganisation {
+		shell.InboxOpenCount = a.inboxOpenCount(ac)
+	}
+	return shell
 }
 
 func (a *app) requireVerwaltung(next authedHandler) authedHandler {

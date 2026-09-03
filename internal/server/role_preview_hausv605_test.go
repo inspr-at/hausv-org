@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -165,6 +166,7 @@ func TestNavigationEntriesByRoleFamilyHAUSV606(t *testing.T) {
 				tenant := a.tenants["demo"]
 				tenant.Organisation = "test-verwaltung"
 				a.tenants["demo"] = tenant
+				a.organisations = map[string]config.OrganisationConfig{"test-verwaltung": {Key: "test-verwaltung", Name: "Test-Verwaltung"}}
 			}
 			page := rolePreviewTestRequest(t, a, http.MethodGet, "/demo/app", nil, rolePreviewTestSession(t, a, email, test.role))
 			if page.Code != http.StatusOK {

@@ -9,6 +9,8 @@ type VerwaltungShell struct {
 	Initials         string
 	Active           string
 	InboxOpenCount   int
+	ShowInboxNav     bool
+	CanManageSettings bool
 	Houses           []VerwaltungHouse
 	Contexts         []PortalContext
 	DisplayVersion   string
@@ -74,7 +76,9 @@ templ VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) {
 templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
 	<nav class="nav verwaltung-nav" aria-label="Bereiche">
 		@PortalNavItem("home", "Portfolio", "/app/verwaltung", shell.Active == "portfolio", 0, icons)
-		@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons)
+		if shell.ShowInboxNav {
+			@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons)
+		}
 		<details class="verwaltung-houses">
 			<summary class={ templ.KV("active", shell.Active == "houses") }>
 				if icons {
@@ -88,7 +92,9 @@ templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
 				}
 			</div>
 		</details>
-		@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
+		if shell.CanManageSettings {
+			@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
+		}
 	</nav>
 }
 
