@@ -418,8 +418,8 @@ func applySuggestionForm(item *store.IntakeItem, r *http.Request) {
 	s.Assignee = strings.TrimSpace(r.FormValue("assignee"))
 	s.TemplateKey = strings.TrimSpace(r.FormValue("template"))
 	s.Reply = strings.TrimSpace(r.FormValue("reply"))
-	if due, err := time.Parse("2006-01-02", r.FormValue("due")); err == nil {
-		item.DueAt = due
+	if due, err := time.ParseInLocation("2006-01-02", r.FormValue("due"), time.Local); err == nil {
+		item.DueAt = time.Date(due.Year(), due.Month(), due.Day(), 17, 0, 0, 0, time.Local).UTC()
 	}
 }
 
@@ -464,6 +464,10 @@ func (a *app) phoneNoteAction(w http.ResponseWriter, r *http.Request, ac authCtx
 }
 
 func (a *app) verwaltungSettingsPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.isOrganisationAdmin(&ac) {
+		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
+		return
+	}
 	orgKey, ok := a.inboxOrganisationKey(&ac)
 	if !ok || a.orgSettings == nil {
 		http.Error(w, "Einstellungen nicht verfügbar.", http.StatusServiceUnavailable)

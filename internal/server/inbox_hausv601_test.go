@@ -125,15 +125,11 @@ func TestInboxEditRejectAssignSettingsAndOwnerGuard(t *testing.T) {
 
 	values := url.Values{"threshold": {"85"}, "auto_enabled": {"1"}, "trust_reparatur": {"auto"}}
 	settingsSave := authedFormRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen", values)
-	if settingsSave.Code != http.StatusSeeOther {
+	if settingsSave.Code != http.StatusForbidden {
 		t.Fatalf("settings=%d body=%s", settingsSave.Code, settingsSave.Body.String())
 	}
-	saved, _ := a.orgSettings("musterstadt").Get(context.Background())
-	if saved.AutoThreshold != .85 || !saved.AutoEnabled || saved.TrustLevels[store.IntakeCategoryRepair] != "auto" {
-		t.Fatalf("settings round trip=%#v", saved)
-	}
-	if len(a.auditStore.List(store.AuditFilter{TenantSlug: "demo", Action: store.AuditActionVerwaltungSettings})) != 1 {
-		t.Fatal("settings audit missing")
+	if len(a.auditStore.List(store.AuditFilter{TenantSlug: "demo", Action: store.AuditActionVerwaltungSettings})) != 0 {
+		t.Fatal("manager settings attempt must not create an audit entry")
 	}
 
 	owner, _, _ := newInboxTestApp(t, roleOwner)
