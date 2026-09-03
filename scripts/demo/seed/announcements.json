@@ -1,0 +1,242 @@
+[
+  {
+    "id": "an-001",
+    "house": "janischhofweg-22",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-002",
+    "house": "janischhofweg-22",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-003",
+    "house": "janischhofweg-22",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-004",
+    "house": "grazbachgasse-14",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-005",
+    "house": "grazbachgasse-14",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-006",
+    "house": "annenstrasse-71",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-007",
+    "house": "annenstrasse-71",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-008",
+    "house": "annenstrasse-71",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-009",
+    "house": "muenzgrabenstrasse-9",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-010",
+    "house": "muenzgrabenstrasse-9",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-011",
+    "house": "schoergelgasse-25",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-012",
+    "house": "schoergelgasse-25",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-013",
+    "house": "schoergelgasse-25",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-014",
+    "house": "leonhardstrasse-3",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-015",
+    "house": "leonhardstrasse-3",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-016",
+    "house": "koerblergasse-40",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-017",
+    "house": "koerblergasse-40",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-018",
+    "house": "koerblergasse-40",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-019",
+    "house": "elisabethstrasse-12",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-020",
+    "house": "elisabethstrasse-12",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-021",
+    "house": "sparbersbachgasse-58",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-022",
+    "house": "sparbersbachgasse-58",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-023",
+    "house": "sparbersbachgasse-58",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-024",
+    "house": "mariatroster-strasse-101",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-025",
+    "house": "mariatroster-strasse-101",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-026",
+    "house": "petersgasse-7",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-027",
+    "house": "petersgasse-7",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-028",
+    "house": "petersgasse-7",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-029",
+    "house": "kaiserfeldgasse-19",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-030",
+    "house": "kaiserfeldgasse-19",
+    "title": "Hausbegehung in der Demo-Woche",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  }
+]
