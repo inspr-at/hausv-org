@@ -371,9 +371,10 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 		</a>
 		if len(data.RolePreviewChoices) > 0 {
 			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
-				<span class="avatar" aria-hidden="true">{ data.Initials }</span>
+				<span class="role-preview-mobile-badge">Ansicht</span>
 			}
-		} else if data.CanUseResidentAreas {
+		}
+		if data.CanUseResidentAreas {
 			<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 		} else {
 			<a class="avatar" href="/app" aria-label={ "Portal von " + data.DisplayName }>{ data.Initials }</a>
