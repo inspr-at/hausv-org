@@ -30,6 +30,7 @@ type TenantConfig struct {
 	Slug              string                   `json:"slug"`
 	Name              string                   `json:"name"`
 	Address           string                   `json:"address"`
+	Organisation      string                   `json:"organisation,omitempty"`
 	PortalType        string                   `json:"portal_type,omitempty"`
 	BrandIcon         string                   `json:"brand_icon,omitempty"`
 	BrandAbbreviation string                   `json:"brand_abbreviation,omitempty"`
@@ -49,6 +50,11 @@ type TenantConfig struct {
 	HeroImageFile     string                   `json:"hero_image_file,omitempty"`
 	HA                homeassistant.Config     `json:"-"`
 	HAConnectors      *HomeAssistantConnectors `json:"-"`
+}
+
+type OrganisationConfig struct {
+	Key  string
+	Name string
 }
 
 const (
@@ -204,6 +210,7 @@ func ParseTenants(raw string, defaultTenant string, defaultHA homeassistant.Conf
 			if tenant.Name == "" {
 				tenant.Name = tenant.Address
 			}
+			tenant.Organisation = textutil.Slug(tenant.Organisation)
 			tenant.PortalType = strings.ToLower(strings.TrimSpace(tenant.PortalType))
 			if tenant.PortalType == "" {
 				tenant.PortalType = PortalTypeCommunity
@@ -249,6 +256,35 @@ func ParseTenants(raw string, defaultTenant string, defaultHA homeassistant.Conf
 			HeroImageURL: store.DefaultTenantHeroImageURL,
 			HA:           defaultHA,
 		}
+	}
+	return out, nil
+}
+
+func ParseOrganisations(raw string) (map[string]OrganisationConfig, error) {
+	out := map[string]OrganisationConfig{}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return out, nil
+	}
+	var organisations map[string]struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(raw), &organisations); err != nil {
+		return nil, fmt.Errorf("invalid WEG_ORGANISATIONS_JSON")
+	}
+	for rawKey, rawOrganisation := range organisations {
+		key := textutil.Slug(rawKey)
+		name := strings.TrimSpace(rawOrganisation.Name)
+		if key == "" {
+			return nil, fmt.Errorf("organisation is missing key")
+		}
+		if name == "" {
+			return nil, fmt.Errorf("organisation %s is missing name", key)
+		}
+		if _, exists := out[key]; exists {
+			return nil, fmt.Errorf("duplicate organisation %s", key)
+		}
+		out[key] = OrganisationConfig{Key: key, Name: name}
 	}
 	return out, nil
 }

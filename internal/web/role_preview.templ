@@ -1,0 +1,52 @@
+package web
+
+type RolePreviewState struct {
+	RoleLabel     string
+	HouseName     string
+	EndsInMinutes int
+	EndPath       string
+}
+
+type RolePreviewChoice struct {
+	Role        string
+	Label       string
+	Description string
+	StartPath   string
+	Current     bool
+}
+
+templ RolePreviewBand(state RolePreviewState) {
+	<section class="role-preview-band" aria-label="Aktive Rollenansicht">
+		<span>Ansicht als { state.RoleLabel } · { state.HouseName } · schreibgeschützt · endet in { state.EndsInMinutes } Min</span>
+		<form method="post" action={ templ.SafeURL(state.EndPath) }><button type="submit">Ansicht beenden</button></form>
+	</section>
+}
+
+templ RolePreviewChooser(choices []RolePreviewChoice) {
+	<details class="role-preview-chooser">
+		<summary>{ children... }</summary>
+		<div class="context-menu role-preview-menu">
+			<strong>Ansicht als</strong>
+			for _, choice := range choices {
+				<form method="post" action={ templ.SafeURL(choice.StartPath) }>
+					<input type="hidden" name="role" value={ choice.Role }/>
+					<button type="submit" class={ templ.KV("current", choice.Current) } aria-current={ rolePreviewCurrent(choice.Current) }>
+						<strong>{ choice.Label }</strong>
+						<small>{ choice.Description }</small>
+						if choice.Current {
+							<small>Aktuell</small>
+						}
+					</button>
+				</form>
+			}
+			<small>15 Minuten · schreibgeschützt · wird protokolliert</small>
+		</div>
+	</details>
+}
+
+func rolePreviewCurrent(current bool) string {
+	if current {
+		return "true"
+	}
+	return "false"
+}

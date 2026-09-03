@@ -1,0 +1,123 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/version"
+
+type VerwaltungShell struct {
+	OrganisationName string
+	RoleLabel        string
+	DisplayName      string
+	Initials         string
+	Active           string
+	InboxOpenCount   int
+	Houses           []VerwaltungHouse
+	Contexts         []PortalContext
+	DisplayVersion   string
+	ReleaseNotes     []version.Note
+}
+
+type VerwaltungHouse struct {
+	Slug    string
+	Name    string
+	Address string
+	Role    string
+}
+
+func PortalVerwaltungPage(shell VerwaltungShell, title string, body templ.Component) templ.Component {
+	return portalVerwaltungPage(shell, title, body)
+}
+
+templ portalVerwaltungPage(shell VerwaltungShell, title string, body templ.Component) {
+	@PortalDocument(title + " · " + shell.OrganisationName, portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class": "verwaltung-page", "data-templ-verwaltung": true}) {
+		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+		@VerwaltungMobileHeader(shell, title)
+		<div class="shell verwaltung-shell" data-portal-shell>
+			@VerwaltungSidebar(shell)
+			<div class="portal-shell-content">
+				<main id="main-content" class="portal-section-landing verwaltung-main" tabindex="-1" data-skip-target>
+					@PortalSectionHeader(
+						PortalSectionIdentityData{Label: "Verwaltung", Icon: "settings"},
+						PortalSectionTitle(title),
+						nil,
+						nil,
+					)
+					<div class="portal-section-content">
+						@body
+					</div>
+				</main>
+			</div>
+		</div>
+	}
+}
+
+templ VerwaltungSidebar(shell VerwaltungShell) {
+	<aside class="sidebar verwaltung-sidebar" aria-label="Verwaltungsnavigation">
+		<header class="organisation-identity"><strong>{ shell.OrganisationName }</strong><small>{ shell.RoleLabel }</small></header>
+		@VerwaltungNavigation(shell, true)
+		@VerwaltungPortalSwitch(shell.Contexts, false)
+		<footer class="account"><span class="avatar" aria-hidden="true">{ shell.Initials }</span><span><strong>{ shell.DisplayName }</strong><small>{ shell.RoleLabel }</small>@VerwaltungReleaseNotes(shell)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
+	</aside>
+}
+
+templ VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) {
+	<header class="mobile-head verwaltung-mobile-head">
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">
+			@VerwaltungNavigation(shell, false)
+			@VerwaltungPortalSwitch(shell.Contexts, true)
+			@VerwaltungReleaseNotes(shell)
+			<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { shell.DisplayName } abmelden</button></form>
+		</div></details>
+		<a class="mobile-identity" href="/app/verwaltung"><strong>{ shell.OrganisationName }</strong><small>{ pageLabel }</small></a>
+		<span class="avatar" aria-hidden="true">{ shell.Initials }</span>
+	</header>
+}
+
+templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
+	<nav class="nav verwaltung-nav" aria-label="Bereiche">
+		@PortalNavItem("home", "Portfolio", "/app/verwaltung", shell.Active == "portfolio", 0, icons)
+		@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons)
+		<details class="verwaltung-houses">
+			<summary class={ templ.KV("active", shell.Active == "houses") }>
+				if icons {
+					<span class="nav-icon">@PortalIcon("home")</span>
+				}
+				<span class="nav-label">Häuser</span><span aria-hidden="true">⌄</span>
+			</summary>
+			<div class="context-menu">
+				for _, house := range shell.Houses {
+					<form method="post" action="/app/context"><input type="hidden" name="tenant" value={ house.Slug }/><input type="hidden" name="role" value={ house.Role }/><button type="submit"><strong>{ house.Name }</strong><small>{ house.Address }</small></button></form>
+				}
+			</div>
+		</details>
+		@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
+	</nav>
+}
+
+templ VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) {
+	if len(contexts) > 1 {
+		<details class={ "context-switch", "verwaltung-portal-switch", templ.KV("mobile-context-switch", mobile) }><summary aria-label="Portal wechseln">Portal wechseln<span class="context-switch-chevron" aria-hidden="true">⌄</span></summary><div class="context-menu">
+			for _, context := range contexts {
+				if context.Current {
+					<span class="context-current"><strong>{ context.HouseName }</strong><small>Aktives Portal</small></span>
+				} else {
+					<form method="post" action="/app/context"><input type="hidden" name="tenant" value={ context.TenantSlug }/><input type="hidden" name="role" value={ context.Role }/><button type="submit"><strong>{ context.HouseName }</strong></button></form>
+				}
+			}
+		</div></details>
+	}
+}
+
+templ VerwaltungReleaseNotes(shell VerwaltungShell) {
+	<details class="release-notes"><summary>v{ shell.DisplayVersion } · Versionsverlauf</summary><div class="release-panel"><h2>Versionsverlauf</h2>
+		for _, note := range shell.ReleaseNotes {
+			<article class="release-entry"><small>v{ note.Version } · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
+				for _, item := range note.Items {
+					<li><strong>{ item.Label }:</strong> { item.Text }</li>
+				}
+			</ul></article>
+		}
+	</div></details>
+}
+
+templ VerwaltungPlaceholder() {
+	<div class="card verwaltung-placeholder"><p>Dieser Bereich wird gerade gebaut.</p></div>
+}

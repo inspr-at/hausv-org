@@ -56,6 +56,11 @@ type PortalPageData struct {
 	Areas                                             []PortalArea
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
+	ShowVerwaltungNav                                 bool
+	InboxOpenCount                                    int
+	RolePreview                                       *RolePreviewState
+	RolePreviewChoices                                []RolePreviewChoice
+	Flash                                             string
 }
 
 type PortalSectionIdentityData struct {
@@ -114,6 +119,12 @@ templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, s
 	>
 		if status != nil {
 			@status
+		}
+		if data.Portal.Flash != "" {
+			<div class="portal-flash" role="status">{ data.Portal.Flash }</div>
+		}
+		if data.Portal.RolePreview != nil {
+			@RolePreviewBand(*data.Portal.RolePreview)
 		}
 		if data.Hero {
 			@PortalSectionHero(data.Portal, PortalSectionHeader(data.Identity, title, lede, action))
@@ -264,7 +275,16 @@ templ PortalSidebar(data PortalPageData) {
 			</div>
 		</header>
 		@PortalNavigation(data, true)
-		<footer class="account"><span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
+		<footer class="account">
+			if len(data.RolePreviewChoices) > 0 {
+				@RolePreviewChooser(data.RolePreviewChoices) {
+					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
+				}
+			} else {
+				<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
+			}
+			<form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form>
+		</footer>
 	</aside>
 }
 
@@ -274,6 +294,12 @@ templ PortalSidebar(data PortalPageData) {
 
 templ PortalNavigation(data PortalPageData, icons bool) {
 	<nav class="nav" aria-label="Bereiche" { portalNavAttrs(icons)... }>
+		if data.ShowVerwaltungNav {
+			<span class="nav-organisation">
+				@PortalNavItem("home", "Portfolio", "/app/verwaltung", false, 0, icons)
+				@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, data.InboxOpenCount, icons)
+			</span>
+		}
 		if data.CanUseResidentAreas {
 			@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 		}
