@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/demo"
@@ -14,6 +15,7 @@ import (
 
 func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) string) error {
 	flags := flag.NewFlagSet("demo-seed", flag.ContinueOnError)
+	anchor := flags.String("anchor", "today", "shift fixture dates so the demo day lands on this day: today, none, or YYYY-MM-DD")
 	flags.SetOutput(stderr)
 	dir := flags.String("dir", "", "directory containing the demo seed JSON files")
 	reset := flags.Bool("reset", false, "remove fixture-owned rows before loading")
@@ -41,6 +43,24 @@ func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) st
 		return err
 	}
 	defer database.Close()
-	_, err = demo.Load(context.Background(), database, *dir, demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout})
+	anchorTime, err := parseSeedAnchor(*anchor)
+	if err != nil {
+		return err
+	}
+	_, err = demo.Load(context.Background(), database, *dir, demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime})
 	return err
+}
+
+func parseSeedAnchor(value string) (time.Time, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "today", "now":
+		return time.Now(), nil
+	case "none", "fixed":
+		return time.Time{}, nil
+	}
+	parsed, err := time.Parse("2006-01-02", strings.TrimSpace(value))
+	if err != nil {
+		return time.Time{}, fmt.Errorf("demo-seed: -anchor must be today, none or YYYY-MM-DD: %w", err)
+	}
+	return parsed, nil
 }

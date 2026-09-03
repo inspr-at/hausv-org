@@ -305,7 +305,7 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 			}
 			// Concentrate open work on six houses so the portfolio shows both
 			// "Handlungsbedarf" and "ruhig"; older, handled items spread over all twelve.
-			if status == "new" || status == "manual" {
+			if status == "new" || status == "manual" || (status == "approved" && (index-1)%4 == 0) {
 				h = houses[houseIndex%6]
 				resident = residentForHouse(persons, h.Slug, index)
 				unitLabel = resident.Memberships[0].Units[0]

@@ -20,7 +20,13 @@ type SeedOptions struct {
 	Reset bool
 	Stats bool
 	Out   io.Writer
+	// Anchor shifts every seed date so that the fixture's demo day (2026-09-09)
+	// lands on Anchor's calendar day; zero keeps the committed dates.
+	Anchor time.Time
 }
+
+// seedDemoDay is the calendar day the committed fixture is written for.
+var seedDemoDay = time.Date(2026, 9, 9, 0, 0, 0, 0, time.FixedZone("CEST", 2*60*60))
 
 type SeedResult struct {
 	Statuses   map[store.IntakeStatus]int
@@ -137,6 +143,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	identities, err := store.EnsureTenantIdentities(ctx, database, configured)
 	if err != nil {
 		return SeedResult{}, err
+	}
+	if !options.Anchor.IsZero() {
+		shiftSeedDates(options.Anchor, intake, events, announcements)
 	}
 	if options.Reset {
 		if err := reset(ctx, database, org.Key, intake, events, announcements); err != nil {
@@ -428,4 +437,25 @@ func seedPriority(raw seedIntake) string {
 		return raw.Precomputed.Priority
 	}
 	return store.IssuePriorityNorm
+}
+
+// shiftSeedDates moves all fixture timestamps by whole days so the demo day
+// becomes the anchor's day; times of day are preserved.
+func shiftSeedDates(anchor time.Time, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement) {
+	a := anchor.In(seedDemoDay.Location())
+	target := time.Date(a.Year(), a.Month(), a.Day(), 0, 0, 0, 0, seedDemoDay.Location())
+	shift := target.Sub(seedDemoDay)
+	if shift == 0 {
+		return
+	}
+	for i := range intake {
+		intake[i].ReceivedAt = intake[i].ReceivedAt.Add(shift)
+	}
+	for i := range events {
+		events[i].StartsAt = events[i].StartsAt.Add(shift)
+		events[i].EndsAt = events[i].EndsAt.Add(shift)
+	}
+	for i := range announcements {
+		announcements[i].PublishedAt = announcements[i].PublishedAt.Add(shift)
+	}
 }
