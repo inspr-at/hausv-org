@@ -755,7 +755,7 @@ func PortalBaseStyles() templ.Component {
 			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<style>\n\t\t*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}.skip-link:focus{transform:translateY(0)}.side-brand{flex:0 0 auto;display:grid;gap:0;margin:-22px -16px 0;padding:0 0 8px}.side-map-card{position:relative;min-width:0;height:276px}.side-map{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border:0;border-radius:0;background:#d8d2c4;color:inherit;isolation:isolate}.side-map::after{content:\"\";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,243,234,.08) 0%,rgba(23,32,25,.06) 48%,rgba(23,32,25,.48) 73%,rgba(23,32,25,.93) 94%,var(--nav) 100%);box-shadow:inset 0 -18px 28px rgba(23,32,25,.42)}.side-map-tiles{position:absolute;inset:0;z-index:1;pointer-events:none;filter:saturate(.54) sepia(.1) contrast(.86) brightness(.97)}.side-map-tile{position:absolute;width:256px;height:256px;max-width:none;display:block;user-select:none;pointer-events:none}.side-map-fallback{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding-bottom:72px;color:rgba(23,32,25,.68);background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9;font-size:10.5px;font-weight:750;letter-spacing:.03em}.side-map-pin{position:absolute;left:50%;top:50%;z-index:4;width:44px;height:56px;color:var(--gold-light);filter:drop-shadow(0 6px 7px rgba(23,32,25,.38));transform:translate(-50%,-100%)}.side-map-pin-shape{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;fill:var(--nav);stroke:rgba(231,216,177,.88);stroke-width:1.25;stroke-linejoin:round}.side-map-pin-mark{position:absolute;left:50%;top:9px;width:25px;height:22px;display:grid;place-items:center;transform:translateX(-50%)}.side-map-pin-mark svg{width:25px;height:21px;display:block;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}.side-place-copy{position:absolute;left:0;right:0;bottom:0;z-index:6;min-width:0;display:grid;gap:4px;padding:0 18px 14px;color:inherit;pointer-events:none}.side-place-copy>*{pointer-events:auto}.side-address-label{min-width:0;display:grid;gap:2px;justify-self:start;color:inherit;font-family:var(--font-sans);line-height:1.2;text-decoration:none}.side-address-label small{overflow:hidden;color:rgba(255,255,255,.6);font-size:10.5px;font-weight:550;text-overflow:ellipsis;white-space:nowrap}.side-address-label:hover small{color:rgba(255,255,255,.86)}@media(min-width:761px) and (max-height:1040px){.side-map-card{height:236px}}@media(min-width:761px) and (max-height:800px){.side-map-card{height:176px!important}.side-map-pin{width:35px;height:45px}.side-map-pin-mark{top:7px;width:20px;height:18px}.side-map-pin-mark svg{width:20px;height:17px}}.side-place-copy .context-switch{margin:0;font-size:10px;align-self:start}.side-place-copy .context-switch summary{display:inline-flex;align-items:center;gap:2px;padding:2px 6px 2px 4px;cursor:pointer;color:rgba(255,255,255,.52);background:rgba(23,32,25,.72);border-radius:var(--radius-xs);font-size:9.5px;font-weight:550;list-style:none}.side-place-copy .context-switch summary::-webkit-details-marker{display:none}.side-place-copy .context-switch summary:hover{color:rgba(255,255,255,.86);background:rgba(23,32,25,.88)}.side-place-copy .context-switch summary span{line-height:1;font-size:13px}.side-place-copy .context-menu{position:absolute;left:0;right:0;bottom:calc(100% + 4px);z-index:10;margin:0;padding:var(--space-2);background:rgba(23,32,25,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);box-shadow:0 8px 20px rgba(0,0,0,.4)}.context-menu{display:grid;gap:var(--space-2)}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-group{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;--font-serif:ui-serif,Georgia,Cambria,\"Times New Roman\",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select,textarea{font:inherit}button{cursor:pointer}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:10px 18px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.nav-home-identity{display:grid;gap:1px;line-height:1.08;min-width:0}.nav-home-identity strong,.nav-home-identity small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-home-identity small{color:var(--soft);font-size:10px}[hidden]{display:none!important}dialog[open]{display:flex;flex-direction:column}dialog[open]>form{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}dialog[open] .dialog-head,dialog[open] .dialog-footer{flex:0 0 auto}dialog[open] .dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}@media(max-width:760px){.button,.button.small{min-height:44px!important}.dialog-close{min-width:44px!important;min-height:44px!important}details>summary{min-height:44px}}\n\t\t\t\t</style><style>\n\t\t.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}\n\t\t.portal-page .sidebar{padding:16px 18px}\n\t\t/* Keep the map link outside the navigation landmark so link inventories\n\t\t   contain page navigation only; visual order still keeps it in its house\n\t\t   group between the group label and its house pages. */\n\t\t.portal-page .sidebar>.nav{display:contents}\n\t\t.portal-page .sidebar>.portal-organisation-identity{order:1}\n\t\t.portal-page .sidebar>.nav>.nav-level-label:not(.nav-house-label){order:2}\n\t\t.portal-page .sidebar>.nav>.nav-organisation{order:3}\n\t\t.portal-page .sidebar>.nav>.nav-house-label{order:4}\n\t\t.portal-page .sidebar>.house-picker,.portal-page .sidebar>.house-header-card{order:5}\n\t\t.portal-page .sidebar>.nav>.nav-house-items{order:6}\n\t\t.portal-page .sidebar>.portal-context-switch{order:7}\n\t\t.portal-page .sidebar>.account{order:8}\n\t\t.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}\n\t\t.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}\n\t\t.portal-organisation-identity small{color:var(--soft);font-size:10px}\n\t\t.portal-page .nav{margin-top:12px;gap:2px}\n\t\t.portal-page .nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}\n\t\t.portal-page .nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}\n\t\t.portal-page .nav-organisation,.portal-page .nav-house-items{display:grid;gap:2px}\n\t\t.portal-page .nav-house-items.indented{margin-left:10px;padding-left:11px;border-left:1px solid var(--nav-2)}\n\t\t.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}\n\t\t.portal-page .nav a.active svg{color:var(--nav)}\n\t\t.house-picker{position:relative;min-width:0;margin-bottom:5px}\n\t\t.house-picker>summary{list-style:none}\n\t\t.house-picker>summary::-webkit-details-marker{display:none}\n\t\t.house-header-card{min-height:72px;display:grid;grid-template-columns:56px minmax(0,1fr) 18px;align-items:center;gap:12px;margin-bottom:4px;padding:8px;border:1px solid var(--soft);border-radius:var(--radius-md);background:var(--nav-2);color:var(--panel)}\n\t\t.house-header-static{grid-template-columns:56px minmax(0,1fr)}\n\t\t.house-header-card:hover{border-color:var(--line)}\n\t\t.house-header-copy{min-width:0;display:grid;gap:4px}\n\t\t.house-header-copy strong{display:-webkit-box;overflow:hidden;overflow-wrap:anywhere;font-family:var(--font-serif);font-size:18px;line-height:1.05;-webkit-box-orient:vertical;-webkit-line-clamp:2}\n\t\t.house-header-copy small{overflow:hidden;color:var(--soft);font-size:10px;text-overflow:ellipsis;white-space:nowrap}\n\t\t.house-header-chevron{color:var(--line);font-size:19px;transition:transform .16s}\n\t\t.house-picker[open] .house-header-chevron{transform:rotate(180deg)}\n\t\t.house-map-thumb{position:relative;width:56px;height:56px;overflow:hidden;border-radius:var(--radius-sm);background:var(--line)}\n\t\t.house-map-thumb .side-map-tiles{width:224px;height:224px;transform:scale(.25);transform-origin:0 0}\n\t\t.house-map-thumb .side-map-tile{max-width:none}\n\t\t.house-map-pin{left:50%;top:50%;right:auto;bottom:auto;width:26px;height:34px;color:var(--gold-light);transform:translate(-50%,-74%)}\n\t\t.house-map-pin .side-map-pin-mark{top:5px;width:15px;height:14px}\n\t\t.house-map-pin .side-map-pin-mark svg{width:15px;height:13px}\n\t\t.house-picker-panel{position:fixed;z-index:210;top:294px;left:254px;width:402px;max-height:calc(100vh - 316px);overflow:auto;padding:18px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-dialog)}\n\t\t.house-picker-panel::before{content:\"\";position:absolute;top:0;left:30px;width:16px;height:16px;background:var(--panel);border-left:1px solid var(--line);border-top:1px solid var(--line);transform:translateY(-9px) rotate(45deg)}\n\t\t.house-picker-heading{display:flex;align-items:baseline;gap:12px}\n\t\t.house-picker-heading h2{font-size:24px}\n\t\t.house-picker-heading span{margin-left:auto;color:var(--muted);font-size:10px}\n\t\t.house-picker-search{min-height:44px;display:grid;grid-template-columns:20px 1fr;align-items:center;gap:8px;margin-top:8px;padding:0 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--muted)}\n\t\t.house-picker-search input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-size:11px}\n\t\t.house-picker-list{margin-top:12px}\n\t\t.house-picker-row{border-bottom:1px solid var(--line)}\n\t\t.house-picker-row.current{background:var(--gold-light)}\n\t\t.house-picker-row button{width:100%;min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:7px 12px;border:0;background:transparent;color:var(--ink);text-align:left}\n\t\t.house-picker-row button:not(:disabled):hover{background:var(--panel-soft)}\n\t\t.house-picker-row button:disabled{cursor:default;opacity:1}\n\t\t.house-picker-row-copy{min-width:0;display:grid;gap:3px}\n\t\t.house-picker-row-copy strong{overflow:hidden;font-size:12px;text-overflow:ellipsis;white-space:nowrap}\n\t\t.house-picker-row-copy small{color:var(--muted);font-size:10px}\n\t\t.house-picker-open{padding:4px 7px;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:9px;white-space:nowrap}\n\t\t.house-picker-check{color:var(--leaf);font-size:16px;font-weight:800}\n\t\t.house-picker-more>summary{min-height:46px;display:grid;place-content:center;margin-top:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--muted);cursor:pointer;font-size:10px;list-style:none}\n\t\t.house-picker-more>summary::-webkit-details-marker{display:none}\n\t\t.house-picker-more[open]>summary{margin-bottom:6px}\n\t\t.house-picker-empty{padding:18px;color:var(--muted);font-size:11px;text-align:center}\n\t\t.house-picker-hints{display:flex;gap:24px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}\n\t\t.house-picker-portfolio{min-height:42px;display:flex;align-items:center;justify-content:center;margin-top:12px;background:var(--nav);color:var(--panel);border-radius:var(--radius-sm);font-size:11px}\n\t\t.portal-context-switch{flex:0 0 auto;margin-top:auto;padding-top:10px}\n\t\t.portal-context-switch>summary{min-height:34px;display:flex;align-items:center;justify-content:space-between;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}\n\t\t.portal-context-switch>summary::-webkit-details-marker{display:none}\n\t\t.portal-context-switch .context-menu{margin-bottom:6px;padding:8px;background:var(--nav-2);border:1px solid var(--soft);border-radius:var(--radius-sm)}\n\t\t.portal-page .account{margin-top:8px}\n\t\t/* The compact house card must preserve a usable map link without competing\n\t\t   with the picker trigger. Its copy is deliberately allowed two complete\n\t\t   lines; a clipped address makes the current house ambiguous. */\n\t\t.portal-organisation-identity strong{overflow:visible;overflow-wrap:normal;text-overflow:clip;white-space:normal}\n\t\t.house-header-card{grid-template-columns:56px minmax(0,1fr) 18px}\n\t\t.house-header-copy strong{overflow:visible;overflow-wrap:normal;hyphens:auto;-webkit-line-clamp:unset}\n\t\t.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}\n\t\t.house-map-thumb{inset:auto;display:block;flex:0 0 56px;border:0;isolation:isolate}\n\t\t.house-map-thumb .side-map-fallback{padding:0;font-size:8px;text-align:center}\n\t\t@media(min-width:761px){.portal-page .sidebar .house-picker-panel{top:clamp(116px,28vh,294px);left:min(296px,calc(100vw - 420px));max-height:calc(100vh - clamp(138px,28vh + 22px,316px))}}\n\t\t@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.house-picker-panel{left:226px}}\n\t\t@media(max-width:760px){\n\t\t\t.portal-page .menu-panel{display:grid;padding:16px 18px 24px}\n\t\t\t.portal-page .menu-panel>.nav{display:contents}\n\t\t\t.portal-page .menu-panel>.portal-organisation-identity{order:1}\n\t\t\t.portal-page .menu-panel>.nav>.nav-level-label:not(.nav-house-label){order:2}\n\t\t\t.portal-page .menu-panel>.nav>.nav-organisation{order:3}\n\t\t\t.portal-page .menu-panel>.nav>.nav-house-label{order:4}\n\t\t\t.portal-page .menu-panel>.house-picker,.portal-page .menu-panel>.house-header-card{order:5}\n\t\t\t.portal-page .menu-panel>.nav>.nav-house-items{order:6}\n\t\t\t.portal-page .menu-panel>.portal-context-switch{order:7}\n\t\t\t.portal-page .menu-panel>.release-notes,.portal-page .menu-panel>.logout-form{order:8}\n\t\t\t.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}\n\t\t\t.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}\n\t\t\t.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}\n\t\t\t.portal-page .menu-panel .nav a{padding:0 10px}\n\t\t\t.portal-page .house-header-card{min-height:80px}\n\t\t\t.portal-page .house-picker-panel{position:static;width:auto;max-height:none;margin:8px 0 12px;padding:14px;box-shadow:none}\n\t\t\t.portal-page .house-picker-panel::before{display:none}\n\t\t\t.portal-page .portal-context-switch{margin-top:12px}\n\t\t}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<style>\n\t\t*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}.skip-link:focus{transform:translateY(0)}.side-brand{flex:0 0 auto;display:grid;gap:0;margin:-22px -16px 0;padding:0 0 8px}.side-map-card{position:relative;min-width:0;height:276px}.side-map{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border:0;border-radius:0;background:#d8d2c4;color:inherit;isolation:isolate}.side-map::after{content:\"\";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,243,234,.08) 0%,rgba(23,32,25,.06) 48%,rgba(23,32,25,.48) 73%,rgba(23,32,25,.93) 94%,var(--nav) 100%);box-shadow:inset 0 -18px 28px rgba(23,32,25,.42)}.side-map-tiles{position:absolute;inset:0;z-index:1;pointer-events:none;filter:saturate(.54) sepia(.1) contrast(.86) brightness(.97)}.side-map-tile{position:absolute;width:256px;height:256px;max-width:none;display:block;user-select:none;pointer-events:none}.side-map-fallback{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding-bottom:72px;color:rgba(23,32,25,.68);background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9;font-size:10.5px;font-weight:750;letter-spacing:.03em}.side-map-pin{position:absolute;left:50%;top:50%;z-index:4;width:44px;height:56px;color:var(--gold-light);filter:drop-shadow(0 6px 7px rgba(23,32,25,.38));transform:translate(-50%,-100%)}.side-map-pin-shape{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;fill:var(--nav);stroke:rgba(231,216,177,.88);stroke-width:1.25;stroke-linejoin:round}.side-map-pin-mark{position:absolute;left:50%;top:9px;width:25px;height:22px;display:grid;place-items:center;transform:translateX(-50%)}.side-map-pin-mark svg{width:25px;height:21px;display:block;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}.side-place-copy{position:absolute;left:0;right:0;bottom:0;z-index:6;min-width:0;display:grid;gap:4px;padding:0 18px 14px;color:inherit;pointer-events:none}.side-place-copy>*{pointer-events:auto}.side-address-label{min-width:0;display:grid;gap:2px;justify-self:start;color:inherit;font-family:var(--font-sans);line-height:1.2;text-decoration:none}.side-address-label small{overflow:hidden;color:rgba(255,255,255,.6);font-size:10.5px;font-weight:550;text-overflow:ellipsis;white-space:nowrap}.side-address-label:hover small{color:rgba(255,255,255,.86)}@media(min-width:761px) and (max-height:1040px){.side-map-card{height:236px}}@media(min-width:761px) and (max-height:800px){.side-map-card{height:176px!important}.side-map-pin{width:35px;height:45px}.side-map-pin-mark{top:7px;width:20px;height:18px}.side-map-pin-mark svg{width:20px;height:17px}}.side-place-copy .context-switch{margin:0;font-size:10px;align-self:start}.side-place-copy .context-switch summary{display:inline-flex;align-items:center;gap:2px;padding:2px 6px 2px 4px;cursor:pointer;color:rgba(255,255,255,.52);background:rgba(23,32,25,.72);border-radius:var(--radius-xs);font-size:9.5px;font-weight:550;list-style:none}.side-place-copy .context-switch summary::-webkit-details-marker{display:none}.side-place-copy .context-switch summary:hover{color:rgba(255,255,255,.86);background:rgba(23,32,25,.88)}.side-place-copy .context-switch summary span{line-height:1;font-size:13px}.side-place-copy .context-menu{position:absolute;left:0;right:0;bottom:calc(100% + 4px);z-index:10;margin:0;padding:var(--space-2);background:rgba(23,32,25,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);box-shadow:0 8px 20px rgba(0,0,0,.4)}.context-menu{display:grid;gap:var(--space-2)}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-group{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;--font-serif:ui-serif,Georgia,Cambria,\"Times New Roman\",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select,textarea{font:inherit}button{cursor:pointer}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:10px 18px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.nav-home-identity{display:grid;gap:1px;line-height:1.08;min-width:0}.nav-home-identity strong,.nav-home-identity small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-home-identity small{color:var(--soft);font-size:10px}[hidden]{display:none!important}dialog[open]{display:flex;flex-direction:column}dialog[open]>form{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}dialog[open] .dialog-head,dialog[open] .dialog-footer{flex:0 0 auto}dialog[open] .dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}@media(max-width:760px){.button,.button.small{min-height:44px!important}.dialog-close{min-width:44px!important;min-height:44px!important}details>summary{min-height:44px}}\n\t\t\t\t</style><style>\n\t\t.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}\n\t\t.portal-page .sidebar{padding:16px 18px}\n\t\t/* The navigation keeps a real box around every house item. The sidebar,\n\t\t   not this landmark, is the short-viewport scroll container. */\n\t\t.portal-page .sidebar>.nav{display:grid;min-height:max-content}\n\t\t.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}\n\t\t.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}\n\t\t.portal-organisation-identity small{color:var(--soft);font-size:10px}\n\t\t.portal-page .nav{margin-top:12px;gap:2px}\n\t\t.portal-page .nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}\n\t\t.portal-page .nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}\n\t\t.portal-page .nav-organisation,.portal-page .nav-house-items{display:grid;gap:2px}\n\t\t.portal-page .nav>.house-picker,.portal-page .nav>.house-header-card{grid-column:1/-1}\n\t\t.portal-page .nav-house-items.indented{margin-left:10px;padding-left:11px;border-left:1px solid var(--nav-2)}\n\t\t.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}\n\t\t.portal-page .nav a.active svg{color:var(--nav)}\n\t\t.house-picker{position:relative;min-width:0;margin-bottom:5px}\n\t\t.house-picker>summary{list-style:none}\n\t\t.house-picker>summary::-webkit-details-marker{display:none}\n\t\t.house-header-card{min-height:72px;display:grid;grid-template-columns:56px minmax(0,1fr) 18px;align-items:center;gap:12px;margin-bottom:4px;padding:8px;border:1px solid var(--soft);border-radius:var(--radius-md);background:var(--nav-2);color:var(--panel)}\n\t\t.house-header-static{grid-template-columns:56px minmax(0,1fr)}\n\t\t.house-header-card:hover{border-color:var(--line)}\n\t\t.house-header-copy{min-width:0;display:grid;gap:4px}\n\t\t.house-header-copy strong{display:-webkit-box;overflow:hidden;overflow-wrap:anywhere;font-family:var(--font-serif);font-size:18px;line-height:1.05;-webkit-box-orient:vertical;-webkit-line-clamp:2}\n\t\t.house-header-copy small{overflow:hidden;color:var(--soft);font-size:10px;text-overflow:ellipsis;white-space:nowrap}\n\t\t.house-header-chevron{color:var(--line);font-size:19px;transition:transform .16s}\n\t\t.house-picker[open] .house-header-chevron{transform:rotate(180deg)}\n\t\t.house-map-thumb{position:relative;width:56px;height:56px;overflow:hidden;border-radius:var(--radius-sm);background:var(--line)}\n\t\t.house-map-thumb .side-map-tiles{width:224px;height:224px;transform:scale(.25);transform-origin:0 0}\n\t\t.house-map-thumb .side-map-tile{max-width:none}\n\t\t.house-map-pin{left:50%;top:50%;right:auto;bottom:auto;width:26px;height:34px;color:var(--gold-light);transform:translate(-50%,-74%)}\n\t\t.house-map-pin .side-map-pin-mark{top:5px;width:15px;height:14px}\n\t\t.house-map-pin .side-map-pin-mark svg{width:15px;height:13px}\n\t\t.house-picker-panel{position:fixed;z-index:210;top:294px;left:254px;width:402px;max-height:calc(100vh - 316px);overflow:auto;padding:18px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-dialog)}\n\t\t.house-picker-panel::before{content:\"\";position:absolute;top:0;left:30px;width:16px;height:16px;background:var(--panel);border-left:1px solid var(--line);border-top:1px solid var(--line);transform:translateY(-9px) rotate(45deg)}\n\t\t.house-picker-heading{display:flex;align-items:baseline;gap:12px}\n\t\t.house-picker-heading h2{font-size:24px}\n\t\t.house-picker-heading span{margin-left:auto;color:var(--muted);font-size:10px}\n\t\t.house-picker-search{min-height:44px;display:grid;grid-template-columns:20px 1fr;align-items:center;gap:8px;margin-top:8px;padding:0 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--muted)}\n\t\t.house-picker-search input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-size:11px}\n\t\t.house-picker-list{margin-top:12px}\n\t\t.house-picker-row{border-bottom:1px solid var(--line)}\n\t\t.house-picker-row.current{background:var(--gold-light)}\n\t\t.house-picker-row button{width:100%;min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:7px 12px;border:0;background:transparent;color:var(--ink);text-align:left}\n\t\t.house-picker-row button:not(:disabled):hover{background:var(--panel-soft)}\n\t\t.house-picker-row button:disabled{cursor:default;opacity:1}\n\t\t.house-picker-row-copy{min-width:0;display:grid;gap:3px}\n\t\t.house-picker-row-copy strong{overflow:hidden;font-size:12px;text-overflow:ellipsis;white-space:nowrap}\n\t\t.house-picker-row-copy small{color:var(--muted);font-size:10px}\n\t\t.house-picker-open{padding:4px 7px;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:9px;white-space:nowrap}\n\t\t.house-picker-check{color:var(--leaf);font-size:16px;font-weight:800}\n\t\t.house-picker-more>summary{min-height:46px;display:grid;place-content:center;margin-top:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--muted);cursor:pointer;font-size:10px;list-style:none}\n\t\t.house-picker-more>summary::-webkit-details-marker{display:none}\n\t\t.house-picker-more[open]>summary{margin-bottom:6px}\n\t\t.house-picker-empty{padding:18px;color:var(--muted);font-size:11px;text-align:center}\n\t\t.house-picker-hints{display:flex;gap:24px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}\n\t\t.house-picker-portfolio{min-height:42px;display:flex;align-items:center;justify-content:center;margin-top:12px;background:var(--nav);color:var(--panel);border-radius:var(--radius-sm);font-size:11px}\n\t\t.portal-context-switch{flex:0 0 auto;margin-top:auto;padding-top:10px}\n\t\t.portal-context-switch>summary{min-height:34px;display:flex;align-items:center;justify-content:space-between;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}\n\t\t.portal-context-switch>summary::-webkit-details-marker{display:none}\n\t\t.portal-context-switch .context-menu{margin-bottom:6px;padding:8px;background:var(--nav-2);border:1px solid var(--soft);border-radius:var(--radius-sm)}\n\t\t.portal-page .account{margin-top:8px}\n\t\t/* The compact house card must preserve a usable map link without competing\n\t\t   with the picker trigger. Its copy is deliberately allowed two complete\n\t\t   lines; a clipped address makes the current house ambiguous. */\n\t\t.portal-organisation-identity strong{overflow:visible;overflow-wrap:normal;text-overflow:clip;white-space:normal}\n\t\t.house-header-card{grid-template-columns:56px minmax(0,1fr) 18px}\n\t\t.house-header-copy strong{overflow:visible;overflow-wrap:normal;hyphens:auto;-webkit-line-clamp:unset}\n\t\t.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}\n\t\t.house-map-thumb{inset:auto;display:block;flex:0 0 56px;border:0;isolation:isolate}\n\t\t.house-map-thumb .side-map-fallback{padding:0;font-size:8px;text-align:center}\n\t\t@media(min-width:761px){.portal-page .sidebar .house-picker-panel{top:clamp(116px,28vh,294px);left:min(296px,calc(100vw - 420px));max-height:calc(100vh - clamp(138px,28vh + 22px,316px))}}\n\t\t@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.house-picker-panel{left:226px}}\n\t\t@media(max-width:760px){\n\t\t\t.portal-page .menu-panel{display:grid;padding:16px 18px 24px}\n\t\t\t.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}\n\t\t\t.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}\n\t\t\t.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}\n\t\t\t.portal-page .menu-panel .nav a{padding:0 10px}\n\t\t\t.portal-page .house-header-card{min-height:80px}\n\t\t\t.portal-page .house-picker-panel{position:static;width:auto;max-height:none;margin:8px 0 12px;padding:14px;box-shadow:none}\n\t\t\t.portal-page .house-picker-panel::before{display:none}\n\t\t\t.portal-page .portal-context-switch{margin-top:12px}\n\t\t}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -907,11 +907,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = PortalNavigation(data, true, false).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = PortalHouseHeader(data, shell, true).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PortalNavigation(data, true, true).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -943,7 +939,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var30 string
 				templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(data.Initials)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 374, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 356, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 				if templ_7745c5c3_Err != nil {
@@ -956,7 +952,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisplayName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 374, Col: 135}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 356, Col: 135}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
@@ -969,7 +965,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var32 string
 				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(data.Role)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 374, Col: 164}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 356, Col: 164}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 				if templ_7745c5c3_Err != nil {
@@ -1005,7 +1001,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(data.Initials)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 378, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 360, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -1018,7 +1014,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisplayName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 378, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 360, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -1031,7 +1027,7 @@ func PortalSidebar(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(data.Role)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 378, Col: 129}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 360, Col: 129}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -1087,7 +1083,7 @@ func PortalOrganisationIdentity(shell PortalShellData) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(shell.OrganisationName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 388, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 370, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -1100,7 +1096,7 @@ func PortalOrganisationIdentity(shell PortalShellData) templ.Component {
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(shell.RoleLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 389, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 371, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -1147,7 +1143,7 @@ func PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) t
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalBool(shell.IsOrganisationMember))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 400, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 382, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 		if templ_7745c5c3_Err != nil {
@@ -1214,7 +1210,7 @@ func PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) t
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(portalHouseGroupLabel(shell))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 415, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 397, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -1396,7 +1392,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 		var templ_7745c5c3_Var45 string
 		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 479, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 461, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 		if templ_7745c5c3_Err != nil {
@@ -1409,7 +1405,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(pageLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 479, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 461, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -1451,7 +1447,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue("Profil von " + data.DisplayName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 486, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 468, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 			if templ_7745c5c3_Err != nil {
@@ -1464,7 +1460,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(data.Initials)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 486, Col: 105}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 468, Col: 105}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1482,7 +1478,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue("Portal von " + data.DisplayName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 488, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 470, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
@@ -1495,7 +1491,7 @@ func PortalMobileHeader(data PortalPageData, pageLabel string) templ.Component {
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(data.Initials)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 488, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 470, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
@@ -1544,11 +1540,7 @@ func PortalMobileNavigation(data PortalPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = PortalNavigation(data, false, false).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = PortalHouseHeader(data, shell, false).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PortalNavigation(data, false, true).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1567,7 +1559,7 @@ func PortalMobileNavigation(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var53 string
 		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 501, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 482, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
@@ -1634,7 +1626,7 @@ func PortalContextSwitch(contexts []PortalContext, mobile bool) templ.Component 
 					var templ_7745c5c3_Var57 string
 					templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(context.HouseName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 510, Col: 62}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 491, Col: 62}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 					if templ_7745c5c3_Err != nil {
@@ -1652,7 +1644,7 @@ func PortalContextSwitch(contexts []PortalContext, mobile bool) templ.Component 
 					var templ_7745c5c3_Var58 string
 					templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(context.TenantSlug)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 512, Col: 108}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 493, Col: 108}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
 					if templ_7745c5c3_Err != nil {
@@ -1665,7 +1657,7 @@ func PortalContextSwitch(contexts []PortalContext, mobile bool) templ.Component 
 					var templ_7745c5c3_Var59 string
 					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(context.Role)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 512, Col: 165}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 493, Col: 165}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
 					if templ_7745c5c3_Err != nil {
@@ -1678,7 +1670,7 @@ func PortalContextSwitch(contexts []PortalContext, mobile bool) templ.Component 
 					var templ_7745c5c3_Var60 string
 					templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(context.HouseName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 512, Col: 218}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 493, Col: 218}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 					if templ_7745c5c3_Err != nil {
@@ -1785,7 +1777,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var62 string
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalHousePickerID(sidebar))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 578, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 559, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 			if templ_7745c5c3_Err != nil {
@@ -1798,7 +1790,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var63 string
 			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalHousePickerShell(sidebar))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 578, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 559, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 			if templ_7745c5c3_Err != nil {
@@ -1811,7 +1803,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var64 string
 			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue("Liegenschaft wechseln, aktuell " + data.HouseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 579, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 560, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 			if templ_7745c5c3_Err != nil {
@@ -1832,7 +1824,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var65 string
 			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 581, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 562, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 			if templ_7745c5c3_Err != nil {
@@ -1845,7 +1837,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var66 string
 			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(portalHousePlace(data.Address))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 581, Col: 142}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 562, Col: 142}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 			if templ_7745c5c3_Err != nil {
@@ -1871,7 +1863,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var67 string
 			templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue("Aktuelle Liegenschaft " + data.HouseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 587, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 568, Col: 107}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 			if templ_7745c5c3_Err != nil {
@@ -1892,7 +1884,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var68 string
 			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 589, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 570, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 			if templ_7745c5c3_Err != nil {
@@ -1905,7 +1897,7 @@ func PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool)
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(portalHousePlace(data.Address))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 589, Col: 141}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 570, Col: 141}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 			if templ_7745c5c3_Err != nil {
@@ -1948,7 +1940,7 @@ func PortalMapThumbnail(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var71 templ.SafeURL
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.MapURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 595, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 576, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 		if templ_7745c5c3_Err != nil {
@@ -1961,7 +1953,7 @@ func PortalMapThumbnail(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Address + " in OpenStreetMap öffnen")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 595, Col: 174}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 576, Col: 174}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
@@ -1974,7 +1966,7 @@ func PortalMapThumbnail(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Address + " in OpenStreetMap öffnen")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 595, Col: 227}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 576, Col: 227}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
@@ -1997,7 +1989,7 @@ func PortalMapThumbnail(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var74 string
 				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(tile.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 599, Col: 61}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 580, Col: 61}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 				if templ_7745c5c3_Err != nil {
@@ -2010,7 +2002,7 @@ func PortalMapThumbnail(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var75 string
 				templ_7745c5c3_Var75, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(templ.SafeCSS(tile.Style))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 599, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 580, Col: 97}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 				if templ_7745c5c3_Err != nil {
@@ -2085,7 +2077,7 @@ func HousePickerPanel(houses []PortalHouse, currentSlug string) templ.Component 
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Häuser", len(houses)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 616, Col: 115}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 597, Col: 115}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 		if templ_7745c5c3_Err != nil {
@@ -2109,7 +2101,7 @@ func HousePickerPanel(houses []PortalHouse, currentSlug string) templ.Component 
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d weitere Häuser ohne Handlungsbedarf", len(housePickerMoreHouses(houses, currentSlug))))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 624, Col: 119}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 605, Col: 119}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 			if templ_7745c5c3_Err != nil {
@@ -2184,7 +2176,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 		var templ_7745c5c3_Var82 string
 		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.ResolveAttributeValue(strings.ToLower(house.Name + " " + house.Address))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 638, Col: 229}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 619, Col: 229}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var82)
 		if templ_7745c5c3_Err != nil {
@@ -2197,7 +2189,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 		var templ_7745c5c3_Var83 string
 		templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.ResolveAttributeValue(house.Slug)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 639, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 620, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
 		if templ_7745c5c3_Err != nil {
@@ -2210,7 +2202,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 		var templ_7745c5c3_Var84 string
 		templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.ResolveAttributeValue(house.Role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 640, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 621, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
 		if templ_7745c5c3_Err != nil {
@@ -2233,7 +2225,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 		var templ_7745c5c3_Var85 string
 		templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(house.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 642, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 623, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 		if templ_7745c5c3_Err != nil {
@@ -2246,7 +2238,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 		var templ_7745c5c3_Var86 string
 		templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(portalHousePlace(house.Address))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 642, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 623, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 		if templ_7745c5c3_Err != nil {
@@ -2264,7 +2256,7 @@ func HousePickerRow(house PortalHouse, currentSlug string) templ.Component {
 			var templ_7745c5c3_Var87 string
 			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d offen", house.OpenIssueCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 644, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 625, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 			if templ_7745c5c3_Err != nil {
@@ -2408,7 +2400,7 @@ func PortalEnergyNavItem(data PortalPageData, icons bool, scope string) templ.Co
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(portalNavActive(data, "energy")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 728, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 709, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 		if templ_7745c5c3_Err != nil {
@@ -2421,7 +2413,7 @@ func PortalEnergyNavItem(data PortalPageData, icons bool, scope string) templ.Co
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.ResolveAttributeValue(scope)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 729, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 710, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 		if templ_7745c5c3_Err != nil {
@@ -2434,7 +2426,7 @@ func PortalEnergyNavItem(data PortalPageData, icons bool, scope string) templ.Co
 		var templ_7745c5c3_Var94 string
 		templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalEnergyNavAria(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 730, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 711, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var94)
 		if templ_7745c5c3_Err != nil {
@@ -2465,7 +2457,7 @@ func PortalEnergyNavItem(data PortalPageData, icons bool, scope string) templ.Co
 		var templ_7745c5c3_Var95 string
 		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(portalHomeDisplayName(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 736, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 717, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 		if templ_7745c5c3_Err != nil {
@@ -2483,7 +2475,7 @@ func PortalEnergyNavItem(data PortalPageData, icons bool, scope string) templ.Co
 			var templ_7745c5c3_Var96 string
 			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(data.HomeIdentity.UnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 738, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 719, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 			if templ_7745c5c3_Err != nil {
@@ -2568,7 +2560,7 @@ func PortalNavItem(kind, label, url string, active bool, badge int, icons bool) 
 		var templ_7745c5c3_Var99 templ.SafeURL
 		templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(url))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 778, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 759, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 		if templ_7745c5c3_Err != nil {
@@ -2594,7 +2586,7 @@ func PortalNavItem(kind, label, url string, active bool, badge int, icons bool) 
 		var templ_7745c5c3_Var101 string
 		templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(active))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 778, Col: 121}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 759, Col: 121}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 		if templ_7745c5c3_Err != nil {
@@ -2625,7 +2617,7 @@ func PortalNavItem(kind, label, url string, active bool, badge int, icons bool) 
 		var templ_7745c5c3_Var102 string
 		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 782, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 763, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 		if templ_7745c5c3_Err != nil {
@@ -2643,7 +2635,7 @@ func PortalNavItem(kind, label, url string, active bool, badge int, icons bool) 
 			var templ_7745c5c3_Var103 string
 			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(badge)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 784, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 765, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 			if templ_7745c5c3_Err != nil {
@@ -2867,7 +2859,7 @@ func PortalHeroGreeting(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var107 string
 			templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 848, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 829, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
 			if templ_7745c5c3_Err != nil {
@@ -2885,7 +2877,7 @@ func PortalHeroGreeting(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var108 string
 			templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(data.GreetingName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 850, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 831, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
 			if templ_7745c5c3_Err != nil {
@@ -2903,7 +2895,7 @@ func PortalHeroGreeting(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var109 string
 		templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.JoinStringErrs(portalHomeDateLine(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 852, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 833, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var109))
 		if templ_7745c5c3_Err != nil {
@@ -2957,7 +2949,7 @@ func PortalHomeHeaderAction(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var111 templ.SafeURL
 			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(portalIssuesURL(data)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 867, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 848, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 			if templ_7745c5c3_Err != nil {
@@ -2970,7 +2962,7 @@ func PortalHomeHeaderAction(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var112 string
 			templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Issues))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 867, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 848, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var112))
 			if templ_7745c5c3_Err != nil {
@@ -2989,7 +2981,7 @@ func PortalHomeHeaderAction(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var113 string
 			templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Events))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 870, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 851, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var113))
 			if templ_7745c5c3_Err != nil {
@@ -3008,7 +3000,7 @@ func PortalHomeHeaderAction(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var114 string
 			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(data.UnreadAnnouncements)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 873, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 854, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
 			if templ_7745c5c3_Err != nil {
@@ -3144,7 +3136,7 @@ func PortalDense(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var117 string
 			templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(data.Energy.HomeName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 909, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 890, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 			if templ_7745c5c3_Err != nil {
@@ -3157,7 +3149,7 @@ func PortalDense(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var118 string
 			templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(data.Energy.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 909, Col: 133}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 890, Col: 133}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var118))
 			if templ_7745c5c3_Err != nil {
@@ -3170,7 +3162,7 @@ func PortalDense(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var119 templ.SafeURL
 			templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Energy.ActionURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 909, Col: 185}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 890, Col: 185}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var119))
 			if templ_7745c5c3_Err != nil {
@@ -3183,7 +3175,7 @@ func PortalDense(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var120 string
 			templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(data.Energy.ActionLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 909, Col: 213}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 890, Col: 213}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 			if templ_7745c5c3_Err != nil {
@@ -3234,7 +3226,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var122 string
 		templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Issues))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 916, Col: 171}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 897, Col: 171}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var122))
 		if templ_7745c5c3_Err != nil {
@@ -3247,7 +3239,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var123 templ.SafeURL
 		templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(portalIssuesURL(data)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 916, Col: 249}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 897, Col: 249}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var123))
 		if templ_7745c5c3_Err != nil {
@@ -3298,7 +3290,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var126 string
 				templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Status)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 166}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 166}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
 				if templ_7745c5c3_Err != nil {
@@ -3311,7 +3303,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var127 templ.SafeURL
 				templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(issue.DetailURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 240}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 240}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var127))
 				if templ_7745c5c3_Err != nil {
@@ -3324,7 +3316,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var128 string
 				templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 256}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 256}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var128))
 				if templ_7745c5c3_Err != nil {
@@ -3337,7 +3329,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var129 string
 				templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.Body)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 340}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 340}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var129)
 				if templ_7745c5c3_Err != nil {
@@ -3350,7 +3342,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var130 string
 				templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 362}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 362}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
 				if templ_7745c5c3_Err != nil {
@@ -3363,7 +3355,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var131 string
 				templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.Location)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 441}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 441}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var131)
 				if templ_7745c5c3_Err != nil {
@@ -3376,7 +3368,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var132 string
 				templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Location)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 460}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 460}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var132))
 				if templ_7745c5c3_Err != nil {
@@ -3389,7 +3381,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var133 string
 				templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinStringErrs(issue.CreatedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 507}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 507}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var133))
 				if templ_7745c5c3_Err != nil {
@@ -3402,7 +3394,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var134 string
 				templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.AssigneeEmail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 545}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 545}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 				if templ_7745c5c3_Err != nil {
@@ -3415,7 +3407,7 @@ func DenseIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var135 string
 				templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinStringErrs(issue.AssigneeName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 923, Col: 568}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 904, Col: 568}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
 				if templ_7745c5c3_Err != nil {
@@ -3467,7 +3459,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var137 string
 		templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Events))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 931, Col: 130}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 912, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var137))
 		if templ_7745c5c3_Err != nil {
@@ -3496,7 +3488,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var138 string
 				templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeDay)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 919, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var138))
 				if templ_7745c5c3_Err != nil {
@@ -3509,7 +3501,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var139 string
 				templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeMonth)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 122}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 919, Col: 122}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var139))
 				if templ_7745c5c3_Err != nil {
@@ -3522,7 +3514,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var140 string
 				templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(event.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 183}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 919, Col: 183}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var140))
 				if templ_7745c5c3_Err != nil {
@@ -3535,7 +3527,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var141 string
 				templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.JoinStringErrs(event.TimeRange)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 217}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 919, Col: 217}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var141))
 				if templ_7745c5c3_Err != nil {
@@ -3553,7 +3545,7 @@ func DenseEvents(data PortalPageData) templ.Component {
 					var templ_7745c5c3_Var142 string
 					templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(event.Location)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 940, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 921, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
 					if templ_7745c5c3_Err != nil {
@@ -3610,7 +3602,7 @@ func DenseAnnouncements(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var144 string
 		templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.JoinStringErrs(data.UnreadAnnouncements)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 950, Col: 131}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 931, Col: 131}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var144))
 		if templ_7745c5c3_Err != nil {
@@ -3661,7 +3653,7 @@ func DenseAnnouncements(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var147 string
 				templ_7745c5c3_Var147, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 957, Col: 142}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 142}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var147))
 				if templ_7745c5c3_Err != nil {
@@ -3674,7 +3666,7 @@ func DenseAnnouncements(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var148 string
 				templ_7745c5c3_Var148, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 957, Col: 174}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 174}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var148))
 				if templ_7745c5c3_Err != nil {
@@ -3687,7 +3679,7 @@ func DenseAnnouncements(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var149 string
 				templ_7745c5c3_Var149, templ_7745c5c3_Err = templ.JoinStringErrs(item.PublishedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 957, Col: 198}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 938, Col: 198}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var149))
 				if templ_7745c5c3_Err != nil {
@@ -3739,7 +3731,7 @@ func PortalCalm(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var151 string
 		templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.JoinStringErrs(calmAnswer(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 966, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 947, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var151))
 		if templ_7745c5c3_Err != nil {
@@ -3779,7 +3771,7 @@ func PortalCalm(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var152 string
 			templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.JoinStringErrs(data.Energy.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 979, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 960, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var152))
 			if templ_7745c5c3_Err != nil {
@@ -3792,7 +3784,7 @@ func PortalCalm(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var153 templ.SafeURL
 			templ_7745c5c3_Var153, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Energy.ActionURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 979, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 960, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var153))
 			if templ_7745c5c3_Err != nil {
@@ -3805,7 +3797,7 @@ func PortalCalm(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var154 string
 			templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.JoinStringErrs(data.Energy.ActionLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 979, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 960, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var154))
 			if templ_7745c5c3_Err != nil {
@@ -3856,7 +3848,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var156 string
 		templ_7745c5c3_Var156, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Issues))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 986, Col: 151}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 967, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var156))
 		if templ_7745c5c3_Err != nil {
@@ -3875,7 +3867,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var157 templ.SafeURL
 				templ_7745c5c3_Var157, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(issue.DetailURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 989, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 970, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var157))
 				if templ_7745c5c3_Err != nil {
@@ -3888,7 +3880,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var158 string
 				templ_7745c5c3_Var158, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 989, Col: 84}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 970, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var158))
 				if templ_7745c5c3_Err != nil {
@@ -3901,7 +3893,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var159 string
 				templ_7745c5c3_Var159, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Location)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 989, Col: 117}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 970, Col: 117}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var159))
 				if templ_7745c5c3_Err != nil {
@@ -3914,7 +3906,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var160 string
 				templ_7745c5c3_Var160, templ_7745c5c3_Err = templ.JoinStringErrs(issue.CreatedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 989, Col: 149}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 970, Col: 149}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var160))
 				if templ_7745c5c3_Err != nil {
@@ -3938,7 +3930,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var161 string
 			templ_7745c5c3_Var161, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Issues))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 994, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 975, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var161))
 			if templ_7745c5c3_Err != nil {
@@ -3957,7 +3949,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 					var templ_7745c5c3_Var162 templ.SafeURL
 					templ_7745c5c3_Var162, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(issue.DetailURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 997, Col: 61}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 978, Col: 61}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var162))
 					if templ_7745c5c3_Err != nil {
@@ -3970,7 +3962,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 					var templ_7745c5c3_Var163 string
 					templ_7745c5c3_Var163, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 997, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 978, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var163))
 					if templ_7745c5c3_Err != nil {
@@ -3983,7 +3975,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 					var templ_7745c5c3_Var164 string
 					templ_7745c5c3_Var164, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Location)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 997, Col: 118}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 978, Col: 118}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var164))
 					if templ_7745c5c3_Err != nil {
@@ -3996,7 +3988,7 @@ func CalmIssues(data PortalPageData) templ.Component {
 					var templ_7745c5c3_Var165 string
 					templ_7745c5c3_Var165, templ_7745c5c3_Err = templ.JoinStringErrs(issue.CreatedAt)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 997, Col: 150}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 978, Col: 150}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var165))
 					if templ_7745c5c3_Err != nil {
@@ -4055,7 +4047,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var167 string
 		templ_7745c5c3_Var167, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Events))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1009, Col: 153}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 990, Col: 153}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var167))
 		if templ_7745c5c3_Err != nil {
@@ -4073,7 +4065,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var168 string
 			templ_7745c5c3_Var168, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeDay)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1011, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 992, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var168))
 			if templ_7745c5c3_Err != nil {
@@ -4086,7 +4078,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var169 string
 			templ_7745c5c3_Var169, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeMonth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1011, Col: 115}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 992, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var169))
 			if templ_7745c5c3_Err != nil {
@@ -4099,7 +4091,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var170 string
 			templ_7745c5c3_Var170, templ_7745c5c3_Err = templ.JoinStringErrs(event.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1011, Col: 153}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 992, Col: 153}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var170))
 			if templ_7745c5c3_Err != nil {
@@ -4112,7 +4104,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var171 string
 			templ_7745c5c3_Var171, templ_7745c5c3_Err = templ.JoinStringErrs(event.TimeRange)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1011, Col: 187}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 992, Col: 187}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var171))
 			if templ_7745c5c3_Err != nil {
@@ -4130,7 +4122,7 @@ func CalmEvents(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var172 string
 				templ_7745c5c3_Var172, templ_7745c5c3_Err = templ.JoinStringErrs(event.Location)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1013, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 994, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var172))
 				if templ_7745c5c3_Err != nil {
@@ -4192,7 +4184,7 @@ func CalmAnnouncements(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var174 string
 		templ_7745c5c3_Var174, templ_7745c5c3_Err = templ.JoinStringErrs(data.UnreadAnnouncements)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1025, Col: 162}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1006, Col: 162}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var174))
 		if templ_7745c5c3_Err != nil {
@@ -4232,7 +4224,7 @@ func CalmAnnouncements(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var177 string
 			templ_7745c5c3_Var177, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.KV("ungelesen", item.Unread))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1027, Col: 148}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1008, Col: 148}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var177)
 			if templ_7745c5c3_Err != nil {
@@ -4245,7 +4237,7 @@ func CalmAnnouncements(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var178 string
 			templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1027, Col: 178}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1008, Col: 178}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var178))
 			if templ_7745c5c3_Err != nil {
@@ -4258,7 +4250,7 @@ func CalmAnnouncements(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var179 string
 			templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1027, Col: 210}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1008, Col: 210}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var179))
 			if templ_7745c5c3_Err != nil {
@@ -4271,7 +4263,7 @@ func CalmAnnouncements(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var180 string
 			templ_7745c5c3_Var180, templ_7745c5c3_Err = templ.JoinStringErrs(item.PublishedAt)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1027, Col: 234}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1008, Col: 234}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var180))
 			if templ_7745c5c3_Err != nil {
@@ -4333,7 +4325,7 @@ func PortalUtilities(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var182 templ.SafeURL
 			templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(area.URL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1039, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1020, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var182))
 			if templ_7745c5c3_Err != nil {
@@ -4346,7 +4338,7 @@ func PortalUtilities(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var183 string
 			templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.JoinStringErrs(area.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1039, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1020, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var183))
 			if templ_7745c5c3_Err != nil {
@@ -4404,7 +4396,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var185 string
 			templ_7745c5c3_Var185, templ_7745c5c3_Err = templ.JoinStringErrs(data.Primary.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1051, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1032, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var185))
 			if templ_7745c5c3_Err != nil {
@@ -4417,7 +4409,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var186 string
 			templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.JoinStringErrs(data.Primary.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1051, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1032, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var186))
 			if templ_7745c5c3_Err != nil {
@@ -4430,7 +4422,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var187 templ.SafeURL
 			templ_7745c5c3_Var187, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Primary.URL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1051, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1032, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var187))
 			if templ_7745c5c3_Err != nil {
@@ -4443,7 +4435,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var188 string
 			templ_7745c5c3_Var188, templ_7745c5c3_Err = templ.JoinStringErrs(data.Primary.ActionLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1051, Col: 151}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1032, Col: 151}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var188))
 			if templ_7745c5c3_Err != nil {
@@ -4471,7 +4463,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var189 templ.SafeURL
 			templ_7745c5c3_Var189, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(portalIssuesURL(data)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1058, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1039, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var189))
 			if templ_7745c5c3_Err != nil {
@@ -4484,7 +4476,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var190 string
 			templ_7745c5c3_Var190, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Issues))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1058, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1039, Col: 98}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var190))
 			if templ_7745c5c3_Err != nil {
@@ -4503,7 +4495,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var191 string
 			templ_7745c5c3_Var191, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Events))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1061, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1042, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var191))
 			if templ_7745c5c3_Err != nil {
@@ -4522,7 +4514,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var192 string
 			templ_7745c5c3_Var192, templ_7745c5c3_Err = templ.JoinStringErrs(data.UnreadAnnouncements)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1064, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1045, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var192))
 			if templ_7745c5c3_Err != nil {
@@ -4562,7 +4554,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var193 string
 				templ_7745c5c3_Var193, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Events))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1076, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1057, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var193))
 				if templ_7745c5c3_Err != nil {
@@ -4615,7 +4607,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var194 string
 				templ_7745c5c3_Var194, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Announcements))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1095, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1076, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var194))
 				if templ_7745c5c3_Err != nil {
@@ -4705,7 +4697,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var195 templ.SafeURL
 			templ_7745c5c3_Var195, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(area.URL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1119, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1100, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var195))
 			if templ_7745c5c3_Err != nil {
@@ -4718,7 +4710,7 @@ func PortalMobile(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var196 string
 			templ_7745c5c3_Var196, templ_7745c5c3_Err = templ.JoinStringErrs(area.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1119, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1100, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var196))
 			if templ_7745c5c3_Err != nil {
@@ -4771,7 +4763,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 		var templ_7745c5c3_Var198 string
 		templ_7745c5c3_Var198, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisplayVersion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1131, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1112, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var198))
 		if templ_7745c5c3_Err != nil {
@@ -4789,7 +4781,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var199 string
 			templ_7745c5c3_Var199, templ_7745c5c3_Err = templ.JoinStringErrs(note.Version)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1133, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1114, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var199))
 			if templ_7745c5c3_Err != nil {
@@ -4802,7 +4794,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var200 string
 			templ_7745c5c3_Var200, templ_7745c5c3_Err = templ.JoinStringErrs(note.Date)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1133, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1114, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var200))
 			if templ_7745c5c3_Err != nil {
@@ -4815,7 +4807,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var201 string
 			templ_7745c5c3_Var201, templ_7745c5c3_Err = templ.JoinStringErrs(note.Kind)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1133, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1114, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var201))
 			if templ_7745c5c3_Err != nil {
@@ -4828,7 +4820,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var202 string
 			templ_7745c5c3_Var202, templ_7745c5c3_Err = templ.JoinStringErrs(note.Headline)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1133, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1114, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var202))
 			if templ_7745c5c3_Err != nil {
@@ -4841,7 +4833,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 			var templ_7745c5c3_Var203 string
 			templ_7745c5c3_Var203, templ_7745c5c3_Err = templ.JoinStringErrs(note.Intro)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1133, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1114, Col: 149}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var203))
 			if templ_7745c5c3_Err != nil {
@@ -4859,7 +4851,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var204 string
 				templ_7745c5c3_Var204, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1135, Col: 29}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1116, Col: 29}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var204))
 				if templ_7745c5c3_Err != nil {
@@ -4872,7 +4864,7 @@ func PortalReleaseNotes(data PortalPageData) templ.Component {
 				var templ_7745c5c3_Var205 string
 				templ_7745c5c3_Var205, templ_7745c5c3_Err = templ.JoinStringErrs(item.Text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1135, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1116, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var205))
 				if templ_7745c5c3_Err != nil {
@@ -4924,7 +4916,7 @@ func PortalMobileEvent(event view.HouseEventView) templ.Component {
 		var templ_7745c5c3_Var207 string
 		templ_7745c5c3_Var207, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeDay)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1143, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1124, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var207))
 		if templ_7745c5c3_Err != nil {
@@ -4937,7 +4929,7 @@ func PortalMobileEvent(event view.HouseEventView) templ.Component {
 		var templ_7745c5c3_Var208 string
 		templ_7745c5c3_Var208, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeMonth)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1143, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1124, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var208))
 		if templ_7745c5c3_Err != nil {
@@ -4950,7 +4942,7 @@ func PortalMobileEvent(event view.HouseEventView) templ.Component {
 		var templ_7745c5c3_Var209 string
 		templ_7745c5c3_Var209, templ_7745c5c3_Err = templ.JoinStringErrs(event.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1143, Col: 200}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1124, Col: 200}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var209))
 		if templ_7745c5c3_Err != nil {
@@ -4963,7 +4955,7 @@ func PortalMobileEvent(event view.HouseEventView) templ.Component {
 		var templ_7745c5c3_Var210 string
 		templ_7745c5c3_Var210, templ_7745c5c3_Err = templ.JoinStringErrs(event.TimeRange)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1143, Col: 234}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1124, Col: 234}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var210))
 		if templ_7745c5c3_Err != nil {
@@ -4981,7 +4973,7 @@ func PortalMobileEvent(event view.HouseEventView) templ.Component {
 			var templ_7745c5c3_Var211 string
 			templ_7745c5c3_Var211, templ_7745c5c3_Err = templ.JoinStringErrs(event.Location)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1145, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1126, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var211))
 			if templ_7745c5c3_Err != nil {
@@ -5050,7 +5042,7 @@ func PortalMobileAnnouncement(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var215 string
 		templ_7745c5c3_Var215, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1151, Col: 160}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1132, Col: 160}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var215))
 		if templ_7745c5c3_Err != nil {
@@ -5063,7 +5055,7 @@ func PortalMobileAnnouncement(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var216 string
 		templ_7745c5c3_Var216, templ_7745c5c3_Err = templ.JoinStringErrs(item.Category)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1151, Col: 192}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1132, Col: 192}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var216))
 		if templ_7745c5c3_Err != nil {
@@ -5076,7 +5068,7 @@ func PortalMobileAnnouncement(item view.AnnouncementView) templ.Component {
 		var templ_7745c5c3_Var217 string
 		templ_7745c5c3_Var217, templ_7745c5c3_Err = templ.JoinStringErrs(item.PublishedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1151, Col: 216}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/portal.templ`, Line: 1132, Col: 216}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var217))
 		if templ_7745c5c3_Err != nil {

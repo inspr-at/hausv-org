@@ -231,18 +231,9 @@ templ PortalBaseStyles() {
 	<style>
 		.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}
 		.portal-page .sidebar{padding:16px 18px}
-		/* Keep the map link outside the navigation landmark so link inventories
-		   contain page navigation only; visual order still keeps it in its house
-		   group between the group label and its house pages. */
-		.portal-page .sidebar>.nav{display:contents}
-		.portal-page .sidebar>.portal-organisation-identity{order:1}
-		.portal-page .sidebar>.nav>.nav-level-label:not(.nav-house-label){order:2}
-		.portal-page .sidebar>.nav>.nav-organisation{order:3}
-		.portal-page .sidebar>.nav>.nav-house-label{order:4}
-		.portal-page .sidebar>.house-picker,.portal-page .sidebar>.house-header-card{order:5}
-		.portal-page .sidebar>.nav>.nav-house-items{order:6}
-		.portal-page .sidebar>.portal-context-switch{order:7}
-		.portal-page .sidebar>.account{order:8}
+		/* The navigation keeps a real box around every house item. The sidebar,
+		   not this landmark, is the short-viewport scroll container. */
+		.portal-page .sidebar>.nav{display:grid;min-height:max-content}
 		.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}
 		.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
 		.portal-organisation-identity small{color:var(--soft);font-size:10px}
@@ -250,6 +241,7 @@ templ PortalBaseStyles() {
 		.portal-page .nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}
 		.portal-page .nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}
 		.portal-page .nav-organisation,.portal-page .nav-house-items{display:grid;gap:2px}
+		.portal-page .nav>.house-picker,.portal-page .nav>.house-header-card{grid-column:1/-1}
 		.portal-page .nav-house-items.indented{margin-left:10px;padding-left:11px;border-left:1px solid var(--nav-2)}
 		.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}
 		.portal-page .nav a.active svg{color:var(--nav)}
@@ -312,15 +304,6 @@ templ PortalBaseStyles() {
 		@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.house-picker-panel{left:226px}}
 		@media(max-width:760px){
 			.portal-page .menu-panel{display:grid;padding:16px 18px 24px}
-			.portal-page .menu-panel>.nav{display:contents}
-			.portal-page .menu-panel>.portal-organisation-identity{order:1}
-			.portal-page .menu-panel>.nav>.nav-level-label:not(.nav-house-label){order:2}
-			.portal-page .menu-panel>.nav>.nav-organisation{order:3}
-			.portal-page .menu-panel>.nav>.nav-house-label{order:4}
-			.portal-page .menu-panel>.house-picker,.portal-page .menu-panel>.house-header-card{order:5}
-			.portal-page .menu-panel>.nav>.nav-house-items{order:6}
-			.portal-page .menu-panel>.portal-context-switch{order:7}
-			.portal-page .menu-panel>.release-notes,.portal-page .menu-panel>.logout-form{order:8}
 			.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}
 			.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}
 			.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}
@@ -365,8 +348,7 @@ templ PortalSidebar(data PortalPageData) {
 	{{ shell := portalShellData(data) }}
 	<aside class="sidebar" aria-label="Hausnavigation">
 		@PortalOrganisationIdentity(shell)
-		@PortalNavigation(data, true, false)
-		@PortalHouseHeader(data, shell, true)
+		@PortalNavigation(data, true, true)
 		@PortalContextSwitch(shell.PortalContexts, false)
 		<footer class="account">
 			if len(data.RolePreviewChoices) > 0 {
@@ -494,8 +476,7 @@ templ PortalMobileNavigation(data PortalPageData) {
 	{{ shell := portalShellData(data) }}
 	<div class="menu-panel">
 		@PortalOrganisationIdentity(shell)
-		@PortalNavigation(data, false, false)
-		@PortalHouseHeader(data, shell, false)
+		@PortalNavigation(data, false, true)
 		@PortalContextSwitch(shell.PortalContexts, true)
 		@PortalReleaseNotes(data)
 		<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form>
