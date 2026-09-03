@@ -69,9 +69,14 @@ if [ "$dry_run" = 1 ]; then
     exit 0
 fi
 
+# The deploy user's login shell may be fish (NixOS hosts), so every remote
+# command runs under bash explicitly: step 1 as a bash -c string (stdin
+# carries the archive), step 2 as a script on stdin.
+case $release_dir in *"'"*) echo "release dir must not contain a single quote" >&2; exit 2 ;; esac
+
 # 1. Ship HEAD. The release directory is immutable once extracted.
 git archive --format=tar HEAD | ssh "${ssh_args[@]}" "$ssh_host" \
-    "set -e; mkdir -p '$release_dir'; tar -x -C '$release_dir'"
+    "bash -c 'set -e; mkdir -p \"$release_dir\"; tar -x -C \"$release_dir\"'"
 
 # 2. Configure, build, start, seed, verify — one remote shell so the
 #    compose invocation is identical for every step.
@@ -98,7 +103,7 @@ echo "healthz: \$(curl -fsS http://127.0.0.1:$port/healthz)"
 echo "live: $release_dir ($version)"
 REMOTE
 )
-ssh "${ssh_args[@]}" "$ssh_host" "$remote"
+printf '%s\n' "$remote" | ssh "${ssh_args[@]}" "$ssh_host" bash -s
 
 echo
 echo "verify from here:"
