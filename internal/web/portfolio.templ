@@ -1,0 +1,250 @@
+package web
+
+import (
+	"fmt"
+	"time"
+)
+
+type PortfolioData struct {
+	OrganisationName  string
+	Eyebrow           string
+	Greeting          string
+	Today             string
+	TodayLine         string
+	Sort              string
+	HouseCount        int
+	UnitCount         int
+	ActionHouseCount  int
+	QuietHouseCount   int
+	OpenIssues        int
+	Overdue           int
+	DueToday          int
+	NewSinceYesterday int
+	Houses            []PortfolioHouse
+	QuietHouses       []PortfolioHouse
+	Appointments      []PortfolioAppointment
+	AuditEvents       []PortfolioAuditEvent
+}
+
+type PortfolioHouse struct {
+	Slug         string
+	Role         string
+	Name         string
+	Address      string
+	Open         int
+	Overdue      int
+	DueToday     int
+	HighPriority int
+	Score        int
+	Oldest       string
+	NextDate     string
+	NextTitle    string
+	Assignee     string
+	ActionClass  string
+}
+
+type PortfolioAppointment struct {
+	House string
+	Title string
+	Day   string
+	Month string
+	Time  string
+	At    time.Time
+}
+
+type PortfolioAuditEvent struct {
+	Actor    string
+	Action   string
+	House    string
+	Relative string
+	At       time.Time
+}
+
+func PortfolioPage(shell VerwaltungShell, data PortfolioData) templ.Component {
+	return portfolioPage(shell, data)
+}
+
+templ portfolioPage(shell VerwaltungShell, data PortfolioData) {
+	@PortalVerwaltungPage(shell, "Portfolio", portfolioBody(data))
+}
+
+templ portfolioBody(data PortfolioData) {
+	@portfolioStyles()
+	<div class="portfolio-page" data-portfolio-page data-replaces-placeholder="Dieser Bereich wird gerade gebaut.">
+		<header class="portfolio-header">
+			<div class="portfolio-heading">
+				<p class="portfolio-eyebrow">{ data.Eyebrow }</p>
+				<h1>{ data.Greeting }</h1>
+				<p>{ data.TodayLine }</p>
+			</div>
+			<div class="metrics portfolio-desktop-metrics" aria-label="Portfolio-Kennzahlen">
+				<span class="metric"><strong>{ fmt.Sprint(data.OpenIssues) }</strong><span>offene Anliegen</span></span>
+				<span class="metric"><strong>{ fmt.Sprint(data.Overdue) }</strong><span>überfällig</span></span>
+				<span class="metric"><strong>{ fmt.Sprint(data.DueToday) }</strong><span>heute fällig</span></span>
+				<span class="metric"><strong>{ fmt.Sprint(data.NewSinceYesterday) }</strong><span>neu seit gestern</span></span>
+			</div>
+		</header>
+
+		<div class="counts portfolio-mobile-only" aria-label="Portfolio-Kennzahlen">
+			<div class="count-tile"><strong>{ fmt.Sprint(data.OpenIssues) }</strong><span>offene Anliegen</span></div>
+			<div class="count-tile"><strong>{ fmt.Sprint(data.Overdue) }</strong><span>überfällig</span></div>
+			<div class="count-tile"><strong>{ fmt.Sprint(data.DueToday) }</strong><span>heute fällig</span></div>
+		</div>
+
+		<div class="working-grid portfolio-layout">
+			<section class="card portfolio-houses" aria-labelledby="portfolio-houses-title">
+				<header class="card-head">
+					<h2 id="portfolio-houses-title">Häuser</h2>
+					<span class="count-label">{ portfolioHouseSummary(data.ActionHouseCount, data.QuietHouseCount) }</span>
+					<nav class="portfolio-sort" aria-label="Häuser sortieren">
+						<a href="/app/verwaltung?sort=need" class={ templ.KV("active", data.Sort != "name") } aria-current={ portfolioSortCurrent(data.Sort != "name") }>Handlungsbedarf</a>
+						<a href="/app/verwaltung?sort=name" class={ templ.KV("active", data.Sort == "name") } aria-current={ portfolioSortCurrent(data.Sort == "name") }>Name</a>
+					</nav>
+				</header>
+
+				<div class="portfolio-desktop-table" role="table" aria-label="Verwaltete Häuser">
+					<div class="portfolio-table-head" role="row">
+						<span role="columnheader"><span class="sr-only">Status</span></span><span role="columnheader">Haus</span><span role="columnheader">Offen</span><span role="columnheader">Überfällig</span><span role="columnheader">Ältestes</span><span role="columnheader">Nächster Termin</span><span role="columnheader">Zuständig</span>
+					</div>
+					if len(data.Houses) == 0 {
+						<p class="empty">Keine Häuser mit Handlungsbedarf</p>
+					} else {
+						for _, house := range data.Houses {
+							@portfolioHouseRow(house)
+						}
+					}
+					if len(data.QuietHouses) > 0 {
+						<details class="portfolio-quiet">
+							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }</summary>
+							for _, house := range data.QuietHouses {
+								@portfolioHouseRow(house)
+							}
+						</details>
+					}
+				</div>
+
+				<div class="mobile-section portfolio-mobile-only" aria-label="Verwaltete Häuser">
+					if len(data.Houses) == 0 {
+						<p class="empty">Keine Häuser mit Handlungsbedarf</p>
+					} else {
+						<ul class="mobile-list">
+							for _, house := range data.Houses {
+								<li>@portfolioMobileHouseRow(house)</li>
+							}
+						</ul>
+					}
+					if len(data.QuietHouses) > 0 {
+						<details class="more-data portfolio-mobile-quiet">
+							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }</summary>
+							<ul class="mobile-list">
+								for _, house := range data.QuietHouses {
+									<li>@portfolioMobileHouseRow(house)</li>
+								}
+							</ul>
+						</details>
+					}
+				</div>
+			</section>
+
+			<div class="side-stack portfolio-side">
+				<section class="card agenda-card" aria-labelledby="portfolio-today-title">
+					<header class="card-head"><h2 id="portfolio-today-title">Heute</h2></header>
+					if len(data.Appointments) == 0 {
+						<p class="empty">Heute und morgen stehen keine Termine an.</p>
+					} else {
+						<ul class="agenda">
+							for _, item := range data.Appointments {
+								<li><div class="portfolio-agenda-item"><time class="date-chip" datetime={ item.At.Format(time.RFC3339) }><strong>{ item.Day }</strong><span>{ item.Month }</span></time><span class="item-copy"><strong>{ item.Title }</strong><span>{ item.House } · { item.Time } Uhr</span></span></div></li>
+							}
+						</ul>
+					}
+				</section>
+
+				<section class="card board-card" aria-labelledby="portfolio-recent-title">
+					<header class="card-head"><h2 id="portfolio-recent-title">Zuletzt</h2></header>
+					if len(data.AuditEvents) == 0 {
+						<p class="empty">Noch keine Aktivitäten.</p>
+					} else {
+						<ul class="board-list portfolio-audit-list">
+							for _, item := range data.AuditEvents {
+								<li><div class="portfolio-audit-item"><span class="dot" aria-hidden="true"></span><span class="item-copy"><strong>{ item.Actor } · { item.Action }</strong><span>{ item.House } · <time datetime={ item.At.Format(time.RFC3339) }>{ item.Relative }</time></span></span></div></li>
+							}
+						</ul>
+					}
+				</section>
+			</div>
+		</div>
+	</div>
+}
+
+templ portfolioHouseRow(house PortfolioHouse) {
+	<form method="post" action="/app/context" class="portfolio-row-form" role="row">
+		<input type="hidden" name="tenant" value={ house.Slug }/>
+		<input type="hidden" name="role" value={ house.Role }/>
+		<button type="submit" class="portfolio-house-row" aria-label={ house.Name + " öffnen" }>
+			<span role="cell"><span class={ "dot", house.ActionClass } aria-label={ portfolioHouseStatus(house.Open) }></span></span>
+			<span class="portfolio-house-copy" role="cell"><strong>{ house.Name }</strong><small>{ house.Address }</small></span>
+			<span role="cell">{ fmt.Sprint(house.Open) }</span>
+			<span role="cell">{ fmt.Sprint(house.Overdue) }</span>
+			<span role="cell">{ house.Oldest }</span>
+			<span class="portfolio-next" role="cell"><strong>{ house.NextDate }</strong><small>{ house.NextTitle }</small></span>
+			<span role="cell">{ house.Assignee }</span>
+		</button>
+	</form>
+}
+
+templ portfolioMobileHouseRow(house PortfolioHouse) {
+	<form method="post" action="/app/context">
+		<input type="hidden" name="tenant" value={ house.Slug }/>
+		<input type="hidden" name="role" value={ house.Role }/>
+		<button type="submit" class="portfolio-mobile-row" aria-label={ house.Name + " öffnen" }>
+			<span class={ "dot", house.ActionClass } aria-hidden="true"></span>
+			<span class="item-copy"><strong>{ house.Name }</strong><span>{ portfolioMobileHouseSummary(house) }</span><span>{ portfolioNextSummary(house) }</span></span>
+			<span class="chevron" aria-hidden="true">›</span>
+		</button>
+	</form>
+}
+
+func portfolioHouseSummary(action, quiet int) string {
+	return fmt.Sprintf("%d mit Handlungsbedarf · %d ruhig", action, quiet)
+}
+
+func portfolioQuietSummary(count int) string {
+	if count == 1 {
+		return "1 weiteres Haus ohne Handlungsbedarf anzeigen"
+	}
+	return fmt.Sprintf("%d weitere Häuser ohne Handlungsbedarf anzeigen", count)
+}
+
+func portfolioMobileHouseSummary(house PortfolioHouse) string {
+	return fmt.Sprintf("%d offen · %d überfällig · ältestes %s", house.Open, house.Overdue, house.Oldest)
+}
+
+func portfolioNextSummary(house PortfolioHouse) string {
+	if house.NextTitle == "—" {
+		return "Kein nächster Termin"
+	}
+	return house.NextDate + " · " + house.NextTitle
+}
+
+func portfolioHouseStatus(open int) string {
+	if open > 0 {
+		return "Handlungsbedarf"
+	}
+	return "Ruhig"
+}
+
+func portfolioSortCurrent(active bool) string {
+	if active {
+		return "page"
+	}
+	return "false"
+}
+
+templ portfolioStyles() {
+	<style>
+		.verwaltung-main:has(.portfolio-page)>.portal-section-header{display:none}.verwaltung-main:has(.portfolio-page)>.portal-section-content{padding-top:0}.portfolio-page{display:grid;gap:var(--space-5)}.portfolio-header{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-5);padding:42px 0 var(--space-5);border-bottom:1px solid var(--line)}.portfolio-heading{min-width:0}.portfolio-eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.portfolio-heading h1{margin-top:var(--space-2);font-size:42px;line-height:1.08}.portfolio-heading>p:last-child{margin-top:var(--space-2);color:var(--muted);font-size:12px}.portfolio-houses{padding:var(--space-4) var(--space-5) var(--space-3);overflow:hidden}.portfolio-sort{display:flex;margin-left:auto;border:1px solid var(--line);border-radius:var(--radius-pill);overflow:hidden}.portfolio-sort a{min-height:30px;display:grid;place-items:center;padding:0 var(--space-3);color:var(--muted);font-size:9px;font-weight:800}.portfolio-sort a+a{border-left:1px solid var(--line)}.portfolio-sort a.active{background:var(--panel-soft);color:var(--ink)}.portfolio-table-head,.portfolio-house-row{display:grid;grid-template-columns:12px minmax(160px,1.25fr) 48px 65px 72px minmax(145px,1fr) minmax(90px,.7fr);align-items:center;gap:var(--space-3)}.portfolio-table-head{min-height:31px;padding:0 var(--space-2);color:var(--muted);font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.portfolio-row-form{border-top:1px solid var(--line)}.portfolio-house-row{width:100%;min-height:58px;padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.portfolio-house-row:hover,.portfolio-house-row:focus-visible{background:var(--panel-soft)}.portfolio-house-copy,.portfolio-next{min-width:0;display:grid;gap:3px}.portfolio-house-copy strong,.portfolio-next small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.portfolio-house-copy small,.portfolio-next small{color:var(--muted);font-size:9px}.portfolio-next strong{font-size:10px}.portfolio-quiet{border-top:1px solid var(--line)}.portfolio-quiet>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-2);color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.portfolio-quiet>summary::-webkit-details-marker{display:none}.portfolio-agenda-item{min-height:55px;display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:var(--space-3)}.portfolio-audit-item{min-height:48px;display:grid;grid-template-columns:8px minmax(0,1fr);align-items:center;gap:var(--space-3)}.portfolio-mobile-only{display:none}
+		@media(max-width:1050px) and (min-width:761px){.portfolio-header{align-items:flex-start}.portfolio-desktop-metrics{flex-wrap:wrap;justify-content:flex-end;max-width:380px;row-gap:var(--space-4)}.portfolio-table-head,.portfolio-house-row{grid-template-columns:12px minmax(140px,1fr) 38px 55px 65px minmax(120px,.8fr)}.portfolio-table-head>span:last-child,.portfolio-house-row>span:last-child{display:none}}
+		@media(max-width:760px){.verwaltung-main:has(.portfolio-page)>.portal-section-content{padding-top:0}.portfolio-page{gap:var(--space-4)}.portfolio-header{display:block;padding:var(--space-5) 0 var(--space-4)}.portfolio-heading h1{font-size:34px}.portfolio-desktop-metrics,.portfolio-desktop-table{display:none}.portfolio-mobile-only{display:grid}.portfolio-layout{display:block}.portfolio-houses{padding:var(--space-4)}.portfolio-houses>.card-head{display:grid;grid-template-columns:1fr auto}.portfolio-houses>.card-head .count-label{align-self:center}.portfolio-sort{grid-column:1/-1;width:100%;margin:var(--space-2) 0 0;border-radius:var(--radius-sm)}.portfolio-sort a{min-height:44px}.portfolio-sort a:first-child{flex:1}.portfolio-sort a:last-child{flex:1}.portfolio-mobile-row{width:100%;min-height:78px;display:grid;grid-template-columns:9px minmax(0,1fr) 12px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:0;background:transparent;color:var(--ink);text-align:left}.portfolio-mobile-row .item-copy span+span{margin-top:5px}.portfolio-mobile-quiet{display:block}.portfolio-side{display:grid;grid-template-rows:auto auto;gap:var(--space-4);margin-top:var(--space-4)}}
+	</style>
+}
