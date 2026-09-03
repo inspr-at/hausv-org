@@ -16,30 +16,41 @@ type RolePreviewChoice struct {
 }
 
 templ RolePreviewBand(state RolePreviewState) {
-	<section class="role-preview-band" aria-label="Aktive Rollenansicht">
-		<span>Ansicht als { state.RoleLabel } · { state.HouseName } · schreibgeschützt · endet in { state.EndsInMinutes } Min</span>
+	<style>
+		.role-preview-band{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--gold);background:var(--paper);color:var(--muted);font-size:12px;line-height:1.4}.role-preview-band strong{color:var(--ink)}.role-preview-band form{flex:0 0 auto}.role-preview-band button{min-height:32px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--ink);font-size:11px;font-weight:800}
+		body.role-preview .button.primary,body:has(.role-preview-band) .button.primary{border-color:var(--line);background:var(--panel-soft);color:var(--muted);box-shadow:none}body.role-preview .account .avatar,body:has(.role-preview-band) .account .avatar{box-shadow:0 0 0 2px var(--gold-light)}body:has(.role-preview-band) .account>span:nth-of-type(2)>small:first-of-type{font-size:0}body:has(.role-preview-band[data-preview-role="Eigentümer"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:"Ansicht als Eigentümer";font-size:10px}body:has(.role-preview-band[data-preview-role="Bewohner"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:"Ansicht als Bewohner";font-size:10px}.role-preview-mobile-label{display:none;color:var(--gold-ink);font-size:10px}
+		@media(max-width:760px){.role-preview-band{align-items:flex-start;margin-top:0;padding:var(--space-2) var(--space-4)}.role-preview-band>span{max-width:30ch}.role-preview-band button{min-height:36px}.role-preview-mobile-label{display:block}}
+	</style>
+	<section class="role-preview-band" aria-label="Aktive Rollenansicht" data-preview-role={ state.RoleLabel }>
+		<span>Ansicht als { state.RoleLabel } · { state.HouseName } · schreibgeschützt · endet in { state.EndsInMinutes } Min<span class="role-preview-mobile-label">Ansicht als { state.RoleLabel } · schreibgeschützt</span></span>
 		<form method="post" action={ templ.SafeURL(state.EndPath) }><button type="submit">Ansicht beenden</button></form>
 	</section>
 }
 
 templ RolePreviewChooser(choices []RolePreviewChoice) {
+	<style>
+		.role-preview-chooser{position:relative;grid-column:1/3;min-width:0}.role-preview-chooser>summary{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:var(--space-3);cursor:pointer;list-style:none}.role-preview-chooser>summary::-webkit-details-marker{display:none}.role-preview-menu{position:absolute;left:0;bottom:calc(100% + var(--space-2));z-index:20;width:min(340px,calc(100vw - 32px));padding:var(--space-3);border:1px solid var(--nav-2);border-radius:var(--radius-sm);background:var(--nav);box-shadow:var(--shadow-dialog)}.role-preview-menu>strong{color:var(--panel);font-size:12px}.role-preview-menu form{margin:0}.role-preview-menu button,.role-preview-current,.role-preview-disabled{width:100%;display:grid;gap:2px;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.role-preview-menu button{border-radius:var(--radius-xs)}.role-preview-menu button:hover{background:var(--nav-2)}.role-preview-menu small{color:var(--soft);font-size:10px;line-height:1.35}.role-preview-current{border:1px solid var(--gold);border-radius:var(--radius-xs)}.role-preview-current>span{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}.role-preview-current em{padding:2px 6px;border:1px solid var(--gold);border-radius:var(--radius-pill);color:var(--gold-light);font-size:9px;font-style:normal}.role-preview-disabled{opacity:.65}.role-preview-footnote{padding:var(--space-1) var(--space-2) 0;border-top:1px solid var(--nav-2)}
+	</style>
 	<details class="role-preview-chooser">
 		<summary>{ children... }</summary>
 		<div class="context-menu role-preview-menu">
 			<strong>Ansicht als</strong>
 			for _, choice := range choices {
-				<form method="post" action={ templ.SafeURL(choice.StartPath) }>
-					<input type="hidden" name="role" value={ choice.Role }/>
-					<button type="submit" class={ templ.KV("current", choice.Current) } aria-current={ rolePreviewCurrent(choice.Current) }>
-						<strong>{ choice.Label }</strong>
-						<small>{ choice.Description }</small>
-						if choice.Current {
-							<small>Aktuell</small>
-						}
-					</button>
-				</form>
+				if choice.Current && choice.StartPath == "" {
+					<div class="role-preview-current" aria-current={ rolePreviewCurrent(true) }><span><strong>{ choice.Label }</strong><em>Aktuell</em></span><small>{ choice.Description }</small></div>
+				} else {
+					<form method="post" action={ templ.SafeURL(choice.StartPath) }>
+						<input type="hidden" name="role" value={ choice.Role }/>
+						<button type="submit" aria-current={ rolePreviewCurrent(choice.Current) }><strong>{ choice.Label }</strong><small>{ choice.Description }</small>
+							if choice.Current {
+								<small>Aktuell</small>
+							}
+						</button>
+					</form>
+				}
 			}
-			<small>15 Minuten · schreibgeschützt · wird protokolliert</small>
+			<div class="role-preview-disabled" aria-disabled="true"><strong>Bestimmte Person … (Supportansicht)</strong><small>nur Plattform-Admin</small></div>
+			<small class="role-preview-footnote">15 Minuten · schreibgeschützt · wird protokolliert</small>
 		</div>
 	</details>
 }
