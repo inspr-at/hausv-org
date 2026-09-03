@@ -37,6 +37,12 @@ const (
 	TenantBrandParking      = "parking"
 )
 
+// BreakAfterSlashes adds a safe line-break opportunity without allowing
+// labels to split arbitrarily in the middle of a word.
+func BreakAfterSlashes(label string) string {
+	return strings.ReplaceAll(label, "/", "/\u200b")
+}
+
 type NotificationEventOption struct {
 	Key         string
 	Label       string
@@ -264,6 +270,7 @@ type IssueView struct {
 	ResolutionConfirmed     bool
 	Priority                string
 	AssigneeEmail           string
+	AssigneeName            string
 	HasAssignee             bool
 	Location                string
 	LocationType            string
@@ -1268,6 +1275,17 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionEventDelete,
 		store.AuditActionContactSave,
 		store.AuditActionContactDelete,
+		store.AuditActionIssueAISuggest,
+		store.AuditActionIssueAIAccept,
+		store.AuditActionIssueAIEdit,
+		store.AuditActionIssueAIReject,
+		store.AuditActionIssueAIAuto,
+		store.AuditActionIssueAIRestore,
+		store.AuditActionIntakePhoneNote,
+		store.AuditActionIntakeAssign,
+		store.AuditActionVerwaltungSettings,
+		store.AuditActionRolePreviewStart,
+		store.AuditActionRolePreviewEnd,
 	} {
 		options = append(options, SelectOption{Value: action, Label: AuditActionLabel(action), Selected: selected == action})
 	}
@@ -1278,6 +1296,8 @@ func AuditActionLabel(action string) string {
 	switch store.NormalizeAuditAction(action) {
 	case store.AuditActionLogin:
 		return "Anmeldung"
+	case store.AuditActionContextSwitch:
+		return "Portal gewechselt"
 	case store.AuditActionInviteCreate:
 		return "Einladung angelegt"
 	case store.AuditActionInviteUpdate:
@@ -1332,6 +1352,12 @@ func AuditActionLabel(action string) string {
 		return "Monatsstatus geändert"
 	case store.AuditActionParkingReminder:
 		return "Zahlungserinnerung gesendet"
+	case store.AuditActionChargingSettings:
+		return "Ladeeinstellungen geändert"
+	case store.AuditActionChargingManual:
+		return "Ladevorgang manuell erfasst"
+	case store.AuditActionChargingSession:
+		return "Ladevorgang gespeichert"
 	case store.AuditActionIssueWorkflow:
 		return "Anliegen bearbeitet"
 	case store.AuditActionIssueEstimate:
@@ -1354,6 +1380,30 @@ func AuditActionLabel(action string) string {
 		return "Kontakt gespeichert"
 	case store.AuditActionContactDelete:
 		return "Kontakt deaktiviert"
+	case store.AuditActionEnergyOnboarding:
+		return "Energie-Einrichtung geändert"
+	case store.AuditActionEnergyMode:
+		return "Energiemodus geändert"
+	case store.AuditActionEnergyImport:
+		return "Smart-Meter-Daten importiert"
+	case store.AuditActionEnergyTarget:
+		return "Energieziel geändert"
+	case store.AuditActionEnergyRecommend:
+		return "Energieempfehlung aktualisiert"
+	case store.AuditActionEnergyMeasureAdd:
+		return "Energiemaßnahme angelegt"
+	case store.AuditActionEnergyMeasureEdit:
+		return "Energiemaßnahme geändert"
+	case store.AuditActionEnergyCaretaker:
+		return "Energiezugriff der Hausbetreuung geändert"
+	case store.AuditActionEnergyInvite:
+		return "Hausbetreuung zu Energie eingeladen"
+	case store.AuditActionEnergyMaintSave:
+		return "Wartungsplan gespeichert"
+	case store.AuditActionEnergyMaintDone:
+		return "Wartung abgeschlossen"
+	case store.AuditActionEnergyTariff:
+		return "Energietarif bewertet"
 	case store.AuditActionEnergyExport:
 		return "Energiedaten exportiert"
 	case store.AuditActionEnergyIdentity:
@@ -1378,8 +1428,34 @@ func AuditActionLabel(action string) string {
 		return "Belegzuordnung entfernt"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
+	case store.AuditActionIssueAISuggest:
+		return "KI-Vorschlag erstellt"
+	case store.AuditActionIssueAIAccept:
+		return "KI-Vorschlag freigegeben"
+	case store.AuditActionIssueAIEdit:
+		return "KI-Vorschlag geändert und freigegeben"
+	case store.AuditActionIssueAIReject:
+		return "KI-Vorschlag verworfen"
+	case store.AuditActionIssueAIAuto:
+		return "Automatisch erledigt"
+	case store.AuditActionIssueAIRestore:
+		return "Zurück in den Eingang"
+	case store.AuditActionIntakePhoneNote:
+		return "Telefonnotiz erfasst"
+	case store.AuditActionIntakeAssign:
+		return "Eingang zugeordnet"
+	case store.AuditActionVerwaltungSettings:
+		return "Verwaltungseinstellungen geändert"
+	case store.AuditActionDemoReset:
+		return "Demo zurückgesetzt"
+	case store.AuditActionTextbausteinChanged:
+		return "Textbaustein geändert"
+	case store.AuditActionRolePreviewStart:
+		return "Ansicht als Rolle gestartet"
+	case store.AuditActionRolePreviewEnd:
+		return "Ansicht als Rolle beendet"
 	default:
-		return action
+		return "Aktivität"
 	}
 }
 

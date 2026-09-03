@@ -78,6 +78,11 @@ var TableOrder = []string{
 	"telegram_state",
 	"telegram_links",
 	"telegram_link_codes",
+	// Organisation-scoped tables (HAUSV-600): keyed by org_key, no tenant_id,
+	// nothing points at them.
+	"org_settings",
+	"textbausteine",
+	"intake_items",
 	// Tenant-bound tables that depend only on tenant.
 	"house_memberships",
 	"annual_statement_cost_types",

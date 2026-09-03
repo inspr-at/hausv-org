@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/homeconnector"
 	"github.com/inspr-at/hausv-org/internal/server"
 )
@@ -71,6 +72,20 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "migrate-data" {
 		if err := runMigrateData(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
 			slog.Error("data migration did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "ai-triage" {
+		if err := ai.RunCLI(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("ai triage did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "demo-seed" {
+		if err := runDemoSeed(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("demo seed did not complete", "error", err)
 			os.Exit(1)
 		}
 		return

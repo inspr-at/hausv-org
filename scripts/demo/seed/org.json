@@ -1,0 +1,33 @@
+{
+  "assignees": [
+    {
+      "email": "vera.verwalter@musterstadt.example",
+      "key": "vera.verwalter",
+      "name": "Vera Verwalter"
+    },
+    {
+      "email": "paul.verwalter@musterstadt.example",
+      "key": "paul.sommer",
+      "name": "Paul Sommer"
+    }
+  ],
+  "auto_enabled": true,
+  "auto_threshold": 0.9,
+  "key": "musterstadt",
+  "name": "Hausverwaltung Musterstadt GmbH",
+  "trust_levels": {
+    "beleg": "auto",
+    "betriebskosten": "propose",
+    "freigabe": "propose",
+    "hausordnung": "propose",
+    "parkplatz": "propose",
+    "reparatur": "propose",
+    "schluessel": "propose",
+    "sonstiges": "propose",
+    "stammdaten": "propose",
+    "termin": "auto",
+    "uebergabe": "propose",
+    "versicherung": "propose",
+    "winterdienst_garten": "propose"
+  }
+}

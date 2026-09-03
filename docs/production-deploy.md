@@ -335,3 +335,109 @@ HAUSV_MAIL_DELIVERY_NOTICE=Accurate transactional mail disclosure
 
 These values are public legal disclosures, not secrets, but remain deployment
 configuration because they differ between self-hosted and managed instances.
+
+## Demo-Instanz
+
+`deploy/demo/` is a self-contained Docker Compose bundle for a **non-production
+demo**. It runs only the committed Musterstadt fixture data on port `8098` by
+default; do not use it for real homes, people, documents, or production data.
+
+From the repository root, prepare the two host-side configuration files and
+start the demo:
+
+```sh
+cp deploy/demo/demo.env.example deploy/demo/demo.env
+cp deploy/demo/secrets.env.example deploy/demo/secrets.env
+chmod 600 deploy/demo/secrets.env
+docker compose -f deploy/demo/docker-compose.yml up -d --build
+deploy/demo/seed.sh
+```
+
+**Anmeldung auf einem öffentlichen Host.** Für die Demo-Instanz setzt `demo.env`
+`DEMO_LOGIN_ENABLED=true`, und `secrets.env` trägt `DEMO_LOGIN_ACCESS_CODE`.
+Der Demo-Modus hat immer Vorrang vor `LOCAL_DEV_LOGIN`, auch bei einer
+localhost-`BASE_URL`; ohne richtigen Zugangscode wird daher nie ein Anmeldelink
+erzeugt.
+Das Anmeldeformular fragt dann zusätzlich nach dem Zugangscode und zeigt den
+Anmeldelink direkt an; ein falscher Code entwertet den Link. Das ist eine
+Vorführ-Hilfe für Fixture-Daten, keine Zugangskontrolle: den Host zusätzlich
+per Reverse-Proxy (Basic Auth oder IP-Liste) schützen und den Code nach dem
+Termin ändern.
+
+**Zurücksetzen aus dem Portal (HAUSV-613).** Auf einer Demo-Instanz
+(`DEMO_LOGIN_ENABLED=true` und `DEMO_SEED_DIR`, im Bundle `/seed`) zeigt
+Einstellungen einen Abschnitt „Demo“. „Demo zurücksetzen …“ verlangt das Wort
+ZURÜCKSETZEN plus eine zweite Bestätigung und spielt dann Anliegen,
+Organisationsdaten, Textbausteine, Ankündigungen und Termine aus dem Seed neu
+ein (Anker heute); Benutzer und Sitzungen bleiben. Ohne Demo-Modus antwortet die
+Route mit 404.
+
+`deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
+fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
+only its named data volume, starts it again, and seeds it. Confirm the running
+instance with `deploy/demo/verify.sh`.
+
+Organisationsadministratoren können die laufende Demo außerdem ohne Abmeldung
+unter `/<tenant>/app/verwaltung/einstellungen` im Abschnitt **Demo**
+zurücksetzen. Der Portal-Weg verlangt das Wort `ZURÜCKSETZEN` und eine zweite
+Bestätigung; anschließend werden die gebündelten Anliegen, Organisationsdaten,
+Ankündigungen und Termine mit dem heutigen Datum als Anker neu eingespielt.
+
+Auf dem Host bleiben die CLI-Wege für Wartung und vollständige Neuinitialisierung
+verfügbar. Der Compose-Projektname muss dabei ausdrücklich der Demo gehören:
+
+```sh
+COMPOSE_PROJECT_NAME=hausv-demo HAUSV_DEMO_SEED_ANCHOR=today deploy/demo/seed.sh
+COMPOSE_PROJECT_NAME=hausv-demo HAUSV_DEMO_SEED_ANCHOR=today deploy/demo/reset.sh
+```
+
+Put the OpenRouter API key only in `deploy/demo/secrets.env` as `AI_API_KEY`;
+that file is ignored by Git and must remain mode `600` on the Docker host. Set a
+separate, high-entropy `SESSION_KEY` there too. `demo.env` contains the committed
+fixture configuration and defaults to OpenRouter's inexpensive structured-output
+model.
+
+For a reverse proxy, point the upstream at `http://127.0.0.1:8098` (or the
+chosen `HAUSV_DEMO_PORT`) and set `BASE_URL` in `demo.env` to the public HTTPS
+URL before exposing it. Never expose the localhost dev-login flow as a
+production authentication mechanism.
+
+### Demo auf agm1 (hausv.agm.ng)
+
+The public demo runs on the Augmentoring host `agm1`. Ownership is split:
+
+- `agm-nixcfg` (module `agm-hausv-demo`) owns the declarative half: the agenix
+  file `agm1-hausv-demo-env` (`AI_API_KEY`, `SESSION_KEY`,
+  `DEMO_LOGIN_ACCESS_CODE`, mode `0440 root:users`), the Caddy vhost, the
+  registry entry in `hostnames.json` (DNS + aliases), `/srv/hausv-demo` and a
+  boot unit that runs `up -d` for the bundle. Rotating the access code is a
+  secret edit plus deploy there; the AGM-16 trigger restarts the bundle.
+- This repository owns the application half. The image is private and CI
+  never pushes it, so the code travels exactly like production: `git archive
+  HEAD` to the host, built there, run from `deploy/demo/`. Ship with
+
+  ```sh
+  HAUSV_DEMO_SSH_HOST=mba@<ip> HAUSV_DEMO_SSH_PORT=2222 HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy \
+  HAUSV_DEMO_BASE_URL=https://hausv.agm.ng \
+  HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env \
+  deploy/demo/deploy-remote.sh --seed
+  ```
+
+  It refuses a dirty tree, keeps every release in
+  `/srv/hausv-demo/releases/<sha>`, points `src` at the live one, rewrites
+  `demo.env` from the example with `BASE_URL`/`ROOT_DOMAIN` set, builds the
+  image as `hausv-demo:<sha>`, waits for `/healthz`, seeds when asked and
+  prints the rollback line. `HAUSV_DEMO_SECRETS_FILE` is the host-side path
+  that replaces `./secrets.env` in the compose `env_file` list;
+  `HAUSV_DEMO_SEED_ANCHOR=today` shifts the fixture dates to the deploy day.
+  The compose project is `hausv-demo`; a manual `seed.sh`/`reset.sh` on the
+  host needs `COMPOSE_PROJECT_NAME=hausv-demo` (or `HAUSV_DEMO_PROJECT`).
+- No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
+  and the data is disposable.
+- Proxy trust: with a public `BASE_URL` the app refuses to start without
+  `TRUSTED_PROXY_CIDRS`. The bundle pins its compose subnet
+  (`HAUSV_DEMO_SUBNET`, default `172.30.98.0/24`) so the proxy's source address
+  inside the container is the gateway `172.30.98.1`; the deploy script writes
+  that `/32` into `demo.env`. The Caddy vhost must send `X-Real-IP`, otherwise
+  every visitor shares one login rate-limit bucket. The container port binds to
+  `127.0.0.1` only; Docker-published ports bypass the host firewall.

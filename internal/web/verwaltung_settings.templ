@@ -1,0 +1,78 @@
+package web
+
+import "fmt"
+
+func VerwaltungSettingsPage(shell VerwaltungShell, data VerwaltungSettingsData) templ.Component {
+	return verwaltungSettingsPage(shell, data)
+}
+
+type VerwaltungSettingsCategory struct { Key, Label, Level string }
+
+type VerwaltungSettingsData struct {
+	Categories []VerwaltungSettingsCategory
+	Threshold int
+	AutoEnabled bool
+	ProviderLabel string
+	AIHost string
+	AIModel string
+	AITimeout string
+	AIProvider string
+	AIConfigured bool
+	AIBaseURLOverride string
+	AIModelOverride string
+	AITestResult string
+	AITestOK bool
+	DemoResetAvailable bool
+	Approved int
+	Edited int
+	Rejected int
+	Auto int
+	UnchangedShare int
+	Flash string
+}
+
+templ verwaltungSettingsPage(shell VerwaltungShell, data VerwaltungSettingsData) {
+	@PortalVerwaltungPage(shell, "Einstellungen", VerwaltungSettingsContent(data))
+}
+
+templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
+	<style>
+		.verwaltung-settings{min-width:0;display:grid;gap:var(--space-5)}.verwaltung-settings h1,.verwaltung-settings h2{margin:0;font-family:var(--font-serif);font-weight:550}.verwaltung-settings h1{font-size:34px}.verwaltung-settings h2{font-size:24px}.settings-form{min-width:0;display:grid;gap:var(--space-5)}.settings-card{min-width:0;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.settings-card p{margin:0}.trust-table{width:100%;border-collapse:collapse}.trust-table th,.trust-table td{padding:var(--space-3);border-bottom:1px solid var(--line);text-align:left;font-size:12px}.trust-table th{color:var(--muted);font-size:10px;text-transform:uppercase}.trust-choice,.provider-choice{display:flex;flex-wrap:wrap;gap:var(--space-3)}.trust-choice label,.provider-choice label{display:flex;align-items:center;gap:5px}.settings-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4);margin-top:var(--space-5)}.settings-options label,.ai-fields label{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.settings-input-group{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2)}.settings-input-group>span{color:var(--ink);font-size:12px;font-weight:650}.settings-options input[type=number],.ai-fields input{min-width:0;width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--radius-xs);font:inherit}.settings-options .check{display:flex;align-items:center}.ai-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.settings-note,.active-provider,.settings-balance>p{color:var(--muted);font-size:12px}.settings-result{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.settings-result[data-ok=true] .status-dot{background:var(--gold)}.status-dot{display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:var(--muted)}.settings-counters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-2)}.settings-counters div{min-width:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);text-align:center}.settings-counters strong{display:block;font-family:var(--font-serif);font-size:24px}.settings-counters span{display:block;overflow-wrap:anywhere;color:var(--muted);font-size:9px;text-transform:uppercase}.settings-actions{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}.settings-form>.settings-actions{justify-content:flex-end}.settings-save,.settings-secondary{display:inline-flex;min-height:42px;padding:0 var(--space-4);align-items:center;justify-content:center;border:1px solid var(--gold);border-radius:var(--radius-sm);font:inherit;font-weight:800;text-decoration:none}.settings-save{background:var(--gold);color:var(--panel)}.settings-secondary{background:transparent;color:var(--ink)}@media(max-width:760px){.trust-table thead{display:none}.trust-table,.trust-table tbody,.trust-table tr,.trust-table td{display:block}.trust-table tr{padding:var(--space-3) 0}.trust-table td{border:0;padding:4px 0}.settings-options,.ai-fields{grid-template-columns:minmax(0,1fr)}.settings-counters{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-card{padding:var(--space-4)}.settings-form>.settings-actions{display:grid}.settings-save{width:100%}}
+		.verwaltung-main:has(.verwaltung-settings)>.portal-section-header{display:none}.verwaltung-main:has(.verwaltung-settings)>.portal-section-content{padding-top:42px}
+	</style>
+	<section class="verwaltung-settings"><div><div class="eyebrow">Hausverwaltung · Automatisierung</div><h1>Einstellungen</h1></div>
+		if data.Flash != "" {
+			<p class="settings-card" role="status">{ data.Flash }</p>
+		}
+		<form class="settings-form" method="post">
+			<section class="settings-card"><h2>Automatisierung</h2><table class="trust-table"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>
+				for _, category := range data.Categories {
+					<tr><td><strong>{ category.Label }</strong></td><td><div class="trust-choice"><label><input type="radio" name={ "trust_" + category.Key } value="manual" checked?={ category.Level == "manual" }/> Manuell</label><label><input type="radio" name={ "trust_" + category.Key } value="propose" checked?={ category.Level == "propose" }/> Vorschlag</label><label><input type="radio" name={ "trust_" + category.Key } value="auto" checked?={ category.Level == "auto" }/> Automatisch</label></div></td></tr>
+				}
+			</tbody></table>
+				<div class="settings-options"><label>Schwellwert für Automatisch<span class="settings-input-group"><input type="number" name="threshold" min="50" max="100" value={ fmt.Sprint(data.Threshold) }/><span>Prozent</span></span></label><label class="check"><input type="checkbox" name="auto_enabled" value="1" checked?={ data.AutoEnabled }/> Automatisch erledigen aktiv</label></div>
+			</section>
+			<section class="settings-card settings-balance"><h2>Bilanz seit Start</h2><p>„Ohne Änderung freigegeben“ zeigt den Anteil der freigegebenen KI-Vorschläge, deren Text unverändert übernommen wurde.</p><div class="settings-counters"><div><strong>{ fmt.Sprint(data.Approved) }</strong><span>freigegeben</span></div><div><strong>{ fmt.Sprint(data.Edited) }</strong><span>geändert</span></div><div><strong>{ fmt.Sprint(data.Rejected) }</strong><span>verworfen</span></div><div><strong>{ fmt.Sprint(data.Auto) }</strong><span>automatisch</span></div><div><strong>{ fmt.Sprintf("%d %%", data.UnchangedShare) }</strong><span>ohne Änderung freigegeben</span></div></div></section>
+			<section class="settings-card"><h2>KI-Anbieter</h2>
+				if data.AIConfigured {
+					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · { data.AIModel } · Zeitlimit { data.AITimeout }</p>
+				} else {
+					<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein KI-Anbieter konfiguriert</strong></p>
+				}
+				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
+				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer = Umgebung"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer = Umgebung"/></label></div>
+				<p class="settings-note">„Umgebung“ verwendet die Konfiguration des Betriebs. Der lokale Betrieb ist vorbereitet, läuft aber noch nicht.</p>
+			</section>
+			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
+		</form>
+		<form class="settings-card" method="post" action="/app/verwaltung/einstellungen/ki-test"><h2>KI-Verbindung</h2><p>Prüft die aktive Konfiguration mit einer kurzen, synthetischen Anfrage.</p>
+			if data.AITestResult != "" {
+				<p class="settings-result" role="status" data-ok={ fmt.Sprint(data.AITestOK) }><span class="status-dot"></span>{ data.AITestResult }</p>
+			}
+			<div class="settings-actions"><button class="settings-secondary" type="submit">Verbindung testen</button></div>
+		</form>
+		if data.DemoResetAvailable {
+			<section class="settings-card"><h2>Demo</h2><p>Spielt die gebündelten Demo-Daten mit dem heutigen Datum neu ein.</p><div class="settings-actions"><a class="settings-secondary" href="/app/verwaltung/einstellungen/demo">Demo zurücksetzen …</a></div></section>
+		}
+	</section>
+}

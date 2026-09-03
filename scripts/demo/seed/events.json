@@ -1,0 +1,326 @@
+[
+  {
+    "id": "ev-001",
+    "house": "janusbergweg-123",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-07T09:00:00+02:00",
+    "ends_at": "2026-09-07T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-002",
+    "house": "janusbergweg-123",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-11T13:00:00+02:00",
+    "ends_at": "2026-09-11T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-003",
+    "house": "janusbergweg-123",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-15T17:00:00+02:00",
+    "ends_at": "2026-09-15T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-004",
+    "house": "grazbachgasse-14",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-08T09:00:00+02:00",
+    "ends_at": "2026-09-08T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-005",
+    "house": "grazbachgasse-14",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-12T13:00:00+02:00",
+    "ends_at": "2026-09-12T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-006",
+    "house": "grazbachgasse-14",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-16T17:00:00+02:00",
+    "ends_at": "2026-09-16T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-007",
+    "house": "annenstrasse-71",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-09T09:00:00+02:00",
+    "ends_at": "2026-09-09T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-008",
+    "house": "annenstrasse-71",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-13T13:00:00+02:00",
+    "ends_at": "2026-09-13T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-009",
+    "house": "annenstrasse-71",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-17T17:00:00+02:00",
+    "ends_at": "2026-09-17T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-010",
+    "house": "muenzgrabenstrasse-9",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-10T09:00:00+02:00",
+    "ends_at": "2026-09-10T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-011",
+    "house": "muenzgrabenstrasse-9",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-14T13:00:00+02:00",
+    "ends_at": "2026-09-14T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-012",
+    "house": "muenzgrabenstrasse-9",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-18T17:00:00+02:00",
+    "ends_at": "2026-09-18T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-013",
+    "house": "schoergelgasse-25",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-11T09:00:00+02:00",
+    "ends_at": "2026-09-11T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-014",
+    "house": "schoergelgasse-25",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-15T13:00:00+02:00",
+    "ends_at": "2026-09-15T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-015",
+    "house": "schoergelgasse-25",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-07T17:00:00+02:00",
+    "ends_at": "2026-09-07T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-016",
+    "house": "leonhardstrasse-3",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-12T09:00:00+02:00",
+    "ends_at": "2026-09-12T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-017",
+    "house": "leonhardstrasse-3",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-16T13:00:00+02:00",
+    "ends_at": "2026-09-16T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-018",
+    "house": "leonhardstrasse-3",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-08T17:00:00+02:00",
+    "ends_at": "2026-09-08T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-019",
+    "house": "koerblergasse-40",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-13T09:00:00+02:00",
+    "ends_at": "2026-09-13T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-020",
+    "house": "koerblergasse-40",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-17T13:00:00+02:00",
+    "ends_at": "2026-09-17T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-021",
+    "house": "koerblergasse-40",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-09T17:00:00+02:00",
+    "ends_at": "2026-09-09T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-022",
+    "house": "elisabethstrasse-12",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-14T09:00:00+02:00",
+    "ends_at": "2026-09-14T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-023",
+    "house": "elisabethstrasse-12",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-18T13:00:00+02:00",
+    "ends_at": "2026-09-18T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-024",
+    "house": "elisabethstrasse-12",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-10T17:00:00+02:00",
+    "ends_at": "2026-09-10T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-025",
+    "house": "sparbersbachgasse-58",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-15T09:00:00+02:00",
+    "ends_at": "2026-09-15T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-026",
+    "house": "sparbersbachgasse-58",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-07T13:00:00+02:00",
+    "ends_at": "2026-09-07T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-027",
+    "house": "sparbersbachgasse-58",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-11T17:00:00+02:00",
+    "ends_at": "2026-09-11T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-028",
+    "house": "mariatroster-strasse-101",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-16T09:00:00+02:00",
+    "ends_at": "2026-09-16T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-029",
+    "house": "mariatroster-strasse-101",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-08T13:00:00+02:00",
+    "ends_at": "2026-09-08T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-030",
+    "house": "mariatroster-strasse-101",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-12T17:00:00+02:00",
+    "ends_at": "2026-09-12T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-031",
+    "house": "petersgasse-7",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-17T09:00:00+02:00",
+    "ends_at": "2026-09-17T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-032",
+    "house": "petersgasse-7",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-09T13:00:00+02:00",
+    "ends_at": "2026-09-09T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-033",
+    "house": "petersgasse-7",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-13T17:00:00+02:00",
+    "ends_at": "2026-09-13T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-034",
+    "house": "kaiserfeldgasse-19",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-18T09:00:00+02:00",
+    "ends_at": "2026-09-18T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-035",
+    "house": "kaiserfeldgasse-19",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-10T13:00:00+02:00",
+    "ends_at": "2026-09-10T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+  },
+  {
+    "id": "ev-036",
+    "house": "kaiserfeldgasse-19",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-14T17:00:00+02:00",
+    "ends_at": "2026-09-14T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+  }
+]

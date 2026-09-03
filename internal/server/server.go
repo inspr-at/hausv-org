@@ -26,10 +26,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/auth"
 	"github.com/inspr-at/hausv-org/internal/authz"
 	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/demo"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
 	appmail "github.com/inspr-at/hausv-org/internal/mail"
@@ -243,6 +245,7 @@ var parseAllowed = config.ParseAllowed
 var parseBool = config.ParseBool
 var parseDuration = config.ParseDuration
 var parseHistoryStart = config.ParseHistoryStart
+var parseOrganisations = config.ParseOrganisations
 var parseTenants = config.ParseTenants
 var parseUserProfiles = config.ParseUserProfiles
 var sessionSecret = config.SessionSecret
@@ -744,12 +747,16 @@ type app struct {
 	rootDomain              string
 	defaultTenant           string
 	tenants                 map[string]tenantConfig
+	organisations           map[string]config.OrganisationConfig
 	tenantIdentities        map[string]store.TenantIdentity
 	sessionSecure           bool
 	allowed                 map[string]struct{}
 	admins                  map[string]struct{}
 	profiles                map[string]userProfile
 	localDevLogin           bool
+	demoLogin               bool
+	demoLoginCode           string
+	demoReset               func(context.Context, time.Time, io.Writer) (demo.SeedResult, error)
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
 	sessionTTL              time.Duration
@@ -821,6 +828,17 @@ type app struct {
 	mapPreviewTiles          map[string]map[mapTileKey]time.Time
 
 	annualStatementReceiptSuggester annualStatementReceiptSuggester
+
+	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
+	intake        func(orgKey string) store.IntakeRepository
+	orgSettings   func(orgKey string) store.OrgSettingsRepository
+	textbausteine func(orgKey string) store.TextbausteinRepository
+	triage        ai.TriageSuggester
+	// Suggestion jobs are intentionally process-local. Production runs one app
+	// replica, so cancellation and polling share this single in-memory table.
+	inboxSuggestTimeout time.Duration
+	suggestJobsMu       sync.Mutex
+	suggestJobs         map[string]*suggestJob
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -1044,6 +1062,25 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
 	mux.HandleFunc("POST /app/context", a.action(a.switchPortalContext))
+	mux.HandleFunc("GET /app/verwaltung", a.page(a.requireVerwaltung(a.portfolioPage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang", a.page(a.requireVerwaltung(a.inboxPage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}", a.page(a.requireVerwaltung(a.inboxCasePage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}/vorschlag", a.page(a.requireVerwaltung(a.inboxSuggestionPartial)))
+	mux.HandleFunc("POST /app/verwaltung/posteingang/{id}", a.action(a.requireVerwaltung(a.inboxCaseAction)))
+	mux.HandleFunc("POST /app/verwaltung/telefonnotiz", a.action(a.requireVerwaltung(a.phoneNoteAction)))
+	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen", a.action(a.requireVerwaltung(a.verwaltungSettingsAction)))
+	mux.HandleFunc("GET /app/verwaltung/rechte", a.page(a.requireVerwaltung(a.rechtePage)))
+	mux.HandleFunc("GET /app/verwaltung/einstellungen/demo", a.page(a.requireVerwaltung(a.verwaltungDemoResetPage)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/demo", a.action(a.requireVerwaltung(a.verwaltungDemoResetAction)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/ki-test", a.action(a.requireVerwaltung(a.verwaltungAITestAction)))
+	mux.HandleFunc("GET /app/verwaltung/textbausteine", a.page(a.requireVerwaltung(a.textbausteinListPage)))
+	mux.HandleFunc("GET /app/verwaltung/textbausteine/{key}", a.page(a.requireVerwaltung(a.textbausteinFormPage)))
+	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}", a.action(a.requireVerwaltung(a.textbausteinSaveAction)))
+	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}/deaktivieren", a.action(a.requireVerwaltung(a.textbausteinDeactivateAction)))
+	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}/aktivieren", a.action(a.requireVerwaltung(a.textbausteinActivateAction)))
+	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
+	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
 	mux.HandleFunc("POST /app/hilfe/connector/pairing", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/revoke", a.action(a.revokeAppHomeConnector))
@@ -1458,6 +1495,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	organisations, err := parseOrganisations(env("WEG_ORGANISATIONS_JSON", ""))
+	if err != nil {
+		return nil, err
+	}
 	if err := config.ApplyHomeAssistantConnectors(env("HA_CONNECTORS_JSON", ""), tenants); err != nil {
 		return nil, err
 	}
@@ -1466,6 +1507,19 @@ func newApp() (*app, error) {
 		return nil, err
 	}
 	localDevLogin := parseBool(env("LOCAL_DEV_LOGIN", "false")) && isLocalHost(parsed.Hostname())
+	// Demo login (HAUSV-609): a fixture-only instance on a public host may render the
+	// magic link inline when the visitor knows the shared access code. Never enable
+	// this on an instance that holds real data.
+	demoLoginCode := strings.TrimSpace(env("DEMO_LOGIN_ACCESS_CODE", ""))
+	demoLoginEnabled := parseBool(env("DEMO_LOGIN_ENABLED", "false"))
+	demoLogin := demoLoginEnabled && demoLoginCode != ""
+	if demoLoginEnabled && localDevLogin {
+		logInfo("demo login takes precedence over LOCAL_DEV_LOGIN")
+		localDevLogin = false
+	}
+	if demoLogin {
+		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
+	}
 
 	mailTransport := appmail.NewSMTP(
 		env("SMTP_HOST", ""),
@@ -1490,8 +1544,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
-	if publicURL && !mailTransport.Configured() && !oidcLogin.Configured() {
-		return nil, fmt.Errorf("SMTP or OIDC login is required when BASE_URL is public")
+	// The demo login (HAUSV-609) is the third public login path: fixture-only
+	// instances behind an access code, never real data.
+	if publicURL && !mailTransport.Configured() && !oidcLogin.Configured() && !demoLogin {
+		return nil, fmt.Errorf("SMTP, OIDC or demo login is required when BASE_URL is public")
 	}
 
 	announcementDataPath := env("ANNOUNCE_DATA_PATH", "tmp/announcements.json")
@@ -1614,6 +1670,10 @@ func newApp() (*app, error) {
 	sessionTTL, err := parseDuration(env("SESSION_TTL", "720h"))
 	if err != nil || sessionTTL <= 0 {
 		return nil, fmt.Errorf("invalid SESSION_TTL")
+	}
+	inboxSuggestTimeout, err := parseDuration(env("AI_TIMEOUT", "45s"))
+	if err != nil || inboxSuggestTimeout <= 0 {
+		return nil, fmt.Errorf("invalid AI_TIMEOUT")
 	}
 	chargingTickInterval, err := parseDuration(env("CHARGING_TICK_INTERVAL", "30s"))
 	if err != nil {
@@ -1851,18 +1911,21 @@ func newApp() (*app, error) {
 	}
 	var filer protocolFiler = sqlFiler
 
-	return &app{
+	a := &app{
 		baseURL:                  baseURL,
 		addr:                     env("ADDR", ":8080"),
 		rootDomain:               rootDomain,
 		defaultTenant:            defaultTenant,
 		tenants:                  tenants,
+		organisations:            organisations,
 		tenantIdentities:         tenantIdentities,
 		sessionSecure:            parsed.Scheme == "https",
 		allowed:                  allowed,
 		admins:                   admins,
 		profiles:                 profiles,
 		localDevLogin:            localDevLogin,
+		demoLogin:                demoLogin,
+		demoLoginCode:            demoLoginCode,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
 		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
 		sessionTTL:               sessionTTL,
@@ -1920,6 +1983,8 @@ func newApp() (*app, error) {
 		mapTileBaseURL:           env("MAP_TILE_BASE_URL", ""),
 		geocoder:                 newNominatimGeocoder(env("GEOCODING_BASE_URL", "")),
 		mapPreviewTiles:          map[string]map[mapTileKey]time.Time{},
+		inboxSuggestTimeout:      inboxSuggestTimeout,
+		suggestJobs:              map[string]*suggestJob{},
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,
@@ -1934,7 +1999,26 @@ func newApp() (*app, error) {
 		telegram:            telegram.New(env("TELEGRAM_API_BASE_URL", ""), env("TELEGRAM_BOT_TOKEN", "")),
 		telegramStore:       telegramBackend,
 		telegramPollTimeout: telegramPollTimeout,
-	}, nil
+	}
+	a.intake = func(orgKey string) store.IntakeRepository { return store.BindIntakeRepository(database, orgKey) }
+	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
+		return store.BindOrgSettingsRepository(database, orgKey)
+	}
+	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
+		return store.BindTextbausteinRepository(database, orgKey)
+	}
+	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
+		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
+			return demo.Load(ctx, database, seedDir, demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor})
+		}
+	}
+	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
+		logError("ai triage provider not configured", err)
+	} else if suggester != nil {
+		a.triage = suggester
+		logInfo("ai triage provider configured", "label", suggester.Label())
+	}
+	return a, nil
 }
 
 // serviceProviderAccessEnabled is the runtime launch gate for external
@@ -2465,6 +2549,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		energy = web.PortalEnergy{}
 	}
 	portalIssues := issueViewsForActor(tenant.Slug, signals.openIssues, role, email)
+	for i := range portalIssues {
+		portalIssues[i].AssigneeName = portalIssues[i].AssigneeEmail
+		if profile, ok := a.directoryProfile(portalIssues[i].AssigneeEmail); ok {
+			portalIssues[i].AssigneeName = profile.DisplayName()
+		}
+	}
 	portalEvents := eventViews(signals.events, now)
 	portalAnnouncements := announcementViewsWithReadState(signals.announcements, now, false, lastSeen)
 	// HAUSV-527: density follows content as well as role. An empty house gives a
@@ -2472,6 +2562,11 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// empty cards, which reads worse than the calm one and loses the reassurance
 	// the old page carried. Calm for everyone when nothing is waiting.
 	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
+	_, showInboxNav := a.organisationFor(&ac)
+	inboxOpenCount := 0
+	if showInboxNav {
+		inboxOpenCount = a.inboxOpenCount(&ac)
+	}
 
 	a.renderPortalTempl(w, r, web.PortalPageData{
 		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
@@ -2483,7 +2578,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		BrandIcon:              tenant.BrandIcon,
 		BrandMarkSVG:           tenantBrandMarkSVG(tenant.BrandIcon),
 		Map:                    portalMapForTenant(tenant),
-		GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		GreetingName:           rolePreviewGreetingName(&ac, firstNonEmpty(profile.FirstName, profile.DisplayName())),
 		Today:                  germanDateLong(now.In(time.Local)),
 		DisplayName:            profile.DisplayName(),
 		Initials:               profile.Initials(),
@@ -2499,6 +2594,12 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		CanManageHandovers:     canManagePortalHandovers,
 		CanManageUsers:         canManagePortalUsers,
 		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		ShowVerwaltungNav:      a.showVerwaltungNav(ac),
+		ShowInboxNav:           showInboxNav,
+		InboxOpenCount:         inboxOpenCount,
+		RolePreview:            rolePreviewPortalData(&ac),
+		RolePreviewChoices:     a.rolePreviewChoices(&ac),
+		Flash:                  rolePreviewFlash(r),
 		HomeIdentity:           a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		HasPrimary:             hasPrimary,
 		Primary:                primary,
@@ -2512,6 +2613,13 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Contexts:               portalContexts,
 		ReleaseNotes:           version.Notes(),
 	})
+}
+
+func rolePreviewFlash(r *http.Request) string {
+	if r != nil && r.URL.Query().Get("flash") == "Wird gebaut" {
+		return "Wird gebaut"
+	}
+	return ""
 }
 
 func (a *app) renderPortalTempl(w http.ResponseWriter, r *http.Request, data web.PortalPageData) {
@@ -6074,7 +6182,7 @@ func (a *app) isConfirmedHomePortalOwner(email string, tenantSlug string) bool {
 }
 
 func (a *app) emailLoginAvailable() bool {
-	return a.mailer.Configured() || a.localDevLogin
+	return a.mailer.Configured() || a.localDevLogin || a.demoLogin
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {

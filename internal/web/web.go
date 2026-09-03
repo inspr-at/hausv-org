@@ -281,6 +281,7 @@ const PageTemplates = `
             <form method="post" action="/auth/request">
               <label for="email">E-Mail-Adresse</label>
               <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
+              {{if .DemoLoginEnabled}}<label for="access-code">Zugangscode</label><input id="access-code" name="access_code" type="password" autocomplete="off" required placeholder="Zugangscode der Demo">{{end}}
               <button type="submit">Anmeldelink senden</button>
             </form>
             <p class="foot-note">15 Minuten gültig · nur für eingeladene Personen</p>
@@ -289,11 +290,13 @@ const PageTemplates = `
           {{end}}
           {{if and .EmailLoginAvailable .OIDCConfigured (not .Sent)}}</details>{{end}}
           {{if and .Sent .EmailLoginAvailable}}
+            {{if .DemoCodeWrong}}<div class="notice">Der Zugangscode war falsch. Bitte noch einmal versuchen.</div>{{end}}
             <details class="login-retry">
               <summary>Andere Adresse verwenden</summary>
               <form method="post" action="/auth/request">
                 <label for="email-retry">E-Mail-Adresse</label>
                 <input id="email-retry" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="name@example.com">
+                {{if .DemoLoginEnabled}}<label for="access-code-retry">Zugangscode</label><input id="access-code-retry" name="access_code" type="password" autocomplete="off" required placeholder="Zugangscode der Demo">{{end}}
                 <button type="submit">Neuen Link senden</button>
               </form>
               <p class="foot-note">Nur für eingeladene Personen</p>

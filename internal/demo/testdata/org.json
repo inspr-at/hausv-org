@@ -1,0 +1,1 @@
+{"key":"musterstadt","name":"Hausverwaltung Musterstadt GmbH","trust_levels":{"beleg":"auto","termin":"auto","reparatur":"propose"},"auto_threshold":0.9,"auto_enabled":true,"assignees":[{"key":"vera","email":"vera@example.com","name":"Vera Verwalter"}]}

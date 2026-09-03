@@ -56,6 +56,12 @@ type PortalPageData struct {
 	Areas                                             []PortalArea
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
+	ShowVerwaltungNav                                 bool
+	ShowInboxNav                                      bool
+	InboxOpenCount                                    int
+	RolePreview                                       *RolePreviewState
+	RolePreviewChoices                                []RolePreviewChoice
+	Flash                                             string
 }
 
 type PortalSectionIdentityData struct {
@@ -83,6 +89,9 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
 			}
 			@PortalBaseStyles()
+			<style>
+				@media(max-width:400px){.verwaltung-mobile-head .mobile-identity strong{display:-webkit-box;overflow:hidden;font-size:18px;line-height:1.05;text-overflow:clip;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}.verwaltung-mobile-head .mobile-identity small{margin-top:2px}}
+			</style>
 			@styles
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
 		</head>
@@ -114,6 +123,12 @@ templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, s
 	>
 		if status != nil {
 			@status
+		}
+		if data.Portal.Flash != "" {
+			<div class="portal-flash" role="status">{ data.Portal.Flash }</div>
+		}
+		if data.Portal.RolePreview != nil {
+			@RolePreviewBand(*data.Portal.RolePreview)
 		}
 		if data.Hero {
 			@PortalSectionHero(data.Portal, PortalSectionHeader(data.Identity, title, lede, action))
@@ -264,7 +279,17 @@ templ PortalSidebar(data PortalPageData) {
 			</div>
 		</header>
 		@PortalNavigation(data, true)
-		<footer class="account"><span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
+		<footer class="account">
+			if len(data.RolePreviewChoices) > 0 {
+				@RolePreviewChooser("role-preview-desktop", data.RolePreviewChoices) {
+					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span class="role-preview-trigger-copy"><strong>{ data.DisplayName }</strong><small>{ data.Role }</small><small class="role-preview-trigger-label">Ansicht als ›</small></span>
+				}
+				<span class="account-release">@PortalReleaseNotes(data)</span>
+			} else {
+				<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
+			}
+			<form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form>
+		</footer>
 	</aside>
 }
 
@@ -274,6 +299,14 @@ templ PortalSidebar(data PortalPageData) {
 
 templ PortalNavigation(data PortalPageData, icons bool) {
 	<nav class="nav" aria-label="Bereiche" { portalNavAttrs(icons)... }>
+		if data.ShowVerwaltungNav {
+			<span class="nav-organisation">
+				@PortalNavItem("home", "Portfolio", "/app/verwaltung", false, 0, icons)
+				if data.ShowInboxNav {
+					@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, data.InboxOpenCount, icons)
+				}
+			</span>
+		}
 		if data.CanUseResidentAreas {
 			@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 		}
@@ -333,6 +366,11 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
 		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel }</small></a>
+		if len(data.RolePreviewChoices) > 0 {
+			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
+				<span class="role-preview-mobile-badge">Ansicht</span>
+			}
+		}
 		if data.CanUseResidentAreas {
 			<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 		} else {
@@ -545,7 +583,7 @@ templ DenseIssues(data PortalPageData) {
 		if len(data.Issues) > 0 {
 			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Alter</th><th>Zuständig</th></tr></thead><tbody>
 				for _, issue := range data.Issues {
-					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td>{ issue.AssigneeEmail }</td></tr>
+					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
 				}
 			</tbody></table>
 		}

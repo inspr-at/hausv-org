@@ -1,0 +1,102 @@
+package web
+
+import (
+	"strings"
+
+	"github.com/inspr-at/hausv-org/internal/authz"
+)
+
+func RechtePage(shell VerwaltungShell) templ.Component {
+	return rechtePage(shell)
+}
+
+func rechteMatrixCell(familyKey, areaKey string) authz.MatrixCell {
+	for _, cell := range authz.RoleMatrix {
+		if cell.FamilyKey == familyKey && cell.AreaKey == areaKey {
+			return cell
+		}
+	}
+	return authz.MatrixCell{FamilyKey: familyKey, AreaKey: areaKey}
+}
+
+func rechteRoleLabels(roles []string) string {
+	return strings.Join(roles, " · ")
+}
+
+func rechteGrantTitle(grant authz.MatrixGrant) string {
+	parts := make([]string, 0, 2)
+	if grant.Capability != "" {
+		parts = append(parts, "Capability: "+string(grant.Capability))
+	} else {
+		parts = append(parts, "Produktregel ohne eigene Capability")
+	}
+	if strings.TrimSpace(grant.Note) != "" {
+		parts = append(parts, grant.Note)
+	}
+	return strings.Join(parts, " · ")
+}
+
+templ rechtePage(shell VerwaltungShell) {
+	@PortalVerwaltungPage(shell, "Rechte", RechteContent())
+}
+
+templ RechteContent() {
+	<style>
+		.rechte-page{display:grid;gap:var(--space-5);max-width:1180px}.rechte-intro{display:grid;gap:var(--space-2);max-width:78ch;color:var(--muted);font-size:13px;line-height:1.55}.rechte-intro strong{color:var(--ink)}.rechte-panel{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.rechte-table-wrap{overflow-x:auto}.rechte-table{width:100%;min-width:760px;border-collapse:collapse}.rechte-table th,.rechte-table td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.rechte-table tbody tr:last-child td{border-bottom:0}.rechte-table th{background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.rechte-family{width:190px}.rechte-family strong{display:block;font-size:13px}.rechte-family small,.rechte-note{display:block;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.4}.rechte-area{width:190px;font-size:13px;font-weight:800}.rechte-actions{display:flex;flex-wrap:wrap;gap:var(--space-1)}.rechte-chip{display:inline-flex;min-height:24px;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:800;white-space:nowrap}.rechte-empty{color:var(--soft);font-size:12px}.rechte-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}.rechte-legend p{display:grid;grid-template-columns:8px minmax(0,1fr);gap:var(--space-2);align-items:start;color:var(--muted);font-size:11px;line-height:1.45}.rechte-dot{width:8px;height:8px;margin-top:4px;border:1px solid var(--gold);border-radius:var(--radius-pill);background:var(--panel)}.rechte-dot.explicit{border-color:var(--muted)}.rechte-special{display:grid;gap:var(--space-3)}.rechte-special h2{font-size:25px}.rechte-special>p{color:var(--muted);font-size:12px}.rechte-special-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.rechte-special-card{display:grid;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-special-card header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-2)}.rechte-special-card h3{font-size:17px}.rechte-special-card header span,.rechte-special-card p{color:var(--muted);font-size:11px;line-height:1.45}@media(max-width:760px){.rechte-page{gap:var(--space-4)}.rechte-panel{margin-inline:calc(var(--space-1)*-1)}.rechte-table th,.rechte-table td{padding:var(--space-3)}.rechte-legend,.rechte-special-grid{grid-template-columns:minmax(0,1fr)}}
+	</style>
+	<section class="rechte-page" aria-labelledby="rechte-matrix-title">
+		<div class="rechte-intro">
+			<p id="rechte-matrix-title"><strong>Wer darf was?</strong> Die Übersicht bündelt die internen Rollen in drei verständliche Familien. Ein leerer Eintrag bedeutet: Diese Aktion ist für die Rollenfamilie nicht freigegeben.</p>
+			<p>Die Tabelle erklärt bestehende Rechte. Technische Prüfungen erfolgen weiterhin mandantengebunden in der Autorisierung und nicht anhand dieser Darstellung.</p>
+		</div>
+		<section class="rechte-panel" aria-label="Rechtematrix der Rollenfamilien">
+			<div class="rechte-table-wrap">
+				<table class="rechte-table">
+					<thead><tr><th scope="col">Familie</th><th scope="col">Bereich</th><th scope="col">Erlaubte Aktionen</th></tr></thead>
+					<tbody>
+						for _, family := range authz.RoleFamilies {
+							for _, area := range authz.RoleAreas {
+								{{ cell := rechteMatrixCell(family.Key, area.Key) }}
+								<tr data-family={ family.Key } data-area={ area.Key }>
+									<td class="rechte-family"><strong>{ family.Label }</strong><small>{ rechteRoleLabels(family.Roles) }</small></td>
+									<td class="rechte-area">{ area.Label }</td>
+									<td>
+										if len(cell.Grants) > 0 {
+											<div class="rechte-actions">
+												for _, grant := range cell.Grants {
+													<span class="rechte-chip" title={ rechteGrantTitle(grant) }>{ string(grant.Action) }</span>
+												}
+											</div>
+										} else {
+											<span class="rechte-empty" aria-label="keine Aktion">—</span>
+										}
+										if cell.Note != "" {
+											<small class="rechte-note">{ cell.Note }</small>
+										}
+									</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+			<div class="rechte-legend" aria-label="Legende">
+				<p><span class="rechte-dot" aria-hidden="true"></span><span><strong>Capability-gestützt:</strong> Die Freigabe folgt direkt aus der zentralen Autorisierung.</span></p>
+				<p><span class="rechte-dot explicit" aria-hidden="true"></span><span><strong>Produktregel:</strong> Für diesen Lese- oder Eigenbereich gibt es noch keine eigene Capability; die bestehende Mandanten-, Zuordnungs- oder Routenprüfung bleibt maßgeblich.</span></p>
+			</div>
+		</section>
+		<section class="rechte-special" aria-labelledby="rechte-special-title">
+			<h2 id="rechte-special-title">Sonderrollen</h2>
+			<p>Diese Zugriffe gehören keiner Rollenfamilie an und bleiben bewusst eng auf Auftrag oder Freigabe begrenzt.</p>
+			<div class="rechte-special-grid">
+				for _, special := range authz.MatrixSpecialRoles {
+					<article class="rechte-special-card"><header><h3>{ special.Label }</h3><span>{ special.Area }</span></header><div class="rechte-actions">
+						for _, action := range special.Actions {
+							<span class="rechte-chip">{ string(action) }</span>
+						}
+					</div><p>{ special.Scope }</p></article>
+				}
+			</div>
+		</section>
+	</section>
+}

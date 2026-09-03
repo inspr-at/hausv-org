@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"net/mail"
@@ -49,6 +50,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"Denied":              r.URL.Query().Get("denied") == "1",
 		"OIDCConfigured":      a.oidc.Configured(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
+		"DemoLoginEnabled":    a.demoLogin,
 		"MapURL":              tenantMapURL(tenant.Address),
 		"LocationMap":         publicMapForTenant(tenant),
 		"HomeCopy":            copy,
@@ -137,6 +139,14 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
+	if a.demoLogin {
+		code := strings.TrimSpace(r.FormValue("access_code"))
+		if code == "" || subtle.ConstantTimeCompare([]byte(code), []byte(a.demoLoginCode)) != 1 {
+			logWarn("demo login: wrong access code", "tenant", tenant.Slug)
+			a.renderDemoCodeWrong(w, tenant)
+			return
+		}
+	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
@@ -159,7 +169,8 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	a.tokens.Put(token, email, tenant.Slug, 15*time.Minute)
 
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	if a.localDevLogin && !a.mailer.Configured() {
+	devLink := (a.localDevLogin || a.demoLogin) && !a.mailer.Configured()
+	if devLink {
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
 			"Title":               tenant.Address + " · Hausportal",
@@ -170,6 +181,8 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 			"Expired":             false,
 			"MailConfigured":      false,
 			"DevLoginLink":        link,
+			"DemoLoginEnabled":    a.demoLogin,
+			"DemoCodeWrong":       false,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),
@@ -196,6 +209,28 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
+}
+
+func (a *app) renderDemoCodeWrong(w http.ResponseWriter, tenant tenantConfig) {
+	copy := a.publicHomeCopy(tenant.Slug)
+	a.render(w, "home", map[string]any{
+		"Title":               tenant.Address + " · Hausportal",
+		"Tenant":              tenant,
+		"HouseName":           houseDisplayName(tenant),
+		"Email":               "",
+		"Sent":                true,
+		"Expired":             false,
+		"MailConfigured":      false,
+		"DevLoginLink":        "",
+		"DemoLoginEnabled":    true,
+		"DemoCodeWrong":       true,
+		"Denied":              false,
+		"OIDCConfigured":      a.oidc.Configured(),
+		"EmailLoginAvailable": a.emailLoginAvailable(),
+		"MapURL":              tenantMapURL(tenant.Address),
+		"LocationMap":         publicMapForTenant(tenant),
+		"HomeCopy":            copy,
+	})
 }
 
 func (a *app) publicHomeCopy(tenantSlug string) publicHomeCopy {
@@ -584,6 +619,9 @@ func (a *app) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, err := r.Cookie("weg_session"); err == nil {
+		if session, ok := a.sessions.GetSession(c.Value); ok && session.PreviewRole != "" {
+			a.recordRolePreviewEnd(session, "logout")
+		}
 		a.sessions.Delete(c.Value)
 	}
 	http.SetCookie(w, &http.Cookie{
