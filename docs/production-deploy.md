@@ -410,3 +410,10 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   `HAUSV_DEMO_SEED_ANCHOR=today` shifts the fixture dates to the deploy day.
 - No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
   and the data is disposable.
+- Proxy trust: with a public `BASE_URL` the app refuses to start without
+  `TRUSTED_PROXY_CIDRS`. The bundle pins its compose subnet
+  (`HAUSV_DEMO_SUBNET`, default `172.30.98.0/24`) so the proxy's source address
+  inside the container is the gateway `172.30.98.1`; the deploy script writes
+  that `/32` into `demo.env`. The Caddy vhost must send `X-Real-IP`, otherwise
+  every visitor shares one login rate-limit bucket. The container port binds to
+  `127.0.0.1` only; Docker-published ports bypass the host firewall.

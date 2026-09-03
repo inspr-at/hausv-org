@@ -5,6 +5,7 @@
 #   HAUSV_DEMO_BASE_URL=https://hausv.agm.ng
 #   [HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env]   # absolute path ON THE HOST
 #   [HAUSV_DEMO_REMOTE_DIR=/srv/hausv-demo] [HAUSV_DEMO_PORT=8098] [HAUSV_DEMO_SEED_ANCHOR=today]
+#   [HAUSV_DEMO_SUBNET=172.30.98.0/24] [HAUSV_DEMO_TRUSTED_PROXY_CIDRS=<gateway>/32]
 #   deploy/demo/deploy-remote.sh [--seed] [--dry-run]
 #
 # Mirrors scripts/deploy.sh in spirit, not in ceremony: HEAD is shipped via
@@ -39,6 +40,11 @@ port=${HAUSV_DEMO_PORT:-8098}
 base_url=${HAUSV_DEMO_BASE_URL%/}
 secrets_file=${HAUSV_DEMO_SECRETS_FILE:-$remote_dir/secrets.env}
 seed_anchor=${HAUSV_DEMO_SEED_ANCHOR:-}
+# The reverse proxy reaches the container from the compose network gateway,
+# the first host of the pinned subnet. A /24 is assumed for the derivation;
+# pass HAUSV_DEMO_TRUSTED_PROXY_CIDRS explicitly for anything else.
+subnet=${HAUSV_DEMO_SUBNET:-172.30.98.0/24}
+trusted_proxies=${HAUSV_DEMO_TRUSTED_PROXY_CIDRS:-${subnet%.*}.1/32}
 project=hausv-demo
 case $base_url in
     https://*) root_domain=${base_url#https://} ;;
@@ -64,6 +70,7 @@ release_dir="$remote_dir/releases/$sha"
 echo "release  $version ($sha)"
 echo "host     $ssh_host:$ssh_port -> $release_dir"
 echo "url      $base_url  (loopback :$port, secrets $secrets_file)"
+echo "proxy    subnet $subnet, TRUSTED_PROXY_CIDRS=$trusted_proxies"
 if [ "$dry_run" = 1 ]; then
     echo "dry run: nothing shipped"
     exit 0
@@ -85,8 +92,9 @@ set -euo pipefail
 cd '$release_dir/deploy/demo'
 if docker compose version >/dev/null 2>&1; then compose() { docker compose "\$@"; }; else compose() { docker-compose "\$@"; }; fi
 [ -r '$secrets_file' ] || { echo "secrets file $secrets_file is missing or unreadable for \$(id -un)" >&2; exit 1; }
-sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$root_domain#' demo.env.example > demo.env
-export HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port'
+sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$root_domain#' -e 's#^TRUSTED_PROXY_CIDRS=.*#TRUSTED_PROXY_CIDRS=$trusted_proxies#' demo.env.example > demo.env
+grep -q '^TRUSTED_PROXY_CIDRS=$trusted_proxies\$' demo.env || { echo 'demo.env.example lacks a TRUSTED_PROXY_CIDRS line' >&2; exit 1; }
+export HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port' HAUSV_DEMO_SUBNET='$subnet'
 export HAUSV_DEMO_SECRETS_FILE='$secrets_file' HAUSV_DEMO_IMAGE='hausv-demo:$sha'
 compose -p '$project' build
 ln -sfn '$release_dir' '$remote_dir/src'
