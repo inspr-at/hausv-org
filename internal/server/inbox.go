@@ -15,6 +15,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/store"
+	viewutil "github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -289,7 +290,7 @@ func inboxQueueView(item store.IntakeItem, names map[string]string, selectedID s
 	view := web.InboxItem{ID: item.ID, Source: inboxSourceLabel(item.Source), Subject: item.Subject, House: house, Unit: item.Unit, Age: relativeAge(now, item.ReceivedAt), Time: item.ReceivedAt.In(time.Local).Format("15:04"), Status: statusLabel, StatusTone: statusTone, Selected: item.ID == selectedID, Unassigned: item.TenantSlug == ""}
 	if item.Suggestion != nil {
 		view.Priority = store.NormalizeIssuePriority(item.Suggestion.Priority)
-		view.Proposal = "Vorschlag: " + intakeCategoryShort(item.Suggestion.Category) + " · " + view.Priority
+		view.Proposal = "Vorschlag: " + viewutil.BreakAfterSlashes(intakeCategoryShort(item.Suggestion.Category)) + " · " + view.Priority
 	}
 	return view
 }
@@ -330,7 +331,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 		view.PromptHash = prefixString(suggestion.PromptHash, 8)
 	}
 	view.Category = category
-	view.CategoryLabel = intakeCategoryLabel(category)
+	view.CategoryLabel = viewutil.BreakAfterSlashes(intakeCategoryLabel(category))
 	view.Priority = priority
 	view.HouseSlug = houseSlug
 	view.Unit = unit
@@ -344,7 +345,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 	view.Due = due.In(time.Local).Format("Mo, 02.01.2006")
 	view.DueValue = due.In(time.Local).Format("2006-01-02")
 	for _, c := range store.IntakeCategories() {
-		view.Categories = append(view.Categories, web.InboxOption{Value: c.Key, Label: c.Label, Selected: c.Key == category})
+		view.Categories = append(view.Categories, web.InboxOption{Value: c.Key, Label: viewutil.BreakAfterSlashes(c.Label), Selected: c.Key == category})
 	}
 	for _, p := range []string{store.IssuePriorityLow, store.IssuePriorityNorm, store.IssuePriorityHigh, store.IssuePriorityUrgent} {
 		view.Priorities = append(view.Priorities, web.InboxOption{Value: p, Label: p, Selected: p == priority})
@@ -373,7 +374,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 		}
 	}
 	if view.AssigneeLabel == "" {
-		view.AssigneeLabel = "Nicht zugeordnet"
+		view.AssigneeLabel = "Noch niemand"
 	}
 	if a.textbausteine != nil {
 		templates, err := a.textbausteine(orgKey).List(ctx)
@@ -818,6 +819,9 @@ func (a *app) inboxProviderLabel() string {
 	return "nicht konfiguriert"
 }
 func (a *app) inboxProviderFootline() string {
+	if a == nil || a.triage == nil {
+		return "Kein KI-Anbieter konfiguriert · jeder Vorschlag und jede Freigabe wird protokolliert"
+	}
 	label := a.inboxProviderLabel()
 	if strings.Contains(strings.ToLower(label), "openrouter") {
 		return "KI: Cloud (OpenRouter) · Zielbetrieb lokal im Büro · jeder Vorschlag und jede Freigabe wird protokolliert"
