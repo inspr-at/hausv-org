@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"net/mail"
@@ -49,6 +50,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"Denied":              r.URL.Query().Get("denied") == "1",
 		"OIDCConfigured":      a.oidc.Configured(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
+		"DemoLoginEnabled":    a.demoLogin,
 		"MapURL":              tenantMapURL(tenant.Address),
 		"LocationMap":         publicMapForTenant(tenant),
 		"HomeCopy":            copy,
@@ -159,7 +161,21 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	a.tokens.Put(token, email, tenant.Slug, 15*time.Minute)
 
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	if a.localDevLogin && !a.mailer.Configured() {
+	devLink := a.localDevLogin && !a.mailer.Configured()
+	demoCodeWrong := false
+	if !devLink && a.demoLogin && !a.mailer.Configured() {
+		code := strings.TrimSpace(r.FormValue("access_code"))
+		devLink = code != "" && subtle.ConstantTimeCompare([]byte(code), []byte(a.demoLoginCode)) == 1
+		demoCodeWrong = !devLink
+	}
+	if devLink || demoCodeWrong {
+		devLinkValue := ""
+		if devLink {
+			devLinkValue = link
+		} else {
+			a.tokens.Invalidate(token)
+			logWarn("demo login: wrong access code", "tenant", tenant.Slug)
+		}
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
 			"Title":               tenant.Address + " · Hausportal",
@@ -169,7 +185,9 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 			"Sent":                true,
 			"Expired":             false,
 			"MailConfigured":      false,
-			"DevLoginLink":        link,
+			"DevLoginLink":        devLinkValue,
+			"DemoLoginEnabled":    a.demoLogin,
+			"DemoCodeWrong":       demoCodeWrong,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),

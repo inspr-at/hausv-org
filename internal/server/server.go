@@ -753,6 +753,8 @@ type app struct {
 	admins                  map[string]struct{}
 	profiles                map[string]userProfile
 	localDevLogin           bool
+	demoLogin               bool
+	demoLoginCode           string
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
 	sessionTTL              time.Duration
@@ -1488,6 +1490,14 @@ func newApp() (*app, error) {
 		return nil, err
 	}
 	localDevLogin := parseBool(env("LOCAL_DEV_LOGIN", "false")) && isLocalHost(parsed.Hostname())
+	// Demo login (HAUSV-609): a fixture-only instance on a public host may render the
+	// magic link inline when the visitor knows the shared access code. Never enable
+	// this on an instance that holds real data.
+	demoLoginCode := strings.TrimSpace(env("DEMO_LOGIN_ACCESS_CODE", ""))
+	demoLogin := parseBool(env("DEMO_LOGIN_ENABLED", "false")) && demoLoginCode != ""
+	if demoLogin {
+		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
+	}
 
 	mailTransport := appmail.NewSMTP(
 		env("SMTP_HOST", ""),
@@ -1886,6 +1896,8 @@ func newApp() (*app, error) {
 		admins:                   admins,
 		profiles:                 profiles,
 		localDevLogin:            localDevLogin,
+		demoLogin:                demoLogin,
+		demoLoginCode:            demoLoginCode,
 		serviceAccessEnabled:     serviceProviderAccessEnabled(),
 		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
 		sessionTTL:               sessionTTL,
@@ -6123,7 +6135,7 @@ func (a *app) isConfirmedHomePortalOwner(email string, tenantSlug string) bool {
 }
 
 func (a *app) emailLoginAvailable() bool {
-	return a.mailer.Configured() || a.localDevLogin
+	return a.mailer.Configured() || a.localDevLogin || a.demoLogin
 }
 
 func (a *app) roleFor(email string, tenantSlug string) string {
