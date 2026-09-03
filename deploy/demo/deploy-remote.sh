@@ -94,7 +94,7 @@ if docker compose version >/dev/null 2>&1; then compose() { docker compose "\$@"
 [ -r '$secrets_file' ] || { echo "secrets file $secrets_file is missing or unreadable for \$(id -un)" >&2; exit 1; }
 sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$root_domain#' -e 's#^TRUSTED_PROXY_CIDRS=.*#TRUSTED_PROXY_CIDRS=$trusted_proxies#' demo.env.example > demo.env
 grep -q '^TRUSTED_PROXY_CIDRS=$trusted_proxies\$' demo.env || { echo 'demo.env.example lacks a TRUSTED_PROXY_CIDRS line' >&2; exit 1; }
-export HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port' HAUSV_DEMO_SUBNET='$subnet'
+export COMPOSE_PROJECT_NAME='$project' HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port' HAUSV_DEMO_SUBNET='$subnet'
 export HAUSV_DEMO_SECRETS_FILE='$secrets_file' HAUSV_DEMO_IMAGE='hausv-demo:$sha'
 compose -p '$project' build
 ln -sfn '$release_dir' '$remote_dir/src'
@@ -118,3 +118,5 @@ echo "verify from here:"
 echo "  HAUSV_DEMO_BASE_URL=$base_url DEMO_LOGIN_ACCESS_CODE=<code> deploy/demo/verify.sh"
 echo "rollback on the host:"
 echo "  ln -sfn $remote_dir/releases/<previous sha> $remote_dir/src && cd $remote_dir/src/deploy/demo && HAUSV_DEMO_SECRETS_FILE=$secrets_file HAUSV_DEMO_IMAGE=hausv-demo:<previous sha> docker-compose -p $project up -d"
+echo "reseed on the host:"
+echo "  cd $remote_dir/src/deploy/demo && COMPOSE_PROJECT_NAME=$project HAUSV_DEMO_SECRETS_FILE=$secrets_file HAUSV_DEMO_SEED_ANCHOR=today ./seed.sh"

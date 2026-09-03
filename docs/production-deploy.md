@@ -408,6 +408,8 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   prints the rollback line. `HAUSV_DEMO_SECRETS_FILE` is the host-side path
   that replaces `./secrets.env` in the compose `env_file` list;
   `HAUSV_DEMO_SEED_ANCHOR=today` shifts the fixture dates to the deploy day.
+  The compose project is `hausv-demo`; a manual `seed.sh`/`reset.sh` on the
+  host needs `COMPOSE_PROJECT_NAME=hausv-demo` (or `HAUSV_DEMO_PROJECT`).
 - No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
   and the data is disposable.
 - Proxy trust: with a public `BASE_URL` the app refuses to start without
