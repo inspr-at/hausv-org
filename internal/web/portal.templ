@@ -231,6 +231,18 @@ templ PortalBaseStyles() {
 	<style>
 		.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}
 		.portal-page .sidebar{padding:16px 18px}
+		/* Keep the map link outside the navigation landmark so link inventories
+		   contain page navigation only; visual order still keeps it in its house
+		   group between the group label and its house pages. */
+		.portal-page .sidebar>.nav{display:contents}
+		.portal-page .sidebar>.portal-organisation-identity{order:1}
+		.portal-page .sidebar>.nav>.nav-level-label:not(.nav-house-label){order:2}
+		.portal-page .sidebar>.nav>.nav-organisation{order:3}
+		.portal-page .sidebar>.nav>.nav-house-label{order:4}
+		.portal-page .sidebar>.house-picker,.portal-page .sidebar>.house-header-card{order:5}
+		.portal-page .sidebar>.nav>.nav-house-items{order:6}
+		.portal-page .sidebar>.portal-context-switch{order:7}
+		.portal-page .sidebar>.account{order:8}
 		.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}
 		.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
 		.portal-organisation-identity small{color:var(--soft);font-size:10px}
@@ -287,11 +299,29 @@ templ PortalBaseStyles() {
 		.portal-context-switch>summary::-webkit-details-marker{display:none}
 		.portal-context-switch .context-menu{margin-bottom:6px;padding:8px;background:var(--nav-2);border:1px solid var(--soft);border-radius:var(--radius-sm)}
 		.portal-page .account{margin-top:8px}
+		/* The compact house card must preserve a usable map link without competing
+		   with the picker trigger. Its copy is deliberately allowed two complete
+		   lines; a clipped address makes the current house ambiguous. */
+		.portal-organisation-identity strong{overflow:visible;overflow-wrap:normal;text-overflow:clip;white-space:normal}
+		.house-header-card{grid-template-columns:56px minmax(0,1fr) 18px}
+		.house-header-copy strong{overflow:visible;overflow-wrap:normal;hyphens:auto;-webkit-line-clamp:unset}
+		.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}
+		.house-map-thumb{inset:auto;display:block;flex:0 0 56px;border:0;isolation:isolate}
+		.house-map-thumb .side-map-fallback{padding:0;font-size:8px;text-align:center}
+		@media(min-width:761px){.portal-page .sidebar .house-picker-panel{top:clamp(116px,28vh,294px);left:min(296px,calc(100vw - 420px));max-height:calc(100vh - clamp(138px,28vh + 22px,316px))}}
 		@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.house-picker-panel{left:226px}}
 		@media(max-width:760px){
-			.portal-page .menu-panel{padding:16px 18px 24px}
+			.portal-page .menu-panel{display:grid;padding:16px 18px 24px}
+			.portal-page .menu-panel>.nav{display:contents}
+			.portal-page .menu-panel>.portal-organisation-identity{order:1}
+			.portal-page .menu-panel>.nav>.nav-level-label:not(.nav-house-label){order:2}
+			.portal-page .menu-panel>.nav>.nav-organisation{order:3}
+			.portal-page .menu-panel>.nav>.nav-house-label{order:4}
+			.portal-page .menu-panel>.house-picker,.portal-page .menu-panel>.house-header-card{order:5}
+			.portal-page .menu-panel>.nav>.nav-house-items{order:6}
+			.portal-page .menu-panel>.portal-context-switch{order:7}
+			.portal-page .menu-panel>.release-notes,.portal-page .menu-panel>.logout-form{order:8}
 			.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}
-			.portal-page .menu-panel .nav{grid-template-columns:1fr}
 			.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}
 			.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}
 			.portal-page .menu-panel .nav a{padding:0 10px}
@@ -332,10 +362,12 @@ func portalBool(value bool) string {
 }
 
 templ PortalSidebar(data PortalPageData) {
+	{{ shell := portalShellData(data) }}
 	<aside class="sidebar" aria-label="Hausnavigation">
-		@PortalOrganisationIdentity(portalShellData(data))
-		@PortalNavigation(data, true)
-		@PortalContextSwitch(portalShellData(data).PortalContexts, false)
+		@PortalOrganisationIdentity(shell)
+		@PortalNavigation(data, true, false)
+		@PortalHouseHeader(data, shell, true)
+		@PortalContextSwitch(shell.PortalContexts, false)
 		<footer class="account">
 			if len(data.RolePreviewChoices) > 0 {
 				@RolePreviewChooser("role-preview-desktop", data.RolePreviewChoices) {
@@ -363,7 +395,7 @@ templ PortalOrganisationIdentity(shell PortalShellData) {
 // routes. Keeping its menu here ensures desktop and mobile use the same gated
 // PortalNavigation instead of letting each route grow a second navigation.
 
-templ PortalNavigation(data PortalPageData, icons bool) {
+templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) {
 	{{ shell := portalShellData(data) }}
 	<nav class="nav" aria-label="Bereiche" data-two-level={ portalBool(shell.IsOrganisationMember) } { portalNavAttrs(icons)... }>
 		if shell.IsOrganisationMember {
@@ -381,7 +413,9 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 			</span>
 		}
 		<span class="nav-group nav-level-label nav-house-label">{ portalHouseGroupLabel(shell) }</span>
-		@PortalHouseHeader(data, shell)
+		if renderHouseHeader {
+			@PortalHouseHeader(data, shell, icons)
+		}
 		<span class={ "nav-house-items", templ.KV("indented", shell.IsOrganisationMember) }>
 			if data.CanUseResidentAreas {
 				@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
@@ -441,7 +475,7 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 // permission-gated navigation.
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
-		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalOrganisationIdentity(portalShellData(data))@PortalNavigation(data, false)@PortalContextSwitch(portalShellData(data).PortalContexts, true)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary>@PortalMobileNavigation(data)</details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel }</small></a>
 		if len(data.RolePreviewChoices) > 0 {
 			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
@@ -454,6 +488,18 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 			<a class="avatar" href="/app" aria-label={ "Portal von " + data.DisplayName }>{ data.Initials }</a>
 		}
 	</header>
+}
+
+templ PortalMobileNavigation(data PortalPageData) {
+	{{ shell := portalShellData(data) }}
+	<div class="menu-panel">
+		@PortalOrganisationIdentity(shell)
+		@PortalNavigation(data, false, false)
+		@PortalHouseHeader(data, shell, false)
+		@PortalContextSwitch(shell.PortalContexts, true)
+		@PortalReleaseNotes(data)
+		<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form>
+	</div>
 }
 
 templ PortalContextSwitch(contexts []PortalContext, mobile bool) {
@@ -513,12 +559,26 @@ func portalHouseGroupLabel(shell PortalShellData) string {
 	return fmt.Sprintf("Liegenschaft · %d von %d", position, len(shell.ManagedHouses))
 }
 
-templ PortalHouseHeader(data PortalPageData, shell PortalShellData) {
+func portalHousePickerID(sidebar bool) string {
+	if sidebar {
+		return "portal-house-picker"
+	}
+	return "portal-house-picker-mobile"
+}
+
+func portalHousePickerShell(sidebar bool) string {
+	if sidebar {
+		return "sidebar"
+	}
+	return "mobile"
+}
+
+templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool) {
 	if len(shell.ManagedHouses) > 1 {
-		<details class="house-picker" data-house-picker>
+		<details class="house-picker" data-house-picker id={ portalHousePickerID(sidebar) } data-house-picker-shell={ portalHousePickerShell(sidebar) }>
 			<summary class="house-header-card" aria-label={ "Liegenschaft wechseln, aktuell " + data.HouseName }>
 				@PortalMapThumbnail(data)
-				<span class="house-header-copy side-address-label"><strong>{ data.HouseName }</strong><small>{ data.Address }</small></span>
+				<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
 				<span class="house-header-chevron" aria-hidden="true">⌄</span>
 			</summary>
 			@HousePickerPanel(shell.ManagedHouses, data.TenantSlug)
@@ -526,27 +586,29 @@ templ PortalHouseHeader(data PortalPageData, shell PortalShellData) {
 	} else {
 		<div class="house-header-card house-header-static" aria-label={ "Aktuelle Liegenschaft " + data.HouseName }>
 			@PortalMapThumbnail(data)
-			<span class="house-header-copy side-address-label"><strong>{ data.HouseName }</strong><small>{ data.Address }</small></span>
+			<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
 		</div>
 	}
 }
 
 templ PortalMapThumbnail(data PortalPageData) {
-	<span class="house-map-thumb" aria-hidden="true">
+	<a class="map side-map house-map-thumb" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title={ data.Address + " in OpenStreetMap öffnen" } data-house-map-link>
 		if data.Map.Configured {
 			<span class="side-map-tiles">
 				for _, tile := range data.Map.Tiles {
 					<img class="side-map-tile" src={ templ.SafeURL(tile.URL) } style={ templ.SafeCSS(tile.Style) } width="256" height="256" alt="" draggable="false"/>
 				}
 			</span>
+			<span class="side-map-pin house-map-pin">
+				<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
+				if data.BrandMarkSVG != "" {
+					<span class="side-map-pin-mark">@templ.Raw(data.BrandMarkSVG)</span>
+				}
+			</span>
+		} else {
+			<span class="side-map-fallback">Standort nicht hinterlegt</span>
 		}
-		<span class="side-map-pin house-map-pin">
-			<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
-			if data.BrandMarkSVG != "" {
-				<span class="side-map-pin-mark">@templ.Raw(data.BrandMarkSVG)</span>
-			}
-		</span>
-	</span>
+	</a>
 }
 
 templ HousePickerPanel(houses []PortalHouse, currentSlug string) {
@@ -629,6 +691,7 @@ templ PortalHousePickerScript() {
 	<script>
 		document.addEventListener('DOMContentLoaded',function(){
 			document.querySelectorAll('[data-house-picker]').forEach(function(picker){
+				picker.querySelectorAll('[data-house-map-link]').forEach(function(link){link.addEventListener('click',function(event){event.stopPropagation();});});
 				const search=picker.querySelector('[data-house-search]');
 				const more=picker.querySelector('[data-house-more]');
 				const empty=picker.querySelector('[data-house-empty]');

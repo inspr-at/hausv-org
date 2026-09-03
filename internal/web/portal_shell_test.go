@@ -118,7 +118,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
 			// The compact map thumbnail precedes the prominent house copy.
-			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
+			if i, j := strings.Index(html, `class="map side-map`), strings.Index(html, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
 				t.Errorf("house copy must come after the map thumbnail")
 			}
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
@@ -192,7 +192,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			for _, marker := range []string{
 				`data-portal-shell`, `data-portal-section-landing`,
 				`data-portal-section-header`, `class="sidebar"`,
-				`class="house-map-thumb"`, `class="house-header-copy side-address-label"`, `class="account"`,
+				`class="map side-map house-map-thumb"`, `class="house-header-copy side-address-label"`, `class="account"`,
 			} {
 				if !strings.Contains(html, marker) {
 					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)
@@ -237,6 +237,28 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	} {
 		if !strings.Contains(energy, contract) {
 			t.Errorf("energy strip lost HAUSV-558 contract %q", contract)
+		}
+	}
+}
+
+func TestHousePickerUsesDistinctDesktopAndMobileIDs(t *testing.T) {
+	portal := PortalPageData{
+		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
+		MapURL: "https://www.openstreetmap.org/", DisplayName: "Vera Verwaltung", Initials: "VV", Role: "Admin",
+		CanUseResidentAreas: true,
+		Shell: PortalShellData{Ready: true, IsOrganisationMember: true, ManagedHouses: []PortalHouse{
+			{Slug: "park", Name: "Haus am Park", Address: "Parkgasse 1, 8010 Graz", Role: "Admin", Current: true},
+			{Slug: "see", Name: "Haus am See", Address: "Seegasse 2, 8010 Graz", Role: "Admin"},
+		}},
+	}
+	html := renderComponent(t, PortalPage(portal))
+	for _, marker := range []string{
+		`id="portal-house-picker"`, `data-house-picker-shell="sidebar"`,
+		`id="portal-house-picker-mobile"`, `data-house-picker-shell="mobile"`,
+		`class="map side-map house-map-thumb"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`,
+	} {
+		if !strings.Contains(html, marker) {
+			t.Errorf("house picker marker %q missing", marker)
 		}
 	}
 }
