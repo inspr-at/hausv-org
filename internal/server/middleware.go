@@ -230,16 +230,16 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		if ac.preview != nil && !strings.HasSuffix(r.URL.Path, "/app/ansicht/ende") {
+			http.Error(w, rolePreviewReadOnlyMessage, http.StatusForbidden)
+			return
+		}
 		if module, managed := portalModuleForPath(r.URL.Path); managed && !a.portalModulesFor(ac.tenant.Slug).Enabled(module) {
 			http.NotFound(w, r)
 			return
 		}
 		if !sameOriginPost(r) {
 			http.Error(w, "Bad request", http.StatusForbidden)
-			return
-		}
-		if ac.preview != nil && !strings.HasSuffix(r.URL.Path, "/app/ansicht/ende") {
-			http.Error(w, rolePreviewReadOnlyMessage, http.StatusForbidden)
 			return
 		}
 		h(w, r, ac)
