@@ -1,0 +1,274 @@
+package web
+
+import "fmt"
+
+func InboxPage(shell VerwaltungShell, data InboxData) templ.Component {
+	return inboxPage(shell, data)
+}
+
+func InboxCasePage(shell VerwaltungShell, data InboxData) templ.Component {
+	return inboxCasePage(shell, data)
+}
+
+func inboxApproveAction(edit bool) string {
+	if edit { return "edit" }
+	return "approve"
+}
+
+type InboxOption struct {
+	Value string
+	Label string
+	Selected bool
+}
+
+type InboxHouse struct {
+	Slug string
+	Name string
+	Address string
+	Units []string
+}
+
+type InboxItem struct {
+	ID string
+	Source string
+	Subject string
+	House string
+	Unit string
+	Age string
+	Time string
+	Status string
+	Proposal string
+	Priority string
+	Selected bool
+	Unassigned bool
+}
+
+type InboxCase struct {
+	ID string
+	Subject string
+	Meta string
+	Sender string
+	Received string
+	Body string
+	Status string
+	HasSuggestion bool
+	CanSuggest bool
+	Editing bool
+	ProviderLabel string
+	Category string
+	CategoryLabel string
+	Priority string
+	Confidence int
+	HouseSlug string
+	HouseLabel string
+	Unit string
+	Assignee string
+	AssigneeLabel string
+	Due string
+	DueValue string
+	TemplateKey string
+	TemplateTitle string
+	Reply string
+	Actions []string
+	Model string
+	PromptHash string
+	Created string
+	Handling string
+	Categories []InboxOption
+	Priorities []InboxOption
+	Houses []InboxOption
+	Assignees []InboxOption
+	Templates []InboxOption
+}
+
+type InboxData struct {
+	Eyebrow string
+	Lede string
+	Flash string
+	Items []InboxItem
+	AutoItems []InboxItem
+	Selected *InboxCase
+	Houses []InboxHouse
+	HouseFilter []InboxOption
+	AssigneeFilter []InboxOption
+	SourceFilter []InboxOption
+	StatusFilter []InboxOption
+	Sort string
+	ProviderFootline string
+	FullPage bool
+}
+
+templ inboxPage(shell VerwaltungShell, data InboxData) {
+	@PortalVerwaltungPage(shell, "Posteingang", InboxContent(data))
+}
+
+templ inboxCasePage(shell VerwaltungShell, data InboxData) {
+	@PortalVerwaltungPage(shell, "Posteingang", InboxContent(data))
+}
+
+templ InboxContent(data InboxData) {
+	<style>
+		.inbox-page{display:grid;gap:var(--space-5)}
+		.inbox-head{display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}
+		.inbox-head h1{margin:3px 0;font-family:var(--font-serif);font-size:36px;font-weight:550}
+		.inbox-head p{margin:0;color:var(--muted);font-size:13px}
+		.inbox-actions,.chips,.btns{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2)}
+		.inbox-page details>summary{cursor:pointer;list-style:none}.inbox-page details>summary::-webkit-details-marker{display:none}
+		.inbox-action,.btns button,.btns a,.assign button,.auto button{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:inherit;font-size:12px;font-weight:750;text-decoration:none;cursor:pointer}
+		.inbox-action.gold,.btns .gold{border-color:var(--gold);background:var(--gold);color:var(--panel)}
+		.filter-panel,.phone-panel{position:absolute;z-index:5;right:0;width:min(440px,calc(100vw - 32px));margin-top:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}
+		.inbox-actions details{position:relative}.filter-grid,.phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+		.phone-grid .wide{grid-column:1/-1}.filter-grid label,.phone-grid label,.case label{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+		.inbox-page input,.inbox-page select,.inbox-page textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font:inherit;font-size:13px}.inbox-page textarea{min-height:115px;resize:vertical}
+		.inbox-grid{display:grid;grid-template-columns:minmax(300px,2fr) minmax(420px,3fr);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel);overflow:hidden}
+		.queue{min-width:0;border-right:1px solid var(--line)}.queue ul{margin:0;padding:0;list-style:none}.queue li+li{border-top:1px solid var(--line)}
+		.queue-row{display:grid;grid-template-columns:1fr auto;gap:4px var(--space-3);padding:var(--space-3);color:inherit;text-decoration:none}.queue-row.selected{background:var(--panel-soft)}.queue-row:hover{background:var(--panel-soft)}
+		.queue-source{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.12em}.queue-source.muted{color:var(--soft)}.queue-age{color:var(--muted);font-size:11px}.queue-subject{font-size:14px;font-weight:780}.queue-place{color:var(--muted);font-size:11px}
+		.chips{grid-column:1/-1;margin-top:4px}.chip{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:700}.chip.high{border-color:var(--gold);color:var(--gold-ink)}.chip.done{color:var(--leaf)}
+		.assign{grid-column:1/-1;display:flex;gap:var(--space-2)}.assign select{padding:7px;font-size:11px}.assign button{min-height:32px}
+		.case{min-width:0;padding:var(--space-5)}.case h2{margin:0;font-family:var(--font-serif);font-size:27px;font-weight:550}.case-meta{margin:5px 0 var(--space-4);color:var(--muted);font-size:12px}.block{margin-top:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm)}.block.original{background:var(--panel-soft)}.block h3{margin:0 0 var(--space-3);font-size:15px}.block p{white-space:pre-wrap;line-height:1.55}.block-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-3)}
+		.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);margin:0}.kv div{min-width:0}.kv dt{color:var(--muted);font-size:10px;font-weight:750;text-transform:uppercase}.kv dd{margin:3px 0 0;font-size:13px;font-weight:700}.conf{display:flex;align-items:center;gap:var(--space-2)}.bar{width:60px;height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.bar span{display:block;height:100%;background:var(--leaf)}
+		.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}.actions-list{display:grid;gap:var(--space-2)}.actions-list label{display:flex;align-items:center;gap:var(--space-2);font-size:12px;text-transform:none;letter-spacing:0}.actions-list input{width:auto}
+		.btns{margin-top:var(--space-4)}.btns form{display:contents}.muted-line,.history,.footline{color:var(--muted);font-size:11px}.muted-line{margin:var(--space-3) 0 0}.history{margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--line);line-height:1.6}
+		.auto{border-top:1px solid var(--line)}.auto summary{padding:var(--space-3);color:var(--muted);font-size:11px;font-weight:750}.auto-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-top:1px solid var(--line);font-size:11px}.auto form{margin:0}.auto button{min-height:30px}
+		.empty-case{display:grid;place-content:center;min-height:420px;color:var(--muted);text-align:center}.footline{text-align:center}
+		@media(max-width:760px){.inbox-head{align-items:start;flex-direction:column}.inbox-grid{display:block;border:0;background:transparent;box-shadow:none}.queue{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inbox-grid>.case{display:none}.inbox-page.full .queue{display:none}.inbox-page.full .case{display:block;padding:0}.filter-grid,.phone-grid,.edit-grid,.kv{grid-template-columns:1fr}.phone-grid .wide{grid-column:auto}.case .btns{display:grid;padding-bottom:72px}.case .btns .approve-form{position:fixed;z-index:12;right:var(--space-3);bottom:var(--space-2);left:var(--space-3);display:block;padding:var(--space-2);background:var(--paper)}.case .btns .approve-form button{width:100%;min-height:48px}.inbox-page:not(.full) .footline{margin-bottom:70px}}
+	</style>
+	<section class={ "inbox-page", templ.KV("full", data.FullPage) }>
+		<header class="inbox-head">
+			<div><div class="eyebrow">{ data.Eyebrow }</div><h1>Posteingang</h1><p>{ data.Lede }</p></div>
+			<div class="inbox-actions">
+				<details><summary class="inbox-action">Filter</summary><form class="filter-panel" method="get"><div class="filter-grid">
+					<label>Quelle<select name="source"><option value="">Alle</option>@InboxOptions(data.SourceFilter)</select></label>
+					<label>Haus<select name="house"><option value="">Alle</option>@InboxOptions(data.HouseFilter)</select></label>
+					<label>Zuständig<select name="assignee"><option value="">Alle</option>@InboxOptions(data.AssigneeFilter)</select></label>
+					<label>Status<select name="status"><option value="">Offen</option>@InboxOptions(data.StatusFilter)</select></label>
+					<label>Sortierung<select name="sort"><option value="received">Neueste zuerst</option><option value="age" selected?={ data.Sort == "age" }>Älteste zuerst</option></select></label>
+				</div><button class="inbox-action" type="submit">Anwenden</button></form></details>
+				<details><summary class="inbox-action gold">Telefonnotiz</summary><form class="phone-panel" method="post" action="/app/verwaltung/telefonnotiz"><div class="phone-grid">
+					<label>Haus<select name="house" required><option value="">Bitte wählen</option>
+						for _, house := range data.Houses {
+							<option value={ house.Slug }>{ house.Name }</option>
+						}
+					</select></label>
+					<label>Einheit<input name="unit"/></label><label>Anrufer Name<input name="from_name" required/></label><label>Telefon<input name="from_phone"/></label><label class="wide">Betreff<input name="subject" required/></label><label class="wide">Text<textarea name="body" required></textarea></label>
+				</div><button class="inbox-action gold" type="submit">Notiz aufnehmen</button></form></details>
+			</div>
+		</header>
+		if data.Flash != "" {
+			<p class="block" role="status">{ data.Flash }</p>
+		}
+		<div class="inbox-grid">
+			<section class="queue" aria-label="Eingang"><ul>
+				for _, item := range data.Items {
+					<li>@InboxQueueItem(item, data.Houses)</li>
+				}
+			</ul>
+			<details class="auto"><summary>Heute automatisch erledigt · { fmt.Sprint(len(data.AutoItems)) }</summary>
+				for _, item := range data.AutoItems {
+					<div class="auto-row"><span><strong>{ item.Time }</strong> · { item.Subject }</span><form method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="restore"/><button type="submit">Zurück in den Eingang</button></form></div>
+				}
+			</details></section>
+			if data.Selected != nil {
+				@InboxCaseDetail(*data.Selected)
+			} else {
+				<div class="empty-case"><p>Kein offenes Anliegen ausgewählt.</p></div>
+			}
+		</div>
+		<p class="footline">{ data.ProviderFootline }</p>
+	</section>
+}
+
+templ InboxOptions(options []InboxOption) {
+	for _, option := range options {
+		<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+	}
+}
+
+templ InboxQueueItem(item InboxItem, houses []InboxHouse) {
+	<a class={ "queue-row", templ.KV("selected", item.Selected) } href={ "/app/verwaltung/posteingang/" + item.ID }>
+		<span class={ "queue-source", templ.KV("muted", item.Unassigned) }>{ item.Source }</span><span class="queue-age">{ item.Age }</span><span class="queue-subject">{ item.Subject }</span><span></span><span class="queue-place">{ item.House }
+			if item.Unit != "" {
+				{ " · " }{ item.Unit }
+			}
+		</span>
+		<div class="chips">
+			if item.Proposal != "" {
+				<span class={ "chip", templ.KV("high", item.Priority == "Hoch" || item.Priority == "Dringend"), templ.KV("done", item.Status == "Freigegeben" || item.Status == "Automatisch") }>{ item.Proposal }</span>
+			}
+		</div>
+	</a>
+	if item.Unassigned {
+		<form class="assign" method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="assign"/><select name="house" aria-label="Haus zuordnen" required><option value="">Haus zuordnen</option>
+			for _, house := range houses {
+				<option value={ house.Slug }>{ house.Name }</option>
+			}
+		</select><input name="unit" placeholder="Einheit"/><button type="submit">Zuordnen</button></form>
+	}
+}
+
+templ InboxCaseDetail(item InboxCase) {
+	<article class="case"><h2>{ item.Subject }</h2><p class="case-meta">{ item.Meta }</p>
+		<section class="block original"><div class="block-head"><h3>Originalnachricht</h3><span class="case-meta">{ item.Received }</span></div><strong>{ item.Sender }</strong><p>{ item.Body }</p></section>
+			<form method="post" action={ "/app/verwaltung/posteingang/" + item.ID }>
+				<section class="block"><div class="block-head"><div><div class="eyebrow">
+				if item.HasSuggestion {
+					{ "Vorschlag der KI · " }{ item.ProviderLabel }
+				} else {
+					{ "Kein Vorschlag" }
+				}
+			</div><h3>Einordnung</h3></div>
+			if !item.HasSuggestion && item.CanSuggest {
+				<button class="inbox-action" type="submit" name="action" value="suggest">Vorschlag anfordern</button>
+			}
+			</div>
+			if item.Editing || !item.HasSuggestion {
+				<div class="edit-grid"><label>Kategorie<select name="category">@InboxOptions(item.Categories)</select></label><label>Dringlichkeit<select name="priority">@InboxOptions(item.Priorities)</select></label><label>Haus<select name="house">@InboxOptions(item.Houses)</select></label><label>Einheit<input name="unit" value={ item.Unit }/></label><label>Zuständig<select name="assignee"><option value="">Nicht zugeordnet</option>@InboxOptions(item.Assignees)</select></label><label>Fällig<input type="date" name="due" value={ item.DueValue }/></label></div>
+			}
+			if !item.Editing && item.HasSuggestion {
+				<dl class="kv"><div><dt>Kategorie</dt><dd>{ item.CategoryLabel }</dd></div><div><dt>Dringlichkeit</dt><dd>{ item.Priority }</dd></div><div><dt>Sicherheit</dt><dd class="conf">{ fmt.Sprintf("%d %%", item.Confidence) }<span class="bar"><span style={ fmt.Sprintf("width:%d%%", item.Confidence) }></span></span></dd></div><div><dt>Haus · Einheit</dt><dd>{ item.HouseLabel }
+					if item.Unit != "" {
+						{ " · " }{ item.Unit }
+					}
+				</dd></div><div><dt>Zuständig</dt><dd>{ item.AssigneeLabel }</dd></div><div><dt>Fällig</dt><dd>{ item.Due }</dd></div></dl>
+			}
+			</section>
+			<section class="block"><h3>Antwort</h3><label>Textbaustein<select name="template">@InboxOptions(item.Templates)</select></label><textarea name="reply">{ item.Reply }</textarea>
+				if item.HasSuggestion {
+					<button class="inbox-action" type="submit" name="action" value="template">Textbaustein einsetzen</button>
+				}
+			</section>
+			<section class="block"><h3>Aktion</h3><div class="actions-list">
+				for _, action := range item.Actions {
+					<label><input type="checkbox" name="proposal_action" value={ action } checked/>{ action }</label>
+				}
+				if len(item.Actions) == 0 {
+					<span class="muted-line">Keine zusätzliche Aktion vorgeschlagen.</span>
+				}
+			</div></section>
+			if item.HasSuggestion {
+				<div class="btns"><span class="approve-form"><button class="gold" type="submit" name="action" value={ inboxApproveAction(item.Editing) }>Freigeben und senden</button></span>
+					if !item.Editing {
+						<a href={ "/app/verwaltung/posteingang/" + item.ID + "?edit=1" }>Bearbeiten</a>
+					}
+					<button type="submit" name="action" value="reject">Manuell übernehmen</button>
+				</div><p class="muted-line">Standard: Vorschlag, Mensch gibt frei</p>
+			}
+		</form>
+		<p class="history"><strong>Verlauf:</strong> { item.Created }
+			if item.Model != "" {
+				{ " · Vorschlag erstellt (" }{ item.Model }
+				if item.ProviderLabel != "" {
+					{ ", " }{ item.ProviderLabel }
+				}
+				if item.PromptHash != "" {
+					{ ", Prompt " }{ item.PromptHash }
+				}
+				{ ")" }
+			}
+			if item.Handling != "" {
+				{ " · " }{ item.Handling }
+			}
+		</p>
+	</article>
+}
