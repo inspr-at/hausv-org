@@ -505,6 +505,23 @@ func seedFull(t *testing.T) *source {
 	identities, err = store.EnsureTenantIdentities(ctx, src.db, qaTenants)
 	must(t, "tenants after activation", err)
 	src.tenants = identities
+	// Organisation-scoped tables (HAUSV-600): keyed by org_key, no tenant_id.
+	orgKey := "musterstadt"
+	intake := store.BindIntakeRepository(src.db, orgKey)
+	must(t, "intake", intake.Create(ctx, store.IntakeItem{
+		ID: "in-rt-1", Organisation: orgKey, TenantSlug: "demo", Unit: "Top 1", Source: store.IntakeSourceEmail,
+		FromName: "Rita Bewohnerin", FromEmail: "resident@example.com", Subject: "Wasserfleck im Bad", Body: "Seit gestern feucht.",
+		ReceivedAt: now, DueAt: now.Add(24 * time.Hour), Status: store.IntakeStatusOpen, CreatedAt: now, UpdatedAt: now,
+	}))
+	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
+		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
+		AutoThreshold: 0.9, AutoEnabled: true, UpdatedAt: now,
+	}))
+	must(t, "textbaustein", store.BindTextbausteinRepository(src.db, orgKey).Upsert(ctx, store.Textbaustein{
+		Key: "reparatur-beauftragt", Organisation: orgKey, Category: "reparatur", Title: "Reparatur – Handwerker beauftragt",
+		Body: "Sehr geehrte{{Anrede}} {{Name}}, wir haben {{Handwerker}} beauftragt.", Placeholders: []string{"Anrede", "Name", "Handwerker"}, Active: true,
+	}))
+
 	return src
 }
 

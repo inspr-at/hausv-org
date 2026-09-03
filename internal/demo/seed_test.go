@@ -2,7 +2,10 @@ package demo
 
 import (
 	"bytes"
+	"database/sql"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/inspr-at/hausv-org/internal/dbtest"
@@ -29,8 +32,8 @@ func TestLoadIsIdempotentAndResettable(t *testing.T) {
 		t.Fatalf("unexpected results: %#v %#v %#v", first, second, third)
 	}
 	for table, want := range map[string]int{"intake_items": 6, "issues": 4, "events": 1, "announcements": 1, "units": 1, "textbausteine": 1, "org_settings": 1} {
-		var got int
-		if err := database.QueryRow(`SELECT count(*) FROM ` + table).Scan(&got); err != nil {
+		got, err := countRows(t, database, table)
+		if err != nil {
 			t.Fatal(err)
 		}
 		if got != want {
@@ -40,4 +43,24 @@ func TestLoadIsIdempotentAndResettable(t *testing.T) {
 	if out.Len() == 0 {
 		t.Fatal("stats output is empty")
 	}
+}
+
+// countRows counts through the maintenance lane on PostgreSQL, where row-level
+// security hides every row from a connection without tenant or organisation
+// context; SQLite has no such policy.
+func countRows(t *testing.T, database *sql.DB, table string) (int, error) {
+	t.Helper()
+	tx, err := database.BeginTx(t.Context(), nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	if strings.Contains(fmt.Sprintf("%T", database.Driver()), "stdlib") {
+		if _, err := tx.ExecContext(t.Context(), `SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
+			return 0, err
+		}
+	}
+	var got int
+	err = tx.QueryRowContext(t.Context(), `SELECT count(*) FROM `+table).Scan(&got)
+	return got, err
 }

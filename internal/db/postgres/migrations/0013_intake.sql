@@ -32,8 +32,10 @@ BEGIN
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
         EXECUTE format(
             'CREATE POLICY organisation_isolation ON %I USING (' ||
-            'org_key = coalesce(current_setting(''app.org_key'', true), '''')) ' ||
-            'WITH CHECK (org_key = coalesce(current_setting(''app.org_key'', true), ''''))',
+            'coalesce(current_setting(''hausv.cross_tenant'', true), '''') = ''on'' ' ||
+            'OR org_key = coalesce(current_setting(''app.org_key'', true), '''')) ' ||
+            'WITH CHECK (coalesce(current_setting(''hausv.cross_tenant'', true), '''') = ''on'' ' ||
+            'OR org_key = coalesce(current_setting(''app.org_key'', true), ''''))',
             table_name
         );
     END LOOP;
