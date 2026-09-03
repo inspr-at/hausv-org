@@ -118,7 +118,7 @@ var houseSpecs = []struct {
 	slug, name, address string
 	count               int
 }{
-	{"janischhofweg-22", "Janischhofweg 22", "Janischhofweg 22, 8010 Graz", 18},
+	{"janusbergweg-123", "Janusbergweg 123", "Janusbergweg 123, 8010 Graz", 18},
 	{"grazbachgasse-14", "Grazbachgasse 14", "Grazbachgasse 14, 8010 Graz", 24},
 	{"annenstrasse-71", "Annenstraße 71", "Annenstraße 71, 8020 Graz", 30},
 	{"muenzgrabenstrasse-9", "Münzgrabenstraße 9", "Münzgrabenstraße 9, 8010 Graz", 12},
@@ -133,7 +133,7 @@ var houseSpecs = []struct {
 }
 
 var residentNames = [][3]string{
-	{"Alina Auer", "alina.auer@example.com", "+43 664 310 20 01"}, {"Matthias Dorn", "matthias.dorn@example.com", "+43 676 310 20 02"}, {"Sibel Erdem", "sibel.erdem@example.com", "+43 660 310 20 03"},
+	{"Alina Auer", "alina.eigentuemer@musterstadt.example", "+43 664 310 20 01"}, {"Matthias Dorn", "matthias.mieter@musterstadt.example", "+43 676 310 20 02"}, {"Sophie Berger", "sophie.bewohner@musterstadt.example", "+43 660 310 20 03"},
 	{"Theresa Fink", "theresa.fink@example.com", "+43 664 310 20 04"}, {"Gregor Haas", "gregor.haas@example.com", "+43 676 310 20 05"}, {"Nora Illek", "nora.illek@example.com", "+43 660 310 20 06"},
 	{"Jasmin Kern", "jasmin.kern@example.com", "+43 664 310 20 07"}, {"Lorenz Leitner", "lorenz.leitner@example.com", "+43 676 310 20 08"}, {"Mira Moser", "mira.moser@example.com", "+43 660 310 20 09"},
 	{"Daniel Novak", "daniel.novak@example.com", "+43 664 310 20 10"}, {"Petra Ortner", "petra.ortner@example.com", "+43 676 310 20 11"}, {"Ramin Pichler", "ramin.pichler@example.com", "+43 660 310 20 12"},
@@ -145,7 +145,7 @@ var residentNames = [][3]string{
 	{"Moritz Maier", "moritz.maier@example.com", "+43 664 310 20 28"}, {"Nadine Oswald", "nadine.oswald@example.com", "+43 676 310 20 29"}, {"Peter Reiter", "peter.reiter@example.com", "+43 660 310 20 30"},
 	{"Selma Sari", "selma.sari@example.com", "+43 664 310 20 31"}, {"Tobias Thaler", "tobias.thaler@example.com", "+43 676 310 20 32"}, {"Ulrike Weiss", "ulrike.weiss@example.com", "+43 660 310 20 33"},
 	{"Florian Zechner", "florian.zechner@example.com", "+43 664 310 20 34"}, {"Gerlinde Binder", "gerlinde.binder@example.com", "+43 676 310 20 35"}, {"Armin Cakir", "armin.cakir@example.com", "+43 660 310 20 36"},
-	{"Hedwig Eder", "hedwig.eder@example.com", "+43 664 310 20 37"}, {"Ivan Gruber", "ivan.gruber@example.com", "+43 676 310 20 38"}, {"Marlene Karner", "marlene.karner@example.com", "+43 660 310 20 39"},
+	{"Hedwig Eder", "hedwig.beirat@musterstadt.example", "+43 664 310 20 37"}, {"Ivan Gruber", "ivan.gruber@example.com", "+43 676 310 20 38"}, {"Marlene Karner", "marlene.karner@example.com", "+43 660 310 20 39"},
 	{"Oskar Lind", "oskar.lind@example.com", "+43 664 310 20 40"},
 }
 
@@ -208,7 +208,7 @@ func writeJSON(path string, value any) error {
 func buildHousesAndPersons() ([]house, []person) {
 	people := []person{
 		{Email: "vera.verwalter@musterstadt.example", Name: "Vera Verwalter", Phone: "+43 316 555 100", Memberships: []membership{}},
-		{Email: "paul.sommer@musterstadt.example", Name: "Paul Sommer", Phone: "+43 316 555 101", Memberships: []membership{}},
+		{Email: "paul.verwalter@musterstadt.example", Name: "Paul Sommer", Phone: "+43 316 555 101", Memberships: []membership{}},
 	}
 	houses := make([]house, 0, len(houseSpecs))
 	for hi, spec := range houseSpecs {
@@ -452,7 +452,7 @@ func buildOrg() map[string]any {
 	return map[string]any{
 		"key": "musterstadt", "name": "Hausverwaltung Musterstadt GmbH", "trust_levels": trust,
 		"auto_threshold": 0.9, "auto_enabled": true,
-		"assignees": []map[string]string{{"key": "vera.verwalter", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul.sommer", "email": "paul.sommer@musterstadt.example", "name": "Paul Sommer"}},
+		"assignees": []map[string]string{{"key": "vera.verwalter", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul.sommer", "email": "paul.verwalter@musterstadt.example", "name": "Paul Sommer"}},
 	}
 }
 

@@ -6,7 +6,7 @@
     "phone": "+43 316 555 100",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Admin",
         "units": []
       },
@@ -68,13 +68,13 @@
     ]
   },
   {
-    "email": "paul.sommer@musterstadt.example",
+    "email": "paul.verwalter@musterstadt.example",
     "name": "Paul Sommer",
     "title": "",
     "phone": "+43 316 555 101",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Verwalter",
         "units": []
       },
@@ -136,13 +136,13 @@
     ]
   },
   {
-    "email": "alina.auer@example.example",
+    "email": "alina.eigentuemer@musterstadt.example.example",
     "name": "Alina Auer",
     "title": "",
     "phone": "+43 664 310 20 01",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Eigentümer",
         "units": [
           "Top 1"
@@ -151,13 +151,13 @@
     ]
   },
   {
-    "email": "matthias.dorn@example.example",
+    "email": "matthias.mieter@musterstadt.example.example",
     "name": "Matthias Dorn",
     "title": "",
     "phone": "+43 676 310 20 02",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Mieter",
         "units": [
           "Top 3"
@@ -166,13 +166,13 @@
     ]
   },
   {
-    "email": "sibel.erdem@example.example",
-    "name": "Sibel Erdem",
+    "email": "sophie.bewohner@musterstadt.example.example",
+    "name": "Sophie Berger",
     "title": "",
     "phone": "+43 660 310 20 03",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Bewohner",
         "units": [
           "Top 7"
@@ -181,13 +181,13 @@
     ]
   },
   {
-    "email": "hedwig.eder@example.example",
+    "email": "hedwig.beirat@musterstadt.example.example",
     "name": "Hedwig Eder",
     "title": "",
     "phone": "+43 664 310 20 37",
     "memberships": [
       {
-        "house": "janischhofweg-22",
+        "house": "janusbergweg-123",
         "role": "Beirat",
         "units": [
           "Top 2"

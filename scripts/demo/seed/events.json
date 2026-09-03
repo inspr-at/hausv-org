@@ -1,30 +1,30 @@
 [
   {
     "id": "ev-001",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Eigentümerversammlung",
     "starts_at": "2026-09-07T09:00:00+02:00",
     "ends_at": "2026-09-07T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Janischhofweg 22. Bitte Aushang und Zugang beachten."
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
   },
   {
     "id": "ev-002",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Liftwartung",
     "starts_at": "2026-09-11T13:00:00+02:00",
     "ends_at": "2026-09-11T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Janischhofweg 22. Bitte Aushang und Zugang beachten."
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
   },
   {
     "id": "ev-003",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Begehung der Allgemeinflächen",
     "starts_at": "2026-09-15T17:00:00+02:00",
     "ends_at": "2026-09-15T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Janischhofweg 22. Bitte Aushang und Zugang beachten."
+    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
   },
   {
     "id": "ev-004",

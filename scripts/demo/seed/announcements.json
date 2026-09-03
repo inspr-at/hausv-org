@@ -1,7 +1,7 @@
 [
   {
     "id": "an-001",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
     "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
     "category": "Wartung",
@@ -9,7 +9,7 @@
   },
   {
     "id": "an-002",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Hausbegehung in der Demo-Woche",
     "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
     "category": "Termin",
@@ -17,7 +17,7 @@
   },
   {
     "id": "an-003",
-    "house": "janischhofweg-22",
+    "house": "janusbergweg-123",
     "title": "Bitte Fluchtwege freihalten",
     "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
     "category": "Info",

@@ -47,7 +47,7 @@ verwaltung_page() {
     local page
     page=$(curl --fail --silent --show-error --cookie "$cookie_jar" "$base_url/app/verwaltung")
     printf '%s' "$page" | grep -q 'Hausverwaltung Musterstadt GmbH'
-    printf '%s' "$page" | grep -q 'Janischhofweg 22'
+    printf '%s' "$page" | grep -q 'Janusbergweg 123'
 }
 
 inbox_count() {

@@ -1,27 +1,27 @@
 [
   {
-    "slug": "janischhofweg-22",
-    "name": "Janischhofweg 22",
-    "address": "Janischhofweg 22, 8010 Graz",
+    "slug": "janusbergweg-123",
+    "name": "Janusbergweg 123",
+    "address": "Janusbergweg 123, 8010 Graz",
     "organisation": "musterstadt",
     "units": [
       {
         "label": "Top 1",
         "floor": "EG",
-        "owner_email": "alina.auer@example.example",
+        "owner_email": "alina.eigentuemer@musterstadt.example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
-        "owner_email": "hedwig.eder@example.example",
+        "owner_email": "hedwig.beirat@musterstadt.example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
         "owner_email": "",
-        "tenant_email": "matthias.dorn@example.example"
+        "tenant_email": "matthias.mieter@musterstadt.example.example"
       },
       {
         "label": "Top 4",
@@ -45,7 +45,7 @@
         "label": "Top 7",
         "floor": "2. OG",
         "owner_email": "",
-        "tenant_email": "sibel.erdem@example.example"
+        "tenant_email": "sophie.bewohner@musterstadt.example.example"
       },
       {
         "label": "Top 8",
