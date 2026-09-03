@@ -98,6 +98,7 @@ const (
 	AuditActionIntakeAssign         = "intake.assign"
 	AuditActionVerwaltungSettings   = "verwaltung.settings"
 	AuditActionDemoReset            = "demo.reset"
+	AuditActionTextbausteinChanged  = "textbaustein.changed"
 	AuditActionRolePreviewStart     = "role-preview.start"
 	AuditActionRolePreviewEnd       = "role-preview.end"
 )
@@ -2153,7 +2154,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete,
 		AuditActionIssueAISuggest, AuditActionIssueAIAccept, AuditActionIssueAIEdit, AuditActionIssueAIReject,
 		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
-		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
+		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionTextbausteinChanged, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
 		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave:
 		return raw
