@@ -2009,7 +2009,11 @@ func newApp() (*app, error) {
 	}
 	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
-			return demo.Load(ctx, database, seedDir, demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor})
+			options := demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor}
+			if units, ok := a.unitStore.(store.UnitSink); ok {
+				options.Units = units
+			}
+			return demo.Load(ctx, database, seedDir, options)
 		}
 	}
 	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {

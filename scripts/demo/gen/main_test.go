@@ -41,9 +41,9 @@ func TestCommittedSeed(t *testing.T) {
 		t.Fatalf("house count = %d, want 12", len(houses))
 	}
 	houseSet := map[string]bool{}
-	for _, h := range houses {
+	for index, h := range houses {
 		houseSet[h.Slug] = true
-		if len(h.Units) < 8 || len(h.Units) > 36 {
+		if len(h.Units) != houseSpecs[index].count+parkingCount(houseSpecs[index].count) {
 			t.Errorf("house %s has %d units", h.Slug, len(h.Units))
 		}
 	}
@@ -145,6 +145,7 @@ func TestCommittedSeed(t *testing.T) {
 	}
 
 	assertExampleEmails(t, seedDir)
+	assertUnitMemberships(t, houses, persons)
 }
 
 func TestGeneratorIsDeterministic(t *testing.T) {
@@ -190,6 +191,62 @@ func assertExampleEmails(t *testing.T, seedDir string) {
 			if !strings.HasSuffix(strings.ToLower(email), ".example") {
 				t.Errorf("%s contains non-example email %s", name, fmt.Sprintf("%q", email))
 			}
+		}
+	}
+}
+
+func TestFixtureEmailDoesNotDoubleExampleSuffix(t *testing.T) {
+	for input, want := range map[string]string{
+		"alina@example.com":         "alina@example.example",
+		"alina@musterstadt.example": "alina@musterstadt.example",
+		"ALINA@MUSTERSTADT.EXAMPLE": "ALINA@MUSTERSTADT.EXAMPLE",
+	} {
+		if got := fixtureEmail(input); got != want {
+			t.Errorf("fixtureEmail(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func assertUnitMemberships(t *testing.T, houses []house, persons []person) {
+	t.Helper()
+	if len(houses) == 0 {
+		t.Fatal("missing houses")
+	}
+	first := houses[0]
+	var top1, top3 unit
+	parking := 0
+	for _, item := range first.Units {
+		switch item.Label {
+		case "Top 1":
+			top1 = item
+		case "Top 3":
+			top3 = item
+		}
+		if item.UnitType == "Stellplatz" {
+			parking++
+		}
+	}
+	if top1.OwnerEmail != "alina.eigentuemer@musterstadt.example" || top3.TenantEmail != "matthias.mieter@musterstadt.example" {
+		t.Fatalf("top memberships = %#v %#v", top1, top3)
+	}
+	if parking < 4 || parking > 12 {
+		t.Fatalf("parking spaces = %d", parking)
+	}
+	for _, item := range first.Units {
+		if item.OwnerEmail == "" && item.TenantEmail == "" {
+			continue
+		}
+		found := false
+		for _, person := range persons {
+			if person.Email != item.OwnerEmail && person.Email != item.TenantEmail {
+				continue
+			}
+			for _, membership := range person.Memberships {
+				found = found || (membership.House == first.Slug && containsUnit(membership.Units, item.Label))
+			}
+		}
+		if !found {
+			t.Errorf("%s parties do not come from a membership", item.Label)
 		}
 	}
 }

@@ -372,6 +372,8 @@ Organisationsdaten, Textbausteine, Ankündigungen und Termine aus dem Seed neu
 ein (Anker heute); Benutzer und Sitzungen bleiben. Ohne Demo-Modus antwortet die
 Route mit 404.
 
+Der Seed enthält pro Haus die Tops samt Eigentümer- und Mieterzuordnung sowie Stellplätze.
+
 `deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
 fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
 only its named data volume, starts it again, and seeds it. Confirm the running
