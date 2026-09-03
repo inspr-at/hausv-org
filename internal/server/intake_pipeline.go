@@ -127,18 +127,63 @@ func (a *app) suggestIntake(ctx context.Context, orgKey string, item store.Intak
 			templateHints = append(templateHints, ai.TemplateHint{Key: item.Key, Category: item.Category, Title: item.Title, Body: item.Body})
 		}
 	}
-	suggestion, err := a.triage.Suggest(ctx, ai.TriageInput{Organisation: orgKey, Source: string(item.Source), Subject: item.Subject, Body: item.Body, FromName: item.FromName, FromEmail: item.FromEmail, FromPhone: item.FromPhone, ReceivedAt: item.ReceivedAt, Houses: houses, Categories: categories, Templates: templateHints, Assignees: a.organisationAssigneeHints(orgKey)})
-	stored := store.IntakeSuggestion{Source: "model", Model: suggestion.Model, PromptHash: suggestion.PromptHash, Category: suggestion.Category, Priority: suggestion.Priority, TenantSlug: suggestion.HouseSlug, Unit: suggestion.Unit, Assignee: suggestion.Assignee, TemplateKey: suggestion.TemplateKey, Reply: suggestion.Reply, Actions: append([]string(nil), suggestion.Actions...), Confidence: suggestion.Confidence, CreatedAt: time.Now().UTC()}
+	assignedSlug := normalizeSlug(item.TenantSlug)
+	assignedName := ""
+	if tenant, _, ok := a.organisationTenant(orgKey, assignedSlug); ok {
+		assignedName = houseDisplayName(tenant)
+	}
+	input := ai.TriageInput{Organisation: orgKey, AssignedHouseSlug: assignedSlug, AssignedHouseName: assignedName, AssignedUnit: item.Unit, Source: string(item.Source), Subject: item.Subject, Body: item.Body, FromName: item.FromName, FromEmail: item.FromEmail, FromPhone: item.FromPhone, ReceivedAt: item.ReceivedAt, Houses: houses, Categories: categories, Templates: templateHints, Assignees: a.organisationAssigneeHints(orgKey)}
+	suggestion, err := a.triage.Suggest(ctx, input)
+	confidence := make(map[string]float64, len(suggestion.Confidence))
+	for key, value := range suggestion.Confidence {
+		confidence[key] = value
+	}
+	stored := store.IntakeSuggestion{Source: "model", Model: suggestion.Model, PromptHash: suggestion.PromptHash, Category: suggestion.Category, Priority: suggestion.Priority, TenantSlug: suggestion.HouseSlug, Unit: suggestion.Unit, Assignee: suggestion.Assignee, TemplateKey: suggestion.TemplateKey, Reply: suggestion.Reply, Actions: append([]string(nil), suggestion.Actions...), Confidence: confidence, CreatedAt: time.Now().UTC()}
 	if stored.TenantSlug == "" {
 		stored.TenantSlug = item.TenantSlug
 	}
 	if stored.Unit == "" {
 		stored.Unit = item.Unit
 	}
+	stored.Reply, stored.Unfilled = store.FillReply(stored.Reply, a.intakeReplyValues(orgKey, item, stored))
+	stored.Reply = store.TidyReply(stored.Reply)
+	if len(stored.Unfilled) > 0 && stored.Confidence["overall"] > 0.5 {
+		stored.Confidence["overall"] = 0.5
+	}
 	if stored.Category != "" {
 		a.recordIntakeAudit(stored.TenantSlug, "System (KI)", store.AuditActionIssueAISuggest, item, stored, "KI-Vorschlag erstellt")
 	}
 	return stored, err
+}
+
+// intakeReplyValues supplies the labels visible in the case view. Model text
+// never determines the replacement values themselves.
+func (a *app) intakeReplyValues(orgKey string, item store.IntakeItem, suggestion store.IntakeSuggestion) map[string]string {
+	houseSlug := normalizeSlug(firstNonEmpty(suggestion.TenantSlug, item.TenantSlug))
+	houseName := ""
+	if tenant, _, ok := a.organisationTenant(orgKey, houseSlug); ok {
+		houseName = houseDisplayName(tenant)
+	}
+	assigneeName := ""
+	for _, hint := range a.organisationAssigneeHints(orgKey) {
+		if hint.Key == suggestion.Assignee {
+			assigneeName = hint.Name
+			break
+		}
+	}
+	due := item.DueAt
+	if due.IsZero() {
+		due = intakeDueAt(time.Now(), suggestion.Priority)
+	}
+	return map[string]string{
+		"Name":       item.FromName,
+		"Haus":       houseName,
+		"Einheit":    firstNonEmpty(suggestion.Unit, item.Unit),
+		"Nummer":     item.ID,
+		"Zuständig":  assigneeName,
+		"Frist":      due.In(time.Local).Format("Mo, 02.01.2006"),
+		"Handwerker": "",
+	}
 }
 
 func (a *app) organisationHouseHints(orgKey string) []ai.HouseHint {

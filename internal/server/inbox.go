@@ -329,6 +329,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 		view.Confidence = int(suggestion.Confidence["overall"]*100 + 0.5)
 		view.Model = suggestion.Model
 		view.PromptHash = prefixString(suggestion.PromptHash, 8)
+		view.UnfilledLabels = intakeUnfilledLabels(suggestion.Unfilled)
 	}
 	view.Category = category
 	view.CategoryLabel = viewutil.BreakAfterSlashes(intakeCategoryLabel(category))
@@ -684,7 +685,11 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		item.Suggestion.TemplateKey = template.Key
-		item.Suggestion.Reply = store.RenderTextbaustein(template.Body, map[string]string{"Name": item.FromName, "Haus": item.Suggestion.TenantSlug, "Einheit": firstNonEmpty(item.Suggestion.Unit, item.Unit)})
+		item.Suggestion.Reply, item.Suggestion.Unfilled = store.FillReply(template.Body, a.intakeReplyValues(orgKey, item, *item.Suggestion))
+		item.Suggestion.Reply = store.TidyReply(item.Suggestion.Reply)
+		if len(item.Suggestion.Unfilled) > 0 && item.Suggestion.Confidence["overall"] > 0.5 {
+			item.Suggestion.Confidence["overall"] = 0.5
+		}
 		if err := repo.UpdateSuggestion(r.Context(), id, *item.Suggestion, item.Status); err != nil {
 			a.inboxError(w, err)
 			return
@@ -693,6 +698,20 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 	default:
 		http.Error(w, "Bad request", http.StatusBadRequest)
 	}
+}
+
+func intakeUnfilledLabels(keys []string) []string {
+	labels := map[string]string{
+		"Name": "Name", "Haus": "Haus", "Einheit": "Einheit", "Nummer": "Nummer",
+		"Zuständig": "Zuständig", "Handwerker": "Handwerker", "Frist": "Frist",
+	}
+	items := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if label := labels[key]; label != "" {
+			items = append(items, label)
+		}
+	}
+	return items
 }
 
 func applySuggestionForm(item *store.IntakeItem, r *http.Request) {

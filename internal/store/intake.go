@@ -58,6 +58,7 @@ type IntakeSuggestion struct {
 	Assignee    string             `json:"assignee,omitempty"`
 	TemplateKey string             `json:"template_key,omitempty"`
 	Reply       string             `json:"reply,omitempty"`
+	Unfilled    []string           `json:"unfilled,omitempty"`
 	Actions     []string           `json:"actions,omitempty"`
 	Confidence  map[string]float64 `json:"confidence,omitempty"`
 	CreatedAt   time.Time          `json:"created_at"`

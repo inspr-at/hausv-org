@@ -55,18 +55,21 @@ type AssigneeHint struct {
 }
 
 type TriageInput struct {
-	Organisation string
-	Source       string
-	Subject      string
-	Body         string
-	FromName     string
-	FromEmail    string
-	FromPhone    string
-	ReceivedAt   time.Time
-	Houses       []HouseHint
-	Categories   []CategoryRule
-	Templates    []TemplateHint
-	Assignees    []AssigneeHint
+	Organisation      string
+	AssignedHouseSlug string
+	AssignedHouseName string
+	AssignedUnit      string
+	Source            string
+	Subject           string
+	Body              string
+	FromName          string
+	FromEmail         string
+	FromPhone         string
+	ReceivedAt        time.Time
+	Houses            []HouseHint
+	Categories        []CategoryRule
+	Templates         []TemplateHint
+	Assignees         []AssigneeHint
 }
 
 type TriageSuggestion struct {
