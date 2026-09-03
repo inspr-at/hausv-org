@@ -2235,6 +2235,14 @@ func GermanDateLong(t time.Time) string {
 	return weekdays[int(t.Weekday())%len(weekdays)] + ", " + strconv.Itoa(t.Day()) + ". " + months[month-1] + " " + strconv.Itoa(t.Year())
 }
 
+// GermanDateShort renders "Do, 17.09.2026": the abbreviated German weekday
+// plus the numeric date. Go's layout has no German weekday token, so callers
+// used to write a literal "Mo," that was wrong six days a week.
+func GermanDateShort(t time.Time) string {
+	weekdays := [...]string{"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}
+	return weekdays[int(t.Weekday())%len(weekdays)] + ", " + t.Format("02.01.2006")
+}
+
 func IssueStatuses() []string {
 	return []string{store.IssueStatusNew, store.IssueStatusAccepted, store.IssueStatusScheduled, store.IssueStatusProgress, store.IssueStatusDone, store.IssueStatusRejected, store.IssueStatusDuplicate}
 }

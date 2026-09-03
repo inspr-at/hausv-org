@@ -10,6 +10,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/store"
+	viewutil "github.com/inspr-at/hausv-org/internal/view"
 )
 
 // processIntake applies the organisation's explicit trust policy. It is
@@ -181,7 +182,7 @@ func (a *app) intakeReplyValues(orgKey string, item store.IntakeItem, suggestion
 		"Einheit":    firstNonEmpty(suggestion.Unit, item.Unit),
 		"Nummer":     item.ID,
 		"Zuständig":  assigneeName,
-		"Frist":      due.In(time.Local).Format("Mo, 02.01.2006"),
+		"Frist":      viewutil.GermanDateShort(due.In(time.Local)),
 		"Handwerker": "",
 	}
 }

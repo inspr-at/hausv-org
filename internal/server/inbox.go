@@ -343,7 +343,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 	if due.IsZero() {
 		due = intakeDueAt(time.Now(), priority)
 	}
-	view.Due = due.In(time.Local).Format("Mo, 02.01.2006")
+	view.Due = viewutil.GermanDateShort(due.In(time.Local))
 	view.DueValue = due.In(time.Local).Format("2006-01-02")
 	for _, c := range store.IntakeCategories() {
 		view.Categories = append(view.Categories, web.InboxOption{Value: c.Key, Label: viewutil.BreakAfterSlashes(c.Label), Selected: c.Key == category})
