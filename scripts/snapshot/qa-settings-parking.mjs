@@ -171,7 +171,9 @@ async function geometry(page, viewport, label) {
     const landing = document.querySelector('[data-portal-section-landing]');
     const labelNode = document.querySelector('.side-address-label');
     const mapLink = document.querySelector('a.side-address');
-    const homeLink = document.querySelector('a.side-address-label');
+    // HAUSV-621: the address label is the house header card (a picker summary for
+    // organisation members, a static card otherwise); the map link keeps the full address.
+    const homeLink = document.querySelector('.house-header-card');
     const menu = document.querySelector('.mobile-head > details.menu > summary');
     const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;
@@ -205,11 +207,11 @@ async function geometry(page, viewport, label) {
   }
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
   if (!result.address ||
-      (result.shellPresent && (!result.address.includes('Musterweg 1') || /\bDEMO\b/i.test(result.address)))) {
+      (result.shellPresent && (!result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address)))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
   if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
-      result.homeLabel !== 'Hausportal Demohaus öffnen') {
+      !/Demohaus/.test(result.homeLabel)) {
     fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf`);
   }
   if (result.shellPresent && viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
