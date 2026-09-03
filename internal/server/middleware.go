@@ -132,6 +132,10 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 	}
 	tenant := resolved.tenant
 	if session, ok := a.rolePreviewSessionForRequest(r); ok && session.PreviewRole != "" {
+		if session.TenantSlug != tenant.Slug {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return authCtx{}, false
+		}
 		if reason := a.rolePreviewSessionEndReason(session); reason != "" {
 			a.terminateRolePreview(w, r, session, reason)
 			return authCtx{}, false
