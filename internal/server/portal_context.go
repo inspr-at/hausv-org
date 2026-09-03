@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -29,25 +30,10 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 
 	shell.RoleLabel = ac.role
 	managed := a.managedTenants(ac)
-	managedSlugs := make(map[string]bool, len(managed))
-	for index, tenant := range managed {
-		managedSlugs[tenant.Config.Slug] = true
-		openIssues := 0
-		if a.issueStore != nil {
-			openIssues = issueOpenCount(a.visibleIssuesForActor(tenant.Ref, ac.email, tenant.Role))
-		}
-		current := tenant.Config.Slug == ac.tenant.Slug
-		if current {
-			shell.CurrentHousePosition = index + 1
-		}
-		shell.ManagedHouses = append(shell.ManagedHouses, web.PortalHouse{
-			Slug: tenant.Config.Slug, Name: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
-			Role: tenant.Role, OpenIssueCount: openIssues, Current: current,
-		})
-	}
-
 	organisation, hasOrganisation := a.organisationFor(ac)
-	shell.IsOrganisationMember = len(managed) > 1 || hasOrganisation && len(managed) > 0
+	// A Verwaltung shell belongs to an actual organisation, not merely to a
+	// person who happens to administer more than one unrelated community.
+	shell.IsOrganisationMember = hasOrganisation && len(managed) > 0
 	if shell.IsOrganisationMember {
 		shell.OrganisationName = strings.TrimSpace(organisation.Name)
 		if shell.OrganisationName == "" {
@@ -61,10 +47,36 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 		shell.IsVerwaltung = shell.CanManageOrganisationSettings || len(managed) > 1
 	}
 
-	for _, context := range a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role) {
-		// Other managed community houses belong to the Liegenschaft picker. The
-		// current portal remains so a personal Home portal can be offered beside it.
-		if managedSlugs[context.TenantSlug] && !context.Current {
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	if shell.IsOrganisationMember {
+		for _, tenant := range managed {
+			shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, portalContextView{
+				TenantSlug: tenant.Config.Slug, HouseName: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
+				Role: tenant.Role, Current: tenant.Config.Slug == ac.tenant.Slug,
+			}))
+		}
+	} else {
+		// People can own or rent several unrelated houses without belonging to a
+		// Verwaltung. Their community contexts are house choices as well; only
+		// Home-style portals remain in the separate portal switcher.
+		seen := make(map[string]bool)
+		for _, context := range contexts {
+			if !a.isCommunityPortal(context.TenantSlug) || seen[context.TenantSlug] {
+				continue
+			}
+			seen[context.TenantSlug] = true
+			shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, context))
+		}
+	}
+	for index := range shell.ManagedHouses {
+		if shell.ManagedHouses[index].Current {
+			shell.CurrentHousePosition = index + 1
+			break
+		}
+	}
+
+	for _, context := range contexts {
+		if a.isCommunityPortal(context.TenantSlug) {
 			continue
 		}
 		shell.PortalContexts = append(shell.PortalContexts, web.PortalContext{
@@ -73,6 +85,32 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 		})
 	}
 	return shell
+}
+
+func (a *app) portalHouseForContext(ac *authCtx, context portalContextView) web.PortalHouse {
+	house := web.PortalHouse{
+		Slug: context.TenantSlug, Name: context.HouseName, Address: context.Address,
+		Role: context.Role, Current: context.Current,
+	}
+	if a == nil || ac == nil || a.issueStore == nil {
+		return house
+	}
+	if identity, ok := a.tenantIdentity(context.TenantSlug); ok {
+		house.OpenIssueCount = issueOpenCount(a.visibleIssuesForActor(identity.Ref(), ac.email, context.Role))
+	}
+	return house
+}
+
+// isCommunityPortal identifies a Hausportal/Liegenschaft. Private Home
+// portals deliberately stay in "Portal wechseln" rather than joining the
+// house picker.
+func (a *app) isCommunityPortal(slug string) bool {
+	tenant, ok := a.tenantBySlug(slug)
+	if !ok {
+		return false
+	}
+	portalType := strings.ToLower(strings.TrimSpace(tenant.PortalType))
+	return portalType == config.PortalTypeCommunity
 }
 
 func (a *app) portalContextsFor(email string, currentTenant string, currentRole string) []portalContextView {

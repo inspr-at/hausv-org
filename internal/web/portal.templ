@@ -530,8 +530,11 @@ func portalShellData(data PortalPageData) PortalShellData {
 }
 
 func portalHouseGroupLabel(shell PortalShellData) string {
-	if !shell.IsOrganisationMember || len(shell.ManagedHouses) < 2 {
+	if len(shell.ManagedHouses) < 2 {
 		return "Liegenschaft"
+	}
+	if !shell.IsOrganisationMember {
+		return "Meine Häuser"
 	}
 	position := shell.CurrentHousePosition
 	if position < 1 {

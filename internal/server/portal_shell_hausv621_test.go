@@ -95,3 +95,36 @@ func TestOwnerPortalKeepsGreetingAndFlatHouseNavigationHAUSV620(t *testing.T) {
 		t.Errorf("desktop/mobile static house header count = %d, want 2", got)
 	}
 }
+
+func TestMultiHousePortalUsesPickerWithoutOrganisationHAUSV621(t *testing.T) {
+	a := newPortalContextTestApp(t)
+	for _, slug := range []string{"demo", "haus-b"} {
+		tenant := a.tenants[slug]
+		tenant.PortalType = config.PortalTypeCommunity
+		a.tenants[slug] = tenant
+	}
+	page := authedRequest(t, a, "multi@example.com", "/demo/app")
+	if page.Code != http.StatusOK {
+		t.Fatalf("portal status = %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		"Meine Häuser", "Musterweg 1", "Haus B", "Liegenschaft wechseln",
+		`name="tenant" value="demo"`, `name="tenant" value="haus-b"`,
+		`name="role" value="Eigentümer"`, `name="role" value="Mieter"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("multi-house picker missing %q", want)
+		}
+	}
+	for _, forbidden := range []string{
+		`<header class="portal-organisation-identity"`, `data-two-level="true"`, "Portal wechseln",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("unaffiliated multi-house shell unexpectedly contains %q", forbidden)
+		}
+	}
+	if got := strings.Count(body, `<details class="house-picker" data-house-picker`); got != 2 {
+		t.Errorf("desktop and mobile house picker count = %d, want 2", got)
+	}
+}

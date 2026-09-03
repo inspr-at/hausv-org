@@ -418,21 +418,20 @@ async function assertPortalSwitcherAtomic() {
   const page = await localLogin(context, 'multi@example.com');
   await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
 
-  const switcher = page.locator('aside.sidebar details.context-switch:not(.mobile-context-switch)');
-  if ((await switcher.count()) !== 1) {
-    fail(`Portalwechsler fehlt im Kopf der Seitenleiste oder ist mehrfach vorhanden (${await switcher.count()})`);
+  const picker = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"]');
+  if ((await picker.count()) !== 1) {
+    fail(`Hauswechsler fehlt in der Seitenleiste oder ist mehrfach vorhanden (${await picker.count()})`);
   }
-  if ((await switcher.locator('.context-current strong').textContent())?.trim() !== 'Demohaus') {
-    fail('Portalwechsler zeigt den aktiven Portalnamen nicht eindeutig');
+  if ((await picker.locator(':scope > summary .house-header-copy strong').textContent())?.trim() !== 'Demohaus') {
+    fail('Hauswechsler zeigt den aktiven Hausnamen nicht eindeutig');
   }
-  await switcher.locator('summary').click();
-  await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
+  await picker.locator(':scope > summary').click();
+  await picker.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
-  const after = page.locator('aside.sidebar details.context-switch:not(.mobile-context-switch) .context-current');
+  const after = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"] > summary .house-header-copy strong');
   const accountRole = page.locator('aside.sidebar > footer.account small').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
-      (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
-      (await after.locator('small').textContent())?.trim() !== 'Aktives Portal' ||
+      (await after.textContent())?.trim() !== 'Haus B' ||
       !(await accountRole.textContent())?.includes('Admin')) {
     fail(`Portalwechsel aktualisiert URL, Name oder Account-Rolle nicht atomar (${page.url()})`);
   }
@@ -442,23 +441,20 @@ async function assertPortalSwitcherAtomic() {
     const menu = page.locator('.mobile-head > details.menu');
     if ((await menu.getAttribute('open')) === null) await menu.locator(':scope > summary').click();
     const mobileGeometry = await page.evaluate(() => {
-      const summary = document.querySelector('.mobile-context-switch > summary');
+      const summary = document.querySelector('.mobile-head details.house-picker[data-house-picker-shell="mobile"] > summary');
       const box = summary?.getBoundingClientRect();
-      const style = summary ? getComputedStyle(summary) : null;
       return {
         overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-        switcherVisible: Boolean(summary?.getClientRects().length),
-        switcherContained: Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1),
-        oneLine: style?.whiteSpace === 'nowrap' && style?.textOverflow === 'ellipsis',
+        pickerVisible: Boolean(summary?.getClientRects().length),
+        pickerContained: Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1),
       };
     });
-    if (mobileGeometry.overflow || !mobileGeometry.switcherVisible ||
-        !mobileGeometry.switcherContained || !mobileGeometry.oneLine) {
-      fail(`Portalwechsler ist bei ${width}px nicht als eine Zeile stabil (${JSON.stringify(mobileGeometry)})`);
+    if (mobileGeometry.overflow || !mobileGeometry.pickerVisible || !mobileGeometry.pickerContained) {
+      fail(`Hauswechsler ist bei ${width}px nicht stabil (${JSON.stringify(mobileGeometry)})`);
     }
   }
   await closeContext(context);
-  process.stdout.write('  ✓ Portalwechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
+  process.stdout.write('  ✓ Hauswechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
 }
 
 async function assertSharedAppShellNavigation() {
