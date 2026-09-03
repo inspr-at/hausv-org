@@ -79,15 +79,17 @@ type IntakeTruth struct {
 }
 
 type IntakeFilter struct {
-	Statuses   []IntakeStatus
-	Sources    []IntakeSource
-	TenantSlug string
-	Unassigned bool
-	Assignee   string
-	Since      time.Time
-	Sort       string
-	Limit      int
-	Offset     int
+	Statuses          []IntakeStatus
+	Sources           []IntakeSource
+	TenantSlug        string
+	TenantSlugs       []string
+	Unassigned        bool
+	IncludeUnassigned bool
+	Assignee          string
+	Since             time.Time
+	Sort              string
+	Limit             int
+	Offset            int
 }
 
 type IntakeRepository interface {
