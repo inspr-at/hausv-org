@@ -1,0 +1,226 @@
+[
+  {
+    "key": "reparatur-beauftragt",
+    "category": "reparatur",
+    "title": "Reparatur – Fachbetrieb beauftragt",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nvielen Dank für Ihre Meldung zu {{Haus}}, {{Einheit}}. Wir haben {{Handwerker}} beauftragt, sich innerhalb von {{Frist}} bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "hausordnung-rueckmeldung",
+    "category": "hausordnung",
+    "title": "Hausordnung – Rückmeldung",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in {{Haus}} und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "betriebskosten-pruefung",
+    "category": "betriebskosten",
+    "title": "Betriebskosten – Prüfung",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für {{Haus}}, {{Einheit}}, unter {{Nummer}} und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "freigabe-unterlagen",
+    "category": "freigabe",
+    "title": "Freigabe – Unterlagen erforderlich",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nfür die Prüfung Ihres Vorhabens in {{Einheit}} senden Sie uns bitte Ausführung, Maße und Befestigungsart. {{Zuständig}} koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "schluessel-bestellung",
+    "category": "schluessel",
+    "title": "Schlüssel – Bestellung",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nwir haben Ihre Anfrage für {{Haus}}, {{Einheit}}, aufgenommen. Nach Prüfung der Berechtigung erhalten Sie Kosten und Abholtermin.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "beleg-erfasst",
+    "category": "beleg",
+    "title": "Beleg – Erfasst",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nder übermittelte Beleg für {{Haus}} wurde unter {{Nummer}} erfasst und der zuständigen Kostenstelle zugeordnet.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "termin-bestaetigt",
+    "category": "termin",
+    "title": "Termin – Bestätigt",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nder Termin für {{Haus}}, {{Einheit}}, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von {{Nummer}}.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "versicherung-schaden",
+    "category": "versicherung",
+    "title": "Versicherung – Schaden aufgenommen",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nwir haben die Schadenmeldung für {{Haus}}, {{Einheit}}, aufgenommen und prüfen die Einreichung bei der Gebäudeversicherung. Ihre Referenz lautet {{Nummer}}.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "uebergabe-termin",
+    "category": "uebergabe",
+    "title": "Übergabe – Abstimmung",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nwir koordinieren die Übergabe von {{Einheit}}. {{Zuständig}} meldet sich innerhalb von {{Frist}} mit Terminvorschlägen und der Schlüsselliste.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "stammdaten-geaendert",
+    "category": "stammdaten",
+    "title": "Stammdaten – Änderung aufgenommen",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nIhre Änderung für {{Haus}}, {{Einheit}}, wurde aufgenommen. Sensible Zahlungsdaten bestätigen wir über einen getrennten sicheren Weg.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "aussenanlage-auftrag",
+    "category": "winterdienst_garten",
+    "title": "Außenanlage – Auftrag",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nvielen Dank für den Hinweis bei {{Haus}}. Wir haben die zuständige Hausbetreuung informiert und erwarten die Erledigung innerhalb von {{Frist}}.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "parkplatz-pruefung",
+    "category": "parkplatz",
+    "title": "Parkplatz – Prüfung",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nwir prüfen Ihr Anliegen zur Garage von {{Haus}} und gleichen Stellplatz sowie Berechtigung mit unseren Unterlagen ab.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "sonstiges-rueckfrage",
+    "category": "sonstiges",
+    "title": "Allgemeine Anfrage – Rückfrage",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nvielen Dank für Ihre Nachricht. {{Zuständig}} prüft, ob die Hausverwaltung zuständig ist, und meldet sich innerhalb von {{Frist}}.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  },
+  {
+    "key": "reparatur-rueckfrage",
+    "category": "reparatur",
+    "title": "Reparatur – Rückfrage",
+    "body": "Sehr geehrte{{Anrede}} {{Name}},\n\nfür die sichere Beauftragung zu {{Nummer}} benötigen wir noch ein Foto und ein erreichbares Zeitfenster.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+    "placeholders": [
+      "Anrede",
+      "Name",
+      "Haus",
+      "Einheit",
+      "Nummer",
+      "Handwerker",
+      "Frist",
+      "Zuständig"
+    ]
+  }
+]

@@ -98,8 +98,13 @@ export HV_PORT="$port"
 export HV_QA_HA_PORT="$ha_port"
 export HV_DATA="$tmp/data"
 mkdir -p "$HV_DATA" || exit 1
-# shellcheck source=scripts/snapshot/env.sh
-. "$repo/scripts/snapshot/env.sh"
+if [ "${HV_DEV_FIXTURE:-}" = "demo" ]; then
+    # shellcheck source=scripts/demo/env.sh
+    . "$repo/scripts/demo/env.sh"
+else
+    # shellcheck source=scripts/snapshot/env.sh
+    . "$repo/scripts/snapshot/env.sh"
+fi
 
 if command -v node >/dev/null 2>&1; then
     echo "── starting local Home Assistant fixture on :$ha_port"
