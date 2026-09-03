@@ -13,9 +13,9 @@ func TestRolePreviewHidesAndDeniesVerwaltungLayer(t *testing.T) {
 	const email = "admin@example.com"
 	a := newTestPortalApp(t, userProfile{
 		Email: email, FirstName: "Vera", LastName: "Verwaltung", Role: roleAdmin,
-		Tenants: []string{"demo", "haus-b"},
+		Tenants:           []string{"demo", "haus-b"},
 		TenantMemberships: map[string]tenantMembership{"demo": {Role: roleAdmin}, "haus-b": {Role: roleAdmin}},
-		AuthMethods: defaultAuthMethods(),
+		AuthMethods:       defaultAuthMethods(),
 	})
 	addTestTenant(a, tenantConfig{Slug: "haus-b", Name: "Haus B", Address: "Nebenweg 2"})
 	adminCookie := rolePreviewTestSession(t, a, email, roleAdmin)
