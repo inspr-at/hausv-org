@@ -362,13 +362,7 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
 		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
-		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong>
-			if len(data.RolePreviewChoices) > 0 {
-				<small>{ data.DisplayName } · { rolePreviewCurrentLabel(data.RolePreviewChoices) }</small>
-			} else {
-				<small>{ pageLabel }</small>
-			}
-		</a>
+		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel }</small></a>
 		if len(data.RolePreviewChoices) > 0 {
 			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
 				<span class="role-preview-mobile-badge">Ansicht</span>
