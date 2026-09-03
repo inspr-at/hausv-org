@@ -117,9 +117,9 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
-			// Context switch is now inside the map overlay (.side-place-copy)
-			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `class="side-place-copy"`); i < 0 || j < 0 || i >= j {
-				t.Errorf("place copy overlay must come after the map anchor")
+			// The compact map thumbnail precedes the prominent house copy.
+			if i, j := strings.Index(html, `class="side-map`), strings.Index(html, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
+				t.Errorf("house copy must come after the map thumbnail")
 			}
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
 				t.Errorf("map pin is missing the brand mark")
@@ -192,7 +192,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			for _, marker := range []string{
 				`data-portal-shell`, `data-portal-section-landing`,
 				`data-portal-section-header`, `class="sidebar"`,
-				`class="side-map`, `class="side-address-label"`, `class="account"`,
+				`class="house-map-thumb"`, `class="house-header-copy side-address-label"`, `class="account"`,
 			} {
 				if !strings.Contains(html, marker) {
 					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)

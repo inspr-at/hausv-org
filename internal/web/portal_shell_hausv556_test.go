@@ -18,6 +18,10 @@ func TestPortalSwitcherIsOneSubduedLineHAUSV556(t *testing.T) {
 			{HouseName: "A deliberately long active portal name", TenantSlug: "active", Role: "Admin", Current: true},
 			{HouseName: "Another portal", TenantSlug: "other", Role: "Admin"},
 		},
+		Shell: PortalShellData{Ready: true, PortalContexts: []PortalContext{
+			{HouseName: "A deliberately long active portal name", TenantSlug: "active", Role: "Admin", Current: true},
+			{HouseName: "Another portal", TenantSlug: "other", Role: "Admin"},
+		}},
 	}
 
 	html := renderComponent(t, PortalPage(portal))
