@@ -832,6 +832,11 @@ type app struct {
 	orgSettings   func(orgKey string) store.OrgSettingsRepository
 	textbausteine func(orgKey string) store.TextbausteinRepository
 	triage        ai.TriageSuggester
+	// Suggestion jobs are intentionally process-local. Production runs one app
+	// replica, so cancellation and polling share this single in-memory table.
+	inboxSuggestTimeout time.Duration
+	suggestJobsMu       sync.Mutex
+	suggestJobs         map[string]*suggestJob
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -1058,6 +1063,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/verwaltung", a.page(a.requireVerwaltung(a.portfolioPage)))
 	mux.HandleFunc("GET /app/verwaltung/posteingang", a.page(a.requireVerwaltung(a.inboxPage)))
 	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}", a.page(a.requireVerwaltung(a.inboxCasePage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}/vorschlag", a.page(a.requireVerwaltung(a.inboxSuggestionPartial)))
 	mux.HandleFunc("POST /app/verwaltung/posteingang/{id}", a.action(a.requireVerwaltung(a.inboxCaseAction)))
 	mux.HandleFunc("POST /app/verwaltung/telefonnotiz", a.action(a.requireVerwaltung(a.phoneNoteAction)))
 	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
@@ -1655,6 +1661,10 @@ func newApp() (*app, error) {
 	if err != nil || sessionTTL <= 0 {
 		return nil, fmt.Errorf("invalid SESSION_TTL")
 	}
+	inboxSuggestTimeout, err := parseDuration(env("AI_TIMEOUT", "45s"))
+	if err != nil || inboxSuggestTimeout <= 0 {
+		return nil, fmt.Errorf("invalid AI_TIMEOUT")
+	}
 	chargingTickInterval, err := parseDuration(env("CHARGING_TICK_INTERVAL", "30s"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid CHARGING_TICK_INTERVAL")
@@ -1963,6 +1973,8 @@ func newApp() (*app, error) {
 		mapTileBaseURL:           env("MAP_TILE_BASE_URL", ""),
 		geocoder:                 newNominatimGeocoder(env("GEOCODING_BASE_URL", "")),
 		mapPreviewTiles:          map[string]map[mapTileKey]time.Time{},
+		inboxSuggestTimeout:      inboxSuggestTimeout,
+		suggestJobs:              map[string]*suggestJob{},
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,

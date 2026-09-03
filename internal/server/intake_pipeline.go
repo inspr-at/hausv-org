@@ -30,6 +30,18 @@ func (a *app) processIntake(ctx context.Context, orgKey string, item store.Intak
 			return item, nil
 		}
 		suggestion, suggestErr := a.suggestIntake(ctx, orgKey, item)
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			item.Suggestion = nil
+			item.Status = store.IntakeStatusOpen
+			return item, ctxErr
+		}
+		if errors.Is(suggestErr, context.Canceled) || errors.Is(suggestErr, context.DeadlineExceeded) {
+			// A cancelled or timed-out request must never leave a partial model
+			// response behind. The caller keeps the intake item open.
+			item.Suggestion = nil
+			item.Status = store.IntakeStatusOpen
+			return item, suggestErr
+		}
 		if suggestErr != nil && (suggestion.Category == "" || !errors.Is(suggestErr, ai.ErrUncertain)) {
 			return item, suggestErr
 		}
