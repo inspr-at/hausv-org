@@ -38,3 +38,14 @@ func TestHausv616TidyReplyRemovesModelMadeEmptySlots(t *testing.T) {
 		}
 	}
 }
+
+func TestFillReplyGreetsByNameWhenTheFormOfAddressIsUnknown(t *testing.T) {
+	t.Parallel()
+	text, unfilled := FillReply("Sehr geehrte{{Anrede}} {{Name}},\n\nwir melden uns.", map[string]string{"Name": "Simon Schober"})
+	if text != "Guten Tag Simon Schober,\n\nwir melden uns." {
+		t.Fatalf("text = %q", text)
+	}
+	if len(unfilled) != 0 {
+		t.Fatalf("unfilled = %v, want none", unfilled)
+	}
+}

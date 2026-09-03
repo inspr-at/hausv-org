@@ -19,7 +19,7 @@ func (s *hausv616Suggester) Suggest(_ context.Context, in ai.TriageInput) (ai.Tr
 	s.input = in
 	return ai.TriageSuggestion{
 		Category: store.IntakeCategoryMasterData, Priority: store.IssuePriorityNorm,
-		Reply:      "Ihre Änderung für {{Haus}}, {{Einheit}}, wurde aufgenommen. {{Handwerker}}",
+		Reply:      "Ihre Änderung für {{Haus}}, {{Einheit}}, wurde aufgenommen. {{Zuständig}} meldet sich innerhalb von {{Frist}}.",
 		Confidence: map[string]float64{"overall": .9},
 	}, nil
 }
@@ -42,7 +42,7 @@ func TestHausv616SuggestionFillsAssignedHouseAndMarksMissingValues(t *testing.T)
 	if !strings.Contains(got.Reply, "Grazbachgasse 14, Top 7") || strings.Contains(got.Reply, "{{") {
 		t.Fatalf("reply = %q", got.Reply)
 	}
-	if len(got.Unfilled) != 1 || got.Unfilled[0] != "Handwerker" || got.Confidence["overall"] != .5 {
+	if len(got.Unfilled) != 1 || got.Unfilled[0] != "Zuständig" || got.Confidence["overall"] != .5 {
 		t.Fatalf("suggestion = %#v", got)
 	}
 }

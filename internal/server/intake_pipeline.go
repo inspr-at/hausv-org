@@ -10,7 +10,6 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/store"
-	viewutil "github.com/inspr-at/hausv-org/internal/view"
 )
 
 // processIntake applies the organisation's explicit trust policy. It is
@@ -172,18 +171,34 @@ func (a *app) intakeReplyValues(orgKey string, item store.IntakeItem, suggestion
 			break
 		}
 	}
-	due := item.DueAt
-	if due.IsZero() {
-		due = intakeDueAt(time.Now(), suggestion.Priority)
-	}
 	return map[string]string{
-		"Name":       item.FromName,
-		"Haus":       houseName,
-		"Einheit":    firstNonEmpty(suggestion.Unit, item.Unit),
-		"Nummer":     item.ID,
-		"Zuständig":  assigneeName,
-		"Frist":      viewutil.GermanDateShort(due.In(time.Local)),
-		"Handwerker": "",
+		"Name":      item.FromName,
+		"Haus":      houseName,
+		"Einheit":   firstNonEmpty(suggestion.Unit, item.Unit),
+		"Nummer":    item.ID,
+		"Zuständig": assigneeName,
+		// The seed templates say "innerhalb von {{Frist}}", so Frist is a
+		// duration derived from the priority (the same ladder as the due
+		// date), not a calendar date.
+		"Frist": intakeFristPhrase(suggestion.Priority),
+		// A contractor is never known at triage time; the generic phrase the
+		// fixture uses is a value, not a gap to flag.
+		"Handwerker": "unseren zuständigen Fachbetrieb",
+	}
+}
+
+// intakeFristPhrase words the response deadline the way the Textbausteine
+// expect it ("innerhalb von …"), following the due-date ladder per priority.
+func intakeFristPhrase(priority string) string {
+	switch priority {
+	case store.IssuePriorityUrgent:
+		return "vier Stunden"
+	case store.IssuePriorityHigh:
+		return "24 Stunden"
+	case store.IssuePriorityLow:
+		return "zwei Wochen"
+	default:
+		return "vier Werktagen"
 	}
 }
 

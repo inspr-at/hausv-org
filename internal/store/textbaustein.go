@@ -226,6 +226,10 @@ func FillReply(text string, values map[string]string) (string, []string) {
 	if strings.TrimSpace(values["Name"]) == "" && emptySalutation.MatchString(text) {
 		text = emptySalutation.ReplaceAllString(text, "Sehr geehrte Damen und Herren")
 		addUnfilled("Name")
+	} else if strings.TrimSpace(values["Anrede"]) == "" && emptySalutation.MatchString(text) {
+		// Without a known form of address "Sehr geehrte Simon Schober" is wrong
+		// in both genders; the neutral greeting keeps the name.
+		text = emptySalutation.ReplaceAllString(text, "Guten Tag "+strings.TrimSpace(values["Name"]))
 	}
 	text = textbausteinPlaceholder.ReplaceAllStringFunc(text, func(token string) string {
 		matches := textbausteinPlaceholder.FindStringSubmatch(token)
