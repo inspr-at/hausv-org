@@ -13,6 +13,7 @@ fail=0
 
 check() {
     local label=$1
+    shift
     if "$@"; then
         printf 'PASS  %s\n' "$label"
         pass=$((pass + 1))
