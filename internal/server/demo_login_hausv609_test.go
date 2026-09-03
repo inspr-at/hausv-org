@@ -10,7 +10,7 @@ import (
 
 // The demo bundle (HAUSV-609) runs on a public host where LOCAL_DEV_LOGIN is
 // off by design. DEMO_LOGIN_ENABLED plus a shared access code renders the
-// magic link inline; a wrong code renders nothing and burns the token.
+// magic link inline; a wrong code renders nothing and creates no token.
 func TestDemoLoginRendersDevLinkOnlyWithAccessCode(t *testing.T) {
 	const email = "manager@example.com"
 	a := newTestPortalApp(t, userProfile{
