@@ -448,8 +448,12 @@ func shiftSeedDates(anchor time.Time, intake []seedIntake, events []seedEvent, a
 	if shift == 0 {
 		return
 	}
+	clampToNow := a.Hour() != 0 || a.Minute() != 0
 	for i := range intake {
 		intake[i].ReceivedAt = intake[i].ReceivedAt.Add(shift)
+		if clampToNow && intake[i].ReceivedAt.After(a) {
+			intake[i].ReceivedAt = a.Add(-time.Duration(i%45+1) * time.Minute)
+		}
 	}
 	for i := range events {
 		events[i].StartsAt = events[i].StartsAt.Add(shift)

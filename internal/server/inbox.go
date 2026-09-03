@@ -52,6 +52,7 @@ func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, se
 func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query url.Values, selectedID string, full bool) (web.InboxData, error) {
 	repo := a.intake(orgKey)
 	filter := store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}}
+	filter.Limit = inboxListLimit(query)
 	switch query.Get("source") {
 	case "email":
 		filter.Sources = []store.IntakeSource{store.IntakeSourceEmail}
@@ -696,4 +697,19 @@ func settingsDiff(before, after store.OrgSettings) string {
 		return "keine Änderung"
 	}
 	return strings.Join(parts, "; ")
+}
+
+// inboxListLimit keeps the queue readable: the newest 80 items by default,
+// ?limit=<n> up to 1000 for a full backlog view.
+func inboxListLimit(query url.Values) int {
+	limit := 80
+	if raw := strings.TrimSpace(query.Get("limit")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	return limit
 }
