@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,9 +13,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
+
+const defaultInboxSuggestTimeout = 45 * time.Second
+
+type suggestJob struct {
+	started   time.Time
+	cancel    context.CancelFunc
+	done      bool
+	cancelled bool
+	errClass  string
+	finished  time.Time
+}
 
 func (a *app) inboxPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.renderInbox(w, r, ac, "", false)
@@ -39,6 +52,12 @@ func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, se
 		http.Error(w, "Posteingang nicht verfügbar.", http.StatusInternalServerError)
 		return
 	}
+	nonce, err := randomToken(24)
+	if err != nil {
+		http.Error(w, "Posteingang nicht verfügbar.", http.StatusInternalServerError)
+		return
+	}
+	data.ScriptNonce = nonce
 	var rendered bytes.Buffer
 	component := web.InboxPage(a.verwaltungShell(&ac, "inbox"), data)
 	if full {
@@ -50,33 +69,47 @@ func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, se
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", inboxContentSecurityPolicy(nonce))
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
+}
+
+func inboxContentSecurityPolicy(nonce string) string {
+	return "default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-" + nonce + "'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'"
+}
+
+func (a *app) inboxSuggestionPartial(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	orgKey, ok := a.inboxOrganisationKey(&ac)
+	if !ok || a.intake == nil {
+		http.Error(w, "Posteingang nicht verfügbar.", http.StatusServiceUnavailable)
+		return
+	}
+	item, err := a.intake(orgKey).Get(r.Context(), strings.TrimSpace(r.PathValue("id")))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if !a.actorCanAccessIntake(&ac, item) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	view, err := a.inboxCaseView(r.Context(), orgKey, item, a.inboxHouses(&ac), false)
+	if err != nil {
+		a.inboxError(w, err)
+		return
+	}
+	view.QueueQuery = inboxQueueQuery(r.URL.Query())
+	var rendered bytes.Buffer
+	if err := web.InboxSuggestionPartial(view).Render(r.Context(), &rendered); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
 }
 
 func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query url.Values, selectedID string, full bool) (web.InboxData, error) {
 	repo := a.intake(orgKey)
-	filter := a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected})
-	filter.Limit = inboxListLimit(query)
-	switch query.Get("source") {
-	case "email":
-		filter.Sources = []store.IntakeSource{store.IntakeSourceEmail}
-	case "phone":
-		filter.Sources = []store.IntakeSource{store.IntakeSourcePhone}
-	case "portal":
-		filter.Sources = []store.IntakeSource{store.IntakeSourcePortal}
-	}
-	if a.actorManagesTenant(ac, query.Get("house")) {
-		filter.TenantSlug = query.Get("house")
-	}
-	filter.Assignee = strings.TrimSpace(query.Get("assignee"))
-	switch query.Get("status") {
-	case "open":
-		filter.Statuses = []store.IntakeStatus{store.IntakeStatusOpen}
-	case "proposed":
-		filter.Statuses = []store.IntakeStatus{store.IntakeStatusProposed}
-	case "rejected":
-		filter.Statuses = []store.IntakeStatus{store.IntakeStatusRejected}
-	}
+	filter := a.inboxListFilter(ac, query)
 	items, err := repo.List(ctx, filter)
 	if err != nil {
 		return web.InboxData{}, err
@@ -126,7 +159,24 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 	if selectedID == "" && len(items) > 0 {
 		selectedID = items[0].ID
 	}
-	data := web.InboxData{Eyebrow: strings.ToUpper(a.inboxOrganisationName(ac)) + " · POSTEINGANG", Lede: fmt.Sprintf("%d offen · %d mit Vorschlag · %d unzugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto)), Houses: houses, Sort: query.Get("sort"), FullPage: full, Flash: query.Get("flash"), ProviderFootline: a.inboxProviderFootline()}
+	queueQuery := inboxQueueQuery(query)
+	data := web.InboxData{
+		Eyebrow:          strings.ToUpper(a.inboxOrganisationName(ac)) + " · POSTEINGANG",
+		Lede:             fmt.Sprintf("%d offen · %d mit Vorschlag · %d nicht zugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto)),
+		Houses:           houses,
+		Sort:             query.Get("sort"),
+		FullPage:         full,
+		Flash:            query.Get("flash"),
+		ProviderFootline: a.inboxProviderFootline(),
+		QueueQuery:       queueQuery,
+		OpenCount:        openCount,
+		UnassignedCount:  unassignedCount,
+		ProposedCount:    proposedCount,
+		AllFilterURL:     inboxFilterURL(query, "", ""),
+		UnassignedURL:    inboxFilterURL(query, "unassigned", "1"),
+		OpenFilterURL:    inboxFilterURL(query, "status", "open"),
+		ProposedURL:      inboxFilterURL(query, "status", "proposed"),
+	}
 	for _, house := range houses {
 		data.HouseFilter = append(data.HouseFilter, web.InboxOption{Value: house.Slug, Label: house.Name, Selected: filter.TenantSlug == house.Slug})
 	}
@@ -148,10 +198,78 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 			if viewErr != nil {
 				return web.InboxData{}, viewErr
 			}
+			view.QueueQuery = queueQuery
 			data.Selected = &view
 		}
 	}
+	for index, item := range items {
+		if item.ID != selectedID || data.Selected == nil {
+			continue
+		}
+		data.Selected.Position = index + 1
+		data.Selected.Total = openCount
+		if index > 0 {
+			data.Selected.PrevURL = "/app/verwaltung/posteingang/" + url.PathEscape(items[index-1].ID) + queueQuery
+		}
+		if index+1 < len(items) {
+			data.Selected.NextURL = "/app/verwaltung/posteingang/" + url.PathEscape(items[index+1].ID) + queueQuery
+		}
+		break
+	}
 	return data, nil
+}
+
+func (a *app) inboxListFilter(ac *authCtx, query url.Values) store.IntakeFilter {
+	filter := a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected})
+	filter.Limit = inboxListLimit(query)
+	switch query.Get("source") {
+	case "email":
+		filter.Sources = []store.IntakeSource{store.IntakeSourceEmail}
+	case "phone":
+		filter.Sources = []store.IntakeSource{store.IntakeSourcePhone}
+	case "portal":
+		filter.Sources = []store.IntakeSource{store.IntakeSourcePortal}
+	}
+	if a.actorManagesTenant(ac, query.Get("house")) {
+		filter.TenantSlug = query.Get("house")
+	}
+	filter.Assignee = strings.TrimSpace(query.Get("assignee"))
+	filter.Unassigned = query.Get("unassigned") == "1"
+	switch query.Get("status") {
+	case "open":
+		filter.Statuses = []store.IntakeStatus{store.IntakeStatusOpen}
+	case "proposed":
+		filter.Statuses = []store.IntakeStatus{store.IntakeStatusProposed}
+	case "rejected":
+		filter.Statuses = []store.IntakeStatus{store.IntakeStatusRejected}
+	}
+	return filter
+}
+
+func inboxQueueQuery(query url.Values) string {
+	clean := url.Values{}
+	for _, key := range []string{"source", "house", "assignee", "status", "sort", "unassigned", "limit"} {
+		if value := strings.TrimSpace(query.Get(key)); value != "" {
+			clean.Set(key, value)
+		}
+	}
+	if encoded := clean.Encode(); encoded != "" {
+		return "?" + encoded
+	}
+	return ""
+}
+
+func inboxFilterURL(query url.Values, key, value string) string {
+	clean, _ := url.ParseQuery(strings.TrimPrefix(inboxQueueQuery(query), "?"))
+	clean.Del("status")
+	clean.Del("unassigned")
+	if key != "" && value != "" {
+		clean.Set(key, value)
+	}
+	if encoded := clean.Encode(); encoded != "" {
+		return "/app/verwaltung/posteingang?" + encoded
+	}
+	return "/app/verwaltung/posteingang"
 }
 
 func intakeHandledToday(item store.IntakeItem, now time.Time) bool {
@@ -167,29 +285,36 @@ func inboxQueueView(item store.IntakeItem, names map[string]string, selectedID s
 	if house == "" {
 		house = "Nicht zugeordnet"
 	}
-	view := web.InboxItem{ID: item.ID, Source: inboxSourceLabel(item.Source), Subject: item.Subject, House: house, Unit: item.Unit, Age: relativeAge(now, item.ReceivedAt), Time: item.ReceivedAt.In(time.Local).Format("15:04"), Selected: item.ID == selectedID, Unassigned: item.TenantSlug == ""}
+	statusLabel, statusTone := inboxStatus(item)
+	view := web.InboxItem{ID: item.ID, Source: inboxSourceLabel(item.Source), Subject: item.Subject, House: house, Unit: item.Unit, Age: relativeAge(now, item.ReceivedAt), Time: item.ReceivedAt.In(time.Local).Format("15:04"), Status: statusLabel, StatusTone: statusTone, Selected: item.ID == selectedID, Unassigned: item.TenantSlug == ""}
 	if item.Suggestion != nil {
 		view.Priority = store.NormalizeIssuePriority(item.Suggestion.Priority)
 		view.Proposal = "Vorschlag: " + intakeCategoryShort(item.Suggestion.Category) + " · " + view.Priority
 	}
-	switch item.Status {
-	case store.IntakeStatusRejected:
-		view.Status = "Manuell"
-		view.Proposal = "Manuell"
-	case store.IntakeStatusApproved, store.IntakeStatusEdited:
-		view.Status = "Freigegeben"
-		view.Proposal = "Freigegeben"
-	case store.IntakeStatusAuto:
-		view.Status = "Automatisch"
-		view.Proposal = "Automatisch"
-	}
 	return view
+}
+
+func inboxStatus(item store.IntakeItem) (label, tone string) {
+	if item.TenantSlug == "" {
+		return "Nicht zugeordnet", "neutral"
+	}
+	switch item.Status {
+	case store.IntakeStatusProposed:
+		return "Vorschlag liegt vor", "ok"
+	case store.IntakeStatusApproved, store.IntakeStatusEdited:
+		return "Freigegeben", "info"
+	case store.IntakeStatusAuto:
+		return "Automatisch erledigt", "neutral"
+	default:
+		return "Offen", "gold"
+	}
 }
 
 func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.IntakeItem, houses []web.InboxHouse, editing bool) (web.InboxCase, error) {
 	provider := a.inboxProviderLabel()
 	suggestion := item.Suggestion
-	view := web.InboxCase{ID: item.ID, Subject: item.Subject, Meta: inboxSourceLabel(item.Source) + " · " + firstNonEmpty(item.TenantSlug, "nicht zugeordnet") + " · " + item.Unit, Sender: firstNonEmpty(item.FromName, item.FromEmail, item.FromPhone, "Unbekannt"), Received: item.ReceivedAt.In(time.Local).Format("02.01.2006 · 15:04"), Body: item.Body, Status: string(item.Status), HasSuggestion: suggestion != nil, CanSuggest: a.triage != nil, Editing: editing, ProviderLabel: provider, Created: "Eingegangen " + item.ReceivedAt.In(time.Local).Format("02.01. · 15:04")}
+	statusLabel, statusTone := inboxStatus(item)
+	view := web.InboxCase{ID: item.ID, Subject: item.Subject, Sender: firstNonEmpty(item.FromName, item.FromEmail, item.FromPhone, "Unbekannt"), Received: item.ReceivedAt.In(time.Local).Format("02.01.2006 · 15:04"), Body: item.Body, Status: statusLabel, StatusTone: statusTone, HasSuggestion: suggestion != nil, CanSuggest: a.triage != nil, Unassigned: item.TenantSlug == "", Editing: editing, ProviderLabel: provider, Created: "Eingegangen " + item.ReceivedAt.In(time.Local).Format("02.01. · 15:04")}
 	category, priority, houseSlug, unit, assignee, templateKey, reply := "", store.IssuePriorityNorm, item.TenantSlug, item.Unit, "", "", ""
 	if suggestion != nil {
 		category = suggestion.Category
@@ -234,6 +359,12 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 	if view.HouseLabel == "" {
 		view.HouseLabel = "Nicht zugeordnet"
 	}
+	metaParts := []string{inboxSourceLabel(item.Source), view.HouseLabel}
+	if item.Unit != "" {
+		metaParts = append(metaParts, item.Unit)
+	}
+	metaParts = append(metaParts, relativeAge(time.Now(), item.ReceivedAt))
+	view.Meta = strings.Join(metaParts, " · ")
 	for _, hint := range a.organisationAssigneeHints(orgKey) {
 		selected := hint.Key == assignee
 		view.Assignees = append(view.Assignees, web.InboxOption{Value: hint.Key, Label: hint.Name, Selected: selected})
@@ -242,7 +373,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 		}
 	}
 	if view.AssigneeLabel == "" {
-		view.AssigneeLabel = firstNonEmpty(assignee, "Nicht zugeordnet")
+		view.AssigneeLabel = "Nicht zugeordnet"
 	}
 	if a.textbausteine != nil {
 		templates, err := a.textbausteine(orgKey).List(ctx)
@@ -262,7 +393,126 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 	if item.Handling != nil {
 		view.Handling = firstNonEmpty(item.Handling.ByName, item.Handling.ByEmail) + " · " + item.Handling.At.In(time.Local).Format("02.01. · 15:04")
 	}
+	a.applySuggestJobView(&view)
 	return view, nil
+}
+
+func (a *app) applySuggestJobView(view *web.InboxCase) {
+	if a == nil || view == nil {
+		return
+	}
+	a.suggestJobsMu.Lock()
+	job := a.suggestJobs[view.ID]
+	if job != nil {
+		started, done, cancelled, errClass, finished := job.started, job.done, job.cancelled, job.errClass, job.finished
+		a.suggestJobsMu.Unlock()
+		view.SuggestionElapsed = int(time.Since(started).Seconds())
+		if view.SuggestionElapsed < 0 {
+			view.SuggestionElapsed = 0
+		}
+		view.SuggestionTimeout = int(a.suggestionTimeout().Seconds())
+		switch {
+		case !done:
+			view.SuggestionState = "running"
+		case cancelled:
+			view.SuggestionState = "cancelled"
+		case errClass != "":
+			view.SuggestionState = "failed"
+			view.SuggestionError = errClass
+		default:
+			view.SuggestionState = "arrived"
+		}
+		if !finished.IsZero() {
+			view.SuggestionFinished = finished.In(time.Local).Format("15:04")
+		}
+		return
+	}
+	a.suggestJobsMu.Unlock()
+}
+
+func (a *app) suggestionTimeout() time.Duration {
+	if a == nil || a.inboxSuggestTimeout <= 0 {
+		return defaultInboxSuggestTimeout
+	}
+	return a.inboxSuggestTimeout
+}
+
+func (a *app) startSuggestJob(requestCtx context.Context, orgKey string, item store.IntakeItem, actor string) (bool, error) {
+	a.suggestJobsMu.Lock()
+	if a.suggestJobs == nil {
+		a.suggestJobs = map[string]*suggestJob{}
+	}
+	if existing := a.suggestJobs[item.ID]; existing != nil && !existing.done {
+		a.suggestJobsMu.Unlock()
+		return false, nil
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(requestCtx), a.suggestionTimeout())
+	job := &suggestJob{started: time.Now(), cancel: cancel}
+	a.suggestJobs[item.ID] = job
+	a.suggestJobsMu.Unlock()
+
+	item.Suggestion = nil
+	item.Status = store.IntakeStatusOpen
+	item.UpdatedAt = time.Now().UTC()
+	if err := a.intake(orgKey).Create(requestCtx, item); err != nil {
+		cancel()
+		a.suggestJobsMu.Lock()
+		if a.suggestJobs[item.ID] == job {
+			delete(a.suggestJobs, item.ID)
+		}
+		a.suggestJobsMu.Unlock()
+		return false, err
+	}
+
+	go a.runSuggestJob(ctx, orgKey, item, actor, job)
+	return true, nil
+}
+
+func (a *app) runSuggestJob(ctx context.Context, orgKey string, item store.IntakeItem, actor string, job *suggestJob) {
+	defer job.cancel()
+	result, err := a.processIntake(ctx, orgKey, item, actor)
+	errClass := inboxSuggestionError(err)
+	if err == nil && result.Suggestion == nil {
+		errClass = "Antwort unbrauchbar"
+	}
+	finished := time.Now()
+	a.suggestJobsMu.Lock()
+	defer a.suggestJobsMu.Unlock()
+	if current := a.suggestJobs[item.ID]; current != job || job.cancelled {
+		return
+	}
+	job.done = true
+	job.errClass = errClass
+	job.finished = finished
+}
+
+func inboxSuggestionError(err error) string {
+	if err == nil {
+		return ""
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "Zeitüberschreitung"
+	}
+	lower := strings.ToLower(err.Error())
+	if errors.Is(err, ai.ErrUncertain) || strings.Contains(lower, "decode") || strings.Contains(lower, "no choices") || strings.Contains(lower, "choice was empty") || strings.Contains(lower, "too large") || strings.Contains(lower, "unknown category") || strings.Contains(lower, "unknown priority") || strings.Contains(lower, "unknown house") || strings.Contains(lower, "unknown assignee") || strings.Contains(lower, "unknown template") || strings.Contains(lower, "unbrauchbar") {
+		return "Antwort unbrauchbar"
+	}
+	return "Anbieter nicht erreichbar"
+}
+
+func (a *app) cancelSuggestJob(item store.IntakeItem) bool {
+	a.suggestJobsMu.Lock()
+	job := a.suggestJobs[item.ID]
+	if job == nil || job.done {
+		a.suggestJobsMu.Unlock()
+		return false
+	}
+	job.cancelled = true
+	job.done = true
+	job.finished = time.Now()
+	job.cancel()
+	a.suggestJobsMu.Unlock()
+	return true
 }
 
 func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -287,10 +537,11 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 		return
 	}
 	action := strings.TrimSpace(r.FormValue("action"))
+	queueQuery, _ := url.ParseQuery(strings.TrimPrefix(r.FormValue("queue_query"), "?"))
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	actorName := profile.DisplayName()
 	switch action {
-	case "approve", "edit":
+	case "approve", "approve_next", "edit":
 		if item.Suggestion == nil {
 			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
 			return
@@ -309,6 +560,10 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 				a.inboxError(w, err)
 				return
 			}
+		}
+		next := ""
+		if action == "approve_next" {
+			next = a.nextOpenIntakeID(r.Context(), orgKey, &ac, id, queueQuery)
 		}
 		if !a.actorManagesTenant(&ac, firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)) {
 			http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
@@ -329,13 +584,16 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		house := a.tenants[firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)]
-		next := a.nextOpenIntakeID(r.Context(), orgKey, &ac, id)
-		location := "/app/verwaltung/posteingang"
-		if next != "" {
-			location += "/" + url.PathEscape(next)
+		flash := "Antwort gesendet, Anliegen angelegt · " + houseDisplayName(house)
+		if action == "approve_next" {
+			if next == "" {
+				a.inboxRedirectWithQuery(w, r, "", queueQuery, "Alle offenen Anliegen erledigt")
+				return
+			}
+			a.inboxRedirectWithQuery(w, r, next, queueQuery, flash)
+			return
 		}
-		location += "?flash=" + url.QueryEscape("Antwort gesendet, Anliegen angelegt · "+houseDisplayName(house))
-		http.Redirect(w, r, location, http.StatusSeeOther)
+		a.inboxRedirectWithQuery(w, r, id, queueQuery, flash)
 	case "reject":
 		if item.Suggestion == nil {
 			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
@@ -372,10 +630,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		a.recordIntakeAudit(house, ac.email, store.AuditActionIntakeAssign, item, store.IntakeSuggestion{}, "Haus zugeordnet")
-		if a.triage != nil {
-			_, _ = a.processIntake(r.Context(), orgKey, item, ac.email)
-		}
-		a.inboxRedirect(w, r, id, "Haus zugeordnet")
+		a.inboxRedirectWithQuery(w, r, id, queueQuery, "Haus zugeordnet")
 	case "restore":
 		if item.Status != store.IntakeStatusAuto || item.Suggestion == nil {
 			http.Error(w, "Anliegen kann nicht wiederhergestellt werden.", http.StatusConflict)
@@ -400,17 +655,23 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
 			return
 		}
-		item.Suggestion = nil
-		item.Status = store.IntakeStatusOpen
-		if err := repo.Create(r.Context(), item); err != nil {
+		if _, err := a.startSuggestJob(r.Context(), orgKey, item, ac.email); err != nil {
 			a.inboxError(w, err)
 			return
 		}
-		if _, err := a.processIntake(r.Context(), orgKey, item, ac.email); err != nil {
-			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
-			return
+		a.inboxRedirectWithQuery(w, r, id, queueQuery, "")
+	case "suggest_cancel":
+		if a.cancelSuggestJob(item) {
+			item.Suggestion = nil
+			item.Status = store.IntakeStatusOpen
+			item.UpdatedAt = time.Now().UTC()
+			if err := repo.Create(r.Context(), item); err != nil {
+				a.inboxError(w, err)
+				return
+			}
+			a.recordIntakeAudit(item.TenantSlug, ac.email, store.AuditActionIssueAICancel, item, store.IntakeSuggestion{}, "KI-Anfrage abgebrochen")
 		}
-		a.inboxRedirect(w, r, id, "Vorschlag erstellt")
+		a.inboxRedirectWithQuery(w, r, id, queueQuery, "")
 	case "template":
 		if item.Suggestion == nil || a.textbausteine == nil {
 			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
@@ -563,27 +824,45 @@ func (a *app) inboxProviderFootline() string {
 	}
 	return "KI läuft " + label + " · jeder Vorschlag und jede Freigabe wird protokolliert"
 }
-func (a *app) nextOpenIntakeID(ctx context.Context, orgKey string, ac *authCtx, current string) string {
+func (a *app) nextOpenIntakeID(ctx context.Context, orgKey string, ac *authCtx, current string, query url.Values) string {
 	// The current action already proved access; use the same managed-house scope
-	// for selecting the next queue item so navigation cannot cross house boundaries.
-	items, err := a.intake(orgKey).List(ctx, a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}))
+	// and visible filter/sort for navigation so it cannot cross queue boundaries.
+	filter := a.inboxListFilter(ac, query)
+	items, err := a.intake(orgKey).List(ctx, filter)
 	if err != nil {
 		return ""
 	}
+	if query.Get("sort") == "age" {
+		for left, right := 0, len(items)-1; left < right; left, right = left+1, right-1 {
+			items[left], items[right] = items[right], items[left]
+		}
+	}
+	foundCurrent := false
 	for _, item := range items {
-		if item.ID != current {
+		if item.ID == current {
+			foundCurrent = true
+			continue
+		}
+		if foundCurrent && item.TenantSlug != "" && (item.Status == store.IntakeStatusOpen || item.Status == store.IntakeStatusProposed) {
 			return item.ID
 		}
 	}
 	return ""
 }
 func (a *app) inboxRedirect(w http.ResponseWriter, r *http.Request, id, flash string) {
+	a.inboxRedirectWithQuery(w, r, id, nil, flash)
+}
+func (a *app) inboxRedirectWithQuery(w http.ResponseWriter, r *http.Request, id string, query url.Values, flash string) {
 	location := "/app/verwaltung/posteingang"
 	if id != "" {
 		location += "/" + url.PathEscape(id)
 	}
+	clean, _ := url.ParseQuery(strings.TrimPrefix(inboxQueueQuery(query), "?"))
 	if flash != "" {
-		location += "?flash=" + url.QueryEscape(flash)
+		clean.Set("flash", flash)
+	}
+	if encoded := clean.Encode(); encoded != "" {
+		location += "?" + encoded
 	}
 	http.Redirect(w, r, location, http.StatusSeeOther)
 }
