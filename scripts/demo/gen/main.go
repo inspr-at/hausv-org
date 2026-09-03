@@ -318,9 +318,9 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 			material := materialByCategory[spec.key][round%len(materialByCategory[spec.key])]
 			body := expand(material.Body, h, unitLabel, resident.Name, index)
 			subject := expand(material.Subject, h, unitLabel, resident.Name, index)
-			assignee := "vera"
+			assignee := "vera.verwalter"
 			if index%3 == 0 {
-				assignee = "paul"
+				assignee = "paul.sommer"
 			}
 			tr := truth{Category: spec.key, Priority: spec.priority, Assignee: assignee, TemplateKey: spec.template}
 			item := intakeItem{
@@ -389,11 +389,11 @@ func renderReply(body, name string, h house, unitLabel, assignee string) string 
 	parts := strings.Fields(name)
 	last := parts[len(parts)-1]
 	zustaendig := "Vera Verwalter"
-	if assignee == "paul" {
+	if assignee == "paul.sommer" {
 		zustaendig = "Paul Sommer"
 	}
 	replacer := strings.NewReplacer(
-		"{{Anrede}}", " Frau", "{{Name}}", last, "{{Haus}}", h.Name, "{{Einheit}}", unitLabel,
+		"{{Anrede}}", salutationFor(parts[0]), "{{Name}}", last, "{{Haus}}", h.Name, "{{Einheit}}", unitLabel,
 		"{{Nummer}}", "HV-2026-09", "{{Handwerker}}", "unseren zuständigen Fachbetrieb", "{{Frist}}", "zwei Werktagen", "{{Zuständig}}", zustaendig,
 	)
 	return replacer.Replace(body)
@@ -452,6 +452,16 @@ func buildOrg() map[string]any {
 	return map[string]any{
 		"key": "musterstadt", "name": "Hausverwaltung Musterstadt GmbH", "trust_levels": trust,
 		"auto_threshold": 0.9, "auto_enabled": true,
-		"assignees": []map[string]string{{"key": "vera", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul", "email": "paul.sommer@musterstadt.example", "name": "Paul Sommer"}},
+		"assignees": []map[string]string{{"key": "vera.verwalter", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul.sommer", "email": "paul.sommer@musterstadt.example", "name": "Paul Sommer"}},
 	}
+}
+
+// salutationFor completes "Sehr geehrte{{Anrede}}" for the fixture persons:
+// " Frau" for the female first names in the material, "r Herr" otherwise.
+func salutationFor(firstName string) string {
+	female := map[string]bool{"Anna": true, "Maria": true, "Rita": true, "Nora": true, "Clara": true, "Bianca": true, "Sabine": true, "Petra": true, "Eva": true, "Julia": true, "Lena": true, "Sophie": true, "Katharina": true, "Ines": true, "Elisabeth": true, "Barbara": true, "Monika": true, "Andrea": true, "Christine": true, "Ursula": true, "Gerlinde": true, "Helga": true, "Renate": true, "Brigitte": true, "Claudia": true, "Martina": true, "Sandra": true, "Nicole": true, "Verena": true, "Tanja": true, "Laura": true, "Sarah": true, "Lisa": true, "Marlene": true, "Theresa": true, "Johanna": true, "Vera": true, "Hanna": true, "Emma": true, "Mia": true, "Lea": true, "Nina": true, "Silvia": true, "Margit": true, "Karin": true, "Doris": true, "Gabriele": true, "Birgit": true, "Ingrid": true, "Susanne": true, "Michaela": true, "Daniela": true, "Bettina": true, "Kerstin": true, "Alexandra": true, "Angelika": true, "Waltraud": true, "Hermine": true, "Leonie": true, "Valentina": true, "Magdalena": true, "Franziska": true, "Carina": true, "Melanie": true, "Stefanie": true, "Jasmin": true, "Simone": true, "Manuela": true, "Elke": true, "Astrid": true, "Iris": true, "Sonja": true}
+	if female[firstName] {
+		return " Frau"
+	}
+	return "r Herr"
 }

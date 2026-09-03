@@ -159,7 +159,7 @@ func (a *app) organisationAssigneeHints(orgKey string) []ai.AssigneeHint {
 	for email, profile := range a.profiles {
 		managed := []string{}
 		for slug := range houses {
-			if profile.HasTenant(slug) && normalizeRole(profile.ForTenant(slug).Role) == roleManager {
+			if role := normalizeRole(profile.ForTenant(slug).Role); profile.HasTenant(slug) && (role == roleManager || role == roleAdmin) {
 				managed = append(managed, slug)
 			}
 		}

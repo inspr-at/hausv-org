@@ -2,12 +2,12 @@
   "assignees": [
     {
       "email": "vera.verwalter@musterstadt.example",
-      "key": "vera",
+      "key": "vera.verwalter",
       "name": "Vera Verwalter"
     },
     {
       "email": "paul.sommer@musterstadt.example",
-      "key": "paul",
+      "key": "paul.sommer",
       "name": "Paul Sommer"
     }
   ],
