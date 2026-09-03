@@ -68,6 +68,23 @@ func TestHausv622BuildingAndContactsShowOccupancyByRole(t *testing.T) {
 			t.Fatalf("building page missing %q", want)
 		}
 	}
+	for _, check := range []struct{ unit, person, email string }{
+		{"Top 1", "Alina Auer", "alina.eigentuemer@musterstadt.example"},
+		{"Top 3", "Matthias Dorn", "matthias.mieter@musterstadt.example"},
+	} {
+		start := strings.Index(buildingBody, "<strong>"+check.unit+"</strong>")
+		if start < 0 {
+			t.Fatalf("building page missing unit %q", check.unit)
+		}
+		end := strings.Index(buildingBody[start+1:], "</article>")
+		if end < 0 {
+			t.Fatalf("building page missing closing card for %q", check.unit)
+		}
+		card := buildingBody[start : start+1+end]
+		if !strings.Contains(card, check.person) || !strings.Contains(card, check.email) {
+			t.Fatalf("building card for %q must show %q and %q: %s", check.unit, check.person, check.email, card)
+		}
+	}
 	if strings.Index(buildingBody, "Top 3") > strings.Index(buildingBody, "Stellplatz 2") {
 		t.Fatal("parking must follow residential units")
 	}

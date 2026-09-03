@@ -136,7 +136,7 @@ func (a *app) buildingUnitViewsWithOccupancy(repositories requestRepositories, t
 	views := a.buildingUnitViewsWithPayments(repositories, tenant, units)
 	for index := range views {
 		occupancy := a.unitOccupancy(tenant.Slug, views[index].Label)
-		views[index].OwnerSummary = occupancyPeopleSummary(occupancy.Owners, "unbewohnt")
+		views[index].OwnerSummary = occupancyPeopleSummary(occupancy.Owners, "nicht zugeordnet")
 		views[index].RenterSummary = occupancyPeopleSummary(occupancy.Renters, "frei")
 	}
 	sort.SliceStable(views, func(i, j int) bool {
