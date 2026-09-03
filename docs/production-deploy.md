@@ -353,9 +353,11 @@ docker compose -f deploy/demo/docker-compose.yml up -d --build
 deploy/demo/seed.sh
 ```
 
-**Anmeldung auf einem öffentlichen Host.** `LOCAL_DEV_LOGIN` wirkt nur bei einer
-localhost-`BASE_URL`. Für die Demo-Instanz setzt `demo.env` daher
+**Anmeldung auf einem öffentlichen Host.** Für die Demo-Instanz setzt `demo.env`
 `DEMO_LOGIN_ENABLED=true`, und `secrets.env` trägt `DEMO_LOGIN_ACCESS_CODE`.
+Der Demo-Modus hat immer Vorrang vor `LOCAL_DEV_LOGIN`, auch bei einer
+localhost-`BASE_URL`; ohne richtigen Zugangscode wird daher nie ein Anmeldelink
+erzeugt.
 Das Anmeldeformular fragt dann zusätzlich nach dem Zugangscode und zeigt den
 Anmeldelink direkt an; ein falscher Code entwertet den Link. Das ist eine
 Vorführ-Hilfe für Fixture-Daten, keine Zugangskontrolle: den Host zusätzlich
@@ -375,8 +377,5 @@ model.
 
 For a reverse proxy, point the upstream at `http://127.0.0.1:8098` (or the
 chosen `HAUSV_DEMO_PORT`) and set `BASE_URL` in `demo.env` to the public HTTPS
-URL before exposing it. The current `LOCAL_DEV_LOGIN` is intentionally enabled
-only when `BASE_URL` uses `localhost`, `127.0.0.1`, or `::1`; a public proxy
-therefore needs a real mail/OIDC login configuration, or a separately reviewed
-explicit demo-login switch in the server. Never expose the localhost dev-login
-flow as a production authentication mechanism.
+URL before exposing it. Never expose the localhost dev-login flow as a
+production authentication mechanism.

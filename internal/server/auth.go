@@ -139,6 +139,14 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
 	}
+	if a.demoLogin {
+		code := strings.TrimSpace(r.FormValue("access_code"))
+		if code == "" || subtle.ConstantTimeCompare([]byte(code), []byte(a.demoLoginCode)) != 1 {
+			logWarn("demo login: wrong access code", "tenant", tenant.Slug)
+			a.renderDemoCodeWrong(w, tenant)
+			return
+		}
+	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
 		return
@@ -161,21 +169,8 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	a.tokens.Put(token, email, tenant.Slug, 15*time.Minute)
 
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	devLink := a.localDevLogin && !a.mailer.Configured()
-	demoCodeWrong := false
-	if !devLink && a.demoLogin && !a.mailer.Configured() {
-		code := strings.TrimSpace(r.FormValue("access_code"))
-		devLink = code != "" && subtle.ConstantTimeCompare([]byte(code), []byte(a.demoLoginCode)) == 1
-		demoCodeWrong = !devLink
-	}
-	if devLink || demoCodeWrong {
-		devLinkValue := ""
-		if devLink {
-			devLinkValue = link
-		} else {
-			a.tokens.Invalidate(token)
-			logWarn("demo login: wrong access code", "tenant", tenant.Slug)
-		}
+	devLink := (a.localDevLogin || a.demoLogin) && !a.mailer.Configured()
+	if devLink {
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
 			"Title":               tenant.Address + " · Hausportal",
@@ -185,9 +180,9 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 			"Sent":                true,
 			"Expired":             false,
 			"MailConfigured":      false,
-			"DevLoginLink":        devLinkValue,
+			"DevLoginLink":        link,
 			"DemoLoginEnabled":    a.demoLogin,
-			"DemoCodeWrong":       demoCodeWrong,
+			"DemoCodeWrong":       false,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),
 			"EmailLoginAvailable": a.emailLoginAvailable(),
@@ -214,6 +209,28 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/?sent=1", http.StatusSeeOther)
+}
+
+func (a *app) renderDemoCodeWrong(w http.ResponseWriter, tenant tenantConfig) {
+	copy := a.publicHomeCopy(tenant.Slug)
+	a.render(w, "home", map[string]any{
+		"Title":               tenant.Address + " · Hausportal",
+		"Tenant":              tenant,
+		"HouseName":           houseDisplayName(tenant),
+		"Email":               "",
+		"Sent":                true,
+		"Expired":             false,
+		"MailConfigured":      false,
+		"DevLoginLink":        "",
+		"DemoLoginEnabled":    true,
+		"DemoCodeWrong":       true,
+		"Denied":              false,
+		"OIDCConfigured":      a.oidc.Configured(),
+		"EmailLoginAvailable": a.emailLoginAvailable(),
+		"MapURL":              tenantMapURL(tenant.Address),
+		"LocationMap":         publicMapForTenant(tenant),
+		"HomeCopy":            copy,
+	})
 }
 
 func (a *app) publicHomeCopy(tenantSlug string) publicHomeCopy {

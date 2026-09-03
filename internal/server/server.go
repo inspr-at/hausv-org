@@ -1497,6 +1497,10 @@ func newApp() (*app, error) {
 	demoLogin := parseBool(env("DEMO_LOGIN_ENABLED", "false")) && demoLoginCode != ""
 	if demoLogin {
 		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
+		if localDevLogin {
+			logInfo("demo login takes precedence over LOCAL_DEV_LOGIN")
+			localDevLogin = false
+		}
 	}
 
 	mailTransport := appmail.NewSMTP(
@@ -2521,6 +2525,11 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// empty cards, which reads worse than the calm one and loses the reassurance
 	// the old page carried. Calm for everyone when nothing is waiting.
 	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
+	_, showInboxNav := a.organisationFor(&ac)
+	inboxOpenCount := 0
+	if showInboxNav {
+		inboxOpenCount = a.inboxOpenCount(&ac)
+	}
 
 	a.renderPortalTempl(w, r, web.PortalPageData{
 		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
@@ -2549,7 +2558,8 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		CanManageUsers:         canManagePortalUsers,
 		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
 		ShowVerwaltungNav:      a.showVerwaltungNav(ac),
-		InboxOpenCount:         a.inboxOpenCount(&ac),
+		ShowInboxNav:           showInboxNav,
+		InboxOpenCount:         inboxOpenCount,
 		RolePreview:            rolePreviewPortalData(&ac),
 		RolePreviewChoices:     a.rolePreviewChoices(&ac),
 		Flash:                  rolePreviewFlash(r),
