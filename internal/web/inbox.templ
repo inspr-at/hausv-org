@@ -133,6 +133,7 @@ templ InboxContent(data InboxData) {
 		.auto{border-top:1px solid var(--line)}.auto summary{padding:var(--space-3);color:var(--muted);font-size:11px;font-weight:750}.auto-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-top:1px solid var(--line);font-size:11px}.auto form{margin:0}.auto button{min-height:30px}
 		.empty-case{display:grid;place-content:center;min-height:420px;color:var(--muted);text-align:center}.footline{text-align:center}
 		@media(max-width:760px){.inbox-head{align-items:start;flex-direction:column}.inbox-grid{display:block;border:0;background:transparent;box-shadow:none}.queue{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inbox-grid>.case{display:none}.inbox-page.full .queue{display:none}.inbox-page.full .case{display:block;padding:0}.filter-grid,.phone-grid,.edit-grid,.kv{grid-template-columns:1fr}.phone-grid .wide{grid-column:auto}.case .btns{display:grid;padding-bottom:72px}.case .btns .approve-form{position:fixed;z-index:12;right:var(--space-3);bottom:var(--space-2);left:var(--space-3);display:block;padding:var(--space-2);background:var(--paper)}.case .btns .approve-form button{width:100%;min-height:48px}.inbox-page:not(.full) .footline{margin-bottom:70px}}
+		.verwaltung-main:has(.inbox-page)>.portal-section-header{display:none}.verwaltung-main:has(.inbox-page)>.portal-section-content{padding-top:0}
 	</style>
 	<section class={ "inbox-page", templ.KV("full", data.FullPage) }>
 		<header class="inbox-head">
