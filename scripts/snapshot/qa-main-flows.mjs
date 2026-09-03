@@ -406,8 +406,8 @@ async function assertSidebarNavReachable() {
 
 // The legacy shell placed the portal switcher inside a sidebar map card, and this
 // assertion used to encode that placement (.side-map-card, .side-foot, .side-map-top).
-// The templ shell renders it as details.context-switch directly under aside.sidebar (HAUSV-621
-// moved it below the house header, out of <header>) and a mobile twin,
+// The templ shell renders it as details.context-switch inside aside.sidebar (HAUSV-621 moved it
+// below the house header, out of <header>; the exact nesting is not part of the contract) and a mobile twin,
 // so those selectors matched nothing — and because CI runs only the energy subset of
 // these flows, this had been failing silently since the switch went live. What is worth
 // keeping is the BEHAVIOUR: switching portals updates URL, house name and the
@@ -418,7 +418,7 @@ async function assertPortalSwitcherAtomic() {
   const page = await localLogin(context, 'multi@example.com');
   await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
 
-  const switcher = page.locator('aside.sidebar > details.context-switch');
+  const switcher = page.locator('aside.sidebar details.context-switch:not(.mobile-context-switch)');
   if ((await switcher.count()) !== 1) {
     fail(`Portalwechsler fehlt im Kopf der Seitenleiste oder ist mehrfach vorhanden (${await switcher.count()})`);
   }
@@ -428,7 +428,7 @@ async function assertPortalSwitcherAtomic() {
   await switcher.locator('summary').click();
   await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
-  const after = page.locator('aside.sidebar > details.context-switch .context-current');
+  const after = page.locator('aside.sidebar details.context-switch:not(.mobile-context-switch) .context-current');
   const accountRole = page.locator('aside.sidebar > footer.account small').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
       (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
