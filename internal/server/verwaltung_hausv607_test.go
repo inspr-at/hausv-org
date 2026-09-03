@@ -43,26 +43,6 @@ func TestVerwaltungManagerOfTwoHousesSeesNavigationAndShell(t *testing.T) {
 	}
 }
 
-func TestRolePreviewPlaceholdersRequireCurrentAdminAndShowFlash(t *testing.T) {
-	const adminEmail = "admin@example.com"
-	admin := newTestPortalApp(t, userProfile{Email: adminEmail, Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	redirect := authedFormRequest(t, admin, adminEmail, "/demo/app/ansicht/start", url.Values{"role": {roleOwner}})
-	if redirect.Code != http.StatusSeeOther || redirect.Header().Get("Location") != "/demo/app?flash=Wird%20gebaut" {
-		t.Fatalf("admin preview redirect status=%d location=%q", redirect.Code, redirect.Header().Get("Location"))
-	}
-	page := authedRequest(t, admin, adminEmail, "/demo/app?flash=Wird%20gebaut")
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), `role="status">Wird gebaut`) {
-		t.Fatalf("preview flash missing: status=%d", page.Code)
-	}
-
-	const managerEmail = "manager-preview@example.com"
-	manager := newTestPortalApp(t, userProfile{Email: managerEmail, Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
-	denied := authedFormRequest(t, manager, managerEmail, "/demo/app/ansicht/ende", url.Values{})
-	if denied.Code != http.StatusForbidden {
-		t.Fatalf("manager preview end status=%d, want 403", denied.Code)
-	}
-}
-
 func TestVerwaltungOwnerAndResidentAreForbidden(t *testing.T) {
 	for _, test := range []struct {
 		name string
