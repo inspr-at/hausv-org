@@ -1494,13 +1494,14 @@ func newApp() (*app, error) {
 	// magic link inline when the visitor knows the shared access code. Never enable
 	// this on an instance that holds real data.
 	demoLoginCode := strings.TrimSpace(env("DEMO_LOGIN_ACCESS_CODE", ""))
-	demoLogin := parseBool(env("DEMO_LOGIN_ENABLED", "false")) && demoLoginCode != ""
+	demoLoginEnabled := parseBool(env("DEMO_LOGIN_ENABLED", "false"))
+	demoLogin := demoLoginEnabled && demoLoginCode != ""
+	if demoLoginEnabled && localDevLogin {
+		logInfo("demo login takes precedence over LOCAL_DEV_LOGIN")
+		localDevLogin = false
+	}
 	if demoLogin {
 		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
-		if localDevLogin {
-			logInfo("demo login takes precedence over LOCAL_DEV_LOGIN")
-			localDevLogin = false
-		}
 	}
 
 	mailTransport := appmail.NewSMTP(
