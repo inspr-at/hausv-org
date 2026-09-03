@@ -3,6 +3,7 @@
 # Rebuild committed seed data with: go run ./scripts/demo/gen -out scripts/demo/seed
 
 demo_repo=${repo:-$(git rev-parse --show-toplevel)}
+export DEMO_SEED_DIR="$demo_repo/scripts/demo/seed"
 # Inherit the isolated local services and safe integration defaults first.
 # shellcheck source=scripts/snapshot/env.sh
 . "$demo_repo/scripts/snapshot/env.sh"
