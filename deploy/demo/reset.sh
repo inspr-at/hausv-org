@@ -3,7 +3,13 @@ set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir"
+# `docker compose` (plugin) or the standalone v2 binary, whichever the host has.
+if docker compose version >/dev/null 2>&1; then
+    compose() { docker compose "$@"; }
+else
+    compose() { docker-compose "$@"; }
+fi
 
-docker compose down --volumes --remove-orphans
-docker compose up -d
+compose down --volumes --remove-orphans
+compose up -d
 "$script_dir/seed.sh"

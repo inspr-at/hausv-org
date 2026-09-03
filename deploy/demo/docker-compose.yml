@@ -13,7 +13,8 @@ services:
       - "${HAUSV_DEMO_PORT:-8098}:8080"
     env_file:
       - ./demo.env
-      - ./secrets.env
+      # On a NixOS host the secrets are an agenix file; point the variable at it.
+      - ${HAUSV_DEMO_SECRETS_FILE:-./secrets.env}
     volumes:
       - hausv-demo-data:/data
       - ../../scripts/demo/seed:/seed:ro

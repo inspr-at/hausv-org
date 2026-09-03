@@ -379,3 +379,34 @@ For a reverse proxy, point the upstream at `http://127.0.0.1:8098` (or the
 chosen `HAUSV_DEMO_PORT`) and set `BASE_URL` in `demo.env` to the public HTTPS
 URL before exposing it. Never expose the localhost dev-login flow as a
 production authentication mechanism.
+
+### Demo auf agm1 (hausv.agm.ng)
+
+The public demo runs on the Augmentoring host `agm1`. Ownership is split:
+
+- `agm-nixcfg` (module `agm-hausv-demo`) owns the declarative half: the agenix
+  file `agm1-hausv-demo-env` (`AI_API_KEY`, `SESSION_KEY`,
+  `DEMO_LOGIN_ACCESS_CODE`, mode `0440 root:users`), the Caddy vhost, the
+  registry entry in `hostnames.json` (DNS + aliases), `/srv/hausv-demo` and a
+  boot unit that runs `up -d` for the bundle. Rotating the access code is a
+  secret edit plus deploy there; the AGM-16 trigger restarts the bundle.
+- This repository owns the application half. The image is private and CI
+  never pushes it, so the code travels exactly like production: `git archive
+  HEAD` to the host, built there, run from `deploy/demo/`. Ship with
+
+  ```sh
+  HAUSV_DEMO_SSH_HOST=mba@<ip> HAUSV_DEMO_SSH_PORT=2222 HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy \
+  HAUSV_DEMO_BASE_URL=https://hausv.agm.ng \
+  HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env \
+  deploy/demo/deploy-remote.sh --seed
+  ```
+
+  It refuses a dirty tree, keeps every release in
+  `/srv/hausv-demo/releases/<sha>`, points `src` at the live one, rewrites
+  `demo.env` from the example with `BASE_URL`/`ROOT_DOMAIN` set, builds the
+  image as `hausv-demo:<sha>`, waits for `/healthz`, seeds when asked and
+  prints the rollback line. `HAUSV_DEMO_SECRETS_FILE` is the host-side path
+  that replaces `./secrets.env` in the compose `env_file` list;
+  `HAUSV_DEMO_SEED_ANCHOR=today` shifts the fixture dates to the deploy day.
+- No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
+  and the data is disposable.

@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Ship the HAUSV demo bundle to a remote Docker host and (re)start it.
+#
+#   HAUSV_DEMO_SSH_HOST=mba@<ip> [HAUSV_DEMO_SSH_PORT=2222] [HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy]
+#   HAUSV_DEMO_BASE_URL=https://hausv.agm.ng
+#   [HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env]   # absolute path ON THE HOST
+#   [HAUSV_DEMO_REMOTE_DIR=/srv/hausv-demo] [HAUSV_DEMO_PORT=8098] [HAUSV_DEMO_SEED_ANCHOR=today]
+#   deploy/demo/deploy-remote.sh [--seed] [--dry-run]
+#
+# Mirrors scripts/deploy.sh in spirit, not in ceremony: HEAD is shipped via
+# `git archive` (a dirty tree is refused), the image is built on the host with
+# the demo version baked in, the compose service is recreated, and the health
+# endpoint is checked. Releases are kept in <dir>/releases/<sha>; <dir>/src
+# points at the live one, so a rollback is `ln -sfn` plus `up -d`.
+#
+# Demo only. No VERSION bump, no CI gate, no snapshot: the data is fixture data
+# and --seed recreates it from scratch.
+set -euo pipefail
+
+usage() { sed -n '2,12p' "$0" >&2; exit 2; }
+
+seed=0
+dry_run=0
+for arg in "$@"; do
+    case $arg in
+        --seed) seed=1 ;;
+        --dry-run) dry_run=1 ;;
+        *) usage ;;
+    esac
+done
+
+need() { [ -n "${!1:-}" ] || { echo "$1 is required" >&2; exit 2; }; }
+need HAUSV_DEMO_SSH_HOST
+need HAUSV_DEMO_BASE_URL
+ssh_host=$HAUSV_DEMO_SSH_HOST
+ssh_port=${HAUSV_DEMO_SSH_PORT:-22}
+remote_dir=${HAUSV_DEMO_REMOTE_DIR:-/srv/hausv-demo}
+port=${HAUSV_DEMO_PORT:-8098}
+base_url=${HAUSV_DEMO_BASE_URL%/}
+secrets_file=${HAUSV_DEMO_SECRETS_FILE:-$remote_dir/secrets.env}
+seed_anchor=${HAUSV_DEMO_SEED_ANCHOR:-}
+project=hausv-demo
+case $base_url in
+    https://*) root_domain=${base_url#https://} ;;
+    http://*) root_domain=${base_url#http://} ;;
+    *) echo "HAUSV_DEMO_BASE_URL must start with http:// or https://" >&2; exit 2 ;;
+esac
+root_domain=${root_domain%%/*}
+root_domain=${root_domain%%:*}
+
+ssh_args=(-p "$ssh_port")
+if [ -n "${HAUSV_DEMO_SSH_KEY:-}" ]; then ssh_args+=(-i "$HAUSV_DEMO_SSH_KEY"); fi
+
+repo=$(git rev-parse --show-toplevel)
+cd "$repo"
+if [ -n "$(git status --porcelain)" ]; then
+    echo "refusing to deploy: working tree is dirty (the archive contains only HEAD)" >&2
+    exit 1
+fi
+sha=$(git rev-parse --short=12 HEAD)
+version="$(tr -d '[:space:]' < VERSION)-demo.${sha:0:7}"
+release_dir="$remote_dir/releases/$sha"
+
+echo "release  $version ($sha)"
+echo "host     $ssh_host:$ssh_port -> $release_dir"
+echo "url      $base_url  (loopback :$port, secrets $secrets_file)"
+if [ "$dry_run" = 1 ]; then
+    echo "dry run: nothing shipped"
+    exit 0
+fi
+
+# 1. Ship HEAD. The release directory is immutable once extracted.
+git archive --format=tar HEAD | ssh "${ssh_args[@]}" "$ssh_host" \
+    "set -e; mkdir -p '$release_dir'; tar -x -C '$release_dir'"
+
+# 2. Configure, build, start, seed, verify — one remote shell so the
+#    compose invocation is identical for every step.
+remote=$(cat <<REMOTE
+set -euo pipefail
+cd '$release_dir/deploy/demo'
+if docker compose version >/dev/null 2>&1; then compose() { docker compose "\$@"; }; else compose() { docker-compose "\$@"; }; fi
+[ -r '$secrets_file' ] || { echo "secrets file $secrets_file is missing or unreadable for \$(id -un)" >&2; exit 1; }
+sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$root_domain#' demo.env.example > demo.env
+export HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port'
+export HAUSV_DEMO_SECRETS_FILE='$secrets_file' HAUSV_DEMO_IMAGE='hausv-demo:$sha'
+compose -p '$project' build
+ln -sfn '$release_dir' '$remote_dir/src'
+compose -p '$project' up -d --remove-orphans
+for i in \$(seq 1 30); do
+    if curl -fsS "http://127.0.0.1:$port/healthz" 2>/dev/null | grep -q '"status":"ok"'; then break; fi
+    [ "\$i" = 30 ] && { echo "healthz never answered ok" >&2; compose -p '$project' logs --tail 40; exit 1; }
+    sleep 2
+done
+if [ '$seed' = 1 ]; then
+    HAUSV_DEMO_SEED_ANCHOR='$seed_anchor' ./seed.sh
+fi
+echo "healthz: \$(curl -fsS http://127.0.0.1:$port/healthz)"
+echo "live: $release_dir ($version)"
+REMOTE
+)
+ssh "${ssh_args[@]}" "$ssh_host" "$remote"
+
+echo
+echo "verify from here:"
+echo "  HAUSV_DEMO_BASE_URL=$base_url DEMO_LOGIN_ACCESS_CODE=<code> deploy/demo/verify.sh"
+echo "rollback on the host:"
+echo "  ln -sfn $remote_dir/releases/<previous sha> $remote_dir/src && cd $remote_dir/src/deploy/demo && HAUSV_DEMO_SECRETS_FILE=$secrets_file HAUSV_DEMO_IMAGE=hausv-demo:<previous sha> docker-compose -p $project up -d"

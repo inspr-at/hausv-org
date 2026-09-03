@@ -3,7 +3,7 @@ set -euo pipefail
 
 base_url=${HAUSV_DEMO_BASE_URL:-"http://localhost:${HAUSV_DEMO_PORT:-8098}"}
 vera_email=vera.verwalter@musterstadt.example
-secrets_file="$(dirname "$0")/secrets.env"
+secrets_file=${HAUSV_DEMO_SECRETS_FILE:-"$(dirname "$0")/secrets.env"}
 if [ -f "$secrets_file" ]; then set -a; . "$secrets_file"; set +a; fi
 cookie_jar=$(mktemp "${TMPDIR:-/tmp}/hausv-demo-verify.XXXXXX")
 trap 'rm -f "$cookie_jar"' EXIT
