@@ -37,6 +37,12 @@ const (
 	TenantBrandParking      = "parking"
 )
 
+// BreakAfterSlashes adds a safe line-break opportunity without allowing
+// labels to split arbitrarily in the middle of a word.
+func BreakAfterSlashes(label string) string {
+	return strings.ReplaceAll(label, "/", "/\u200b")
+}
+
 type NotificationEventOption struct {
 	Key         string
 	Label       string

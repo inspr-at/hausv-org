@@ -154,7 +154,7 @@ func textbausteinStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.textbausteine{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-head{min-width:0;display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}.textbausteine-head>div{min-width:0}.textbausteine h1{overflow-wrap:anywhere;font-family:var(--font-serif);font-size:34px;font-weight:550}.textbausteine .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.textbausteine-count{margin-top:var(--space-1);color:var(--muted);font-size:11px}.textbausteine .button.primary{background:var(--gold);color:var(--panel)}.textbausteine .button.ghost{border-color:var(--line);color:var(--muted)}.textbausteine-flash,.textbausteine-error{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.textbausteine-groups{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-group{min-width:0;display:grid;gap:var(--space-2)}.textbausteine-group h2{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.textbausteine-group h2 span{color:var(--muted)}.textbausteine-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-table{width:100%;min-width:650px;table-layout:fixed;border-collapse:collapse}.textbausteine-table th,.textbausteine-table td{padding:var(--space-3);border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:11px}.textbausteine-table thead th{border-top:0;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.textbausteine-table th:nth-child(1){width:34%}.textbausteine-table th:nth-child(2){width:25%}.textbausteine-table th:nth-child(3){width:15%}.textbausteine-table th:nth-child(4){width:16%}.textbausteine-table th:nth-child(5){width:10%}.textbausteine-title{min-width:0;overflow-wrap:anywhere;font-weight:750}.textbausteine-key{overflow-wrap:anywhere;color:var(--muted)}.textbausteine-status{display:inline-flex;align-items:center;gap:6px;padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);white-space:nowrap}.textbausteine-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:var(--radius-pill);background:var(--soft)}.textbausteine-status.active .textbausteine-status-dot{background:var(--leaf)}.textbausteine-action{color:var(--gold-ink);font-weight:750;text-decoration:underline;text-underline-offset:3px}.textbausteine-empty{padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--muted)}.textbausteine-form-card{min-width:0;display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-form-grid{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.textbausteine-field{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.textbausteine-field.full{grid-column:1/-1}.textbausteine-field input,.textbausteine-field select,.textbausteine-field textarea{min-width:0;width:100%;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.textbausteine-field textarea{min-height:260px;resize:vertical;line-height:1.55}.textbausteine-field small{font-weight:500}.textbausteine-check{display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:12px;font-weight:700}.textbausteine-placeholders{display:flex;flex-wrap:wrap;gap:var(--space-2)}.textbausteine-placeholder{min-height:34px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:750}.textbausteine-form-actions,.textbausteine-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.textbausteine-toggle{justify-content:flex-end}.verwaltung-main:has(.textbausteine)>.portal-section-header{display:none}.verwaltung-main:has(.textbausteine)>.portal-section-content{min-width:0;padding-top:0}@media(max-width:760px){.textbausteine-head{align-items:stretch;flex-direction:column}.textbausteine-head .button{width:100%}.textbausteine-table-wrap{overflow:visible}.textbausteine-table,.textbausteine-table tbody{min-width:0;display:block}.textbausteine-table thead{display:none}.textbausteine-table tr{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);padding:var(--space-4)}.textbausteine-table tr+tr{border-top:1px solid var(--line)}.textbausteine-table td{min-width:0;display:block;padding:0;border:0}.textbausteine-title,.textbausteine-key{grid-column:1/-1}.textbausteine-key{font-size:10px}.textbausteine-status-cell{grid-column:1}.textbausteine-updated{grid-column:1;color:var(--muted);font-size:10px}.textbausteine-action-cell{grid-column:2;grid-row:3/5;align-self:center}.textbausteine-form-grid{grid-template-columns:minmax(0,1fr)}.textbausteine-field.full{grid-column:1}.textbausteine-form-card{padding:var(--space-4)}.textbausteine-form-actions>*{width:100%}.textbausteine-toggle button{width:100%}}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.textbausteine{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-head{min-width:0;display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}.textbausteine-head>div{min-width:0}.textbausteine h1{overflow-wrap:anywhere;font-family:var(--font-serif);font-size:34px;font-weight:550}.textbausteine .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.textbausteine-count{margin-top:var(--space-1);color:var(--muted);font-size:11px}.textbausteine .button.primary{background:var(--gold);color:var(--panel)}.textbausteine .button.ghost{border-color:var(--line);color:var(--muted)}.textbausteine-flash,.textbausteine-error{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.textbausteine-groups{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-group{min-width:0;display:grid;gap:var(--space-2)}.textbausteine-group h2{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.textbausteine-group h2 span{color:var(--muted)}.textbausteine-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-table{width:100%;min-width:650px;table-layout:fixed;border-collapse:collapse}.textbausteine-table th,.textbausteine-table td{padding:var(--space-3);border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:11px}.textbausteine-table thead th{border-top:0;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.textbausteine-table th:nth-child(1){width:34%}.textbausteine-table th:nth-child(2){width:25%}.textbausteine-table th:nth-child(3){width:15%}.textbausteine-table th:nth-child(4){width:16%}.textbausteine-table th:nth-child(5){width:10%}.textbausteine-title{min-width:0;overflow-wrap:anywhere;font-weight:750}.textbausteine-key{overflow-wrap:anywhere;color:var(--muted)}.textbausteine-status{display:inline-flex;align-items:center;gap:6px;padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);white-space:nowrap}.textbausteine-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:var(--radius-pill);background:var(--soft)}.textbausteine-status.active .textbausteine-status-dot{background:var(--leaf)}.textbausteine-action{color:var(--gold-ink);font-weight:750;text-decoration:underline;text-underline-offset:3px}.textbausteine-empty{padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--muted)}.textbausteine-form-card{min-width:0;display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-form-grid{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.textbausteine-field{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.textbausteine-field.full{grid-column:1/-1}.textbausteine-field input,.textbausteine-field select,.textbausteine-field textarea{min-width:0;width:100%;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.textbausteine-field textarea{min-height:260px;resize:vertical;line-height:1.55}.textbausteine-field small{font-weight:500}.textbausteine-check{display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:12px;font-weight:700}.textbausteine-placeholders{display:flex;flex-wrap:wrap;gap:var(--space-2)}.textbausteine-placeholder{min-height:34px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:750}.textbausteine-form-actions,.textbausteine-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.textbausteine-toggle{justify-content:flex-end}.verwaltung-main:has(.textbausteine)>.portal-section-header{display:none}.verwaltung-main:has(.textbausteine)>.portal-section-content{min-width:0;padding-top:0}@media(max-width:760px){.textbausteine-head{align-items:stretch;flex-direction:column}.textbausteine-head .button{width:100%}.textbausteine-table-wrap{overflow:visible}.textbausteine-table,.textbausteine-table tbody{min-width:0;display:block}.textbausteine-table thead{display:none}.textbausteine-table tr{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);padding:var(--space-4)}.textbausteine-table tr+tr{border-top:1px solid var(--line)}.textbausteine-table td{min-width:0;display:block;padding:0;border:0}.textbausteine-title,.textbausteine-key{grid-column:1/-1}.textbausteine-key{font-size:10px}.textbausteine-status-cell{grid-column:1}.textbausteine-updated{grid-column:1;color:var(--muted);font-size:10px}.textbausteine-action-cell{grid-column:2;grid-row:3/5;align-self:center}.textbausteine-form-grid{grid-template-columns:minmax(0,1fr)}.textbausteine-field.full{grid-column:1}.textbausteine-form-card{padding:var(--space-4)}.textbausteine-form-actions>*{width:100%}.textbausteine-toggle button{width:100%}}\n\t\t@media(max-width:760px){.textbausteine-table tr{row-gap:6px;padding:var(--space-3)}.textbausteine-title,.textbausteine-key,.textbausteine-updated{grid-column:1/-1}.textbausteine-key,.textbausteine-updated{font-size:10px}.textbausteine-updated{color:var(--muted)}.textbausteine-status-cell{grid-column:1;grid-row:4}.textbausteine-action-cell{grid-column:2;grid-row:4;align-self:center}}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -194,7 +194,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinCountLabel(data.Count))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 87, Col: 189}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 88, Col: 189}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -212,7 +212,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(data.Flash)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 89, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 90, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -241,7 +241,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(group.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 96, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 97, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -254,7 +254,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(group.Items)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 96, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 97, Col: 97}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -272,7 +272,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 98, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -285,7 +285,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(item.Key)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 98, Col: 102}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 102}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -320,7 +320,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 98, Col: 297}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 297}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -333,7 +333,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(item.Updated)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 98, Col: 370}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 370}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -346,7 +346,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 					var templ_7745c5c3_Var15 templ.SafeURL
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.EditURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 98, Col: 481}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 481}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -407,7 +407,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinFormHeading(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 110, Col: 135}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 111, Col: 135}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -425,7 +425,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(data.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 112, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 113, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -443,7 +443,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 		var templ_7745c5c3_Var19 templ.SafeURL
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Action))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 114, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 115, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -456,7 +456,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 116, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 117, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 		if templ_7745c5c3_Err != nil {
@@ -474,7 +474,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(category.Key)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 119, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 120, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 			if templ_7745c5c3_Err != nil {
@@ -497,7 +497,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(category.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 119, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 120, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -515,7 +515,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 122, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 123, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -533,7 +533,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(placeholder)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 125, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 126, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 			if templ_7745c5c3_Err != nil {
@@ -546,7 +546,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(placeholder)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 125, Col: 108}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 126, Col: 108}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -564,7 +564,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(data.Body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 128, Col: 113}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 129, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -592,7 +592,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var27 templ.SafeURL
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(textbausteinToggleAction(data)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 134, Col: 106}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 135, Col: 106}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -605,7 +605,7 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinToggleLabel(data))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 134, Col: 183}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 135, Col: 183}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {

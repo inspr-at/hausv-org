@@ -70,6 +70,65 @@ func TestInboxSuggestionStatesAndUnassignedCase(t *testing.T) {
 	}
 }
 
+func TestInboxPass2ResponsiveHistoryAndLiveRegionMarkup(t *testing.T) {
+	item := InboxCase{
+		ID: "in-1", HasSuggestion: true, Editing: true, CategoryLabel: "Betriebskosten/\u200bVorschreibung",
+		Categories:    []InboxOption{{Value: "betriebskosten", Label: "Betriebskosten/\u200bVorschreibung", Selected: true}},
+		AssigneeLabel: "Noch niemand", Created: "Eingegangen 03.09. · 11:00", Handling: "Vera · 03.09. · 12:10",
+		Model: "triage-1", ProviderLabel: "Cloud (OpenRouter)", PromptHash: "12345678",
+	}
+	body := renderComponent(t, InboxContent(InboxData{Selected: &item}))
+	for _, want := range []string{
+		"overflow-wrap:break-word", "filter-chips{display:flex;flex-wrap:wrap", ".action-bar{position:static;bottom:auto",
+		".inbox-page:not(.full) .empty-case{display:none}", "Betriebskosten/\u200bVorschreibung", ">Noch niemand</option>",
+		"Technische Details", "Modell: triage-1", "Anbieter: Cloud (OpenRouter)", "Prompt: 12345678",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("pass-2 inbox render missing %q", want)
+		}
+	}
+	historyStart := strings.Index(body, `<div class="history">`)
+	if historyStart < 0 {
+		t.Fatalf("history structure missing: %s", body)
+	}
+	historyDetails := strings.Index(body[historyStart:], `<details class="history-technical">`)
+	if historyDetails < 0 {
+		t.Fatalf("history technical details missing: %s", body)
+	}
+	plainHistory := body[historyStart : historyStart+historyDetails]
+	if !strings.Contains(plainHistory, "Vorschlag erstellt") || strings.Contains(plainHistory, "triage-1") || strings.Contains(plainHistory, "12345678") {
+		t.Fatalf("technical metadata leaked into plain history: %s", plainHistory)
+	}
+
+	running := renderComponent(t, InboxSuggestionState(InboxCase{ID: "in-1", SuggestionState: "running", SuggestionTimeout: 45}))
+	if strings.Contains(running, `aria-live=`) || strings.Contains(running, `role="status"`) {
+		t.Fatalf("polling state must not be a live region: %s", running)
+	}
+	arrived := renderComponent(t, InboxSuggestionState(InboxCase{ID: "in-1", SuggestionState: "arrived", SuggestionFinished: "12:04"}))
+	if strings.Count(arrived, `role="status"`) != 1 || strings.Contains(arrived, `hx-trigger=`) {
+		t.Fatalf("arrival must be announced exactly once without polling: %s", arrived)
+	}
+}
+
+func TestHausv615TextbausteinePhoneStatusAndActionShareOneRow(t *testing.T) {
+	body := renderComponent(t, TextbausteinListPage(VerwaltungShell{OrganisationName: "Musterstadt"}, TextbausteinListData{
+		Count: 1,
+		Groups: []TextbausteinGroup{{Label: "Betriebskosten", Items: []TextbausteinRow{{
+			Key: "betriebskosten-pruefung", Title: "Betriebskosten prüfen", Status: "Aktiv", Active: true, Updated: "03.09.2026", EditURL: "/eins",
+		}}}},
+	}))
+	for _, want := range []string{
+		".textbausteine-table tr{row-gap:6px;padding:var(--space-3)}",
+		".textbausteine-status-cell{grid-column:1;grid-row:4}",
+		".textbausteine-action-cell{grid-column:2;grid-row:4",
+		"Geändert: 03.09.2026",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("phone textbaustein render missing %q", want)
+		}
+	}
+}
+
 func TestVerwaltungSettingsPageRendersTrustLevels(t *testing.T) {
 	data := VerwaltungSettingsData{Categories: []VerwaltungSettingsCategory{{Key: "reparatur", Label: "Reparatur/Mangel", Level: "auto"}}, Threshold: 90, AutoEnabled: true, ProviderLabel: "nicht konfiguriert"}
 	var out bytes.Buffer
