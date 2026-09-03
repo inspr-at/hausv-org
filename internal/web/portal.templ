@@ -89,6 +89,9 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
 			}
 			@PortalBaseStyles()
+			<style>
+				@media(max-width:400px){.verwaltung-mobile-head .mobile-identity strong{display:-webkit-box;overflow:hidden;font-size:18px;line-height:1.05;text-overflow:clip;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}.verwaltung-mobile-head .mobile-identity small{margin-top:2px}}
+			</style>
 			@styles
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
 		</head>

@@ -21,12 +21,13 @@ import (
 var newSettingsAISuggester = ai.NewFromEnv
 
 type aiSettingsConfig struct {
-	Provider string
-	Label    string
-	BaseURL  string
-	Host     string
-	Model    string
-	Timeout  string
+	Provider   string
+	Label      string
+	BaseURL    string
+	Host       string
+	Model      string
+	Timeout    string
+	Configured bool
 }
 
 func effectiveAIConfig(getenv func(string) string, settings store.OrgSettings) aiSettingsConfig {
@@ -47,31 +48,31 @@ func effectiveAIConfig(getenv func(string) string, settings store.OrgSettings) a
 	provider := strings.TrimSpace(settings.AIProvider)
 	parsed, _ := url.Parse(baseURL)
 	if provider == "" {
-		provider = "local"
+		provider = "environment"
 		if parsed != nil && strings.Contains(strings.ToLower(parsed.Hostname()), "openrouter") {
 			provider = "cloud"
 		}
 	}
 	label := value("AI_PROVIDER_LABEL")
 	if settings.AIProvider != "" || label == "" {
-		if provider == "cloud" {
+		switch provider {
+		case "cloud":
 			label = "Cloud (OpenRouter)"
-		} else {
+		case "local":
 			label = "Lokal (OpenAI-kompatibel)"
+		default:
+			label = "Umgebung"
 		}
 	}
-	host := "nicht konfiguriert"
+	host := ""
 	if parsed != nil && parsed.Host != "" {
 		host = parsed.Host
-	}
-	if model == "" {
-		model = "nicht konfiguriert"
 	}
 	timeout := value("AI_TIMEOUT")
 	if timeout == "" {
 		timeout = "45s"
 	}
-	return aiSettingsConfig{Provider: provider, Label: label, BaseURL: baseURL, Host: host, Model: model, Timeout: timeout}
+	return aiSettingsConfig{Provider: provider, Label: label, BaseURL: baseURL, Host: host, Model: model, Timeout: timeout, Configured: baseURL != "" && model != ""}
 }
 
 func aiSettingsGetenv(getenv func(string) string, settings store.OrgSettings) func(string) string {
@@ -164,7 +165,7 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 	after.AutoEnabled = r.FormValue("auto_enabled") == "1"
 	if r.Form.Has("ai_provider") || r.Form.Has("ai_base_url") || r.Form.Has("ai_model") {
 		provider := strings.TrimSpace(r.FormValue("ai_provider"))
-		if provider != "cloud" && provider != "local" {
+		if provider != "environment" && provider != "cloud" && provider != "local" {
 			http.Error(w, "Bitte einen KI-Anbieter auswählen.", http.StatusBadRequest)
 			return
 		}
@@ -173,9 +174,15 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		after.AIProvider = provider
-		after.AIBaseURL = baseURL
-		after.AIModel = strings.TrimSpace(r.FormValue("ai_model"))
+		if provider == "environment" {
+			after.AIProvider = ""
+			after.AIBaseURL = ""
+			after.AIModel = ""
+		} else {
+			after.AIProvider = provider
+			after.AIBaseURL = baseURL
+			after.AIModel = strings.TrimSpace(r.FormValue("ai_model"))
+		}
 	}
 	if err := repo.Save(r.Context(), after); err != nil {
 		a.inboxError(w, err)
@@ -201,7 +208,7 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	data := web.VerwaltungSettingsData{
 		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
-		AIProvider: config.Provider, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,
+		AIProvider: config.Provider, AIConfigured: config.Configured, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,
 		Approved: settings.Counters.Approved, Edited: settings.Counters.Edited, Rejected: settings.Counters.Rejected,
 		Auto: settings.Counters.Auto, UnchangedShare: share, Flash: flash, AITestResult: aiResult, AITestOK: aiOK,
 		DemoResetAvailable: a.demoReset != nil,

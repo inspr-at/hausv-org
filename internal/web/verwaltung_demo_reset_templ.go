@@ -187,7 +187,7 @@ func VerwaltungDemoResetContent(data VerwaltungDemoResetData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</ul></div></div><div class=\"demo-reset-actions\"><a class=\"demo-reset-cancel\" href=\"/app/verwaltung/einstellungen\">Zu den Einstellungen</a></div></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</ul></div></div><div class=\"demo-reset-actions\"><a class=\"demo-reset-primary\" href=\"/app/verwaltung/posteingang\">Zum Posteingang</a><a class=\"demo-reset-cancel\" href=\"/app/verwaltung/einstellungen\">Zurück zu den Einstellungen</a></div></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
