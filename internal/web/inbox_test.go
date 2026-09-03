@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -67,6 +68,23 @@ func TestInboxSuggestionStatesAndUnassignedCase(t *testing.T) {
 	body := out.String()
 	if !strings.Contains(body, "Haus zuordnen") || strings.Contains(body, "Vorschlag anfordern") || strings.Contains(body, "Einordnung") {
 		t.Fatalf("unexpected unassigned case controls: %s", body)
+	}
+}
+
+func TestHausv618SuggestionPollingUsesAbsolutePartialURL(t *testing.T) {
+	data := InboxData{Selected: &InboxCase{
+		ID:              "in-0350",
+		SuggestionState: "running",
+		QueueQuery:      "?status=open",
+	}}
+	body := renderComponent(t, InboxPage(VerwaltungShell{}, data))
+	if !strings.Contains(body, `id="vorschlag" hx-get="/app/verwaltung/posteingang/in-0350/vorschlag?status=open" hx-select="#vorschlag"`) {
+		t.Fatalf("running suggestion polling attributes missing: %s", body)
+	}
+	for _, match := range regexp.MustCompile(`hx-get="([^"]+)"`).FindAllStringSubmatch(body, -1) {
+		if !strings.HasPrefix(match[1], "/") {
+			t.Fatalf("relative hx-get URL %q", match[1])
+		}
 	}
 }
 

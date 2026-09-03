@@ -1305,22 +1305,22 @@ func InboxSuggestionState(item InboxCase) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var68 string
-			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue("vorschlag" + item.QueueQuery)
+			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue("/app/verwaltung/posteingang/" + item.ID + "/vorschlag" + item.QueueQuery)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\" hx-trigger=\"every 1s\" hx-swap=\"outerHTML\"><div class=\"suggest-state-main\"><span class=\"spinner\" aria-hidden=\"true\"></span><div class=\"suggest-state-copy\"><strong>Vorschlag wird erstellt</strong><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\" hx-select=\"#vorschlag\" hx-trigger=\"every 1s\" hx-swap=\"outerHTML\"><div class=\"suggest-state-main\"><span class=\"spinner\" aria-hidden=\"true\"></span><div class=\"suggest-state-copy\"><strong>Vorschlag wird erstellt</strong><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(item.ProviderLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 305}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 372}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 			if templ_7745c5c3_Err != nil {
@@ -1333,7 +1333,7 @@ func InboxSuggestionState(item InboxCase) templ.Component {
 			var templ_7745c5c3_Var70 string
 			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Sek. · max. %d s", item.SuggestionElapsed, item.SuggestionTimeout))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 396}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 463}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 			if templ_7745c5c3_Err != nil {
@@ -1346,7 +1346,7 @@ func InboxSuggestionState(item InboxCase) templ.Component {
 			var templ_7745c5c3_Var71 templ.SafeURL
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs("/app/verwaltung/posteingang/" + item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 486}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 553}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 			if templ_7745c5c3_Err != nil {
@@ -1359,7 +1359,7 @@ func InboxSuggestionState(item InboxCase) templ.Component {
 			var templ_7745c5c3_Var72 string
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.QueueQuery)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 611}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/inbox.templ`, Line: 285, Col: 678}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 			if templ_7745c5c3_Err != nil {
