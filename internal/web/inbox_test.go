@@ -13,7 +13,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		Houses:           []InboxHouse{{Slug: "haus-a", Name: "Haus A"}},
 		Items:            []InboxItem{{ID: "in-1", Source: "E-MAIL", Subject: "Wasser im Keller", House: "Haus A", Unit: "Top 1", Status: "Vorschlag liegt vor", StatusTone: "ok", Proposal: "Vorschlag: Reparatur · Hoch", Priority: "Hoch", Selected: true}},
 		AutoItems:        []InboxItem{{ID: "auto-1", Subject: "Termin", Time: "09:15"}},
-		Selected:         &InboxCase{ID: "in-1", Subject: "Wasser im Keller", Body: "Nachricht", Status: "Vorschlag liegt vor", StatusTone: "ok", HasSuggestion: true, ProviderLabel: "Cloud (OpenRouter)", CategoryLabel: "Reparatur/Mangel", Priority: "Hoch", Confidence: 95, HouseLabel: "Haus A", Unit: "Top 1", AssigneeLabel: "Vera", Due: "morgen", Reply: "Wir kümmern uns.", Created: "Eingegangen", Actions: []string{"Hausbetreuung informieren"}, Position: 2, Total: 37},
+		Selected:         &InboxCase{ID: "in-1", Subject: "Wasser im Keller", Body: "Nachricht", Status: "Vorschlag liegt vor", StatusTone: "ok", HasSuggestion: true, ProviderLabel: "Cloud (OpenRouter)", CategoryLabel: "Reparatur/Mangel", Priority: "Hoch", Confidence: 95, HouseLabel: "Haus A", Unit: "Top 1", AssigneeLabel: "Vera", Due: "morgen", Reply: "Wir kümmern uns.", UnfilledLabels: []string{"Haus", "Frist"}, Created: "Eingegangen", Actions: []string{"Hausbetreuung informieren"}, Position: 2, Total: 37},
 		ProviderFootline: "KI: Cloud (OpenRouter) · Zielbetrieb lokal im Büro",
 		OpenCount:        37,
 		UnassignedCount:  5,
@@ -29,7 +29,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "htmx.min.js", "nonce=\"test-nonce\""} {
+	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Haus, Frist — bitte prüfen", "htmx.min.js", "nonce=\"test-nonce\""} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("render missing %q", want)
 		}

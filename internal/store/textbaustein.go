@@ -189,11 +189,83 @@ func TextbausteinPlaceholders() []string {
 	return []string{"{{Anrede}}", "{{Name}}", "{{Haus}}", "{{Einheit}}", "{{Nummer}}", "{{Zuständig}}", "{{Handwerker}}", "{{Frist}}"}
 }
 
-var textbausteinPlaceholder = regexp.MustCompile(`\{\{([[:alnum:]_]+)\}\}`)
+var textbausteinPlaceholder = regexp.MustCompile(`\{\{([\p{L}\p{N}_]+)\}\}`)
+
+var (
+	emptySalutation = regexp.MustCompile(`Sehr geehrte\{\{Anrede\}\}(?:\s+(?:Frau|Herr))?\s+\{\{Name\}\}`)
+	emptyForNumber  = regexp.MustCompile(`\bfür\s*,\s*,\s*unter\s+\s*und\b`)
+	emptyForSlot    = regexp.MustCompile(`\bfür\s*,\s*`)
+	emptyUnder      = regexp.MustCompile(`\bunter\s+\s*und\b`)
+	commaBeforeVerb = regexp.MustCompile(`,\s+(wurde|werden|ist|sind|und)\b`)
+	spaces          = regexp.MustCompile(`[\t ]{2,}`)
+)
+
+var textbausteinFallbacks = map[string]string{
+	"Haus":       "Ihrer Liegenschaft",
+	"Einheit":    "Ihrer Einheit",
+	"Nummer":     "Ihrem Anliegen",
+	"Zuständig":  "die zuständige Person",
+	"Handwerker": "einem Fachbetrieb",
+	"Frist":      "in Kürze",
+}
+
+// FillReply replaces textbaustein placeholders with known values. Missing
+// business values receive neutral wording and are returned for human review.
+func FillReply(text string, values map[string]string) (string, []string) {
+	if values == nil {
+		values = map[string]string{}
+	}
+	unfilled := []string{}
+	seen := map[string]bool{}
+	addUnfilled := func(key string) {
+		if !seen[key] {
+			seen[key] = true
+			unfilled = append(unfilled, key)
+		}
+	}
+	if strings.TrimSpace(values["Name"]) == "" && emptySalutation.MatchString(text) {
+		text = emptySalutation.ReplaceAllString(text, "Sehr geehrte Damen und Herren")
+		addUnfilled("Name")
+	} else if strings.TrimSpace(values["Anrede"]) == "" && emptySalutation.MatchString(text) {
+		// Without a known form of address "Sehr geehrte Simon Schober" is wrong
+		// in both genders; the neutral greeting keeps the name.
+		text = emptySalutation.ReplaceAllString(text, "Guten Tag "+strings.TrimSpace(values["Name"]))
+	}
+	text = textbausteinPlaceholder.ReplaceAllStringFunc(text, func(token string) string {
+		matches := textbausteinPlaceholder.FindStringSubmatch(token)
+		key := matches[1]
+		if value := strings.TrimSpace(values[key]); value != "" {
+			return value
+		}
+		// Anrede is intentionally optional; the seed salutations work without it.
+		if key == "Anrede" {
+			return ""
+		}
+		if fallback, ok := textbausteinFallbacks[key]; ok {
+			addUnfilled(key)
+			return fallback
+		}
+		addUnfilled(key)
+		if key == "Name" {
+			return "Sie"
+		}
+		return ""
+	})
+	return text, unfilled
+}
+
+// TidyReply removes punctuation gaps that may be left by a model that copied a
+// textbaustein body but replaced its placeholders with empty text.
+func TidyReply(text string) string {
+	text = emptyForNumber.ReplaceAllString(text, "und")
+	text = emptyForSlot.ReplaceAllString(text, "für ")
+	text = emptyUnder.ReplaceAllString(text, "und")
+	text = commaBeforeVerb.ReplaceAllString(text, " $1")
+	text = spaces.ReplaceAllString(text, " ")
+	return strings.TrimSpace(text)
+}
 
 func RenderTextbaustein(body string, values map[string]string) string {
-	return textbausteinPlaceholder.ReplaceAllStringFunc(body, func(token string) string {
-		matches := textbausteinPlaceholder.FindStringSubmatch(token)
-		return values[matches[1]]
-	})
+	rendered, _ := FillReply(body, values)
+	return rendered
 }

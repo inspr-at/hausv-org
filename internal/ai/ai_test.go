@@ -59,6 +59,9 @@ func TestPromptContainsEveryCatalogueKeyAndStableHash(t *testing.T) {
 	in.Houses = append(in.Houses, HouseHint{Slug: "haus-b", Name: "Haus B"})
 	in.Categories = append(in.Categories, CategoryRule{Key: "abrechnung", Label: "Abrechnung"})
 	in.Templates = append(in.Templates, TemplateHint{Key: "abrechnung-antwort", Category: "abrechnung"})
+	in.AssignedHouseSlug = "haus-a"
+	in.AssignedHouseName = "Haus A"
+	in.AssignedUnit = "Top 7"
 	messages, hashOne, err := buildPrompt(in)
 	if err != nil {
 		t.Fatalf("buildPrompt: %v", err)
@@ -67,7 +70,8 @@ func TestPromptContainsEveryCatalogueKeyAndStableHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildPrompt again: %v", err)
 	}
-	if hashOne != hashTwo || len(hashOne) != 64 {
+	// HAUSV-616: assigned-house context and placeholder instruction are pinned.
+	if hashOne != hashTwo || hashOne != "7320fb9a33b29b9e3a62269b4e8e1842d2f63c8f47e37d220461fc3a6e1af0c7" {
 		t.Fatalf("hashes = %q, %q", hashOne, hashTwo)
 	}
 	combined := messages[0].Content + messages[1].Content
@@ -78,6 +82,11 @@ func TestPromptContainsEveryCatalogueKeyAndStableHash(t *testing.T) {
 	}
 	if !strings.Contains(combined, "WEG") || !strings.Contains(combined, "MRG") {
 		t.Error("prompt does not establish Austrian WEG/MRG context")
+	}
+	for _, want := range []string{"Bereits zugeordnet: Haus Haus A (haus-a), Einheit Top 7. Übernimm diese Zuordnung.", "Behalte die Platzhalter des gewählten Textbausteins"} {
+		if !strings.Contains(combined, want) {
+			t.Errorf("prompt does not contain %q", want)
+		}
 	}
 }
 

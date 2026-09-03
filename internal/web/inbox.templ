@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"strings"
 )
 
 func InboxPage(shell VerwaltungShell, data InboxData) templ.Component {
@@ -91,6 +92,7 @@ type InboxCase struct {
 	TemplateKey        string
 	TemplateTitle      string
 	Reply              string
+	UnfilledLabels     []string
 	Actions            []string
 	Model              string
 	PromptHash         string
@@ -334,6 +336,9 @@ templ InboxCaseWorkflowContent(item InboxCase) {
 					<div class="reply-edit"><div class="reply-tools"><label>Textbaustein<select name="template">@InboxOptions(item.Templates)</select></label><button class="case-button" type="submit" name="action" value="template">Textbaustein einsetzen</button></div><textarea name="reply">{ item.Reply }</textarea></div>
 				} else {
 					<p class="reply-copy">{ item.Reply }</p>
+					if len(item.UnfilledLabels) > 0 {
+						<small class="queue-age">Platzhalter ohne Wert: { strings.Join(item.UnfilledLabels, ", ") } — bitte prüfen</small>
+					}
 				}
 			</section>
 			@InboxAIHistory(item)
