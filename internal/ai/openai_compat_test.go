@@ -52,7 +52,7 @@ func TestSuggestHappyPathAndHeaders(t *testing.T) {
 	if suggestion.Model != "test-model" || len(suggestion.PromptHash) != 64 || len(suggestion.Raw) == 0 {
 		t.Fatalf("missing provenance: %+v", suggestion)
 	}
-	if received.Model != "test-model" || received.Temperature != 0.1 || received.MaxTokens != 1200 {
+	if received.Model != "test-model" || received.Temperature != 0.1 || received.MaxTokens != completionMaxTokens {
 		t.Fatalf("unexpected request: %+v", received)
 	}
 	if got := received.ResponseFormat["type"]; got != "json_object" {
@@ -110,6 +110,57 @@ func TestSuggestNormalisesVocabularyCase(t *testing.T) {
 	}
 	if suggestion.Priority != "Hoch" || suggestion.Category != "reparatur" {
 		t.Fatalf("priority=%q category=%q; want catalogue spelling", suggestion.Priority, suggestion.Category)
+	}
+}
+
+// Live finding 2026-09-03: OpenRouter's gemini-3.8-flash spends hidden
+// reasoning tokens before the JSON answer; with a 1200-token budget every
+// triage came back truncated. The request now carries a large budget and,
+// for OpenRouter only, a low reasoning effort; a truncated answer is named
+// as such instead of surfacing as a JSON decode error.
+func TestSuggestRequestBudgetAndReasoning(t *testing.T) {
+	t.Parallel()
+	var body map[string]any
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		writeCompletion(t, w, validAnswerJSON())
+	})
+
+	if _, err := newTestSuggester(handler).Suggest(context.Background(), testInput()); err != nil {
+		t.Fatalf("Suggest: %v", err)
+	}
+	if got := body["max_tokens"]; got != float64(completionMaxTokens) {
+		t.Fatalf("max_tokens = %v, want %d", got, completionMaxTokens)
+	}
+	if _, ok := body["reasoning"]; ok {
+		t.Fatalf("reasoning must not be sent to a generic OpenAI-compatible server: %v", body["reasoning"])
+	}
+
+	s := newTestSuggester(handler)
+	s.baseURL = "https://openrouter.ai/api/v1"
+	if _, err := s.Suggest(context.Background(), testInput()); err != nil {
+		t.Fatalf("Suggest via OpenRouter: %v", err)
+	}
+	reasoning, _ := body["reasoning"].(map[string]any)
+	if reasoning["effort"] != "low" {
+		t.Fatalf("reasoning = %v, want effort low for OpenRouter", body["reasoning"])
+	}
+}
+
+func TestSuggestNamesTruncatedCompletion(t *testing.T) {
+	t.Parallel()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []any{map[string]any{"finish_reason": "length", "message": map[string]string{"content": `{"category":"reparatur","priority":"Hoch","reply":"Sehr geehr`}}},
+		})
+	})
+
+	_, err := newTestSuggester(handler).Suggest(context.Background(), testInput())
+	if err == nil || !strings.Contains(err.Error(), "truncated") {
+		t.Fatalf("error = %v, want a truncation error", err)
 	}
 }
 

@@ -39,14 +39,34 @@ type completionRequest struct {
 	Temperature    float64        `json:"temperature"`
 	ResponseFormat map[string]any `json:"response_format"`
 	MaxTokens      int            `json:"max_tokens"`
+	// Reasoning is OpenRouter's unified knob. Reasoning models spend their
+	// budget on hidden thinking first (measured 2026-09-03: gemini-3.8-flash
+	// used 206 reasoning tokens for a one-line answer), so a small budget
+	// returns truncated JSON. Only sent to OpenRouter; other OpenAI-compatible
+	// servers may reject unknown fields.
+	Reasoning map[string]any `json:"reasoning,omitempty"`
 }
+
+// completionMaxTokens leaves room for hidden reasoning plus the reply text and
+// actions; the answer itself stays well under a thousand tokens.
+const completionMaxTokens = 4000
 
 type completionResponse struct {
 	Choices []struct {
-		Message struct {
+		FinishReason string `json:"finish_reason"`
+		Message      struct {
 			Content string `json:"content"`
 		} `json:"message"`
 	} `json:"choices"`
+}
+
+// reasoningFor returns the OpenRouter reasoning setting for the base URL:
+// low effort keeps the hidden thinking short so the JSON answer fits.
+func reasoningFor(baseURL string) map[string]any {
+	if strings.Contains(strings.ToLower(baseURL), "openrouter.ai") {
+		return map[string]any{"effort": "low"}
+	}
+	return nil
 }
 
 type triageAnswer struct {
@@ -74,7 +94,8 @@ func (s *openAICompatSuggester) Suggest(ctx context.Context, in TriageInput) (Tr
 	}
 	payload, err := json.Marshal(completionRequest{
 		Model: s.model, Messages: messages, Temperature: 0.1,
-		ResponseFormat: map[string]any{"type": "json_object"}, MaxTokens: 1200,
+		ResponseFormat: map[string]any{"type": "json_object"}, MaxTokens: completionMaxTokens,
+		Reasoning: reasoningFor(s.baseURL),
 	})
 	if err != nil {
 		return TriageSuggestion{}, fmt.Errorf("ai: encode completion request: %w", err)
@@ -170,6 +191,9 @@ func parseSuggestion(responseBody []byte, in TriageInput, model, promptHash stri
 	}
 	if len(completion.Choices) == 0 {
 		return TriageSuggestion{}, errors.New("ai: completion contained no choices")
+	}
+	if completion.Choices[0].FinishReason == "length" {
+		return TriageSuggestion{}, errors.New("ai: completion truncated by the token budget")
 	}
 	raw := stripCodeFence(completion.Choices[0].Message.Content)
 	if raw == "" {
