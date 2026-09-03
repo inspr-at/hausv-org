@@ -88,6 +88,17 @@ const (
 	AuditActionEnergyExport         = "energy.data.export"
 	AuditActionEnergyHistoryDelete  = "energy.history.delete"
 	AuditActionEnergyProfileDelete  = "energy.profile.delete"
+	AuditActionIssueAISuggest       = "issue.ai.suggest"
+	AuditActionIssueAIAccept        = "issue.ai.accept"
+	AuditActionIssueAIEdit          = "issue.ai.edit"
+	AuditActionIssueAIReject        = "issue.ai.reject"
+	AuditActionIssueAIAuto          = "issue.ai.auto"
+	AuditActionIssueAIRestore       = "issue.ai.restore"
+	AuditActionIntakePhoneNote      = "intake.phone-note"
+	AuditActionIntakeAssign         = "intake.assign"
+	AuditActionVerwaltungSettings   = "verwaltung.settings"
+	AuditActionRolePreviewStart     = "role-preview.start"
+	AuditActionRolePreviewEnd       = "role-preview.end"
 )
 
 const (
@@ -2139,6 +2150,9 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionEnergyCaretaker, AuditActionEnergyInvite, AuditActionEnergyMaintSave,
 		AuditActionEnergyMaintDone, AuditActionEnergyTariff, AuditActionEnergyExport,
 		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete,
+		AuditActionIssueAISuggest, AuditActionIssueAIAccept, AuditActionIssueAIEdit, AuditActionIssueAIReject,
+		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
+		AuditActionVerwaltungSettings, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
 		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave:
 		return raw
