@@ -243,6 +243,7 @@ var parseAllowed = config.ParseAllowed
 var parseBool = config.ParseBool
 var parseDuration = config.ParseDuration
 var parseHistoryStart = config.ParseHistoryStart
+var parseOrganisations = config.ParseOrganisations
 var parseTenants = config.ParseTenants
 var parseUserProfiles = config.ParseUserProfiles
 var sessionSecret = config.SessionSecret
@@ -744,6 +745,7 @@ type app struct {
 	rootDomain              string
 	defaultTenant           string
 	tenants                 map[string]tenantConfig
+	organisations           map[string]config.OrganisationConfig
 	tenantIdentities        map[string]store.TenantIdentity
 	sessionSecure           bool
 	allowed                 map[string]struct{}
@@ -1044,6 +1046,15 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
 	mux.HandleFunc("POST /app/context", a.action(a.switchPortalContext))
+	mux.HandleFunc("GET /app/verwaltung", a.page(a.requireVerwaltung(a.portfolioPage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang", a.page(a.requireVerwaltung(a.inboxPage)))
+	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}", a.page(a.requireVerwaltung(a.inboxCasePage)))
+	mux.HandleFunc("POST /app/verwaltung/posteingang/{id}", a.action(a.requireVerwaltung(a.inboxCaseAction)))
+	mux.HandleFunc("POST /app/verwaltung/telefonnotiz", a.action(a.requireVerwaltung(a.phoneNoteAction)))
+	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen", a.action(a.requireVerwaltung(a.verwaltungSettingsAction)))
+	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
+	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
 	mux.HandleFunc("POST /app/hilfe/connector/pairing", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/revoke", a.action(a.revokeAppHomeConnector))
@@ -1458,6 +1469,10 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	organisations, err := parseOrganisations(env("WEG_ORGANISATIONS_JSON", ""))
+	if err != nil {
+		return nil, err
+	}
 	if err := config.ApplyHomeAssistantConnectors(env("HA_CONNECTORS_JSON", ""), tenants); err != nil {
 		return nil, err
 	}
@@ -1857,6 +1872,7 @@ func newApp() (*app, error) {
 		rootDomain:               rootDomain,
 		defaultTenant:            defaultTenant,
 		tenants:                  tenants,
+		organisations:            organisations,
 		tenantIdentities:         tenantIdentities,
 		sessionSecure:            parsed.Scheme == "https",
 		allowed:                  allowed,
@@ -2499,6 +2515,11 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		CanManageHandovers:     canManagePortalHandovers,
 		CanManageUsers:         canManagePortalUsers,
 		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		ShowVerwaltungNav:      a.showVerwaltungNav(ac),
+		InboxOpenCount:         0,
+		RolePreview:            nil,
+		RolePreviewChoices:     nil,
+		Flash:                  rolePreviewFlash(r),
 		HomeIdentity:           a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		HasPrimary:             hasPrimary,
 		Primary:                primary,
@@ -2512,6 +2533,13 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Contexts:               portalContexts,
 		ReleaseNotes:           version.Notes(),
 	})
+}
+
+func rolePreviewFlash(r *http.Request) string {
+	if r != nil && r.URL.Query().Get("flash") == "Wird gebaut" {
+		return "Wird gebaut"
+	}
+	return ""
 }
 
 func (a *app) renderPortalTempl(w http.ResponseWriter, r *http.Request, data web.PortalPageData) {
