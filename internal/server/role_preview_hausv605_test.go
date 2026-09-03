@@ -108,6 +108,30 @@ func TestRolePreviewExpiryRestoresSessionAndAuditsHAUSV605(t *testing.T) {
 	}
 }
 
+func TestRolePreviewEndsWhenAdminMembershipChangesHAUSV605(t *testing.T) {
+	const email = "admin@example.com"
+	a := newTestPortalApp(t, userProfile{Email: email, Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	start := rolePreviewTestRequest(t, a, http.MethodPost, "/demo/app/ansicht/start", url.Values{"role": {roleOwner}}, rolePreviewTestSession(t, a, email, roleAdmin))
+	previewCookie := rolePreviewResponseCookie(t, start)
+	profile := a.profiles[email]
+	profile.Role = roleManager
+	a.profiles[email] = profile
+
+	response := rolePreviewTestRequest(t, a, http.MethodGet, "/demo/app", nil, previewCookie)
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("changed actor context status = %d, want 303", response.Code)
+	}
+	restoredCookie := rolePreviewResponseCookie(t, response)
+	restored, ok := a.sessions.GetSession(restoredCookie.Value)
+	if !ok || restored.Role != roleManager || restored.PreviewRole != "" {
+		t.Fatalf("restored changed context = %+v ok=%v", restored, ok)
+	}
+	ends := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: store.AuditActionRolePreviewEnd, Limit: 10})
+	if len(ends) != 1 || ends[0].Details["reason"] != rolePreviewEndActorContextInvalid {
+		t.Fatalf("actor invalidation audit = %+v", ends)
+	}
+}
+
 func TestRolePreviewLogoutRecordsEndHAUSV605(t *testing.T) {
 	const email = "admin@example.com"
 	a := newTestPortalApp(t, userProfile{Email: email, Role: roleAdmin, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
