@@ -75,6 +75,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "demo-seed" {
+		if err := runDemoSeed(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("demo seed did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "predeploy-snapshot" {
 		if err := runPredeploySnapshot(os.Args[2:], os.Stdout, os.Stderr); err != nil {

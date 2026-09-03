@@ -1268,6 +1268,17 @@ func AuditActionOptions(selected string) []SelectOption {
 		store.AuditActionEventDelete,
 		store.AuditActionContactSave,
 		store.AuditActionContactDelete,
+		store.AuditActionIssueAISuggest,
+		store.AuditActionIssueAIAccept,
+		store.AuditActionIssueAIEdit,
+		store.AuditActionIssueAIReject,
+		store.AuditActionIssueAIAuto,
+		store.AuditActionIssueAIRestore,
+		store.AuditActionIntakePhoneNote,
+		store.AuditActionIntakeAssign,
+		store.AuditActionVerwaltungSettings,
+		store.AuditActionRolePreviewStart,
+		store.AuditActionRolePreviewEnd,
 	} {
 		options = append(options, SelectOption{Value: action, Label: AuditActionLabel(action), Selected: selected == action})
 	}
@@ -1378,6 +1389,28 @@ func AuditActionLabel(action string) string {
 		return "Belegzuordnung entfernt"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
+	case store.AuditActionIssueAISuggest:
+		return "KI-Vorschlag erstellt"
+	case store.AuditActionIssueAIAccept:
+		return "KI-Vorschlag freigegeben"
+	case store.AuditActionIssueAIEdit:
+		return "KI-Vorschlag geändert und freigegeben"
+	case store.AuditActionIssueAIReject:
+		return "KI-Vorschlag verworfen"
+	case store.AuditActionIssueAIAuto:
+		return "Automatisch erledigt"
+	case store.AuditActionIssueAIRestore:
+		return "Zurück in den Eingang"
+	case store.AuditActionIntakePhoneNote:
+		return "Telefonnotiz erfasst"
+	case store.AuditActionIntakeAssign:
+		return "Eingang zugeordnet"
+	case store.AuditActionVerwaltungSettings:
+		return "Verwaltungseinstellungen geändert"
+	case store.AuditActionRolePreviewStart:
+		return "Ansicht als Rolle gestartet"
+	case store.AuditActionRolePreviewEnd:
+		return "Ansicht als Rolle beendet"
 	default:
 		return action
 	}
