@@ -9,7 +9,7 @@ func TestHausv616FillReplyUsesValuesAndNeutralFallbacks(t *testing.T) {
 	text, unfilled := FillReply("Sehr geehrte{{Anrede}} {{Name}}, für {{Haus}}, {{Einheit}} unter {{Nummer}}: {{Zuständig}}; {{Handwerker}}; {{Frist}}.", map[string]string{
 		"Name": "Rita Beispiel", "Haus": "Grazbachgasse 14", "Einheit": "Top 7", "Nummer": "in-0002",
 	})
-	want := "Sehr geehrte Rita Beispiel, für Grazbachgasse 14, Top 7 unter in-0002: die zuständige Person; einem Fachbetrieb; in Kürze."
+	want := "Guten Tag Rita Beispiel, für Grazbachgasse 14, Top 7 unter in-0002: die zuständige Person; einem Fachbetrieb; in Kürze."
 	if text != want {
 		t.Fatalf("FillReply = %q, want %q", text, want)
 	}
