@@ -9,22 +9,44 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
 type Textbaustein struct {
-	Key          string   `json:"key"`
-	Organisation string   `json:"organisation"`
-	Category     string   `json:"category"`
-	Title        string   `json:"title"`
-	Body         string   `json:"body"`
-	Placeholders []string `json:"placeholders,omitempty"`
-	Active       bool     `json:"active"`
+	Key          string    `json:"key"`
+	Organisation string    `json:"organisation"`
+	Category     string    `json:"category"`
+	Title        string    `json:"title"`
+	Body         string    `json:"body"`
+	Placeholders []string  `json:"placeholders,omitempty"`
+	Active       bool      `json:"active"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// UnmarshalJSON keeps catalogue entries and rows written before the active flag
+// backwards-compatible: an omitted active property means active, while an
+// explicit false remains false.
+func (t *Textbaustein) UnmarshalJSON(data []byte) error {
+	type plain Textbaustein
+	decoded := struct {
+		plain
+		Active *bool `json:"active"`
+	}{plain: plain{Active: true}}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*t = Textbaustein(decoded.plain)
+	if decoded.Active != nil {
+		t.Active = *decoded.Active
+	}
+	return nil
 }
 
 type TextbausteinRepository interface {
 	List(context.Context) ([]Textbaustein, error)
+	ListActive(context.Context) ([]Textbaustein, error)
 	Get(context.Context, string) (Textbaustein, error)
 	Upsert(context.Context, Textbaustein) error
 }
@@ -42,6 +64,14 @@ func BindTextbausteinRepository(database *sql.DB, orgKey string) TextbausteinRep
 }
 
 func (r *sqlTextbausteinRepository) List(ctx context.Context) ([]Textbaustein, error) {
+	return r.list(ctx, false)
+}
+
+func (r *sqlTextbausteinRepository) ListActive(ctx context.Context) ([]Textbaustein, error) {
+	return r.list(ctx, true)
+}
+
+func (r *sqlTextbausteinRepository) list(ctx context.Context, activeOnly bool) ([]Textbaustein, error) {
 	if r.begin == nil || r.orgKey == "" {
 		return nil, fmt.Errorf("textbaustein repository is not bound")
 	}
@@ -50,19 +80,21 @@ func (r *sqlTextbausteinRepository) List(ctx context.Context) ([]Textbaustein, e
 		return nil, err
 	}
 	defer tx.Rollback()
-	rows, err := tx.QueryContext(ctx, `SELECT data FROM textbausteine WHERE org_key=$1 ORDER BY key`, r.orgKey)
+	query := `SELECT data, active, updated_at FROM textbausteine WHERE org_key=$1 ORDER BY key`
+	args := []any{r.orgKey}
+	if activeOnly {
+		query = `SELECT data, active, updated_at FROM textbausteine WHERE org_key=$1 AND active=$2 ORDER BY key`
+		args = append(args, true)
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	items := []Textbaustein{}
 	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
-			return nil, err
-		}
-		var item Textbaustein
-		if err := json.Unmarshal([]byte(data), &item); err != nil {
+		item, err := scanTextbaustein(rows)
+		if err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -80,7 +112,6 @@ func (r *sqlTextbausteinRepository) List(ctx context.Context) ([]Textbaustein, e
 }
 
 func (r *sqlTextbausteinRepository) Get(ctx context.Context, key string) (Textbaustein, error) {
-	var data string
 	if r.begin == nil || r.orgKey == "" {
 		return Textbaustein{}, fmt.Errorf("textbaustein repository is not bound")
 	}
@@ -89,15 +120,12 @@ func (r *sqlTextbausteinRepository) Get(ctx context.Context, key string) (Textba
 		return Textbaustein{}, err
 	}
 	defer tx.Rollback()
-	err = tx.QueryRowContext(ctx, `SELECT data FROM textbausteine WHERE org_key=$1 AND key=$2`, r.orgKey, strings.TrimSpace(key)).Scan(&data)
+	row := tx.QueryRowContext(ctx, `SELECT data, active, updated_at FROM textbausteine WHERE org_key=$1 AND key=$2`, r.orgKey, strings.TrimSpace(key))
+	item, err := scanTextbaustein(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Textbaustein{}, ErrIntakeNotFound
 	}
 	if err != nil {
-		return Textbaustein{}, err
-	}
-	var item Textbaustein
-	if err := json.Unmarshal([]byte(data), &item); err != nil {
 		return Textbaustein{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -116,6 +144,7 @@ func (r *sqlTextbausteinRepository) Upsert(ctx context.Context, item Textbaustei
 	}
 	item.Placeholders = append([]string(nil), item.Placeholders...)
 	sort.Strings(item.Placeholders)
+	item.UpdatedAt = time.Now().UTC()
 	blob, err := json.Marshal(item)
 	if err != nil {
 		return err
@@ -125,12 +154,39 @@ func (r *sqlTextbausteinRepository) Upsert(ctx context.Context, item Textbaustei
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, `INSERT INTO textbausteine(org_key,key,data) VALUES($1,$2,$3)
-		ON CONFLICT(org_key,key) DO UPDATE SET data=excluded.data`, r.orgKey, item.Key, string(blob))
+	_, err = tx.ExecContext(ctx, `INSERT INTO textbausteine(org_key,key,data,active,updated_at) VALUES($1,$2,$3,$4,$5)
+		ON CONFLICT(org_key,key) DO UPDATE SET data=excluded.data, active=excluded.active, updated_at=excluded.updated_at`, r.orgKey, item.Key, string(blob), item.Active, item.UpdatedAt.Format(time.RFC3339Nano))
 	if err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+type textbausteinScanner interface {
+	Scan(...any) error
+}
+
+func scanTextbaustein(scanner textbausteinScanner) (Textbaustein, error) {
+	var data, updatedAt string
+	var active bool
+	if err := scanner.Scan(&data, &active, &updatedAt); err != nil {
+		return Textbaustein{}, err
+	}
+	var item Textbaustein
+	if err := json.Unmarshal([]byte(data), &item); err != nil {
+		return Textbaustein{}, err
+	}
+	item.Active = active
+	if updatedAt != "" {
+		if parsed, err := time.Parse(time.RFC3339Nano, updatedAt); err == nil {
+			item.UpdatedAt = parsed.UTC()
+		}
+	}
+	return item, nil
+}
+
+func TextbausteinPlaceholders() []string {
+	return []string{"{{Anrede}}", "{{Name}}", "{{Haus}}", "{{Einheit}}", "{{Nummer}}", "{{Zuständig}}", "{{Handwerker}}", "{{Frist}}"}
 }
 
 var textbausteinPlaceholder = regexp.MustCompile(`\{\{([[:alnum:]_]+)\}\}`)

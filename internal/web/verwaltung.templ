@@ -94,6 +94,8 @@ templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
 		</details>
 		if shell.CanManageSettings {
 			@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
+			@PortalNavItem("document", "Textbausteine", "/app/verwaltung/textbausteine", shell.Active == "textbausteine", 0, icons)
+			@PortalNavItem("users", "Rechte", "/app/verwaltung/rechte", shell.Active == "rechte", 0, icons)
 		}
 	</nav>
 }
