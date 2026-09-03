@@ -18,3 +18,12 @@ anchor_args=()
 if [ -n "${HAUSV_DEMO_SEED_ANCHOR:-}" ]; then anchor_args=(-anchor "$HAUSV_DEMO_SEED_ANCHOR"); fi
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -reset "${anchor_args[@]}"
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -stats
+# The unit register is a JSON store the app loads once at boot (UNIT_DATA_PATH);
+# the CLI rewrote the file, so the running app must reload it. The portal's own
+# demo reset seeds in-process and does not need this.
+compose restart hausv-demo
+for i in $(seq 1 30); do
+    if compose exec -T hausv-demo /hausv-org healthcheck >/dev/null 2>&1; then break; fi
+    [ "$i" = 30 ] && { echo "hausv-demo did not become healthy after the restart" >&2; exit 1; }
+    sleep 2
+done

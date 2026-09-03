@@ -374,7 +374,10 @@ Route mit 404.
 
 Der Seed enthält pro Haus die Tops samt Eigentümer- und Mieterzuordnung sowie Stellplätze.
 
-`deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
+`deploy/demo/seed.sh` can be rerun safely to restore the fixture records. It restarts the
+container afterwards, because the unit register (`UNIT_DATA_PATH`) is a JSON store
+the app loads once at boot; the portal's demo reset seeds in-process and needs no
+restart. For a
 fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
 only its named data volume, starts it again, and seeds it. Confirm the running
 instance with `deploy/demo/verify.sh`.
