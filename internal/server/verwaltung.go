@@ -22,6 +22,11 @@ func (a *app) managedTenants(ac *authCtx) []managedTenant {
 	if a == nil || ac == nil {
 		return nil
 	}
+	// A role preview narrows the effective role to Eigentümer or Bewohner; neither
+	// manages houses, so the Verwaltung layer disappears for the duration.
+	if ac.preview != nil {
+		return nil
+	}
 	email := normalizeEmail(ac.email)
 	_, breakGlass := a.admins[email]
 	slugs := a.ownTenantSlugs(email)
@@ -93,6 +98,9 @@ func (a *app) organisationFor(ac *authCtx) (config.OrganisationConfig, bool) {
 }
 
 func (a *app) showVerwaltungNav(ac authCtx) bool {
+	if ac.preview != nil {
+		return false
+	}
 	managed := a.managedTenants(&ac)
 	if len(managed) >= 2 {
 		return true
