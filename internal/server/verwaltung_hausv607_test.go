@@ -25,10 +25,11 @@ func TestVerwaltungManagerOfTwoHousesSeesNavigationAndShell(t *testing.T) {
 	if portal.Code != http.StatusOK {
 		t.Fatalf("portal status = %d: %s", portal.Code, portal.Body.String())
 	}
-	for _, want := range []string{`href="/demo/app/verwaltung"`, `href="/demo/app/verwaltung/posteingang"`} {
-		if !strings.Contains(portal.Body.String(), want) {
-			t.Fatalf("portal missing Verwaltung navigation %q", want)
-		}
+	if !strings.Contains(portal.Body.String(), `href="/demo/app/verwaltung"`) {
+		t.Fatal("portal missing Portfolio navigation")
+	}
+	if strings.Contains(portal.Body.String(), `href="/demo/app/verwaltung/posteingang"`) {
+		t.Fatal("organisation-less portal must not show Posteingang navigation")
 	}
 
 	verwaltung := authedRequest(t, a, email, "/demo/app/verwaltung")

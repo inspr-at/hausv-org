@@ -25,7 +25,11 @@ func (a *app) inboxCasePage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 
 func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, selectedID string, full bool) {
 	orgKey, ok := a.inboxOrganisationKey(&ac)
-	if !ok || a.intake == nil {
+	if !ok {
+		http.Redirect(w, r, "/app/verwaltung?flash="+url.QueryEscape("Posteingang braucht eine Organisation"), http.StatusSeeOther)
+		return
+	}
+	if a.intake == nil {
 		http.Error(w, "Posteingang nicht verfügbar.", http.StatusServiceUnavailable)
 		return
 	}
@@ -51,7 +55,7 @@ func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, se
 
 func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query url.Values, selectedID string, full bool) (web.InboxData, error) {
 	repo := a.intake(orgKey)
-	filter := store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}}
+	filter := a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected})
 	filter.Limit = inboxListLimit(query)
 	switch query.Get("source") {
 	case "email":
@@ -83,29 +87,34 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 		}
 	}
 	now := time.Now()
-	allAuto, err := repo.List(ctx, store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusAuto}})
+	allAuto, err := repo.List(ctx, a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusAuto}))
 	if err != nil {
 		return web.InboxData{}, err
 	}
 	auto := make([]store.IntakeItem, 0, len(allAuto))
 	for _, item := range allAuto {
-		handledAt := item.ReceivedAt
-		if item.Handling != nil && !item.Handling.At.IsZero() {
-			handledAt = item.Handling.At
-		}
-		if sameLocalDate(handledAt, now) {
+		if intakeHandledToday(item, now) {
 			auto = append(auto, item)
 		}
 	}
-	openCount, err := repo.Count(ctx, store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}})
+	countFilter := filter
+	countFilter.Limit = 0
+	countFilter.Offset = 0
+	countFilter.Sort = ""
+	countFilter.Statuses = []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}
+	openCount, err := repo.Count(ctx, countFilter)
 	if err != nil {
 		return web.InboxData{}, err
 	}
-	proposedCount, err := repo.Count(ctx, store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusProposed}})
+	proposedFilter := countFilter
+	proposedFilter.Statuses = []store.IntakeStatus{store.IntakeStatusProposed}
+	proposedCount, err := repo.Count(ctx, proposedFilter)
 	if err != nil {
 		return web.InboxData{}, err
 	}
-	unassignedCount, err := repo.Count(ctx, store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}, Unassigned: true})
+	unassignedFilter := countFilter
+	unassignedFilter.Unassigned = true
+	unassignedCount, err := repo.Count(ctx, unassignedFilter)
 	if err != nil {
 		return web.InboxData{}, err
 	}
@@ -143,6 +152,14 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 		}
 	}
 	return data, nil
+}
+
+func intakeHandledToday(item store.IntakeItem, now time.Time) bool {
+	handledAt := item.ReceivedAt
+	if item.Handling != nil && !item.Handling.At.IsZero() {
+		handledAt = item.Handling.At
+	}
+	return sameLocalDate(handledAt.In(time.Local), now.In(time.Local))
 }
 
 func inboxQueueView(item store.IntakeItem, names map[string]string, selectedID string, now time.Time) web.InboxItem {
@@ -312,7 +329,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		house := a.tenants[firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)]
-		next := a.nextOpenIntakeID(r.Context(), orgKey, id)
+		next := a.nextOpenIntakeID(r.Context(), orgKey, &ac, id)
 		location := "/app/verwaltung/posteingang"
 		if next != "" {
 			location += "/" + url.PathEscape(next)
@@ -343,10 +360,17 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			a.inboxError(w, err)
 			return
 		}
-		item, _ = repo.Get(r.Context(), id)
+		item, err = repo.Get(r.Context(), id)
+		if err != nil {
+			a.inboxError(w, err)
+			return
+		}
 		item.Suggestion = nil
 		item.Status = store.IntakeStatusOpen
-		_ = repo.Create(r.Context(), item)
+		if err := repo.Create(r.Context(), item); err != nil {
+			a.inboxError(w, err)
+			return
+		}
 		a.recordIntakeAudit(house, ac.email, store.AuditActionIntakeAssign, item, store.IntakeSuggestion{}, "Haus zugeordnet")
 		if a.triage != nil {
 			_, _ = a.processIntake(r.Context(), orgKey, item, ac.email)
@@ -418,8 +442,8 @@ func applySuggestionForm(item *store.IntakeItem, r *http.Request) {
 	s.Assignee = strings.TrimSpace(r.FormValue("assignee"))
 	s.TemplateKey = strings.TrimSpace(r.FormValue("template"))
 	s.Reply = strings.TrimSpace(r.FormValue("reply"))
-	if due, err := time.Parse("2006-01-02", r.FormValue("due")); err == nil {
-		item.DueAt = due
+	if due, err := time.ParseInLocation("2006-01-02", r.FormValue("due"), time.Local); err == nil {
+		item.DueAt = time.Date(due.Year(), due.Month(), due.Day(), 17, 0, 0, 0, time.Local).UTC()
 	}
 }
 
@@ -464,6 +488,10 @@ func (a *app) phoneNoteAction(w http.ResponseWriter, r *http.Request, ac authCtx
 }
 
 func (a *app) verwaltungSettingsPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.isOrganisationAdmin(&ac) {
+		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
+		return
+	}
 	orgKey, ok := a.inboxOrganisationKey(&ac)
 	if !ok || a.orgSettings == nil {
 		http.Error(w, "Einstellungen nicht verfügbar.", http.StatusServiceUnavailable)
@@ -477,6 +505,10 @@ func (a *app) verwaltungSettingsPage(w http.ResponseWriter, r *http.Request, ac 
 	a.renderVerwaltungSettings(w, r, ac, settings, r.URL.Query().Get("flash"))
 }
 func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !a.isOrganisationAdmin(&ac) {
+		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -543,19 +575,24 @@ func (a *app) inboxOpenCount(ac *authCtx) int {
 	if !ok || a.intake == nil {
 		return 0
 	}
-	count, err := a.intake(orgKey).Count(context.Background(), store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}})
+	count, err := a.intake(orgKey).Count(context.Background(), a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}))
 	if err != nil {
 		return 0
 	}
 	return count
 }
 
+func (a *app) managedIntakeFilter(ac *authCtx, statuses []store.IntakeStatus) store.IntakeFilter {
+	filter := store.IntakeFilter{Statuses: statuses, IncludeUnassigned: true}
+	for _, tenant := range a.managedTenants(ac) {
+		filter.TenantSlugs = append(filter.TenantSlugs, tenant.Ref.Slug)
+	}
+	return filter
+}
+
 func (a *app) inboxOrganisationKey(ac *authCtx) (string, bool) {
 	if org, ok := a.organisationFor(ac); ok && normalizeSlug(org.Key) != "" {
 		return normalizeSlug(org.Key), true
-	}
-	if ac != nil && normalizeSlug(ac.tenant.Organisation) != "" {
-		return normalizeSlug(ac.tenant.Organisation), true
 	}
 	return "", false
 }
@@ -609,8 +646,10 @@ func (a *app) inboxProviderFootline() string {
 	}
 	return "KI läuft " + label + " · jeder Vorschlag und jede Freigabe wird protokolliert"
 }
-func (a *app) nextOpenIntakeID(ctx context.Context, orgKey, current string) string {
-	items, err := a.intake(orgKey).List(ctx, store.IntakeFilter{Statuses: []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}})
+func (a *app) nextOpenIntakeID(ctx context.Context, orgKey string, ac *authCtx, current string) string {
+	// The current action already proved access; use the same managed-house scope
+	// for selecting the next queue item so navigation cannot cross house boundaries.
+	items, err := a.intake(orgKey).List(ctx, a.managedIntakeFilter(ac, []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusRejected}))
 	if err != nil {
 		return ""
 	}

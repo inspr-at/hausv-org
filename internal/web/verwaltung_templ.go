@@ -11,16 +11,18 @@ import templruntime "github.com/a-h/templ/runtime"
 import "github.com/inspr-at/hausv-org/internal/version"
 
 type VerwaltungShell struct {
-	OrganisationName string
-	RoleLabel        string
-	DisplayName      string
-	Initials         string
-	Active           string
-	InboxOpenCount   int
-	Houses           []VerwaltungHouse
-	Contexts         []PortalContext
-	DisplayVersion   string
-	ReleaseNotes     []version.Note
+	OrganisationName  string
+	RoleLabel         string
+	DisplayName       string
+	Initials          string
+	Active            string
+	InboxOpenCount    int
+	ShowInboxNav      bool
+	CanManageSettings bool
+	Houses            []VerwaltungHouse
+	Contexts          []PortalContext
+	DisplayVersion    string
+	ReleaseNotes      []version.Note
 }
 
 type VerwaltungHouse struct {
@@ -146,7 +148,7 @@ func VerwaltungSidebar(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(shell.OrganisationName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 54, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 56, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -159,7 +161,7 @@ func VerwaltungSidebar(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(shell.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 54, Col: 107}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 56, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -184,7 +186,7 @@ func VerwaltungSidebar(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(shell.Initials)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 57, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 59, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -197,7 +199,7 @@ func VerwaltungSidebar(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(shell.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 57, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 59, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -210,7 +212,7 @@ func VerwaltungSidebar(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(shell.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 57, Col: 159}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 59, Col: 159}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -276,7 +278,7 @@ func VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) templ.Compo
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(shell.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 67, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 69, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -289,7 +291,7 @@ func VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) templ.Compo
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(shell.OrganisationName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 69, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 71, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -302,7 +304,7 @@ func VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) templ.Compo
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(pageLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 69, Col: 113}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 71, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -315,7 +317,7 @@ func VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) templ.Compo
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(shell.Initials)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 70, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 72, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -358,9 +360,11 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
+		if shell.ShowInboxNav {
+			templ_7745c5c3_Err = PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<details class=\"verwaltung-houses\">")
 		if templ_7745c5c3_Err != nil {
@@ -414,7 +418,7 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(house.Slug)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 87, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 91, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 			if templ_7745c5c3_Err != nil {
@@ -427,7 +431,7 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(house.Role)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 87, Col: 155}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 91, Col: 155}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 			if templ_7745c5c3_Err != nil {
@@ -440,7 +444,7 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(house.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 87, Col: 201}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 91, Col: 201}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -453,7 +457,7 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(house.Address)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 87, Col: 234}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 91, Col: 234}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -464,13 +468,15 @@ func VerwaltungNavigation(shell VerwaltungShell, icons bool) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div></details> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
+		if shell.CanManageSettings {
+			templ_7745c5c3_Err = PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</nav>")
 		if templ_7745c5c3_Err != nil {
@@ -533,7 +539,7 @@ func VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) templ.Compone
 					var templ_7745c5c3_Var24 string
 					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(context.HouseName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 100, Col: 62}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 106, Col: 62}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 					if templ_7745c5c3_Err != nil {
@@ -551,7 +557,7 @@ func VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) templ.Compone
 					var templ_7745c5c3_Var25 string
 					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.ResolveAttributeValue(context.TenantSlug)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 102, Col: 108}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 108, Col: 108}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 					if templ_7745c5c3_Err != nil {
@@ -564,7 +570,7 @@ func VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) templ.Compone
 					var templ_7745c5c3_Var26 string
 					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(context.Role)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 102, Col: 165}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 108, Col: 165}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 					if templ_7745c5c3_Err != nil {
@@ -577,7 +583,7 @@ func VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) templ.Compone
 					var templ_7745c5c3_Var27 string
 					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(context.HouseName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 102, Col: 218}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 108, Col: 218}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
@@ -626,7 +632,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(shell.DisplayVersion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 110, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 116, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -644,7 +650,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 			var templ_7745c5c3_Var30 string
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(note.Version)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 112, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 118, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -657,7 +663,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 			var templ_7745c5c3_Var31 string
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(note.Date)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 112, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 118, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -670,7 +676,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(note.Kind)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 112, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 118, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {
@@ -683,7 +689,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(note.Headline)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 112, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 118, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -696,7 +702,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(note.Intro)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 112, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 118, Col: 149}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -714,7 +720,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 114, Col: 29}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 120, Col: 29}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 				if templ_7745c5c3_Err != nil {
@@ -727,7 +733,7 @@ func VerwaltungReleaseNotes(shell VerwaltungShell) templ.Component {
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(item.Text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 114, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung.templ`, Line: 120, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {

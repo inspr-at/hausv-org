@@ -54,6 +54,47 @@ func TestIntakeRepositoryRoundTripFiltersAndIsolation(t *testing.T) {
 	}
 }
 
+func TestIntakeRepositoryScopesHousesAndPaginatesAfterAssigneeFilter(t *testing.T) {
+	database := dbtest.Open(t)
+	repo := BindIntakeRepository(database, "org-a")
+	now := time.Date(2026, 9, 3, 8, 0, 0, 0, time.UTC)
+	items := []IntakeItem{
+		{ID: "c-newest", TenantSlug: "house-c", Source: IntakeSourceEmail, Status: IntakeStatusOpen, Subject: "C", Body: "C", ReceivedAt: now.Add(4 * time.Hour), Suggestion: &IntakeSuggestion{Assignee: "vera"}},
+		{ID: "a-other", TenantSlug: "house-a", Source: IntakeSourceEmail, Status: IntakeStatusOpen, Subject: "A other", Body: "A", ReceivedAt: now.Add(3 * time.Hour), Suggestion: &IntakeSuggestion{Assignee: "other"}},
+		{ID: "b-vera", TenantSlug: "house-b", Source: IntakeSourceEmail, Status: IntakeStatusOpen, Subject: "B vera", Body: "B", ReceivedAt: now.Add(2 * time.Hour), Suggestion: &IntakeSuggestion{Assignee: "vera"}},
+		{ID: "a-vera", TenantSlug: "house-a", Source: IntakeSourceEmail, Status: IntakeStatusOpen, Subject: "A vera", Body: "A", ReceivedAt: now.Add(time.Hour), Suggestion: &IntakeSuggestion{Assignee: "vera"}},
+		{ID: "unassigned", Source: IntakeSourceEmail, Status: IntakeStatusOpen, Subject: "Unassigned", Body: "U", ReceivedAt: now},
+	}
+	for _, item := range items {
+		if err := repo.Create(t.Context(), item); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	scoped := IntakeFilter{TenantSlugs: []string{"house-a", "house-b"}, IncludeUnassigned: true}
+	got, err := repo.List(t.Context(), scoped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 4 {
+		t.Fatalf("managed-house list has %d items, want 4: %#v", len(got), got)
+	}
+	if count, err := repo.Count(t.Context(), scoped); err != nil || count != 4 {
+		t.Fatalf("managed-house count = %d, %v; want 4", count, err)
+	}
+
+	got, err = repo.List(t.Context(), IntakeFilter{TenantSlugs: []string{"house-a", "house-b"}, IncludeUnassigned: true, Assignee: "vera", Limit: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != "b-vera" {
+		t.Fatalf("assignee page = %#v, want first matching managed item", got)
+	}
+	if count, err := repo.Count(t.Context(), IntakeFilter{TenantSlugs: []string{"house-a", "house-b"}, IncludeUnassigned: true, Assignee: "vera"}); err != nil || count != 2 {
+		t.Fatalf("assignee count = %d, %v; want 2", count, err)
+	}
+}
+
 func TestOrgSettingsAndTextbausteine(t *testing.T) {
 	database := dbtest.Open(t)
 	ctx := context.Background()

@@ -165,6 +165,29 @@ func intakeWhere(orgKey string, filter IntakeFilter) (string, []any) {
 	} else if slug := textutil.Slug(filter.TenantSlug); slug != "" {
 		args = append(args, slug)
 		parts = append(parts, fmt.Sprintf("tenant_"+"slug=$%d", len(args)))
+	} else if len(filter.TenantSlugs) > 0 {
+		slugs := make([]string, 0, len(filter.TenantSlugs))
+		for _, value := range filter.TenantSlugs {
+			if slug := textutil.Slug(value); slug != "" {
+				slugs = append(slugs, slug)
+			}
+		}
+		if len(slugs) > 0 {
+			marks := make([]string, 0, len(slugs))
+			for _, slug := range slugs {
+				args = append(args, slug)
+				marks = append(marks, fmt.Sprintf("$%d", len(args)))
+			}
+			clause := "tenant_" + "slug IN (" + strings.Join(marks, ",") + ")"
+			if filter.IncludeUnassigned {
+				clause = "(" + clause + " OR tenant_" + "slug='')"
+			}
+			parts = append(parts, clause)
+		} else if filter.IncludeUnassigned {
+			parts = append(parts, "tenant_"+"slug=''")
+		}
+	} else if filter.IncludeUnassigned {
+		parts = append(parts, "tenant_"+"slug=''")
 	}
 	if !filter.Since.IsZero() {
 		args = append(args, filter.Since.UTC().Format(time.RFC3339Nano))
@@ -181,14 +204,14 @@ func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]
 	} else {
 		query += ` ORDER BY received_at DESC`
 	}
-	if filter.Limit > 0 {
+	if filter.Assignee == "" && filter.Limit > 0 {
 		args = append(args, filter.Limit)
 		query += fmt.Sprintf(" LIMIT $%d", len(args))
 		if filter.Offset > 0 {
 			args = append(args, filter.Offset)
 			query += fmt.Sprintf(" OFFSET $%d", len(args))
 		}
-	} else if filter.Offset > 0 {
+	} else if filter.Assignee == "" && filter.Offset > 0 {
 		args = append(args, filter.Offset)
 		query += fmt.Sprintf(" LIMIT -1 OFFSET $%d", len(args))
 	}
@@ -229,11 +252,19 @@ func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+	if filter.Assignee != "" {
+		start := min(filter.Offset, len(items))
+		end := len(items)
+		if filter.Limit > 0 {
+			end = min(start+filter.Limit, end)
+		}
+		items = items[start:end]
+	}
 	return items, nil
 }
 
 func (r *sqlIntakeRepository) Count(ctx context.Context, filter IntakeFilter) (int, error) {
-	items, err := r.List(ctx, IntakeFilter{Statuses: filter.Statuses, Sources: filter.Sources, TenantSlug: filter.TenantSlug, Unassigned: filter.Unassigned, Assignee: filter.Assignee, Since: filter.Since})
+	items, err := r.List(ctx, IntakeFilter{Statuses: filter.Statuses, Sources: filter.Sources, TenantSlug: filter.TenantSlug, TenantSlugs: filter.TenantSlugs, Unassigned: filter.Unassigned, IncludeUnassigned: filter.IncludeUnassigned, Assignee: filter.Assignee, Since: filter.Since})
 	return len(items), err
 }
 
