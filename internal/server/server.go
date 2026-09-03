@@ -1062,6 +1062,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/verwaltung/telefonnotiz", a.action(a.requireVerwaltung(a.phoneNoteAction)))
 	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen", a.action(a.requireVerwaltung(a.verwaltungSettingsAction)))
+	mux.HandleFunc("GET /app/verwaltung/rechte", a.page(a.requireVerwaltung(a.rechtePage)))
 	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
 	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
