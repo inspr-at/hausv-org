@@ -279,7 +279,7 @@ templ PortalSidebar(data PortalPageData) {
 		<footer class="account">
 			if len(data.RolePreviewChoices) > 0 {
 				@RolePreviewChooser("role-preview-desktop", data.RolePreviewChoices) {
-					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span class="role-preview-trigger-copy"><strong>{ data.DisplayName }</strong><small>{ data.Role }</small><small class="role-preview-trigger-label">Ansicht als · { rolePreviewCurrentLabel(data.RolePreviewChoices) }</small></span>
+					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span class="role-preview-trigger-copy"><strong>{ data.DisplayName }</strong><small>{ data.Role }</small><small class="role-preview-trigger-label">Ansicht als ›</small></span>
 				}
 				<span class="account-release">@PortalReleaseNotes(data)</span>
 			} else {
