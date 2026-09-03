@@ -1707,19 +1707,6 @@ func newApp() (*app, error) {
 		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
-	a.intake = func(orgKey string) store.IntakeRepository { return store.BindIntakeRepository(database, orgKey) }
-	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
-		return store.BindOrgSettingsRepository(database, orgKey)
-	}
-	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
-		return store.BindTextbausteinRepository(database, orgKey)
-	}
-	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
-		logError("ai triage provider not configured", err)
-	} else if suggester != nil {
-		a.triage = suggester
-		logInfo("ai triage provider configured", "label", suggester.Label())
-	}
 	// The scoped seam. Every SQL store below takes this instead of the process
 	// pool, so each of their statements names a tenant lane or a declared
 	// cross-tenant one. VerifyBudget runs before any store exists, so a lane plan
@@ -1886,7 +1873,7 @@ func newApp() (*app, error) {
 	}
 	var filer protocolFiler = sqlFiler
 
-	return &app{
+	a := &app{
 		baseURL:                  baseURL,
 		addr:                     env("ADDR", ":8080"),
 		rootDomain:               rootDomain,
@@ -1970,7 +1957,21 @@ func newApp() (*app, error) {
 		telegram:            telegram.New(env("TELEGRAM_API_BASE_URL", ""), env("TELEGRAM_BOT_TOKEN", "")),
 		telegramStore:       telegramBackend,
 		telegramPollTimeout: telegramPollTimeout,
-	}, nil
+	}
+	a.intake = func(orgKey string) store.IntakeRepository { return store.BindIntakeRepository(database, orgKey) }
+	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
+		return store.BindOrgSettingsRepository(database, orgKey)
+	}
+	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
+		return store.BindTextbausteinRepository(database, orgKey)
+	}
+	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
+		logError("ai triage provider not configured", err)
+	} else if suggester != nil {
+		a.triage = suggester
+		logInfo("ai triage provider configured", "label", suggester.Label())
+	}
+	return a, nil
 }
 
 // serviceProviderAccessEnabled is the runtime launch gate for external
