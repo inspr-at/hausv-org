@@ -364,6 +364,14 @@ Vorführ-Hilfe für Fixture-Daten, keine Zugangskontrolle: den Host zusätzlich
 per Reverse-Proxy (Basic Auth oder IP-Liste) schützen und den Code nach dem
 Termin ändern.
 
+**Zurücksetzen aus dem Portal (HAUSV-613).** Auf einer Demo-Instanz
+(`DEMO_LOGIN_ENABLED=true` und `DEMO_SEED_DIR`, im Bundle `/seed`) zeigt
+Einstellungen einen Abschnitt „Demo“. „Demo zurücksetzen …“ verlangt das Wort
+ZURÜCKSETZEN plus eine zweite Bestätigung und spielt dann Anliegen,
+Organisationsdaten, Textbausteine, Ankündigungen und Termine aus dem Seed neu
+ein (Anker heute); Benutzer und Sitzungen bleiben. Ohne Demo-Modus antwortet die
+Route mit 404.
+
 `deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
 fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
 only its named data volume, starts it again, and seeds it. Confirm the running
