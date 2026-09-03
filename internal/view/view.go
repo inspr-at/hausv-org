@@ -264,6 +264,7 @@ type IssueView struct {
 	ResolutionConfirmed     bool
 	Priority                string
 	AssigneeEmail           string
+	AssigneeName            string
 	HasAssignee             bool
 	Location                string
 	LocationType            string

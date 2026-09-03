@@ -44,7 +44,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.role-preview-band{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--gold);background:var(--paper);color:var(--muted);font-size:12px;line-height:1.4}.role-preview-band strong{color:var(--ink)}.role-preview-band form{flex:0 0 auto}.role-preview-band button{min-height:32px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--ink);font-size:11px;font-weight:800}\n\t\tbody.role-preview .button.primary,body:has(.role-preview-band) .button.primary{border-color:var(--line);background:var(--panel-soft);color:var(--muted);box-shadow:none}body.role-preview .account .avatar,body:has(.role-preview-band) .account .avatar{box-shadow:0 0 0 2px var(--gold-light)}body:has(.role-preview-band) .account>span:nth-of-type(2)>small:first-of-type{font-size:0}body:has(.role-preview-band[data-preview-role=\"Eigentümer\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Eigentümer\";font-size:10px}body:has(.role-preview-band[data-preview-role=\"Bewohner\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Bewohner\";font-size:10px}body:has(.role-preview-band) .greeting h1{font-size:0}body:has(.role-preview-band) .greeting h1::after{content:\"Hallo.\";font-size:34px}.role-preview-mobile-label{display:none;color:var(--gold-ink);font-size:10px}\n\t\t@media(max-width:760px){.role-preview-band{align-items:flex-start;margin-top:0;padding:var(--space-2) var(--space-4)}.role-preview-band>span{max-width:30ch}.role-preview-band button{min-height:36px}.role-preview-mobile-label{display:block}}\n\t</style><section class=\"role-preview-band\" aria-label=\"Aktive Rollenansicht\" data-preview-role=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.role-preview-band{height:49px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--gold);background:var(--paper);color:var(--ink)}.role-preview-band-content{width:100%;display:flex;align-items:center;gap:12px;white-space:nowrap}.role-preview-band-eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.role-preview-band-role{font-size:12px;font-weight:800}.role-preview-band-house,.role-preview-band-time{color:var(--muted);font-size:11px}.role-preview-band-pill{padding:6px 20px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.role-preview-band form{margin-left:auto;flex:0 0 auto}.role-preview-band button{min-height:32px;padding:5px 24px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--ink);font-size:10px;font-weight:800}\n\t\tbody.role-preview .button.primary,body:has(.role-preview-band) .button.primary{border-color:var(--line);background:var(--panel-soft);color:var(--muted);box-shadow:none}body:has(.role-preview-band) .account>span:nth-of-type(2)>small:first-of-type{font-size:0}body:has(.role-preview-band[data-preview-role=\"Eigentümer\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Eigentümer\";font-size:10px}body:has(.role-preview-band[data-preview-role=\"Bewohner\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Bewohner\";font-size:10px}body:has(.role-preview-band) .greeting h1{font-size:0}body:has(.role-preview-band) .greeting h1::after{content:\"Hallo.\";font-size:34px}\n\t\t@media(max-width:900px){.role-preview-band-content{gap:8px}.role-preview-band-house,.role-preview-band-time{display:none}.role-preview-band-pill{padding-inline:10px}.role-preview-band button{padding-inline:14px}}\n\t</style><section class=\"role-preview-band\" aria-label=\"Aktive Rollenansicht\" data-preview-role=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -57,14 +57,14 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><span>Ansicht als ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><span class=\"sr-only\">Ansicht als ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -77,7 +77,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -90,39 +90,65 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.EndsInMinutes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 133}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " Min<span class=\"role-preview-mobile-label\">Ansicht als ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " Min</span><div class=\"role-preview-band-content\"><span class=\"role-preview-band-eyebrow\" aria-hidden=\"true\">Ansicht als</span> <strong class=\"role-preview-band-role\" aria-hidden=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(state.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 192}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 28, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " · schreibgeschützt</span></span><form method=\"post\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</strong> <span class=\"role-preview-band-house\" aria-hidden=\"true\">·&nbsp; ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var7 templ.SafeURL
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(state.EndPath))
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(state.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 26, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 29, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"><button type=\"submit\">Ansicht beenden</button></form></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span> <span class=\"role-preview-band-pill\" aria-hidden=\"true\">Schreibgeschützt</span> <span class=\"role-preview-band-time\" aria-hidden=\"true\">endet in ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(state.EndsInMinutes)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 31, Col: 89}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " Min</span><form method=\"post\" action=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 templ.SafeURL
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(state.EndPath))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 32, Col: 60}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"><button type=\"submit\">Ansicht beenden</button></form></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -130,7 +156,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 	})
 }
 
-func RolePreviewChooser(choices []RolePreviewChoice) templ.Component {
+func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -146,151 +172,193 @@ func RolePreviewChooser(choices []RolePreviewChoice) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var8 == nil {
-			templ_7745c5c3_Var8 = templ.NopComponent
+		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var10 == nil {
+			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<style>\n\t\t.role-preview-chooser{position:relative;grid-column:1/3;min-width:0}.role-preview-chooser>summary{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:var(--space-3);cursor:pointer;list-style:none}.role-preview-chooser>summary::-webkit-details-marker{display:none}.role-preview-menu{position:absolute;left:0;bottom:calc(100% + var(--space-2));z-index:20;width:min(340px,calc(100vw - 32px));padding:var(--space-3);border:1px solid var(--nav-2);border-radius:var(--radius-sm);background:var(--nav);box-shadow:var(--shadow-dialog)}.role-preview-menu>strong{color:var(--panel);font-size:12px}.role-preview-menu form{margin:0}.role-preview-menu button,.role-preview-current,.role-preview-disabled{width:100%;display:grid;gap:2px;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.role-preview-menu button{border-radius:var(--radius-xs)}.role-preview-menu button:hover{background:var(--nav-2)}.role-preview-menu small{color:var(--soft);font-size:10px;line-height:1.35}.role-preview-current{border:1px solid var(--gold);border-radius:var(--radius-xs)}.role-preview-current>span{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}.role-preview-current em{padding:2px 6px;border:1px solid var(--gold);border-radius:var(--radius-pill);color:var(--gold-light);font-size:9px;font-style:normal}.role-preview-disabled{opacity:.65}.role-preview-footnote{padding:var(--space-1) var(--space-2) 0;border-top:1px solid var(--nav-2)}\n\t</style><details class=\"role-preview-chooser\"><summary>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<style>\n\t\t.role-preview-control{display:contents}.role-preview-trigger{min-width:0;padding:0;border:0;background:transparent;color:inherit;text-align:left}.account .role-preview-trigger{grid-column:1/3;grid-row:1;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:12px}.account .account-release{grid-column:2;grid-row:2}.account>.logout-form{grid-column:3;grid-row:1}.role-preview-trigger-copy{min-width:0}.role-preview-trigger-copy>*{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.role-preview-trigger-label{margin:0 0 3px!important;color:var(--soft)!important;font-size:9px!important;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.role-preview-menu{inset:auto auto 16px 256px;width:336px;margin:0;padding:12px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);color:var(--ink)}.role-preview-menu:popover-open{display:block}.role-preview-menu::backdrop{background:transparent}.role-preview-handle{display:none}.role-preview-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.role-preview-heading h2{margin:0;font-family:var(--font-serif);font-size:20px;font-weight:600;line-height:1.2}.role-preview-cancel{padding:4px 0;border:0;background:transparent;color:var(--muted);font-size:10.5px}.role-preview-explanation{margin:3px 0 8px;color:var(--muted);font-size:11px}.role-preview-options{display:grid}.role-preview-options form{height:58px;margin:0}.role-preview-row{width:100%;height:58px;display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:center;gap:10px;padding:0 10px;border:0;background:transparent;color:var(--ink);text-align:left}.role-preview-row+.role-preview-row,.role-preview-row+form,form+.role-preview-row,.role-preview-options form+form{border-top:1px solid var(--line)}.role-preview-options form .role-preview-row{height:100%}.role-preview-row-current{border:1px solid var(--gold)!important;border-radius:var(--radius-lg)}.role-preview-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--muted)}.role-preview-row-current .role-preview-dot{background:var(--gold)}.role-preview-row-copy{min-width:0}.role-preview-row-copy strong,.role-preview-row-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.role-preview-row-copy strong{font-size:12px}.role-preview-row-copy small{margin-top:4px;color:var(--muted);font-size:10px}.role-preview-current-pill{padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.role-preview-row-disabled{opacity:.5}.role-preview-footnote{min-height:38px;display:flex;align-items:flex-end;margin-top:0;padding:10px 0 2px;border-top:1px solid var(--line);color:var(--muted);font-size:9.5px;white-space:nowrap}.role-preview-mobile-cancel{display:none}\n\t\t@media(max-width:900px){.role-preview-menu{inset:auto 0 0 0;width:100%;max-width:none;max-height:calc(100dvh - 16px);overflow-y:auto;padding:0 16px max(16px,env(safe-area-inset-bottom));border-radius:var(--radius-lg) var(--radius-lg) 0 0}.role-preview-menu::backdrop{background:color-mix(in srgb,var(--ink) 40%,transparent)}.role-preview-handle{width:36px;height:4px;display:block;margin:8px auto 24px;border-radius:var(--radius-pill);background:var(--line)}.role-preview-heading h2{font-size:22px}.role-preview-heading .role-preview-cancel{display:none}.role-preview-explanation{margin-top:4px;margin-bottom:16px;font-size:11px}.role-preview-options{gap:8px}.role-preview-options form{height:68px}.role-preview-row{height:68px;padding:0 16px;border:1px solid var(--line)!important;border-radius:var(--radius-lg)}.role-preview-row-current{border-color:var(--gold)!important}.role-preview-row-copy small{white-space:normal}.role-preview-footnote{min-height:50px;justify-content:center;align-items:center;margin-top:10px;padding:0;border-top:1px solid var(--line);font-size:10px;text-align:center}.role-preview-mobile-cancel{width:100%;height:44px;display:block;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);color:var(--ink);font-size:12px;font-weight:800}.mobile-head .role-preview-trigger{width:40px;height:40px;display:grid;place-items:center;padding:0}.mobile-head .role-preview-trigger .avatar{width:40px;height:40px}}\n\t</style><div class=\"role-preview-control role-preview-chooser\"><button class=\"role-preview-trigger\" type=\"button\" popovertarget=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ_7745c5c3_Var8.Render(ctx, templ_7745c5c3_Buffer)
+		var templ_7745c5c3_Var11 string
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 43, Col: 71}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</summary><div class=\"context-menu role-preview-menu\"><strong>Ansicht als</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" aria-label=\"Ansicht als Hausverwaltung öffnen\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ_7745c5c3_Var10.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</button><div id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var12 string
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 46, Col: 14}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" class=\"role-preview-menu\" popover=\"auto\" aria-label=\"Ansicht als\"><span class=\"role-preview-handle\" aria-hidden=\"true\"></span><header class=\"role-preview-heading\"><h2>Ansicht als</h2><button class=\"role-preview-cancel\" type=\"button\" popovertarget=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var13 string
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 50, Col: 72}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" popovertargetaction=\"hide\" autofocus>Abbrechen</button></header><p class=\"role-preview-explanation\">Vorschau einer anderen Rolle.</p><div class=\"role-preview-options\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, choice := range choices {
 			if choice.Current && choice.StartPath == "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"role-preview-current\" aria-current=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(true))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 40, Col: 78}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><span><strong>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Label)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 40, Col: 109}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</strong><em>Aktuell</em></span><small>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Description)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 40, Col: 170}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</small></div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<form method=\"post\" action=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var12 templ.SafeURL
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(choice.StartPath))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 42, Col: 65}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"><input type=\"hidden\" name=\"role\" value=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(choice.Role)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 43, Col: 58}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"> <button type=\"submit\" aria-current=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"role-preview-row role-preview-row-current\" aria-current=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 string
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(choice.Current))
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(true))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 44, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 56, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"><span class=\"role-preview-dot\" aria-hidden=\"true\"></span> <span class=\"role-preview-row-copy\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 44, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 58, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 44, Col: 140}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 58, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</small> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</small></span> <span class=\"role-preview-current-pill\">Aktuell</span></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if choice.Current {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<small>Aktuell</small>")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<form method=\"post\" action=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</button></form>")
+				var templ_7745c5c3_Var17 templ.SafeURL
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(choice.StartPath))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 62, Col: 66}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\"><input type=\"hidden\" name=\"role\" value=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var18 string
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(choice.Role)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 63, Col: 59}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"> <button class=\"role-preview-row\" type=\"submit\" aria-current=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var19 string
+				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(choice.Current))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 64, Col: 103}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\"><span class=\"role-preview-dot\" aria-hidden=\"true\"></span> <span class=\"role-preview-row-copy\"><strong>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var20 string
+				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Label)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 66, Col: 66}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var21 string
+				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Description)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 66, Col: 104}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</small></span></button></form>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"role-preview-disabled\" aria-disabled=\"true\"><strong>Bestimmte Person … (Supportansicht)</strong><small>nur Plattform-Admin</small></div><small class=\"role-preview-footnote\">15 Minuten · schreibgeschützt · wird protokolliert</small></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"role-preview-row role-preview-row-disabled\" aria-disabled=\"true\"><span class=\"role-preview-dot\" aria-hidden=\"true\"></span> <span class=\"role-preview-row-copy\"><strong>Bestimmte Person (Supportansicht)</strong><small>Nur Plattform-Admin</small></span></div></div><div class=\"role-preview-footnote\">15 Minuten · schreibgeschützt · wird protokolliert</div><button class=\"role-preview-mobile-cancel\" type=\"button\" popovertarget=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 77, Col: 78}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" popovertargetaction=\"hide\">Abbrechen</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -303,6 +371,15 @@ func rolePreviewCurrent(current bool) string {
 		return "true"
 	}
 	return "false"
+}
+
+func rolePreviewCurrentLabel(choices []RolePreviewChoice) string {
+	for _, choice := range choices {
+		if choice.Current {
+			return choice.Label
+		}
+	}
+	return ""
 }
 
 var _ = templruntime.GeneratedTemplate

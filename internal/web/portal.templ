@@ -278,9 +278,10 @@ templ PortalSidebar(data PortalPageData) {
 		@PortalNavigation(data, true)
 		<footer class="account">
 			if len(data.RolePreviewChoices) > 0 {
-				@RolePreviewChooser(data.RolePreviewChoices) {
-					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
+				@RolePreviewChooser("role-preview-desktop", data.RolePreviewChoices) {
+					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span class="role-preview-trigger-copy"><small class="role-preview-trigger-label">Ansicht als</small><strong>{ rolePreviewCurrentLabel(data.RolePreviewChoices) }</strong><small>{ data.DisplayName }</small></span>
 				}
+				<span class="account-release">@PortalReleaseNotes(data)</span>
 			} else {
 				<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
 			}
@@ -361,8 +362,18 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
 		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
-		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel }</small></a>
-		if data.CanUseResidentAreas {
+		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong>
+			if len(data.RolePreviewChoices) > 0 {
+				<small>{ data.DisplayName } · { rolePreviewCurrentLabel(data.RolePreviewChoices) }</small>
+			} else {
+				<small>{ pageLabel }</small>
+			}
+		</a>
+		if len(data.RolePreviewChoices) > 0 {
+			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
+				<span class="avatar" aria-hidden="true">{ data.Initials }</span>
+			}
+		} else if data.CanUseResidentAreas {
 			<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 		} else {
 			<a class="avatar" href="/app" aria-label={ "Portal von " + data.DisplayName }>{ data.Initials }</a>
@@ -574,7 +585,7 @@ templ DenseIssues(data PortalPageData) {
 		if len(data.Issues) > 0 {
 			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Alter</th><th>Zuständig</th></tr></thead><tbody>
 				for _, issue := range data.Issues {
-					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td>{ issue.AssigneeEmail }</td></tr>
+					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
 				}
 			</tbody></table>
 		}
