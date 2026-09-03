@@ -1290,6 +1290,8 @@ func AuditActionLabel(action string) string {
 	switch store.NormalizeAuditAction(action) {
 	case store.AuditActionLogin:
 		return "Anmeldung"
+	case store.AuditActionContextSwitch:
+		return "Portal gewechselt"
 	case store.AuditActionInviteCreate:
 		return "Einladung angelegt"
 	case store.AuditActionInviteUpdate:
@@ -1344,6 +1346,12 @@ func AuditActionLabel(action string) string {
 		return "Monatsstatus geändert"
 	case store.AuditActionParkingReminder:
 		return "Zahlungserinnerung gesendet"
+	case store.AuditActionChargingSettings:
+		return "Ladeeinstellungen geändert"
+	case store.AuditActionChargingManual:
+		return "Ladevorgang manuell erfasst"
+	case store.AuditActionChargingSession:
+		return "Ladevorgang gespeichert"
 	case store.AuditActionIssueWorkflow:
 		return "Anliegen bearbeitet"
 	case store.AuditActionIssueEstimate:
@@ -1366,6 +1374,30 @@ func AuditActionLabel(action string) string {
 		return "Kontakt gespeichert"
 	case store.AuditActionContactDelete:
 		return "Kontakt deaktiviert"
+	case store.AuditActionEnergyOnboarding:
+		return "Energie-Einrichtung geändert"
+	case store.AuditActionEnergyMode:
+		return "Energiemodus geändert"
+	case store.AuditActionEnergyImport:
+		return "Smart-Meter-Daten importiert"
+	case store.AuditActionEnergyTarget:
+		return "Energieziel geändert"
+	case store.AuditActionEnergyRecommend:
+		return "Energieempfehlung aktualisiert"
+	case store.AuditActionEnergyMeasureAdd:
+		return "Energiemaßnahme angelegt"
+	case store.AuditActionEnergyMeasureEdit:
+		return "Energiemaßnahme geändert"
+	case store.AuditActionEnergyCaretaker:
+		return "Energiezugriff der Hausbetreuung geändert"
+	case store.AuditActionEnergyInvite:
+		return "Hausbetreuung zu Energie eingeladen"
+	case store.AuditActionEnergyMaintSave:
+		return "Wartungsplan gespeichert"
+	case store.AuditActionEnergyMaintDone:
+		return "Wartung abgeschlossen"
+	case store.AuditActionEnergyTariff:
+		return "Energietarif bewertet"
 	case store.AuditActionEnergyExport:
 		return "Energiedaten exportiert"
 	case store.AuditActionEnergyIdentity:
@@ -1408,12 +1440,16 @@ func AuditActionLabel(action string) string {
 		return "Eingang zugeordnet"
 	case store.AuditActionVerwaltungSettings:
 		return "Verwaltungseinstellungen geändert"
+	case store.AuditActionDemoReset:
+		return "Demo zurückgesetzt"
+	case store.AuditActionTextbausteinChanged:
+		return "Textbaustein geändert"
 	case store.AuditActionRolePreviewStart:
 		return "Ansicht als Rolle gestartet"
 	case store.AuditActionRolePreviewEnd:
 		return "Ansicht als Rolle beendet"
 	default:
-		return action
+		return "Aktivität"
 	}
 }
 

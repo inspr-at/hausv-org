@@ -42,7 +42,7 @@ templ VerwaltungDemoResetContent(data VerwaltungDemoResetData) {
 					for _, item := range data.Categories {
 						<li><span>{ item.Label }</span><strong>{ fmt.Sprint(item.Count) }</strong></li>
 					}
-				</ul></div></div><div class="demo-reset-actions"><a class="demo-reset-cancel" href="/app/verwaltung/einstellungen">Zu den Einstellungen</a></div></section>
+				</ul></div></div><div class="demo-reset-actions"><a class="demo-reset-primary" href="/app/verwaltung/posteingang">Zum Posteingang</a><a class="demo-reset-cancel" href="/app/verwaltung/einstellungen">Zurück zu den Einstellungen</a></div></section>
 			default:
 				<form class="demo-reset-card" method="post"><input type="hidden" name="step" value="1"/><h2>Gebündelte Demo-Daten neu einspielen</h2><p>Anliegen, Organisationsdaten, Ankündigungen und Termine werden auf den Ausgangsstand gesetzt. Ihre Anmeldung bleibt gültig.</p>
 					if data.Error != "" {

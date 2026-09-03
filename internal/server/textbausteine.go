@@ -24,7 +24,7 @@ func (a *app) textbausteinListPage(w http.ResponseWriter, r *http.Request, ac au
 		a.inboxError(w, err)
 		return
 	}
-	data := web.TextbausteinListData{Flash: strings.TrimSpace(r.URL.Query().Get("flash"))}
+	data := web.TextbausteinListData{Count: len(items), Flash: strings.TrimSpace(r.URL.Query().Get("flash"))}
 	byCategory := make(map[string][]web.TextbausteinRow)
 	for _, item := range items {
 		status := "Inaktiv"
