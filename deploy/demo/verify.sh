@@ -3,6 +3,8 @@ set -euo pipefail
 
 base_url=${HAUSV_DEMO_BASE_URL:-"http://localhost:${HAUSV_DEMO_PORT:-8098}"}
 vera_email=vera.verwalter@musterstadt.example
+secrets_file="$(dirname "$0")/secrets.env"
+if [ -f "$secrets_file" ]; then set -a; . "$secrets_file"; set +a; fi
 cookie_jar=$(mktemp "${TMPDIR:-/tmp}/hausv-demo-verify.XXXXXX")
 trap 'rm -f "$cookie_jar"' EXIT
 
@@ -27,7 +29,8 @@ healthcheck() {
 login_vera() {
     local page href target
     page=$(curl --fail --silent --show-error --cookie-jar "$cookie_jar" \
-        --header "Origin: $base_url" --data-urlencode "email=$vera_email" "$base_url/auth/request")
+        --header "Origin: $base_url" --data-urlencode "email=$vera_email" \
+        --data-urlencode "access_code=${DEMO_LOGIN_ACCESS_CODE:-}" "$base_url/auth/request")
     href=$(printf '%s' "$page" | sed -n 's/.*<a class="dev-link" href="\([^"]*\)".*/\1/p')
     [ -n "$href" ]
     href=$(printf '%s' "$href" | sed 's/&amp;/\&/g')

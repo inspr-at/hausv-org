@@ -353,6 +353,15 @@ docker compose -f deploy/demo/docker-compose.yml up -d --build
 deploy/demo/seed.sh
 ```
 
+**Anmeldung auf einem öffentlichen Host.** `LOCAL_DEV_LOGIN` wirkt nur bei einer
+localhost-`BASE_URL`. Für die Demo-Instanz setzt `demo.env` daher
+`DEMO_LOGIN_ENABLED=true`, und `secrets.env` trägt `DEMO_LOGIN_ACCESS_CODE`.
+Das Anmeldeformular fragt dann zusätzlich nach dem Zugangscode und zeigt den
+Anmeldelink direkt an; ein falscher Code entwertet den Link. Das ist eine
+Vorführ-Hilfe für Fixture-Daten, keine Zugangskontrolle: den Host zusätzlich
+per Reverse-Proxy (Basic Auth oder IP-Liste) schützen und den Code nach dem
+Termin ändern.
+
 `deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
 fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
 only its named data volume, starts it again, and seeds it. Confirm the running
