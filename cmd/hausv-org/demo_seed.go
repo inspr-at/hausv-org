@@ -11,6 +11,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/demo"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) string) error {
@@ -47,7 +48,15 @@ func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) st
 	if err != nil {
 		return err
 	}
-	_, err = demo.Load(context.Background(), database, *dir, demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime})
+	options := demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime}
+	if unitPath := strings.TrimSpace(getenv("UNIT_DATA_PATH")); unitPath != "" {
+		units, err := store.NewUnitStore(unitPath)
+		if err != nil {
+			return err
+		}
+		options.Units = units
+	}
+	_, err = demo.Load(context.Background(), database, *dir, options)
 	return err
 }
 

@@ -20,6 +20,9 @@ type SeedOptions struct {
 	Reset bool
 	Stats bool
 	Out   io.Writer
+	// Units receives the fixture's tenant-scoped unit inventory when supplied.
+	// It is optional so database-only consumers keep their existing behavior.
+	Units store.UnitSink
 	// Anchor shifts every seed date so that the fixture's demo day (2026-09-09)
 	// lands on Anchor's calendar day; zero keeps the committed dates.
 	Anchor time.Time
@@ -59,6 +62,7 @@ type seedHouse struct {
 type seedUnit struct {
 	Label       string `json:"label"`
 	Floor       string `json:"floor"`
+	UnitType    string `json:"unit_type"`
 	OwnerEmail  string `json:"owner_email"`
 	TenantEmail string `json:"tenant_email"`
 }
@@ -171,6 +175,17 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	if err := upsertHouseFixtures(ctx, database, houses, identities, intake, events, announcements, org); err != nil {
 		return SeedResult{}, err
 	}
+	if options.Units != nil {
+		for _, house := range houses {
+			identity, ok := identities[textutil.Slug(house.Slug)]
+			if !ok {
+				return SeedResult{}, fmt.Errorf("missing tenant identity for %s", house.Slug)
+			}
+			if err := options.Units.ReplaceTenantUnits(ctx, identity.Slug, fixtureUnits(identity.Slug, house.Units)); err != nil {
+				return SeedResult{}, fmt.Errorf("seed units for %s: %w", identity.Slug, err)
+			}
+		}
+	}
 	intakeRepo := store.BindIntakeRepository(database, org.Key)
 	result := SeedResult{Statuses: map[store.IntakeStatus]int{}, Categories: map[string]int{}}
 	for index, raw := range intake {
@@ -248,14 +263,7 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 		if !ok {
 			return fmt.Errorf("missing tenant identity for %s", house.Slug)
 		}
-		for _, raw := range house.Units {
-			unit := store.Unit{ID: textutil.Slug(raw.Label), TenantSlug: identity.Slug, Label: raw.Label, UnitType: store.UnitTypeResidential}
-			if raw.OwnerEmail != "" {
-				unit.OwnerEmails = []string{raw.OwnerEmail}
-			}
-			if raw.TenantEmail != "" {
-				unit.RenterEmails = []string{raw.TenantEmail}
-			}
+		for _, unit := range fixtureUnits(identity.Slug, house.Units) {
 			if err := upsertJSON(ctx, tx, "units", identity, unit.ID, unit); err != nil {
 				return err
 			}
@@ -332,6 +340,29 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 		}
 	}
 	return tx.Commit()
+}
+
+func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
+	units := make([]store.Unit, 0, len(rawUnits))
+	for _, raw := range rawUnits {
+		unit := store.Unit{
+			ID:         store.NormalizeUnitID(raw.Label),
+			TenantSlug: tenantSlug,
+			Label:      raw.Label,
+			UnitType:   store.NormalizeUnitType(raw.UnitType),
+		}
+		if unit.UnitType == "" {
+			unit.UnitType = store.UnitTypeResidential
+		}
+		if raw.OwnerEmail != "" {
+			unit.OwnerEmails = []string{raw.OwnerEmail}
+		}
+		if raw.TenantEmail != "" {
+			unit.RenterEmails = []string{raw.TenantEmail}
+		}
+		units = append(units, unit)
+	}
+	return store.NormalizeUnits(units, tenantSlug)
 }
 
 func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.TenantIdentity, id string, value any) error {

@@ -136,7 +136,7 @@
     ]
   },
   {
-    "email": "alina.eigentuemer@musterstadt.example.example",
+    "email": "alina.eigentuemer@musterstadt.example",
     "name": "Alina Auer",
     "title": "",
     "phone": "+43 664 310 20 01",
@@ -145,13 +145,14 @@
         "house": "janusbergweg-123",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
   },
   {
-    "email": "matthias.mieter@musterstadt.example.example",
+    "email": "matthias.mieter@musterstadt.example",
     "name": "Matthias Dorn",
     "title": "",
     "phone": "+43 676 310 20 02",
@@ -160,13 +161,15 @@
         "house": "janusbergweg-123",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
   },
   {
-    "email": "sophie.bewohner@musterstadt.example.example",
+    "email": "sophie.bewohner@musterstadt.example",
     "name": "Sophie Berger",
     "title": "",
     "phone": "+43 660 310 20 03",
@@ -175,13 +178,15 @@
         "house": "janusbergweg-123",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6"
         ]
       }
     ]
   },
   {
-    "email": "hedwig.beirat@musterstadt.example.example",
+    "email": "hedwig.beirat@musterstadt.example",
     "name": "Hedwig Eder",
     "title": "",
     "phone": "+43 664 310 20 37",
@@ -205,7 +210,9 @@
         "house": "grazbachgasse-14",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7"
         ]
       }
     ]
@@ -220,7 +227,9 @@
         "house": "grazbachgasse-14",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -235,7 +244,9 @@
         "house": "grazbachgasse-14",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6"
         ]
       }
     ]
@@ -265,7 +276,9 @@
         "house": "annenstrasse-71",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7"
         ]
       }
     ]
@@ -280,7 +293,9 @@
         "house": "annenstrasse-71",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -295,7 +310,10 @@
         "house": "annenstrasse-71",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6",
+          "Stellplatz 9"
         ]
       }
     ]
@@ -325,7 +343,8 @@
         "house": "muenzgrabenstrasse-9",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
@@ -340,7 +359,9 @@
         "house": "muenzgrabenstrasse-9",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -355,7 +376,8 @@
         "house": "muenzgrabenstrasse-9",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3"
         ]
       }
     ]
@@ -385,7 +407,8 @@
         "house": "schoergelgasse-25",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
@@ -400,7 +423,9 @@
         "house": "schoergelgasse-25",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -415,7 +440,9 @@
         "house": "schoergelgasse-25",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6"
         ]
       }
     ]
@@ -430,7 +457,8 @@
         "house": "leonhardstrasse-3",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
@@ -445,7 +473,8 @@
         "house": "leonhardstrasse-3",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2"
         ]
       }
     ]
@@ -460,7 +489,8 @@
         "house": "leonhardstrasse-3",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3"
         ]
       }
     ]
@@ -475,7 +505,10 @@
         "house": "koerblergasse-40",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7",
+          "Stellplatz 10"
         ]
       }
     ]
@@ -490,7 +523,10 @@
         "house": "koerblergasse-40",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5",
+          "Stellplatz 11"
         ]
       }
     ]
@@ -505,7 +541,10 @@
         "house": "koerblergasse-40",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6",
+          "Stellplatz 9"
         ]
       }
     ]
@@ -520,7 +559,9 @@
         "house": "elisabethstrasse-12",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7"
         ]
       }
     ]
@@ -535,7 +576,9 @@
         "house": "elisabethstrasse-12",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -550,7 +593,9 @@
         "house": "elisabethstrasse-12",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6"
         ]
       }
     ]
@@ -565,7 +610,8 @@
         "house": "sparbersbachgasse-58",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
@@ -580,7 +626,9 @@
         "house": "sparbersbachgasse-58",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -595,7 +643,8 @@
         "house": "sparbersbachgasse-58",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3"
         ]
       }
     ]
@@ -610,7 +659,9 @@
         "house": "mariatroster-strasse-101",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7"
         ]
       }
     ]
@@ -625,7 +676,9 @@
         "house": "mariatroster-strasse-101",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -640,7 +693,10 @@
         "house": "mariatroster-strasse-101",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6",
+          "Stellplatz 9"
         ]
       }
     ]
@@ -655,7 +711,8 @@
         "house": "petersgasse-7",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1"
         ]
       }
     ]
@@ -670,7 +727,8 @@
         "house": "petersgasse-7",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2"
         ]
       }
     ]
@@ -685,7 +743,8 @@
         "house": "petersgasse-7",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3"
         ]
       }
     ]
@@ -700,7 +759,9 @@
         "house": "kaiserfeldgasse-19",
         "role": "Eigentümer",
         "units": [
-          "Top 1"
+          "Top 1",
+          "Stellplatz 1",
+          "Stellplatz 7"
         ]
       }
     ]
@@ -715,7 +776,9 @@
         "house": "kaiserfeldgasse-19",
         "role": "Mieter",
         "units": [
-          "Top 3"
+          "Top 3",
+          "Stellplatz 2",
+          "Stellplatz 5"
         ]
       }
     ]
@@ -730,7 +793,9 @@
         "house": "kaiserfeldgasse-19",
         "role": "Bewohner",
         "units": [
-          "Top 7"
+          "Top 7",
+          "Stellplatz 3",
+          "Stellplatz 6"
         ]
       }
     ]

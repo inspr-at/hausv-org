@@ -17,6 +17,7 @@ import (
 type unit struct {
 	Label       string `json:"label"`
 	Floor       string `json:"floor"`
+	UnitType    string `json:"unit_type"`
 	OwnerEmail  string `json:"owner_email"`
 	TenantEmail string `json:"tenant_email"`
 }
@@ -217,6 +218,7 @@ func buildHousesAndPersons() ([]house, []person) {
 		base := hi * 3
 		roles := []string{"Eigentümer", "Mieter", "Bewohner"}
 		labels := []string{"Top 1", "Top 3", "Top 7"}
+		residentStart := len(people)
 		for pi := 0; pi < 3; pi++ {
 			n := residentNames[base+pi]
 			people = append(people, person{Email: fixtureEmail(n[1]), Name: n[0], Phone: n[2], Memberships: []membership{{House: spec.slug, Role: roles[pi], Units: []string{labels[pi]}}}})
@@ -225,24 +227,25 @@ func buildHousesAndPersons() ([]house, []person) {
 			n := residentNames[36+hi]
 			people = append(people, person{Email: fixtureEmail(n[1]), Name: n[0], Phone: n[2], Memberships: []membership{{House: spec.slug, Role: "Beirat", Units: []string{"Top 2"}}}})
 		}
-		units := make([]unit, 0, spec.count)
+		units := make([]unit, 0, spec.count+parkingCount(spec.count))
 		for u := 1; u <= spec.count; u++ {
 			floor := fmt.Sprintf("%d. OG", (u-1)/4+1)
 			if u <= 4 {
 				floor = "EG"
 			}
-			owner := ""
-			tenant := ""
-			if u == 1 {
-				owner = fixtureEmail(residentNames[base][1])
-			} else if u == 2 && hi < 4 {
-				owner = fixtureEmail(residentNames[36+hi][1])
-			} else if u == 3 {
-				tenant = fixtureEmail(residentNames[base+1][1])
-			} else if u == 7 {
-				tenant = fixtureEmail(residentNames[base+2][1])
+			units = append(units, unit{Label: fmt.Sprintf("Top %d", u), Floor: floor, UnitType: "Wohnung"})
+		}
+		for parking := 1; parking <= parkingCount(spec.count); parking++ {
+			label := fmt.Sprintf("Stellplatz %d", parking)
+			// Every fourth parking space stays free. The other spaces are assigned
+			// round-robin to the people whose memberships belong to this house.
+			if parking%4 != 0 {
+				people[residentStart+(parking-1)%3].Memberships[0].Units = append(people[residentStart+(parking-1)%3].Memberships[0].Units, label)
 			}
-			units = append(units, unit{Label: fmt.Sprintf("Top %d", u), Floor: floor, OwnerEmail: owner, TenantEmail: tenant})
+			units = append(units, unit{Label: label, Floor: "Garage", UnitType: "Stellplatz"})
+		}
+		for index := range units {
+			units[index].OwnerEmail, units[index].TenantEmail = unitParties(people, spec.slug, units[index].Label)
 		}
 		houses = append(houses, house{Slug: spec.slug, Name: spec.name, Address: spec.address, Organisation: "musterstadt", Units: units})
 	}
@@ -250,7 +253,41 @@ func buildHousesAndPersons() ([]house, []person) {
 }
 
 func fixtureEmail(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasSuffix(strings.ToLower(value), ".example") {
+		return value
+	}
 	return strings.TrimSuffix(value, ".com") + ".example"
+}
+
+func parkingCount(unitCount int) int {
+	return 4 + (unitCount-8)/4
+}
+
+func unitParties(people []person, house, label string) (owner, tenant string) {
+	for _, person := range people {
+		for _, membership := range person.Memberships {
+			if membership.House != house || !containsUnit(membership.Units, label) {
+				continue
+			}
+			switch membership.Role {
+			case "Eigentümer":
+				owner = person.Email
+			case "Mieter", "Bewohner":
+				tenant = person.Email
+			}
+		}
+	}
+	return owner, tenant
+}
+
+func containsUnit(units []string, label string) bool {
+	for _, unit := range units {
+		if unit == label {
+			return true
+		}
+	}
+	return false
 }
 
 func buildIntake(houses []house, persons []person, templates []textTemplate) ([]intakeItem, error) {

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -213,6 +214,13 @@ type UnitStore struct {
 
 type UnitStoreData struct {
 	Units []Unit `json:"units"`
+}
+
+// UnitSink accepts a complete, tenant-scoped unit fixture set.
+// It intentionally remains separate from UnitStorage so demo seeding can use
+// the legacy JSON file without exposing the application's repository API.
+type UnitSink interface {
+	ReplaceTenantUnits(ctx context.Context, tenantSlug string, units []Unit) error
 }
 
 type Unit struct {
@@ -934,6 +942,31 @@ func (s *UnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
 	tenantSlug = textutil.Slug(tenantSlug)
 	if tenantSlug == "" {
 		return nil
+	}
+	normalized := NormalizeUnits(units, tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Units[:0]
+	for _, existing := range s.data.Units {
+		if textutil.Slug(existing.TenantSlug) != tenantSlug {
+			kept = append(kept, existing)
+		}
+	}
+	s.data.Units = append(kept, normalized...)
+	SortUnits(s.data.Units)
+	return s.saveLocked()
+}
+
+// ReplaceTenantUnits atomically replaces one tenant's JSON units while keeping
+// every other tenant intact. Context is accepted for the seed boundary; JSON
+// persistence itself has no cancellable operation.
+func (s *UnitStore) ReplaceTenantUnits(_ context.Context, tenantSlug string, units []Unit) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	if tenantSlug == "" {
+		return fmt.Errorf("unit tenant slug is required")
 	}
 	normalized := NormalizeUnits(units, tenantSlug)
 	s.mu.Lock()
