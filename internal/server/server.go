@@ -31,6 +31,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/authz"
 	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/db"
+	"github.com/inspr-at/hausv-org/internal/demo"
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
 	appmail "github.com/inspr-at/hausv-org/internal/mail"
@@ -755,6 +756,7 @@ type app struct {
 	localDevLogin           bool
 	demoLogin               bool
 	demoLoginCode           string
+	demoReset               func(context.Context, time.Time, io.Writer) (demo.SeedResult, error)
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
 	sessionTTL              time.Duration
@@ -1062,6 +1064,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/verwaltung/telefonnotiz", a.action(a.requireVerwaltung(a.phoneNoteAction)))
 	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen", a.action(a.requireVerwaltung(a.verwaltungSettingsAction)))
+	mux.HandleFunc("GET /app/verwaltung/einstellungen/demo", a.page(a.requireVerwaltung(a.verwaltungDemoResetPage)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/demo", a.action(a.requireVerwaltung(a.verwaltungDemoResetAction)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/ki-test", a.action(a.requireVerwaltung(a.verwaltungAITestAction)))
 	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
 	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
@@ -1983,6 +1988,11 @@ func newApp() (*app, error) {
 	}
 	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
 		return store.BindTextbausteinRepository(database, orgKey)
+	}
+	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
+		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
+			return demo.Load(ctx, database, seedDir, demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor})
+		}
 	}
 	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
 		logError("ai triage provider not configured", err)

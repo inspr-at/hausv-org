@@ -24,6 +24,9 @@ type OrgSettings struct {
 	TrustLevels   map[string]string `json:"trust_levels"`
 	AutoThreshold float64           `json:"auto_threshold"`
 	AutoEnabled   bool              `json:"auto_enabled"`
+	AIProvider    string            `json:"ai_provider,omitempty"`
+	AIBaseURL     string            `json:"ai_base_url,omitempty"`
+	AIModel       string            `json:"ai_model,omitempty"`
 	Counters      OrgCounters       `json:"counters"`
 	UpdatedAt     time.Time         `json:"updated_at"`
 }
@@ -58,6 +61,12 @@ func normalizeOrgSettings(orgKey string, item OrgSettings) (OrgSettings, error) 
 	defaults := DefaultOrgSettings(orgKey)
 	item.Organisation = defaults.Organisation
 	item.Name = strings.TrimSpace(item.Name)
+	item.AIProvider = strings.ToLower(strings.TrimSpace(item.AIProvider))
+	if item.AIProvider != "cloud" && item.AIProvider != "local" {
+		item.AIProvider = ""
+	}
+	item.AIBaseURL = strings.TrimSpace(item.AIBaseURL)
+	item.AIModel = strings.TrimSpace(item.AIModel)
 	for key, value := range item.TrustLevels {
 		if value == "manual" || value == "propose" || value == "auto" {
 			defaults.TrustLevels[key] = value

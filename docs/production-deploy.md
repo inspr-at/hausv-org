@@ -369,6 +369,20 @@ fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes
 only its named data volume, starts it again, and seeds it. Confirm the running
 instance with `deploy/demo/verify.sh`.
 
+Organisationsadministratoren können die laufende Demo außerdem ohne Abmeldung
+unter `/<tenant>/app/verwaltung/einstellungen` im Abschnitt **Demo**
+zurücksetzen. Der Portal-Weg verlangt das Wort `ZURÜCKSETZEN` und eine zweite
+Bestätigung; anschließend werden die gebündelten Anliegen, Organisationsdaten,
+Ankündigungen und Termine mit dem heutigen Datum als Anker neu eingespielt.
+
+Auf dem Host bleiben die CLI-Wege für Wartung und vollständige Neuinitialisierung
+verfügbar. Der Compose-Projektname muss dabei ausdrücklich der Demo gehören:
+
+```sh
+COMPOSE_PROJECT_NAME=hausv-demo HAUSV_DEMO_SEED_ANCHOR=today deploy/demo/seed.sh
+COMPOSE_PROJECT_NAME=hausv-demo HAUSV_DEMO_SEED_ANCHOR=today deploy/demo/reset.sh
+```
+
 Put the OpenRouter API key only in `deploy/demo/secrets.env` as `AI_API_KEY`;
 that file is ignored by Git and must remain mode `600` on the Docker host. Set a
 separate, high-entropy `SESSION_KEY` there too. `demo.env` contains the committed
