@@ -1,5 +1,7 @@
 package server
 
+import "github.com/inspr-at/hausv-org/internal/web"
+
 import "net/http"
 
 func (a *app) rolePreviewStart(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -17,3 +19,10 @@ func (a *app) rolePreviewPlaceholder(w http.ResponseWriter, r *http.Request, ac 
 	}
 	http.Redirect(w, r, "/app?flash=Wird%20gebaut", http.StatusSeeOther)
 }
+
+// Stubs for the role-preview hooks in the portal page builder; HAUSV-605 replaces them.
+func rolePreviewPortalData(ac *authCtx) *web.RolePreviewState { return nil }
+
+func (a *app) rolePreviewChoices(ac *authCtx) []web.RolePreviewChoice { return nil }
+
+func rolePreviewGreetingName(ac *authCtx, name string) string { return name }

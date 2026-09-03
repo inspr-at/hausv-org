@@ -26,6 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/auth"
 	"github.com/inspr-at/hausv-org/internal/authz"
 	"github.com/inspr-at/hausv-org/internal/config"
@@ -823,6 +824,12 @@ type app struct {
 	mapPreviewTiles          map[string]map[mapTileKey]time.Time
 
 	annualStatementReceiptSuggester annualStatementReceiptSuggester
+
+	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
+	intake        func(orgKey string) store.IntakeRepository
+	orgSettings   func(orgKey string) store.OrgSettingsRepository
+	textbausteine func(orgKey string) store.TextbausteinRepository
+	triage        ai.TriageSuggester
 
 	chargingTickInterval   time.Duration
 	chargingStaleAfter     time.Duration
@@ -1700,6 +1707,19 @@ func newApp() (*app, error) {
 		}
 		return nil, fmt.Errorf("open sqlite at %s: %w", dbPath, err)
 	}
+	a.intake = func(orgKey string) store.IntakeRepository { return store.BindIntakeRepository(database, orgKey) }
+	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
+		return store.BindOrgSettingsRepository(database, orgKey)
+	}
+	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
+		return store.BindTextbausteinRepository(database, orgKey)
+	}
+	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
+		logError("ai triage provider not configured", err)
+	} else if suggester != nil {
+		a.triage = suggester
+		logInfo("ai triage provider configured", "label", suggester.Label())
+	}
 	// The scoped seam. Every SQL store below takes this instead of the process
 	// pool, so each of their statements names a tenant lane or a declared
 	// cross-tenant one. VerifyBudget runs before any store exists, so a lane plan
@@ -2499,7 +2519,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		BrandIcon:              tenant.BrandIcon,
 		BrandMarkSVG:           tenantBrandMarkSVG(tenant.BrandIcon),
 		Map:                    portalMapForTenant(tenant),
-		GreetingName:           firstNonEmpty(profile.FirstName, profile.DisplayName()),
+		GreetingName:           rolePreviewGreetingName(&ac, firstNonEmpty(profile.FirstName, profile.DisplayName())),
 		Today:                  germanDateLong(now.In(time.Local)),
 		DisplayName:            profile.DisplayName(),
 		Initials:               profile.Initials(),
@@ -2516,9 +2536,9 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		CanManageUsers:         canManagePortalUsers,
 		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
 		ShowVerwaltungNav:      a.showVerwaltungNav(ac),
-		InboxOpenCount:         0,
-		RolePreview:            nil,
-		RolePreviewChoices:     nil,
+		InboxOpenCount:         a.inboxOpenCount(&ac),
+		RolePreview:            rolePreviewPortalData(&ac),
+		RolePreviewChoices:     a.rolePreviewChoices(&ac),
 		Flash:                  rolePreviewFlash(r),
 		HomeIdentity:           a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		HasPrimary:             hasPrimary,

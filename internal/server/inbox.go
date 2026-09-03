@@ -25,3 +25,6 @@ func (a *app) verwaltungSettingsPage(w http.ResponseWriter, r *http.Request, ac 
 func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, _ authCtx) {
 	http.Redirect(w, r, "/app/verwaltung/einstellungen", http.StatusSeeOther)
 }
+
+// inboxOpenCount is the nav badge count; HAUSV-601 replaces this stub.
+func (a *app) inboxOpenCount(ac *authCtx) int { return 0 }

@@ -133,7 +133,7 @@ func (a *app) verwaltungShell(ac *authCtx, active string) web.VerwaltungShell {
 		DisplayName:      profile.DisplayName(),
 		Initials:         profile.Initials(),
 		Active:           active,
-		InboxOpenCount:   0,
+		InboxOpenCount:   a.inboxOpenCount(ac),
 		Houses:           houses,
 		Contexts:         portalContexts,
 		DisplayVersion:   version.DisplayVersion(version.Version),
