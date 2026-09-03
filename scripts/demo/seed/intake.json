@@ -243,7 +243,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "termin-bestaetigt",
-      "reply": "Sehr geehrter Herr Gül,\n\nder Termin für Elisabethstraße 12, Top 3, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nder Termin für Elisabethstraße 12, Top 3, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Termin eintragen",
         "Bestätigung senden"
@@ -503,7 +503,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -943,7 +943,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "sonstiges-rueckfrage",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Nachricht. Vera Verwalter prüft, ob die Hausverwaltung zuständig ist, und meldet sich innerhalb von zwei Werktagen.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Nachricht. Vera Verwalter prüft, ob die Hausverwaltung zuständig ist, und meldet sich innerhalb von zwei Werktagen.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -1023,7 +1023,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Gül,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Elisabethstraße 12 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Elisabethstraße 12 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -1243,7 +1243,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "versicherung-schaden",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir haben die Schadenmeldung für Elisabethstraße 12, Top 3, aufgenommen und prüfen die Einreichung bei der Gebäudeversicherung. Ihre Referenz lautet HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir haben die Schadenmeldung für Elisabethstraße 12, Top 3, aufgenommen und prüfen die Einreichung bei der Gebäudeversicherung. Ihre Referenz lautet HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -1523,7 +1523,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -1763,7 +1763,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "uebergabe-termin",
-      "reply": "Sehr geehrter Herr Auer,\n\nwir koordinieren die Übergabe von Top 1. Paul Sommer meldet sich innerhalb von zwei Werktagen mit Terminvorschlägen und der Schlüsselliste.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nwir koordinieren die Übergabe von Top 1. Paul Sommer meldet sich innerhalb von zwei Werktagen mit Terminvorschlägen und der Schlüsselliste.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -2443,7 +2443,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -2903,7 +2903,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -3323,7 +3323,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -3783,7 +3783,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -4183,7 +4183,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -4543,7 +4543,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Gül,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Elisabethstraße 12 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Elisabethstraße 12 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -4903,7 +4903,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -5543,7 +5543,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "termin-bestaetigt",
-      "reply": "Sehr geehrter Herr Gül,\n\nder Termin für Elisabethstraße 12, Top 3, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nder Termin für Elisabethstraße 12, Top 3, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Termin eintragen",
         "Bestätigung senden"
@@ -5883,7 +5883,7 @@
       "unit": "",
       "assignee": "vera.verwalter",
       "template_key": "beleg-erfasst",
-      "reply": "Sehr geehrter Herr Gül,\n\nder übermittelte Beleg für Elisabethstraße 12 wurde unter HV-2026-09 erfasst und der zuständigen Kostenstelle zugeordnet.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nder übermittelte Beleg für Elisabethstraße 12 wurde unter HV-2026-09 erfasst und der zuständigen Kostenstelle zugeordnet.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Beleg erfassen",
         "Kostenstelle zuordnen"
@@ -6423,7 +6423,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "aussenanlage-auftrag",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für den Hinweis bei Janischhofweg 22. Wir haben die zuständige Hausbetreuung informiert und erwarten die Erledigung innerhalb von zwei Werktagen.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für den Hinweis bei Janischhofweg 22. Wir haben die zuständige Hausbetreuung informiert und erwarten die Erledigung innerhalb von zwei Werktagen.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -6563,7 +6563,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "freigabe-unterlagen",
-      "reply": "Sehr geehrter Herr Gül,\n\nfür die Prüfung Ihres Vorhabens in Top 3 senden Sie uns bitte Ausführung, Maße und Befestigungsart. Vera Verwalter koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nfür die Prüfung Ihres Vorhabens in Top 3 senden Sie uns bitte Ausführung, Maße und Befestigungsart. Vera Verwalter koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -6883,7 +6883,7 @@
       "unit": "Top 3",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Gül,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Elisabethstraße 12, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -7063,7 +7063,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -7143,7 +7143,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Moser,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Annenstraße 71, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Annenstraße 71, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -7283,7 +7283,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "termin-bestaetigt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nder Termin für Janischhofweg 22, Top 7, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nder Termin für Janischhofweg 22, Top 7, ist eingetragen. Bei Änderungen melden Sie sich bitte unter Angabe von HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Termin eintragen",
         "Bestätigung senden"
@@ -7563,7 +7563,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -7603,7 +7603,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -8143,7 +8143,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -8583,7 +8583,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -9003,7 +9003,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -9443,7 +9443,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Janischhofweg 22, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -9723,7 +9723,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -9763,7 +9763,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -10083,7 +10083,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -10163,7 +10163,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung",
-      "reply": "Sehr geehrter Herr Moser,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Annenstraße 71, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Annenstraße 71, Top 7, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -10203,7 +10203,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "freigabe-unterlagen",
-      "reply": "Sehr geehrter Herr Eder,\n\nfür die Prüfung Ihres Vorhabens in Top 2 senden Sie uns bitte Ausführung, Maße und Befestigungsart. Paul Sommer koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nfür die Prüfung Ihres Vorhabens in Top 2 senden Sie uns bitte Ausführung, Maße und Befestigungsart. Paul Sommer koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -10623,7 +10623,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -11023,7 +11023,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -11063,7 +11063,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -11463,7 +11463,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -11883,7 +11883,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -11923,7 +11923,7 @@
       "unit": "Top 2",
       "assignee": "paul.sommer",
       "template_key": "hausordnung-rueckmeldung",
-      "reply": "Sehr geehrter Herr Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Eder,\n\nvielen Dank für Ihren Hinweis. Wir prüfen die Situation in Janischhofweg 22 und erinnern die Hausgemeinschaft sachlich an die geltende Hausordnung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Zuständige Person informieren"
@@ -12243,7 +12243,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -12323,7 +12323,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -12463,7 +12463,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -12683,7 +12683,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -12903,7 +12903,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13183,7 +13183,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13323,7 +13323,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13543,7 +13543,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13623,7 +13623,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13763,7 +13763,7 @@
       "unit": "Top 7",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Erdem,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -13983,7 +13983,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -14043,7 +14043,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -14403,7 +14403,7 @@
       "unit": "Top 1",
       "assignee": "paul.sommer",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Auer,\n\nvielen Dank für Ihre Meldung zu Janischhofweg 22, Top 1. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
@@ -14483,7 +14483,7 @@
       "unit": "Top 7",
       "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt",
-      "reply": "Sehr geehrter Herr Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
+      "reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt",
       "actions": [
         "Anliegen anlegen",
         "Fachbetrieb verständigen"
