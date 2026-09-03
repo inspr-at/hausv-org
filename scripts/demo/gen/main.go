@@ -303,6 +303,17 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 			} else if index%9 == 0 {
 				status = "manual"
 			}
+			// Concentrate open work on six houses so the portfolio shows both
+			// "Handlungsbedarf" and "ruhig"; older, handled items spread over all twelve.
+			if status == "new" || status == "manual" {
+				h = houses[houseIndex%6]
+				resident = residentForHouse(persons, h.Slug, index)
+				unitLabel = resident.Memberships[0].Units[0]
+				itemHouse = h.Slug
+				if unassigned {
+					itemHouse, unitLabel = "", ""
+				}
+			}
 			received := time.Date(2026, 9, 9-dayOffset, 7+(index*3)%11, (index*17)%60, 0, 0, time.FixedZone("CEST", 2*60*60))
 			material := materialByCategory[spec.key][round%len(materialByCategory[spec.key])]
 			body := expand(material.Body, h, unitLabel, resident.Name, index)

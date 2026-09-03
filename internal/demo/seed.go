@@ -217,7 +217,7 @@ func intakeItem(raw seedIntake, orgKey string, index int) store.IntakeItem {
 	return store.IntakeItem{
 		ID: raw.ID, Organisation: orgKey, TenantSlug: raw.House, Unit: raw.Unit, Source: raw.Source,
 		FromName: raw.FromName, FromEmail: raw.FromEmail, FromPhone: raw.FromPhone,
-		Subject: raw.Subject, Body: raw.Body, ReceivedAt: raw.ReceivedAt, Status: status,
+		Subject: raw.Subject, Body: raw.Body, ReceivedAt: raw.ReceivedAt, DueAt: dueFor(raw.ReceivedAt, seedPriority(raw)), Status: status,
 		Suggestion: suggestion, Handling: handling, IssueID: issueID, Truth: raw.Truth,
 		CreatedAt: raw.ReceivedAt, UpdatedAt: raw.ReceivedAt.Add(time.Duration(index) * time.Nanosecond),
 	}
@@ -271,7 +271,7 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 			category, priority, assignee = raw.Precomputed.Category, raw.Precomputed.Priority, raw.Precomputed.Assignee
 		}
 		status := store.IssueStatusNew
-		if raw.StatusHint == "auto_done" || (raw.StatusHint == "approved" && index%2 == 1) {
+		if raw.StatusHint == "auto_done" || (raw.StatusHint == "approved" && index%4 != 0) {
 			status = store.IssueStatusDone
 		} else if raw.StatusHint == "approved" {
 			status = store.IssueStatusProgress
@@ -289,7 +289,7 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 			AuthorEmail: email, AuthorName: raw.FromName, Category: category, Title: raw.Subject, Body: raw.Body,
 			LocationType: location, LocationDetail: raw.Unit, Status: status, Priority: priority,
 			AssigneeEmail: assigneeEmail[assignee], StatusChangedAt: raw.ReceivedAt, StatusChangedBy: "system",
-			CreatedAt: raw.ReceivedAt, UpdatedAt: raw.ReceivedAt,
+			CreatedAt: raw.ReceivedAt, UpdatedAt: raw.ReceivedAt, DueAt: dueFor(raw.ReceivedAt, priority),
 		}
 		if issue.Title == "" {
 			issue.Title = "Demo-Anliegen"
@@ -403,4 +403,29 @@ func printStats(out io.Writer, result SeedResult) {
 	for _, key := range keys {
 		fmt.Fprintf(out, "category %s: %d\n", key, result.Categories[key])
 	}
+}
+
+// dueFor derives the demo due date from the priority window used in the concept:
+// Dringend heute, Hoch morgen, Mittel in vier Tagen, Niedrig in vierzehn Tagen.
+func dueFor(received time.Time, priority string) time.Time {
+	switch priority {
+	case store.IssuePriorityUrgent:
+		return received.Add(4 * time.Hour)
+	case store.IssuePriorityHigh:
+		return received.Add(24 * time.Hour)
+	case store.IssuePriorityLow:
+		return received.Add(14 * 24 * time.Hour)
+	default:
+		return received.Add(4 * 24 * time.Hour)
+	}
+}
+
+func seedPriority(raw seedIntake) string {
+	if raw.Truth != nil && raw.Truth.Priority != "" {
+		return raw.Truth.Priority
+	}
+	if raw.Precomputed != nil && raw.Precomputed.Priority != "" {
+		return raw.Precomputed.Priority
+	}
+	return store.IssuePriorityNorm
 }
