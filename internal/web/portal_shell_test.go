@@ -92,7 +92,9 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			// listeners to markup that was never written for it.
 			var loaded []string
 			for _, m := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(html, -1) {
-				if m[1] != "app.js" {
+				// app.js and house-picker.js belong to the shell itself and ship with
+				// every portal page; the per-page set is what must match exactly.
+				if m[1] != "app.js" && m[1] != "house-picker.js" {
 					loaded = append(loaded, m[1])
 				}
 			}
