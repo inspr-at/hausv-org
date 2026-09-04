@@ -170,7 +170,8 @@ async function geometry(page, viewport, label) {
     const shell = document.querySelector('[data-portal-shell]');
     const landing = document.querySelector('[data-portal-section-landing]');
     const labelNode = document.querySelector('.side-address-label');
-    const mapLink = document.querySelector('a.side-address');
+    // HAUSV-620/621: the map is the thumbnail link inside the house header card.
+    const mapLink = document.querySelector('a.map');
     // HAUSV-621: the address label is the house header card (a picker summary for
     // organisation members, a static card otherwise); the map link keeps the full address.
     const homeLink = document.querySelector('.house-header-card');
