@@ -207,8 +207,10 @@ async function geometry(page, viewport, label) {
     fail(`${label}: gemeinsames Portal-Chrome fehlt oder ist mehrfach vorhanden (${JSON.stringify(result)})`);
   }
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
-  if (!result.address ||
-      (result.shellPresent && (!result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address)))) {
+  // Only pages that carry the shared page head show the house address; the
+  // payment preview and other bare routes legitimately have none.
+  if (result.shellPresent &&
+      (!result.address || !result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
   // Pages without the shared page head (the payment preview is one) carry no map
