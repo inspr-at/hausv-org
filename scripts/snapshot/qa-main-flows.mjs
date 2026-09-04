@@ -2115,8 +2115,10 @@ async function assertPage(page, persona, route, viewportName) {
       if (!href || !/openstreetmap\.org/.test(href) || !label || !/OpenStreetMap/.test(label)) {
         fail(`${persona.name} Desktop: Kartenlink zeigt nicht auf OpenStreetMap oder hat kein Label (${href} / ${label})`);
       }
+      // HAUSV-620/621 made the map a thumbnail inside the house header card; the
+      // contract is that it stays a visible, clickable tile, not that it is wide.
       const box = await map.boundingBox();
-      if (!box || box.width < 120 || box.height < 40) {
+      if (!box || box.width < 40 || box.height < 40) {
         fail(`${persona.name} Desktop: Kartenlink ist nicht sichtbar gerendert (${JSON.stringify(box)})`);
       }
       const tileCount = await map.locator('img.side-map-tile').count();
