@@ -420,7 +420,7 @@ templ BuildingContacts(data BuildingSettingsPageData) {
 
 templ BuildingUnits(data BuildingSettingsPageData) {
 	<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class="head-actions"><a class="button ghost" href="/app/settings/payments/import">Bankdatei einlesen</a><a class="button primary" href="#unit-add">Einheit hinzufügen</a></div></header>
-		<div class="metrics"><span><strong>{ data.UnitTotal }</strong><small>Einheiten gesamt</small></span><span><strong>{ data.BillableUnits } von { data.FairUseFreeUnits }</strong><small>{ data.BillableLabel } in Nutzung</small></span></div>
+		<div class="metrics"><span><strong>{ data.UnitTotal }</strong><small>Einheiten gesamt</small></span><span><strong>{ data.BillableUnits } von { data.FairUseFreeUnits }</strong><small>{ data.BillableLabel } im inkludierten Rahmen</small></span></div>
 		if data.FairUseExceeded {
 			<p class="notice">Über dem inkludierten Rahmen von { data.FairUseFreeUnits } Wohneinheiten. Richtwert: 1 € pro Einheit und Monat.</p>
 		}

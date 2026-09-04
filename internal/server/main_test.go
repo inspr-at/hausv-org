@@ -2283,7 +2283,7 @@ func TestBuildingSettingsManagerUpdatesMetaHeroAndUnits(t *testing.T) {
 		t.Fatalf("payment status after add = %+v, found=%t", payment, ok)
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/building?section=units")
-	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1 von 25", "Wohneinheit in Nutzung", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
+	for _, want := range []string{"WEG Sonneneck", "Neue Gasse 7", "Top 1", "Wohnung", "zählt als 1 WE", "1 von 25", "Wohneinheit im inkludierten Rahmen", "12.345 / 1.000.000", `value="owner@example.com, second@example.com"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("building page should contain %q", want)
 		}

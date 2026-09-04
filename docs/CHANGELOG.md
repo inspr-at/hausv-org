@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.0.2] - 2026-09-04
+
+### Kennzahl der Einheitenliste eindeutig benannt
+
+- Gebäude & Einheiten: Die Kennzahl über der Liste nennt jetzt den inkludierten Rahmen, den sie zählt, und wird nicht mehr als Belegung gelesen.
+
 ## [1.0.1] - 2026-09-04
 
 ### Einheiten in gewohnter Reihenfolge
