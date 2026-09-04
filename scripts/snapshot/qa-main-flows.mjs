@@ -32,9 +32,7 @@ const personas = [
 ];
 
 const routes = [
-  // HAUSV-620: the overview greets residents by name and names the house for
-  // people who administer several, so both headings are valid here.
-  { path: '/app', heading: /Hallo |^[A-ZÄÖÜ].*\d/, content: 'Jetzt zu erledigen' },
+  { path: '/app', heading: /Hallo /, content: 'Jetzt zu erledigen' },
   { path: '/app/announcements', heading: 'Aushang', content: 'QA Hausinformation' },
   { path: '/app/events', heading: 'Termine', content: 'QA Hausbegehung' },
   { path: '/app/kontakte', heading: 'Kontakte', content: 'QA Energiehilfe' },
@@ -2092,7 +2090,19 @@ async function assertPage(page, persona, route, viewportName) {
     fail(`${persona.name} ${viewportName} ${route.path}: Status ${response?.status() ?? 0}`);
   }
   const heading = page.getByRole('heading', { name: route.heading }).first();
-  if (!(await heading.count())) fail(`${persona.name} ${viewportName} ${route.path}: Überschrift fehlt`);
+  if (!(await heading.count())) {
+    // HAUSV-620: the overview greets residents by name, but for people who
+    // administer several houses it names the current house instead. Both are
+    // valid; the house name must then match the sidebar's header card.
+    const houseHeading = route.path === '/app'
+      ? await page.evaluate(() => {
+          const h1 = document.querySelector('main h1');
+          const card = document.querySelector('aside.sidebar .house-header-copy strong');
+          return h1 && card && h1.textContent.trim() === card.textContent.trim() ? h1.textContent.trim() : '';
+        })
+      : '';
+    if (!houseHeading) fail(`${persona.name} ${viewportName} ${route.path}: Überschrift fehlt`);
+  }
   if (!(await page.getByText(route.content, { exact: false }).count())) {
     fail(`${persona.name} ${viewportName} ${route.path}: Inhalt „${route.content}“ fehlt`);
   }
