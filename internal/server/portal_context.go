@@ -31,11 +31,11 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	shell.RoleLabel = ac.role
 	managed := a.managedTenants(ac)
 	organisation, hasOrganisation := a.organisationFor(ac)
-	// The Verwaltung layer follows the same rule as before this shell existed
-	// (showVerwaltungNav): an organisation, or somebody who administers more
-	// than one house. Narrowing it to organisations only took Portfolio and
-	// Posteingang away from multi-house admins.
-	shell.IsOrganisationMember = a.showVerwaltungNav(*ac)
+	// The Verwaltung layer needs someone who actually administers houses: a
+	// member of an organisation, or somebody who administers more than one
+	// house without one. Residents and owners never see it, even though their
+	// house belongs to an organisation.
+	shell.IsOrganisationMember = len(managed) > 0 && (hasOrganisation || len(managed) > 1)
 	if shell.IsOrganisationMember {
 		shell.OrganisationName = strings.TrimSpace(organisation.Name)
 		if shell.OrganisationName == "" {
