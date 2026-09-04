@@ -24,12 +24,13 @@ func (a *app) processIntake(ctx context.Context, orgKey string, item store.Intak
 	if err != nil {
 		return item, err
 	}
+	suggester, provider := a.triageFor(ctx, orgKey)
 
 	if item.Suggestion == nil {
-		if a.triage == nil {
+		if suggester == nil {
 			return item, nil
 		}
-		suggestion, suggestErr := a.suggestIntake(ctx, orgKey, item)
+		suggestion, suggestErr := a.suggestIntakeWith(ctx, orgKey, item, suggester, provider)
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			item.Suggestion = nil
 			item.Status = store.IntakeStatusOpen
@@ -61,7 +62,7 @@ func (a *app) processIntake(ctx context.Context, orgKey string, item store.Intak
 		}
 		return repo.Get(ctx, item.ID)
 	}
-	if level == "auto" && a.triage != nil && settings.AutoEnabled && item.Suggestion.Confidence["overall"] >= settings.AutoThreshold {
+	if level == "auto" && suggester != nil && settings.AutoEnabled && item.Suggestion.Confidence["overall"] >= settings.AutoThreshold {
 		if err := a.handleIntake(ctx, orgKey, item, intakeHandleOptions{status: store.IntakeStatusAuto, action: "auto", actorName: "System (KI)", auditAction: store.AuditActionIssueAIAuto, counter: "auto"}); err != nil {
 			return item, err
 		}
@@ -105,9 +106,14 @@ func (a *app) intakeStores(orgKey string) (store.IntakeRepository, store.OrgSett
 }
 
 func (a *app) suggestIntake(ctx context.Context, orgKey string, item store.IntakeItem) (store.IntakeSuggestion, error) {
-	if a == nil || a.triage == nil {
+	suggester, provider := a.triageFor(ctx, orgKey)
+	if suggester == nil {
 		return store.IntakeSuggestion{}, ai.ErrUnavailable
 	}
+	return a.suggestIntakeWith(ctx, orgKey, item, suggester, provider)
+}
+
+func (a *app) suggestIntakeWith(ctx context.Context, orgKey string, item store.IntakeItem, suggester ai.TriageSuggester, provider string) (store.IntakeSuggestion, error) {
 	templates := []store.Textbaustein{}
 	if a.textbausteine != nil {
 		var err error
@@ -133,12 +139,12 @@ func (a *app) suggestIntake(ctx context.Context, orgKey string, item store.Intak
 		assignedName = houseDisplayName(tenant)
 	}
 	input := ai.TriageInput{Organisation: orgKey, AssignedHouseSlug: assignedSlug, AssignedHouseName: assignedName, AssignedUnit: item.Unit, Source: string(item.Source), Subject: item.Subject, Body: item.Body, FromName: item.FromName, FromEmail: item.FromEmail, FromPhone: item.FromPhone, ReceivedAt: item.ReceivedAt, Houses: houses, Categories: categories, Templates: templateHints, Assignees: a.organisationAssigneeHints(orgKey)}
-	suggestion, err := a.triage.Suggest(ctx, input)
+	suggestion, err := suggester.Suggest(ctx, input)
 	confidence := make(map[string]float64, len(suggestion.Confidence))
 	for key, value := range suggestion.Confidence {
 		confidence[key] = value
 	}
-	stored := store.IntakeSuggestion{Source: "model", Model: suggestion.Model, PromptHash: suggestion.PromptHash, Category: suggestion.Category, Priority: suggestion.Priority, TenantSlug: suggestion.HouseSlug, Unit: suggestion.Unit, Assignee: suggestion.Assignee, TemplateKey: suggestion.TemplateKey, Reply: suggestion.Reply, Actions: append([]string(nil), suggestion.Actions...), Confidence: confidence, CreatedAt: time.Now().UTC()}
+	stored := store.IntakeSuggestion{Source: "model", Provider: provider, Model: suggestion.Model, PromptHash: suggestion.PromptHash, Category: suggestion.Category, Priority: suggestion.Priority, TenantSlug: suggestion.HouseSlug, Unit: suggestion.Unit, Assignee: suggestion.Assignee, TemplateKey: suggestion.TemplateKey, Reply: suggestion.Reply, Actions: append([]string(nil), suggestion.Actions...), Confidence: confidence, CreatedAt: time.Now().UTC()}
 	if stored.TenantSlug == "" {
 		stored.TenantSlug = item.TenantSlug
 	}
