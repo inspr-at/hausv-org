@@ -27,12 +27,20 @@ Every production release must:
 2. be committed and pushed to `origin/main`;
 3. have a completed green `CI` run on Blacksmith for the exact commit;
 4. pass the read-only deployment preflight;
-5. be built from the CI image pushed to GHCR (Mac-less path) or from `git archive HEAD` on the configured host (attended Mac path);
+5. be the CI image that green run pushed to GHCR — both paths pull `release-<version>-<short sha>`, neither builds on the production host;
 6. expose the expected version and commit after activation.
 
-The script preserves the previous image. If migrations changed, deployment is
-refused in the Mac-less path; the attended Mac path creates a quiesced SQLite
-and blob snapshot before building the new image.
+The script preserves the previous image. When migrations changed, both paths
+create a quiesced SQLite and blob snapshot before the swap — the Mac-less path
+inside the green image under the project lock, the attended Mac path on the
+host. A failed snapshot refuses the release; production stays on the previous
+image.
+
+A merge to `main` that does not bump `VERSION` still triggers `Deploy`, and that
+run fails with `release refused: VERSION <x> is already live`. This is the
+release contract's first rule refusing to ship an unchanged version, not a
+broken pipeline: nothing is touched and production keeps serving the previous
+image. Expect one such red run for every deliberate no-release merge.
 
 ## Deployment paths
 
