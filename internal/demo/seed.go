@@ -152,7 +152,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		shiftSeedDates(options.Anchor, intake, events, announcements)
 	}
 	if options.Reset {
-		if err := reset(ctx, database, org.Key, intake, events, announcements); err != nil {
+		if err := reset(ctx, database, org.Key, houses, intake, events, announcements); err != nil {
 			return SeedResult{}, err
 		}
 	}
@@ -382,7 +382,7 @@ func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.Tena
 	return err
 }
 
-func reset(ctx context.Context, database *sql.DB, orgKey string, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement) error {
+func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement) error {
 	tx, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -408,6 +408,14 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, intake []seedIn
 	}
 	for _, raw := range announcements {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM announcements WHERE id=$1`, raw.ID); err != nil {
+			return err
+		}
+	}
+	// Units are keyed by a normalized label; a fixture change (a renamed house,
+	// a corrected e-mail, a new normalization) would otherwise leave the old
+	// rows behind and the portal would resolve occupants from stale records.
+	for _, house := range houses {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM units WHERE tenant_slug=$1`, textutil.Slug(house.Slug)); err != nil {
 			return err
 		}
 	}
