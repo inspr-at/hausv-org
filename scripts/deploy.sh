@@ -194,8 +194,9 @@ repo=$(git rev-parse --show-toplevel 2>/dev/null) \
     || fail_before_change "not inside the HAUSV repository"
 cd "$repo" || fail_before_change "cannot enter repository root"
 
-# The archive contains only HEAD. A dirty tree would make the operator believe
-# uncommitted work was shipped even though it cannot be in the image.
+# Only the CI image built from HEAD ever ships. A dirty tree would make the
+# operator believe uncommitted work was released even though it cannot be in
+# that image.
 dirty=$(git status --porcelain) \
     || fail_before_change "cannot inspect the working tree"
 if [ -n "$dirty" ]; then
