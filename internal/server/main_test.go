@@ -5657,7 +5657,9 @@ func TestManualUnitPaymentStatusVisibilityAndAudit(t *testing.T) {
 		t.Fatalf("payment status records = %+v", records)
 	}
 
-	ownerPage := authedRequest(t, a, "owner@example.com", "/demo/app").Body.String()
+	// The release-notes panel is part of every portal page and may legitimately
+	// name a unit label, which would otherwise read as a leak below.
+	ownerPage := withoutReleaseNotes(authedRequest(t, a, "owner@example.com", "/demo/app").Body.String())
 	if !strings.Contains(ownerPage, "Offenen Zahlungsstatus klären") || !strings.Contains(ownerPage, "Top 1") || !strings.Contains(ownerPage, "Überfällig") {
 		t.Fatalf("owner page missing own payment status:\n%s", ownerPage)
 	}
@@ -6797,4 +6799,18 @@ func assertClose(t *testing.T, got float64, want float64) {
 
 func strconvFormatInt(value int64) string {
 	return strconv.FormatInt(value, 10)
+}
+
+// withoutReleaseNotes removes the release-notes panel from a rendered page so
+// page-wide assertions are not disturbed by release copy.
+func withoutReleaseNotes(page string) string {
+	start := strings.Index(page, "<details class=\"release-notes\">")
+	if start < 0 {
+		return page
+	}
+	end := strings.Index(page[start:], "</details>")
+	if end < 0 {
+		return page
+	}
+	return page[:start] + page[start+end+len("</details>"):]
 }

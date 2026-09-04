@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.0.1",
+			Date:     "4. September 2026",
+			Kind:     "Einheiten",
+			Headline: "Einheiten stehen in gewohnter Reihenfolge.",
+			Intro:    "Einheiten sind nach ihrer Nummer geordnet statt nach reiner Textsortierung; Stellplätze folgen weiterhin hinter den Wohnungen.",
+			Items: []NoteItem{
+				{Label: "Gebäude & Einheiten", Text: "Die Einheitenliste ist wieder in der Reihenfolge lesbar, in der eine Verwaltung sie erwartet."},
+			},
+		},
+		{
 			Version:  "1.0.0",
 			Date:     "4. September 2026",
 			Kind:     "Hausverwaltung",

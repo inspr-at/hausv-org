@@ -2399,8 +2399,8 @@ func UnitLess(a Unit, b Unit) bool {
 	if a.TenantSlug != b.TenantSlug {
 		return a.TenantSlug < b.TenantSlug
 	}
-	if strings.ToLower(a.Label) != strings.ToLower(b.Label) {
-		return strings.ToLower(a.Label) < strings.ToLower(b.Label)
+	if !strings.EqualFold(a.Label, b.Label) {
+		return UnitLabelLess(a.Label, b.Label)
 	}
 	return a.ID < b.ID
 }

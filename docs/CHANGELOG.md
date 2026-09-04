@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.0.1] - 2026-09-04
+
+### Einheiten in gewohnter Reihenfolge
+
+- Gebäude & Einheiten: Einheiten sind nach ihrer Nummer geordnet statt nach reiner Textsortierung; Stellplätze folgen weiterhin hinter den Wohnungen.
+
 ## [1.0.0] - 2026-09-04
 
 ### Hausverwaltung: Portfolio, Posteingang mit KI-Triage und klare Rollen
