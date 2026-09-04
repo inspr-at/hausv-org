@@ -84,4 +84,17 @@ jobs:
           HAUSV_DEPLOY_BASE64_BIN: /run/current-system/sw/bin/base64
           HAUSV_DEPLOY_MKTEMP_BIN: /run/current-system/sw/bin/mktemp
         run: |
+          set +e
           bash scripts/deploy-from-ci-image.sh "${{ steps.params.outputs.version }}" "${{ steps.params.outputs.commit }}"
+          status=$?
+          set -e
+          # Exit 3 means the script read the live build and found this VERSION
+          # already there: nothing to release. Ending green keeps a red run
+          # meaning what it says — a release that was refused or failed.
+          if [ "$status" -eq 3 ]; then
+            echo "### Nothing to release" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "VERSION \`${{ steps.params.outputs.version }}\` is already live; production keeps its current image. Bump VERSION to release." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$status"

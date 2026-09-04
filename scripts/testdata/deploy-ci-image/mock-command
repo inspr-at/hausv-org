@@ -187,6 +187,11 @@ def mock_curl(args: list[str]) -> int:
     
     if url:
         if url == LIVE_URL:
+            if CASE == "version_already_live":
+                # Production already serves the candidate version: the script
+                # must end as "nothing to release" instead of refusing.
+                print(f"<html><body>Live: 9.99.0 ({LIVE[:7]})</body></html>")
+                return 0
             # First read is the live release; later reads verify the target.
             if count("page") <= 2:
                 print(f"<html><body>Live: {APP_VERSION} ({LIVE[:7]})</body></html>")

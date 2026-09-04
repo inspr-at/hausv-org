@@ -36,11 +36,21 @@ inside the green image under the project lock, the attended Mac path on the
 host. A failed snapshot refuses the release; production stays on the previous
 image.
 
-A merge to `main` that does not bump `VERSION` still triggers `Deploy`, and that
-run fails with `release refused: VERSION <x> is already live`. This is the
-release contract's first rule refusing to ship an unchanged version, not a
-broken pipeline: nothing is touched and production keeps serving the previous
-image. Expect one such red run for every deliberate no-release merge.
+A merge to `main` that does not bump `VERSION` still triggers `Deploy`. The
+unattended script reads the live build, finds this version already there and
+ends with `nothing to release: VERSION <x> is already live` and exit code 3;
+the workflow turns that into a green run whose summary says "Nothing to
+release". Nothing is pulled, nothing is swapped, production keeps serving its
+image.
+
+The distinction is deliberate: a red `Deploy` run always means a release was
+refused or failed, so it is worth reading. The check only ends the run when the
+live build was actually read and reports exactly the candidate version — an
+unreachable or unparsable live build still refuses through the fail-closed path,
+and a release whose deploy failed is still picked up by the next merge, because
+the live version then differs from `VERSION`. `scripts/deploy.sh`, the attended
+path, keeps refusing an unchanged version with an error: there an operator asked
+for a release explicitly.
 
 ## Deployment paths
 
