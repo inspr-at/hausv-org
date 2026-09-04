@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.0.2",
+			Date:     "4. September 2026",
+			Kind:     "Einheiten",
+			Headline: "Die Kennzahl über der Einheitenliste ist eindeutig benannt.",
+			Intro:    "Sie zählt den inkludierten Rahmen und heißt jetzt auch so; vorher las sie sich als Belegung.",
+			Items: []NoteItem{
+				{Label: "Gebäude & Einheiten", Text: "Die Kennzahl über der Liste benennt den inkludierten Rahmen statt einer Nutzung."},
+			},
+		},
+		{
 			Version:  "1.0.1",
 			Date:     "4. September 2026",
 			Kind:     "Einheiten",
