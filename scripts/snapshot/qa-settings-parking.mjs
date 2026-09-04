@@ -169,7 +169,11 @@ async function geometry(page, viewport, label) {
       .filter((item) => item.left < -1 || item.right > innerWidth + 1);
     const shell = document.querySelector('[data-portal-shell]');
     const landing = document.querySelector('[data-portal-section-landing]');
-    const labelNode = document.querySelector('.side-address-label');
+    // The address lives in the sidebar card on wide viewports and in the mobile
+    // head below 760 px; innerText of a hidden node is empty, so take the first
+    // one that is actually rendered.
+    const labelNode = [...document.querySelectorAll('.side-address-label, .mobile-head .mobile-identity')]
+      .find((node) => (node.innerText || '').trim().length > 0) || document.querySelector('.side-address-label');
     // HAUSV-620/621: the map is the thumbnail link inside the house header card.
     const mapLink = document.querySelector('a.map');
     // HAUSV-621: the address label is the house header card (a picker summary for
