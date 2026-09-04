@@ -217,6 +217,11 @@ func rolePreviewSidebarNavigation(body string) []string {
 	matches := rolePreviewHrefPattern.FindAllStringSubmatch(body[start:start+end], -1)
 	result := make([]string, 0, len(matches))
 	for _, match := range matches {
+		// HAUSV-621 moved the house header card, whose map thumbnail links to
+		// OpenStreetMap, inside the navigation. Navigation entries are in-app routes.
+		if !strings.HasPrefix(match[1], "/") {
+			continue
+		}
 		result = append(result, match[1])
 	}
 	return result

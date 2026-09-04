@@ -31,9 +31,11 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	shell.RoleLabel = ac.role
 	managed := a.managedTenants(ac)
 	organisation, hasOrganisation := a.organisationFor(ac)
-	// A Verwaltung shell belongs to an actual organisation, not merely to a
-	// person who happens to administer more than one unrelated community.
-	shell.IsOrganisationMember = hasOrganisation && len(managed) > 0
+	// The Verwaltung layer follows the same rule as before this shell existed
+	// (showVerwaltungNav): an organisation, or somebody who administers more
+	// than one house. Narrowing it to organisations only took Portfolio and
+	// Posteingang away from multi-house admins.
+	shell.IsOrganisationMember = a.showVerwaltungNav(*ac)
 	if shell.IsOrganisationMember {
 		shell.OrganisationName = strings.TrimSpace(organisation.Name)
 		if shell.OrganisationName == "" {
@@ -48,25 +50,23 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	}
 
 	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
-	if shell.IsOrganisationMember {
-		for _, tenant := range managed {
-			shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, portalContextView{
-				TenantSlug: tenant.Config.Slug, HouseName: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
-				Role: tenant.Role, Current: tenant.Config.Slug == ac.tenant.Slug,
-			}))
+	// The picker offers every house the person can switch to: the ones they
+	// administer plus the ones they own or rent. Only Home-style portals stay
+	// in the separate portal switcher.
+	seen := make(map[string]bool)
+	for _, tenant := range managed {
+		seen[tenant.Config.Slug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, portalContextView{
+			TenantSlug: tenant.Config.Slug, HouseName: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
+			Role: tenant.Role, Current: tenant.Config.Slug == ac.tenant.Slug,
+		}))
+	}
+	for _, context := range contexts {
+		if seen[context.TenantSlug] || !a.isCommunityPortal(context.TenantSlug) {
+			continue
 		}
-	} else {
-		// People can own or rent several unrelated houses without belonging to a
-		// Verwaltung. Their community contexts are house choices as well; only
-		// Home-style portals remain in the separate portal switcher.
-		seen := make(map[string]bool)
-		for _, context := range contexts {
-			if !a.isCommunityPortal(context.TenantSlug) || seen[context.TenantSlug] {
-				continue
-			}
-			seen[context.TenantSlug] = true
-			shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, context))
-		}
+		seen[context.TenantSlug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, context))
 	}
 	for index := range shell.ManagedHouses {
 		if shell.ManagedHouses[index].Current {
