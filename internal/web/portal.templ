@@ -312,8 +312,13 @@ templ PortalBaseStyles() {
 			.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}
 			.portal-page .menu-panel .nav a{padding:0 10px}
 			.portal-page .house-header-card{min-height:80px}
-			.portal-page .house-picker-panel{position:static;width:auto;max-height:none;margin:8px 0 12px;padding:14px;box-shadow:none}
-			.portal-page .house-picker-panel::before{display:none}
+			/* Not scoped to .portal-page: settings and detail routes carry a different
+			   body class but the same drawer, and the panel would otherwise stay
+			   absolutely positioned there. */
+			.house-picker-panel{position:static;width:auto;max-height:none;margin:8px 0 12px;padding:14px;box-shadow:none}
+			/* The drawer clips its panel while closed; the card must stay a real tap target. */
+			.menu-panel .house-header-card{min-width:44px;min-height:44px}
+			.house-picker-panel::before{display:none}
 			.portal-page .portal-context-switch{margin-top:12px}
 		}
 	</style>
