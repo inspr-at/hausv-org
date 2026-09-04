@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.0.0] - 2026-09-04
+
+### Hausverwaltung: Portfolio, Posteingang mit KI-Triage und klare Rollen
+
+- Portfolio: Eine Hausverwaltung sieht alle betreuten Liegenschaften auf einen Blick und wechselt mit einer Auswahl direkt in ein Haus; die aktuelle Liegenschaft steht sichtbar in Kopfzeile und Seitenleiste.
+- Posteingang: Anliegen laufen in einer Warteschlange mit Filtern und Status zusammen. Die KI schlägt Kategorie, Dringlichkeit und Antwort vor; der Vorschlag lässt sich mit einem Klick übernehmen und direkt mit dem nächsten Fall fortsetzen.
+- KI-Einstellungen: Verwaltungen wählen selbst, ob die Cloud oder ein eigenes Modell im Büro antwortet. Die gewählte Quelle steuert die Vorschläge und ist im Posteingang jederzeit sichtbar.
+- Laufende Anfragen: Jede KI-Anfrage zeigt Fortschritt und verbleibende Zeit und lässt sich abbrechen; Ergebnis und Fehlschlag sind klar benannt.
+- Rollen: Verwaltung, Eigentümer, Mieter, Bewohner und Beirat sehen jeweils nur die für sie vorgesehenen Bereiche.
+- Belegung: Wohnungen und Stellplätze zeigen Eigentümer und Mieter mit Namen, auch direkt im Fall im Posteingang.
+- Jahresabrechnung: Kostenarten, Verteilerschlüssel mit Anteilsvorschau, Vorauszahlungen je Einheit und Belege an bestehenden Dokumenten sind vorbereitet.
+- Demo: Ein vollständiger Demostand lässt sich mit doppelter Bestätigung jederzeit zurücksetzen.
+
 ## [0.99.11] - 2026-08-27
 
 ### Jahresabrechnung vorbereitet
