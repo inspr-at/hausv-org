@@ -3897,7 +3897,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
-		"Units":                 a.buildingUnitViewsWithPayments(ac.repositories, ac.tenantRef, units),
+		"Units":                 a.buildingUnitViewsWithOccupancy(ac.repositories, ac.tenantRef, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),
 		"UnitTotal":             len(units),

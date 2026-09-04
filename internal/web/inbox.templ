@@ -85,6 +85,7 @@ type InboxCase struct {
 	HouseSlug          string
 	HouseLabel         string
 	Unit               string
+	Occupancy          string
 	Assignee           string
 	AssigneeLabel      string
 	Due                string
@@ -176,7 +177,7 @@ templ InboxContent(data InboxData) {
 		.block{margin-top:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm)}.block.original{background:var(--panel-soft)}.block h3{margin:0 0 var(--space-3);color:var(--gold-ink);font-family:var(--font-serif);font-size:16px}.block p{white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere}.block-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-3)}.block-head .case-meta{white-space:nowrap}
 		.original-mobile{display:none}.original-mobile summary{padding:var(--space-4)}.original-preview{display:-webkit-box;margin-top:6px;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:3;color:var(--ink);font-size:13px;line-height:1.5;white-space:pre-wrap}.more-label{color:var(--gold-ink);font-weight:750}.original-full{padding:0 var(--space-4) var(--space-4);font-size:13px;line-height:1.5;white-space:pre-wrap}
 		.assign-case{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:var(--space-3);align-items:end;margin-top:var(--space-4);padding:var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft)}.assign-copy{grid-column:1/-1}.assign-copy strong{display:block;color:var(--gold-ink);font-family:var(--font-serif);font-size:17px}.assign-copy span{display:block;margin-top:3px;color:var(--muted);font-size:12px}
-		.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.classification-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4)}.classification-row+.classification-row{margin-top:var(--space-5)}.fact{min-width:0}.fact small{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.fact strong{display:block;margin-top:6px;overflow-wrap:break-word;hyphens:auto;font-size:13px}.conf{display:flex!important;align-items:center;gap:var(--space-2)}.bar{width:70px;height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.bar span{display:block;height:100%;background:var(--leaf)}
+		.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.classification-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4)}.classification-row+.classification-row{margin-top:var(--space-5)}.fact{min-width:0}.fact small{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.fact strong{display:block;margin-top:6px;overflow-wrap:break-word;hyphens:auto;font-size:13px}.occupancy-detail{display:block;margin-top:4px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.conf{display:flex!important;align-items:center;gap:var(--space-2)}.bar{width:70px;height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.bar span{display:block;height:100%;background:var(--leaf)}
 		.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}.actions-compact{display:flex;flex-wrap:wrap;gap:6px;margin:var(--space-4) 0 0;padding:var(--space-3) 0 0;border-top:1px solid var(--line);list-style:none}.actions-compact li{font-size:11px;color:var(--muted)}.actions-compact li+li::before{content:"·";margin-right:6px;color:var(--soft)}
 		.reply-copy{font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.reply-edit{display:grid;gap:var(--space-3)}.reply-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2);align-items:end}.reply-tools button{white-space:nowrap}.reply-edit textarea{line-height:1.55}
 		.suggest-state{margin-top:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.suggest-state-main{display:flex;align-items:center;gap:var(--space-3)}.suggest-state-copy{min-width:0;flex:1}.suggest-state-copy strong,.suggest-state-copy span{display:block}.suggest-state-copy strong{font-size:12px}.suggest-state-copy span{margin-top:4px;color:var(--muted);font-size:11px}.spinner{width:22px;height:22px;flex:0 0 auto;border:2px solid var(--line);border-top-color:var(--ink);border-radius:var(--radius-pill);animation:inbox-spin .9s linear infinite}.state-icon{width:22px;height:22px;display:grid;place-items:center;flex:0 0 auto;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.state-icon.failed{border:1px solid var(--gold);background:transparent;color:var(--gold-ink)}.suggest-state form{margin:var(--space-3) 0 0;text-align:right}.suggest-state .case-button{min-height:32px}.arrival-banner{margin-top:var(--space-4);padding:var(--space-3);border:1px solid var(--leaf);border-radius:var(--radius-sm);color:var(--leaf);font-size:11px;font-weight:750;animation:inbox-arrival 1s ease 5s forwards}.arrival-banner .state-icon{display:inline-grid;width:20px;height:20px;margin-right:var(--space-2)}
@@ -317,7 +318,11 @@ templ InboxCaseWorkflowContent(item InboxCase) {
 						if item.Unit != "" {
 							{ " · " }{ item.Unit }
 						}
-					</strong></div><div class="fact"><small>Zuständig</small><strong>{ item.AssigneeLabel }</strong></div><div class="fact"><small>Fällig</small><strong>{ item.Due }</strong></div></div>
+					</strong>
+						if item.Occupancy != "" {
+							<span class="occupancy-detail">{ item.Occupancy }</span>
+						}
+					</div><div class="fact"><small>Zuständig</small><strong>{ item.AssigneeLabel }</strong></div><div class="fact"><small>Fällig</small><strong>{ item.Due }</strong></div></div>
 				}
 				if len(item.Actions) > 0 {
 					<ul class="actions-compact">
