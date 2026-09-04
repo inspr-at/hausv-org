@@ -127,7 +127,7 @@ func (a *app) unitOccupancies(tenant store.TenantRef) []web.UnitOccupancy {
 		if leftParking != rightParking {
 			return !leftParking
 		}
-		return strings.ToLower(occupancies[i].UnitLabel) < strings.ToLower(occupancies[j].UnitLabel)
+		return store.UnitLabelLess(occupancies[i].UnitLabel, occupancies[j].UnitLabel)
 	})
 	return occupancies
 }
@@ -145,7 +145,7 @@ func (a *app) buildingUnitViewsWithOccupancy(repositories requestRepositories, t
 		if leftParking != rightParking {
 			return !leftParking
 		}
-		return strings.ToLower(views[i].Label) < strings.ToLower(views[j].Label)
+		return store.UnitLabelLess(views[i].Label, views[j].Label)
 	})
 	return views
 }
