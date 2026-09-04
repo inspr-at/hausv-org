@@ -91,6 +91,20 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.0.0",
+			Date:     "4. September 2026",
+			Kind:     "Hausverwaltung",
+			Headline: "Hausverwaltungen arbeiten jetzt über mehrere Häuser hinweg.",
+			Intro:    "Portfolio, Posteingang mit KI-Triage und klare Rollen kommen zusammen: Anliegen laufen in einer Warteschlange zusammen, die KI schlägt Einordnung und Antwort vor, und jede Rolle sieht nur ihren Bereich.",
+			Items: []NoteItem{
+				{Label: "Portfolio", Text: "Alle betreuten Liegenschaften auf einen Blick; die aktuelle Liegenschaft steht sichtbar in Kopfzeile und Seitenleiste."},
+				{Label: "Posteingang", Text: "Warteschlange mit Filtern und Status; ein Klick übernimmt den Vorschlag und öffnet den nächsten Fall."},
+				{Label: "KI-Einstellungen", Text: "Cloud oder eigenes Modell im Büro ist wählbar; die gewählte Quelle steuert die Vorschläge und ist im Posteingang sichtbar."},
+				{Label: "Belegung", Text: "Wohnungen und Stellplätze zeigen Eigentümer und Mieter mit Namen, auch direkt im Fall."},
+				{Label: "Jahresabrechnung", Text: "Kostenarten, Verteilerschlüssel mit Anteilsvorschau, Vorauszahlungen je Einheit und Belege an bestehenden Dokumenten sind vorbereitet."},
+			},
+		},
+		{
 			Version:  "0.99.11",
 			Date:     "27. August 2026",
 			Kind:     "Jahresabrechnung",
