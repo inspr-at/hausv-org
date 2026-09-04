@@ -830,10 +830,12 @@ type app struct {
 	annualStatementReceiptSuggester annualStatementReceiptSuggester
 
 	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
-	intake        func(orgKey string) store.IntakeRepository
-	orgSettings   func(orgKey string) store.OrgSettingsRepository
-	textbausteine func(orgKey string) store.TextbausteinRepository
-	triage        ai.TriageSuggester
+	intake            func(orgKey string) store.IntakeRepository
+	orgSettings       func(orgKey string) store.OrgSettingsRepository
+	textbausteine     func(orgKey string) store.TextbausteinRepository
+	triage            ai.TriageSuggester
+	triageProvidersMu sync.Mutex
+	triageProviders   map[string]triageProviderCacheEntry
 	// Suggestion jobs are intentionally process-local. Production runs one app
 	// replica, so cancellation and polling share this single in-memory table.
 	inboxSuggestTimeout time.Duration
@@ -1985,6 +1987,7 @@ func newApp() (*app, error) {
 		mapPreviewTiles:          map[string]map[mapTileKey]time.Time{},
 		inboxSuggestTimeout:      inboxSuggestTimeout,
 		suggestJobs:              map[string]*suggestJob{},
+		triageProviders:          map[string]triageProviderCacheEntry{},
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,

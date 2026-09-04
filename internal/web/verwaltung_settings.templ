@@ -61,7 +61,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				}
 				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
 				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer = Umgebung"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer = Umgebung"/></label></div>
-				<p class="settings-note">„Umgebung“ verwendet die Konfiguration des Betriebs. Der lokale Betrieb ist vorbereitet, läuft aber noch nicht.</p>
+				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer = Umgebung.</p>
 			</section>
 			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
 		</form>

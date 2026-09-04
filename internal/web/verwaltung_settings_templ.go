@@ -415,7 +415,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" placeholder=\"Leer = Umgebung\"></label></div><p class=\"settings-note\">„Umgebung“ verwendet die Konfiguration des Betriebs. Der lokale Betrieb ist vorbereitet, läuft aber noch nicht.</p></section><div class=\"settings-actions\"><button class=\"settings-save\" type=\"submit\">Einstellungen speichern</button></div></form><form class=\"settings-card\" method=\"post\" action=\"/app/verwaltung/einstellungen/ki-test\"><h2>KI-Verbindung</h2><p>Prüft die aktive Konfiguration mit einer kurzen, synthetischen Anfrage.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" placeholder=\"Leer = Umgebung\"></label></div><p class=\"settings-note\">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer = Umgebung.</p></section><div class=\"settings-actions\"><button class=\"settings-save\" type=\"submit\">Einstellungen speichern</button></div></form><form class=\"settings-card\" method=\"post\" action=\"/app/verwaltung/einstellungen/ki-test\"><h2>KI-Verbindung</h2><p>Prüft die aktive Konfiguration mit einer kurzen, synthetischen Anfrage.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

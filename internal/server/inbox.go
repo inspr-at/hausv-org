@@ -168,7 +168,7 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 		Sort:             query.Get("sort"),
 		FullPage:         full,
 		Flash:            query.Get("flash"),
-		ProviderFootline: a.inboxProviderFootline(),
+		ProviderFootline: a.inboxProviderFootlineFor(ctx, orgKey),
 		QueueQuery:       queueQuery,
 		OpenCount:        openCount,
 		UnassignedCount:  unassignedCount,
@@ -312,10 +312,16 @@ func inboxStatus(item store.IntakeItem) (label, tone string) {
 }
 
 func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.IntakeItem, houses []web.InboxHouse, editing bool) (web.InboxCase, error) {
-	provider := a.inboxProviderLabel()
+	suggester, provider := a.triageFor(ctx, orgKey)
+	if provider == "" {
+		provider = "nicht konfiguriert"
+	}
 	suggestion := item.Suggestion
+	if suggestion != nil && suggestion.Provider != "" {
+		provider = suggestion.Provider
+	}
 	statusLabel, statusTone := inboxStatus(item)
-	view := web.InboxCase{ID: item.ID, Subject: item.Subject, Sender: firstNonEmpty(item.FromName, item.FromEmail, item.FromPhone, "Unbekannt"), Received: item.ReceivedAt.In(time.Local).Format("02.01.2006 · 15:04"), Body: item.Body, Status: statusLabel, StatusTone: statusTone, HasSuggestion: suggestion != nil, CanSuggest: a.triage != nil, Unassigned: item.TenantSlug == "", Editing: editing, ProviderLabel: provider, Created: "Eingegangen " + item.ReceivedAt.In(time.Local).Format("02.01. · 15:04")}
+	view := web.InboxCase{ID: item.ID, Subject: item.Subject, Sender: firstNonEmpty(item.FromName, item.FromEmail, item.FromPhone, "Unbekannt"), Received: item.ReceivedAt.In(time.Local).Format("02.01.2006 · 15:04"), Body: item.Body, Status: statusLabel, StatusTone: statusTone, HasSuggestion: suggestion != nil, CanSuggest: suggester != nil, Unassigned: item.TenantSlug == "", Editing: editing, ProviderLabel: provider, Created: "Eingegangen " + item.ReceivedAt.In(time.Local).Format("02.01. · 15:04")}
 	category, priority, houseSlug, unit, assignee, templateKey, reply := "", store.IssuePriorityNorm, item.TenantSlug, item.Unit, "", "", ""
 	if suggestion != nil {
 		category = suggestion.Category
@@ -654,7 +660,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 		a.recordIntakeAudit(item.TenantSlug, ac.email, store.AuditActionIssueAIRestore, item, *item.Suggestion, "Automatische Bearbeitung zurückgenommen")
 		a.inboxRedirect(w, r, id, "Zurück in den Eingang verschoben")
 	case "suggest":
-		if a.triage == nil {
+		if !a.hasTriage(r.Context(), orgKey) {
 			a.inboxRedirect(w, r, id, "Kein Vorschlag verfügbar")
 			return
 		}
@@ -833,16 +839,26 @@ func (a *app) actorCanAccessIntake(ac *authCtx, item store.IntakeItem) bool {
 	return a.actorManagesTenant(ac, item.TenantSlug)
 }
 func (a *app) inboxProviderLabel() string {
-	if a != nil && a.triage != nil {
-		return a.triage.Label()
+	return a.inboxProviderLabelFor(context.Background(), "")
+}
+
+func (a *app) inboxProviderLabelFor(ctx context.Context, orgKey string) string {
+	_, label := a.triageFor(ctx, orgKey)
+	if label != "" {
+		return label
 	}
 	return "nicht konfiguriert"
 }
+
 func (a *app) inboxProviderFootline() string {
-	if a == nil || a.triage == nil {
+	return a.inboxProviderFootlineFor(context.Background(), "")
+}
+
+func (a *app) inboxProviderFootlineFor(ctx context.Context, orgKey string) string {
+	if suggester, _ := a.triageFor(ctx, orgKey); suggester == nil {
 		return "Kein KI-Anbieter konfiguriert · jeder Vorschlag und jede Freigabe wird protokolliert"
 	}
-	label := a.inboxProviderLabel()
+	label := a.inboxProviderLabelFor(ctx, orgKey)
 	if strings.Contains(strings.ToLower(label), "openrouter") {
 		return "KI: Cloud (OpenRouter) · Zielbetrieb lokal im Büro · jeder Vorschlag und jede Freigabe wird protokolliert"
 	}

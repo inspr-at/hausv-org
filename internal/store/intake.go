@@ -49,6 +49,7 @@ type IntakeItem struct {
 
 type IntakeSuggestion struct {
 	Source      string             `json:"source"`
+	Provider    string             `json:"provider,omitempty"`
 	Model       string             `json:"model,omitempty"`
 	PromptHash  string             `json:"prompt_hash,omitempty"`
 	Category    string             `json:"category,omitempty"`
