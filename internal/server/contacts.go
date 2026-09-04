@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/authz"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
@@ -28,6 +29,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	activeManagedContacts, inactiveManagedContacts := splitManagedContactViews(managedContacts)
 	boardContacts := a.boardContactViews(ac.tenantRef)
 	residentContacts := a.residentDirectoryViews(ac.tenantRef)
+	canViewUnitOccupancies := authz.Can(ac.actor(), authz.CapabilityManageBuilding, ac.resource()) || authz.Can(ac.actor(), authz.CapabilityOversight, ac.resource())
 	managedEmptyTitle := "Noch kein Adressbucheintrag"
 	managedEmptyMessage := "Dienstleister, Hausmeister und Notdienste können hier zentral hinterlegt werden."
 	if !a.serviceAccessEnabled {
@@ -62,6 +64,8 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		InactiveContacts:             inactiveManagedContacts,
 		BoardContacts:                boardContacts,
 		ResidentContacts:             residentContacts,
+		CanViewUnitOccupancies:       canViewUnitOccupancies,
+		UnitOccupancies:              a.unitOccupancies(ac.tenantRef),
 		ContactKindOptions:           contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
 		ManagedEmpty:                 managedEmpty,
 	})

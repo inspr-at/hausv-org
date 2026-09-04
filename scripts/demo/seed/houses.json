@@ -8,110 +8,170 @@
       {
         "label": "Top 1",
         "floor": "EG",
-        "owner_email": "alina.eigentuemer@musterstadt.example.example",
+        "unit_type": "Wohnung",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
-        "owner_email": "hedwig.beirat@musterstadt.example.example",
+        "unit_type": "Wohnung",
+        "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
-        "tenant_email": "matthias.mieter@musterstadt.example.example"
+        "tenant_email": "matthias.mieter@musterstadt.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
-        "tenant_email": "sophie.bewohner@musterstadt.example.example"
+        "tenant_email": "sophie.bewohner@musterstadt.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "matthias.mieter@musterstadt.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "sophie.bewohner@musterstadt.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "matthias.mieter@musterstadt.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "sophie.bewohner@musterstadt.example"
       }
     ]
   },
@@ -124,144 +184,224 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "theresa.fink@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
-        "owner_email": "ivan.gruber@example.example",
+        "unit_type": "Wohnung",
+        "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "gregor.haas@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "nora.illek@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 21",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 22",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 23",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 24",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "theresa.fink@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "gregor.haas@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "nora.illek@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "gregor.haas@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "nora.illek@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "theresa.fink@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 8",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
         "owner_email": "",
         "tenant_email": ""
       }
@@ -276,182 +416,275 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "jasmin.kern@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
-        "owner_email": "marlene.karner@example.example",
+        "unit_type": "Wohnung",
+        "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "lorenz.leitner@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "mira.moser@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 21",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 22",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 23",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 24",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 25",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 26",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 27",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 28",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 29",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 30",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "jasmin.kern@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "lorenz.leitner@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "mira.moser@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "lorenz.leitner@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "mira.moser@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "jasmin.kern@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 8",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 9",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "mira.moser@example.example"
       }
     ]
   },
@@ -464,74 +697,121 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "daniel.novak@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
-        "owner_email": "oskar.lind@example.example",
+        "unit_type": "Wohnung",
+        "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "petra.ortner@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "ramin.pichler@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "daniel.novak@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "petra.ortner@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "ramin.pichler@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "petra.ortner@example.example"
       }
     ]
   },
@@ -544,98 +824,156 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "elisa.rauch@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "simon.schober@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "leyla.tas@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "elisa.rauch@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "simon.schober@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "leyla.tas@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "simon.schober@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "leyla.tas@example.example"
       }
     ]
   },
@@ -648,60 +986,98 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "valentin.unger@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "carina.wolf@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "hannes.zeller@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "valentin.unger@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "carina.wolf@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "hannes.zeller@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
         "owner_email": "",
         "tenant_email": ""
       }
@@ -716,218 +1092,331 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "bettina.almer@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "emir.basic@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "klara.cerny@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 21",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 22",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 23",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 24",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 25",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 26",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 27",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 28",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 29",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 30",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 31",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 32",
         "floor": "8. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 33",
         "floor": "9. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 34",
         "floor": "9. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 35",
         "floor": "9. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 36",
         "floor": "9. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "bettina.almer@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "emir.basic@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "klara.cerny@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "emir.basic@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "klara.cerny@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "bettina.almer@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 8",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 9",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "klara.cerny@example.example"
+      },
+      {
+        "label": "Stellplatz 10",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "bettina.almer@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 11",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "emir.basic@example.example"
       }
     ]
   },
@@ -940,121 +1429,190 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "david.ebner@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "fatma.guel@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "josef.hofer@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "david.ebner@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "fatma.guel@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "josef.hofer@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "fatma.guel@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "josef.hofer@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "david.ebner@example.example",
         "tenant_email": ""
       }
     ]
@@ -1068,86 +1626,135 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "iris.jauk@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "kemal.kaya@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "lena.lenz@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "iris.jauk@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "kemal.kaya@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "lena.lenz@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "kemal.kaya@example.example"
       }
     ]
   },
@@ -1160,170 +1767,261 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "moritz.maier@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "nadine.oswald@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "peter.reiter@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 21",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 22",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 23",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 24",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 25",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 26",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 27",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 28",
         "floor": "7. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "moritz.maier@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "nadine.oswald@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "peter.reiter@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "nadine.oswald@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "peter.reiter@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "moritz.maier@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 8",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 9",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "peter.reiter@example.example"
       }
     ]
   },
@@ -1336,48 +2034,84 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "selma.sari@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "tobias.thaler@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "ulrike.weiss@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "selma.sari@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "tobias.thaler@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "ulrike.weiss@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
         "owner_email": "",
         "tenant_email": ""
       }
@@ -1392,133 +2126,204 @@
       {
         "label": "Top 1",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "florian.zechner@example.example",
         "tenant_email": ""
       },
       {
         "label": "Top 2",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "gerlinde.binder@example.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": "armin.cakir@example.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 19",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 20",
         "floor": "5. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 21",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
         "tenant_email": ""
       },
       {
         "label": "Top 22",
         "floor": "6. OG",
+        "unit_type": "Wohnung",
         "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 1",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "florian.zechner@example.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 2",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "gerlinde.binder@example.example"
+      },
+      {
+        "label": "Stellplatz 3",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "armin.cakir@example.example"
+      },
+      {
+        "label": "Stellplatz 4",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": ""
+      },
+      {
+        "label": "Stellplatz 5",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "gerlinde.binder@example.example"
+      },
+      {
+        "label": "Stellplatz 6",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "",
+        "tenant_email": "armin.cakir@example.example"
+      },
+      {
+        "label": "Stellplatz 7",
+        "floor": "Garage",
+        "unit_type": "Stellplatz",
+        "owner_email": "florian.zechner@example.example",
         "tenant_email": ""
       }
     ]

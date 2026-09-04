@@ -336,6 +336,7 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 	view.Priority = priority
 	view.HouseSlug = houseSlug
 	view.Unit = unit
+	view.Occupancy = occupancyLabel(a.unitOccupancy(houseSlug, unit))
 	view.Assignee = assignee
 	view.TemplateKey = templateKey
 	view.Reply = reply

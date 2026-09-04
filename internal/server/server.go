@@ -2009,7 +2009,11 @@ func newApp() (*app, error) {
 	}
 	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
-			return demo.Load(ctx, database, seedDir, demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor})
+			options := demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor}
+			if units, ok := a.unitStore.(store.UnitSink); ok {
+				options.Units = units
+			}
+			return demo.Load(ctx, database, seedDir, options)
 		}
 	}
 	if suggester, err := ai.NewFromEnv(os.Getenv); err != nil {
@@ -3879,7 +3883,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
-		"Units":                 a.buildingUnitViewsWithPayments(ac.repositories, ac.tenantRef, units),
+		"Units":                 a.buildingUnitViewsWithOccupancy(ac.repositories, ac.tenantRef, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),
 		"UnitTotal":             len(units),
