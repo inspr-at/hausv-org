@@ -211,9 +211,13 @@ async function geometry(page, viewport, label) {
       (result.shellPresent && (!result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address)))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
-  if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
-      !/Demohaus/.test(result.homeLabel)) {
-    fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf`);
+  // Pages without the shared page head (the payment preview is one) carry no map
+  // and no house header card; where the head exists both must name the house.
+  if (result.mapLabel || result.homeLabel) {
+    if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
+        !/Demohaus/.test(result.homeLabel)) {
+      fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf (map=${result.mapLabel} / home=${result.homeLabel})`);
+    }
   }
   if (result.shellPresent && viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
     fail(`${label}: ausgeschriebene Straße wird bei 320px abgeschnitten`);
