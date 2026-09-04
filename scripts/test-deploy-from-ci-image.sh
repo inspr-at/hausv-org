@@ -87,6 +87,18 @@ fi
 # Test schema path with missing data dir
 fixture migrations_changed_no_data 1 "HAUSV_DEPLOY_DATA_DIR is required"
 
+# A push without a VERSION bump is nothing to release, not a failed release:
+# exit 3, no pull, no swap. Every push to main reaches this case.
+fixture version_already_live 3 "nothing to release: VERSION 9.99.0 is already live"
+if grep -qF -- "pulling CI image from GHCR" "$test_root/version_already_live/output.txt"; then
+    echo "FAIL version_already_live: pulled an image although there was nothing to release" >&2
+    exit 1
+fi
+if grep -qF -- "release refused" "$test_root/version_already_live/output.txt"; then
+    echo "FAIL version_already_live: reported a refusal instead of nothing to release" >&2
+    exit 1
+fi
+
 # Test git repo missing
 fixture not_in_repo 1 "not inside the HAUSV repository"
 if grep -qF -- "schema change" "$test_root/not_in_repo/output.txt"; then

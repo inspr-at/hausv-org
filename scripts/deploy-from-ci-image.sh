@@ -22,6 +22,11 @@
 #   - Preserves the previous image as a rollback target
 #   - Validates health after container swap
 #   - Fails before change if preconditions are not met
+#
+# Exit codes:
+#   0  released, live version verified
+#   3  nothing to release: this VERSION is already live, production untouched
+#   1  refused or failed; the output names the rollback state
 
 set -u
 
@@ -29,6 +34,17 @@ fail_before_change() {
     echo "release refused: $1" >&2
     echo "rollback: not required; production was not changed." >&2
     exit 1
+}
+
+# Every push to main triggers this path, and most pushes carry no VERSION bump.
+# That is not a failed release, it is nothing to release: exit 3 lets the caller
+# end neutrally instead of raising an alarm nobody can tell from a real one.
+# Reached only after the live build was read and parsed, so a live check that
+# cannot answer still refuses through fail_before_change above.
+nothing_to_release() {
+    echo "nothing to release: $1"
+    echo "production keeps its current image."
+    exit 3
 }
 
 shell_quote() {
@@ -195,7 +211,7 @@ if [ -z "$live_version" ] || [ -z "$live_commit" ]; then
     fail_before_change "the current live version and commit are not visible"
 fi
 if [ "$live_version" = "$app_version" ]; then
-    fail_before_change "VERSION $app_version is already live; every production deployment requires a VERSION bump"
+    nothing_to_release "VERSION $app_version is already live; a release requires a VERSION bump"
 fi
 
 live_health=$(curl -fsS --max-time 10 "$health_url") \
