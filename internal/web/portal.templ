@@ -245,7 +245,7 @@ templ PortalBaseStyles() {
 		.portal-page .nav-house-items.indented{margin-left:10px;padding-left:11px;border-left:1px solid var(--nav-2)}
 		.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}
 		.portal-page .nav a.active svg{color:var(--nav)}
-		.house-picker{position:relative;min-width:0;margin-bottom:5px}
+		.house-picker{position:relative;min-width:0;margin-bottom:5px}details.house-picker:not([open])>.house-picker-panel{display:none}
 		.house-picker>summary{list-style:none}
 		.house-picker>summary::-webkit-details-marker{display:none}
 		.house-header-card{min-height:72px;display:grid;grid-template-columns:56px minmax(0,1fr) 18px;align-items:center;gap:12px;margin-bottom:4px;padding:8px;border:1px solid var(--soft);border-radius:var(--radius-md);background:var(--nav-2);color:var(--panel)}

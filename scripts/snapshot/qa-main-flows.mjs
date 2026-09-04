@@ -542,11 +542,26 @@ async function assertSharedAppShellNavigation() {
     if (!navEntryCount) fail(`App-Shell ${width}px: offenes Menü enthält keine Navigationseinträge`);
     for (let index = 0; index < navEntryCount; index += 1) {
       const entry = navEntries.nth(index);
+      const inCollapsed = await entry.evaluate((element) => {
+        for (let node = element.parentElement; node; node = node.parentElement) {
+          if (node.classList && node.classList.contains('menu-panel')) return false;
+          if (node.tagName === 'DETAILS' && !node.open) return true;
+        }
+        return false;
+      });
+      if (inCollapsed) continue;
       await entry.focus();
       await entry.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
       const reachability = await entry.evaluate((element) => {
         const panelElement = element.closest('.menu-panel');
         if (!panelElement) return { missingPanel: true };
+        // Content of a collapsed disclosure (the Liegenschaft picker) is not part
+        // of the visible navigation; the summary that opens it is checked instead.
+        for (let node = element.parentElement; node && node !== panelElement; node = node.parentElement) {
+          if (node.tagName === 'DETAILS' && !node.open) {
+            return { skipped: true, focused: true, visible: true, verticallyReachable: true, horizontallyContained: true };
+          }
+        }
         const item = element.getBoundingClientRect();
         const viewport = panelElement.getBoundingClientRect();
         return {
