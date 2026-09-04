@@ -169,9 +169,18 @@ async function geometry(page, viewport, label) {
       .filter((item) => item.left < -1 || item.right > innerWidth + 1);
     const shell = document.querySelector('[data-portal-shell]');
     const landing = document.querySelector('[data-portal-section-landing]');
-    const labelNode = document.querySelector('.side-address-label');
-    const mapLink = document.querySelector('a.side-address');
-    const homeLink = document.querySelector('a.side-address-label');
+    // The address lives in the sidebar card on wide viewports and in the mobile
+    // head below 760 px; innerText of a hidden node is empty, so take the first
+    // one that is actually rendered.
+    const labelNode = [...document.querySelectorAll('.side-address-label')]
+      .find((node) => (node.innerText || '').trim().length > 0)
+      || document.querySelector('.side-address-label')
+      || document.querySelector('.mobile-head .mobile-identity');
+    // HAUSV-620/621: the map is the thumbnail link inside the house header card.
+    const mapLink = document.querySelector('a.map');
+    // HAUSV-621: the address label is the house header card (a picker summary for
+    // organisation members, a static card otherwise); the map link keeps the full address.
+    const homeLink = document.querySelector('.house-header-card');
     const menu = document.querySelector('.mobile-head > details.menu > summary');
     const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;
@@ -204,13 +213,19 @@ async function geometry(page, viewport, label) {
     fail(`${label}: gemeinsames Portal-Chrome fehlt oder ist mehrfach vorhanden (${JSON.stringify(result)})`);
   }
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
-  if (!result.address ||
-      (result.shellPresent && (!result.address.includes('Musterweg 1') || /\bDEMO\b/i.test(result.address)))) {
+  // Only pages that carry the shared page head show the house address; the
+  // payment preview and other bare routes legitimately have none.
+  if (result.shellPresent &&
+      (!result.address || !result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
-  if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
-      result.homeLabel !== 'Hausportal Demohaus öffnen') {
-    fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf`);
+  // Pages without the shared page head (the payment preview is one) carry no map
+  // and no house header card; where the head exists both must name the house.
+  if (result.mapLabel || result.homeLabel) {
+    if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
+        !/Demohaus/.test(result.homeLabel)) {
+      fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf (map=${result.mapLabel} / home=${result.homeLabel})`);
+    }
   }
   if (result.shellPresent && viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
     fail(`${label}: ausgeschriebene Straße wird bei 320px abgeschnitten`);

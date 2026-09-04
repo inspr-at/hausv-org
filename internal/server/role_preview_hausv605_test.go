@@ -178,7 +178,7 @@ func TestNavigationEntriesByRoleFamilyHAUSV606(t *testing.T) {
 		role string
 		want []string
 	}{
-		{name: "Hausverwaltung", role: roleAdmin, want: []string{"/demo/app/verwaltung", "/demo/app/verwaltung/posteingang", "/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen/board", "/demo/app/abstimmungen", "/demo/app/parking", "/demo/app/uebergaben", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
+		{name: "Hausverwaltung", role: roleAdmin, want: []string{"/demo/app/verwaltung", "/demo/app/verwaltung/posteingang", "/demo/app/verwaltung/textbausteine", "/demo/app/verwaltung/rechte", "/demo/app/verwaltung/einstellungen", "/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen/board", "/demo/app/abstimmungen", "/demo/app/parking", "/demo/app/uebergaben", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
 		{name: "Eigentümer", role: roleOwner, want: []string{"/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
 		{name: "Bewohner", role: roleResident, want: []string{"/demo/app", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
 	}
@@ -217,6 +217,11 @@ func rolePreviewSidebarNavigation(body string) []string {
 	matches := rolePreviewHrefPattern.FindAllStringSubmatch(body[start:start+end], -1)
 	result := make([]string, 0, len(matches))
 	for _, match := range matches {
+		// HAUSV-621 moved the house header card, whose map thumbnail links to
+		// OpenStreetMap, inside the navigation. Navigation entries are in-app routes.
+		if !strings.HasPrefix(match[1], "/") {
+			continue
+		}
 		result = append(result, match[1])
 	}
 	return result

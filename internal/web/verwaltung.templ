@@ -103,8 +103,8 @@ templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
 				if len(shell.Houses) == 0 {
 					<p class="verwaltung-houses-empty">Keine verwalteten Häuser.</p>
 				} else {
-					for _, house := range shell.Houses {
-						<form method="post" action="/app/context"><input type="hidden" name="tenant" value={ house.Slug }/><input type="hidden" name="role" value={ house.Role }/><button type="submit"><strong>{ house.Name }</strong><small>{ house.Address }</small></button></form>
+					for _, house := range verwaltungPortalHouses(shell.Houses) {
+						@HousePickerRow(house, "")
 					}
 				}
 			</div>
@@ -115,6 +115,14 @@ templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
 			@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
 		}
 	</nav>
+}
+
+func verwaltungPortalHouses(houses []VerwaltungHouse) []PortalHouse {
+	out := make([]PortalHouse, 0, len(houses))
+	for _, house := range houses {
+		out = append(out, PortalHouse{Slug: house.Slug, Name: house.Name, Address: house.Address, Role: house.Role})
+	}
+	return out
 }
 
 templ VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) {
