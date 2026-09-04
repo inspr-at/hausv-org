@@ -32,7 +32,9 @@ const personas = [
 ];
 
 const routes = [
-  { path: '/app', heading: /Hallo /, content: 'Jetzt zu erledigen' },
+  // HAUSV-620: the overview greets residents by name and names the house for
+  // people who administer several, so both headings are valid here.
+  { path: '/app', heading: /Hallo |^[A-ZÄÖÜ].*\d/, content: 'Jetzt zu erledigen' },
   { path: '/app/announcements', heading: 'Aushang', content: 'QA Hausinformation' },
   { path: '/app/events', heading: 'Termine', content: 'QA Hausbegehung' },
   { path: '/app/kontakte', heading: 'Kontakte', content: 'QA Energiehilfe' },
