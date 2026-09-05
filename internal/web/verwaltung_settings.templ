@@ -10,6 +10,11 @@ type VerwaltungSettingsCategory struct { Key, Label, Level string }
 
 type VerwaltungSettingsData struct {
 	Categories []VerwaltungSettingsCategory
+	OrganisationName string
+	OrganisationHouses int
+	ContactName string
+	ContactEmail string
+	ContactPhone string
 	Threshold int
 	AutoEnabled bool
 	ProviderLabel string
@@ -45,6 +50,11 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			<p class="settings-card" role="status">{ data.Flash }</p>
 		}
 		<form class="settings-form" method="post">
+			<section class="settings-card"><h2>Hausverwaltung</h2><p>Name und Kontakt dieser Verwaltung. Sie erscheinen in der Seitenleiste und in Antworten an Bewohner.</p>
+				<div class="ai-fields"><label>Name<input type="text" name="organisation_name" value={ data.OrganisationName } required/></label><label>Ansprechperson<input type="text" name="contact_name" value={ data.ContactName } placeholder="optional"/></label></div>
+				<div class="ai-fields"><label>E-Mail<input type="email" name="contact_email" value={ data.ContactEmail } placeholder="optional"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.ContactPhone } placeholder="optional"/></label></div>
+				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Haus.</p>
+			</section>
 			<section class="settings-card"><h2>Automatisierung</h2><table class="trust-table"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>
 				for _, category := range data.Categories {
 					<tr><td><strong>{ category.Label }</strong></td><td><div class="trust-choice"><label><input type="radio" name={ "trust_" + category.Key } value="manual" checked?={ category.Level == "manual" }/> Manuell</label><label><input type="radio" name={ "trust_" + category.Key } value="propose" checked?={ category.Level == "propose" }/> Vorschlag</label><label><input type="radio" name={ "trust_" + category.Key } value="auto" checked?={ category.Level == "auto" }/> Automatisch</label></div></td></tr>

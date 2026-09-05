@@ -26,9 +26,9 @@ type portfolioHouseInput struct {
 }
 
 func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	shell := a.verwaltungShell(&ac, "portfolio")
+	shell := a.verwaltungShell(r.Context(), &ac, "portfolio")
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	managed := a.managedTenants(&ac)
+	managed := a.organisationManagedTenants(r.Context(), &ac)
 	houses := make([]portfolioHouseInput, 0, len(managed))
 	for _, tenant := range managed {
 		repositories := a.repositoriesFor(tenant.Ref)

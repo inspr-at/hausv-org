@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.1.0] - 2026-09-05
+
+### Die Hausverwaltung ist eine eigene Größe
+
+- Verwaltung: Name und Kontakt der Hausverwaltung stehen jetzt in den Einstellungen und lassen sich dort pflegen, statt aus der Serverkonfiguration zu stammen.
+- Portfolio: Die Liste der betreuten Liegenschaften kommt aus der Verwaltung selbst; wer welche davon öffnen darf, entscheidet weiterhin die Rolle je Haus.
+- Einzelne Liegenschaften ohne Verwaltung bleiben unverändert.
+
 ## [1.0.2] - 2026-09-04
 
 ### Kennzahl der Einheitenliste eindeutig benannt

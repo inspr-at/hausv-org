@@ -832,6 +832,7 @@ type app struct {
 	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
 	intake            func(orgKey string) store.IntakeRepository
 	orgSettings       func(orgKey string) store.OrgSettingsRepository
+	organisationRepo  func(orgKey string) store.OrganisationRepository
 	textbausteine     func(orgKey string) store.TextbausteinRepository
 	triage            ai.TriageSuggester
 	triageProvidersMu sync.Mutex
@@ -2007,6 +2008,12 @@ func newApp() (*app, error) {
 	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
 		return store.BindOrgSettingsRepository(database, orgKey)
 	}
+	a.organisationRepo = func(orgKey string) store.OrganisationRepository {
+		return store.BindOrganisationRepository(database, orgKey)
+	}
+	// The configured organisations become rows here, once, so every read path
+	// below can take the Verwaltung from the store instead of from the map.
+	a.syncOrganisations(context.Background())
 	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
 		return store.BindTextbausteinRepository(database, orgKey)
 	}

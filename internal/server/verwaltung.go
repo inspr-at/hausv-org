@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"sort"
 	"strings"
@@ -133,11 +134,11 @@ func (a *app) showVerwaltungNav(ac authCtx) bool {
 	return normalizeSlug(ac.tenant.Organisation) != ""
 }
 
-func (a *app) verwaltungShell(ac *authCtx, active string) web.VerwaltungShell {
-	managed := a.managedTenants(ac)
+func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) web.VerwaltungShell {
+	managed := a.organisationManagedTenants(ctx, ac)
 	organisationName := "Verwaltung"
-	_, hasOrganisation := a.organisationFor(ac)
-	if organisation, ok := a.organisationFor(ac); ok {
+	organisation, hasOrganisation := a.organisationRecordFor(ctx, ac)
+	if hasOrganisation {
 		organisationName = organisation.Name
 	}
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
@@ -200,7 +201,7 @@ func (a *app) requireVerwaltung(next authedHandler) authedHandler {
 
 func (a *app) renderVerwaltungPage(w http.ResponseWriter, r *http.Request, ac authCtx, active, title string) {
 	var rendered bytes.Buffer
-	if err := web.PortalVerwaltungPage(a.verwaltungShell(&ac, active), title, web.VerwaltungPlaceholder()).Render(r.Context(), &rendered); err != nil {
+	if err := web.PortalVerwaltungPage(a.verwaltungShell(r.Context(), &ac, active), title, web.VerwaltungPlaceholder()).Render(r.Context(), &rendered); err != nil {
 		logError("templ verwaltung render failed", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
