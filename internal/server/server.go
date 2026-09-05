@@ -39,6 +39,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/web"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/mailintake"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/telegram"
 	"github.com/inspr-at/hausv-org/internal/textutil"
@@ -834,10 +835,15 @@ type app struct {
 	orgSettings            func(orgKey string) store.OrgSettingsRepository
 	organisationRepo       func(orgKey string) store.OrganisationRepository
 	organisationMemberRepo func(orgKey string) store.OrganisationMemberRepository
-	textbausteine          func(orgKey string) store.TextbausteinRepository
-	triage                 ai.TriageSuggester
-	triageProvidersMu      sync.Mutex
-	triageProviders        map[string]triageProviderCacheEntry
+	// Mail intake: one mailbox per organisation, polled in the background.
+	mailIntakeConfigs map[string]mailintake.Config
+	mailIntake        mailIntakeState
+	intakeMailSeen    func(orgKey string) store.IntakeMailSeenRepository
+	mailIntakeDir     string
+	textbausteine     func(orgKey string) store.TextbausteinRepository
+	triage            ai.TriageSuggester
+	triageProvidersMu sync.Mutex
+	triageProviders   map[string]triageProviderCacheEntry
 	// Suggestion jobs are intentionally process-local. Production runs one app
 	// replica, so cancellation and polling share this single in-memory table.
 	inboxSuggestTimeout time.Duration
@@ -2017,6 +2023,22 @@ func newApp() (*app, error) {
 	a.organisationMemberRepo = func(orgKey string) store.OrganisationMemberRepository {
 		return store.BindOrganisationMemberRepository(database, orgKey)
 	}
+	a.intakeMailSeen = func(orgKey string) store.IntakeMailSeenRepository {
+		return store.BindIntakeMailSeenRepository(database, orgKey)
+	}
+	// A mailbox per organisation. Broken configuration stops the boot: a
+	// Verwaltung that believes its mail is being read must not be wrong.
+	mailIntakeConfigs, err := mailintake.ParseConfigs(env("INTAKE_MAIL_JSON", ""))
+	if err != nil {
+		return nil, err
+	}
+	for key := range mailIntakeConfigs {
+		if _, ok := a.organisations[key]; !ok {
+			return nil, fmt.Errorf("INTAKE_MAIL_JSON names unknown organisation %q", key)
+		}
+	}
+	a.mailIntakeConfigs = mailIntakeConfigs
+	a.mailIntakeDir = env("INTAKE_MAIL_DIR", filepath.Join(attachmentFileDir, "intake-mail"))
 	// The configured organisations become rows here, once, so every read path
 	// below can take the Verwaltung from the store instead of from the map.
 	a.syncOrganisations(context.Background())

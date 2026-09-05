@@ -522,6 +522,7 @@ func seedFull(t *testing.T) *source {
 		Email: "sachbearbeiter@example.com", Role: store.OrganisationRoleClerk,
 		Granted: map[string]string{"demo": "bewohner", "haus-a": ""}, CreatedAt: now,
 	}))
+	must(t, "intake mail seen", store.BindIntakeMailSeenRepository(src.db, orgKey).Record(ctx, "<seed-mail@example.com>", "in-0001"))
 	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
 		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
 		AutoThreshold: 0.9, AutoEnabled: true, UpdatedAt: now,

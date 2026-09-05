@@ -64,8 +64,17 @@ type InboxItem struct {
 	Unassigned bool
 }
 
+type InboxAttachment struct {
+	Filename string
+	Size     string
+}
+
 type InboxCase struct {
 	ID                 string
+	SourceLabel        string
+	SenderEmail        string
+	DroppedFiles       int
+	Attachments        []InboxAttachment
 	Subject            string
 	Meta               string
 	Sender             string
@@ -278,7 +287,22 @@ templ InboxAssignment(item InboxCase) {
 }
 
 templ InboxOriginal(item InboxCase) {
-	<section class="block original original-desktop"><div class="block-head"><h3>Originalnachricht</h3><span class="case-meta">{ item.Received }</span></div><strong>{ item.Sender }</strong><p>{ item.Body }</p></section><details class="block original original-mobile"><summary><div class="block-head"><h3>Originalnachricht</h3><span class="case-meta">{ item.Received }</span></div><strong>{ item.Sender }</strong><span class="original-preview">{ item.Body }</span><span class="more-label">Mehr</span></summary><div class="original-full">{ item.Body }</div></details>
+	<section class="block original original-desktop"><div class="block-head"><h3>Originalnachricht</h3><span class="case-meta">{ item.Received }</span></div><strong>{ item.Sender }</strong>
+		if item.SenderEmail != "" {
+			<span class="case-meta">{ item.SourceLabel } · { item.SenderEmail }</span>
+		}
+		<p>{ item.Body }</p>
+		if len(item.Attachments) > 0 || item.DroppedFiles > 0 {
+			<ul class="case-attachments">
+				for _, attachment := range item.Attachments {
+					<li>{ attachment.Filename } <small>{ attachment.Size }</small></li>
+				}
+				if item.DroppedFiles > 0 {
+					<li><small>{ fmt.Sprintf("%d Anhänge nicht übernommen (Größe oder Anzahl)", item.DroppedFiles) }</small></li>
+				}
+			</ul>
+		}
+	</section><details class="block original original-mobile"><summary><div class="block-head"><h3>Originalnachricht</h3><span class="case-meta">{ item.Received }</span></div><strong>{ item.Sender }</strong><span class="original-preview">{ item.Body }</span><span class="more-label">Mehr</span></summary><div class="original-full">{ item.Body }</div></details>
 }
 
 templ InboxSuggestionState(item InboxCase) {

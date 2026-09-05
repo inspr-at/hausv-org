@@ -98,6 +98,7 @@ const (
 	AuditActionIssueAICancel        = "issue.ai.cancel"
 	AuditActionIntakePhoneNote      = "intake.phone-note"
 	AuditActionIntakeAssign         = "intake.assign"
+	AuditActionIntakeMail           = "intake.mail"
 	AuditActionVerwaltungSettings   = "verwaltung.settings"
 	AuditActionDemoReset            = "demo.reset"
 	AuditActionTextbausteinChanged  = "textbaustein.changed"

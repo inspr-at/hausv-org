@@ -91,6 +91,18 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.0",
+			Date:     "5. September 2026",
+			Kind:     "Posteingang",
+			Headline: "E-Mails kommen direkt in den Posteingang.",
+			Intro:    "Ein Postfach je Verwaltung wird laufend abgeholt; jede ungelesene E-Mail wird genau einmal übernommen, Haus und Einheit werden vorgeschlagen, Antworten gehen per E-Mail mit Anliegen-Nummer zurück.",
+			Items: []NoteItem{
+				{Label: "Zuordnung", Text: "Absenderadresse, Hausadresse im Text oder Anliegen-Nummer im Betreff — als Vorschlag mit Sicherheitswert, nie als Nachweis."},
+				{Label: "Antworten", Text: "Freigegebene Antworten tragen die Anliegen-Nummer im Betreff, Rückantworten landen beim richtigen Anliegen."},
+				{Label: "Anhänge", Text: "Mitgeschickte Dateien warten beim Fall und wandern bei der Freigabe zum Anliegen."},
+			},
+		},
+		{
 			Version:  "1.2.0",
 			Date:     "5. September 2026",
 			Kind:     "Verwaltung",

@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.0] - 2026-09-05
+
+### E-Mails kommen direkt in den Posteingang
+
+- Posteingang: Ein Postfach je Verwaltung wird laufend abgeholt. Jede ungelesene E-Mail wird genau einmal übernommen, mit Absender, Text und Anhängen innerhalb der bekannten Grenzen.
+- Zuordnung: Haus und Einheit werden aus der Absenderadresse, einer Hausadresse im Text oder der Anliegen-Nummer im Betreff vorgeschlagen — als Vorschlag mit Sicherheitswert, nie als Nachweis. Was sich nicht zuordnen lässt, bleibt als „nicht zugeordnet" sichtbar.
+- Antworten: Freigegebene Antworten auf E-Mail-Anliegen gehen per E-Mail an den Absender und tragen die Anliegen-Nummer im Betreff; Rückantworten landen damit beim richtigen Anliegen.
+- Anhänge: Mitgeschickte Dateien warten beim Fall und wandern bei der Freigabe zum Anliegen.
+- Einstellungen: Der Stand des E-Mail-Eingangs (Postfach, Intervall, letzter Abruf) ist einsehbar.
+
 ## [1.2.0] - 2026-09-05
 
 ### Mitarbeiter der Hausverwaltung

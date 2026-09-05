@@ -313,6 +313,8 @@ func (a *app) handleIntake(ctx context.Context, orgKey string, item store.Intake
 		}
 		issue = created
 		a.notifyIssueCreated(tenant, issue)
+		// Files that came with the mail belong to the Anliegen from here on.
+		a.handMailAttachmentsToIssue(repositories, item, issue.ID, actorEmail)
 	} else {
 		updated, exists, err := repositories.issues.UpdateWorkflow(issue.ID, store.IssueWorkflowUpdate{Status: store.IssueStatusNew, Priority: priority, AssigneeEmail: assignee, Body: body, LocationType: store.IssueLocationUnit, LocationDetail: firstNonEmpty(item.Suggestion.Unit, item.Unit), UpdateDetails: true, ActorEmail: actorEmail, ActorName: actorName, ChangedAt: time.Now()})
 		if err != nil {
@@ -334,6 +336,19 @@ func (a *app) handleIntake(ctx context.Context, orgKey string, item store.Intake
 		issue = updated
 		a.recordAudit(store.AuditEvent{TenantSlug: tenantSlug, ActorEmail: actorEmail, ActorRole: roleManager, Action: store.AuditActionIssueComment, TargetType: "issue", TargetID: issue.ID, Summary: "Kommentar zu Anliegen hinzugefügt", Details: map[string]string{"comment_id": "intake-reply-" + item.ID, "message_type": store.IssueCommentKindInformation, "has_file": "false", "file_count": "0"}})
 		a.notifyIssueUpdated(tenant, issue, actorEmail, "Neue Antwort zu Anliegen \""+issue.Title+"\"")
+		// An e-mail case is answered by e-mail, tagged so the sender's reply
+		// finds its way back to this Anliegen. Delivery failure is recorded,
+		// never fatal: the approval itself has already happened.
+		if item.Source == store.IntakeSourceEmail && strings.TrimSpace(item.FromEmail) != "" {
+			details := map[string]string{"to": redactedEmail(item.FromEmail), "tag": mailIntakeSubjectTag(item.ID)}
+			summary := "Antwort per E-Mail gesendet"
+			if err := a.sendMailIntakeReply(item, item.Suggestion.Reply); err != nil {
+				summary = "Antwort per E-Mail nicht gesendet"
+				details["error"] = err.Error()
+				logWarn("intake reply mail not sent", "intake_id", item.ID, "error_type", fmt.Sprintf("%T", err))
+			}
+			a.recordAudit(store.AuditEvent{TenantSlug: tenantSlug, ActorEmail: actorEmail, ActorRole: roleManager, Action: store.AuditActionIntakeMail, TargetType: "issue", TargetID: issue.ID, Summary: summary, Details: details})
+		}
 	}
 	repo := a.intake(orgKey)
 	if err := repo.UpdateHandling(ctx, item.ID, store.IntakeHandling{Action: options.action, ByEmail: options.actorEmail, ByName: actorName, At: time.Now().UTC()}, options.status, issue.ID); err != nil {
