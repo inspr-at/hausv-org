@@ -240,4 +240,29 @@ if grep -qE -- $'^docker\ttag\tsha256:222222222222222222222222222222222222222222
     exit 1
 fi
 
+# HAUSV-634: the host lost the :latest tag. The live release's own tag still
+# names the running image, so the preflight accepts it, the preserve step puts
+# :latest back under the lock, and the release goes through.
+fixture_schema latest_missing 0 "live version: 9.99.0 (aaaaaaa)" release 3
+if ! grep -qF -- "is missing on the host" "$test_root/latest_missing/output.txt"; then
+    echo "FAIL latest_missing: the missing tag was not reported" >&2
+    exit 1
+fi
+restore_line=$(grep -n $'^docker\ttag\tsha256:1111111111111111111111111111111111111111111111111111111111111111\t.*:latest$' \
+    "$test_root/latest_missing/commands.log" | head -1 | cut -d: -f1)
+activate_line=$(grep -n $'^docker\ttag\tsha256:2222222222222222222222222222222222222222222222222222222222222222\t.*:latest$' \
+    "$test_root/latest_missing/commands.log" | head -1 | cut -d: -f1)
+if [ -z "$restore_line" ] || [ -z "$activate_line" ] || [ "$restore_line" -ge "$activate_line" ]; then
+    echo "FAIL latest_missing: :latest was not restored onto the running image before activation" >&2
+    exit 1
+fi
+
+# Without :latest AND without the live release's tag nothing proves the
+# running image; the release is refused before any change.
+fixture_schema latest_missing_no_release 1 "local preflight failed" release
+if grep -qF -- "pulling CI image from GHCR" "$test_root/latest_missing_no_release/output.txt"; then
+    echo "FAIL latest_missing_no_release: pulled an image although the running image was unproven" >&2
+    exit 1
+fi
+
 echo "$test_passed deploy-from-ci-image fixtures passed."

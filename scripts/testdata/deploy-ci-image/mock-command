@@ -82,9 +82,37 @@ def mock_git(args: list[str]) -> int:
     return 0
 
 
+def latest_is_missing(target: str) -> bool:
+    # HAUSV-634: in the latest_missing cases the host has lost the :latest tag.
+    # It comes back only when the script re-tags the running image under the
+    # lock, which the "tag" branch below records.
+    if not CASE.startswith("latest_missing"):
+        return False
+    if target.endswith(":latest"):
+        return not (STATE / "latest_restored").exists()
+    if CASE == "latest_missing_no_release" and ":release-" in target and "9.99.0" not in target:
+        # Neither :latest nor the live release's own tag: nothing proves the
+        # running image, the preflight must refuse.
+        return True
+    return False
+
+
 def mock_docker(args: list[str]) -> int:
+    if len(args) >= 3 and args[:2] == ["image", "inspect"] and latest_is_missing(args[-1]):
+        print(f"Error response from daemon: No such image: {args[-1]}", file=sys.stderr)
+        return 1
     # Mock basic docker inspect calls needed for preflight
     if len(args) >= 5 and args[:3] == ["image", "inspect", "--format"]:
+        if CASE.startswith("latest_missing"):
+            target = args[-1]
+            activated = (STATE / "activated").exists()
+            if ":release-9.99.0-" in target or target == RELEASE_IMAGE_ID:
+                print(RELEASE_IMAGE_ID)
+            elif target.endswith(":latest") and activated:
+                print(RELEASE_IMAGE_ID)
+            else:
+                print(LIVE_IMAGE_ID)
+            return 0
         if CASE in ("schema_with_snapshot", "schema_release_success", "schema_snapshot_container_fail"):
             target = args[-1]
             activated = (STATE / "activated").exists()
@@ -170,6 +198,10 @@ def mock_docker(args: list[str]) -> int:
         if args[0] == "tag" and len(args) == 3 \
                 and args[1] == RELEASE_IMAGE_ID and args[2].endswith(":latest"):
             (STATE / "activated").write_text("yes", encoding="utf-8")
+        if args[0] == "tag" and len(args) == 3 \
+                and args[1] == LIVE_IMAGE_ID and args[2].endswith(":latest"):
+            # The preserve step put :latest back onto the running image.
+            (STATE / "latest_restored").write_text("yes", encoding="utf-8")
         return 0
     
     # Just log other docker calls
