@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -308,6 +309,48 @@ func TestAttachmentsWaitWithTheItemAndMoveToTheIssueOnApproval(t *testing.T) {
 	}
 	if !strings.Contains(replies[0].Body, "Beleg ist angekommen") {
 		t.Fatalf("reply body = %q", replies[0].Body)
+	}
+}
+
+// vanishingIntake makes every item disappear right after it is created — the
+// shape of a demo reset racing the first poll.
+type vanishingIntake struct{ store.IntakeRepository }
+
+func (v vanishingIntake) Get(ctx context.Context, id string) (store.IntakeItem, error) {
+	return store.IntakeItem{}, fmt.Errorf("intake item not found")
+}
+
+type failingSettings struct{}
+
+func (failingSettings) Get(context.Context) (store.OrgSettings, error) {
+	return store.OrgSettings{}, fmt.Errorf("settings unavailable")
+}
+func (failingSettings) Save(context.Context, store.OrgSettings) error { return nil }
+func (failingSettings) Increment(context.Context, string) error       { return nil }
+
+func TestAMailWhoseItemVanishedIsNeitherRecordedNorMarkedRead(t *testing.T) {
+	a, _ := mailIntakeTestApp(t)
+	real := a.intake
+	a.intake = func(orgKey string) store.IntakeRepository { return vanishingIntake{real(orgKey)} }
+	a.orgSettings = func(string) store.OrgSettingsRepository { return failingSettings{} }
+	config := startTestMailbox(t, rawTestMail("gone@example.com", "Unbekannt <niemand@example.com>", "Verschwunden", "weg"))
+	ctx := context.Background()
+
+	filed, err := a.pollMailIntakeOnce(ctx, "musterstadt", config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filed != 0 {
+		t.Fatalf("filed %d, want 0: the item was gone before triage", filed)
+	}
+	if count, _ := a.intakeMailSeen("musterstadt").Count(ctx); count != 0 {
+		t.Fatalf("ledger recorded a mail whose item vanished (count %d)", count)
+	}
+	// Still unread on the server, so the next poll gets another chance.
+	fetcher := mailintake.Fetcher{Config: config, Password: "geheim", Limits: mailIntakeLimits(), DialTimeout: 3 * time.Second}
+	unread, err := fetcher.Unread(ctx, 10)
+	if err != nil || len(unread) != 1 {
+		t.Fatalf("unread after failed pass = %d err=%v, want 1", len(unread), err)
 	}
 }
 

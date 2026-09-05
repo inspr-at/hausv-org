@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.2] - 2026-09-05
+
+### Stabilität verbessert
+
+- E-Mail-Eingang: Eine Mail, deren Fall während der Übernahme durch einen Demo-Reset verschwindet, gilt nicht als übernommen und läuft beim nächsten Abruf erneut ein.
+- Demo: Das Demo-Postfach pausiert während des Resets und startet danach frisch; der Postfach-Sidecar startet zuverlässig.
+
 ## [1.3.1] - 2026-09-05
 
 ### Demo mit eigenem Postfach

@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.2",
+			Date:     "5. September 2026",
+			Kind:     "Stabilität",
+			Headline: "E-Mail-Eingang und Demo-Postfach laufen stabiler.",
+			Intro:    "Eine Mail, deren Fall während der Übernahme verschwindet, gilt nicht als übernommen und läuft beim nächsten Abruf erneut ein; das Demo-Postfach pausiert während des Resets.",
+			Items: []NoteItem{
+				{Label: "E-Mail-Eingang", Text: "Kein Verlust einer Mail mehr, wenn ein Demo-Reset in den ersten Abruf fällt."},
+			},
+		},
+		{
 			Version:  "1.3.1",
 			Date:     "5. September 2026",
 			Kind:     "Demo",
