@@ -86,6 +86,7 @@ var TableOrder = []string{
 	"org_settings",
 	"textbausteine",
 	"intake_items",
+	"intake_mail_seen",
 	// Tenant-bound tables that depend only on tenant.
 	"house_memberships",
 	"annual_statement_cost_types",

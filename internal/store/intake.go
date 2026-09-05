@@ -43,8 +43,12 @@ type IntakeItem struct {
 	Handling     *IntakeHandling   `json:"handling,omitempty"`
 	IssueID      string            `json:"issue_id,omitempty"`
 	Truth        *IntakeTruth      `json:"truth,omitempty"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	// Attachments arrived with a mail and wait for approval; DroppedFiles
+	// counts what the limits left behind, so the case can say so.
+	Attachments  []IntakeAttachment `json:"attachments,omitempty"`
+	DroppedFiles int                `json:"dropped_files,omitempty"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
 }
 
 type IntakeSuggestion struct {

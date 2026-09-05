@@ -13,6 +13,12 @@ type VerwaltungSettingsData struct {
 	OrganisationName string
 	Members []VerwaltungSettingsMember
 	MembersAvailable bool
+	MailConfigured bool
+	MailMailbox string
+	MailInterval string
+	MailLastRun string
+	MailLastError string
+	MailTotal int
 	OrganisationHouses int
 	ContactName string
 	ContactEmail string
@@ -120,6 +126,20 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			}
 			<div class="settings-actions"><button class="settings-secondary" type="submit">Verbindung testen</button></div>
 		</form>
+		<section class="settings-card"><h2>E-Mail-Eingang</h2>
+			if data.MailConfigured {
+				<p class="active-provider"><strong>Aktiv:</strong> { data.MailMailbox } · alle { data.MailInterval }</p>
+				if data.MailLastError != "" {
+					<p class="settings-result" role="status" data-ok="false"><span class="status-dot"></span>Letzter Abruf fehlgeschlagen: { data.MailLastError }</p>
+				} else if data.MailLastRun != "" {
+					<p class="settings-result" role="status" data-ok="true"><span class="status-dot"></span>{ fmt.Sprintf("Zuletzt abgerufen %s · %d Mails seit Start übernommen", data.MailLastRun, data.MailTotal) }</p>
+				}
+				<p class="settings-note">Ungelesene Mails werden abgeholt, Haus und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>
+			} else {
+				<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein Postfach konfiguriert</strong></p>
+				<p class="settings-note">Ein Postfach je Verwaltung wird über die Serverkonfiguration angebunden (INTAKE_MAIL_JSON, Zugangsdaten als Datei- oder Umgebungsreferenz). Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>
+			}
+		</section>
 		if data.DemoResetAvailable {
 			<section class="settings-card"><h2>Demo</h2><p>Spielt die gebündelten Demo-Daten mit dem heutigen Datum neu ein.</p><div class="settings-actions"><a class="settings-secondary" href="/app/verwaltung/einstellungen/demo">Demo zurücksetzen …</a></div></section>
 		}

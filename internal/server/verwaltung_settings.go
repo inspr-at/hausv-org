@@ -233,6 +233,11 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	}
 	config := effectiveAIConfig(os.Getenv, settings)
 	organisation, _ := a.organisationRecordFor(r.Context(), &ac)
+	mailStatus, _ := a.mailIntake.get(organisation.Key)
+	mailLastRun := ""
+	if !mailStatus.LastRun.IsZero() {
+		mailLastRun = mailStatus.LastRun.Local().Format("02.01.2006 15:04")
+	}
 	members, membersErr := a.organisationMembers(r.Context(), organisation.Key)
 	if membersErr != nil {
 		logError("organisation members could not be read", membersErr, "organisation", organisation.Key)
@@ -240,7 +245,9 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	data := web.VerwaltungSettingsData{
 		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
 		MembersAvailable: a.organisationMemberRepo != nil,
-		ContactName:      organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
+		MailConfigured:   mailStatus.Configured, MailMailbox: mailStatus.Mailbox, MailInterval: mailStatus.Interval.String(),
+		MailLastRun: mailLastRun, MailLastError: mailStatus.LastError, MailTotal: mailStatus.Total,
+		ContactName: organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
 		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
 		AIProvider: config.Provider, AIConfigured: config.Configured, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,

@@ -132,6 +132,8 @@ func main() {
 	defer stopHomeReservationRetention()
 	stopEnergySampler := app.StartEnergyIntervalSampler()
 	defer stopEnergySampler()
+	stopMailIntake := app.StartMailIntake()
+	defer stopMailIntake()
 
 	srv := newHTTPServer(app.Addr(), app.Handler())
 

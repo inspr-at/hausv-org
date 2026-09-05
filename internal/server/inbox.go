@@ -337,6 +337,20 @@ func (a *app) inboxCaseView(ctx context.Context, orgKey string, item store.Intak
 		view.PromptHash = prefixString(suggestion.PromptHash, 8)
 		view.UnfilledLabels = intakeUnfilledLabels(suggestion.Unfilled)
 	}
+	// An e-mail case names its channel and address and lists what came with
+	// it; the files themselves move to the Anliegen on approval.
+	if item.Source == store.IntakeSourceEmail {
+		view.SourceLabel = "E-Mail"
+		view.SenderEmail = item.FromEmail
+	}
+	view.DroppedFiles = item.DroppedFiles
+	for _, attachment := range item.Attachments {
+		size := fmt.Sprintf("%d KB", (attachment.Size+1023)/1024)
+		if attachment.Size >= 1<<20 {
+			size = fmt.Sprintf("%.1f MB", float64(attachment.Size)/float64(1<<20))
+		}
+		view.Attachments = append(view.Attachments, web.InboxAttachment{Filename: attachment.Filename, Size: size})
+	}
 	view.Category = category
 	view.CategoryLabel = viewutil.BreakAfterSlashes(intakeCategoryLabel(category))
 	view.Priority = priority
