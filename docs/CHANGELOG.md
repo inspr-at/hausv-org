@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.3] - 2026-09-05
+
+### Stabilität verbessert
+
+- Auslieferung: Ein Release wird nicht mehr abgelehnt, nur weil auf dem Server ein Image-Tag fehlt, solange das laufende Image eindeutig der aktuellen Version zugeordnet werden kann; das Tag wird dabei wiederhergestellt.
+
 ## [1.3.2] - 2026-09-05
 
 ### Stabilität verbessert

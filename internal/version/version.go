@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.3",
+			Date:     "5. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Die Auslieferung ist robuster gegen ein fehlendes Image-Tag.",
+			Intro:    "Ein Release wird nicht mehr abgelehnt, nur weil auf dem Server ein Image-Tag fehlt, solange das laufende Image eindeutig der aktuellen Version zugeordnet werden kann; das Tag wird dabei wiederhergestellt.",
+			Items: []NoteItem{
+				{Label: "Auslieferung", Text: "Fehlt das Tag, bezeugt das Release-Tag der laufenden Version das Image; fehlen beide, bleibt es bei der Ablehnung."},
+			},
+		},
+		{
 			Version:  "1.3.2",
 			Date:     "5. September 2026",
 			Kind:     "Stabilität",
