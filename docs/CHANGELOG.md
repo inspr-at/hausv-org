@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.2.0] - 2026-09-05
+
+### Mitarbeiter der Hausverwaltung
+
+- Einstellungen: Eine Verwaltung führt ihre Mitarbeiter an einer Stelle. Wer aufgenommen wird, betreut alle Liegenschaften der Verwaltung — als Verwaltungs-Admin oder als Sachbearbeiter.
+- Beim Entfernen werden genau die Rollen zurückgenommen, die die Aufnahme vergeben hat; von Hand gesetzte Rollen bleiben bestehen.
+- Jede Aufnahme und jedes Entfernen steht im Verlauf.
+
 ## [1.1.0] - 2026-09-05
 
 ### Die Hausverwaltung ist eine eigene Größe

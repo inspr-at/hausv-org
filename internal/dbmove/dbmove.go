@@ -82,6 +82,7 @@ var TableOrder = []string{
 	// nothing points at them.
 	"organisations",
 	"organisation_houses",
+	"organisation_members",
 	"org_settings",
 	"textbausteine",
 	"intake_items",

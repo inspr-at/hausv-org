@@ -518,6 +518,10 @@ func seedFull(t *testing.T) *source {
 		ContactEmail: "buero@musterstadt.example", ContactPhone: "+43 316 123456",
 		Houses: []string{"demo", "haus-a"}, UpdatedAt: now,
 	}))
+	must(t, "organisation member", store.BindOrganisationMemberRepository(src.db, orgKey).Save(ctx, store.OrganisationMember{
+		Email: "sachbearbeiter@example.com", Role: store.OrganisationRoleClerk,
+		Granted: map[string]string{"demo": "bewohner", "haus-a": ""}, CreatedAt: now,
+	}))
 	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
 		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
 		AutoThreshold: 0.9, AutoEnabled: true, UpdatedAt: now,

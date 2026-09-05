@@ -830,13 +830,14 @@ type app struct {
 	annualStatementReceiptSuggester annualStatementReceiptSuggester
 
 	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
-	intake            func(orgKey string) store.IntakeRepository
-	orgSettings       func(orgKey string) store.OrgSettingsRepository
-	organisationRepo  func(orgKey string) store.OrganisationRepository
-	textbausteine     func(orgKey string) store.TextbausteinRepository
-	triage            ai.TriageSuggester
-	triageProvidersMu sync.Mutex
-	triageProviders   map[string]triageProviderCacheEntry
+	intake                 func(orgKey string) store.IntakeRepository
+	orgSettings            func(orgKey string) store.OrgSettingsRepository
+	organisationRepo       func(orgKey string) store.OrganisationRepository
+	organisationMemberRepo func(orgKey string) store.OrganisationMemberRepository
+	textbausteine          func(orgKey string) store.TextbausteinRepository
+	triage                 ai.TriageSuggester
+	triageProvidersMu      sync.Mutex
+	triageProviders        map[string]triageProviderCacheEntry
 	// Suggestion jobs are intentionally process-local. Production runs one app
 	// replica, so cancellation and polling share this single in-memory table.
 	inboxSuggestTimeout time.Duration
@@ -1077,6 +1078,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/verwaltung/einstellungen/demo", a.page(a.requireVerwaltung(a.verwaltungDemoResetPage)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen/demo", a.action(a.requireVerwaltung(a.verwaltungDemoResetAction)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen/ki-test", a.action(a.requireVerwaltung(a.verwaltungAITestAction)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/mitarbeiter", a.action(a.requireVerwaltung(a.verwaltungMemberAdd)))
+	mux.HandleFunc("POST /app/verwaltung/einstellungen/mitarbeiter/entfernen", a.action(a.requireVerwaltung(a.verwaltungMemberRemove)))
 	mux.HandleFunc("GET /app/verwaltung/textbausteine", a.page(a.requireVerwaltung(a.textbausteinListPage)))
 	mux.HandleFunc("GET /app/verwaltung/textbausteine/{key}", a.page(a.requireVerwaltung(a.textbausteinFormPage)))
 	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}", a.action(a.requireVerwaltung(a.textbausteinSaveAction)))
@@ -2010,6 +2013,9 @@ func newApp() (*app, error) {
 	}
 	a.organisationRepo = func(orgKey string) store.OrganisationRepository {
 		return store.BindOrganisationRepository(database, orgKey)
+	}
+	a.organisationMemberRepo = func(orgKey string) store.OrganisationMemberRepository {
+		return store.BindOrganisationMemberRepository(database, orgKey)
 	}
 	// The configured organisations become rows here, once, so every read path
 	// below can take the Verwaltung from the store instead of from the map.

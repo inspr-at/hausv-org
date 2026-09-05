@@ -11,6 +11,8 @@ type VerwaltungSettingsCategory struct { Key, Label, Level string }
 type VerwaltungSettingsData struct {
 	Categories []VerwaltungSettingsCategory
 	OrganisationName string
+	Members []VerwaltungSettingsMember
+	MembersAvailable bool
 	OrganisationHouses int
 	ContactName string
 	ContactEmail string
@@ -34,6 +36,14 @@ type VerwaltungSettingsData struct {
 	Auto int
 	UnchangedShare int
 	Flash string
+}
+
+type VerwaltungSettingsMember struct {
+	Email string
+	Name string
+	RoleLabel string
+	Houses int
+	Since string
 }
 
 templ verwaltungSettingsPage(shell VerwaltungShell, data VerwaltungSettingsData) {
@@ -75,6 +85,35 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			</section>
 			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
 		</form>
+		if data.MembersAvailable {
+			<section class="settings-card"><h2>Mitarbeiter</h2><p>Wer hier steht, betreut alle Liegenschaften dieser Verwaltung. Beim Entfernen werden genau die dadurch vergebenen Rollen wieder zurückgenommen.</p>
+				if len(data.Members) == 0 {
+					<p class="settings-note">Noch niemand aufgenommen.</p>
+				} else {
+					<table class="trust-table"><thead><tr><th>Person</th><th>Rolle</th><th>Häuser</th><th>Seit</th><th></th></tr></thead><tbody>
+						for _, member := range data.Members {
+							<tr>
+								<td>
+									if member.Name != "" {
+										<strong>{ member.Name }</strong><br/>
+									}
+									<span>{ member.Email }</span>
+								</td>
+								<td>{ member.RoleLabel }</td>
+								<td>{ fmt.Sprint(member.Houses) }</td>
+								<td>{ member.Since }</td>
+								<td><form method="post" action="/app/verwaltung/einstellungen/mitarbeiter/entfernen"><input type="hidden" name="member_email" value={ member.Email }/><button class="settings-secondary" type="submit">Entfernen</button></form></td>
+							</tr>
+						}
+					</tbody></table>
+				}
+				<form class="member-add" method="post" action="/app/verwaltung/einstellungen/mitarbeiter">
+					<div class="ai-fields"><label>E-Mail<input type="email" name="member_email" required placeholder="person@example.com"/></label><label>Rolle<select name="member_role"><option value="sachbearbeiter">Sachbearbeiter</option><option value="admin">Verwaltungs-Admin</option></select></label></div>
+					<p class="settings-note">Die Person muss bereits in einem Haus angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Haus, ein Sachbearbeiter die Verwalterrolle.</p>
+					<div class="settings-actions"><button class="settings-secondary" type="submit">Mitarbeiter aufnehmen</button></div>
+				</form>
+			</section>
+		}
 		<form class="settings-card" method="post" action="/app/verwaltung/einstellungen/ki-test"><h2>KI-Verbindung</h2><p>Prüft die aktive Konfiguration mit einer kurzen, synthetischen Anfrage.</p>
 			if data.AITestResult != "" {
 				<p class="settings-result" role="status" data-ok={ fmt.Sprint(data.AITestOK) }><span class="status-dot"></span>{ data.AITestResult }</p>
