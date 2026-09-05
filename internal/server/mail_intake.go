@@ -342,6 +342,12 @@ func (a *app) ingestMail(ctx context.Context, orgKey string, message mailintake.
 	}
 	a.recordIntakeAudit(match.TenantSlug, "mail-intake", store.AuditActionIntakeMail, item, store.IntakeSuggestion{}, "E-Mail eingegangen: "+match.Reason)
 	if _, err := a.processIntake(ctx, orgKey, item, "System (E-Mail)"); err != nil {
+		if _, getErr := a.intake(orgKey).Get(ctx, id); getErr != nil {
+			// The item vanished underneath us — a demo reset ran between Create
+			// and triage. Reporting failure keeps the mail out of the ledger
+			// and unread on the server, so the next poll files it again.
+			return "", fmt.Errorf("intake item %s disappeared during triage: %w", id, err)
+		}
 		logError("mail intake triage unavailable", err, "intake_id", id)
 	}
 	return id, nil
