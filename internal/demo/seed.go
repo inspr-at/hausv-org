@@ -419,7 +419,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 			return err
 		}
 	}
-	for _, table := range []string{"intake_items", "org_settings", "textbausteine"} {
+	// intake_mail_seen goes too: a reset must let a re-seeded mailbox flow in
+	// again instead of the ledger remembering mails whose items are gone.
+	for _, table := range []string{"intake_items", "intake_mail_seen", "org_settings", "textbausteine"} {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE org_key=$1`, orgKey); err != nil {
 			return err
 		}

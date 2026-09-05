@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.1] - 2026-09-05
+
+### Demo mit eigenem Postfach
+
+- Demo: Die Demo bringt ihr eigenes Postfach mit. Seed-E-Mails mit Absender, Anhang und Hausbezug laufen wie echte Mails in den Posteingang, und eine neu abgelegte Mail erscheint innerhalb einer halben Minute.
+- Demo-Reset: Setzt auch den E-Mail-Eingang zurück, sodass die Mails nach dem Reset erneut einlaufen.
+
 ## [1.3.0] - 2026-09-05
 
 ### E-Mails kommen direkt in den Posteingang

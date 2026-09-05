@@ -280,11 +280,19 @@ func (a *app) unitLabelForEmail(slug string, email string) string {
 	if !ok {
 		return ""
 	}
-	memberships := units.UnitsForEmail(email)
-	if len(memberships) != 1 {
+	// A person usually holds a flat and a parking space; the flat is where a
+	// mail about "my apartment" belongs. Name it only when it is unambiguous.
+	residential := make([]string, 0, 2)
+	for _, membership := range units.UnitsForEmail(email) {
+		if normalizeUnitType(membership.Unit.UnitType) == unitTypeParking {
+			continue
+		}
+		residential = append(residential, membership.Unit.Label)
+	}
+	if len(residential) != 1 {
 		return ""
 	}
-	return memberships[0].Unit.Label
+	return residential[0]
 }
 
 // ingestMail files one mail: as a comment on the Anliegen it answers, or as a
