@@ -270,6 +270,10 @@ ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
 
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 release_tag="$image_repo:release-$app_version-$commit"
+# The live release's own tag names the same image :latest should name. When
+# :latest has gone missing on the host (HAUSV-634), it is the second witness
+# that lets the preflight prove the running container instead of refusing.
+live_release_tag="$image_repo:release-$live_version-$live_commit"
 
 # Preflight verifies the currently healthy service. The script runs locally on
 # the runner, so locked_remote_script evals the body instead of using SSH.
@@ -281,7 +285,12 @@ preflight_body="\
     printf \"%s\" \"\$locked_live_page\" | grep -F \"\$locked_build_marker\" >/dev/null; \
     test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container)\" = healthy; \
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
-    latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
+    if docker image inspect $image >/dev/null 2>&1; then \
+        latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
+    else \
+        echo \"note: $image is missing on the host; the live release tag $live_release_tag must name the running image\" >&2; \
+        latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $live_release_tag)\"; \
+    fi; \
     compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $container)\"; \
     compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $container)\"; \
     test -n \"\$running_image_id\"; \
@@ -331,6 +340,9 @@ fi
 
 preserve_body="\
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
+    if ! docker image inspect $image >/dev/null 2>&1; then \
+        docker tag \"\$running_image_id\" $image; \
+    fi; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
     test -n \"\$running_image_id\"; \
     test \"\$running_image_id\" = $expected_running_image_id; \

@@ -52,6 +52,15 @@ the live version then differs from `VERSION`. `scripts/deploy.sh`, the attended
 path, keeps refusing an unchanged version with an error: there an operator asked
 for a release explicitly.
 
+The preflight proves the running container by its image: normally the image
+`:latest` names. When `:latest` has gone missing on the host (it did once on
+csb1, HAUSV-634), the live release's own tag `release-<live version>-<live
+commit>` is the second witness — the running image must be exactly that image,
+otherwise the release is refused as before. The preserve step then puts
+`:latest` back onto the running image under the project lock before anything
+else changes, and the preflight prints a `note:` line so the operator sees the
+tag was missing. Neither witness present means an unproven host: refuse.
+
 ## Deployment paths
 
 ### Mac-less automatic deployment (recommended for all releases)
