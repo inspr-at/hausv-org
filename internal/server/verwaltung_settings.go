@@ -184,11 +184,38 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 			after.AIModel = strings.TrimSpace(r.FormValue("ai_model"))
 		}
 	}
+	organisationSummary := ""
+	if r.Form.Has("organisation_name") {
+		record, ok := a.organisationRecordFor(r.Context(), &ac)
+		if !ok {
+			http.Error(w, "Einstellungen nicht verfügbar.", http.StatusServiceUnavailable)
+			return
+		}
+		name := strings.TrimSpace(r.FormValue("organisation_name"))
+		if name == "" {
+			http.Error(w, "Der Name der Hausverwaltung darf nicht leer sein.", http.StatusBadRequest)
+			return
+		}
+		updated := record
+		updated.Name = name
+		updated.ContactName = strings.TrimSpace(r.FormValue("contact_name"))
+		updated.ContactEmail = strings.TrimSpace(r.FormValue("contact_email"))
+		updated.ContactPhone = strings.TrimSpace(r.FormValue("contact_phone"))
+		changed := updated.Name != record.Name || updated.ContactName != record.ContactName ||
+			updated.ContactEmail != record.ContactEmail || updated.ContactPhone != record.ContactPhone
+		if changed {
+			if err := a.saveOrganisationContact(r.Context(), updated); err != nil {
+				a.inboxError(w, err)
+				return
+			}
+			organisationSummary = "; Hausverwaltung aktualisiert"
+		}
+	}
 	if err := repo.Save(r.Context(), after); err != nil {
 		a.inboxError(w, err)
 		return
 	}
-	summary := settingsDiff(before, after)
+	summary := settingsDiff(before, after) + organisationSummary
 	if before.AIProvider != after.AIProvider || before.AIBaseURL != after.AIBaseURL || before.AIModel != after.AIModel {
 		summary += "; KI-Anbieter aktualisiert"
 	}
@@ -205,7 +232,10 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		share = settings.Counters.Approved * 100 / total
 	}
 	config := effectiveAIConfig(os.Getenv, settings)
+	organisation, _ := a.organisationRecordFor(r.Context(), &ac)
 	data := web.VerwaltungSettingsData{
+		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
+		ContactName: organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
 		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
 		AIProvider: config.Provider, AIConfigured: config.Configured, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,
@@ -217,7 +247,7 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		data.Categories = append(data.Categories, web.VerwaltungSettingsCategory{Key: category.Key, Label: category.Label, Level: settings.TrustLevels[category.Key]})
 	}
 	var rendered bytes.Buffer
-	if err := web.VerwaltungSettingsPage(a.verwaltungShell(&ac, "settings"), data).Render(r.Context(), &rendered); err != nil {
+	if err := web.VerwaltungSettingsPage(a.verwaltungShell(r.Context(), &ac, "settings"), data).Render(r.Context(), &rendered); err != nil {
 		a.inboxError(w, err)
 		return
 	}
@@ -362,7 +392,7 @@ func demoResetAnchor(now time.Time) time.Time {
 
 func (a *app) renderVerwaltungDemoReset(w http.ResponseWriter, r *http.Request, ac authCtx, data web.VerwaltungDemoResetData) {
 	var rendered bytes.Buffer
-	if err := web.VerwaltungDemoResetPage(a.verwaltungShell(&ac, "settings"), data).Render(r.Context(), &rendered); err != nil {
+	if err := web.VerwaltungDemoResetPage(a.verwaltungShell(r.Context(), &ac, "settings"), data).Render(r.Context(), &rendered); err != nil {
 		a.inboxError(w, err)
 		return
 	}

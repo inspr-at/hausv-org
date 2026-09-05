@@ -17,7 +17,7 @@ func TestRoleDisplayUsesEffectiveRoleInEveryVerwaltungShellHAUSV606(t *testing.T
 			const email = "verwaltung@example.com"
 			a := newTestPortalApp(t, userProfile{Email: email, Role: test.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 			ac := authCtx{email: email, role: test.role, tenant: a.tenants["demo"], tenantRef: testTenantRef("demo")}
-			shell := a.verwaltungShell(&ac, "rechte")
+			shell := a.verwaltungShell(t.Context(), &ac, "rechte")
 			if shell.RoleLabel != test.role {
 				t.Fatalf("shared desktop/mobile role label = %q, want %q", shell.RoleLabel, test.role)
 			}

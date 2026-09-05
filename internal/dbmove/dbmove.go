@@ -80,6 +80,8 @@ var TableOrder = []string{
 	"telegram_link_codes",
 	// Organisation-scoped tables (HAUSV-600): keyed by org_key, no tenant_id,
 	// nothing points at them.
+	"organisations",
+	"organisation_houses",
 	"org_settings",
 	"textbausteine",
 	"intake_items",

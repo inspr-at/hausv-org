@@ -193,7 +193,7 @@ func (a *app) auditTextbausteinChange(ac *authCtx, key, summary string, details 
 
 func (a *app) renderTextbausteinList(w http.ResponseWriter, r *http.Request, ac authCtx, data web.TextbausteinListData) {
 	var rendered bytes.Buffer
-	if err := web.TextbausteinListPage(a.verwaltungShell(&ac, "textbausteine"), data).Render(r.Context(), &rendered); err != nil {
+	if err := web.TextbausteinListPage(a.verwaltungShell(r.Context(), &ac, "textbausteine"), data).Render(r.Context(), &rendered); err != nil {
 		a.inboxError(w, err)
 		return
 	}
@@ -203,7 +203,7 @@ func (a *app) renderTextbausteinList(w http.ResponseWriter, r *http.Request, ac 
 
 func (a *app) renderTextbausteinForm(w http.ResponseWriter, r *http.Request, ac authCtx, data web.TextbausteinFormData, status int) {
 	var rendered bytes.Buffer
-	if err := web.TextbausteinFormPage(a.verwaltungShell(&ac, "textbausteine"), data).Render(r.Context(), &rendered); err != nil {
+	if err := web.TextbausteinFormPage(a.verwaltungShell(r.Context(), &ac, "textbausteine"), data).Render(r.Context(), &rendered); err != nil {
 		a.inboxError(w, err)
 		return
 	}

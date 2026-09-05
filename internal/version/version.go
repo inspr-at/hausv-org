@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.1.0",
+			Date:     "5. September 2026",
+			Kind:     "Verwaltung",
+			Headline: "Die Hausverwaltung ist eine eigene Größe.",
+			Intro:    "Name und Kontakt der Verwaltung werden gespeichert und in den Einstellungen gepflegt; die betreuten Liegenschaften hängen an der Verwaltung statt an der Serverkonfiguration.",
+			Items: []NoteItem{
+				{Label: "Einstellungen", Text: "Name, Ansprechperson, E-Mail und Telefon der Verwaltung sind dort pflegbar."},
+				{Label: "Portfolio", Text: "Die Liegenschaften kommen aus der Verwaltung; wer sie öffnen darf, entscheidet weiterhin die Rolle je Haus."},
+			},
+		},
+		{
 			Version:  "1.0.2",
 			Date:     "4. September 2026",
 			Kind:     "Einheiten",

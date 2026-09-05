@@ -60,9 +60,9 @@ func (a *app) renderInbox(w http.ResponseWriter, r *http.Request, ac authCtx, se
 	}
 	data.ScriptNonce = nonce
 	var rendered bytes.Buffer
-	component := web.InboxPage(a.verwaltungShell(&ac, "inbox"), data)
+	component := web.InboxPage(a.verwaltungShell(r.Context(), &ac, "inbox"), data)
 	if full {
-		component = web.InboxCasePage(a.verwaltungShell(&ac, "inbox"), data)
+		component = web.InboxCasePage(a.verwaltungShell(r.Context(), &ac, "inbox"), data)
 	}
 	if err := component.Render(r.Context(), &rendered); err != nil {
 		logError("inbox render failed", err)

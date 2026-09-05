@@ -513,6 +513,11 @@ func seedFull(t *testing.T) *source {
 		FromName: "Rita Bewohnerin", FromEmail: "resident@example.com", Subject: "Wasserfleck im Bad", Body: "Seit gestern feucht.",
 		ReceivedAt: now, DueAt: now.Add(24 * time.Hour), Status: store.IntakeStatusOpen, CreatedAt: now, UpdatedAt: now,
 	}))
+	must(t, "organisation", store.BindOrganisationRepository(src.db, orgKey).Save(ctx, store.Organisation{
+		Key: orgKey, Name: "Hausverwaltung Musterstadt", ContactName: "Vera Verwalter",
+		ContactEmail: "buero@musterstadt.example", ContactPhone: "+43 316 123456",
+		Houses: []string{"demo", "haus-a"}, UpdatedAt: now,
+	}))
 	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
 		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
 		AutoThreshold: 0.9, AutoEnabled: true, UpdatedAt: now,

@@ -10,7 +10,7 @@ import (
 
 func (a *app) rechtePage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	var rendered bytes.Buffer
-	if err := web.RechtePage(a.verwaltungShell(&ac, "rechte")).Render(r.Context(), &rendered); err != nil {
+	if err := web.RechtePage(a.verwaltungShell(r.Context(), &ac, "rechte")).Render(r.Context(), &rendered); err != nil {
 		logError("templ rechte render failed", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
