@@ -34,7 +34,8 @@ services:
   # the Posteingang can show mail arriving without a real mailbox. No ports.
   hausv-demo-mailbox:
     image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
-    command: ["/hausv-org", "demo-mailbox", "-dir", "/seed/mail", "-addr", ":143", "-rescan", "15s"]
+    # The image's ENTRYPOINT is /hausv-org; command holds only its arguments.
+    command: ["demo-mailbox", "-dir", "/seed/mail", "-addr", ":143", "-rescan", "15s"]
     env_file:
       - ./demo.env
     volumes:

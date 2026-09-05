@@ -130,6 +130,44 @@ func TestDemoMailboxServesSeedMailsAndPicksUpNewFiles(t *testing.T) {
 	}
 }
 
+// The image's ENTRYPOINT is /hausv-org, so the compose command must hold only
+// the arguments. Repeating the binary silently started the web server instead
+// of the mailbox on the first deploy; this pins the shape.
+func TestDemoComposeStartsTheMailboxSubcommand(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "deploy", "demo", "docker-compose.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compose := string(raw)
+	start := strings.Index(compose, "hausv-demo-mailbox:")
+	if start < 0 {
+		t.Fatal("compose has no hausv-demo-mailbox service")
+	}
+	section := compose[start:]
+	if end := strings.Index(section, "\nvolumes:"); end > 0 {
+		section = section[:end]
+	}
+	line := ""
+	for _, candidate := range strings.Split(section, "\n") {
+		if strings.Contains(candidate, "command:") {
+			line = candidate
+			break
+		}
+	}
+	if line == "" {
+		t.Fatal("mailbox service has no command")
+	}
+	if !strings.Contains(line, `command: ["demo-mailbox"`) {
+		t.Fatalf("mailbox command must start with the subcommand, not the binary: %s", strings.TrimSpace(line))
+	}
+	if strings.Contains(line, "/hausv-org") {
+		t.Fatalf("mailbox command repeats the entrypoint binary: %s", strings.TrimSpace(line))
+	}
+	if strings.Contains(section, "ports:") {
+		t.Fatal("the mailbox must not publish ports; it speaks plain IMAP")
+	}
+}
+
 func TestDemoMailboxRequiresAccountAndDirectory(t *testing.T) {
 	ctx := context.Background()
 	var out bytes.Buffer
