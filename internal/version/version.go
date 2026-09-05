@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.1",
+			Date:     "5. September 2026",
+			Kind:     "Demo",
+			Headline: "Die Demo bringt ihr eigenes Postfach mit.",
+			Intro:    "Seed-E-Mails mit Absender, Anhang und Hausbezug laufen wie echte Mails in den Posteingang; eine neu abgelegte Mail erscheint innerhalb einer halben Minute.",
+			Items: []NoteItem{
+				{Label: "Demo-Reset", Text: "Setzt auch den E-Mail-Eingang zurück, sodass die Mails nach dem Reset erneut einlaufen."},
+			},
+		},
+		{
 			Version:  "1.3.0",
 			Date:     "5. September 2026",
 			Kind:     "Posteingang",

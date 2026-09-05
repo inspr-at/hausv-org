@@ -28,6 +28,19 @@ services:
       retries: 10
       start_period: 20s
 
+  # The demo's own post office (HAUSV-633): the same image, plain IMAP, only
+  # reachable inside this compose network. It holds the seed mails unread and
+  # takes any .eml dropped into scripts/demo/seed/mail as a new message, so
+  # the Posteingang can show mail arriving without a real mailbox. No ports.
+  hausv-demo-mailbox:
+    image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
+    command: ["/hausv-org", "demo-mailbox", "-dir", "/seed/mail", "-addr", ":143", "-rescan", "15s"]
+    env_file:
+      - ./demo.env
+    volumes:
+      - ../../scripts/demo/seed:/seed:ro
+    restart: unless-stopped
+
 volumes:
   hausv-demo-data:
 

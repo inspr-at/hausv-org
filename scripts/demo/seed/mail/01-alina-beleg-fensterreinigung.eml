@@ -1,0 +1,28 @@
+From: Alina Auer <alina.eigentuemer@musterstadt.example>
+To: post@musterstadt.example
+Subject: Beleg Fensterreinigung Stiegenhaus
+Message-ID: <demo-mail-0001@musterstadt.example>
+Date: Fri, 05 Sep 2026 08:12:00 +0200
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="hausv-demo-beleg"
+
+--hausv-demo-beleg
+Content-Type: text/plain; charset=utf-8
+
+Guten Tag,
+
+anbei der Beleg der Firma Glasklar für die Fensterreinigung im Stiegenhaus (Juli).
+Bitte um Erstattung über die Rücklage, wie in der letzten Versammlung besprochen.
+
+Mit freundlichen Grüßen
+Alina Auer, Top 1
+--hausv-demo-beleg
+Content-Type: application/pdf; name="beleg-glasklar-juli.pdf"
+Content-Disposition: attachment; filename="beleg-glasklar-juli.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBv
+Ymo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlw
+ZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgMjAwIDEwMF0+PmVuZG9iagp0cmFpbGVy
+PDwvUm9vdCAxIDAgUj4+CiUlRU9GCg==
+--hausv-demo-beleg--

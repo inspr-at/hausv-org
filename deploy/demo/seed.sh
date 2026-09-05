@@ -18,3 +18,6 @@ anchor_args=()
 if [ -n "${HAUSV_DEMO_SEED_ANCHOR:-}" ]; then anchor_args=(-anchor "$HAUSV_DEMO_SEED_ANCHOR"); fi
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -reset "${anchor_args[@]}"
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -stats
+# The reset also cleared the mail ledger; a restarted mailbox holds its seed
+# mails unread again, so they flow into the Posteingang on the next poll.
+compose restart hausv-demo-mailbox >/dev/null 2>&1 || true

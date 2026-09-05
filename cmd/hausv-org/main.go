@@ -91,6 +91,16 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "demo-mailbox" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := runDemoMailbox(ctx, os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("demo mailbox stopped", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "predeploy-snapshot" {
 		if err := runPredeploySnapshot(os.Args[2:], os.Stdout, os.Stderr); err != nil {
 			slog.Error("pre-deploy snapshot failed", "error", err)

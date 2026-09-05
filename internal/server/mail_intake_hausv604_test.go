@@ -162,7 +162,12 @@ func TestSenderMembershipProposesHouseAndUnit(t *testing.T) {
 	if !ok {
 		t.Fatal("unit repository unavailable")
 	}
-	if err := repo.SetUnits([]store.Unit{{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"alina@example.com"}}}); err != nil {
+	// A flat and a parking space, like the demo data: the flat is the unit a
+	// mail belongs to, the parking space must not make it ambiguous.
+	if err := repo.SetUnits([]store.Unit{
+		{ID: "top-1", TenantSlug: "demo", Label: "Top 1", UnitType: unitTypeResidential, OwnerEmails: []string{"alina@example.com"}},
+		{ID: "sp-1", TenantSlug: "demo", Label: "Stellplatz 1", UnitType: unitTypeParking, OwnerEmails: []string{"alina@example.com"}},
+	}); err != nil {
 		t.Fatal(err)
 	}
 	match := a.matchMail(context.Background(), "musterstadt", mailintake.Message{FromEmail: "Alina@Example.com", Subject: "Heizung", Text: "kalt"})
