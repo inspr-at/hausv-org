@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.2.0",
+			Date:     "5. September 2026",
+			Kind:     "Verwaltung",
+			Headline: "Eine Verwaltung führt ihre Mitarbeiter an einer Stelle.",
+			Intro:    "Wer aufgenommen wird, betreut alle Liegenschaften der Verwaltung; beim Entfernen wird genau das wieder zurückgenommen, was die Aufnahme vergeben hat.",
+			Items: []NoteItem{
+				{Label: "Rollen", Text: "Verwaltungs-Admin oder Sachbearbeiter, einmal gewählt und für alle Liegenschaften gültig."},
+				{Label: "Nachvollziehbar", Text: "Jede Aufnahme und jedes Entfernen steht im Verlauf; von Hand gesetzte Rollen bleiben unangetastet."},
+			},
+		},
+		{
 			Version:  "1.1.0",
 			Date:     "5. September 2026",
 			Kind:     "Verwaltung",

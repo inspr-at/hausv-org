@@ -233,9 +233,14 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	}
 	config := effectiveAIConfig(os.Getenv, settings)
 	organisation, _ := a.organisationRecordFor(r.Context(), &ac)
+	members, membersErr := a.organisationMembers(r.Context(), organisation.Key)
+	if membersErr != nil {
+		logError("organisation members could not be read", membersErr, "organisation", organisation.Key)
+	}
 	data := web.VerwaltungSettingsData{
 		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
-		ContactName: organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
+		MembersAvailable: a.organisationMemberRepo != nil,
+		ContactName:      organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
 		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
 		AIProvider: config.Provider, AIConfigured: config.Configured, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,
@@ -245,6 +250,11 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	}
 	for _, category := range store.IntakeCategories() {
 		data.Categories = append(data.Categories, web.VerwaltungSettingsCategory{Key: category.Key, Label: category.Label, Level: settings.TrustLevels[category.Key]})
+	}
+	for _, member := range members {
+		data.Members = append(data.Members, web.VerwaltungSettingsMember{
+			Email: member.Email, Name: member.Name, RoleLabel: member.RoleLabel, Houses: member.Houses, Since: member.Since,
+		})
 	}
 	var rendered bytes.Buffer
 	if err := web.VerwaltungSettingsPage(a.verwaltungShell(r.Context(), &ac, "settings"), data).Render(r.Context(), &rendered); err != nil {
@@ -398,4 +408,39 @@ func (a *app) renderVerwaltungDemoReset(w http.ResponseWriter, r *http.Request, 
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
+}
+
+func (a *app) verwaltungMemberAdd(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.verwaltungMemberAction(w, r, ac, func(orgKey string) error {
+		return a.addOrganisationMember(r.Context(), &ac, orgKey, r.FormValue("member_email"), r.FormValue("member_role"))
+	})
+}
+
+func (a *app) verwaltungMemberRemove(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.verwaltungMemberAction(w, r, ac, func(orgKey string) error {
+		return a.removeOrganisationMember(r.Context(), &ac, orgKey, r.FormValue("member_email"))
+	})
+}
+
+// verwaltungMemberAction carries the guard both roster actions share: only an
+// organisation admin may change who works for the Verwaltung.
+func (a *app) verwaltungMemberAction(w http.ResponseWriter, r *http.Request, ac authCtx, run func(orgKey string) error) {
+	if !a.isOrganisationAdmin(&ac) {
+		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	orgKey, ok := a.inboxOrganisationKey(&ac)
+	if !ok || a.organisationMemberRepo == nil {
+		http.Error(w, "Einstellungen nicht verfügbar.", http.StatusServiceUnavailable)
+		return
+	}
+	if err := run(orgKey); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, "/app/verwaltung/einstellungen?flash="+url.QueryEscape("Mitarbeiterliste aktualisiert"), http.StatusSeeOther)
 }
