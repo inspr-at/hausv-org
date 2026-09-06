@@ -30,9 +30,23 @@ func TestHausv615PortfolioShellKeepsTableContentInsideCard(t *testing.T) {
 	body := renderComponent(t, PortfolioPage(VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}, PortfolioData{
 		Houses: []PortfolioHouse{{Name: "Münzgrabenstraße 12", Address: "Münzgrabenstraße 12, 8010 Graz", Assignee: "Vera Verwalter"}},
 	}))
-	for _, want := range []string{"Münzgrabenstraße 12", "Vera Verwalter", ".verwaltung-page .portfolio-desktop-table{overflow-x:auto}", "minmax(95px,.72fr)"} {
+	// The table stays inside the card by column priority, not by an inner
+	// scroller: overflow-x:auto without a visible bar cut the Zuständig column
+	// at 1280 (HAUSV-637). Below 1260 the column leaves; below 1120 so does
+	// Nächster Termin.
+	for _, want := range []string{
+		"Münzgrabenstraße 12", "Vera Verwalter",
+		".verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{min-width:0;grid-template-columns:",
+		"@media(max-width:1260px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
+		"@media(max-width:1120px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px}",
+	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portfolio render missing %q", want)
+		}
+	}
+	for _, banned := range []string{".portfolio-desktop-table{overflow-x:auto}", "min-width:595px"} {
+		if strings.Contains(body, banned) {
+			t.Fatalf("portfolio render must not scroll the Häuser table inside the card: found %q", banned)
 		}
 	}
 }

@@ -44,14 +44,14 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.role-preview-band{height:49px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--gold);background:var(--paper);color:var(--ink)}.role-preview-band-content{width:100%;display:flex;align-items:center;gap:12px;white-space:nowrap}.role-preview-band-eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.role-preview-band-role{font-size:12px;font-weight:800}.role-preview-band-house,.role-preview-band-time{color:var(--muted);font-size:11px}.role-preview-band-pill{padding:6px 20px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.role-preview-band form{margin-left:auto;flex:0 0 auto}.role-preview-band button{min-height:32px;padding:5px 24px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--ink);font-size:10px;font-weight:800}\n\t\tbody.role-preview .button.primary,body:has(.role-preview-band) .button.primary{border-color:var(--line);background:var(--panel-soft);color:var(--muted);box-shadow:none}body:has(.role-preview-band) .account>span:nth-of-type(2)>small:first-of-type{font-size:0}body:has(.role-preview-band[data-preview-role=\"Eigentümer\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Eigentümer\";font-size:10px}body:has(.role-preview-band[data-preview-role=\"Bewohner\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Bewohner\";font-size:10px}body:has(.role-preview-band) .greeting h1{font-size:0}body:has(.role-preview-band) .greeting h1::after{content:\"Hallo.\";font-size:34px}\n\t\t@media(max-width:900px){.role-preview-band-content{gap:8px}.role-preview-band-house,.role-preview-band-time{display:none}.role-preview-band-pill{padding-inline:10px}.role-preview-band button{padding-inline:14px}}\n\t</style><section class=\"role-preview-band\" aria-label=\"Aktive Rollenansicht\" data-preview-role=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.role-preview-band{height:49px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--gold);background:var(--paper);color:var(--ink)}.role-preview-band-content{width:100%;display:flex;align-items:center;gap:12px;white-space:nowrap}.role-preview-band-eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.role-preview-band-role{font-size:12px;font-weight:800}.role-preview-band-house,.role-preview-band-time{color:var(--muted);font-size:11px}.role-preview-band-pill{padding:6px 20px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.role-preview-band form{margin-left:auto;flex:0 0 auto}.role-preview-band button{min-height:32px;padding:5px 24px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--ink);font-size:10px;font-weight:800}\n\t\tbody.role-preview .button.primary,body:has(.role-preview-band) .button.primary{border-color:var(--line);background:var(--panel-soft);color:var(--muted);box-shadow:none}body:has(.role-preview-band) .account>span:nth-of-type(2)>small:first-of-type{font-size:0}body:has(.role-preview-band[data-preview-role=\"Eigentümer\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Eigentümer\";font-size:10px}body:has(.role-preview-band[data-preview-role=\"Bewohner\"]) .account>span:nth-of-type(2)>small:first-of-type::after{content:\"Ansicht als Bewohner\";font-size:10px}body:has(.role-preview-band) .greeting h1{font-size:0}body:has(.role-preview-band) .greeting h1::after{content:\"Hallo.\";font-size:34px}\n\t\t@media(max-width:900px){.role-preview-band-content{gap:8px}.role-preview-band-house,.role-preview-band-time{display:none}.role-preview-band-pill{padding-inline:10px}.role-preview-band button{padding-inline:14px}}\n\t\t@media(max-width:760px){.role-preview-band{height:auto;min-height:49px;padding:8px 16px}.role-preview-band-content{flex-wrap:wrap;gap:8px 10px;white-space:normal}.role-preview-band-content>*{white-space:nowrap}}\n\t</style><section class=\"role-preview-band\" aria-label=\"Aktive Rollenansicht\" data-preview-role=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.ResolveAttributeValue(state.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 24, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 		if templ_7745c5c3_Err != nil {
@@ -64,7 +64,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(state.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 26, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -77,7 +77,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(state.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 26, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -90,7 +90,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(state.EndsInMinutes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 25, Col: 133}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 26, Col: 133}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -103,7 +103,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(state.RoleLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 28, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 29, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -116,7 +116,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(state.HouseName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 29, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 30, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -129,7 +129,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(state.EndsInMinutes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 31, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 32, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -142,7 +142,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 		var templ_7745c5c3_Var9 templ.SafeURL
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(state.EndPath))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 32, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 33, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 43, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 44, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 		if templ_7745c5c3_Err != nil {
@@ -205,7 +205,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 46, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 47, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 		if templ_7745c5c3_Err != nil {
@@ -218,7 +218,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 50, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 51, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 		if templ_7745c5c3_Err != nil {
@@ -237,7 +237,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(true))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 56, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 57, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 				if templ_7745c5c3_Err != nil {
@@ -250,7 +250,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 58, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 59, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -263,7 +263,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 58, Col: 103}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 59, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -281,7 +281,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var17 templ.SafeURL
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(choice.StartPath))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 62, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 63, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -294,7 +294,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(choice.Role)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 63, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 64, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 				if templ_7745c5c3_Err != nil {
@@ -307,7 +307,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(rolePreviewCurrent(choice.Current))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 64, Col: 103}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 65, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 				if templ_7745c5c3_Err != nil {
@@ -320,7 +320,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 66, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 67, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -333,7 +333,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(choice.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 66, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 67, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -352,7 +352,7 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 77, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 78, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 		if templ_7745c5c3_Err != nil {
