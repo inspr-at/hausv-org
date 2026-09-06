@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -384,12 +385,7 @@ func annualStatementReceiptContentTypeSupported(contentType string) bool {
 }
 
 func formatAnnualStatementReceiptAmount(cents int64) string {
-	euros := cents / 100
-	digits := strconv.FormatInt(euros, 10)
-	for index := len(digits) - 3; index > 0; index -= 3 {
-		digits = digits[:index] + "." + digits[index:]
-	}
-	return fmt.Sprintf("%s,%02d €", digits, cents%100)
+	return view.FormatEURCents(cents)
 }
 
 func annualStatementReceiptSuggestionStatusMessage(status annualStatementReceiptSuggestionStatus) string {

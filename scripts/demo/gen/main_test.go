@@ -153,7 +153,7 @@ func TestGeneratorIsDeterministic(t *testing.T) {
 	if err := generate(out); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json"} {
+	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json", "annual-statement.json"} {
 		got, err := os.ReadFile(filepath.Join(out, name))
 		if err != nil {
 			t.Fatal(err)

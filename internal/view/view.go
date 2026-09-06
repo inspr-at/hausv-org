@@ -2065,6 +2065,24 @@ func FormatInputFloat(value float64) string {
 	return FormatDecimal(value, 3)
 }
 
+// FormatEURCents shares the statement receipt formatter with PDF exports.
+// Integer cents must not lose precision through a float64 conversion.
+func FormatEURCents(cents int64) string {
+	raw := strconv.FormatInt(cents, 10)
+	sign := ""
+	if strings.HasPrefix(raw, "-") {
+		sign, raw = "-", raw[1:]
+	}
+	for len(raw) < 3 {
+		raw = "0" + raw
+	}
+	digits, fraction := raw[:len(raw)-2], raw[len(raw)-2:]
+	for index := len(digits) - 3; index > 0; index -= 3 {
+		digits = digits[:index] + "." + digits[index:]
+	}
+	return sign + digits + "," + fraction + " €"
+}
+
 func FormatEUR(value float64) string {
 	return FormatDecimal(value, 2) + " €"
 }

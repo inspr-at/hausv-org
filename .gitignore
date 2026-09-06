@@ -18,6 +18,7 @@ scripts/mark3d/node_modules/
 
 # direnv/nix dev shell cache
 .direnv/
+.gocache/
 
 # Agent worktrees are per-machine; the command symlinks are shared wiring.
 .claude/worktrees/

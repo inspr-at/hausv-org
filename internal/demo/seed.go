@@ -17,9 +17,11 @@ import (
 )
 
 type SeedOptions struct {
-	Reset bool
-	Stats bool
-	Out   io.Writer
+	// DocumentDir is the same original-file directory used by the portal.
+	DocumentDir string
+	Reset       bool
+	Stats       bool
+	Out         io.Writer
 	// Units receives the fixture's tenant-scoped unit inventory when supplied.
 	// It is optional so database-only consumers keep their existing behavior.
 	Units store.UnitSink
@@ -60,11 +62,13 @@ type seedHouse struct {
 }
 
 type seedUnit struct {
-	Label       string `json:"label"`
-	Floor       string `json:"floor"`
-	UnitType    string `json:"unit_type"`
-	OwnerEmail  string `json:"owner_email"`
-	TenantEmail string `json:"tenant_email"`
+	StatementBasis *seedStatementBasis      `json:"-"`
+	PartyContacts  []store.UnitPartyContact `json:"-"`
+	Label          string                   `json:"label"`
+	Floor          string                   `json:"floor"`
+	UnitType       string                   `json:"unit_type"`
+	OwnerEmail     string                   `json:"owner_email"`
+	TenantEmail    string                   `json:"tenant_email"`
 }
 
 type seedIntake struct {
@@ -140,6 +144,10 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		}
 	}
 
+	statement, err := loadStatementFixture(dir, houses, options.DocumentDir)
+	if err != nil {
+		return SeedResult{}, err
+	}
 	configured := make([]store.TenantIdentity, 0, len(houses))
 	for _, house := range houses {
 		configured = append(configured, store.TenantIdentity{Slug: house.Slug, Name: house.Name})
@@ -174,6 +182,11 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 
 	if err := upsertHouseFixtures(ctx, database, houses, identities, intake, events, announcements, org); err != nil {
 		return SeedResult{}, err
+	}
+	if statement != nil {
+		if err := seedAnnualStatement(ctx, database, statement, identities[statement.House], options.DocumentDir, options.Reset); err != nil {
+			return SeedResult{}, err
+		}
 	}
 	if options.Units != nil {
 		for _, house := range houses {
@@ -353,6 +366,14 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 		}
 		if unit.UnitType == "" {
 			unit.UnitType = store.UnitTypeResidential
+		}
+		unit.PartyContacts = append([]store.UnitPartyContact(nil), raw.PartyContacts...)
+		if basis := raw.StatementBasis; basis != nil {
+			unit.MiteigentumsanteilPPM = basis.PPM
+			unit.UsableAreaM2Hundredths = basis.Area
+			unit.UsableAreaRecorded = true
+			unit.Persons = basis.Persons
+			unit.PersonsRecorded = true
 		}
 		if raw.OwnerEmail != "" {
 			unit.OwnerEmails = []string{raw.OwnerEmail}

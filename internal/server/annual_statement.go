@@ -869,9 +869,13 @@ func (a *app) importAnnualStatementParties(w http.ResponseWriter, r *http.Reques
 }
 
 type annualStatementPartyAssignment struct {
-	unit  string
-	role  string
-	email string
+	unit       string
+	role       string
+	email      string
+	name       string
+	address    string
+	nameSet    bool
+	addressSet bool
 }
 
 func parseAnnualStatementPartyCSV(raw []byte) ([]annualStatementPartyAssignment, error) {
@@ -926,7 +930,21 @@ func parseAnnualStatementPartyCSV(raw []byte) ([]annualStatementPartyAssignment,
 		if normalizedRole != roleOwner && normalizedRole != roleRenter {
 			return nil, fmt.Errorf("invalid role")
 		}
-		assignments = append(assignments, annualStatementPartyAssignment{unit: unitValue, role: normalizedRole, email: normalizeEmail(parsedEmail.Address)})
+		optional := func(key string) (string, bool) {
+			index, found := columns[key]
+			if !found || index >= len(row) {
+				// A row shorter than its header has not stated the value: it
+				// must not clear what an earlier import recorded.
+				return "", false
+			}
+			return strings.TrimSpace(row[index]), true
+		}
+		name, nameSet := optional("name")
+		address, addressSet := optional("anschrift")
+		if name == "" {
+			name = parsedEmail.Name
+		}
+		assignments = append(assignments, annualStatementPartyAssignment{unit: unitValue, role: normalizedRole, email: normalizeEmail(parsedEmail.Address), name: name, address: address, nameSet: nameSet || name != "", addressSet: addressSet})
 	}
 	if len(assignments) == 0 {
 		return nil, fmt.Errorf("no assignments")
@@ -948,6 +966,7 @@ func annualStatementPartyUpdates(units []unit, assignments []annualStatementPart
 	}
 	type importedParties struct {
 		owners, renters       []string
+		contacts              []store.UnitPartyContact
 		hasOwners, hasRenters bool
 	}
 	imports := map[int]importedParties{}
@@ -968,13 +987,28 @@ func annualStatementPartyUpdates(units []unit, assignments []annualStatementPart
 			parties.hasRenters = true
 			parties.renters = append(parties.renters, assignment.email)
 		}
+		if assignment.nameSet || assignment.addressSet {
+			contact := store.UnitPartyContact{Email: assignment.email}
+			for _, existing := range append(append([]store.UnitPartyContact(nil), units[index].PartyContacts...), parties.contacts...) {
+				if existing.Email == assignment.email {
+					contact = existing
+				}
+			}
+			if assignment.nameSet {
+				contact.Name = assignment.name
+			}
+			if assignment.addressSet {
+				contact.Address = assignment.address
+			}
+			parties.contacts = append(parties.contacts, contact)
+		}
 		imports[index] = parties
 	}
 	updates := make([]store.UnitPartyUpdate, 0, len(imports))
 	for index, parties := range imports {
 		updates = append(updates, store.UnitPartyUpdate{
 			UnitID: units[index].ID, OwnerEmails: parties.owners, RenterEmails: parties.renters,
-			SetOwners: parties.hasOwners, SetRenters: parties.hasRenters,
+			SetOwners: parties.hasOwners, SetRenters: parties.hasRenters, Contacts: parties.contacts,
 		})
 	}
 	return updates, len(assignments), nil

@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.5.0",
+			Date:     "6. September 2026",
+			Kind:     "Neu",
+			Headline: "Zu jedem Abrechnungslauf gibt es ein PDF je Einheit und Partei.",
+			Intro:    "Jedes Dokument zeigt Kostenarten, Anteil und Betrag der Einheit, die Akontozahlung und den Saldo als Nachzahlung oder Guthaben; bei gemessenen Anteilen auch die Messbasis. Die Dokumente sind als Entwurf gekennzeichnet und keine Rechtsauskunft.",
+			Items: []NoteItem{
+				{Label: "Jahresabrechnung", Text: "Download je Einheit und Partei oder als ein Gesamtdokument; die Zahlen stammen ausschließlich aus dem gespeicherten Lauf."},
+				{Label: "Demo", Text: "Die Musterstadt-Demo enthält eine vollständige Abrechnungsperiode 2025 für den Janusbergweg 123."},
+			},
+		},
+		{
 			Version:  "1.4.0",
 			Date:     "6. September 2026",
 			Kind:     "Neu",

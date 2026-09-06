@@ -290,6 +290,7 @@ func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUp
 		if update.SetRenters {
 			item.RenterEmails = NormalizeEmailList(update.RenterEmails)
 		}
+		item.PartyContacts = mergeUnitPartyContacts(item, update.Contacts)
 		blob, err := json.Marshal(item)
 		if err != nil {
 			return false, err

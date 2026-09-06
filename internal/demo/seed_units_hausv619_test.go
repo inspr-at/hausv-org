@@ -14,7 +14,7 @@ func TestHAUSV619LoadWritesFixtureUnitsToUnitSink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Load(t.Context(), database, filepath.Join("..", "..", "scripts", "demo", "seed"), SeedOptions{Reset: true, Units: units}); err != nil {
+	if _, err := Load(t.Context(), database, filepath.Join("..", "..", "scripts", "demo", "seed"), SeedOptions{DocumentDir: t.TempDir(), Reset: true, Units: units}); err != nil {
 		t.Fatal(err)
 	}
 	identities, err := store.EnsureTenantIdentities(t.Context(), database, []store.TenantIdentity{{Slug: "janusbergweg-123"}})

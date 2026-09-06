@@ -28,15 +28,17 @@ type AnnualStatementRun struct {
 type AnnualStatementRunRepository interface {
 	// Preview reuses page-loaded vectors when supplied; nil loads current reports.
 	Preview(year int, consumption map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error)
-	Create(year int, actor string, now time.Time) (AnnualStatementRun, error)
+	Create(year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error)
 	List(year int) ([]AnnualStatementRun, error)
+	Get(id string) (AnnualStatementRun, bool, error)
 }
 
 type AnnualStatementRunStorage interface{ annualStatementRunStorage() }
 type annualStatementRunBackend interface {
 	previewAnnualStatementRun(TenantRef, int, map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error)
-	createAnnualStatementRun(TenantRef, int, string, time.Time) (AnnualStatementRun, error)
+	createAnnualStatementRun(TenantRef, int, string, time.Time, ...AnnualStatementRunPresentation) (AnnualStatementRun, error)
 	listAnnualStatementRuns(TenantRef, int) ([]AnnualStatementRun, error)
+	getAnnualStatementRun(TenantRef, string) (AnnualStatementRun, bool, error)
 }
 
 type boundAnnualStatementRunRepository struct {
@@ -55,8 +57,11 @@ func BindAnnualStatementRunRepository(storage AnnualStatementRunStorage, tenant 
 func (r *boundAnnualStatementRunRepository) Preview(year int, consumption map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error) {
 	return r.storage.previewAnnualStatementRun(r.tenant, year, consumption)
 }
-func (r *boundAnnualStatementRunRepository) Create(year int, actor string, now time.Time) (AnnualStatementRun, error) {
-	return r.storage.createAnnualStatementRun(r.tenant, year, actor, now)
+func (r *boundAnnualStatementRunRepository) Create(year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error) {
+	return r.storage.createAnnualStatementRun(r.tenant, year, actor, now, presentation...)
+}
+func (r *boundAnnualStatementRunRepository) Get(id string) (AnnualStatementRun, bool, error) {
+	return r.storage.getAnnualStatementRun(r.tenant, id)
 }
 func (r *boundAnnualStatementRunRepository) List(year int) ([]AnnualStatementRun, error) {
 	return r.storage.listAnnualStatementRuns(r.tenant, year)
@@ -89,7 +94,7 @@ func (s *MemoryAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantR
 	}
 	return evaluateAnnualStatementRun(input)
 }
-func (s *MemoryAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time) (AnnualStatementRun, error) {
+func (s *MemoryAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	input, result, err := s.previewAnnualStatementRun(tenant, year, nil)
@@ -101,6 +106,9 @@ func (s *MemoryAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRe
 		if run.PeriodYear == year && run.Revision >= revision {
 			revision = run.Revision + 1
 		}
+	}
+	if len(presentation) > 0 {
+		input.Presentation = presentation[0]
 	}
 	run, err := newAnnualStatementRun(input, result, revision, actor, now)
 	if err != nil {
@@ -139,6 +147,7 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 	input.Structure, _ = periods.Structure(year)
 	for _, unit := range units.List() {
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{unit.ID, unit.Label})
+		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
 	}
 	input.Receipts = receipts.ListByPeriod(year)
 	input.Prepayments = prepayments.ListByPeriod(year)
@@ -216,6 +225,12 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	if err != nil {
 		return AnnualStatementRun{}, err
 	}
+	sort.Slice(input.Parties, func(i, j int) bool {
+		if input.Parties[i].UnitID != input.Parties[j].UnitID {
+			return input.Parties[i].UnitID < input.Parties[j].UnitID
+		}
+		return input.Parties[i].ID < input.Parties[j].ID
+	})
 	// Stable ordering makes input hashes inspectable and independent of SQL row order.
 	sort.Slice(input.Units, func(i, j int) bool { return input.Units[i].ID < input.Units[j].ID })
 	sort.Slice(input.Structure.CostTypes, func(i, j int) bool { return input.Structure.CostTypes[i].Key < input.Structure.CostTypes[j].Key })
@@ -236,4 +251,15 @@ func copyAnnualStatementRun(run AnnualStatementRun) AnnualStatementRun {
 	var copy AnnualStatementRun
 	_ = json.Unmarshal(raw, &copy)
 	return copy
+}
+
+func (s *MemoryAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, id string) (AnnualStatementRun, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, run := range s.runs[tenant.ID] {
+		if run.ID == id {
+			return copyAnnualStatementRun(run), true, nil
+		}
+	}
+	return AnnualStatementRun{}, false, nil
 }

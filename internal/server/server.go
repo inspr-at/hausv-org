@@ -1193,6 +1193,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
+	mux.HandleFunc("GET /app/settings/annual-statement/runs/{runID}/pdf", a.page(a.downloadAnnualStatementPDF))
 	mux.HandleFunc("POST /app/settings/annual-statement/prepayments", a.action(a.saveAnnualStatementPrepayment))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/confirm", a.action(a.confirmAnnualStatementReceiptSuggestion))
@@ -2060,7 +2061,7 @@ func newApp() (*app, error) {
 	}
 	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
-			options := demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor}
+			options := demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
 			if units, ok := a.unitStore.(store.UnitSink); ok {
 				options.Units = units
 			}

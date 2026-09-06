@@ -86,6 +86,11 @@ func TestAnnualStatementRunStorage(t *testing.T) {
 			}
 			tenant := testTenantRef("demo")
 			receipt, document := seedAnnualRunSources(t, sources, tenant)
+			units, _ := BindUnitRepository(sources.Units, tenant)
+			contacts := []UnitPartyContact{{Email: "anna@example.com", Name: "Anna Groß", Address: "Gasse 2, 8010 Graz"}}
+			if _, err := units.UpdateParties([]UnitPartyUpdate{{UnitID: "a", SetOwners: true, SetRenters: true, OwnerEmails: []string{"anna@example.com"}, RenterEmails: []string{"anna@example.com", "mieter@example.com"}, Contacts: contacts}}); err != nil {
+				t.Fatal(err)
+			}
 			repo, ok := BindAnnualStatementRunRepository(storage, tenant)
 			if !ok {
 				t.Fatal("bind")
@@ -109,6 +114,21 @@ func TestAnnualStatementRunStorage(t *testing.T) {
 				t.Fatalf("run=%+v", run)
 			}
 			original := copyAnnualStatementRun(run)
+			if len(run.Input.Parties) != 2 || run.Input.Parties[0].Address != "Gasse 2, 8010 Graz" || !run.Input.Parties[0].Owner || !run.Input.Parties[0].Renter {
+				t.Fatalf("parties=%+v", run.Input.Parties)
+			}
+			if _, err := units.UpdateParties([]UnitPartyUpdate{{UnitID: "a", SetOwners: true, OwnerEmails: []string{"new@example.com"}, Contacts: []UnitPartyContact{{Email: "anna@example.com", Address: "Changed"}}}}); err != nil {
+				t.Fatal(err)
+			}
+			loaded, found, err := repo.Get(run.ID)
+			if err != nil || !found || !reflect.DeepEqual(loaded, original) {
+				t.Fatal("stored snapshot changed", err)
+			}
+			loaded.Input.Parties[0].Address = "Mutated return value"
+			again, _, _ := repo.Get(run.ID)
+			if !reflect.DeepEqual(again, original) {
+				t.Fatal("Get aliases snapshot")
+			}
 			run.Result.Units[0].BalanceCents = 0
 			run.Input.Receipts[0].AmountCents = 1
 			receipts, _ := BindAnnualStatementReceiptRepository(sources.Receipts, tenant)
@@ -127,6 +147,12 @@ func TestAnnualStatementRunStorage(t *testing.T) {
 				t.Fatalf("old run changed: %+v %v", runs, err)
 			}
 			foreign, _ := BindAnnualStatementRunRepository(storage, testTenantRef("other"))
+			if _, found, err := foreign.Get(original.ID); err != nil || found {
+				t.Fatal("foreign Get leaked run", err)
+			}
+			if _, found, err := repo.Get("unknown"); err != nil || found {
+				t.Fatal("unknown Get", err)
+			}
 			if runs, err := foreign.List(2025); err != nil || len(runs) != 0 {
 				t.Fatalf("foreign list=%v %v", runs, err)
 			}

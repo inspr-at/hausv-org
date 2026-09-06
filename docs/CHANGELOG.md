@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.5.0] - 2026-09-06
+
+### Neu
+
+- Jahresabrechnung: Zu jedem gespeicherten Abrechnungslauf gibt es je Einheit und Partei ein deutsches PDF (Kostenarten, Anteil, Betrag, Akonto, Saldo als Nachzahlung oder Guthaben, Messbasis bei gemessenen Anteilen) sowie ein Gesamtdokument; die Dokumente sind als Entwurf gekennzeichnet und keine Rechtsauskunft.
+- Demo: Die Musterstadt-Demo enthält für den Janusbergweg 123 eine vollständige Abrechnungsperiode 2025 mit Kostenarten, Verteilerschlüsseln, Belegen, Akontos und Parteien, sodass Abrechnungslauf und PDFs vorgeführt werden können.
+
 ## [1.4.0] - 2026-09-06
 
 ### Neu

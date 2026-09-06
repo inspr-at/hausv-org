@@ -17,6 +17,7 @@ type AnnualStatementRunView struct {
 	Excluded  string
 	Units     []AnnualStatementRunUnitView
 	History   []AnnualStatementRunLinkView
+	AllPDFURL string
 }
 type AnnualStatementRunLinkView struct {
 	ID       string
@@ -29,6 +30,11 @@ type AnnualStatementRunUnitView struct {
 	Prepaid   string
 	Balance   string
 	Costs     []AnnualStatementRunCostView
+	PDFs []AnnualStatementRunPDFView
+}
+type AnnualStatementRunPDFView struct {
+	Label string
+	URL string
 }
 type AnnualStatementRunCostView struct {
 	Name   string
@@ -72,11 +78,21 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			<article data-annual-statement-run={ data.ID }>
 				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p><small>Kennung: { data.ID }</small></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
-				<div class="unit-list">
+				if data.AllPDFURL != "" {
+                    <a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+                } else {
+                    <p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
+                }
+                <div class="unit-list">
 					for _,unit:=range data.Units {
 						<article class="inline-details">
 							<header class="subhead"><h4>{ unit.Label }</h4></header>
 							<div class="form-grid"><label>Kostenanteil<span class="readonly">{ unit.Allocated }</span></label><label>Akonto<span class="readonly">{ unit.Prepaid }</span></label><label>Saldo<span class="readonly"><strong>{ unit.Balance }</strong></span></label></div>
+                            <nav class="settings-links" aria-label={ "PDF für " + unit.Label }>
+                                for _, document := range unit.PDFs {
+                                    <a href={ templ.SafeURL(document.URL) } download>PDF für { document.Label }</a>
+                                }
+                            </nav>
 							<details>
 								<summary>Kostenarten und Anteile</summary>
 								for _,cost:=range unit.Costs {

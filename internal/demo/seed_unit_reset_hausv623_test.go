@@ -15,7 +15,7 @@ import (
 func TestResetClearsUnitsBeforeSeeding(t *testing.T) {
 	ctx := context.Background()
 	database := dbtest.Open(t)
-	if _, err := Load(ctx, database, "../../scripts/demo/seed", SeedOptions{Reset: true}); err != nil {
+	if _, err := Load(ctx, database, "../../scripts/demo/seed", SeedOptions{DocumentDir: t.TempDir(), Reset: true}); err != nil {
 		t.Fatalf("first seed: %v", err)
 	}
 	// PostgreSQL enforces per-tenant RLS; the maintenance lane is how the
@@ -35,7 +35,7 @@ func TestResetClearsUnitsBeforeSeeding(t *testing.T) {
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit: %v", err)
 	}
-	if _, err := Load(ctx, database, "../../scripts/demo/seed", SeedOptions{Reset: true}); err != nil {
+	if _, err := Load(ctx, database, "../../scripts/demo/seed", SeedOptions{DocumentDir: t.TempDir(), Reset: true}); err != nil {
 		t.Fatalf("reseed: %v", err)
 	}
 	read := func(query string, args ...any) string {

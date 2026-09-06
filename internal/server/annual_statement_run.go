@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/statementpdf"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -29,7 +30,14 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 		http.Error(w, "Bitte eine gespeicherte Abrechnungsperiode wählen.", http.StatusBadRequest)
 		return
 	}
-	run, err := ac.repositories.annualStatementRuns.Create(year, actor, time.Now())
+	presentation := store.AnnualStatementRunPresentation{EstateSlug: tenant.Slug, EstateName: tenant.Name, EstateAddress: tenant.Address, Organisation: tenant.ContactName, ContactName: tenant.ContactName, ContactAddress: tenant.ContactAddress, ContactEmail: tenant.ContactEmail, ContactPhone: tenant.ContactPhone}
+	if org, found := a.organisationRecordFor(r.Context(), &ac); found {
+		presentation.Organisation = org.Name
+		presentation.ContactName = firstNonEmpty(org.ContactName, presentation.ContactName)
+		presentation.ContactEmail = firstNonEmpty(org.ContactEmail, presentation.ContactEmail)
+		presentation.ContactPhone = firstNonEmpty(org.ContactPhone, presentation.ContactPhone)
+	}
+	run, err := ac.repositories.annualStatementRuns.Create(year, actor, time.Now(), presentation)
 	status := "created"
 	if err != nil {
 		var blocked *store.AnnualStatementRunBlockedError
@@ -95,6 +103,9 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 		if !selected {
 			continue
 		}
+		if _, err := statementpdf.Documents(run, "", ""); err == nil {
+			out.AllPDFURL = annualStatementPDFURL(run.ID, "", "")
+		}
 		out.ID = run.ID
 		out.Revision = run.Revision
 		if location, err := time.LoadLocation("Europe/Vienna"); err == nil {
@@ -109,6 +120,11 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 			row := web.AnnualStatementRunUnitView{Label: unit.Label, Allocated: formatAnnualStatementMoney(unit.AllocatedCents), Prepaid: formatAnnualStatementMoney(unit.PrepaidCents), Balance: formatAnnualStatementBalance(-unit.BalanceCents)}
 			for _, cost := range unit.Costs {
 				row.Costs = append(row.Costs, web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)})
+			}
+			for _, party := range run.Input.Parties {
+				if party.UnitID == unit.UnitID {
+					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
+				}
 			}
 			out.Units = append(out.Units, row)
 		}

@@ -48,7 +48,15 @@ func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) st
 	if err != nil {
 		return err
 	}
-	options := demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime}
+	documentDir := strings.TrimSpace(getenv("DOC_FILE_DIR"))
+	if documentDir == "" {
+		documentDataPath := strings.TrimSpace(getenv("DOC_DATA_PATH"))
+		if documentDataPath == "" {
+			documentDataPath = "tmp/documents.json"
+		}
+		documentDir = filepath.Join(filepath.Dir(documentDataPath), "documents")
+	}
+	options := demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime, DocumentDir: documentDir}
 	if unitPath := strings.TrimSpace(getenv("UNIT_DATA_PATH")); unitPath != "" {
 		units, err := store.NewUnitStore(unitPath)
 		if err != nil {

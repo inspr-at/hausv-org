@@ -446,6 +446,16 @@ ein (Anker heute); Benutzer und Sitzungen bleiben, der Audit-Eintrag heißt
 „Demodaten initialisiert“. Ohne Demo-Modus antwortet die Route mit 404.
 
 Der Seed enthält pro Haus die Tops samt Eigentümer- und Mieterzuordnung sowie Stellplätze.
+Für Janusbergweg 123 enthält `annual-statement.json` außerdem die feste Periode 2025:
+24 vollständige Einheitenbasen, drei Kostenarten (Nutzwert, Fläche, Personen),
+bestätigte Demobelege mit deterministischen PDF-Originalen und Akontos. Die Parteien
+stammen aus `persons.json`. Verbrauchskosten werden ohne Grenzmessungen nicht
+vorgegeben. `demo-seed -reset` und die Portal-Initialisierung laden diese Grundlagen;
+der Datumsanker verschiebt die Abrechnungsperiode nicht. Originale liegen in
+`DOC_FILE_DIR` (Standard: `documents` neben `DOC_DATA_PATH`, wie im Portal).
+Vorhandene Abrechnungsläufe bleiben unverändert erhalten. Nach dem Reset kann die
+Verwaltung auf der Jahresabrechnungsseite 2025 wählen, einen Lauf berechnen und
+30 Partei-PDFs für die 24 Einheiten einzeln oder gemeinsam herunterladen.
 
 `deploy/demo/seed.sh` can be rerun safely to restore the fixture records. For a
 fresh database and blobs, run `deploy/demo/reset.sh`; it stops the demo, removes

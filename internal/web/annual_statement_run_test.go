@@ -47,3 +47,16 @@ func TestAnnualStatementRunPanelEscapesHistoryQuery(t *testing.T) {
 		t.Fatalf("missing escaped history URL %q", want)
 	}
 }
+
+func TestAnnualStatementRunPanelPDFLinks(t *testing.T) {
+	var body bytes.Buffer
+	data := AnnualStatementRunView{ID: "stored-run", AllPDFURL: "/app/settings/annual-statement/runs/stored-run/pdf", Units: []AnnualStatementRunUnitView{{Label: "Top 1", PDFs: []AnnualStatementRunPDFView{{Label: "Anna <Groß>", URL: "/app/settings/annual-statement/runs/stored-run/pdf?party=anna%40example.com&unit=top-1"}, {Label: "Mieter", URL: "/app/settings/annual-statement/runs/stored-run/pdf?party=mieter%40example.com&unit=top-1"}}}}}
+	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Alle Dokumente (PDF)", "PDF für Anna &lt;Groß&gt;", "PDF für Mieter", "party=anna%40example.com&amp;unit=top-1", "download"} {
+		if !strings.Contains(body.String(), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+}
