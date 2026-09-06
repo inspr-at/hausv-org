@@ -19,6 +19,13 @@ Production infrastructure hostnames, paths and operator details are supplied
 through a private deployment environment. Do not commit a populated environment
 file.
 
+## Transactional email
+
+SMTP uses `SMTP_HOST`, `SMTP_PORT`, optional paired `SMTP_USER` / `SMTP_PASS`,
+and `MAIL_FROM`. Setting `MAIL_OUTBOX_DIR` overrides SMTP for **all** messages:
+the test mode stores `.eml` files in a private directory (0700; files 0600),
+including login links and PDF attachments. The demo uses `/data/outbox`.
+
 ## Release contract
 
 Every production release must:

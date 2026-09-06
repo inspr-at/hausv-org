@@ -45,6 +45,7 @@ const (
 	AuditActionAnnualReceiptDelete  = "annual-statement.receipt.delete"
 	AuditActionAnnualPrepaymentSave = "annual-statement.prepayment.save"
 	AuditActionAnnualRunCreate      = "annual-statement.run.create"
+	AuditActionAnnualRunSend        = "annual-statement.send"
 	AuditActionAnnualRunArchive     = "annual-statement.archive"
 	AuditActionParkingSettings      = "parking.settings"
 	AuditActionParkingMonth         = "parking.month"
@@ -2197,7 +2198,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIssueAICancel, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
 		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionTextbausteinChanged, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
-		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualRunCreate, AuditActionAnnualRunArchive:
+		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualRunCreate, AuditActionAnnualRunArchive, AuditActionAnnualRunSend:
 		return raw
 	default:
 		return ""

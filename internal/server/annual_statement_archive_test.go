@@ -57,6 +57,7 @@ func newArchiveDemoApp(t *testing.T) (*app, requestRepositories, func() error) {
 	a.annualStatementAkontos = store.NewSQLAnnualStatementPrepaymentStore(a.tenantDB)
 	a.annualConsumption = store.NewSQLAnnualStatementConsumptionStore(a.tenantDB)
 	a.annualStatementRuns = store.NewSQLAnnualStatementRunStore(a.tenantDB, a.documentStore)
+	a.annualStatementDeliveries = store.NewSQLAnnualStatementDeliveryStore(a.tenantDB)
 	return a, a.repositoriesForTenant(identities[archiveDemoTenant].Ref()), func() error {
 		_, err := demo.Load(t.Context(), database, "../../scripts/demo/seed", options)
 		return err

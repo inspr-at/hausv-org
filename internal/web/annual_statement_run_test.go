@@ -86,3 +86,16 @@ func TestAnnualStatementRunArchiveActionAndStatus(t *testing.T) {
 		t.Fatal("completed archive has create action")
 	}
 }
+
+func TestAnnualStatementDeliveryPanel(t *testing.T) {
+	data := AnnualStatementRunView{ID: "run", SendAction: "/app/settings/annual-statement/runs/run/send", MailMode: "Postausgang als Datei — Testmodus", SendIssue: "Zuerst im Archiv ablegen", DeliverySummary: "1 gesendet · 1 fehlgeschlagen · 2 übersprungen", Deliveries: []AnnualStatementDeliveryView{{Party: "Anna <Groß>", Recipient: "anna@example.com", Time: "06.09.2026 20:00 CEST", Status: "Fehlgeschlagen", Error: "Datei <fehlt>"}}}
+	var body bytes.Buffer
+	if err := AnnualStatementRunPanel(data).Render(t.Context(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`method="post" action="/app/settings/annual-statement/runs/run/send"`, `disabled`, "Per E-Mail senden", "Postausgang als Datei — Testmodus", "Zuerst im Archiv ablegen", "Versandprotokoll", "Adresse", "Zeit", "Status", "Fehler", "Anna &lt;Groß&gt;", "Datei &lt;fehlt&gt;", "1 gesendet · 1 fehlgeschlagen · 2 übersprungen"} {
+		if !strings.Contains(body.String(), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+}

@@ -27,6 +27,7 @@ const (
 )
 
 type Mailer interface {
+	SendDocument(ctx context.Context, to, subject, body string, attachment Attachment) error
 	SendMagicLink(to string, link string, address string) error
 	SendInvite(to string, loginURL string, address string) error
 	SendNotification(to string, subject string, body string) error
@@ -49,6 +50,7 @@ func NewSMTP(host, port, user, pass, from string) SmtpMailer {
 }
 
 type SmtpMailer struct {
+	outboxDir          string
 	host               string
 	port               string
 	user               string
@@ -94,7 +96,7 @@ func (event PortalNotification) Body() string {
 }
 
 func (m SmtpMailer) Configured() bool {
-	return m.host != "" && m.port != "" && m.from != ""
+	return m.outboxDir != "" || (m.host != "" && m.port != "" && m.from != "")
 }
 
 func (m SmtpMailer) Validate() error {
@@ -103,6 +105,9 @@ func (m SmtpMailer) Validate() error {
 	}
 	if _, err := mail.ParseAddress(m.from); err != nil {
 		return fmt.Errorf("invalid MAIL_FROM")
+	}
+	if m.outboxDir != "" {
+		return nil
 	}
 	if (m.user == "") != (m.pass == "") {
 		return fmt.Errorf("SMTP_USER and SMTP_PASS must be set together")
@@ -295,6 +300,12 @@ func (m SmtpMailer) send(ctx context.Context, to string, message []byte) error {
 	}
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if m.outboxDir != "" {
+		return m.writeOutbox(ctx, message)
 	}
 	fromAddr, err := mail.ParseAddress(m.from)
 	if err != nil {

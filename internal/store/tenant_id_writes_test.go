@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -224,6 +225,10 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	runs, _ := BindAnnualStatementRunRepository(NewSQLAnnualStatementRunStore(lanes, NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs"))), tenant)
 	if _, err := runs.Create(2026, "a@example.com", now); err != nil {
 		t.Fatalf("annual statement run: %v", err)
+	}
+	deliveries, _ := BindAnnualStatementDeliveryRepository(NewSQLAnnualStatementDeliveryStore(lanes), tenant)
+	if _, _, err := deliveries.Attempt(t.Context(), AnnualStatementDelivery{RunID: "identity-run", Revision: 1, PartyID: "a@example.com", UnitID: "u1", DocumentID: receiptDocument.ID, SHA256: "fixture", Recipient: "a@example.com", Actor: "a@example.com"}, func(context.Context) error { return nil }); err != nil {
+		t.Fatalf("annual statement delivery: %v", err)
 	}
 	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, filepath.Join(fileDir, "att")), tenant)
 	if _, err := attachments.CreateUploaded("issue", "i1", "a@example.com",

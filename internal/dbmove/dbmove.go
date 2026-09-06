@@ -97,6 +97,7 @@ var TableOrder = []string{
 	"annual_statement_prepayments",
 	"annual_statement_receipts",
 	"annual_statement_runs",
+	"annual_statement_deliveries",
 	"unit_payment_status",
 	"contacts",
 	"announcement_reads",
