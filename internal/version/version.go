@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.5",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Hausüberblick ist am Handy wieder vollständig sichtbar.",
+			Intro:    "Anliegen, Termine und Aushang erscheinen am Handy wieder unter dem Hausbild; die Vorschau-Leiste „Ansicht als“ und die Tabellen im Portfolio und im Hausüberblick passen sich schmalen Bildschirmen an, ohne Werte abzuschneiden.",
+			Items: []NoteItem{
+				{Label: "Hausüberblick", Text: "Die Handy-Ansicht war seit der Auslagerung des Portal-Stylesheets verdeckt; ein Prüfschritt in der Auslieferung verhindert das künftig."},
+			},
+		},
+		{
 			Version:  "1.3.4",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",
