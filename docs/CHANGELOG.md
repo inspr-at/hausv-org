@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.5.3] - 2026-09-06
+
+### Stabilität verbessert
+
+- Darstellung: Auf der Jahresabrechnungsseite brechen lange E-Mail-Adressen der Parteien um, und der Versionsverlauf bleibt am Handy im Bild — kein seitliches Scrollen mehr auf Handy und Tablet.
+
 ## [1.5.2] - 2026-09-06
 
 ### Stabilität verbessert

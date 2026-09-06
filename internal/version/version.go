@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.5.3",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Die Jahresabrechnungsseite scrollt auf Handy und Tablet nicht mehr seitlich.",
+			Intro:    "Lange E-Mail-Adressen der Parteien brechen in der Einheitenliste um, und der Versionsverlauf bleibt am Handy im Bild.",
+			Items:    []NoteItem{{Label: "Darstellung", Text: "Gefunden beim Breiten-Sweep auf der Demo mit vollständiger Abrechnungsperiode."}},
+		},
+		{
 			Version:  "1.5.2",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",
