@@ -91,6 +91,17 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.4.0",
+			Date:     "6. September 2026",
+			Kind:     "Neu",
+			Headline: "Die Jahresabrechnung berechnet einen Abrechnungslauf für alle Einheiten.",
+			Intro:    "Ein Lauf verteilt die Kosten der Periode nach den hinterlegten Kostenarten, Verteilerschlüsseln, Belegen und Akontozahlungen auf alle Einheiten und wird unveränderlich mit seinen Eingaben gespeichert. Fehlt ein Schlüssel, ein Beleg oder eine Messung, hält der Lauf an und nennt den Grund.",
+			Items: []NoteItem{
+				{Label: "Abrechnungslauf", Text: "Ganzzahlige Cent-Verteilung je Kostenart, Summen stimmen exakt; jeder Lauf bekommt eine eigene Version und ändert frühere Läufe nicht."},
+				{Label: "Heiz- und Warmwasser", Text: "Anteile je Einheit aus gemessenen Verbrauchswerten der Periode; ohne vollständige Grenzmessungen bleibt die Kostenart gesperrt statt geschätzt."},
+			},
+		},
+		{
 			Version:  "1.3.5",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",
