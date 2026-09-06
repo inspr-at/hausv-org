@@ -8,6 +8,38 @@ import (
 	"github.com/inspr-at/hausv-org/internal/homeassistant"
 )
 
+func TestParseOrganisations(t *testing.T) {
+	organisations, err := ParseOrganisations(`{"musterstadt":{"name":" Hausverwaltung Musterstadt GmbH "}}`)
+	if err != nil {
+		t.Fatalf("ParseOrganisations: %v", err)
+	}
+	if got := organisations["musterstadt"]; got.Key != "musterstadt" || got.Name != "Hausverwaltung Musterstadt GmbH" {
+		t.Fatalf("organisation = %+v", got)
+	}
+	empty, err := ParseOrganisations("  ")
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("empty organisations = %+v, err = %v", empty, err)
+	}
+}
+
+func TestParseOrganisationsRejectsInvalidEntries(t *testing.T) {
+	for _, raw := range []string{`[]`, `{"":{"name":"Verwaltung"}}`, `{"musterstadt":{"name":""}}`} {
+		if _, err := ParseOrganisations(raw); err == nil {
+			t.Fatalf("ParseOrganisations(%q) unexpectedly succeeded", raw)
+		}
+	}
+}
+
+func TestParseTenantsParsesOrganisation(t *testing.T) {
+	tenants, err := ParseTenants(`[{"slug":"haus-a","name":"Haus A","organisation":" Musterstadt "}]`, "haus-a", homeassistant.Config{})
+	if err != nil {
+		t.Fatalf("ParseTenants: %v", err)
+	}
+	if got := tenants["haus-a"].Organisation; got != "musterstadt" {
+		t.Fatalf("organisation = %q, want musterstadt", got)
+	}
+}
+
 func TestApplyHomeAssistantConnectorsUsesReferencedSecret(t *testing.T) {
 	secretPath := filepath.Join(t.TempDir(), "ha-token")
 	if err := os.WriteFile(secretPath, []byte("not-a-real-secret\n"), 0o600); err != nil {

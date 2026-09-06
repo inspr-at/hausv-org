@@ -2022,7 +2022,7 @@ func BuildingUnits(data BuildingSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, " in Nutzung</small></span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, " im inkludierten Rahmen</small></span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2241,120 +2241,166 @@ func BuildingUnitRow(unit view.BuildingUnitView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "</strong><small>Mieter</small><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var95 string
-		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(unit.RenterSummary)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 144}
+		if unit.HasOwners {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<small>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var95 string
+			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(unit.OwnerEmails)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 459, Col: 28}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</small> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "</strong></div><div><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "<small>Mieter</small><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var96 string
-		templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Share)
+		templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(unit.RenterSummary)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 186}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 461, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</strong><small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var97 string
-		templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(unit.MembersLabel)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 223}
+		if unit.HasRenters {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<small>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var97 string
+			templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(unit.RenterEmails)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 29}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</small>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "</div><div><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</small></div><div>")
+		var templ_7745c5c3_Var98 string
+		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Share)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 32}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var98 = []any{"pill", unit.PaymentStatusClass}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var98...)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "</strong><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var99 string
-		templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var98).String())
+		templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(unit.MembersLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 69}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var99)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var100 string
-		templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(unit.PaymentStatus)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 312}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</small></div><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</span><small>")
+		var templ_7745c5c3_Var100 = []any{"pill", unit.PaymentStatusClass}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var100...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var101 string
-		templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinStringErrs(paymentUpdated(unit))
+		templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var100).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 350}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "</small></div><a class=\"icon-button\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var102 templ.SafeURL
-		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("#unit-" + unit.ID))
+		var templ_7745c5c3_Var102 string
+		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(unit.PaymentStatus)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 429}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 158}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "</span><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var103 string
-		templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label + " bearbeiten")
+		templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(paymentUpdated(unit))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 457, Col: 471}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 196}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var103)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "\">✎</a></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</small></div><a class=\"icon-button\" href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var104 templ.SafeURL
+		templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("#unit-" + unit.ID))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 275}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "\" aria-label=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var105 string
+		templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label + " bearbeiten")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 317}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var105)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "\">✎</a></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2385,332 +2431,332 @@ func BuildingUnitDialog(unit view.BuildingUnitView, types, payments []view.Selec
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var104 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var104 == nil {
-			templ_7745c5c3_Var104 = templ.NopComponent
+		templ_7745c5c3_Var106 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var106 == nil {
+			templ_7745c5c3_Var106 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<section class=\"anchor-dialog unit-dialog-shell\" id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var105 string
-		templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 78}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var105)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var106 string
-		templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-title")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 165}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var106)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "\" tabindex=\"-1\"><a class=\"dialog-backdrop\" href=\"?section=units\" aria-label=\"Dialog schließen\" data-unit-dialog-close></a><div class=\"dialog-card\"><header><div><h2 id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<section class=\"anchor-dialog unit-dialog-shell\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var107 string
-		templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-title")
+		templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 370}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var107)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var108 string
-		templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogTitle(add))
+		templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 395}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 165}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var108)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "</h2><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "\" tabindex=\"-1\"><a class=\"dialog-backdrop\" href=\"?section=units\" aria-label=\"Dialog schließen\" data-unit-dialog-close></a><div class=\"dialog-card\"><header><div><h2 id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var109 string
-		templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogDetail(unit, add))
+		templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 434}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 370}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var109))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var109)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "</p></div><a class=\"icon-button\" href=\"?section=units\" aria-label=\"Dialog schließen\" data-unit-dialog-close>×</a></header><form id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var110 string
-		templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
+		templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogTitle(add))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 463, Col: 604}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 395}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var110)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var110))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "\" method=\"post\" action=\"/app/settings/building/units\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "</h2><p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var111 string
+		templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogDetail(unit, add))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 434}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "</p></div><a class=\"icon-button\" href=\"?section=units\" aria-label=\"Dialog schließen\" data-unit-dialog-close>×</a></header><form id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var112 string
+		templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 604}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var112)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "\" method=\"post\" action=\"/app/settings/building/units\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !add {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "<input type=\"hidden\" name=\"orig_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<input type=\"hidden\" name=\"orig_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var111 string
-			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
+			var templ_7745c5c3_Var113 string
+			templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 473, Col: 54}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var111)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var113)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var112 string
-			templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 465, Col: 104}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var112)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "<fieldset><legend>Stammdaten</legend><label>Offizielle Bezeichnung<input name=\"label\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var113 string
-		templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 467, Col: 106}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var113)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "\" maxlength=\"120\" required placeholder=\"Top 1\"></label><label>Typ<select name=\"unit_type\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for _, option := range types {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "\"><input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var114 string
-			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
+			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 469, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 473, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var114)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<fieldset><legend>Stammdaten</legend><label>Offizielle Bezeichnung<input name=\"label\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var115 string
+		templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Label)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 475, Col: 106}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var115)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "\" maxlength=\"120\" required placeholder=\"Top 1\"></label><label>Typ<select name=\"unit_type\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, option := range types {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "<option value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var116 string
+			templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 477, Col: 32}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var116)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if option.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, ">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var115 string
-			templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
+			var templ_7745c5c3_Var117 string
+			templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 469, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 477, Col: 79}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "</option>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "</option>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "</select></label><label>Miteigentumsanteil<input type=\"number\" name=\"miteigentumsanteil\" min=\"0\" max=\"1000000\" step=\"1\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var116 string
-		templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitShareValue(unit, add))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 471, Col: 155}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var116)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "\" inputmode=\"numeric\"></label></fieldset><fieldset><legend>Personen &amp; Zuordnung</legend><label>Eigentümer E-Mails<input name=\"owner_emails\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var117 string
-		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.OwnerEmails)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 472, Col: 130}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var117)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "\" placeholder=\"name@example.com, zweite@example.com\"></label><label>Mieter E-Mails<input name=\"renter_emails\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "</select></label><label>Miteigentumsanteil<input type=\"number\" name=\"miteigentumsanteil\" min=\"0\" max=\"1000000\" step=\"1\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var118 string
-		templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.RenterEmails)
+		templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitShareValue(unit, add))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 472, Col: 267}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 479, Col: 155}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var118)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "\" placeholder=\"name@example.com\"></label></fieldset><fieldset><legend>Zahlungsstatus</legend><label>Status<select name=\"payment_status\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "\" inputmode=\"numeric\"></label></fieldset><fieldset><legend>Personen &amp; Zuordnung</legend><label>Eigentümer E-Mails<input name=\"owner_emails\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var119 string
+		templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.OwnerEmails)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 480, Col: 130}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "\" placeholder=\"name@example.com, zweite@example.com\"></label><label>Mieter E-Mails<input name=\"renter_emails\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var120 string
+		templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.RenterEmails)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 480, Col: 267}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var120)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "\" placeholder=\"name@example.com\"></label></fieldset><fieldset><legend>Zahlungsstatus</legend><label>Status<select name=\"payment_status\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range payments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<option value=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var119 string
-			templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 475, Col: 32}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if option.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, " selected")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, ">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var120 string
-			templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 475, Col: 79}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "</option>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "</select></label></fieldset></form><footer>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !add {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, "<form method=\"post\" action=\"/app/settings/building/units/delete\" data-confirm=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var121 string
-			templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.DeleteConfirmLabel + "?")
+			templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 480, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 483, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var121)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if option.Selected {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, " selected")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var122 string
-			templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
+			templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 480, Col: 161}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 483, Col: 79}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var122)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "\"><button class=\"button ghost\" type=\"submit\">Einheit löschen</button></form>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var122))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "</option>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "<a class=\"button ghost\" href=\"?section=units\">Abbrechen</a><button class=\"button primary\" type=\"submit\" form=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "</select></label></fieldset></form><footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var123 string
-		templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 482, Col: 146}
+		if !add {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "<form method=\"post\" action=\"/app/settings/building/units/delete\" data-confirm=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var123 string
+			templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.DeleteConfirmLabel + "?")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 488, Col: 112}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var123)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var124 string
+			templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 488, Col: 161}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var124)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\"><button class=\"button ghost\" type=\"submit\">Einheit löschen</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var123)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "<a class=\"button ghost\" href=\"?section=units\">Abbrechen</a><button class=\"button primary\" type=\"submit\" form=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "\">")
+		var templ_7745c5c3_Var125 string
+		templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 490, Col: 146}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var125)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var124 string
-		templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogButton(add))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 482, Col: 172}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "</button></footer></div></section>")
+		var templ_7745c5c3_Var126 string
+		templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogButton(add))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 490, Col: 172}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "</button></footer></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2765,12 +2811,12 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var125 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var125 == nil {
-			templ_7745c5c3_Var125 = templ.NopComponent
+		templ_7745c5c3_Var127 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var127 == nil {
+			templ_7745c5c3_Var127 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2782,48 +2828,48 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "<div class=\"appearance-grid\" data-appearance-workspace><div class=\"aside-stack\"><form class=\"panel inset\" method=\"post\" action=\"/app/settings/building/appearance\"><fieldset><legend>Portal-Symbol</legend><input type=\"hidden\" name=\"brand_icon\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "<div class=\"appearance-grid\" data-appearance-workspace><div class=\"aside-stack\"><form class=\"panel inset\" method=\"post\" action=\"/app/settings/building/appearance\"><fieldset><legend>Portal-Symbol</legend><input type=\"hidden\" name=\"brand_icon\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var126 string
-		templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandIcon)
+		var templ_7745c5c3_Var128 string
+		templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandIcon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 493, Col: 273}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 501, Col: 273}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var126)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var128)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\" data-brand-icon-value><div class=\"brand-grid\" role=\"radiogroup\" aria-label=\"Portal-Symbol\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "\" data-brand-icon-value><div class=\"brand-grid\" role=\"radiogroup\" aria-label=\"Portal-Symbol\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range data.BrandIconOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "<label class=\"brand-icon-choice\"><input type=\"radio\" name=\"brand_icon_choice\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, "<label class=\"brand-icon-choice\"><input type=\"radio\" name=\"brand_icon_choice\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var127 string
-			templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
+			var templ_7745c5c3_Var129 string
+			templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 495, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 503, Col: 102}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var127)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var129)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if option.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, " checked")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, "><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2831,129 +2877,129 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "</span><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "</span><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var128 string
-			templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
+			var templ_7745c5c3_Var130 string
+			templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 495, Col: 213}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 503, Col: 213}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var128))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "</strong></label>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "</strong></label>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, "</div></fieldset><section class=\"icon-search\"><label>Weitere Symbole aus Lucide<input type=\"search\" placeholder=\"Symbol suchen\" autocomplete=\"off\" data-brand-icon-search></label><div data-brand-icon-results hidden></div><p data-brand-icon-result-note")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, "</div></fieldset><section class=\"icon-search\"><label>Weitere Symbole aus Lucide<input type=\"search\" placeholder=\"Symbol suchen\" autocomplete=\"off\" data-brand-icon-search></label><div data-brand-icon-results hidden></div><p data-brand-icon-result-note")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !data.BrandIconIsLucide {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, " hidden")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, " hidden")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, ">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, ">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.BrandIconIsLucide {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, "Aktuell ausgewählt: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "Aktuell ausgewählt: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var129 string
-			templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.JoinStringErrs(data.BrandIconLabel)
+			var templ_7745c5c3_Var131 string
+			templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.JoinStringErrs(data.BrandIconLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 500, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 508, Col: 47}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var129))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var131))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "</p></section><label>Kurzkennung<input id=\"brand-abbreviation\" name=\"brand_abbreviation\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var130 string
-		templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandAbbreviation)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 503, Col: 124}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var130)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "\" maxlength=\"12\" placeholder=\"HAUS\"><span data-abbreviation-count>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var131 string
-		templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Tenant.BrandAbbreviation))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 503, Col: 228}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var131))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, " / 12</span></label><button class=\"button primary\" type=\"submit\">Portal-Kennung speichern</button></form><section class=\"panel inset\"><h3>Titelbild</h3><img class=\"hero-preview\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "</p></section><label>Kurzkennung<input id=\"brand-abbreviation\" name=\"brand_abbreviation\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var132 string
-		templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
+		templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandAbbreviation)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 504, Col: 121}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 511, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var132)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, "\" alt=\"Aktuelles Titelbild\" data-hero-preview><p data-hero-file-name>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "\" maxlength=\"12\" placeholder=\"HAUS\"><span data-abbreviation-count>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var133 string
-		templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinStringErrs(heroLabel(data.HasCustomHero))
+		templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Tenant.BrandAbbreviation))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 504, Col: 223}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 511, Col: 228}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var133))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, "</p><form method=\"post\" action=\"/app/settings/building/hero\" enctype=\"multipart/form-data\"><label>Neues Titelbild<input id=\"hero-image\" type=\"file\" name=\"hero_image\" accept=\"image/jpeg,image/png,image/webp\" required></label><button class=\"button\" type=\"submit\">Titelbild übernehmen</button></form>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if data.HasCustomHero {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "<form method=\"post\" action=\"/app/settings/building/hero/delete\" data-confirm=\"Titelbild entfernen und Standardbild verwenden?\"><button class=\"button ghost\" type=\"submit\">Standardbild verwenden</button></form>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "</section></div><aside class=\"preview panel\"><span class=\"eyebrow\">Live-Vorschau</span><img src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, " / 12</span></label><button class=\"button primary\" type=\"submit\">Portal-Kennung speichern</button></form><section class=\"panel inset\"><h3>Titelbild</h3><img class=\"hero-preview\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var134 string
 		templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 509, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 512, Col: 121}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "\" alt=\"\" data-hero-stage><div><span class=\"preview-mark\" data-brand-preview-mark>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "\" alt=\"Aktuelles Titelbild\" data-hero-preview><p data-hero-file-name>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var135 string
+		templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinStringErrs(heroLabel(data.HasCustomHero))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 512, Col: 223}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "</p><form method=\"post\" action=\"/app/settings/building/hero\" enctype=\"multipart/form-data\"><label>Neues Titelbild<input id=\"hero-image\" type=\"file\" name=\"hero_image\" accept=\"image/jpeg,image/png,image/webp\" required></label><button class=\"button\" type=\"submit\">Titelbild übernehmen</button></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.HasCustomHero {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "<form method=\"post\" action=\"/app/settings/building/hero/delete\" data-confirm=\"Titelbild entfernen und Standardbild verwenden?\"><button class=\"button ghost\" type=\"submit\">Standardbild verwenden</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "</section></div><aside class=\"preview panel\"><span class=\"eyebrow\">Live-Vorschau</span><img src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var136 string
+		templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 517, Col: 124}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var136)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\" alt=\"\" data-hero-stage><div><span class=\"preview-mark\" data-brand-preview-mark>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2961,33 +3007,33 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "</span><strong data-brand-preview-abbreviation>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "</span><strong data-brand-preview-abbreviation>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var135 string
-		templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.BrandAbbreviation)
+		var templ_7745c5c3_Var137 string
+		templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.BrandAbbreviation)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 509, Col: 304}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 517, Col: 304}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</strong><small>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var137))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var136 string
-		templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 509, Col: 340}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "</strong><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class=\"button primary\">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div><script id=\"brand-lucide-icon-names\" type=\"application/json\">@templ.Raw(data.LucideIconNamesJSON)</script></section>")
+		var templ_7745c5c3_Var138 string
+		templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 517, Col: 340}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var138))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class=\"button primary\">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div><script id=\"brand-lucide-icon-names\" type=\"application/json\">@templ.Raw(data.LucideIconNamesJSON)</script></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3024,44 +3070,44 @@ func SettingsFlash(message string, ok bool) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var137 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var137 == nil {
-			templ_7745c5c3_Var137 = templ.NopComponent
+		templ_7745c5c3_Var139 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var139 == nil {
+			templ_7745c5c3_Var139 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if message != "" {
-			var templ_7745c5c3_Var138 = []any{"flash", templ.KV("ok", ok), templ.KV("bad", !ok)}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var138...)
+			var templ_7745c5c3_Var140 = []any{"flash", templ.KV("ok", ok), templ.KV("bad", !ok)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var140...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "<p class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "<p class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var139 string
-			templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var138).String())
+			var templ_7745c5c3_Var141 string
+			templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var140).String())
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var139)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var141)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "\" role=\"status\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\" role=\"status\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var140 string
-			templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+			var templ_7745c5c3_Var142 string
+			templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 519, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 527, Col: 88}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var140))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3086,74 +3132,74 @@ func SettingsEmpty(empty view.EmptyStateView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var141 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var141 == nil {
-			templ_7745c5c3_Var141 = templ.NopComponent
+		templ_7745c5c3_Var143 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var143 == nil {
+			templ_7745c5c3_Var143 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "<section class=\"empty\"><h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "<section class=\"empty\"><h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var142 string
-		templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Title)
+		var templ_7745c5c3_Var144 string
+		templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 524, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 532, Col: 41}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "</h2><p>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var144))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var143 string
-		templ_7745c5c3_Var143, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Message)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 524, Col: 66}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var143))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</p>")
+		var templ_7745c5c3_Var145 string
+		templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Message)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 532, Col: 66}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var145))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if empty.HasAction {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "<a class=\"button\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "<a class=\"button\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var144 templ.SafeURL
-			templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(empty.ActionURL))
+			var templ_7745c5c3_Var146 templ.SafeURL
+			templ_7745c5c3_Var146, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(empty.ActionURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 526, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 534, Col: 58}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var144))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var146))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var145 string
-			templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.JoinStringErrs(empty.ActionLabel)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 526, Col: 80}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var145))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "</a>")
+			var templ_7745c5c3_Var147 string
+			templ_7745c5c3_Var147, templ_7745c5c3_Err = templ.JoinStringErrs(empty.ActionLabel)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 534, Col: 80}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var147))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3177,9 +3223,9 @@ func UserSettingsPage(data UserSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var146 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var146 == nil {
-			templ_7745c5c3_Var146 = templ.NopComponent
+		templ_7745c5c3_Var148 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var148 == nil {
+			templ_7745c5c3_Var148 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = SettingsFrame(data.Portal, "Benutzer & Rechte", []string{"users.js"}, UserSettingsContent(data)).Render(ctx, templ_7745c5c3_Buffer)
@@ -3206,9 +3252,9 @@ func UserSettingsContent(data UserSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var147 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var147 == nil {
-			templ_7745c5c3_Var147 = templ.NopComponent
+		templ_7745c5c3_Var149 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var149 == nil {
+			templ_7745c5c3_Var149 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PortalSectionLanding(
@@ -3248,90 +3294,90 @@ func UserSettingsBody(data UserSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var148 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var148 == nil {
-			templ_7745c5c3_Var148 = templ.NopComponent
+		templ_7745c5c3_Var150 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var150 == nil {
+			templ_7745c5c3_Var150 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "<div data-templ-user-settings><section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Zugänge</h2><p>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var149 string
-		templ_7745c5c3_Var149, templ_7745c5c3_Err = templ.JoinStringErrs(data.UserCount)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 554, Col: 107}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var149))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, " ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var150 string
-		templ_7745c5c3_Var150, templ_7745c5c3_Err = templ.JoinStringErrs(personLabel(data.UserCount))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 554, Col: 139}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var150))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "</p></div></header><div class=\"metrics four\"><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "<div data-templ-user-settings><section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Zugänge</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var151 string
 		templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.JoinStringErrs(data.UserCount)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 555, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 562, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var151))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "</strong><small>Gesamt</small></span><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, " ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var152 string
-		templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.JoinStringErrs(data.ActiveUserCount)
+		templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.JoinStringErrs(personLabel(data.UserCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 555, Col: 134}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 562, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var152))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "</strong><small>Aktiv</small></span><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "</p></div></header><div class=\"metrics four\"><span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var153 string
-		templ_7745c5c3_Var153, templ_7745c5c3_Err = templ.JoinStringErrs(data.InvitedUserCount)
+		templ_7745c5c3_Var153, templ_7745c5c3_Err = templ.JoinStringErrs(data.UserCount)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 555, Col: 209}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 563, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var153))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, "</strong><small>Eingeladen</small></span><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "</strong><small>Gesamt</small></span><span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var154 string
-		templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisabledUserCount)
+		templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.JoinStringErrs(data.ActiveUserCount)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 555, Col: 290}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 563, Col: 134}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var154))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "</strong><small>Deaktiviert</small></span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "</strong><small>Aktiv</small></span><span><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var155 string
+		templ_7745c5c3_Var155, templ_7745c5c3_Err = templ.JoinStringErrs(data.InvitedUserCount)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 563, Col: 209}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var155))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "</strong><small>Eingeladen</small></span><span><strong>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var156 string
+		templ_7745c5c3_Var156, templ_7745c5c3_Err = templ.JoinStringErrs(data.DisabledUserCount)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 563, Col: 290}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var156))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "</strong><small>Deaktiviert</small></span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3343,7 +3389,7 @@ func UserSettingsBody(data UserSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "<header class=\"subhead\"><div><h2>Personen</h2><p>Handlungsbedarf zuerst</p></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "<header class=\"subhead\"><div><h2>Personen</h2><p>Handlungsbedarf zuerst</p></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3353,7 +3399,7 @@ func UserSettingsBody(data UserSettingsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "<div class=\"user-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "<div class=\"user-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3363,12 +3409,12 @@ func UserSettingsBody(data UserSettingsPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "</section></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "</section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3399,12 +3445,12 @@ func UserInvite(data UserSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var155 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var155 == nil {
-			templ_7745c5c3_Var155 = templ.NopComponent
+		templ_7745c5c3_Var157 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var157 == nil {
+			templ_7745c5c3_Var157 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "<details id=\"invite\" class=\"invite\"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small></summary><form method=\"post\" action=\"/app/settings/users\"><div class=\"form-grid\"><label>E-Mail-Adresse<input type=\"email\" name=\"email\" placeholder=\"name@example.com\" autocomplete=\"email\" required></label><label>Rolle<select class=\"f-role\" name=\"role\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "<details id=\"invite\" class=\"invite\"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small></summary><form method=\"post\" action=\"/app/settings/users\"><div class=\"form-grid\"><label>E-Mail-Adresse<input type=\"email\" name=\"email\" placeholder=\"name@example.com\" autocomplete=\"email\" required></label><label>Rolle<select class=\"f-role\" name=\"role\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3412,17 +3458,17 @@ func UserInvite(data UserSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "</select></label></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "</select></label></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !data.ServiceProviderAccessEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "<p class=\"notice\">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "<p class=\"notice\">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "<details class=\"inline-details\"><summary>Name ergänzen <small>optional</small></summary><div class=\"form-grid three\"><input name=\"title\" placeholder=\"Titel\" aria-label=\"Titel\"><input name=\"first_name\" placeholder=\"Vorname\" aria-label=\"Vorname\"><input name=\"last_name\" placeholder=\"Nachname\" aria-label=\"Nachname\"></div></details> <details class=\"inline-details\"><summary>Zugang anpassen <small>optional</small></summary>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "<details class=\"inline-details\"><summary>Name ergänzen <small>optional</small></summary><div class=\"form-grid three\"><input name=\"title\" placeholder=\"Titel\" aria-label=\"Titel\"><input name=\"first_name\" placeholder=\"Vorname\" aria-label=\"Vorname\"><input name=\"last_name\" placeholder=\"Nachname\" aria-label=\"Nachname\"></div></details> <details class=\"inline-details\"><summary>Zugang anpassen <small>optional</small></summary>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3430,7 +3476,7 @@ func UserInvite(data UserSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "</details><footer class=\"form-actions\"><button class=\"button primary\" type=\"submit\">Einladung senden</button><a class=\"text-link\" href=\"/app/settings/building?section=units\">Danach bei Bedarf: Einheit verknüpfen</a></footer></form></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "</details><footer class=\"form-actions\"><button class=\"button primary\" type=\"submit\">Einladung senden</button><a class=\"text-link\" href=\"/app/settings/building?section=units\">Danach bei Bedarf: Einheit verknüpfen</a></footer></form></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3454,98 +3500,98 @@ func RoleOptions(data UserSettingsPageData, selected string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var156 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var156 == nil {
-			templ_7745c5c3_Var156 = templ.NopComponent
+		templ_7745c5c3_Var158 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var158 == nil {
+			templ_7745c5c3_Var158 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "<option value=\"Mieter\" data-preset-label=\"Standardzugriff\" data-preset-permissions=\"\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "<option value=\"Mieter\" data-preset-label=\"Standardzugriff\" data-preset-permissions=\"\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Mieter" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, ">Mieter</option><option value=\"Eigentümer\" data-preset-label=\"Eigentümerzugriff\" data-preset-permissions=\"\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if selected == "Eigentümer" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, ">Eigentümer</option><option value=\"Beirat\" data-preset-label=\"Beiratszugriff\" data-preset-permissions=\"\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if selected == "Beirat" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, ">Beirat</option><option value=\"Verwalter\" data-preset-label=\"Verwalterzugriff\" data-preset-permissions=\"\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if selected == "Verwalter" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, ">Verwalter</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, ">Mieter</option><option value=\"Eigentümer\" data-preset-label=\"Eigentümerzugriff\" data-preset-permissions=\"\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if selected == "Eigentümer" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, ">Eigentümer</option><option value=\"Beirat\" data-preset-label=\"Beiratszugriff\" data-preset-permissions=\"\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if selected == "Beirat" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, ">Beirat</option><option value=\"Verwalter\" data-preset-label=\"Verwalterzugriff\" data-preset-permissions=\"\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if selected == "Verwalter" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, ">Verwalter</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "<option value=\"Admin\" data-preset-label=\"Adminzugriff\" data-preset-permissions=\"parking\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "<option value=\"Admin\" data-preset-label=\"Adminzugriff\" data-preset-permissions=\"parking\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if selected == "Admin" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, ">Admin</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, ">Admin</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.ServiceProviderAccessEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "<option value=\"Dienstleister\" data-preset-label=\"Nur zugewiesene Anliegen\" data-preset-permissions=\"\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "<option value=\"Dienstleister\" data-preset-label=\"Nur zugewiesene Anliegen\" data-preset-permissions=\"\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if selected == "Dienstleister" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, ">Dienstleister</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, ">Dienstleister</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "<option value=\"Bewohner\" data-preset-label=\"Bewohnerzugriff\" data-preset-permissions=\"\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "<option value=\"Bewohner\" data-preset-label=\"Bewohnerzugriff\" data-preset-permissions=\"\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Bewohner" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, ">Bewohner</option>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, ">Bewohner</option>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3569,255 +3615,255 @@ func UserCard(data UserSettingsPageData, user view.UserRow) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var157 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var157 == nil {
-			templ_7745c5c3_Var157 = templ.NopComponent
+		templ_7745c5c3_Var159 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var159 == nil {
+			templ_7745c5c3_Var159 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var158 = []any{"user-card", templ.KV("attention", user.Status == "Eingeladen" || user.Status == "Deaktiviert")}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var158...)
+		var templ_7745c5c3_Var160 = []any{"user-card", templ.KV("attention", user.Status == "Eingeladen" || user.Status == "Deaktiviert")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var160...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "<article class=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var159 string
-		templ_7745c5c3_Var159, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var158).String())
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var159)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, "\"><span class=\"user-avatar\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var160 string
-		templ_7745c5c3_Var160, templ_7745c5c3_Err = templ.JoinStringErrs(user.Initials)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 597, Col: 157}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var160))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, "</span><div class=\"user-identity\"><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "<article class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var161 string
-		templ_7745c5c3_Var161, templ_7745c5c3_Err = templ.JoinStringErrs(user.DisplayName)
+		templ_7745c5c3_Var161, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var160).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 597, Col: 219}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var161))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var161)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "</strong><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "\"><span class=\"user-avatar\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var162 templ.SafeURL
-		templ_7745c5c3_Var162, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("mailto:" + user.Email))
+		var templ_7745c5c3_Var162 string
+		templ_7745c5c3_Var162, templ_7745c5c3_Err = templ.JoinStringErrs(user.Initials)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 597, Col: 277}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 157}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var162))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "</span><div class=\"user-identity\"><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var163 string
-		templ_7745c5c3_Var163, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
+		templ_7745c5c3_Var163, templ_7745c5c3_Err = templ.JoinStringErrs(user.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 597, Col: 292}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 219}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var163))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, "</a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "</strong><a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var164 templ.SafeURL
+		templ_7745c5c3_Var164, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("mailto:" + user.Email))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 277}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var164))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var165 string
+		templ_7745c5c3_Var165, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 292}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var165))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.Phone != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "<small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "<small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var164 string
-			templ_7745c5c3_Var164, templ_7745c5c3_Err = templ.JoinStringErrs(user.Phone)
+			var templ_7745c5c3_Var166 string
+			templ_7745c5c3_Var166, templ_7745c5c3_Err = templ.JoinStringErrs(user.Phone)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 599, Col: 22}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 607, Col: 22}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var164))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var166))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "</small> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "</small> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if user.HasUnits {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "<div class=\"chips\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "<div class=\"chips\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, unit := range user.UnitList {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "<span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var165 string
-				templ_7745c5c3_Var165, templ_7745c5c3_Err = templ.JoinStringErrs(unit)
+				var templ_7745c5c3_Var167 string
+				templ_7745c5c3_Var167, templ_7745c5c3_Err = templ.JoinStringErrs(unit)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 604, Col: 17}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 612, Col: 17}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var165))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var167))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var166 = []any{"pill", user.RoleClass}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var166...)
+		var templ_7745c5c3_Var168 = []any{"pill", user.RoleClass}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var168...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "<span class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var167 string
-		templ_7745c5c3_Var167, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var166).String())
+		var templ_7745c5c3_Var169 string
+		templ_7745c5c3_Var169, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var168).String())
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var167)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var169)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var168 string
-		templ_7745c5c3_Var168, templ_7745c5c3_Err = templ.JoinStringErrs(user.Role)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 608, Col: 57}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var168))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "</span><div class=\"chips\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for _, permission := range user.PermissionList {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "<span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var169 string
-			templ_7745c5c3_Var169, templ_7745c5c3_Err = templ.JoinStringErrs(permission)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 610, Col: 21}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var169))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "</div><span class=\"pill\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var170 string
-		templ_7745c5c3_Var170, templ_7745c5c3_Err = templ.JoinStringErrs(user.Status)
+		templ_7745c5c3_Var170, templ_7745c5c3_Err = templ.JoinStringErrs(user.Role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 612, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 616, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var170))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "</span><div class=\"chips\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, permission := range user.PermissionList {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "<span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var171 string
+			templ_7745c5c3_Var171, templ_7745c5c3_Err = templ.JoinStringErrs(permission)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 618, Col: 21}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var171))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "</div><span class=\"pill\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var172 string
+		templ_7745c5c3_Var172, templ_7745c5c3_Err = templ.JoinStringErrs(user.Status)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 620, Col: 39}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var172))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.Editable || (user.IsConfig && !user.Protected) {
 			if !data.ServiceProviderAccessEnabled && user.Role == "Dienstleister" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "<span class=\"muted\">Schreibgeschützt</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "<span class=\"muted\">Schreibgeschützt</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "<button class=\"icon-button row-edit\" type=\"button\" data-edit=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var171 string
-				templ_7745c5c3_Var171, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 617, Col: 77}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var171)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "\" aria-label=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var172 string
-				templ_7745c5c3_Var172, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.DisplayName + " bearbeiten")
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 617, Col: 125}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var172)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "\" aria-haspopup=\"dialog\" aria-controls=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "<button class=\"icon-button row-edit\" type=\"button\" data-edit=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var173 string
-				templ_7745c5c3_Var173, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-" + user.Email)
+				templ_7745c5c3_Var173, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 617, Col: 187}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var173)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "\">✎</button>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "\" aria-label=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var174 string
+				templ_7745c5c3_Var174, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.DisplayName + " bearbeiten")
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 125}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var174)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "\" aria-haspopup=\"dialog\" aria-controls=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var175 string
+				templ_7745c5c3_Var175, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-" + user.Email)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 187}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var175)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, "\">✎</button>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -3827,7 +3873,7 @@ func UserCard(data UserSettingsPageData, user view.UserRow) templ.Component {
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "</article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "</article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3851,87 +3897,87 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var174 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var174 == nil {
-			templ_7745c5c3_Var174 = templ.NopComponent
+		templ_7745c5c3_Var176 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var176 == nil {
+			templ_7745c5c3_Var176 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "<dialog id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var175 string
-		templ_7745c5c3_Var175, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-" + user.Email)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 34}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var175)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "\" class=\"user-dialog\" aria-labelledby=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var176 string
-		templ_7745c5c3_Var176, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-title-" + user.Email)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 101}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var176)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "\"><form method=\"dialog\" class=\"dialog-close\"><button aria-label=\"Schließen\">×</button></form><h2 id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "<dialog id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var177 string
-		templ_7745c5c3_Var177, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-title-" + user.Email)
+		templ_7745c5c3_Var177, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-" + user.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 232}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 633, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var177)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "\">Zugang bearbeiten</h2><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "\" class=\"user-dialog\" aria-labelledby=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var178 string
-		templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
+		templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-title-" + user.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 272}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 633, Col: 101}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var178))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, " ")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var178)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.IsConfig {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "<span>(aus Konfiguration)</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "</p><form method=\"post\" action=\"/app/settings/users/edit\"><input type=\"hidden\" name=\"orig_email\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "\"><form method=\"dialog\" class=\"dialog-close\"><button aria-label=\"Schließen\">×</button></form><h2 id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var179 string
-		templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
+		templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.ResolveAttributeValue("edit-title-" + user.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 629, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 633, Col: 232}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var179)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "\"><label>Rolle in diesem Haus<select class=\"f-role\" name=\"role\" autofocus>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "\">Zugang bearbeiten</h2><p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var180 string
+		templ_7745c5c3_Var180, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 633, Col: 272}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var180))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, " ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if user.IsConfig {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "<span>(aus Konfiguration)</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "</p><form method=\"post\" action=\"/app/settings/users/edit\"><input type=\"hidden\" name=\"orig_email\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var181 string
+		templ_7745c5c3_Var181, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 637, Col: 116}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var181)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 290, "\"><label>Rolle in diesem Haus<select class=\"f-role\" name=\"role\" autofocus>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3939,81 +3985,35 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "</select></label> <details class=\"inline-details\"><summary>Personendaten <small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 291, "</select></label> <details class=\"inline-details\"><summary>Personendaten <small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "bearbeiten")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 292, "bearbeiten")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, "zentral gepflegt")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 293, "zentral gepflegt")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "</small></summary><div class=\"form-grid three\"><input name=\"title\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var180 string
-		templ_7745c5c3_Var180, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 87}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var180)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "\" placeholder=\"Titel\" aria-label=\"Titel\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 290, " readonly")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 291, "><input name=\"first_name\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var181 string
-		templ_7745c5c3_Var181, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.FirstName)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 205}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var181)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 292, "\" placeholder=\"Vorname\" aria-label=\"Vorname\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 293, " readonly")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 294, "><input name=\"last_name\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 294, "</small></summary><div class=\"form-grid three\"><input name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var182 string
-		templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.LastName)
+		templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 325}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 644, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var182)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 295, "\" placeholder=\"Nachname\" aria-label=\"Nachname\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 295, "\" placeholder=\"Titel\" aria-label=\"Titel\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4023,72 +4023,118 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 297, "><input type=\"email\" name=\"email\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 297, "><input name=\"first_name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var183 string
-		templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
+		templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.FirstName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 453}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 644, Col: 205}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var183)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 298, "\" aria-label=\"E-Mail-Adresse\" autocomplete=\"email\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 298, "\" placeholder=\"Vorname\" aria-label=\"Vorname\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.IsConfig || !data.IsAdmin {
+		if !data.IsAdmin {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 299, " readonly")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if !user.IsConfig && data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 300, " required")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 301, "></div></details> <details class=\"inline-details\"><summary>Einheiten <small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 300, "><input name=\"last_name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var184 string
-		templ_7745c5c3_Var184, templ_7745c5c3_Err = templ.JoinStringErrs(len(user.UnitList))
+		templ_7745c5c3_Var184, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.LastName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 637, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 644, Col: 325}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var184))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var184)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 302, " verknüpft</small></summary><div class=\"chips\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 301, "\" placeholder=\"Nachname\" aria-label=\"Nachname\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !data.IsAdmin {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 302, " readonly")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 303, "><input type=\"email\" name=\"email\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var185 string
+		templ_7745c5c3_Var185, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 644, Col: 453}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var185)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 304, "\" aria-label=\"E-Mail-Adresse\" autocomplete=\"email\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if user.IsConfig || !data.IsAdmin {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 305, " readonly")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if !user.IsConfig && data.IsAdmin {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 306, " required")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 307, "></div></details> <details class=\"inline-details\"><summary>Einheiten <small>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var186 string
+		templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.JoinStringErrs(len(user.UnitList))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 645, Col: 80}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var186))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 308, " verknüpft</small></summary><div class=\"chips\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, unit := range user.UnitList {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 303, "<span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 309, "<span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var185 string
-			templ_7745c5c3_Var185, templ_7745c5c3_Err = templ.JoinStringErrs(unit)
+			var templ_7745c5c3_Var187 string
+			templ_7745c5c3_Var187, templ_7745c5c3_Err = templ.JoinStringErrs(unit)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 639, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 647, Col: 16}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var185))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var187))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 304, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 310, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 305, "</div><a class=\"text-link\" href=\"/app/settings/building?section=units\">Zuordnung verwalten</a></details> <details class=\"inline-details\"><summary>Anmeldung &amp; Sonderrechte</summary>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 311, "</div><a class=\"text-link\" href=\"/app/settings/building?section=units\">Zuordnung verwalten</a></details> <details class=\"inline-details\"><summary>Anmeldung &amp; Sonderrechte</summary>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4096,40 +4142,40 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 306, "</details> <label class=\"check-card\"><input type=\"checkbox\" name=\"deactivated\" value=\"1\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 312, "</details> <label class=\"check-card\"><input type=\"checkbox\" name=\"deactivated\" value=\"1\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.Deactivated {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 307, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 313, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 308, "><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 314, "><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !user.IsConfig {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 309, "<details class=\"danger\"><summary>Zugang dauerhaft entfernen</summary><form method=\"post\" action=\"/app/settings/users/delete\" data-confirm=\"Diesen Zugang wirklich dauerhaft entfernen?\"><input type=\"hidden\" name=\"email\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 315, "<details class=\"danger\"><summary>Zugang dauerhaft entfernen</summary><form method=\"post\" action=\"/app/settings/users/delete\" data-confirm=\"Diesen Zugang wirklich dauerhaft entfernen?\"><input type=\"hidden\" name=\"email\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var186 string
-			templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
+			var templ_7745c5c3_Var188 string
+			templ_7745c5c3_Var188, templ_7745c5c3_Err = templ.ResolveAttributeValue(user.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 645, Col: 239}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 653, Col: 239}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var186)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var188)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 310, "\"><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type=\"submit\">Dauerhaft entfernen</button></form></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 316, "\"><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type=\"submit\">Dauerhaft entfernen</button></form></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 311, "</dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 317, "</dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4153,52 +4199,52 @@ func AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) templ.Com
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var187 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var187 == nil {
-			templ_7745c5c3_Var187 = templ.NopComponent
+		templ_7745c5c3_Var189 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var189 == nil {
+			templ_7745c5c3_Var189 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 312, "<div class=\"access-options\"><fieldset><legend>Sonderrechte</legend><span class=\"scope personal\" data-preset-label>Gespeicherte Rechte</span><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"parking\" data-permission=\"parking\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 318, "<div class=\"access-options\"><fieldset><legend>Sonderrechte</legend><span class=\"scope personal\" data-preset-label>Gespeicherte Rechte</span><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"parking\" data-permission=\"parking\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if parking {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 313, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 314, "><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"energy-caretaker\" data-permission=\"energy-caretaker\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if energyCaretaker {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 315, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 316, "><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"email\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if emailAuth {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 317, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 318, "><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"oidc\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if oidcAuth {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 319, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 320, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 320, "><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"energy-caretaker\" data-permission=\"energy-caretaker\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if energyCaretaker {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 321, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 322, "><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"email\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if emailAuth {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 323, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 324, "><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"oidc\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if oidcAuth {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 325, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 326, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4222,12 +4268,12 @@ func SettingsStyles() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var188 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var188 == nil {
-			templ_7745c5c3_Var188 = templ.NopComponent
+		templ_7745c5c3_Var190 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var190 == nil {
+			templ_7745c5c3_Var190 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 321, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.settings-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.settings-main>*{max-width:1180px;margin-inline:auto}.settings-main>*+*{margin-top:var(--space-5)}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.panel{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.text-link{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}.muted{color:var(--muted)}\n\t\t.identity-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:var(--space-4);padding:var(--space-4)}.identity-icon,.link-icon,.unit-kind{display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);color:var(--gold-ink);border-radius:var(--radius-sm)}.identity-icon{width:58px;height:58px;background:var(--ink);color:var(--panel)}.identity-icon svg{width:28px}.identity-card h2{font-size:23px}.identity-card p{margin-top:3px;color:var(--muted);font-size:13px}.pill,.scope{display:inline-flex;align-items:center;width:max-content;padding:4px 10px;border-radius:var(--radius-pill);background:var(--panel-soft);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800}.scope.personal{background:rgba(47,107,74,.08);color:var(--leaf)}.scope.management{background:rgba(200,153,63,.12);color:var(--gold-ink)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.span-all{grid-column:1/-1}.settings-group{overflow:hidden}.settings-group>header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3);align-items:start;padding:var(--space-4)}.settings-group h2{font-size:21px}.settings-group header p{margin-top:4px;color:var(--muted);font-size:12px}.settings-links{display:grid}.settings-links a{min-height:72px;display:grid;grid-template-columns:42px minmax(0,1fr) 16px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line)}.settings-links a:hover{background:var(--panel-soft)}.settings-links .link-icon{width:42px;height:42px}.link-icon svg,.unit-kind svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.settings-links strong,.settings-links small{display:block}.settings-links strong{font-family:var(--font-serif);font-size:17px}.settings-links small{margin-top:3px;color:var(--muted);font-size:12px}.settings-links b{color:var(--gold-ink);font-size:22px}.management-links{grid-template-columns:repeat(2,minmax(0,1fr))}.management-links a:nth-child(even){border-left:1px solid var(--line)}\n\t\t.two-column{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:var(--space-4);align-items:start}.form-card{padding:var(--space-4)}.form-card form,.workspace form,.user-dialog form{display:grid;gap:var(--space-4)}fieldset{min-width:0;display:grid;gap:var(--space-3);margin:0;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}legend{padding-inline:var(--space-2);font-family:var(--font-serif);font-size:19px;font-weight:700}fieldset>p{color:var(--muted);font-size:12px}.form-grid,.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-grid{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:grid;gap:6px;color:var(--gold-ink);font-size:11px;font-weight:800}label small{color:var(--soft);font-weight:600}input,select,textarea,.readonly{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}textarea{min-height:92px;resize:vertical}.readonly{display:flex;align-items:center;overflow-wrap:anywhere}.check-card{min-height:64px;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.check-card input{width:19px;min-height:19px;margin:1px 0 0;accent-color:var(--leaf)}.check-card span{display:grid;gap:3px;color:var(--ink);font-size:13px}.check-card small{color:var(--muted);font-size:12px;line-height:1.4}.form-actions,.dialog-card>footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:var(--space-2)}.aside-stack{display:grid;gap:var(--space-3)}.note{overflow:hidden}.note>summary{min-height:52px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850;list-style:none}.note>summary::-webkit-details-marker{display:none}.note>div{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4);color:var(--muted);font-size:12px}.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.facts li{display:grid;gap:2px}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{color:var(--ink);font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{display:inline-flex;padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.flash,.notice{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:rgba(200,153,63,.09);color:var(--gold-ink);font-size:12px;line-height:1.45}.flash.ok{background:rgba(47,107,74,.08);color:var(--leaf)}.flash.bad{border-color:#8c3434;background:rgba(140,52,52,.07);color:#8c3434}\n\t\t.notification-form{display:grid;gap:var(--space-4)}.master-switch{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.master-switch .link-icon{width:48px;height:48px}.master-switch strong,.master-switch small{display:block}.master-switch strong{font-family:var(--font-serif);font-size:18px}.master-switch small{margin-top:3px;color:var(--muted);font-size:12px}.switch{position:relative;width:46px;height:27px}.switch input{position:absolute;opacity:0}.switch i{position:absolute;inset:0;border-radius:var(--radius-pill);background:var(--line);box-shadow:inset 0 0 0 1px rgba(32,37,31,.08)}.switch i::after{content:\"\";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--panel);box-shadow:0 2px 5px rgba(32,37,31,.18);transition:.16s}.switch input:checked+i{background:var(--leaf)}.switch input:checked+i::after{transform:translateX(19px)}.subhead{display:flex;align-items:end;justify-content:space-between;gap:var(--space-3)}.subhead h2{font-size:21px}.subhead p,.subhead>span{color:var(--muted);font-size:12px}.option-group{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.option-group h3{padding:9px var(--space-3);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.option-group>label{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);color:var(--ink)}.option-group strong,.option-group small{display:block}.option-group small{margin-top:3px;color:var(--muted);font-size:12px}.paused-note{display:none}.email-paused .paused-note{display:block}.email-paused .option-group{opacity:.7}\n\t\t.settings-home-unit{display:block;font-weight:650}.section-tabs{display:flex;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.section-tabs a{min-height:46px;display:grid;place-items:center;padding:0 var(--space-4);border-right:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.section-tabs a.active{background:var(--ink);color:var(--panel)}.workspace{padding:var(--space-4)}.workspace>*+*{margin-top:var(--space-4)}.workspace-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.workspace-head h2{font-size:24px}.workspace-head p{margin-top:3px;color:var(--muted);font-size:12px}.head-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.map-card{min-height:180px;display:grid;place-content:center;justify-items:center;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);text-align:center}.map-card .map-pin{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.map-card svg{width:23px;fill:none;stroke:currentColor}.map-card small{color:var(--muted)}.inline-details{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inline-details>summary{cursor:pointer;font-weight:800}.inline-details>*+*{margin-top:var(--space-3)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.metrics.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metrics span{display:grid;gap:3px;padding:var(--space-3);border-left:1px solid var(--line)}.metrics span:first-child{border-left:0}.metrics strong{font-family:var(--font-serif);font-size:22px}.metrics small{color:var(--muted);font-size:11px}.unit-list,.user-list{display:grid;gap:var(--space-2)}.unit-card{display:grid;grid-template-columns:42px minmax(150px,1.1fr) minmax(180px,1fr) minmax(100px,.5fr) minmax(120px,.6fr) 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.unit-kind{width:42px;height:42px}.unit-title,.assignment,.unit-card>div{min-width:0;display:grid;gap:3px}.unit-card small{color:var(--muted);font-size:11px}.unit-title em{color:var(--gold-ink);font-size:10px;font-style:normal}.icon-button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:20px}.anchor-dialog{position:fixed;z-index:300;inset:0;display:none;place-items:center;padding:var(--space-4)}.anchor-dialog:target{display:grid}.dialog-backdrop{position:absolute;inset:0;background:rgba(32,37,31,.48)}.dialog-card{position:relative;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.dialog-card>header{display:flex;justify-content:space-between;gap:var(--space-3)}.dialog-card>form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.dialog-card>form fieldset{align-content:start}.dialog-card>footer form{margin-right:auto}.appearance-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.7fr);gap:var(--space-4);align-items:start}.inset{padding:var(--space-4)}.inset>*+*{margin-top:var(--space-3)}.brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.brand-grid label{position:relative;place-items:center;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);text-align:center}.brand-grid input{position:absolute;opacity:0}.brand-grid label:has(input:checked){background:var(--panel-soft);border-color:var(--gold)}.brand-grid svg{width:26px;fill:none;stroke:var(--gold-ink)}.hero-preview{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:var(--radius-sm)}.preview{position:sticky;top:var(--space-4);overflow:hidden;padding:var(--space-4)}.preview>img{width:100%;aspect-ratio:16/9;object-fit:cover;margin-top:var(--space-3);border-radius:var(--radius-sm)}.preview>div{display:grid;grid-template-columns:38px 1fr;gap:var(--space-2);margin-top:var(--space-3)}.preview-mark{grid-row:1/3;display:grid;place-items:center}.preview-mark svg{width:24px;fill:none;stroke:var(--gold-ink)}.preview small{color:var(--muted)}.preview h3{margin-block:var(--space-5);font-size:27px}.preview p{margin-top:var(--space-3);color:var(--muted);font-size:11px}\n\t\t.invite{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.invite>summary{min-height:54px;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:var(--space-2);padding:var(--space-3);cursor:pointer;list-style:none}.invite>summary span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--panel)}.invite>summary small{color:var(--muted)}.invite>form{padding:0 var(--space-4) var(--space-4)}.access-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}.user-card{display:grid;grid-template-columns:42px minmax(180px,1.25fr) auto minmax(110px,.7fr) auto 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.user-card.attention{background:var(--panel-soft)}.user-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:rgba(200,153,63,.14);color:var(--gold-ink);font-weight:800}.user-identity{min-width:0;display:grid;gap:2px}.user-identity a,.user-identity small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.user-dialog{width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.user-dialog::backdrop{background:rgba(32,37,31,.48)}.user-dialog>p{margin:3px 0 var(--space-4);color:var(--muted);font-size:12px}.dialog-close{float:right}.dialog-close button{width:42px;height:42px;border:0;background:transparent;font-size:22px}.danger{margin-top:var(--space-4);border-top:1px solid var(--line);padding-top:var(--space-3)}.danger>summary{cursor:pointer;color:#8c3434;font-weight:800}.danger form{margin-top:var(--space-3)}.danger button{justify-self:start;min-height:42px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:var(--panel);color:#8c3434;font-weight:800}\n\t\t.empty{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.empty p{color:var(--muted);font-size:12px}.cost-type-list{display:grid;gap:var(--space-2)}.cost-type-card{display:grid!important;grid-template-columns:minmax(180px,1.2fr) minmax(160px,.8fr) minmax(180px,.8fr) auto;align-items:end;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.cost-type-card code{font-size:12px}.cost-type-card .button{min-height:42px}\n\t\t.home-identity .form-grid{align-items:start}.home-identity .form-grid fieldset{align-content:start}.home-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-scope{min-height:116px;display:grid;align-content:center;gap:5px;padding:var(--space-4) var(--space-5);border-right:1px solid var(--line)}.home-scope:last-child{border-right:0}.home-scope.current{background:var(--panel-soft)}.home-scope>span{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.home-scope strong{font-family:var(--font-serif);font-size:21px;line-height:1.2;overflow-wrap:anywhere}.home-scope small{color:var(--muted);font-size:12px;line-height:1.4}.home-scope .home-scope-unit{font-weight:700}.home-scope .home-scope-meta{color:var(--soft);font-size:11px}.home-readonly{min-height:50px;justify-content:space-between;gap:var(--space-3);background:var(--panel-soft)}.home-readonly strong{font-size:15px;overflow-wrap:break-word}.home-readonly small{color:var(--muted);font-size:12px;font-weight:600;text-align:right}.home-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45}.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;padding:13px 14px;border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:11px;line-height:1.4}.home-note{display:grid;grid-template-columns:34px minmax(0,1fr);gap:11px;align-items:start;padding-top:var(--space-4);border-top:1px solid var(--line)}.home-note svg{width:32px;height:32px;padding:7px;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);fill:none;stroke:currentColor;stroke-width:1.8}.home-note strong{display:block;font-size:13px}.home-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}\n\t\t@media(max-width:720px){.home-map{grid-template-columns:1fr}.home-scope{min-height:0;padding:var(--space-3) var(--space-4);border-right:0;border-bottom:1px solid var(--line)}.home-scope:last-child{border-bottom:0}}\n\t\t@media(max-width:1050px){.two-column,.appearance-grid{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr 1fr}.unit-card{grid-template-columns:42px minmax(0,1fr) auto}.unit-card .assignment,.unit-card>div:nth-of-type(3){display:none}.user-card{grid-template-columns:42px minmax(0,1fr) auto auto 42px}.user-card>.chips{display:none}.preview{position:static}.cost-type-card{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.settings-main{padding:var(--space-5) var(--space-4) 48px}.settings-grid,.management-links,.form-grid,.form-grid.three,.contact-grid,.access-options,.cost-type-card{grid-template-columns:1fr}.span-all{grid-column:auto}.management-links a:nth-child(even){border-left:0}.identity-card{grid-template-columns:48px minmax(0,1fr)}.identity-icon{width:48px;height:48px}.identity-card>.pill{grid-column:2}.section-tabs{margin-inline:-4px}.section-tabs a{padding-inline:var(--space-3)}.workspace{padding:var(--space-3)}.workspace-head{display:grid}.head-actions{display:grid}.metrics.four{grid-template-columns:repeat(3,1fr)}.metrics.four span:first-child{display:none}.metrics.four span:nth-child(2){border-left:0}.dialog-card>form{grid-template-columns:1fr}.brand-grid{grid-template-columns:repeat(2,1fr)}.unit-card{grid-template-columns:38px minmax(0,1fr) 42px}.unit-card>div:not(.unit-title){display:none}.user-card{grid-template-columns:38px minmax(0,1fr) 42px;row-gap:var(--space-2)}.user-card>.user-avatar,.user-card>.user-identity{grid-row:1}.user-card>.icon-button{grid-row:1;grid-column:3}.user-card>.pill{grid-column:2/-1;justify-self:start}.user-card>.chips,.user-card>.muted{display:none}.invite>summary{grid-template-columns:26px 1fr}.invite>summary small{grid-column:2}.form-actions{display:grid;grid-template-columns:1fr}.form-actions .button{width:100%}}\n\t</style><style>\n\t\tbody.unit-dialog-enhanced .unit-dialog-shell{display:none}body.unit-dialog-enhanced .unit-dialog-shell.is-open{display:grid}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 327, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.settings-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.settings-main>*{max-width:1180px;margin-inline:auto}.settings-main>*+*{margin-top:var(--space-5)}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.panel{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.text-link{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}.muted{color:var(--muted)}\n\t\t.identity-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:var(--space-4);padding:var(--space-4)}.identity-icon,.link-icon,.unit-kind{display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);color:var(--gold-ink);border-radius:var(--radius-sm)}.identity-icon{width:58px;height:58px;background:var(--ink);color:var(--panel)}.identity-icon svg{width:28px}.identity-card h2{font-size:23px}.identity-card p{margin-top:3px;color:var(--muted);font-size:13px}.pill,.scope{display:inline-flex;align-items:center;width:max-content;padding:4px 10px;border-radius:var(--radius-pill);background:var(--panel-soft);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800}.scope.personal{background:rgba(47,107,74,.08);color:var(--leaf)}.scope.management{background:rgba(200,153,63,.12);color:var(--gold-ink)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.span-all{grid-column:1/-1}.settings-group{overflow:hidden}.settings-group>header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3);align-items:start;padding:var(--space-4)}.settings-group h2{font-size:21px}.settings-group header p{margin-top:4px;color:var(--muted);font-size:12px}.settings-links{display:grid}.settings-links a{min-height:72px;display:grid;grid-template-columns:42px minmax(0,1fr) 16px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line)}.settings-links a:hover{background:var(--panel-soft)}.settings-links .link-icon{width:42px;height:42px}.link-icon svg,.unit-kind svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.settings-links strong,.settings-links small{display:block}.settings-links strong{font-family:var(--font-serif);font-size:17px}.settings-links small{margin-top:3px;color:var(--muted);font-size:12px}.settings-links b{color:var(--gold-ink);font-size:22px}.management-links{grid-template-columns:repeat(2,minmax(0,1fr))}.management-links a:nth-child(even){border-left:1px solid var(--line)}\n\t\t.two-column{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:var(--space-4);align-items:start}.form-card{padding:var(--space-4)}.form-card form,.workspace form,.user-dialog form{display:grid;gap:var(--space-4)}fieldset{min-width:0;display:grid;gap:var(--space-3);margin:0;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}legend{padding-inline:var(--space-2);font-family:var(--font-serif);font-size:19px;font-weight:700}fieldset>p{color:var(--muted);font-size:12px}.form-grid,.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-grid{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:grid;gap:6px;color:var(--gold-ink);font-size:11px;font-weight:800}label small{color:var(--soft);font-weight:600}input,select,textarea,.readonly{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}textarea{min-height:92px;resize:vertical}.readonly{display:flex;align-items:center;overflow-wrap:anywhere}.check-card{min-height:64px;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.check-card input{width:19px;min-height:19px;margin:1px 0 0;accent-color:var(--leaf)}.check-card span{display:grid;gap:3px;color:var(--ink);font-size:13px}.check-card small{color:var(--muted);font-size:12px;line-height:1.4}.form-actions,.dialog-card>footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:var(--space-2)}.aside-stack{display:grid;gap:var(--space-3)}.note{overflow:hidden}.note>summary{min-height:52px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850;list-style:none}.note>summary::-webkit-details-marker{display:none}.note>div{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4);color:var(--muted);font-size:12px}.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.facts li{display:grid;gap:2px}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{color:var(--ink);font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{display:inline-flex;padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.flash,.notice{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:rgba(200,153,63,.09);color:var(--gold-ink);font-size:12px;line-height:1.45}.flash.ok{background:rgba(47,107,74,.08);color:var(--leaf)}.flash.bad{border-color:#8c3434;background:rgba(140,52,52,.07);color:#8c3434}\n\t\t.notification-form{display:grid;gap:var(--space-4)}.master-switch{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.master-switch .link-icon{width:48px;height:48px}.master-switch strong,.master-switch small{display:block}.master-switch strong{font-family:var(--font-serif);font-size:18px}.master-switch small{margin-top:3px;color:var(--muted);font-size:12px}.switch{position:relative;width:46px;height:27px}.switch input{position:absolute;opacity:0}.switch i{position:absolute;inset:0;border-radius:var(--radius-pill);background:var(--line);box-shadow:inset 0 0 0 1px rgba(32,37,31,.08)}.switch i::after{content:\"\";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--panel);box-shadow:0 2px 5px rgba(32,37,31,.18);transition:.16s}.switch input:checked+i{background:var(--leaf)}.switch input:checked+i::after{transform:translateX(19px)}.subhead{display:flex;align-items:end;justify-content:space-between;gap:var(--space-3)}.subhead h2{font-size:21px}.subhead p,.subhead>span{color:var(--muted);font-size:12px}.option-group{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.option-group h3{padding:9px var(--space-3);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.option-group>label{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);color:var(--ink)}.option-group strong,.option-group small{display:block}.option-group small{margin-top:3px;color:var(--muted);font-size:12px}.paused-note{display:none}.email-paused .paused-note{display:block}.email-paused .option-group{opacity:.7}\n\t\t.settings-home-unit{display:block;font-weight:650}.section-tabs{display:flex;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.section-tabs a{min-height:46px;display:grid;place-items:center;padding:0 var(--space-4);border-right:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.section-tabs a.active{background:var(--ink);color:var(--panel)}.workspace{padding:var(--space-4)}.workspace>*+*{margin-top:var(--space-4)}.workspace-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.workspace-head h2{font-size:24px}.workspace-head p{margin-top:3px;color:var(--muted);font-size:12px}.head-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.map-card{min-height:180px;display:grid;place-content:center;justify-items:center;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);text-align:center}.map-card .map-pin{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.map-card svg{width:23px;fill:none;stroke:currentColor}.map-card small{color:var(--muted)}.inline-details{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inline-details>summary{cursor:pointer;font-weight:800}.inline-details>*+*{margin-top:var(--space-3)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.metrics.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metrics span{display:grid;gap:3px;padding:var(--space-3);border-left:1px solid var(--line)}.metrics span:first-child{border-left:0}.metrics strong{font-family:var(--font-serif);font-size:22px}.metrics small{color:var(--muted);font-size:11px}.unit-list,.user-list{display:grid;gap:var(--space-2)}.unit-card{display:grid;grid-template-columns:42px minmax(150px,1.1fr) minmax(180px,1fr) minmax(100px,.5fr) minmax(120px,.6fr) 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.unit-kind{width:42px;height:42px}.unit-title,.assignment,.unit-card>div{min-width:0;display:grid;gap:3px}.unit-card small{color:var(--muted);font-size:11px}.unit-title em{color:var(--gold-ink);font-size:10px;font-style:normal}.icon-button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:20px}.anchor-dialog{position:fixed;z-index:300;inset:0;display:none;place-items:center;padding:var(--space-4)}.anchor-dialog:target{display:grid}.dialog-backdrop{position:absolute;inset:0;background:rgba(32,37,31,.48)}.dialog-card{position:relative;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.dialog-card>header{display:flex;justify-content:space-between;gap:var(--space-3)}.dialog-card>form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.dialog-card>form fieldset{align-content:start}.dialog-card>footer form{margin-right:auto}.appearance-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.7fr);gap:var(--space-4);align-items:start}.inset{padding:var(--space-4)}.inset>*+*{margin-top:var(--space-3)}.brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.brand-grid label{position:relative;place-items:center;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);text-align:center}.brand-grid input{position:absolute;opacity:0}.brand-grid label:has(input:checked){background:var(--panel-soft);border-color:var(--gold)}.brand-grid svg{width:26px;fill:none;stroke:var(--gold-ink)}.hero-preview{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:var(--radius-sm)}.preview{position:sticky;top:var(--space-4);overflow:hidden;padding:var(--space-4)}.preview>img{width:100%;aspect-ratio:16/9;object-fit:cover;margin-top:var(--space-3);border-radius:var(--radius-sm)}.preview>div{display:grid;grid-template-columns:38px 1fr;gap:var(--space-2);margin-top:var(--space-3)}.preview-mark{grid-row:1/3;display:grid;place-items:center}.preview-mark svg{width:24px;fill:none;stroke:var(--gold-ink)}.preview small{color:var(--muted)}.preview h3{margin-block:var(--space-5);font-size:27px}.preview p{margin-top:var(--space-3);color:var(--muted);font-size:11px}\n\t\t.invite{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.invite>summary{min-height:54px;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:var(--space-2);padding:var(--space-3);cursor:pointer;list-style:none}.invite>summary span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--panel)}.invite>summary small{color:var(--muted)}.invite>form{padding:0 var(--space-4) var(--space-4)}.access-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}.user-card{display:grid;grid-template-columns:42px minmax(180px,1.25fr) auto minmax(110px,.7fr) auto 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.user-card.attention{background:var(--panel-soft)}.user-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:rgba(200,153,63,.14);color:var(--gold-ink);font-weight:800}.user-identity{min-width:0;display:grid;gap:2px}.user-identity a,.user-identity small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.user-dialog{width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.user-dialog::backdrop{background:rgba(32,37,31,.48)}.user-dialog>p{margin:3px 0 var(--space-4);color:var(--muted);font-size:12px}.dialog-close{float:right}.dialog-close button{width:42px;height:42px;border:0;background:transparent;font-size:22px}.danger{margin-top:var(--space-4);border-top:1px solid var(--line);padding-top:var(--space-3)}.danger>summary{cursor:pointer;color:#8c3434;font-weight:800}.danger form{margin-top:var(--space-3)}.danger button{justify-self:start;min-height:42px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:var(--panel);color:#8c3434;font-weight:800}\n\t\t.empty{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.empty p{color:var(--muted);font-size:12px}.cost-type-list{display:grid;gap:var(--space-2)}.cost-type-card,.allocation-row{display:grid!important;align-items:end;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.cost-type-card{grid-template-columns:minmax(180px,1.2fr) minmax(160px,.8fr) minmax(180px,.8fr) auto}.cost-type-list>form.cost-type-card{grid-template-columns:minmax(170px,1.2fr) minmax(120px,.6fr) minmax(150px,.7fr) minmax(150px,.7fr) auto}.allocation-row{grid-template-columns:minmax(170px,1.2fr) minmax(150px,.8fr) minmax(150px,.8fr) minmax(120px,.7fr)}.cost-type-card code{font-size:12px}.cost-type-card .button{min-height:42px}\n\t\t.home-identity .form-grid{align-items:start}.home-identity .form-grid fieldset{align-content:start}.home-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-scope{min-height:116px;display:grid;align-content:center;gap:5px;padding:var(--space-4) var(--space-5);border-right:1px solid var(--line)}.home-scope:last-child{border-right:0}.home-scope.current{background:var(--panel-soft)}.home-scope>span{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.home-scope strong{font-family:var(--font-serif);font-size:21px;line-height:1.2;overflow-wrap:anywhere}.home-scope small{color:var(--muted);font-size:12px;line-height:1.4}.home-scope .home-scope-unit{font-weight:700}.home-scope .home-scope-meta{color:var(--soft);font-size:11px}.home-readonly{min-height:50px;justify-content:space-between;gap:var(--space-3);background:var(--panel-soft)}.home-readonly strong{font-size:15px;overflow-wrap:break-word}.home-readonly small{color:var(--muted);font-size:12px;font-weight:600;text-align:right}.home-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45}.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;padding:13px 14px;border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:11px;line-height:1.4}.home-note{display:grid;grid-template-columns:34px minmax(0,1fr);gap:11px;align-items:start;padding-top:var(--space-4);border-top:1px solid var(--line)}.home-note svg{width:32px;height:32px;padding:7px;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);fill:none;stroke:currentColor;stroke-width:1.8}.home-note strong{display:block;font-size:13px}.home-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}\n\t\t@media(max-width:720px){.home-map{grid-template-columns:1fr}.home-scope{min-height:0;padding:var(--space-3) var(--space-4);border-right:0;border-bottom:1px solid var(--line)}.home-scope:last-child{border-bottom:0}}\n\t\t@media(max-width:1050px){.two-column,.appearance-grid{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr 1fr}.unit-card{grid-template-columns:42px minmax(0,1fr) minmax(180px,1fr) auto}.unit-card>div:nth-of-type(3){display:none}.user-card{grid-template-columns:42px minmax(0,1fr) auto auto 42px}.user-card>.chips{display:none}.preview{position:static}.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}.cost-type-list>form.cost-type-card>.button{grid-column:1/-1}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.settings-main{padding:var(--space-5) var(--space-4) 48px}.settings-grid,.management-links,.form-grid,.form-grid.three,.contact-grid,.access-options,.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:1fr}.span-all{grid-column:auto}.management-links a:nth-child(even){border-left:0}.identity-card{grid-template-columns:48px minmax(0,1fr)}.identity-icon{width:48px;height:48px}.identity-card>.pill{grid-column:2}.section-tabs{margin-inline:-4px}.section-tabs a{padding-inline:var(--space-3)}.workspace{padding:var(--space-3)}.workspace-head{display:grid}.head-actions{display:grid}.metrics.four{grid-template-columns:repeat(3,1fr)}.metrics.four span:first-child{display:none}.metrics.four span:nth-child(2){border-left:0}.dialog-card>form{grid-template-columns:1fr}.brand-grid{grid-template-columns:repeat(2,1fr)}.unit-card{grid-template-columns:38px minmax(0,1fr) 42px}.unit-card .assignment{display:grid;grid-column:2/-1}.unit-card>div:nth-of-type(3),.unit-card>div:nth-of-type(4){display:none}.user-card{grid-template-columns:38px minmax(0,1fr) 42px;row-gap:var(--space-2)}.user-card>.user-avatar,.user-card>.user-identity{grid-row:1}.user-card>.icon-button{grid-row:1;grid-column:3}.user-card>.pill{grid-column:2/-1;justify-self:start}.user-card>.chips,.user-card>.muted{display:none}.invite>summary{grid-template-columns:26px 1fr}.invite>summary small{grid-column:2}.form-actions{display:grid;grid-template-columns:1fr}.form-actions .button{width:100%}}\n\t</style><style>\n\t\tbody.unit-dialog-enhanced .unit-dialog-shell{display:none}body.unit-dialog-enhanced .unit-dialog-shell.is-open{display:grid}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

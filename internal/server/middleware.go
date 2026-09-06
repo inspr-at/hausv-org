@@ -6,8 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/auth"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -82,6 +84,8 @@ func requestLogRoute(r *http.Request) string {
 type authCtx struct {
 	email        string
 	role         string
+	realRole     string
+	preview      *rolePreviewContext
 	tenant       tenantConfig
 	tenantRef    store.TenantRef
 	repositories requestRepositories
@@ -127,12 +131,38 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		return authCtx{}, false
 	}
 	tenant := resolved.tenant
+	if session, ok := a.rolePreviewSessionForRequest(r); ok && session.PreviewRole != "" {
+		if session.TenantSlug != tenant.Slug {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return authCtx{}, false
+		}
+		if reason := a.rolePreviewSessionEndReason(session); reason != "" {
+			a.terminateRolePreview(w, r, session, reason)
+			return authCtx{}, false
+		}
+		return authCtx{
+			email: session.Email, role: session.PreviewRole, realRole: session.Role,
+			preview: &rolePreviewContext{Role: session.PreviewRole, StartedAt: time.Unix(session.PreviewStartedAt, 0), ExpiresAt: time.Unix(session.PreviewExpiresAt, 0)},
+			tenant:  tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories,
+		}, true
+	}
 	email, role, tenantSlug, ok := a.currentUser(r)
 	if !ok || tenantSlug != tenant.Slug {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+	return authCtx{email: email, role: role, realRole: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+}
+
+func (a *app) rolePreviewSessionForRequest(r *http.Request) (auth.Session, bool) {
+	if a == nil || a.sessions == nil || r == nil {
+		return auth.Session{}, false
+	}
+	cookie, err := r.Cookie("weg_session")
+	if err != nil {
+		return auth.Session{}, false
+	}
+	return a.sessions.GetSession(cookie.Value)
 }
 
 func (a *app) closedServiceProviderSession(r *http.Request) bool {
@@ -198,6 +228,10 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ac, ok := a.authenticate(w, r)
 		if !ok {
+			return
+		}
+		if ac.preview != nil && !strings.HasSuffix(r.URL.Path, "/app/ansicht/ende") {
+			http.Error(w, rolePreviewReadOnlyMessage, http.StatusForbidden)
 			return
 		}
 		if module, managed := portalModuleForPath(r.URL.Path); managed && !a.portalModulesFor(ac.tenant.Slug).Enabled(module) {

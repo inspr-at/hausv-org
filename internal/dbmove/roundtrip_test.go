@@ -334,8 +334,19 @@ func seedFull(t *testing.T) *source {
 			t.Fatalf("%s annual statement cost type: %v", slug, err)
 		}
 		periods, _ := store.BindAnnualStatementPeriodRepository(store.NewSQLAnnualStatementPeriodStore(src.lanes), tenant)
-		if _, err := periods.Save(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
+		if _, err := periods.SaveWithStructure(store.AnnualStatementPeriod{
+			Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedAt: now, UpdatedBy: "verwalter@example.com",
+		}, costTypes.List(), units.List()); err != nil {
 			t.Fatalf("%s annual statement period: %v", slug, err)
+		}
+		consumption, _ := store.BindAnnualStatementConsumptionRepository(store.NewSQLAnnualStatementConsumptionStore(src.lanes), tenant)
+		for _, evidence := range []store.AnnualStatementConsumptionEvidence{
+			{UnitID: "top-1", CostTypeKey: "heizung", SourceKind: store.ConsumptionSourceEntity, SourceID: "sensor." + slug + "_heat", MeasuredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), ValueMicros: 1_000_000, MeasurementUnit: "kWh", ReceivedAt: now},
+			{UnitID: "top-1", CostTypeKey: "heizung", SourceKind: store.ConsumptionSourceEntity, SourceID: "sensor." + slug + "_heat", MeasuredAt: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC), ValueMicros: 1_250_000, MeasurementUnit: "kWh", ReceivedAt: now},
+		} {
+			if _, inserted, err := consumption.Append(evidence); err != nil || !inserted {
+				t.Fatalf("%s annual statement consumption: inserted=%t err=%v", slug, inserted, err)
+			}
 		}
 		prepayments, _ := store.BindAnnualStatementPrepaymentRepository(store.NewSQLAnnualStatementPrepaymentStore(src.lanes), tenant)
 		if _, _, err := prepayments.Save(store.AnnualStatementPrepayment{PeriodYear: 2026, UnitID: "top-1", AmountCents: 12_550, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
@@ -494,6 +505,33 @@ func seedFull(t *testing.T) *source {
 	identities, err = store.EnsureTenantIdentities(ctx, src.db, qaTenants)
 	must(t, "tenants after activation", err)
 	src.tenants = identities
+	// Organisation-scoped tables (HAUSV-600): keyed by org_key, no tenant_id.
+	orgKey := "musterstadt"
+	intake := store.BindIntakeRepository(src.db, orgKey)
+	must(t, "intake", intake.Create(ctx, store.IntakeItem{
+		ID: "in-rt-1", Organisation: orgKey, TenantSlug: "demo", Unit: "Top 1", Source: store.IntakeSourceEmail,
+		FromName: "Rita Bewohnerin", FromEmail: "resident@example.com", Subject: "Wasserfleck im Bad", Body: "Seit gestern feucht.",
+		ReceivedAt: now, DueAt: now.Add(24 * time.Hour), Status: store.IntakeStatusOpen, CreatedAt: now, UpdatedAt: now,
+	}))
+	must(t, "organisation", store.BindOrganisationRepository(src.db, orgKey).Save(ctx, store.Organisation{
+		Key: orgKey, Name: "Hausverwaltung Musterstadt", ContactName: "Vera Verwalter",
+		ContactEmail: "buero@musterstadt.example", ContactPhone: "+43 316 123456",
+		Houses: []string{"demo", "haus-a"}, UpdatedAt: now,
+	}))
+	must(t, "organisation member", store.BindOrganisationMemberRepository(src.db, orgKey).Save(ctx, store.OrganisationMember{
+		Email: "sachbearbeiter@example.com", Role: store.OrganisationRoleClerk,
+		Granted: map[string]string{"demo": "bewohner", "haus-a": ""}, CreatedAt: now,
+	}))
+	must(t, "intake mail seen", store.BindIntakeMailSeenRepository(src.db, orgKey).Record(ctx, "<seed-mail@example.com>", "in-0001"))
+	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
+		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
+		AutoThreshold: 0.9, AutoEnabled: true, UpdatedAt: now,
+	}))
+	must(t, "textbaustein", store.BindTextbausteinRepository(src.db, orgKey).Upsert(ctx, store.Textbaustein{
+		Key: "reparatur-beauftragt", Organisation: orgKey, Category: "reparatur", Title: "Reparatur – Handwerker beauftragt",
+		Body: "Sehr geehrte{{Anrede}} {{Name}}, wir haben {{Handwerker}} beauftragt.", Placeholders: []string{"Anrede", "Name", "Handwerker"}, Active: true,
+	}))
+
 	return src
 }
 
@@ -995,6 +1033,10 @@ func TestReadPathsAgreeAfterMove(t *testing.T) {
 		}},
 		{"homeConnectorReadings.List", func(l *store.TenantDB) (any, error) {
 			return store.NewSQLHomeConnectorReadingStore(l).List("stadtpark-home")
+		}},
+		{"annualStatementConsumption.ConsumptionVector", func(l *store.TenantDB) (any, error) {
+			r, _ := store.BindAnnualStatementConsumptionRepository(store.NewSQLAnnualStatementConsumptionStore(l), demo)
+			return r.ConsumptionVector(store.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31"}, "heizung", []string{"top-1"}, time.UTC)
 		}},
 	}
 	compared := 0

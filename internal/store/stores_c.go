@@ -70,6 +70,9 @@ type IssueStoreData struct {
 type ResidentIssue struct {
 	ID                    string              `json:"id"`
 	TenantSlug            string              `json:"tenant"`
+	Source                string              `json:"source,omitempty"`
+	DueAt                 time.Time           `json:"due_at,omitempty"`
+	IntakeID              string              `json:"intake_id,omitempty"`
 	AuthorEmail           string              `json:"author_email"`
 	AuthorName            string              `json:"author_name"`
 	Category              string              `json:"category"`

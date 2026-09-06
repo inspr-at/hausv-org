@@ -2,6 +2,83 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.4] - 2026-09-06
+
+### Stabilität verbessert
+
+- Auslieferung: Vor einem Datenbank-Update sichert die Auslieferung jetzt auch die PostgreSQL-Datenbank in denselben Wiederherstellungspunkt wie Dateien und Anhänge; ein fehlgeschlagener Sicherungsschritt hält das Release an, bevor sich etwas ändert.
+
+## [1.3.3] - 2026-09-05
+
+### Stabilität verbessert
+
+- Auslieferung: Ein Release wird nicht mehr abgelehnt, nur weil auf dem Server ein Image-Tag fehlt, solange das laufende Image eindeutig der aktuellen Version zugeordnet werden kann; das Tag wird dabei wiederhergestellt.
+
+## [1.3.2] - 2026-09-05
+
+### Stabilität verbessert
+
+- E-Mail-Eingang: Eine Mail, deren Fall während der Übernahme durch einen Demo-Reset verschwindet, gilt nicht als übernommen und läuft beim nächsten Abruf erneut ein.
+- Demo: Das Demo-Postfach pausiert während des Resets und startet danach frisch; der Postfach-Sidecar startet zuverlässig.
+
+## [1.3.1] - 2026-09-05
+
+### Demo mit eigenem Postfach
+
+- Demo: Die Demo bringt ihr eigenes Postfach mit. Seed-E-Mails mit Absender, Anhang und Hausbezug laufen wie echte Mails in den Posteingang, und eine neu abgelegte Mail erscheint innerhalb einer halben Minute.
+- Demo-Reset: Setzt auch den E-Mail-Eingang zurück, sodass die Mails nach dem Reset erneut einlaufen.
+
+## [1.3.0] - 2026-09-05
+
+### E-Mails kommen direkt in den Posteingang
+
+- Posteingang: Ein Postfach je Verwaltung wird laufend abgeholt. Jede ungelesene E-Mail wird genau einmal übernommen, mit Absender, Text und Anhängen innerhalb der bekannten Grenzen.
+- Zuordnung: Haus und Einheit werden aus der Absenderadresse, einer Hausadresse im Text oder der Anliegen-Nummer im Betreff vorgeschlagen — als Vorschlag mit Sicherheitswert, nie als Nachweis. Was sich nicht zuordnen lässt, bleibt als „nicht zugeordnet" sichtbar.
+- Antworten: Freigegebene Antworten auf E-Mail-Anliegen gehen per E-Mail an den Absender und tragen die Anliegen-Nummer im Betreff; Rückantworten landen damit beim richtigen Anliegen.
+- Anhänge: Mitgeschickte Dateien warten beim Fall und wandern bei der Freigabe zum Anliegen.
+- Einstellungen: Der Stand des E-Mail-Eingangs (Postfach, Intervall, letzter Abruf) ist einsehbar.
+
+## [1.2.0] - 2026-09-05
+
+### Mitarbeiter der Hausverwaltung
+
+- Einstellungen: Eine Verwaltung führt ihre Mitarbeiter an einer Stelle. Wer aufgenommen wird, betreut alle Liegenschaften der Verwaltung — als Verwaltungs-Admin oder als Sachbearbeiter.
+- Beim Entfernen werden genau die Rollen zurückgenommen, die die Aufnahme vergeben hat; von Hand gesetzte Rollen bleiben bestehen.
+- Jede Aufnahme und jedes Entfernen steht im Verlauf.
+
+## [1.1.0] - 2026-09-05
+
+### Die Hausverwaltung ist eine eigene Größe
+
+- Verwaltung: Name und Kontakt der Hausverwaltung stehen jetzt in den Einstellungen und lassen sich dort pflegen, statt aus der Serverkonfiguration zu stammen.
+- Portfolio: Die Liste der betreuten Liegenschaften kommt aus der Verwaltung selbst; wer welche davon öffnen darf, entscheidet weiterhin die Rolle je Haus.
+- Einzelne Liegenschaften ohne Verwaltung bleiben unverändert.
+
+## [1.0.2] - 2026-09-04
+
+### Kennzahl der Einheitenliste eindeutig benannt
+
+- Gebäude & Einheiten: Die Kennzahl über der Liste nennt jetzt den inkludierten Rahmen, den sie zählt, und wird nicht mehr als Belegung gelesen.
+
+## [1.0.1] - 2026-09-04
+
+### Einheiten in gewohnter Reihenfolge
+
+- Gebäude & Einheiten: Einheiten sind nach ihrer Nummer geordnet statt nach reiner Textsortierung; Stellplätze folgen weiterhin hinter den Wohnungen.
+
+## [1.0.0] - 2026-09-04
+
+### Hausverwaltung: Portfolio, Posteingang mit KI-Triage und klare Rollen
+
+- Portfolio: Eine Hausverwaltung sieht alle betreuten Liegenschaften auf einen Blick und wechselt mit einer Auswahl direkt in ein Haus; die aktuelle Liegenschaft steht sichtbar in Kopfzeile und Seitenleiste.
+- Posteingang: Anliegen laufen in einer Warteschlange mit Filtern und Status zusammen. Die KI schlägt Kategorie, Dringlichkeit und Antwort vor; der Vorschlag lässt sich mit einem Klick übernehmen und direkt mit dem nächsten Fall fortsetzen.
+- KI-Einstellungen: Verwaltungen wählen selbst, ob die Cloud oder ein eigenes Modell im Büro antwortet. Die gewählte Quelle steuert die Vorschläge und ist im Posteingang jederzeit sichtbar.
+- Laufende Anfragen: Jede KI-Anfrage zeigt Fortschritt und verbleibende Zeit und lässt sich abbrechen; Ergebnis und Fehlschlag sind klar benannt.
+- Rollen: Verwaltung, Eigentümer, Mieter, Bewohner und Beirat sehen jeweils nur die für sie vorgesehenen Bereiche.
+- Belegung: Wohnungen und Stellplätze zeigen Eigentümer und Mieter mit Namen, auch direkt im Fall im Posteingang.
+- Jahresabrechnung: Kostenarten, Verteilerschlüssel mit Anteilsvorschau, Vorauszahlungen je Einheit und Belege an bestehenden Dokumenten sind vorbereitet.
+- Demo: Ein vollständiger Demostand lässt sich mit doppelter Bestätigung jederzeit zurücksetzen.
+
 ## [0.99.11] - 2026-08-27
 
 ### Jahresabrechnung vorbereitet

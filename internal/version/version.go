@@ -91,6 +91,114 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.4",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Wiederherstellungspunkt vor Datenbank-Updates umfasst jetzt auch PostgreSQL.",
+			Intro:    "Vor einem Datenbank-Update sichert die Auslieferung die PostgreSQL-Datenbank in denselben Wiederherstellungspunkt wie Dateien und Anhänge; ein fehlgeschlagener Sicherungsschritt hält das Release an, bevor sich etwas ändert.",
+			Items: []NoteItem{
+				{Label: "Auslieferung", Text: "Der Sicherungsschritt läuft bei angehaltenem Dienst, prüft das Archiv auf Wiederherstellbarkeit und legt es schreibgeschützt neben die Dateisicherung."},
+			},
+		},
+		{
+			Version:  "1.3.3",
+			Date:     "5. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Die Auslieferung ist robuster gegen ein fehlendes Image-Tag.",
+			Intro:    "Ein Release wird nicht mehr abgelehnt, nur weil auf dem Server ein Image-Tag fehlt, solange das laufende Image eindeutig der aktuellen Version zugeordnet werden kann; das Tag wird dabei wiederhergestellt.",
+			Items: []NoteItem{
+				{Label: "Auslieferung", Text: "Fehlt das Tag, bezeugt das Release-Tag der laufenden Version das Image; fehlen beide, bleibt es bei der Ablehnung."},
+			},
+		},
+		{
+			Version:  "1.3.2",
+			Date:     "5. September 2026",
+			Kind:     "Stabilität",
+			Headline: "E-Mail-Eingang und Demo-Postfach laufen stabiler.",
+			Intro:    "Eine Mail, deren Fall während der Übernahme verschwindet, gilt nicht als übernommen und läuft beim nächsten Abruf erneut ein; das Demo-Postfach pausiert während des Resets.",
+			Items: []NoteItem{
+				{Label: "E-Mail-Eingang", Text: "Kein Verlust einer Mail mehr, wenn ein Demo-Reset in den ersten Abruf fällt."},
+			},
+		},
+		{
+			Version:  "1.3.1",
+			Date:     "5. September 2026",
+			Kind:     "Demo",
+			Headline: "Die Demo bringt ihr eigenes Postfach mit.",
+			Intro:    "Seed-E-Mails mit Absender, Anhang und Hausbezug laufen wie echte Mails in den Posteingang; eine neu abgelegte Mail erscheint innerhalb einer halben Minute.",
+			Items: []NoteItem{
+				{Label: "Demo-Reset", Text: "Setzt auch den E-Mail-Eingang zurück, sodass die Mails nach dem Reset erneut einlaufen."},
+			},
+		},
+		{
+			Version:  "1.3.0",
+			Date:     "5. September 2026",
+			Kind:     "Posteingang",
+			Headline: "E-Mails kommen direkt in den Posteingang.",
+			Intro:    "Ein Postfach je Verwaltung wird laufend abgeholt; jede ungelesene E-Mail wird genau einmal übernommen, Haus und Einheit werden vorgeschlagen, Antworten gehen per E-Mail mit Anliegen-Nummer zurück.",
+			Items: []NoteItem{
+				{Label: "Zuordnung", Text: "Absenderadresse, Hausadresse im Text oder Anliegen-Nummer im Betreff — als Vorschlag mit Sicherheitswert, nie als Nachweis."},
+				{Label: "Antworten", Text: "Freigegebene Antworten tragen die Anliegen-Nummer im Betreff, Rückantworten landen beim richtigen Anliegen."},
+				{Label: "Anhänge", Text: "Mitgeschickte Dateien warten beim Fall und wandern bei der Freigabe zum Anliegen."},
+			},
+		},
+		{
+			Version:  "1.2.0",
+			Date:     "5. September 2026",
+			Kind:     "Verwaltung",
+			Headline: "Eine Verwaltung führt ihre Mitarbeiter an einer Stelle.",
+			Intro:    "Wer aufgenommen wird, betreut alle Liegenschaften der Verwaltung; beim Entfernen wird genau das wieder zurückgenommen, was die Aufnahme vergeben hat.",
+			Items: []NoteItem{
+				{Label: "Rollen", Text: "Verwaltungs-Admin oder Sachbearbeiter, einmal gewählt und für alle Liegenschaften gültig."},
+				{Label: "Nachvollziehbar", Text: "Jede Aufnahme und jedes Entfernen steht im Verlauf; von Hand gesetzte Rollen bleiben unangetastet."},
+			},
+		},
+		{
+			Version:  "1.1.0",
+			Date:     "5. September 2026",
+			Kind:     "Verwaltung",
+			Headline: "Die Hausverwaltung ist eine eigene Größe.",
+			Intro:    "Name und Kontakt der Verwaltung werden gespeichert und in den Einstellungen gepflegt; die betreuten Liegenschaften hängen an der Verwaltung statt an der Serverkonfiguration.",
+			Items: []NoteItem{
+				{Label: "Einstellungen", Text: "Name, Ansprechperson, E-Mail und Telefon der Verwaltung sind dort pflegbar."},
+				{Label: "Portfolio", Text: "Die Liegenschaften kommen aus der Verwaltung; wer sie öffnen darf, entscheidet weiterhin die Rolle je Haus."},
+			},
+		},
+		{
+			Version:  "1.0.2",
+			Date:     "4. September 2026",
+			Kind:     "Einheiten",
+			Headline: "Die Kennzahl über der Einheitenliste ist eindeutig benannt.",
+			Intro:    "Sie zählt den inkludierten Rahmen und heißt jetzt auch so; vorher las sie sich als Belegung.",
+			Items: []NoteItem{
+				{Label: "Gebäude & Einheiten", Text: "Die Kennzahl über der Liste benennt den inkludierten Rahmen statt einer Nutzung."},
+			},
+		},
+		{
+			Version:  "1.0.1",
+			Date:     "4. September 2026",
+			Kind:     "Einheiten",
+			Headline: "Einheiten stehen in gewohnter Reihenfolge.",
+			Intro:    "Einheiten sind nach ihrer Nummer geordnet statt nach reiner Textsortierung; Stellplätze folgen weiterhin hinter den Wohnungen.",
+			Items: []NoteItem{
+				{Label: "Gebäude & Einheiten", Text: "Die Einheitenliste ist wieder in der Reihenfolge lesbar, in der eine Verwaltung sie erwartet."},
+			},
+		},
+		{
+			Version:  "1.0.0",
+			Date:     "4. September 2026",
+			Kind:     "Hausverwaltung",
+			Headline: "Hausverwaltungen arbeiten jetzt über mehrere Häuser hinweg.",
+			Intro:    "Portfolio, Posteingang mit KI-Triage und klare Rollen kommen zusammen: Anliegen laufen in einer Warteschlange zusammen, die KI schlägt Einordnung und Antwort vor, und jede Rolle sieht nur ihren Bereich.",
+			Items: []NoteItem{
+				{Label: "Portfolio", Text: "Alle betreuten Liegenschaften auf einen Blick; die aktuelle Liegenschaft steht sichtbar in Kopfzeile und Seitenleiste."},
+				{Label: "Posteingang", Text: "Warteschlange mit Filtern und Status; ein Klick übernimmt den Vorschlag und öffnet den nächsten Fall."},
+				{Label: "KI-Einstellungen", Text: "Cloud oder eigenes Modell im Büro ist wählbar; die gewählte Quelle steuert die Vorschläge und ist im Posteingang sichtbar."},
+				{Label: "Belegung", Text: "Wohnungen und Stellplätze zeigen Eigentümer und Mieter mit Namen, auch direkt im Fall."},
+				{Label: "Jahresabrechnung", Text: "Kostenarten, Verteilerschlüssel mit Anteilsvorschau, Vorauszahlungen je Einheit und Belege an bestehenden Dokumenten sind vorbereitet."},
+			},
+		},
+		{
 			Version:  "0.99.11",
 			Date:     "27. August 2026",
 			Kind:     "Jahresabrechnung",

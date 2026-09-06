@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"strings"
 	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/view"
@@ -14,6 +15,26 @@ type PortalModules struct {
 type PortalContext struct {
 	TenantSlug, HouseName, Address, Role string
 	Current                              bool
+}
+
+type PortalHouse struct {
+	Slug, Name, Address, Role string
+	OpenIssueCount            int
+	Current                   bool
+}
+
+type PortalShellData struct {
+	Ready                        bool
+	OrganisationName             string
+	RoleLabel                    string
+	ManagedHouses                []PortalHouse
+	PortalContexts               []PortalContext
+	IsOrganisationMember         bool
+	IsVerwaltung                 bool
+	CanManageOrganisationSettings bool
+	ShowInboxNav                 bool
+	InboxOpenCount               int
+	CurrentHousePosition         int
 }
 
 type PortalArea struct {
@@ -56,6 +77,13 @@ type PortalPageData struct {
 	Areas                                             []PortalArea
 	Contexts                                          []PortalContext
 	ReleaseNotes                                      []version.Note
+	ShowVerwaltungNav                                 bool
+	ShowInboxNav                                      bool
+	InboxOpenCount                                    int
+	RolePreview                                       *RolePreviewState
+	RolePreviewChoices                                []RolePreviewChoice
+	Flash                                             string
+	Shell                                             PortalShellData
 }
 
 type PortalSectionIdentityData struct {
@@ -79,10 +107,17 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			<title>{ title }</title>
 			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 			<script src={ "/assets/app.js?v=" + assetVersion } defer></script>
+			// The house picker belongs to the shell, so it ships with every portal page
+			// rather than being repeated inline (the app forbids inline scripts).
+			<script src={ "/assets/house-picker.js?v=" + assetVersion } defer></script>
+			@PortalHousePickerScript()
 			for _, script := range extraScripts {
 				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
 			}
 			@PortalBaseStyles()
+			<style>
+				@media(max-width:400px){.verwaltung-mobile-head .mobile-identity strong{display:-webkit-box;overflow:hidden;font-size:18px;line-height:1.05;text-overflow:clip;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}.verwaltung-mobile-head .mobile-identity small{margin-top:2px}}
+			</style>
 			@styles
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
 		</head>
@@ -114,6 +149,12 @@ templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, s
 	>
 		if status != nil {
 			@status
+		}
+		if data.Portal.Flash != "" {
+			<div class="portal-flash" role="status">{ data.Portal.Flash }</div>
+		}
+		if data.Portal.RolePreview != nil {
+			@RolePreviewBand(*data.Portal.RolePreview)
 		}
 		if data.Hero {
 			@PortalSectionHero(data.Portal, PortalSectionHeader(data.Identity, title, lede, action))
@@ -189,6 +230,97 @@ templ PortalSectionLede(lede string) {
 templ PortalBaseStyles() {
 	<style>
 		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}.skip-link:focus{transform:translateY(0)}.side-brand{flex:0 0 auto;display:grid;gap:0;margin:-22px -16px 0;padding:0 0 8px}.side-map-card{position:relative;min-width:0;height:276px}.side-map{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border:0;border-radius:0;background:#d8d2c4;color:inherit;isolation:isolate}.side-map::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,243,234,.08) 0%,rgba(23,32,25,.06) 48%,rgba(23,32,25,.48) 73%,rgba(23,32,25,.93) 94%,var(--nav) 100%);box-shadow:inset 0 -18px 28px rgba(23,32,25,.42)}.side-map-tiles{position:absolute;inset:0;z-index:1;pointer-events:none;filter:saturate(.54) sepia(.1) contrast(.86) brightness(.97)}.side-map-tile{position:absolute;width:256px;height:256px;max-width:none;display:block;user-select:none;pointer-events:none}.side-map-fallback{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding-bottom:72px;color:rgba(23,32,25,.68);background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9;font-size:10.5px;font-weight:750;letter-spacing:.03em}.side-map-pin{position:absolute;left:50%;top:50%;z-index:4;width:44px;height:56px;color:var(--gold-light);filter:drop-shadow(0 6px 7px rgba(23,32,25,.38));transform:translate(-50%,-100%)}.side-map-pin-shape{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;fill:var(--nav);stroke:rgba(231,216,177,.88);stroke-width:1.25;stroke-linejoin:round}.side-map-pin-mark{position:absolute;left:50%;top:9px;width:25px;height:22px;display:grid;place-items:center;transform:translateX(-50%)}.side-map-pin-mark svg{width:25px;height:21px;display:block;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}.side-place-copy{position:absolute;left:0;right:0;bottom:0;z-index:6;min-width:0;display:grid;gap:4px;padding:0 18px 14px;color:inherit;pointer-events:none}.side-place-copy>*{pointer-events:auto}.side-address-label{min-width:0;display:grid;gap:2px;justify-self:start;color:inherit;font-family:var(--font-sans);line-height:1.2;text-decoration:none}.side-address-label small{overflow:hidden;color:rgba(255,255,255,.6);font-size:10.5px;font-weight:550;text-overflow:ellipsis;white-space:nowrap}.side-address-label:hover small{color:rgba(255,255,255,.86)}@media(min-width:761px) and (max-height:1040px){.side-map-card{height:236px}}@media(min-width:761px) and (max-height:800px){.side-map-card{height:176px!important}.side-map-pin{width:35px;height:45px}.side-map-pin-mark{top:7px;width:20px;height:18px}.side-map-pin-mark svg{width:20px;height:17px}}.side-place-copy .context-switch{margin:0;font-size:10px;align-self:start}.side-place-copy .context-switch summary{display:inline-flex;align-items:center;gap:2px;padding:2px 6px 2px 4px;cursor:pointer;color:rgba(255,255,255,.52);background:rgba(23,32,25,.72);border-radius:var(--radius-xs);font-size:9.5px;font-weight:550;list-style:none}.side-place-copy .context-switch summary::-webkit-details-marker{display:none}.side-place-copy .context-switch summary:hover{color:rgba(255,255,255,.86);background:rgba(23,32,25,.88)}.side-place-copy .context-switch summary span{line-height:1;font-size:13px}.side-place-copy .context-menu{position:absolute;left:0;right:0;bottom:calc(100% + 4px);z-index:10;margin:0;padding:var(--space-2);background:rgba(23,32,25,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);box-shadow:0 8px 20px rgba(0,0,0,.4)}.context-menu{display:grid;gap:var(--space-2)}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-group{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.release-notes>summary{margin-top:2px;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}.release-notes>summary::-webkit-details-marker{display:none}.release-panel h2{font-size:24px}.release-entry{padding-top:var(--space-4)}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select,textarea{font:inherit}button{cursor:pointer}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-panel{position:fixed;z-index:250;left:var(--space-6);bottom:72px;width:min(520px,calc(100vw - 48px));max-height:70vh;overflow:auto;padding:var(--space-5);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:10px 18px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.nav-home-identity{display:grid;gap:1px;line-height:1.08;min-width:0}.nav-home-identity strong,.nav-home-identity small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-home-identity small{color:var(--soft);font-size:10px}[hidden]{display:none!important}dialog[open]{display:flex;flex-direction:column}dialog[open]>form{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}dialog[open] .dialog-head,dialog[open] .dialog-footer{flex:0 0 auto}dialog[open] .dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}@media(max-width:760px){.button,.button.small{min-height:44px!important}.dialog-close{min-width:44px!important;min-height:44px!important}details>summary{min-height:44px}}
+				</style>
+	<style>
+		.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}
+		.portal-page .sidebar{padding:16px 18px}
+		/* The navigation keeps a real box around every house item. The sidebar,
+		   not this landmark, is the short-viewport scroll container. */
+		.portal-page .sidebar>.nav{display:grid;min-height:max-content}
+		.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}
+		.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
+		.portal-organisation-identity small{color:var(--soft);font-size:10px}
+		.portal-page .nav{margin-top:12px;gap:2px}
+		.portal-page .nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}
+		.portal-page .nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}
+		.portal-page .nav-organisation,.portal-page .nav-house-items{display:grid;gap:2px}
+		.portal-page .nav>.house-picker,.portal-page .nav>.house-header-card{grid-column:1/-1}
+		.portal-page .nav-house-items.indented{margin-left:10px;padding-left:11px;border-left:1px solid var(--nav-2)}
+		.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}
+		.portal-page .nav a.active svg{color:var(--nav)}
+		.house-picker{position:relative;min-width:0;margin-bottom:5px}details.house-picker:not([open])>.house-picker-panel{display:none}
+		.house-picker>summary{list-style:none}
+		.house-picker>summary::-webkit-details-marker{display:none}
+		.house-header-card{min-height:72px;display:grid;grid-template-columns:56px minmax(0,1fr) 18px;align-items:center;gap:12px;margin-bottom:4px;padding:8px;border:1px solid var(--soft);border-radius:var(--radius-md);background:var(--nav-2);color:var(--panel)}
+		.house-header-static{grid-template-columns:56px minmax(0,1fr)}
+		.house-header-card:hover{border-color:var(--line)}
+		.house-header-copy{min-width:0;display:grid;gap:4px}
+		.house-header-copy strong{display:-webkit-box;overflow:hidden;overflow-wrap:anywhere;font-family:var(--font-serif);font-size:18px;line-height:1.05;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+		.house-header-copy small{overflow:hidden;color:var(--soft);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+		.house-header-chevron{color:var(--line);font-size:19px;transition:transform .16s}
+		.house-picker[open] .house-header-chevron{transform:rotate(180deg)}
+		.house-map-thumb{position:relative;width:56px;height:56px;overflow:hidden;border-radius:var(--radius-sm);background:var(--line)}
+		.house-map-thumb .side-map-tiles{width:224px;height:224px;transform:scale(.25);transform-origin:0 0}
+		.house-map-thumb .side-map-tile{max-width:none}
+		.house-map-pin{left:50%;top:50%;right:auto;bottom:auto;width:26px;height:34px;color:var(--gold-light);transform:translate(-50%,-74%)}
+		.house-map-pin .side-map-pin-mark{top:5px;width:15px;height:14px}
+		.house-map-pin .side-map-pin-mark svg{width:15px;height:13px}
+		.house-picker-panel{position:fixed;z-index:210;top:294px;left:254px;width:402px;max-height:calc(100vh - 316px);overflow:auto;padding:18px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-dialog)}
+		.house-picker-panel::before{content:"";position:absolute;top:0;left:30px;width:16px;height:16px;background:var(--panel);border-left:1px solid var(--line);border-top:1px solid var(--line);transform:translateY(-9px) rotate(45deg)}
+		.house-picker-heading{display:flex;align-items:baseline;gap:12px}
+		.house-picker-heading h2{font-size:24px}
+		.house-picker-heading span{margin-left:auto;color:var(--muted);font-size:10px}
+		.house-picker-search{min-height:44px;display:grid;grid-template-columns:20px 1fr;align-items:center;gap:8px;margin-top:8px;padding:0 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--muted)}
+		.house-picker-search input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-size:11px}
+		.house-picker-list{margin-top:12px}
+		.house-picker-row{border-bottom:1px solid var(--line)}
+		.house-picker-row.current{background:var(--gold-light)}
+		.house-picker-row button{width:100%;min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:7px 12px;border:0;background:transparent;color:var(--ink);text-align:left}
+		.house-picker-row button:not(:disabled):hover{background:var(--panel-soft)}
+		.house-picker-row button:disabled{cursor:default;opacity:1}
+		.house-picker-row-copy{min-width:0;display:grid;gap:3px}
+		.house-picker-row-copy strong{overflow:hidden;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+		.house-picker-row-copy small{color:var(--muted);font-size:10px}
+		.house-picker-open{padding:4px 7px;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:9px;white-space:nowrap}
+		.house-picker-check{color:var(--leaf);font-size:16px;font-weight:800}
+		.house-picker-more>summary{min-height:46px;display:grid;place-content:center;margin-top:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--muted);cursor:pointer;font-size:10px;list-style:none}
+		.house-picker-more>summary::-webkit-details-marker{display:none}
+		.house-picker-more[open]>summary{margin-bottom:6px}
+		.house-picker-empty{padding:18px;color:var(--muted);font-size:11px;text-align:center}
+		.house-picker-hints{display:flex;gap:24px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}
+		.house-picker-portfolio{min-height:42px;display:flex;align-items:center;justify-content:center;margin-top:12px;background:var(--nav);color:var(--panel);border-radius:var(--radius-sm);font-size:11px}
+		.portal-context-switch{flex:0 0 auto;margin-top:auto;padding-top:10px}
+		.portal-context-switch>summary{min-height:34px;display:flex;align-items:center;justify-content:space-between;color:var(--soft);cursor:pointer;font-size:10px;list-style:none}
+		.portal-context-switch>summary::-webkit-details-marker{display:none}
+		.portal-context-switch .context-menu{margin-bottom:6px;padding:8px;background:var(--nav-2);border:1px solid var(--soft);border-radius:var(--radius-sm)}
+		.portal-page .account{margin-top:8px}
+		/* The compact house card must preserve a usable map link without competing
+		   with the picker trigger. Its copy is deliberately allowed two complete
+		   lines; a clipped address makes the current house ambiguous. */
+		.portal-organisation-identity strong{overflow:visible;overflow-wrap:normal;text-overflow:clip;white-space:normal}
+		.house-header-card{grid-template-columns:56px minmax(0,1fr) 18px}
+		.house-header-copy strong{overflow:visible;overflow-wrap:normal;hyphens:auto;-webkit-line-clamp:unset}
+		.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}
+		.house-map-thumb{inset:auto;display:block;flex:0 0 56px;border:0;isolation:isolate}
+		.house-map-thumb .side-map-fallback{padding:0;font-size:8px;text-align:center}
+		@media(min-width:761px){.portal-page .sidebar .house-picker-panel{top:clamp(116px,28vh,294px);left:min(296px,calc(100vw - 420px));max-height:calc(100vh - clamp(138px,28vh + 22px,316px))}}
+		@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.house-picker-panel{left:226px}}
+		@media(max-width:760px){
+			.portal-page .menu-panel{display:grid;padding:16px 18px 24px}
+			.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}
+			.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}
+			.portal-page .menu-panel .nav-house-items.indented{margin-left:9px;padding-left:11px}
+			.portal-page .menu-panel .nav a{padding:0 10px}
+			.portal-page .house-header-card{min-height:80px}
+			/* Not scoped to .portal-page: settings and detail routes carry a different
+			   body class but the same drawer, and the panel would otherwise stay
+			   absolutely positioned there. */
+			.house-picker-panel{position:static;width:auto;max-height:none;margin:8px 0 12px;padding:14px;box-shadow:none}
+			/* The drawer clips its panel while closed; the card must stay a real tap target. */
+			.menu-panel .house-header-card{min-width:44px;min-height:44px}
+			.house-picker-panel::before{display:none}
+			.portal-page .portal-context-switch{margin-top:12px}
+		}
 	</style>
 }
 
@@ -221,108 +353,110 @@ func portalBool(value bool) string {
 }
 
 templ PortalSidebar(data PortalPageData) {
+	{{ shell := portalShellData(data) }}
 	<aside class="sidebar" aria-label="Hausnavigation">
-		<header>
-			<div class="side-brand">
-				<div class="side-map-card">
-					<a class="map side-map side-address" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title="In OpenStreetMap öffnen">
-						if data.Map.Configured {
-							<span class="side-map-tiles" aria-hidden="true">
-								for _, tile := range data.Map.Tiles {
-									<img class="side-map-tile" src={ templ.SafeURL(tile.URL) } style={ templ.SafeCSS(tile.Style) } width="256" height="256" alt="" draggable="false"/>
-								}
-							</span>
-							<span class="side-map-pin" aria-hidden="true">
-								<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
-								if data.BrandMarkSVG != "" {
-									<span class="side-map-pin-mark">
-										@templ.Raw(data.BrandMarkSVG)
-									</span>
-								}
-							</span>
-						} else {
-							<span class="side-map-fallback">Standort nicht hinterlegt</span>
-						}
-					</a>
-					<div class="side-place-copy">
-						<a class="side-address-label" href="/app" aria-label={ "Hausportal " + data.HouseName + " öffnen" }>
-							<small>{ data.Address }</small>
-						</a>
-						if len(data.Contexts) > 1 {
-							<details class="context-switch"><summary><span aria-hidden="true">⌄</span></summary><div class="context-menu">
-								for _, context := range data.Contexts {
-									if context.Current {
-										<span class="context-current"><strong>{ context.HouseName }</strong><small>Aktives Portal</small></span>
-									} else {
-										<form method="post" action="/app/context"><input type="hidden" name="tenant" value={ context.TenantSlug }/><input type="hidden" name="role" value={ context.Role }/><button type="submit"><strong>{ context.HouseName }</strong></button></form>
-									}
-								}
-							</div></details>
-						}
-					</div>
-				</div>
-			</div>
-		</header>
-		@PortalNavigation(data, true)
-		<footer class="account"><span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
+		@PortalOrganisationIdentity(shell)
+		@PortalNavigation(data, true, true)
+		@PortalContextSwitch(shell.PortalContexts, false)
+		<footer class="account">
+			if len(data.RolePreviewChoices) > 0 {
+				@RolePreviewChooser("role-preview-desktop", data.RolePreviewChoices) {
+					<span class="avatar" aria-hidden="true">{ data.Initials }</span><span class="role-preview-trigger-copy"><strong>{ data.DisplayName }</strong><small>{ data.Role }</small><small class="role-preview-trigger-label">Ansicht als ›</small></span>
+				}
+				<span class="account-release">@PortalReleaseNotes(data)</span>
+			} else {
+				<span class="avatar" aria-hidden="true">{ data.Initials }</span><span><strong>{ data.DisplayName }</strong><small>{ data.Role }</small>@PortalReleaseNotes(data)</span>
+			}
+			<form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form>
+		</footer>
 	</aside>
+}
+
+templ PortalOrganisationIdentity(shell PortalShellData) {
+	if shell.IsOrganisationMember {
+		<header class="portal-organisation-identity">
+			<strong>{ shell.OrganisationName }</strong>
+			<small>{ shell.RoleLabel }</small>
+		</header>
+	}
 }
 
 // PortalSectionHeader is the compact counterpart to PortalSidebar for detail
 // routes. Keeping its menu here ensures desktop and mobile use the same gated
 // PortalNavigation instead of letting each route grow a second navigation.
 
-templ PortalNavigation(data PortalPageData, icons bool) {
-	<nav class="nav" aria-label="Bereiche" { portalNavAttrs(icons)... }>
-		if data.CanUseResidentAreas {
-			@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
+templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) {
+	{{ shell := portalShellData(data) }}
+	<nav class="nav" aria-label="Bereiche" data-two-level={ portalBool(shell.IsOrganisationMember) } { portalNavAttrs(icons)... }>
+		if shell.IsOrganisationMember {
+			<span class="nav-group nav-level-label">Organisation</span>
+			<span class="nav-organisation">
+				@PortalNavItem("home", "Portfolio", "/app/verwaltung", false, 0, icons)
+				if shell.ShowInboxNav {
+					@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, shell.InboxOpenCount, icons)
+				}
+				if shell.CanManageOrganisationSettings {
+					@PortalNavItem("document", "Textbausteine", "/app/verwaltung/textbausteine", false, 0, icons)
+					@PortalNavItem("users", "Rechte", "/app/verwaltung/rechte", false, 0, icons)
+					@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", false, 0, icons)
+				}
+			</span>
 		}
-		if data.CanUseResidentAreas && data.CanViewEnergy {
-			@PortalEnergyNavItem(data, icons, portalIdentityScope(icons))
+		<span class="nav-group nav-level-label nav-house-label">{ portalHouseGroupLabel(shell) }</span>
+		if renderHouseHeader {
+			@PortalHouseHeader(data, shell, icons)
 		}
-		if data.CanUseResidentAreas && data.Modules.Announcements {
-			@PortalNavItem("announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Events {
-			@PortalNavItem("calendar", "Termine", "/app/events", portalNavActive(data, "events"), 0, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Contacts {
-			@PortalNavItem("contact", "Kontakte", "/app/kontakte", portalNavActive(data, "contacts"), 0, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Documents {
-			@PortalNavItem("document", "Dokumente", "/app/dokumente", portalNavActive(data, "documents"), 0, icons)
-		}
-		if data.Modules.Issues {
-			if data.CanManageIssues {
-				@PortalNavItem("issue", "Anliegen", "/app/anliegen/board", portalNavActive(data, "issues"), len(data.Issues), icons)
-			} else {
-				@PortalNavItem("issue", "Anliegen", "/app/anliegen", portalNavActive(data, "issues"), len(data.Issues), icons)
+		<span class={ "nav-house-items", templ.KV("indented", shell.IsOrganisationMember) }>
+			if data.CanUseResidentAreas {
+				@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 			}
-		}
-		if data.CanUseResidentAreas && data.Modules.Votes {
-			@PortalNavItem("vote", "Abstimmungen", "/app/abstimmungen", portalNavActive(data, "votes"), 0, icons)
-		}
-		if data.CanUseResidentAreas && ((data.Modules.Parking && data.CanSeeParking) || (data.Modules.Handovers && data.CanManageHandovers) || (data.Modules.Users && data.CanManageUsers)) {
-			<span class="nav-group">Verwaltung</span>
-		}
-		if data.CanUseResidentAreas && data.Modules.Parking && data.CanSeeParking {
-			@PortalNavItem("parking", "Parkplatznutzung", "/app/parking", portalNavActive(data, "parking"), 0, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Handovers && data.CanManageHandovers {
-			@PortalNavItem("handover", "Übergaben", "/app/uebergaben", portalNavActive(data, "handovers"), 0, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Users && data.CanManageUsers {
-			@PortalNavItem("users", "Benutzer & Rechte", "/app/settings/users", portalNavActive(data, "users"), 0, icons)
-		}
-		if data.CanUseResidentAreas && data.Modules.Audit && data.CanViewAudit {
-			@PortalNavItem("audit", "Verlauf", "/app/audit", portalNavActive(data, "audit"), 0, icons)
-		}
-		if data.CanUseResidentAreas {
-			@PortalNavItem("settings", "Einstellungen", "/app/settings", portalNavActive(data, "settings"), 0, icons)
-		}
-		if data.Modules.Help {
-			@PortalNavItem("help", "Hilfe", "/app/hilfe", portalNavActive(data, "help"), 0, icons)
-		}
+			if data.CanUseResidentAreas && data.CanViewEnergy {
+				@PortalEnergyNavItem(data, icons, portalIdentityScope(icons))
+			}
+			if data.CanUseResidentAreas && data.Modules.Announcements {
+				@PortalNavItem("announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Events {
+				@PortalNavItem("calendar", "Termine", "/app/events", portalNavActive(data, "events"), 0, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Contacts {
+				@PortalNavItem("contact", "Kontakte", "/app/kontakte", portalNavActive(data, "contacts"), 0, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Documents {
+				@PortalNavItem("document", "Dokumente", "/app/dokumente", portalNavActive(data, "documents"), 0, icons)
+			}
+			if data.Modules.Issues {
+				if data.CanManageIssues {
+					@PortalNavItem("issue", "Anliegen", "/app/anliegen/board", portalNavActive(data, "issues"), len(data.Issues), icons)
+				} else {
+					@PortalNavItem("issue", "Anliegen", "/app/anliegen", portalNavActive(data, "issues"), len(data.Issues), icons)
+				}
+			}
+			if data.CanUseResidentAreas && data.Modules.Votes {
+				@PortalNavItem("vote", "Abstimmungen", "/app/abstimmungen", portalNavActive(data, "votes"), 0, icons)
+			}
+			if data.CanUseResidentAreas && ((data.Modules.Parking && data.CanSeeParking) || (data.Modules.Handovers && data.CanManageHandovers) || (data.Modules.Users && data.CanManageUsers)) {
+				<span class="nav-group">Verwaltung</span>
+			}
+			if data.CanUseResidentAreas && data.Modules.Parking && data.CanSeeParking {
+				@PortalNavItem("parking", "Parkplatznutzung", "/app/parking", portalNavActive(data, "parking"), 0, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Handovers && data.CanManageHandovers {
+				@PortalNavItem("handover", "Übergaben", "/app/uebergaben", portalNavActive(data, "handovers"), 0, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Users && data.CanManageUsers {
+				@PortalNavItem("users", "Benutzer & Rechte", "/app/settings/users", portalNavActive(data, "users"), 0, icons)
+			}
+			if data.CanUseResidentAreas && data.Modules.Audit && data.CanViewAudit {
+				@PortalNavItem("audit", "Verlauf", "/app/audit", portalNavActive(data, "audit"), 0, icons)
+			}
+			if data.CanUseResidentAreas {
+				@PortalNavItem("settings", "Einstellungen", "/app/settings", portalNavActive(data, "settings"), 0, icons)
+			}
+			if data.Modules.Help {
+				@PortalNavItem("help", "Hilfe", "/app/hilfe", portalNavActive(data, "help"), 0, icons)
+			}
+		</span>
 	</nav>
 }
 
@@ -331,8 +465,13 @@ templ PortalNavigation(data PortalPageData, icons bool) {
 // permission-gated navigation.
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	<header class="mobile-head">
-		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@PortalMobileContextSwitch(data)@PortalNavigation(data, false)@PortalReleaseNotes(data)<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form></div></details>
+		<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary>@PortalMobileNavigation(data)</details>
 		<a class="mobile-identity" href="/app"><strong>{ data.HouseName }</strong><small>{ pageLabel }</small></a>
+		if len(data.RolePreviewChoices) > 0 {
+			@RolePreviewChooser("role-preview-mobile", data.RolePreviewChoices) {
+				<span class="role-preview-mobile-badge">Ansicht</span>
+			}
+		}
 		if data.CanUseResidentAreas {
 			<a class="avatar" href="/app/settings" aria-label={ "Profil von " + data.DisplayName }>{ data.Initials }</a>
 		} else {
@@ -341,10 +480,21 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	</header>
 }
 
-templ PortalMobileContextSwitch(data PortalPageData) {
-	if len(data.Contexts) > 1 {
-		<details class="context-switch mobile-context-switch"><summary>Portal wechseln</summary><div class="context-menu">
-			for _, context := range data.Contexts {
+templ PortalMobileNavigation(data PortalPageData) {
+	{{ shell := portalShellData(data) }}
+	<div class="menu-panel">
+		@PortalOrganisationIdentity(shell)
+		@PortalNavigation(data, false, true)
+		@PortalContextSwitch(shell.PortalContexts, true)
+		@PortalReleaseNotes(data)
+		<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { data.DisplayName } abmelden</button></form>
+	</div>
+}
+
+templ PortalContextSwitch(contexts []PortalContext, mobile bool) {
+	if len(contexts) > 1 {
+		<details class={ "context-switch", "portal-context-switch", templ.KV("mobile-context-switch", mobile) }><summary aria-label="Portal wechseln">Portal wechseln<span class="context-switch-chevron" aria-hidden="true">⌄</span></summary><div class="context-menu">
+			for _, context := range contexts {
 				if context.Current {
 					<span class="context-current"><strong>{ context.HouseName }</strong><small>Aktives Portal</small></span>
 				} else {
@@ -353,6 +503,183 @@ templ PortalMobileContextSwitch(data PortalPageData) {
 			}
 		</div></details>
 	}
+}
+
+func portalShellData(data PortalPageData) PortalShellData {
+	if data.Shell.Ready {
+		return data.Shell
+	}
+	shell := data.Shell
+	shell.PortalContexts = data.Contexts
+	shell.ShowInboxNav = data.ShowInboxNav
+	shell.InboxOpenCount = data.InboxOpenCount
+	seen := map[string]bool{}
+	for _, context := range data.Contexts {
+		if context.Role != "Admin" && context.Role != "Verwalter" || seen[context.TenantSlug] {
+			continue
+		}
+		seen[context.TenantSlug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, PortalHouse{
+			Slug: context.TenantSlug, Name: context.HouseName, Address: context.Address,
+			Role: context.Role, Current: context.Current,
+		})
+		if context.Current {
+			shell.CurrentHousePosition = len(shell.ManagedHouses)
+		}
+	}
+	shell.IsOrganisationMember = data.ShowVerwaltungNav || len(shell.ManagedHouses) > 1
+	shell.IsVerwaltung = shell.IsOrganisationMember && (data.Role == "Admin" || len(shell.ManagedHouses) > 1)
+	shell.CanManageOrganisationSettings = shell.IsOrganisationMember && data.Role == "Admin"
+	if shell.IsOrganisationMember && strings.TrimSpace(shell.OrganisationName) == "" {
+		shell.OrganisationName = "Verwaltung"
+	}
+	shell.RoleLabel = data.Role
+	return shell
+}
+
+func portalHouseGroupLabel(shell PortalShellData) string {
+	if len(shell.ManagedHouses) < 2 {
+		return "Liegenschaft"
+	}
+	if !shell.IsOrganisationMember {
+		return "Meine Häuser"
+	}
+	position := shell.CurrentHousePosition
+	if position < 1 {
+		position = 1
+	}
+	return fmt.Sprintf("Liegenschaft · %d von %d", position, len(shell.ManagedHouses))
+}
+
+func portalHousePickerID(sidebar bool) string {
+	if sidebar {
+		return "portal-house-picker"
+	}
+	return "portal-house-picker-mobile"
+}
+
+func portalHousePickerShell(sidebar bool) string {
+	if sidebar {
+		return "sidebar"
+	}
+	return "mobile"
+}
+
+templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool) {
+	if len(shell.ManagedHouses) > 1 {
+		<details class="house-picker" data-house-picker id={ portalHousePickerID(sidebar) } data-house-picker-shell={ portalHousePickerShell(sidebar) }>
+			<summary class="house-header-card" aria-label={ "Liegenschaft wechseln, aktuell " + data.HouseName }>
+				@PortalMapThumbnail(data)
+				<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
+				<span class="house-header-chevron" aria-hidden="true">⌄</span>
+			</summary>
+			@HousePickerPanel(shell.ManagedHouses, data.TenantSlug)
+		</details>
+	} else {
+		<div class="house-header-card house-header-static" aria-label={ "Aktuelle Liegenschaft " + data.HouseName }>
+			@PortalMapThumbnail(data)
+			<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
+		</div>
+	}
+}
+
+templ PortalMapThumbnail(data PortalPageData) {
+	<a class="map side-map house-map-thumb" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title={ data.Address + " in OpenStreetMap öffnen" } data-house-map-link>
+		if data.Map.Configured {
+			<span class="side-map-tiles">
+				for _, tile := range data.Map.Tiles {
+					<img class="side-map-tile" src={ templ.SafeURL(tile.URL) } style={ templ.SafeCSS(tile.Style) } width="256" height="256" alt="" draggable="false"/>
+				}
+			</span>
+			<span class="side-map-pin house-map-pin">
+				<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
+				if data.BrandMarkSVG != "" {
+					<span class="side-map-pin-mark">@templ.Raw(data.BrandMarkSVG)</span>
+				}
+			</span>
+		} else {
+			<span class="side-map-fallback">Standort nicht hinterlegt</span>
+		}
+	</a>
+}
+
+templ HousePickerPanel(houses []PortalHouse, currentSlug string) {
+	<div class="house-picker-panel" role="group" aria-label="Liegenschaft wechseln">
+		<header class="house-picker-heading"><h2>Liegenschaft wechseln</h2><span>{ fmt.Sprintf("%d Häuser", len(houses)) }</span></header>
+		<label class="house-picker-search"><span class="sr-only">Liegenschaft suchen</span><span aria-hidden="true">⌕</span><input type="search" placeholder="Liegenschaft suchen" autocomplete="off" data-house-search/></label>
+		<div class="house-picker-list" data-house-list>
+			for _, house := range housePickerPrimaryHouses(houses, currentSlug) {
+				@HousePickerRow(house, currentSlug)
+			}
+			if len(housePickerMoreHouses(houses, currentSlug)) > 0 {
+				<details class="house-picker-more" data-house-more>
+					<summary>{ fmt.Sprintf("%d weitere Häuser ohne Handlungsbedarf", len(housePickerMoreHouses(houses, currentSlug))) }</summary>
+					for _, house := range housePickerMoreHouses(houses, currentSlug) {
+						@HousePickerRow(house, currentSlug)
+					}
+				</details>
+			}
+			<p class="house-picker-empty" hidden data-house-empty>Keine Liegenschaft gefunden.</p>
+		</div>
+		<div class="house-picker-hints" aria-hidden="true"><span>↑↓ navigieren</span><span>↵ auswählen</span><span>Esc schließen</span></div>
+		<a class="house-picker-portfolio" href="/app/verwaltung">Zur Portfolioübersicht</a>
+	</div>
+}
+
+templ HousePickerRow(house PortalHouse, currentSlug string) {
+	<form class={ "house-picker-row", templ.KV("current", house.Slug == currentSlug || house.Current) } method="post" action="/app/context" data-house-option data-house-search-text={ strings.ToLower(house.Name + " " + house.Address) }>
+		<input type="hidden" name="tenant" value={ house.Slug }/>
+		<input type="hidden" name="role" value={ house.Role }/>
+		<button type="submit" disabled?={ house.Slug == currentSlug || house.Current }>
+			<span class="house-picker-row-copy"><strong>{ house.Name }</strong><small>{ portalHousePlace(house.Address) }</small></span>
+			if house.OpenIssueCount > 0 {
+				<span class="house-picker-open">{ fmt.Sprintf("%d offen", house.OpenIssueCount) }</span>
+			}
+			if house.Slug == currentSlug || house.Current {
+				<span class="house-picker-check" aria-label="Aktuelle Liegenschaft">✓</span>
+			}
+		</button>
+	</form>
+}
+
+func housePickerPrimaryHouses(houses []PortalHouse, currentSlug string) []PortalHouse {
+	primary := make([]PortalHouse, 0, len(houses))
+	quiet := make([]PortalHouse, 0, len(houses))
+	for _, house := range houses {
+		if house.OpenIssueCount > 0 || house.Current || house.Slug == currentSlug {
+			primary = append(primary, house)
+		} else {
+			quiet = append(quiet, house)
+		}
+	}
+	for len(primary) < 6 && len(quiet) > 0 {
+		primary = append(primary, quiet[0])
+		quiet = quiet[1:]
+	}
+	return primary
+}
+
+func housePickerMoreHouses(houses []PortalHouse, currentSlug string) []PortalHouse {
+	primary := housePickerPrimaryHouses(houses, currentSlug)
+	seen := make(map[string]bool, len(primary))
+	for _, house := range primary {
+		seen[house.Slug] = true
+	}
+	more := make([]PortalHouse, 0, len(houses)-len(primary))
+	for _, house := range houses {
+		if !seen[house.Slug] {
+			more = append(more, house)
+		}
+	}
+	return more
+}
+
+func portalHousePlace(address string) string {
+	parts := strings.Split(address, ",")
+	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+templ PortalHousePickerScript() {
 }
 
 func portalNavActive(data PortalPageData, page string) bool {
@@ -451,6 +778,7 @@ templ PortalIcon(kind string) {
 			case "audit": <path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path>
 			case "settings": <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.8-1L14.4 3h-4.8L9.3 6a7 7 0 0 0-1.8 1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.8 1l.3 3h4.8l.3-3a7 7 0 0 0 1.8-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path>
 			case "help": <circle cx="12" cy="12" r="9"></circle><path d="M9.7 9a2.5 2.5 0 1 1 3.2 2.4c-.7.3-.9.8-.9 1.6"></path><path d="M12 17h.01"></path>
+			case "map-pin": <path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11z"></path><circle cx="12" cy="10" r="2"></circle>
 			default: <path d="M5 4h14v16H5z"></path>
 		}
 	</svg>
@@ -464,6 +792,7 @@ templ PortalHomeLanding(data PortalPageData) {
 			PageLabel: data.Address,
 			Class: portalHomeLandingClass(data),
 			Hero: true,
+			Identity: PortalSectionIdentityData{Label: "Hausüberblick · " + data.HouseName},
 		},
 		PortalHeroGreeting(data),
 		nil,
@@ -482,7 +811,21 @@ func portalHomeLandingClass(data PortalPageData) string {
 }
 
 templ PortalHeroGreeting(data PortalPageData) {
-	<div class="greeting"><h1>Hallo { data.GreetingName }.</h1><p>{ data.Today }</p></div>
+	<div class="greeting">
+		if portalShellData(data).IsVerwaltung {
+			<h1>{ data.HouseName }</h1>
+		} else {
+			<h1>Hallo { data.GreetingName }.</h1>
+		}
+		<p>{ portalHomeDateLine(data) }</p>
+	</div>
+}
+
+func portalHomeDateLine(data PortalPageData) string {
+	if strings.TrimSpace(data.Address) == "" {
+		return data.Today
+	}
+	return data.Address + " · " + data.Today
 }
 
 templ PortalHomeHeaderAction(data PortalPageData) {
@@ -545,7 +888,7 @@ templ DenseIssues(data PortalPageData) {
 		if len(data.Issues) > 0 {
 			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Alter</th><th>Zuständig</th></tr></thead><tbody>
 				for _, issue := range data.Issues {
-					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td>{ issue.AssigneeEmail }</td></tr>
+					<tr><td><span class="status"><span class={ "dot", templ.KV("gold", issue.Status == "Neu"), templ.KV("green", issue.Status == "In Arbeit") }></span>{ issue.Status }</span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
 				}
 			</tbody></table>
 		}

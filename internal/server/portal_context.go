@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 type portalContextView struct {
@@ -15,6 +17,100 @@ type portalContextView struct {
 	Address    string
 	Role       string
 	Current    bool
+}
+
+// portalShellData is the single assembly point for the shared house shell. It
+// keeps cross-house issue reads tenant-bound and separates managed houses from
+// the personal portal contexts shown by "Portal wechseln".
+func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
+	shell := web.PortalShellData{Ready: true}
+	if a == nil || ac == nil {
+		return shell
+	}
+
+	shell.RoleLabel = ac.role
+	managed := a.managedTenants(ac)
+	organisation, hasOrganisation := a.organisationFor(ac)
+	// The Verwaltung layer needs someone who actually administers houses: a
+	// member of an organisation, or somebody who administers more than one
+	// house without one. Residents and owners never see it, even though their
+	// house belongs to an organisation.
+	shell.IsOrganisationMember = len(managed) > 0 && (hasOrganisation || len(managed) > 1)
+	if shell.IsOrganisationMember {
+		shell.OrganisationName = strings.TrimSpace(organisation.Name)
+		if shell.OrganisationName == "" {
+			shell.OrganisationName = "Verwaltung"
+		}
+		shell.ShowInboxNav = hasOrganisation
+		if hasOrganisation {
+			shell.InboxOpenCount = a.inboxOpenCount(ac)
+		}
+		shell.CanManageOrganisationSettings = a.isOrganisationAdmin(ac)
+		shell.IsVerwaltung = shell.CanManageOrganisationSettings || len(managed) > 1
+	}
+
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	// The picker offers every house the person can switch to: the ones they
+	// administer plus the ones they own or rent. Only Home-style portals stay
+	// in the separate portal switcher.
+	seen := make(map[string]bool)
+	for _, tenant := range managed {
+		seen[tenant.Config.Slug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, portalContextView{
+			TenantSlug: tenant.Config.Slug, HouseName: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
+			Role: tenant.Role, Current: tenant.Config.Slug == ac.tenant.Slug,
+		}))
+	}
+	for _, context := range contexts {
+		if seen[context.TenantSlug] || !a.isCommunityPortal(context.TenantSlug) {
+			continue
+		}
+		seen[context.TenantSlug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, context))
+	}
+	for index := range shell.ManagedHouses {
+		if shell.ManagedHouses[index].Current {
+			shell.CurrentHousePosition = index + 1
+			break
+		}
+	}
+
+	for _, context := range contexts {
+		if a.isCommunityPortal(context.TenantSlug) {
+			continue
+		}
+		shell.PortalContexts = append(shell.PortalContexts, web.PortalContext{
+			TenantSlug: context.TenantSlug, HouseName: context.HouseName, Address: context.Address,
+			Role: context.Role, Current: context.Current,
+		})
+	}
+	return shell
+}
+
+func (a *app) portalHouseForContext(ac *authCtx, context portalContextView) web.PortalHouse {
+	house := web.PortalHouse{
+		Slug: context.TenantSlug, Name: context.HouseName, Address: context.Address,
+		Role: context.Role, Current: context.Current,
+	}
+	if a == nil || ac == nil || a.issueStore == nil {
+		return house
+	}
+	if identity, ok := a.tenantIdentity(context.TenantSlug); ok {
+		house.OpenIssueCount = issueOpenCount(a.visibleIssuesForActor(identity.Ref(), ac.email, context.Role))
+	}
+	return house
+}
+
+// isCommunityPortal identifies a Hausportal/Liegenschaft. Private Home
+// portals deliberately stay in "Portal wechseln" rather than joining the
+// house picker.
+func (a *app) isCommunityPortal(slug string) bool {
+	tenant, ok := a.tenantBySlug(slug)
+	if !ok {
+		return false
+	}
+	portalType := strings.ToLower(strings.TrimSpace(tenant.PortalType))
+	return portalType == config.PortalTypeCommunity
 }
 
 func (a *app) portalContextsFor(email string, currentTenant string, currentRole string) []portalContextView {

@@ -29,8 +29,8 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 	a.profiles["resident@example.com"] = userProfile{Email: "resident@example.com", Role: roleResident, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()}
 
-	// The existing page initializes the HAUSV-574 catalogue before a document
-	// can be selected. The suggestion requests below must not change it.
+	// Rendering is read-only. The period's catalogue is initialized explicitly
+	// below before suggestion requests, which must not change it.
 	if response := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement"); response.Code != http.StatusOK {
 		t.Fatalf("annual statement page status = %d", response.Code)
 	}
@@ -51,6 +51,7 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	}); err != nil {
 		t.Fatalf("save period: %v", err)
 	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	periodsBefore := repositories.annualStatementPeriods.List()
 	costTypesBefore := repositories.annualStatementCostTypes.List()
 	receiptsBefore := repositories.annualStatementReceipts.List()
@@ -64,7 +65,7 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 		t.Fatalf("resident confirmation status = %d, want 403", got)
 	}
 
-	preview := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}})
+	preview := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}, "year": {"2026"}})
 	if preview.Code != http.StatusOK {
 		t.Fatalf("suggestion status = %d", preview.Code)
 	}
@@ -95,6 +96,67 @@ func TestAnnualStatementReceiptSuggestionRequiresExplicitConfirmationBeforeWriti
 	}
 	if suggester.calls != 3 {
 		t.Fatalf("suggester calls = %d, want preview plus two trusted re-checks", suggester.calls)
+	}
+}
+
+func TestAnnualStatementReceiptSuggestionUsesSelectedPeriodCatalog(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	repositories := testRepositories(a, "demo")
+	for _, period := range []storepkg.AnnualStatementPeriod{
+		{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"},
+		{Year: 2027, StartsOn: "2027-01-01", EndsOn: "2027-12-31", UpdatedBy: "manager@example.com"},
+	} {
+		if _, err := repositories.annualStatementPeriods.Save(period); err != nil {
+			t.Fatal(err)
+		}
+	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
+	if _, err := repositories.annualStatementPeriods.SaveStructureCostType(2026, storepkg.AnnualStatementCostType{
+		Key: "period_only", Name: "Nur 2026", Allocatable: true, AllocationKey: storepkg.AllocationKeyNutzwert, UpdatedBy: "manager@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repositories.annualStatementCostTypes.Save(storepkg.AnnualStatementCostType{
+		Key: "global_only", Name: "Nur global", Allocatable: true, AllocationKey: storepkg.AllocationKeyNutzwert, UpdatedBy: "manager@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	document, err := repositories.documents.CreateGenerated(storepkg.DocumentRecord{
+		Title: "Periodenbeleg", Category: documentCategoryBilling, Visibility: documentVisibilityManagerOnly, UploadedBy: "manager@example.com",
+	}, "periode.pdf", "application/pdf", []byte("%PDF-1.4 fixture receipt"), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.annualStatementReceiptSuggester = &fixedAnnualStatementReceiptSuggester{suggestion: annualStatementReceiptSuggestion{
+		AmountCents: 1200, InvoiceDate: "2026-06-01", CostTypeKey: "period_only", AmountCertain: true, DateCertain: true, CostTypeCertain: true,
+	}}
+	preview := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{
+		"document_id": {document.ID}, "year": {"2026"},
+	})
+	if preview.Code != http.StatusOK || !strings.Contains(preview.Body.String(), "Nur 2026") ||
+		!strings.Contains(preview.Body.String(), `name="year" value="2026"`) || strings.Contains(preview.Body.String(), "Nur global") {
+		t.Fatalf("selected-period suggestion was not preserved: status=%d", preview.Code)
+	}
+
+	a.annualStatementReceiptSuggester = &fixedAnnualStatementReceiptSuggester{suggestion: annualStatementReceiptSuggestion{
+		AmountCents: 1200, InvoiceDate: "2026-06-01", CostTypeKey: "global_only", AmountCertain: true, DateCertain: true, CostTypeCertain: true,
+	}}
+	rejected := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{
+		"document_id": {document.ID}, "year": {"2026"},
+	})
+	if rejected.Code != http.StatusOK || !strings.Contains(rejected.Body.String(), "Keine verlässlichen Vorschläge erkannt") ||
+		strings.Contains(rejected.Body.String(), `action="/demo/app/settings/annual-statement/receipts/confirm"`) {
+		t.Fatalf("global-only suggestion did not fail closed for selected period: status=%d", rejected.Code)
+	}
+}
+
+func seedAnnualStatementPeriodStructure(t *testing.T, repositories requestRepositories, year int) {
+	t.Helper()
+	if err := repositories.annualStatementCostTypes.EnsureDefaults("manager@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repositories.annualStatementPeriods.EnsureStructure(year, repositories.annualStatementCostTypes.List(), repositories.units.List(), "manager@example.com"); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -130,11 +192,15 @@ func TestAnnualStatementReceiptSuggestionFailsClosedWhenAnyFieldIsUncertain(t *t
 		AmountCertain: true, DateCertain: true, CostTypeCertain: false,
 	}}
 	repositories := testRepositories(a, "demo")
+	if _, err := repositories.annualStatementPeriods.Save(storepkg.AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	seedAnnualStatementPeriodStructure(t, repositories, 2026)
 	periodsBefore := repositories.annualStatementPeriods.List()
 	costTypesBefore := repositories.annualStatementCostTypes.List()
 	receiptsBefore := repositories.annualStatementReceipts.List()
 
-	response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}})
+	response := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/receipts/suggest", url.Values{"document_id": {document.ID}, "year": {"2026"}})
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Keine verlässlichen Vorschläge erkannt. Es wurde nichts übernommen.") {
 		t.Fatalf("uncertain response did not fail closed: status=%d", response.Code)
 	}

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -15,6 +18,15 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// postgresDumpName is the PostgreSQL half of a recovery point: a pg_dump in
+// custom format, taken while the service was stopped, next to hausv.db and
+// the blobs. Production runs PostgreSQL (HAUSV-562); a recovery point without
+// it would let an operator restore files against a migrated database.
+const postgresDumpName = "postgres.pgdump"
+
+// postgresDumpMagic opens every custom-format pg_dump archive.
+var postgresDumpMagic = []byte("PGDMP")
+
 type predeploySnapshotConfig struct {
 	source        string
 	snapshot      string
@@ -22,28 +34,42 @@ type predeploySnapshotConfig struct {
 	sourceCommit  string
 	targetVersion string
 	targetCommit  string
+	// postgresDumpBytes > 0 announces a PostgreSQL dump of exactly that many
+	// bytes arriving on postgresDump; it is stored as postgres.pgdump. Zero
+	// means the host runs SQLite only and no dump is expected.
+	postgresDumpBytes int64
+	postgresDump      io.Reader
 }
 
 type predeploySnapshotMetadata struct {
-	CreatedUTC    string `json:"created_utc"`
-	Scope         string `json:"scope"`
-	SourceCommit  string `json:"source_commit"`
-	SourceVersion string `json:"source_version"`
-	SQLite        string `json:"sqlite_integrity"`
-	TargetCommit  string `json:"target_commit"`
-	TargetVersion string `json:"target_version"`
+	CreatedUTC         string `json:"created_utc"`
+	Scope              string `json:"scope"`
+	SourceCommit       string `json:"source_commit"`
+	SourceVersion      string `json:"source_version"`
+	SQLite             string `json:"sqlite_integrity"`
+	TargetCommit       string `json:"target_commit"`
+	TargetVersion      string `json:"target_version"`
+	PostgresDump       string `json:"postgres_dump,omitempty"`
+	PostgresDumpBytes  int64  `json:"postgres_dump_bytes,omitempty"`
+	PostgresDumpSHA256 string `json:"postgres_dump_sha256,omitempty"`
 }
 
-func runPredeploySnapshot(args []string, stdout, stderr io.Writer) error {
+type predeploySnapshotResult struct {
+	Created            time.Time
+	PostgresDumpSHA256 string
+}
+
+func runPredeploySnapshot(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("predeploy-snapshot", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	config := predeploySnapshotConfig{}
+	config := predeploySnapshotConfig{postgresDump: stdin}
 	flags.StringVar(&config.source, "source", "", "read-only HAUSV data directory")
 	flags.StringVar(&config.snapshot, "snapshot", "", "write-once snapshot directory")
 	flags.StringVar(&config.sourceVersion, "source-version", "", "live source version")
 	flags.StringVar(&config.sourceCommit, "source-commit", "", "live source commit")
 	flags.StringVar(&config.targetVersion, "target-version", "", "target version")
 	flags.StringVar(&config.targetCommit, "target-commit", "", "target commit")
+	flags.Int64Var(&config.postgresDumpBytes, "postgres-dump-bytes", 0, "size of the custom-format pg_dump arriving on stdin; 0 for a SQLite-only host")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -53,27 +79,39 @@ func runPredeploySnapshot(args []string, stdout, stderr io.Writer) error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("snapshot command requires container UID 0")
 	}
-	created, err := createPredeploySnapshot(config, time.Now().UTC())
+	result, err := createPredeploySnapshot(config, time.Now().UTC())
 	if err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "snapshot-path=%s\n", config.snapshot)
-	fmt.Fprintf(stdout, "snapshot-created=%s\n", created.Format(time.RFC3339))
+	fmt.Fprintf(stdout, "snapshot-created=%s\n", result.Created.Format(time.RFC3339))
 	fmt.Fprintln(stdout, "snapshot-integrity=ok")
+	if config.postgresDumpBytes > 0 {
+		fmt.Fprintf(stdout, "postgres-dump=%s\n", filepath.Join(config.snapshot, postgresDumpName))
+		fmt.Fprintf(stdout, "postgres-dump-bytes=%d\n", config.postgresDumpBytes)
+		fmt.Fprintf(stdout, "postgres-dump-sha256=%s\n", result.PostgresDumpSHA256)
+	}
 	return nil
 }
 
-func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) (time.Time, error) {
+func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) (predeploySnapshotResult, error) {
+	var result predeploySnapshotResult
 	source, err := checkedSnapshotPath(config.source, "source")
 	if err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	snapshot, err := checkedSnapshotPath(config.snapshot, "snapshot")
 	if err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	if source == snapshot || pathWithin(source, snapshot) || pathWithin(snapshot, source) {
-		return time.Time{}, fmt.Errorf("source and snapshot paths must be separate")
+		return result, fmt.Errorf("source and snapshot paths must be separate")
+	}
+	if config.postgresDumpBytes < 0 {
+		return result, fmt.Errorf("PostgreSQL dump size must not be negative")
+	}
+	if config.postgresDumpBytes > 0 && config.postgresDump == nil {
+		return result, fmt.Errorf("PostgreSQL dump was announced but no input is available")
 	}
 	for name, value := range map[string]string{
 		"source version": config.sourceVersion,
@@ -82,24 +120,24 @@ func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) 
 		"target commit":  config.targetCommit,
 	} {
 		if strings.TrimSpace(value) == "" {
-			return time.Time{}, fmt.Errorf("%s is required", name)
+			return result, fmt.Errorf("%s is required", name)
 		}
 	}
 	database := filepath.Join(source, "hausv.db")
 	if info, statErr := os.Stat(database); statErr != nil || !info.Mode().IsRegular() {
-		return time.Time{}, fmt.Errorf("required HAUSV database is unavailable")
+		return result, fmt.Errorf("required HAUSV database is unavailable")
 	}
 	if _, statErr := os.Stat(snapshot); statErr == nil {
-		return time.Time{}, fmt.Errorf("snapshot path already exists; the existing recovery point was preserved")
+		return result, fmt.Errorf("snapshot path already exists; the existing recovery point was preserved")
 	} else if !os.IsNotExist(statErr) {
-		return time.Time{}, fmt.Errorf("inspect snapshot path: %w", statErr)
+		return result, fmt.Errorf("inspect snapshot path: %w", statErr)
 	}
 	parent := filepath.Dir(snapshot)
 	if info, statErr := os.Stat(parent); statErr != nil || !info.IsDir() {
-		return time.Time{}, fmt.Errorf("snapshot parent is unavailable")
+		return result, fmt.Errorf("snapshot parent is unavailable")
 	}
 	if err := os.Chmod(parent, 0o700); err != nil {
-		return time.Time{}, fmt.Errorf("secure snapshot parent: %w", err)
+		return result, fmt.Errorf("secure snapshot parent: %w", err)
 	}
 
 	staging := filepath.Join(parent, "."+filepath.Base(snapshot)+".staging")
@@ -107,10 +145,10 @@ func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) 
 	// container can leave it behind, so remove that exact versioned path before
 	// recreating it; the write-once published path above remains untouched.
 	if err := os.RemoveAll(staging); err != nil {
-		return time.Time{}, fmt.Errorf("remove stale snapshot staging directory: %w", err)
+		return result, fmt.Errorf("remove stale snapshot staging directory: %w", err)
 	}
 	if err := os.Mkdir(staging, 0o700); err != nil {
-		return time.Time{}, fmt.Errorf("create snapshot staging directory: %w", err)
+		return result, fmt.Errorf("create snapshot staging directory: %w", err)
 	}
 	published := false
 	defer func() {
@@ -120,10 +158,10 @@ func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) 
 	}()
 
 	if err := copySnapshotTree(source, staging); err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	if err := checkpointSnapshotSQLite(filepath.Join(staging, "hausv.db")); err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	metadata := predeploySnapshotMetadata{
 		CreatedUTC:    created.Truncate(time.Second).Format(time.RFC3339),
@@ -134,28 +172,91 @@ func createPredeploySnapshot(config predeploySnapshotConfig, created time.Time) 
 		TargetCommit:  config.targetCommit,
 		TargetVersion: config.targetVersion,
 	}
+	if config.postgresDumpBytes > 0 {
+		sum, err := writePostgresDump(filepath.Join(staging, postgresDumpName), config.postgresDump, config.postgresDumpBytes)
+		if err != nil {
+			return result, err
+		}
+		metadata.Scope = "pre-schema SQLite, blob and PostgreSQL recovery point"
+		metadata.PostgresDump = postgresDumpName
+		metadata.PostgresDumpBytes = config.postgresDumpBytes
+		metadata.PostgresDumpSHA256 = sum
+		result.PostgresDumpSHA256 = sum
+	}
 	encoded, err := json.MarshalIndent(metadata, "", "  ")
 	if err != nil {
-		return time.Time{}, fmt.Errorf("encode snapshot metadata: %w", err)
+		return result, fmt.Errorf("encode snapshot metadata: %w", err)
 	}
 	encoded = append(encoded, '\n')
 	if err := writeSyncedFile(filepath.Join(staging, "PREDEPLOY-SNAPSHOT.json"), encoded, 0o600); err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	if err := os.Chmod(staging, 0o700); err != nil {
-		return time.Time{}, fmt.Errorf("secure snapshot: %w", err)
+		return result, fmt.Errorf("secure snapshot: %w", err)
 	}
 	if err := syncSnapshotDirectories(staging); err != nil {
-		return time.Time{}, err
+		return result, err
 	}
 	if err := os.Rename(staging, snapshot); err != nil {
-		return time.Time{}, fmt.Errorf("publish snapshot: %w", err)
+		return result, fmt.Errorf("publish snapshot: %w", err)
 	}
 	published = true
 	if err := syncDirectory(parent); err != nil {
-		return time.Time{}, err
+		return result, err
 	}
-	return created.Truncate(time.Second), nil
+	result.Created = created.Truncate(time.Second)
+	return result, nil
+}
+
+// writePostgresDump stores exactly announced bytes of a custom-format pg_dump
+// archive and returns its SHA-256. The caller measured the archive inside the
+// database container before streaming it here, so a short or long stream is a
+// broken transport, not a smaller database — both refuse the recovery point.
+func writePostgresDump(destination string, dump io.Reader, announced int64) (string, error) {
+	file, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return "", fmt.Errorf("create PostgreSQL dump: %w", err)
+	}
+	digest := sha256.New()
+	written, copyErr := io.CopyN(io.MultiWriter(file, digest), dump, announced)
+	if copyErr != nil && copyErr != io.EOF {
+		file.Close()
+		return "", fmt.Errorf("store PostgreSQL dump: %w", copyErr)
+	}
+	if written != announced {
+		file.Close()
+		return "", fmt.Errorf("PostgreSQL dump ended after %d of %d announced bytes", written, announced)
+	}
+	var extra [1]byte
+	if n, _ := io.ReadFull(dump, extra[:]); n != 0 {
+		file.Close()
+		return "", fmt.Errorf("PostgreSQL dump is longer than the announced %d bytes", announced)
+	}
+	if err := verifyPostgresDumpHeader(destination); err != nil {
+		file.Close()
+		return "", err
+	}
+	if err := file.Sync(); err != nil {
+		file.Close()
+		return "", err
+	}
+	if err := file.Close(); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(digest.Sum(nil)), nil
+}
+
+func verifyPostgresDumpHeader(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	header := make([]byte, len(postgresDumpMagic))
+	if _, err := io.ReadFull(file, header); err != nil || !bytes.Equal(header, postgresDumpMagic) {
+		return fmt.Errorf("PostgreSQL dump is not a custom-format pg_dump archive")
+	}
+	return nil
 }
 
 func checkedSnapshotPath(raw, label string) (string, error) {

@@ -169,9 +169,18 @@ async function geometry(page, viewport, label) {
       .filter((item) => item.left < -1 || item.right > innerWidth + 1);
     const shell = document.querySelector('[data-portal-shell]');
     const landing = document.querySelector('[data-portal-section-landing]');
-    const labelNode = document.querySelector('.side-address-label');
-    const mapLink = document.querySelector('a.side-address');
-    const homeLink = document.querySelector('a.side-address-label');
+    // The address lives in the sidebar card on wide viewports and in the mobile
+    // head below 760 px; innerText of a hidden node is empty, so take the first
+    // one that is actually rendered.
+    const labelNode = [...document.querySelectorAll('.side-address-label')]
+      .find((node) => (node.innerText || '').trim().length > 0)
+      || document.querySelector('.side-address-label')
+      || document.querySelector('.mobile-head .mobile-identity');
+    // HAUSV-620/621: the map is the thumbnail link inside the house header card.
+    const mapLink = document.querySelector('a.map');
+    // HAUSV-621: the address label is the house header card (a picker summary for
+    // organisation members, a static card otherwise); the map link keeps the full address.
+    const homeLink = document.querySelector('.house-header-card');
     const menu = document.querySelector('.mobile-head > details.menu > summary');
     const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;
@@ -204,13 +213,19 @@ async function geometry(page, viewport, label) {
     fail(`${label}: gemeinsames Portal-Chrome fehlt oder ist mehrfach vorhanden (${JSON.stringify(result)})`);
   }
   if (result.shellOverlap) fail(`${label}: Ortskopf und Menü überlappen`);
-  if (!result.address ||
-      (result.shellPresent && (!result.address.includes('Musterweg 1') || /\bDEMO\b/i.test(result.address)))) {
+  // Only pages that carry the shared page head show the house address; the
+  // payment preview and other bare routes legitimately have none.
+  if (result.shellPresent &&
+      (!result.address || !result.address.includes('Demohaus') || !result.address.includes('1010 Wien') || /\bDEMO\b/i.test(result.address))) {
     fail(`${label}: sichtbare Adresse ist nicht sinnvoll ausgeschrieben (${result.address})`);
   }
-  if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
-      result.homeLabel !== 'Hausportal Demohaus öffnen') {
-    fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf`);
+  // Pages without the shared page head (the payment preview is one) carry no map
+  // and no house header card; where the head exists both must name the house.
+  if (result.mapLabel || result.homeLabel) {
+    if (!result.mapLabel.includes('Musterweg 1, 1010 Wien') ||
+        !/Demohaus/.test(result.homeLabel)) {
+      fail(`${label}: Karten- oder Portal-Linkname entspricht nicht dem gemeinsamen Seitenkopf (map=${result.mapLabel} / home=${result.homeLabel})`);
+    }
   }
   if (result.shellPresent && viewport.width === 320 && result.addressScrollWidth > result.addressWidth + 1) {
     fail(`${label}: ausgeschriebene Straße wird bei 320px abgeschnitten`);
@@ -611,6 +626,26 @@ try {
       }
       if (!(await candidate.getByText('keine rechtliche Beurteilung', { exact: false }).count())) fail(`${label}: rechtliche Abgrenzung fehlt`);
       if (!(await candidate.locator('.cost-type-card select[name="allocation_key"] option[value="nutzwert"][selected]').count())) fail(`${label}: Verteilerschlüssel Nutzwert fehlt`);
+      // HAUSV-590: direct children must fit their own grid. On wide desktop,
+      // each cost-type card and allocation row also stays on exactly one row
+      // with one track per visible child.
+      const gridDefects = await candidate.locator('.cost-type-list > form.cost-type-card, .allocation-row').evaluateAll((cards, desktop) => cards.flatMap((card, index) => {
+        const children = [...card.children].filter((node) => node.tagName !== 'INPUT' || node.type !== 'hidden');
+        const tracks = getComputedStyle(card).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length;
+        const box = card.getBoundingClientRect();
+        const problems = [];
+        for (const child of children) {
+          const rect = child.getBoundingClientRect();
+          if (rect.right > box.right + 1 || rect.left < box.left - 1) problems.push(`${card.className}#${index}: ${child.tagName.toLowerCase()} ragt über die Karte hinaus`);
+        }
+        if (desktop) {
+          if (tracks !== children.length) problems.push(`${card.className}#${index}: ${children.length} Elemente auf ${tracks} Spalten`);
+          const bottoms = children.map((child) => Math.round(child.getBoundingClientRect().bottom));
+          if (Math.max(...bottoms) - Math.min(...bottoms) > 2) problems.push(`${card.className}#${index}: Elemente stehen nicht in einer Zeile (${bottoms.join('/')})`);
+        }
+        return problems;
+      }), viewport.width >= 1200);
+      if (gridDefects.length) fail(`${label}: ${gridDefects.join('; ')}`);
       if (!(await candidate.getByText('erfindet keinen', { exact: false }).count())) fail(`${label}: Nutzwert-Grenze fehlt`);
       if (!(await candidate.getByText('Automatische Erkennung derzeit geschlossen.', { exact: false }).count())) fail(`${label}: geschlossener Inferenzvertrag fehlt`);
       if (!(await candidate.getByText('Es werden keine Belegdaten versendet.', { exact: false }).count())) fail(`${label}: Datenschutzgrenze fehlt`);

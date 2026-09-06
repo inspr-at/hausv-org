@@ -38,9 +38,19 @@ jobs:
     steps:
       - name: Determine deploy commit
         id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "sha=${{ github.event.inputs.commit }}" >> "$GITHUB_OUTPUT"
+            # The input may be the 7-character form the release tag uses;
+            # actions/checkout needs a full SHA, so resolve it through the API
+            # instead of hoping a short SHA passes as a ref (it does not).
+            full=$(gh api "repos/${{ github.repository }}/commits/${{ github.event.inputs.commit }}" -q .sha)
+            case $full in
+              [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;;
+              *) echo "could not resolve commit ${{ github.event.inputs.commit }}" >&2; exit 1 ;;
+            esac
+            echo "sha=$full" >> "$GITHUB_OUTPUT"
           else
             # Use the exact commit that CI ran on, not the workflow_run commit.
             # github.event.workflow_run.head_sha is the CI commit that went green.
@@ -60,14 +70,16 @@ jobs:
       - name: Determine deploy parameters
         id: params
         run: |
+          # The release tag always carries the 7-character commit, derived from
+          # the resolved full SHA — so a dispatch given a full SHA still maps to
+          # the tag CI pushed.
+          sha_full="${{ steps.commit.outputs.sha }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "commit=${{ github.event.inputs.commit }}" >> "$GITHUB_OUTPUT"
           else
-            sha_full="${{ steps.commit.outputs.sha }}"
             echo "version=${{ steps.version.outputs.app_version }}" >> "$GITHUB_OUTPUT"
-            echo "commit=${sha_full:0:7}" >> "$GITHUB_OUTPUT"
           fi
+          echo "commit=${sha_full:0:7}" >> "$GITHUB_OUTPUT"
       
       - name: Deploy to production
         env:
@@ -78,10 +90,30 @@ jobs:
           HAUSV_DEPLOY_COMPOSE_LOCK: /run/lock/compose-hausv.lock
           HAUSV_DEPLOY_DATA_DIR: /var/lib/csb1-docker/hausv-org
           HAUSV_DEPLOY_SNAPSHOT_ROOT: /var/backups/hausv-predeploy
+          # Production runs PostgreSQL: a schema release dumps this database
+          # into the same recovery point (HAUSV-562). "none" would mean SQLite only.
+          # The dump runs as the read-only BYPASSRLS backup role, not as the
+          # superuser (HAUSV-635); it connects over the container's local socket.
+          HAUSV_DEPLOY_POSTGRES_CONTAINER: hausv-postgres
+          HAUSV_DEPLOY_POSTGRES_DB: hausv
+          HAUSV_DEPLOY_POSTGRES_USER: hausv_backup
           HAUSV_DEPLOY_LIVE_URL: https://hausv.org/jhw22/
           HAUSV_DEPLOY_HEALTH_URL: https://hausv.org/healthz
           HAUSV_DEPLOY_FLOCK_BIN: /run/current-system/sw/bin/flock
           HAUSV_DEPLOY_BASE64_BIN: /run/current-system/sw/bin/base64
           HAUSV_DEPLOY_MKTEMP_BIN: /run/current-system/sw/bin/mktemp
         run: |
+          set +e
           bash scripts/deploy-from-ci-image.sh "${{ steps.params.outputs.version }}" "${{ steps.params.outputs.commit }}"
+          status=$?
+          set -e
+          # Exit 3 means the script read the live build and found this VERSION
+          # already there: nothing to release. Ending green keeps a red run
+          # meaning what it says — a release that was refused or failed.
+          if [ "$status" -eq 3 ]; then
+            echo "### Nothing to release" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "VERSION \`${{ steps.params.outputs.version }}\` is already live; production keeps its current image. Bump VERSION to release." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$status"

@@ -406,7 +406,8 @@ async function assertSidebarNavReachable() {
 
 // The legacy shell placed the portal switcher inside a sidebar map card, and this
 // assertion used to encode that placement (.side-map-card, .side-foot, .side-map-top).
-// The templ shell renders it as details.context-switch in the sidebar and a mobile twin,
+// The templ shell renders it as details.context-switch inside aside.sidebar (HAUSV-621 moved it
+// below the house header, out of <header>; the exact nesting is not part of the contract) and a mobile twin,
 // so those selectors matched nothing — and because CI runs only the energy subset of
 // these flows, this had been failing silently since the switch went live. What is worth
 // keeping is the BEHAVIOUR: switching portals updates URL, house name and the
@@ -417,37 +418,43 @@ async function assertPortalSwitcherAtomic() {
   const page = await localLogin(context, 'multi@example.com');
   await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
 
-  const switcher = page.locator('aside.sidebar > header details.context-switch');
-  if ((await switcher.count()) !== 1) {
-    fail(`Portalwechsler fehlt im Kopf der Seitenleiste oder ist mehrfach vorhanden (${await switcher.count()})`);
+  const picker = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"]');
+  if ((await picker.count()) !== 1) {
+    fail(`Hauswechsler fehlt in der Seitenleiste oder ist mehrfach vorhanden (${await picker.count()})`);
   }
-  if ((await switcher.locator('.context-current strong').textContent())?.trim() !== 'Demohaus') {
-    fail('Portalwechsler zeigt den aktiven Portalnamen nicht eindeutig');
+  if ((await picker.locator(':scope > summary .house-header-copy strong').textContent())?.trim() !== 'Demohaus') {
+    fail('Hauswechsler zeigt den aktiven Hausnamen nicht eindeutig');
   }
-  await switcher.locator('summary').click();
-  await switcher.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
+  await picker.locator(':scope > summary').click();
+  await picker.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
-  const after = page.locator('aside.sidebar > header details.context-switch .context-current');
+  const after = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"] > summary .house-header-copy strong');
   const accountRole = page.locator('aside.sidebar > footer.account small').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
-      (await after.locator('strong').textContent())?.trim() !== 'Haus B' ||
-      (await after.locator('small').textContent())?.trim() !== 'Aktives Portal' ||
+      (await after.textContent())?.trim() !== 'Haus B' ||
       !(await accountRole.textContent())?.includes('Admin')) {
     fail(`Portalwechsel aktualisiert URL, Name oder Account-Rolle nicht atomar (${page.url()})`);
   }
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  const mobileGeometry = await page.evaluate(() => ({
-    overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-    // On a phone the sidebar copy is inside the closed hamburger; the mobile twin is what
-    // must be reachable without opening anything.
-    switcherVisible: Boolean(document.querySelector('.mobile-context-switch > summary')?.getClientRects().length),
-  }));
-  if (mobileGeometry.overflow || !mobileGeometry.switcherVisible) {
-    fail(`Portalwechsler ist im schmalen Layout nicht stabil (${JSON.stringify(mobileGeometry)})`);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const menu = page.locator('.mobile-head > details.menu');
+    if ((await menu.getAttribute('open')) === null) await menu.locator(':scope > summary').click();
+    const mobileGeometry = await page.evaluate(() => {
+      const summary = document.querySelector('.mobile-head details.house-picker[data-house-picker-shell="mobile"] > summary');
+      const box = summary?.getBoundingClientRect();
+      return {
+        overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        pickerVisible: Boolean(summary?.getClientRects().length),
+        pickerContained: Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1),
+      };
+    });
+    if (mobileGeometry.overflow || !mobileGeometry.pickerVisible || !mobileGeometry.pickerContained) {
+      fail(`Hauswechsler ist bei ${width}px nicht stabil (${JSON.stringify(mobileGeometry)})`);
+    }
   }
   await closeContext(context);
-  process.stdout.write('  ✓ Portalwechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
+  process.stdout.write('  ✓ Hauswechsler · URL, Name und Account-Rolle atomar · Desktop und Mobil\n');
 }
 
 async function assertSharedAppShellNavigation() {
@@ -535,11 +542,26 @@ async function assertSharedAppShellNavigation() {
     if (!navEntryCount) fail(`App-Shell ${width}px: offenes Menü enthält keine Navigationseinträge`);
     for (let index = 0; index < navEntryCount; index += 1) {
       const entry = navEntries.nth(index);
+      const inCollapsed = await entry.evaluate((element) => {
+        for (let node = element.parentElement; node; node = node.parentElement) {
+          if (node.classList && node.classList.contains('menu-panel')) return false;
+          if (node.tagName === 'DETAILS' && !node.open) return true;
+        }
+        return false;
+      });
+      if (inCollapsed) continue;
       await entry.focus();
       await entry.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
       const reachability = await entry.evaluate((element) => {
         const panelElement = element.closest('.menu-panel');
         if (!panelElement) return { missingPanel: true };
+        // Content of a collapsed disclosure (the Liegenschaft picker) is not part
+        // of the visible navigation; the summary that opens it is checked instead.
+        for (let node = element.parentElement; node && node !== panelElement; node = node.parentElement) {
+          if (node.tagName === 'DETAILS' && !node.open) {
+            return { skipped: true, focused: true, visible: true, verticallyReachable: true, horizontallyContained: true };
+          }
+        }
         const item = element.getBoundingClientRect();
         const viewport = panelElement.getBoundingClientRect();
         return {
@@ -2068,7 +2090,19 @@ async function assertPage(page, persona, route, viewportName) {
     fail(`${persona.name} ${viewportName} ${route.path}: Status ${response?.status() ?? 0}`);
   }
   const heading = page.getByRole('heading', { name: route.heading }).first();
-  if (!(await heading.count())) fail(`${persona.name} ${viewportName} ${route.path}: Überschrift fehlt`);
+  if (!(await heading.count())) {
+    // HAUSV-620: the overview greets residents by name, but for people who
+    // administer several houses it names the current house instead. Both are
+    // valid; the house name must then match the sidebar's header card.
+    const houseHeading = route.path === '/app'
+      ? await page.evaluate(() => {
+          const h1 = document.querySelector('main h1');
+          const card = document.querySelector('aside.sidebar .house-header-copy strong');
+          return h1 && card && h1.textContent.trim() === card.textContent.trim() ? h1.textContent.trim() : '';
+        })
+      : '';
+    if (!houseHeading) fail(`${persona.name} ${viewportName} ${route.path}: Überschrift fehlt`);
+  }
   if (!(await page.getByText(route.content, { exact: false }).count())) {
     fail(`${persona.name} ${viewportName} ${route.path}: Inhalt „${route.content}“ fehlt`);
   }
@@ -2093,8 +2127,10 @@ async function assertPage(page, persona, route, viewportName) {
       if (!href || !/openstreetmap\.org/.test(href) || !label || !/OpenStreetMap/.test(label)) {
         fail(`${persona.name} Desktop: Kartenlink zeigt nicht auf OpenStreetMap oder hat kein Label (${href} / ${label})`);
       }
+      // HAUSV-620/621 made the map a thumbnail inside the house header card; the
+      // contract is that it stays a visible, clickable tile, not that it is wide.
       const box = await map.boundingBox();
-      if (!box || box.width < 120 || box.height < 40) {
+      if (!box || box.width < 40 || box.height < 40) {
         fail(`${persona.name} Desktop: Kartenlink ist nicht sichtbar gerendert (${JSON.stringify(box)})`);
       }
       const tileCount = await map.locator('img.side-map-tile').count();

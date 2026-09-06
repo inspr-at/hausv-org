@@ -1,0 +1,55 @@
+services:
+  hausv-demo:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${HAUSV_DEMO_VERSION:-demo}
+        GIT_COMMIT: ${HAUSV_DEMO_COMMIT:-dev}
+    image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
+    # A fresh Docker-managed volume is root-owned; the demo initializes /data.
+    user: "0:0"
+    # Loopback only: the reverse proxy is the sole public edge. Docker's
+    # published ports bypass a host firewall, so never bind 0.0.0.0 here.
+    ports:
+      - "${HAUSV_DEMO_BIND:-127.0.0.1}:${HAUSV_DEMO_PORT:-8098}:8080"
+    env_file:
+      - ./demo.env
+      # On a NixOS host the secrets are an agenix file; point the variable at it.
+      - ${HAUSV_DEMO_SECRETS_FILE:-./secrets.env}
+    volumes:
+      - hausv-demo-data:/data
+      - ../../scripts/demo/seed:/seed:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/hausv-org", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  # The demo's own post office (HAUSV-633): the same image, plain IMAP, only
+  # reachable inside this compose network. It holds the seed mails unread and
+  # takes any .eml dropped into scripts/demo/seed/mail as a new message, so
+  # the Posteingang can show mail arriving without a real mailbox. No ports.
+  hausv-demo-mailbox:
+    image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
+    # The image's ENTRYPOINT is /hausv-org; command holds only its arguments.
+    command: ["demo-mailbox", "-dir", "/seed/mail", "-addr", ":143", "-rescan", "15s"]
+    env_file:
+      - ./demo.env
+    volumes:
+      - ../../scripts/demo/seed:/seed:ro
+    restart: unless-stopped
+
+volumes:
+  hausv-demo-data:
+
+# A pinned subnet makes the proxy's source address (the bridge gateway,
+# first host of the subnet) predictable, so TRUSTED_PROXY_CIDRS can name it
+# as an exact /32. Override when the range is taken on the host.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${HAUSV_DEMO_SUBNET:-172.30.98.0/24}

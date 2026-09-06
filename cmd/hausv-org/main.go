@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/ai"
 	"github.com/inspr-at/hausv-org/internal/homeconnector"
 	"github.com/inspr-at/hausv-org/internal/server"
 )
@@ -75,9 +76,33 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "ai-triage" {
+		if err := ai.RunCLI(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("ai triage did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "demo-seed" {
+		if err := runDemoSeed(os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("demo seed did not complete", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "demo-mailbox" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := runDemoMailbox(ctx, os.Args[2:], os.Stdout, os.Stderr, os.Getenv); err != nil {
+			slog.Error("demo mailbox stopped", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "predeploy-snapshot" {
-		if err := runPredeploySnapshot(os.Args[2:], os.Stdout, os.Stderr); err != nil {
+		if err := runPredeploySnapshot(os.Args[2:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 			slog.Error("pre-deploy snapshot failed", "error", err)
 			os.Exit(1)
 		}
@@ -117,6 +142,8 @@ func main() {
 	defer stopHomeReservationRetention()
 	stopEnergySampler := app.StartEnergyIntervalSampler()
 	defer stopEnergySampler()
+	stopMailIntake := app.StartMailIntake()
+	defer stopMailIntake()
 
 	srv := newHTTPServer(app.Addr(), app.Handler())
 

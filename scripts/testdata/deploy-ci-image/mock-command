@@ -68,13 +68,16 @@ def mock_git(args: list[str]) -> int:
             "schema_with_snapshot",
             "schema_release_success",
             "schema_snapshot_container_fail",
+            "schema_postgres_unset",
+            "schema_sqlite_only",
+            "schema_postgres_dump_fail",
         ):
             return 1
         elif CASE == "git_diff_fail":
             print("fatal: git diff failed", file=sys.stderr)
             return 2
         # Log that we checked migrations
-        log("git", ["diff", "--quiet", LIVE, "HEAD", "--", "internal/db/migrations"])
+        log("git", ["diff", "--quiet", LIVE, "HEAD", "--", "internal/db/migrations", "internal/db/postgres/migrations"])
         return 0
     else:
         print(f"unexpected git mock call: {args}", file=sys.stderr)
@@ -82,10 +85,91 @@ def mock_git(args: list[str]) -> int:
     return 0
 
 
+def latest_is_missing(target: str) -> bool:
+    # HAUSV-634: in the latest_missing cases the host has lost the :latest tag.
+    # It comes back only when the script re-tags the running image under the
+    # lock, which the "tag" branch below records.
+    if not CASE.startswith("latest_missing"):
+        return False
+    if target.endswith(":latest"):
+        return not (STATE / "latest_restored").exists()
+    if CASE == "latest_missing_no_release" and ":release-" in target and "9.99.0" not in target:
+        # Neither :latest nor the live release's own tag: nothing proves the
+        # running image, the preflight must refuse.
+        return True
+    return False
+
+
+FAKE_PG_DUMP = b"PGDMP" + bytes((index * 7 + 3) % 256 for index in range(5, 4096))
+
+
+def mock_docker_exec(args: list[str]) -> int:
+    # HAUSV-562: the PostgreSQL half of the recovery point runs inside the
+    # database container. The double answers like postgres:17-alpine would.
+    log("docker", ["exec"] + args)
+    rest = [arg for arg in args if arg not in ("-i", "--interactive")]
+    if not rest:
+        return 64
+    container, command = rest[0], rest[1:]
+    if container != os.environ.get("HAUSV_DEPLOY_POSTGRES_CONTAINER", ""):
+        print(f"docker exec targeted an unexpected container: {container}", file=sys.stderr)
+        return 64
+    if command[:1] == ["pg_isready"]:
+        return 1 if CASE == "schema_postgres_unready" else 0
+    if command[:1] == ["pg_dump"]:
+        if "--format=custom" not in command or "--file=/tmp/hausv-predeploy-9.99.0-aaaaaaa.pgdump" not in command:
+            print(f"pg_dump is not a custom-format archive inside the container: {command}", file=sys.stderr)
+            return 64
+        if CASE == "schema_postgres_dump_fail":
+            print("pg_dump: error: connection failed", file=sys.stderr)
+            return 1
+        (STATE / "pg_dumped").write_text("yes", encoding="utf-8")
+        return 0
+    if command[:2] == ["stat", "-c"]:
+        print(len(FAKE_PG_DUMP))
+        return 0
+    if command[:2] == ["pg_restore", "--list"]:
+        print(";")
+        print("; Archive created at 2026-09-06 00:00:00 UTC")
+        for index, table in enumerate(("issues", "persons", "units"), start=1):
+            print(f"{index}; 0 0 TABLE DATA public {table} postgres")
+        return 0
+    if command[:1] == ["cat"]:
+        sys.stdout.buffer.write(FAKE_PG_DUMP)
+        sys.stdout.buffer.flush()
+        return 0
+    if command[:2] == ["rm", "-f"]:
+        (STATE / "pg_dump_removed").write_text("yes", encoding="utf-8")
+        return 0
+    print(f"unexpected docker exec mock call: {command}", file=sys.stderr)
+    return 64
+
+
 def mock_docker(args: list[str]) -> int:
+    if args and args[0] == "exec":
+        return mock_docker_exec(args[1:])
+    if len(args) >= 3 and args[:2] == ["image", "inspect"] and latest_is_missing(args[-1]):
+        print(f"Error response from daemon: No such image: {args[-1]}", file=sys.stderr)
+        return 1
     # Mock basic docker inspect calls needed for preflight
     if len(args) >= 5 and args[:3] == ["image", "inspect", "--format"]:
-        if CASE in ("schema_with_snapshot", "schema_release_success", "schema_snapshot_container_fail"):
+        if CASE.startswith("latest_missing"):
+            target = args[-1]
+            activated = (STATE / "activated").exists()
+            if ":release-9.99.0-" in target or target == RELEASE_IMAGE_ID:
+                print(RELEASE_IMAGE_ID)
+            elif target.endswith(":latest") and activated:
+                print(RELEASE_IMAGE_ID)
+            else:
+                print(LIVE_IMAGE_ID)
+            return 0
+        if CASE in (
+            "schema_with_snapshot",
+            "schema_release_success",
+            "schema_snapshot_container_fail",
+            "schema_sqlite_only",
+            "schema_postgres_dump_fail",
+        ):
             target = args[-1]
             activated = (STATE / "activated").exists()
             if ":release-" in target or target == RELEASE_IMAGE_ID:
@@ -114,6 +198,9 @@ def mock_docker(args: list[str]) -> int:
             # Image ID (alternate format)
             print(LIVE_IMAGE_ID)
             return 0
+        elif "{{.State.Running}}" in args[2]:
+            print("true")
+            return 0
         elif "{{index .Config.Labels" in args[2]:
             # Compose labels
             if "compose.project" in args[2]:
@@ -126,6 +213,22 @@ def mock_docker(args: list[str]) -> int:
         return 0
     elif args and args[0] == "run":
         log("docker", args)
+        # docker parses everything before the image as its own options and
+        # rejects unknown ones; the double does the same so a snapshot flag
+        # slipped in front of the image fails here, not on csb1 (HAUSV-562).
+        docker_run_options = {
+            "--rm", "--user", "--network", "--read-only", "--cap-drop", "--cap-add",
+            "--security-opt", "--tmpfs", "--mount", "--interactive", "-i",
+        }
+        try:
+            image_index = args.index(RELEASE_IMAGE_ID)
+        except ValueError:
+            print("snapshot did not name the pinned release image", file=sys.stderr)
+            return 125
+        for option in args[1:image_index]:
+            if option.startswith("-") and option not in docker_run_options:
+                print(f"unknown flag: {option}", file=sys.stderr)
+                return 125
         required = (
             "--user", "0:0", "--network", "none", "--read-only",
             "--cap-drop", "ALL", "--cap-add", "DAC_OVERRIDE",
@@ -152,6 +255,23 @@ def mock_docker(args: list[str]) -> int:
         print("snapshot-path=/snapshots/9.99.0-aaaaaaa")
         print("snapshot-created=2026-08-27T12:00:00Z")
         print("snapshot-integrity=ok")
+        if "--postgres-dump-bytes" in args:
+            # Only an --interactive container has stdin attached; reading it
+            # anywhere else would block on an inherited terminal.
+            if "--interactive" not in args:
+                print("the PostgreSQL dump was announced without attaching stdin", file=sys.stderr)
+                return 1
+            announced = int(args[args.index("--postgres-dump-bytes") + 1])
+            streamed = sys.stdin.buffer.read()
+            if streamed != FAKE_PG_DUMP or announced != len(FAKE_PG_DUMP):
+                print("the PostgreSQL dump did not arrive byte-exact on stdin", file=sys.stderr)
+                return 1
+            print("postgres-dump=/snapshots/9.99.0-aaaaaaa/postgres.pgdump")
+            print(f"postgres-dump-bytes={announced}")
+            print("postgres-dump-sha256=" + "c" * 64)
+        elif "--interactive" in args:
+            print("a SQLite-only snapshot unexpectedly attached stdin", file=sys.stderr)
+            return 1
         return 0
     elif len(args) >= 2 and args[0] == "compose":
         # Compose commands
@@ -170,6 +290,10 @@ def mock_docker(args: list[str]) -> int:
         if args[0] == "tag" and len(args) == 3 \
                 and args[1] == RELEASE_IMAGE_ID and args[2].endswith(":latest"):
             (STATE / "activated").write_text("yes", encoding="utf-8")
+        if args[0] == "tag" and len(args) == 3 \
+                and args[1] == LIVE_IMAGE_ID and args[2].endswith(":latest"):
+            # The preserve step put :latest back onto the running image.
+            (STATE / "latest_restored").write_text("yes", encoding="utf-8")
         return 0
     
     # Just log other docker calls
@@ -187,6 +311,11 @@ def mock_curl(args: list[str]) -> int:
     
     if url:
         if url == LIVE_URL:
+            if CASE == "version_already_live":
+                # Production already serves the candidate version: the script
+                # must end as "nothing to release" instead of refusing.
+                print(f"<html><body>Live: 9.99.0 ({LIVE[:7]})</body></html>")
+                return 0
             # First read is the live release; later reads verify the target.
             if count("page") <= 2:
                 print(f"<html><body>Live: {APP_VERSION} ({LIVE[:7]})</body></html>")

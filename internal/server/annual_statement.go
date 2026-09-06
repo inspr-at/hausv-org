@@ -33,22 +33,9 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	if err := ac.repositories.annualStatementCostTypes.EnsureDefaults(actorEmail); err != nil {
-		logError("annual statement cost type defaults failed", err, "tenant", tenant.Slug)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
 	costTypes := ac.repositories.annualStatementCostTypes.List()
-	costTypeViews := make([]web.AnnualStatementCostTypeView, 0, len(costTypes))
-	allocatableCount := 0
-	for _, costType := range costTypes {
-		if costType.Allocatable {
-			allocatableCount++
-		}
-		costTypeViews = append(costTypeViews, web.AnnualStatementCostTypeView{
-			Key: costType.Key, Name: costType.Name, Allocatable: costType.Allocatable,
-			AllocationKey: costType.AllocationKey,
-		})
+	if len(costTypes) == 0 {
+		costTypes = store.AnnualStatementDefaultCostTypes(actorEmail)
 	}
 	periods := ac.repositories.annualStatementPeriods.List()
 	selectedYear, _ := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("year")))
@@ -60,18 +47,50 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		formYear = time.Now().Year()
 	}
 	startsOn, endsOn := "", ""
+	selectedPeriodFound := false
+	followup := web.AnnualStatementFollowupView{}
 	periodViews := make([]web.AnnualStatementPeriodView, 0, len(periods))
 	for _, period := range periods {
 		selected := period.Year == selectedYear
 		if selected {
+			selectedPeriodFound = true
 			startsOn, endsOn = period.StartsOn, period.EndsOn
+			if next, nextOK := annualStatementFollowupPeriod(period, actorEmail); nextOK {
+				followup = web.AnnualStatementFollowupView{
+					SourceYear: period.Year, Year: next.Year, DateRange: annualStatementDateRange(next.StartsOn, next.EndsOn),
+					Deadline: annualStatementDeadline(next.EndsOn), Available: true,
+				}
+			}
 		}
 		periodViews = append(periodViews, web.AnnualStatementPeriodView{
 			Year: period.Year, StartsOn: period.StartsOn, EndsOn: period.EndsOn,
-			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Selected: selected,
+			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualStatementDeadline(period.EndsOn), Selected: selected,
 		})
 	}
 	units := ac.repositories.units.List()
+	structureYear := 0
+	if selectedPeriodFound {
+		structureYear = selectedYear
+		structure, found := ac.repositories.annualStatementPeriods.Structure(selectedYear)
+		if !found {
+			logError("annual statement period structure unavailable", fmt.Errorf("missing period snapshot"), "tenant", tenant.Slug, "year", selectedYear)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		costTypes = structure.CostTypes
+		units = annualStatementUnitsWithPeriodBases(units, structure.UnitBases)
+	}
+	costTypeViews := make([]web.AnnualStatementCostTypeView, 0, len(costTypes))
+	allocatableCount := 0
+	for _, costType := range costTypes {
+		if costType.Allocatable {
+			allocatableCount++
+		}
+		costTypeViews = append(costTypeViews, web.AnnualStatementCostTypeView{
+			Key: costType.Key, Name: costType.Name, Allocatable: costType.Allocatable,
+			AllocationKey: costType.AllocationKey,
+		})
+	}
 	unitViews := make([]web.AnnualStatementUnitView, 0, len(units))
 	for _, unit := range units {
 		unitViews = append(unitViews, web.AnnualStatementUnitView{
@@ -163,8 +182,8 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
 		Periods: periodViews, HasPeriods: len(periodViews) > 0,
-		Year: formYear, StartsOn: startsOn, EndsOn: endsOn,
-		PeriodMsg: periodMsg, PeriodOK: periodOK, ImportMsg: importMsg, ImportOK: importOK,
+		Year: formYear, StructureYear: structureYear, StartsOn: startsOn, EndsOn: endsOn,
+		PeriodMsg: periodMsg, PeriodOK: periodOK, Followup: followup, ImportMsg: importMsg, ImportOK: importOK,
 		CostTypes: costTypeViews, CostTypeCount: len(costTypeViews), AllocatableCostTypeCount: allocatableCount,
 		CostTypeMsg: costTypeMsg, CostTypeOK: costTypeOK,
 		ReceiptDocuments: receiptDocuments, HasReceiptDocuments: len(receiptDocuments) > 0,
@@ -301,23 +320,32 @@ func (a *app) saveAnnualStatementCostType(w http.ResponseWriter, r *http.Request
 		AllocationKey: r.FormValue("allocation_key"),
 		UpdatedAt:     time.Now().UTC(), UpdatedBy: actorEmail,
 	}
-	saved, err := ac.repositories.annualStatementCostTypes.Save(costType)
+	periodYear, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("period_year")))
+	var saved store.AnnualStatementCostType
+	var err error
+	if periodYear > 0 && ac.repositories.annualStatementPeriods != nil {
+		saved, err = ac.repositories.annualStatementPeriods.SaveStructureCostType(periodYear, costType)
+	} else {
+		if err = ac.repositories.annualStatementCostTypes.EnsureDefaults(actorEmail); err == nil {
+			saved, err = ac.repositories.annualStatementCostTypes.Save(costType)
+		}
+	}
 	if err != nil {
-		http.Redirect(w, r, "/app/settings/annual-statement?cost-type=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "cost-type", "invalid", ""), http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
 		Action: auditActionAnnualCostTypeSave, TargetType: "annual-statement-cost-type", TargetID: saved.Key,
 		Summary: "Kostenart gespeichert",
-		Details: map[string]string{"key": saved.Key, "name": saved.Name, "allocatable": strconv.FormatBool(saved.Allocatable), "allocation_key": saved.AllocationKey},
+		Details: map[string]string{"period_year": strconv.Itoa(periodYear), "key": saved.Key, "name": saved.Name, "allocatable": strconv.FormatBool(saved.Allocatable), "allocation_key": saved.AllocationKey},
 	})
-	http.Redirect(w, r, "/app/settings/annual-statement?cost-type=saved", http.StatusSeeOther)
+	http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "cost-type", "saved", ""), http.StatusSeeOther)
 }
 
 // saveAnnualStatementAllocationBases records Nutzfläche and Personen for every
-// unit in one submit. Nutzwert stays on the unit record itself and is edited in
-// the building settings; nothing here invents a Miteigentumsanteil.
+// unit in one submit. For a selected period all three bases, including
+// Nutzwert, stay in that period's snapshot; nothing here invents a share.
 func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
@@ -327,6 +355,7 @@ func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.
 		http.Redirect(w, r, "/app/settings/annual-statement?bases=invalid", http.StatusSeeOther)
 		return
 	}
+	periodYear, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("period_year")))
 	// All or nothing: the three parallel arrays must line up, every row must
 	// name a unit, every value must parse. Any defect rejects the whole
 	// submit before the store is touched, so nothing is written or audited.
@@ -343,22 +372,65 @@ func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.
 		http.Redirect(w, r, "/app/settings/annual-statement?bases=stale", http.StatusSeeOther)
 		return
 	}
-	unknownUnit, err := ac.repositories.units.UpdateAllocationBases(updates)
-	if unknownUnit {
-		http.Redirect(w, r, "/app/settings/annual-statement?bases=stale", http.StatusSeeOther)
-		return
+	var err error
+	if periodYear > 0 && ac.repositories.annualStatementPeriods != nil {
+		structure, found := ac.repositories.annualStatementPeriods.Structure(periodYear)
+		if !found {
+			http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "bases", "stale", "verteilerschluessel"), http.StatusSeeOther)
+			return
+		}
+		basisByUnit := make(map[string]store.AnnualStatementPeriodUnitBasis, len(structure.UnitBases))
+		for _, basis := range structure.UnitBases {
+			basisByUnit[normalizeUnitID(basis.UnitID)] = basis
+		}
+		canonicalByUnit := map[string]store.Unit{}
+		for _, unit := range ac.repositories.units.List() {
+			canonicalByUnit[normalizeUnitID(unit.ID)] = unit
+		}
+		bases := make([]store.AnnualStatementPeriodUnitBasis, 0, len(updates))
+		for _, update := range updates {
+			basis, exists := basisByUnit[update.UnitID]
+			if !exists {
+				basis = store.AnnualStatementPeriodUnitBasis{UnitID: update.UnitID, MiteigentumsanteilPPM: canonicalByUnit[update.UnitID].MiteigentumsanteilPPM}
+			}
+			basis.UsableAreaM2Hundredths = update.UsableAreaM2Hundredths
+			basis.UsableAreaRecorded = update.UsableAreaRecorded
+			basis.Persons = update.Persons
+			basis.PersonsRecorded = update.PersonsRecorded
+			bases = append(bases, basis)
+		}
+		err = ac.repositories.annualStatementPeriods.SaveStructureUnitBases(periodYear, bases)
+	} else {
+		var unknownUnit bool
+		unknownUnit, err = ac.repositories.units.UpdateAllocationBases(updates)
+		if unknownUnit {
+			http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "bases", "stale", "verteilerschluessel"), http.StatusSeeOther)
+			return
+		}
 	}
 	if err != nil {
 		logError("annual statement allocation bases save failed", err, "tenant", tenant.Slug)
-		http.Redirect(w, r, "/app/settings/annual-statement?bases=error", http.StatusSeeOther)
+		http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "bases", "error", "verteilerschluessel"), http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
 		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
 		Action: auditActionAnnualBasesSave, TargetType: "annual-statement-allocation-bases", TargetID: tenant.Slug,
-		Summary: "Verteilerbasis je Einheit gespeichert", Details: map[string]string{"units": strconv.Itoa(len(updates))},
+		Summary: "Verteilerbasis je Einheit gespeichert", Details: map[string]string{"period_year": strconv.Itoa(periodYear), "units": strconv.Itoa(len(updates))},
 	})
-	http.Redirect(w, r, "/app/settings/annual-statement?bases=saved#verteilerschluessel", http.StatusSeeOther)
+	http.Redirect(w, r, annualStatementStructureRedirect(periodYear, "bases", "saved", "verteilerschluessel"), http.StatusSeeOther)
+}
+
+func annualStatementStructureRedirect(year int, key, status, fragment string) string {
+	query := url.Values{key: {status}}
+	if year > 0 {
+		query.Set("year", strconv.Itoa(year))
+	}
+	target := "/app/settings/annual-statement?" + query.Encode()
+	if fragment != "" {
+		target += "#" + fragment
+	}
+	return target
 }
 
 func annualStatementBasisUpdatesFromForm(values url.Values) ([]store.UnitAllocationBasisUpdate, bool) {
@@ -469,6 +541,31 @@ func annualStatementAllocationKeyOptions() []web.AnnualStatementAllocationKeyOpt
 	return out
 }
 
+func annualStatementUnitsWithPeriodBases(units []store.Unit, bases []store.AnnualStatementPeriodUnitBasis) []store.Unit {
+	byUnit := make(map[string]store.AnnualStatementPeriodUnitBasis, len(bases))
+	for _, basis := range bases {
+		byUnit[normalizeUnitID(basis.UnitID)] = basis
+	}
+	out := append([]store.Unit(nil), units...)
+	for index := range out {
+		basis, found := byUnit[normalizeUnitID(out[index].ID)]
+		if !found {
+			out[index].MiteigentumsanteilPPM = 0
+			out[index].UsableAreaM2Hundredths = 0
+			out[index].UsableAreaRecorded = false
+			out[index].Persons = 0
+			out[index].PersonsRecorded = false
+			continue
+		}
+		out[index].MiteigentumsanteilPPM = basis.MiteigentumsanteilPPM
+		out[index].UsableAreaM2Hundredths = basis.UsableAreaM2Hundredths
+		out[index].UsableAreaRecorded = basis.UsableAreaRecorded
+		out[index].Persons = basis.Persons
+		out[index].PersonsRecorded = basis.PersonsRecorded
+	}
+	return out
+}
+
 func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit) web.AnnualStatementAllocationView {
 	names := map[string]string{}
 	for _, costType := range costTypes {
@@ -543,14 +640,19 @@ func formatAnnualStatementBasis(key string, basis int, mapped bool) string {
 	}
 }
 
-// formatAnnualStatementShare renders parts per million as a percentage with
-// two decimals, e.g. 333334 → "33,33 %". A mapped unit with a zero basis
-// (0 Personen) is a real "0,00 %"; an unmapped or blocked one shows no share.
+// formatAnnualStatementShare renders parts per million as a percentage
+// rounded to the nearest hundredth of a percent (half up). The underlying
+// ppm allocation stays exact; only its visible representation is rounded.
+// A mapped unit with a zero basis (0 Personen) is a real "0,00 %"; an
+// unmapped or blocked one shows no share.
 func formatAnnualStatementShare(ppm int, mapped bool) string {
 	if !mapped || ppm < 0 {
 		return "–"
 	}
-	return strings.Replace(fmt.Sprintf("%d.%02d %%", ppm/10_000, (ppm%10_000)/100), ".", ",", 1)
+	// One hundredth of a percent is 100 ppm. Adding half that unit before
+	// integer division gives the required half-up rule and carries naturally.
+	hundredths := (ppm + 50) / 100
+	return strings.Replace(fmt.Sprintf("%d.%02d %%", hundredths/100, hundredths%100), ".", ",", 1)
 }
 
 func annualStatementBasesMessage(status string) (string, bool) {
@@ -586,7 +688,16 @@ func (a *app) saveAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, 
 		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
 		return
 	}
-	if _, err := ac.repositories.annualStatementPeriods.Save(period); err != nil {
+	if ac.repositories.annualStatementCostTypes == nil || ac.repositories.units == nil {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
+		return
+	}
+	if err := ac.repositories.annualStatementCostTypes.EnsureDefaults(actorEmail); err != nil {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
+		return
+	}
+	if _, err := ac.repositories.annualStatementPeriods.SaveWithStructure(period, ac.repositories.annualStatementCostTypes.List(), ac.repositories.units.List()); err != nil {
+		logError("annual statement period structure save failed", err, "tenant", tenant.Slug, "year", year)
 		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid", http.StatusSeeOther)
 		return
 	}
@@ -597,6 +708,107 @@ func (a *app) saveAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, 
 		Details: map[string]string{"year": strconv.Itoa(year), "starts_on": period.StartsOn, "ends_on": period.EndsOn},
 	})
 	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(year)+"&period=saved", http.StatusSeeOther)
+}
+
+func (a *app) cloneNextAnnualStatementPeriod(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil || ac.repositories.annualStatementPeriods == nil || ac.repositories.annualStatementCostTypes == nil || ac.repositories.units == nil {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid#perioden", http.StatusSeeOther)
+		return
+	}
+	sourceYear, err := strconv.Atoi(strings.TrimSpace(r.FormValue("source_year")))
+	periods := ac.repositories.annualStatementPeriods.List()
+	var source store.AnnualStatementPeriod
+	found := false
+	for _, period := range periods {
+		if period.Year == sourceYear {
+			source, found = period, true
+			break
+		}
+	}
+	target, valid := annualStatementFollowupPeriod(source, actorEmail)
+	if err != nil || !found || !valid {
+		http.Redirect(w, r, "/app/settings/annual-statement?period=invalid#perioden", http.StatusSeeOther)
+		return
+	}
+	if err := ac.repositories.annualStatementCostTypes.EnsureDefaults(actorEmail); err != nil {
+		logError("annual statement source defaults unavailable", err, "tenant", tenant.Slug, "source_year", sourceYear)
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(sourceYear)+"&period=error#perioden", http.StatusSeeOther)
+		return
+	}
+	if err := ac.repositories.annualStatementPeriods.EnsureStructure(sourceYear, ac.repositories.annualStatementCostTypes.List(), ac.repositories.units.List(), actorEmail); err != nil {
+		logError("annual statement source structure unavailable", err, "tenant", tenant.Slug, "source_year", sourceYear)
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(sourceYear)+"&period=error#perioden", http.StatusSeeOther)
+		return
+	}
+	saved, created, err := ac.repositories.annualStatementPeriods.CloneStructure(sourceYear, target)
+	if err != nil {
+		logError("annual statement follow-up period save failed", err, "tenant", tenant.Slug, "source_year", sourceYear, "target_year", target.Year)
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(sourceYear)+"&period=error#perioden", http.StatusSeeOther)
+		return
+	}
+	if !created {
+		http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(target.Year)+"&period=exists#perioden", http.StatusSeeOther)
+		return
+	}
+	a.recordAudit(auditEvent{
+		TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role,
+		Action: auditActionAnnualPeriodSave, TargetType: "annual-statement-period", TargetID: strconv.Itoa(saved.Year),
+		Summary: "Folgeperiode aus Vorlage erstellt",
+		Details: map[string]string{
+			"source_year": strconv.Itoa(sourceYear), "year": strconv.Itoa(saved.Year),
+			"starts_on": saved.StartsOn, "ends_on": saved.EndsOn, "copied_amounts": "false",
+		},
+	})
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(saved.Year)+"&period=cloned#perioden", http.StatusSeeOther)
+}
+
+func annualStatementFollowupPeriod(source store.AnnualStatementPeriod, updatedBy string) (store.AnnualStatementPeriod, bool) {
+	if source.Year < 1 || source.Year >= 9999 {
+		return store.AnnualStatementPeriod{}, false
+	}
+	startsOn, startsOK := annualStatementShiftDate(source.StartsOn, 12)
+	endsOn, endsOK := annualStatementShiftDate(source.EndsOn, 12)
+	if !startsOK || !endsOK {
+		return store.AnnualStatementPeriod{}, false
+	}
+	return store.AnnualStatementPeriod{
+		Year: source.Year + 1, StartsOn: startsOn, EndsOn: endsOn,
+		UpdatedAt: time.Now().UTC(), UpdatedBy: updatedBy,
+	}, true
+}
+
+func annualStatementShiftDate(raw string, months int) (string, bool) {
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return "", false
+	}
+	totalMonths := int(parsed.Month()) - 1 + months
+	year := parsed.Year() + totalMonths/12
+	monthIndex := totalMonths % 12
+	if monthIndex < 0 {
+		year--
+		monthIndex += 12
+	}
+	month := time.Month(monthIndex + 1)
+	lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	day := parsed.Day()
+	if day > lastDay {
+		day = lastDay
+	}
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02"), true
+}
+
+func annualStatementDeadline(endsOn string) string {
+	deadline, ok := annualStatementShiftDate(endsOn, 6)
+	if !ok {
+		return "–"
+	}
+	parsed, _ := time.Parse("2006-01-02", deadline)
+	return parsed.Format("02.01.2006")
 }
 
 func (a *app) importAnnualStatementParties(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -783,8 +995,14 @@ func annualStatementPeriodMessage(status string) (string, bool) {
 	switch status {
 	case "saved":
 		return "Die Abrechnungsperiode wurde gespeichert.", true
+	case "cloned":
+		return "Vorlage übernommen. Belege, Beträge und Akonto wurden nicht kopiert.", true
+	case "exists":
+		return "Das Folgejahr ist bereits vorhanden und wurde nicht überschrieben.", false
 	case "invalid":
 		return "Bitte Abrechnungsjahr und Zeitraum vollständig und chronologisch eingeben.", false
+	case "error":
+		return "Das Folgejahr konnte nicht angelegt werden.", false
 	default:
 		return "", false
 	}

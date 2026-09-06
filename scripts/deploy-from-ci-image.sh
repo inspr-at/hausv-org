@@ -22,6 +22,11 @@
 #   - Preserves the previous image as a rollback target
 #   - Validates health after container swap
 #   - Fails before change if preconditions are not met
+#
+# Exit codes:
+#   0  released, live version verified
+#   3  nothing to release: this VERSION is already live, production untouched
+#   1  refused or failed; the output names the rollback state
 
 set -u
 
@@ -29,6 +34,17 @@ fail_before_change() {
     echo "release refused: $1" >&2
     echo "rollback: not required; production was not changed." >&2
     exit 1
+}
+
+# Every push to main triggers this path, and most pushes carry no VERSION bump.
+# That is not a failed release, it is nothing to release: exit 3 lets the caller
+# end neutrally instead of raising an alarm nobody can tell from a real one.
+# Reached only after the live build was read and parsed, so a live check that
+# cannot answer still refuses through fail_before_change above.
+nothing_to_release() {
+    echo "nothing to release: $1"
+    echo "production keeps its current image."
+    exit 3
 }
 
 shell_quote() {
@@ -83,9 +99,12 @@ print_rollback() {
     image_body="docker tag $2 $3 && $4 up -d --force-recreate --no-deps $5"
     if [ "$1" = 1 ]; then
         echo "data/schema restore required: do NOT run an image-only rollback against a possibly migrated database." >&2
-        echo "restore source: $6 (root-only, pre-deploy SQLite + blobs)." >&2
+        echo "restore source: $6 (root-only, pre-deploy $recovery_scope)." >&2
         echo "locked recovery shell: ssh to the runner host and run: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
         echo "inside that same locked shell, containment command: $4 stop -t 30 $5" >&2
+        if [ -n "$postgres_container" ]; then
+            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_user --clean --if-exists --exit-on-error -d $postgres_db < $6/postgres.pgdump" >&2
+        fi
         echo "restore procedure: hausv-org docs/production-deploy.md → \"Schema rollback procedure\"; keep the locked shell open through verification, data replacement and recreation." >&2
         echo "inside that same locked shell after the matching data restore: $image_body" >&2
     else
@@ -138,8 +157,8 @@ required_deploy_env() {
 image=${HAUSV_DEPLOY_IMAGE:-ghcr.io/inspr-at/hausv-org:latest}
 case $image in *:latest) ;; *) fail_before_change "HAUSV_DEPLOY_IMAGE must end in :latest" ;; esac
 image_repo=${image%:latest}
-compose_dir=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_DIR)
-compose_file=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_FILE)
+compose_dir=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_DIR) || exit 1
+compose_file=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_FILE) || exit 1
 compose_project=${HAUSV_DEPLOY_COMPOSE_PROJECT:-hausv}
 compose_lock=${HAUSV_DEPLOY_COMPOSE_LOCK:-/run/lock/hausv-compose.lock}
 compose_lock_dir=${compose_lock%/*}
@@ -155,7 +174,7 @@ snapshot_dir=""
 case $container in
     ""|*[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_CONTAINER must be a valid Docker container name" ;;
 esac
-live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL)
+live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL) || exit 1
 health_url=${HAUSV_DEPLOY_HEALTH_URL:-${live_url%/}/healthz}
 verify_attempts=15
 verify_sleep=2
@@ -195,7 +214,7 @@ if [ -z "$live_version" ] || [ -z "$live_commit" ]; then
     fail_before_change "the current live version and commit are not visible"
 fi
 if [ "$live_version" = "$app_version" ]; then
-    fail_before_change "VERSION $app_version is already live; every production deployment requires a VERSION bump"
+    nothing_to_release "VERSION $app_version is already live; a release requires a VERSION bump"
 fi
 
 live_health=$(curl -fsS --max-time 10 "$health_url") \
@@ -221,7 +240,9 @@ head_sha=$(git rev-parse HEAD 2>/dev/null) \
 # a fresh consistent snapshot before container replacement, captured atomically
 # under the project lock using the same helper as scripts/deploy.sh.
 schema_changed=0
-git diff --quiet "$live_sha" HEAD -- internal/db/migrations
+# Both migration series count: production migrates PostgreSQL, and a change
+# that only touches that series must take the recovery point too (HAUSV-562).
+git diff --quiet "$live_sha" HEAD -- internal/db/migrations internal/db/postgres/migrations
 schema_diff_status=$?
 case $schema_diff_status in
     0) ;;
@@ -229,10 +250,33 @@ case $schema_diff_status in
     *) fail_before_change "cannot determine whether database migrations changed" ;;
 esac
 
+# The recovery point is SQLite + blobs, plus a pg_dump of the production
+# database when the host runs PostgreSQL. Which of the two applies is stated by
+# the deployment environment, never guessed from the host (HAUSV-562).
+postgres_container=""
+postgres_user=""
+postgres_db=""
+recovery_scope="SQLite + blobs"
 if [ "$schema_changed" -eq 1 ]; then
-    data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
-    snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
+    data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR) || exit 1
+    snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT) || exit 1
     snapshot_dir="$snapshot_root/$app_version-$commit"
+    postgres_container=$(required_deploy_env HAUSV_DEPLOY_POSTGRES_CONTAINER) || exit 1
+    case $postgres_container in
+        none) postgres_container="" ;;
+        *[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_CONTAINER must be a Docker container name or none" ;;
+    esac
+    if [ -n "$postgres_container" ]; then
+        postgres_user=${HAUSV_DEPLOY_POSTGRES_USER:-postgres}
+        postgres_db=${HAUSV_DEPLOY_POSTGRES_DB:-hausv}
+        case $postgres_user in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_USER must be a plain role name" ;;
+        esac
+        case $postgres_db in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_DB must be a plain database name" ;;
+        esac
+        recovery_scope="SQLite + blobs + PostgreSQL dump"
+    fi
     case $data_dir in
         /*) ;;
         *) fail_before_change "HAUSV_DEPLOY_DATA_DIR must be an absolute path" ;;
@@ -254,6 +298,10 @@ ghcr_user=${HAUSV_DEPLOY_GHCR_USER:-x-access-token}
 
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 release_tag="$image_repo:release-$app_version-$commit"
+# The live release's own tag names the same image :latest should name. When
+# :latest has gone missing on the host (HAUSV-634), it is the second witness
+# that lets the preflight prove the running container instead of refusing.
+live_release_tag="$image_repo:release-$live_version-$live_commit"
 
 # Preflight verifies the currently healthy service. The script runs locally on
 # the runner, so locked_remote_script evals the body instead of using SSH.
@@ -265,7 +313,12 @@ preflight_body="\
     printf \"%s\" \"\$locked_live_page\" | grep -F \"\$locked_build_marker\" >/dev/null; \
     test \"\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container)\" = healthy; \
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
-    latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
+    if docker image inspect $image >/dev/null 2>&1; then \
+        latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
+    else \
+        echo \"note: $image is missing on the host; the live release tag $live_release_tag must name the running image\" >&2; \
+        latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $live_release_tag)\"; \
+    fi; \
     compose_project_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.project\"}}' $container)\"; \
     compose_service_label=\"\$(docker inspect --format '{{index .Config.Labels \"com.docker.compose.service\"}}' $container)\"; \
     test -n \"\$running_image_id\"; \
@@ -282,7 +335,15 @@ preflight_body="\
     test -f $compose_file; \
     compose_services=\"\$($compose_command config --services)\"; \
     printf '%s\n' \"\$compose_services\" | grep -Fx $service >/dev/null;"
-preflight_body="$preflight_body \
+# A schema release also needs the database container it will dump: running and
+# accepting connections, proven read-only before anything changes.
+postgres_probe=""
+if [ -n "$postgres_container" ]; then
+    postgres_probe="\
+    test \"\$(docker inspect --format '{{.State.Running}}' $postgres_container)\" = true; \
+    docker exec $postgres_container pg_isready -U $postgres_user -d $postgres_db >/dev/null;"
+fi
+preflight_body="$preflight_body $postgres_probe \
     printf 'running-image-id=%s\n' \"\$running_image_id\""
 preflight_script=$(locked_remote_script "$preflight_body") \
     || fail_before_change "cannot encode the locked remote preflight"
@@ -301,6 +362,7 @@ echo "CI image: $release_tag"
 echo "live now: $live_version ($live_commit), health ok"
 if [ "$schema_changed" -eq 1 ]; then
     echo "schema change: yes — snapshot mandatory"
+    echo "recovery point: $recovery_scope"
 else
     echo "schema change: no"
 fi
@@ -308,13 +370,16 @@ fi
 if [ "$dry_run" -eq 1 ]; then
     echo "[dry-run] all fail-closed preconditions passed; production was not changed."
     if [ "$schema_changed" -eq 1 ]; then
-        echo "[dry-run] actual release will publish $snapshot_dir atomically before starting the new image."
+        echo "[dry-run] actual release will publish $snapshot_dir ($recovery_scope) atomically before starting the new image."
     fi
     exit 0
 fi
 
 preserve_body="\
     running_image_id=\"\$(docker inspect --format '{{.Image}}' $container)\"; \
+    if ! docker image inspect $image >/dev/null 2>&1; then \
+        docker tag \"\$running_image_id\" $image; \
+    fi; \
     latest_image_id=\"\$(docker image inspect --format '{{.Id}}' $image)\"; \
     test -n \"\$running_image_id\"; \
     test \"\$running_image_id\" = $expected_running_image_id; \
@@ -356,9 +421,39 @@ if [ "$schema_changed" -eq 1 ]; then
     container_snapshot="/snapshots/$snapshot_name"
     source_mount=$(shell_quote "type=bind,src=$data_dir,dst=/source,readonly")
     snapshot_mount=$(shell_quote "type=bind,src=$snapshot_root,dst=/snapshots")
+    # PostgreSQL is dumped while the service is stopped, so the dump and the
+    # SQLite/blob copy describe one moment. pg_dump writes inside its own
+    # container (an honest exit status, no host path), the archive is listed
+    # there as a restorability check, then streamed byte-exact into the same
+    # write-once recovery point; the snapshot command verifies the length and
+    # the archive header and records the digest (HAUSV-562).
+    postgres_dump_prepare=""
+    postgres_dump_stream=""
+    postgres_dump_stdin=""
+    postgres_dump_flags=""
+    postgres_dump_cleanup=""
+    postgres_dump_proof=""
+    if [ -n "$postgres_container" ]; then
+        postgres_dump_file="/tmp/hausv-predeploy-$snapshot_name.pgdump"
+        postgres_dump_prepare="
+docker exec $postgres_container pg_dump -U $postgres_user --format=custom --file=$postgres_dump_file $postgres_db
+postgres_dump_bytes=\"\$(docker exec $postgres_container stat -c %s $postgres_dump_file)\"
+postgres_dump_tables=\"\$(docker exec $postgres_container pg_restore --list $postgres_dump_file | grep -c 'TABLE DATA' || true)\"
+test \"\$postgres_dump_bytes\" -gt 0
+test \"\$postgres_dump_tables\" -gt 0"
+        postgres_dump_stream="docker exec $postgres_container cat $postgres_dump_file | "
+        # docker's own option goes before the image, the snapshot command's
+        # flag after it: docker refuses an unknown flag in front of the image
+        # (it did, once, on csb1 — release 1.3.4 was refused fail-closed).
+        postgres_dump_stdin="--interactive"
+        postgres_dump_flags="--postgres-dump-bytes \"\$postgres_dump_bytes\""
+        postgres_dump_cleanup="docker exec $postgres_container rm -f $postgres_dump_file"
+        postgres_dump_proof="printf 'postgres-dump-tables=%s\\n' \"\$postgres_dump_tables\""
+    fi
     snapshot_body="
 recovery_required=0
 recover_snapshot_service() {
+    ${postgres_dump_cleanup:+$postgres_dump_cleanup >/dev/null 2>&1 || true}
     if [ \"\$recovery_required\" = 1 ]; then
         recovery_required=0
         $compose_command up -d --force-recreate --no-deps $service >/dev/null 2>&1 || true
@@ -369,8 +464,8 @@ test \"\$(docker inspect --format '{{.Image}}' $container)\" = $expected_running
 test \"\$(docker image inspect --format '{{.Id}}' $image)\" = $expected_running_image_id
 test \"\$(docker image inspect --format '{{.Id}}' $release_tag)\" = $expected_release_image_id
 recovery_required=1
-$compose_command stop -t 30 $service
-docker run --rm \
+$compose_command stop -t 30 $service$postgres_dump_prepare
+${postgres_dump_stream}docker run --rm \
     --user 0:0 \
     --network none \
     --read-only \
@@ -379,14 +474,15 @@ docker run --rm \
     --security-opt no-new-privileges \
     --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
     --mount $source_mount \
-    --mount $snapshot_mount \
+    --mount $snapshot_mount $postgres_dump_stdin \
     $expected_release_image_id predeploy-snapshot \
     --source /source \
     --snapshot $container_snapshot \
     --source-version $live_version \
     --source-commit $live_sha \
     --target-version $app_version \
-    --target-commit $head_sha
+    --target-commit $head_sha $postgres_dump_flags
+$postgres_dump_cleanup
 $compose_command start $service
 snapshot_health=none
 snapshot_attempt=0
@@ -399,6 +495,7 @@ done
 test \"\$snapshot_health\" = healthy
 recovery_required=0
 trap - EXIT HUP INT TERM
+$postgres_dump_proof
 printf 'snapshot-host-path=%s\nservice-health=healthy\n' $snapshot_dir"
     snapshot_script=$(locked_remote_script "$snapshot_body") \
         || fail_before_change "cannot encode the locked pre-deploy snapshot"
@@ -428,7 +525,16 @@ printf 'snapshot-host-path=%s\nservice-health=healthy\n' $snapshot_dir"
         echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
         exit 1
     fi
+    if [ -n "$postgres_container" ] && ! { [[ $snapshot_proof == *"postgres-dump=$container_snapshot/postgres.pgdump"* ]] \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-bytes=[1-9][0-9]*$' \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-sha256=[0-9a-f]{64}$' \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-tables=[1-9][0-9]*$'; }; then
+        echo "release refused: snapshot command returned incomplete PostgreSQL proof." >&2
+        echo "recovery verified: the current production service is healthy; no new image or schema was activated." >&2
+        exit 1
+    fi
     echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
+    echo "recovery point scope: $recovery_scope"
 fi
 
 echo "replacing the production container…"

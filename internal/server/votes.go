@@ -322,17 +322,6 @@ func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
 	modules := a.portalModulesFor(tenant.Slug)
-	contexts := a.portalContextsFor(email, tenant.Slug, role)
-	portalContexts := make([]web.PortalContext, 0, len(contexts))
-	for _, context := range contexts {
-		portalContexts = append(portalContexts, web.PortalContext{
-			TenantSlug: context.TenantSlug,
-			HouseName:  context.HouseName,
-			Address:    context.Address,
-			Role:       context.Role,
-			Current:    context.Current,
-		})
-	}
 	unreadAnnouncements := 0
 	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(email) != "" {
 		now := time.Now()
@@ -369,7 +358,7 @@ func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {
 		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
 		Issues:              make([]issueView, openIssues),
 		UnreadAnnouncements: unreadAnnouncements,
-		Contexts:            portalContexts,
+		Shell:               a.portalShellData(&ac),
 		ReleaseNotes:        version.Notes(),
 	}
 }

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,6 +89,21 @@ const (
 	AuditActionEnergyExport         = "energy.data.export"
 	AuditActionEnergyHistoryDelete  = "energy.history.delete"
 	AuditActionEnergyProfileDelete  = "energy.profile.delete"
+	AuditActionIssueAISuggest       = "issue.ai.suggest"
+	AuditActionIssueAIAccept        = "issue.ai.accept"
+	AuditActionIssueAIEdit          = "issue.ai.edit"
+	AuditActionIssueAIReject        = "issue.ai.reject"
+	AuditActionIssueAIAuto          = "issue.ai.auto"
+	AuditActionIssueAIRestore       = "issue.ai.restore"
+	AuditActionIssueAICancel        = "issue.ai.cancel"
+	AuditActionIntakePhoneNote      = "intake.phone-note"
+	AuditActionIntakeAssign         = "intake.assign"
+	AuditActionIntakeMail           = "intake.mail"
+	AuditActionVerwaltungSettings   = "verwaltung.settings"
+	AuditActionDemoReset            = "demo.reset"
+	AuditActionTextbausteinChanged  = "textbaustein.changed"
+	AuditActionRolePreviewStart     = "role-preview.start"
+	AuditActionRolePreviewEnd       = "role-preview.end"
 )
 
 const (
@@ -199,6 +215,13 @@ type UnitStore struct {
 
 type UnitStoreData struct {
 	Units []Unit `json:"units"`
+}
+
+// UnitSink accepts a complete, tenant-scoped unit fixture set.
+// It intentionally remains separate from UnitStorage so demo seeding can use
+// the legacy JSON file without exposing the application's repository API.
+type UnitSink interface {
+	ReplaceTenantUnits(ctx context.Context, tenantSlug string, units []Unit) error
 }
 
 type Unit struct {
@@ -920,6 +943,31 @@ func (s *UnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
 	tenantSlug = textutil.Slug(tenantSlug)
 	if tenantSlug == "" {
 		return nil
+	}
+	normalized := NormalizeUnits(units, tenantSlug)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.data.Units[:0]
+	for _, existing := range s.data.Units {
+		if textutil.Slug(existing.TenantSlug) != tenantSlug {
+			kept = append(kept, existing)
+		}
+	}
+	s.data.Units = append(kept, normalized...)
+	SortUnits(s.data.Units)
+	return s.saveLocked()
+}
+
+// ReplaceTenantUnits atomically replaces one tenant's JSON units while keeping
+// every other tenant intact. Context is accepted for the seed boundary; JSON
+// persistence itself has no cancellable operation.
+func (s *UnitStore) ReplaceTenantUnits(_ context.Context, tenantSlug string, units []Unit) error {
+	if s == nil {
+		return nil
+	}
+	tenantSlug = textutil.Slug(tenantSlug)
+	if tenantSlug == "" {
+		return fmt.Errorf("unit tenant slug is required")
 	}
 	normalized := NormalizeUnits(units, tenantSlug)
 	s.mu.Lock()
@@ -2139,6 +2187,9 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionEnergyCaretaker, AuditActionEnergyInvite, AuditActionEnergyMaintSave,
 		AuditActionEnergyMaintDone, AuditActionEnergyTariff, AuditActionEnergyExport,
 		AuditActionEnergyHistoryDelete, AuditActionEnergyProfileDelete,
+		AuditActionIssueAISuggest, AuditActionIssueAIAccept, AuditActionIssueAIEdit, AuditActionIssueAIReject,
+		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIssueAICancel, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
+		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionTextbausteinChanged, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
 		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave:
 		return raw
@@ -2349,8 +2400,8 @@ func UnitLess(a Unit, b Unit) bool {
 	if a.TenantSlug != b.TenantSlug {
 		return a.TenantSlug < b.TenantSlug
 	}
-	if strings.ToLower(a.Label) != strings.ToLower(b.Label) {
-		return strings.ToLower(a.Label) < strings.ToLower(b.Label)
+	if !strings.EqualFold(a.Label, b.Label) {
+		return UnitLabelLess(a.Label, b.Label)
 	}
 	return a.ID < b.ID
 }
