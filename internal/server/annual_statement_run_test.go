@@ -145,7 +145,7 @@ func TestAnnualStatementRunHandlerFormAndStoreErrors(t *testing.T) {
 				if err != nil || target.Query().Get("run-status") != tc.status {
 					t.Fatalf("redirect=%s error=%v", response.Header().Get("Location"), err)
 				}
-				view := annualStatementRunView(failed, 2025, "", target.Query().Get("run-status"), map[string]store.AnnualStatementConsumptionVector{})
+				view := annualStatementRunView(failed, repos.documents, 2025, "", target.Query().Get("run-status"), map[string]store.AnnualStatementConsumptionVector{})
 				if !strings.Contains(view.Message, tc.message) {
 					t.Fatalf("message=%q", view.Message)
 				}

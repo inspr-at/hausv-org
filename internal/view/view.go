@@ -150,6 +150,8 @@ type SelectOption struct {
 }
 
 type DocumentView struct {
+	Archived        bool
+	ArchiveParty    string
 	ID              string
 	Title           string
 	Category        string
@@ -1428,6 +1430,8 @@ func AuditActionLabel(action string) string {
 		return "Belegzuordnung entfernt"
 	case store.AuditActionAnnualRunCreate:
 		return "Abrechnungslauf berechnet"
+	case store.AuditActionAnnualRunArchive:
+		return "Jahresabrechnung im Archiv abgelegt"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
 	case store.AuditActionIssueAISuggest:
@@ -1917,7 +1921,13 @@ func DocumentVisibilityClass(visibility string) string {
 func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
 	canPreview := DocumentCanPreview(contentType)
+	archiveParty := ""
+	if item.AnnualStatementArchive != nil {
+		archiveParty = item.AnnualStatementArchive.PartyID
+	}
 	return DocumentView{
+		Archived:        item.AnnualStatementArchive != nil,
+		ArchiveParty:    archiveParty,
 		ID:              item.ID,
 		Title:           item.Title,
 		Category:        item.Category,

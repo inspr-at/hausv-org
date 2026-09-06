@@ -137,6 +137,9 @@ func (s *SQLDocumentStore) insertOne(tenant TenantRef, item DocumentRecord, file
 }
 
 func (s *SQLDocumentStore) create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+	if item.AnnualStatementArchive != nil {
+		return DocumentRecord{}, fmt.Errorf("archives require generated documents")
+	}
 	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
@@ -172,6 +175,9 @@ func (s *SQLDocumentStore) createGenerated(tenant TenantRef, item DocumentRecord
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
 	item.TenantSlug = textutil.Slug(tenantSlug)
+	if item.AnnualStatementArchive != nil {
+		return s.createArchive(tenant, item, filename, contentType, data, now)
+	}
 	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, err
@@ -196,6 +202,9 @@ func (s *SQLDocumentStore) replace(tenant TenantRef, id string, uploadedBy strin
 	existing, found := s.get(tenant, id)
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
+	}
+	if existing.AnnualStatementArchive != nil {
+		return DocumentRecord{}, DocumentRecord{}, ErrDocumentArchived
 	}
 	if now.IsZero() {
 		now = time.Now()
@@ -222,6 +231,10 @@ func (s *SQLDocumentStore) replace(tenant TenantRef, id string, uploadedBy strin
 	if err := json.Unmarshal([]byte(data), &current); err != nil || !current.Current {
 		_ = os.Remove(fileSave.Path)
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not current")
+	}
+	if current.AnnualStatementArchive != nil {
+		_ = os.Remove(fileSave.Path)
+		return DocumentRecord{}, DocumentRecord{}, ErrDocumentArchived
 	}
 
 	replacement := current
