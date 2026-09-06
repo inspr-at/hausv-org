@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.5.2] - 2026-09-06
+
+### Stabilität verbessert
+
+- Darstellung: Im Tablet-Hochformat nutzen Portfolio, Hausüberblick und Posteingang die volle Breite; die Seitenkarten rücken unter den Inhalt statt daneben, und der Posteingang zeigt Warteschlange und Fall nacheinander wie am Handy.
+- Darstellung: Tabellen und Formulare passen sich zwischen Handy- und Desktop-Breite ohne seitliches Scrollen an; ein Prüfschritt in der Auslieferung sichert alle Breiten von 320 bis 1920 Pixel.
+
 ## [1.5.1] - 2026-09-06
 
 ### Stabilität verbessert

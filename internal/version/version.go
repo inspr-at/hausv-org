@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.5.2",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Auch im Tablet-Hochformat nutzt das Portal die volle Breite.",
+			Intro:    "Portfolio, Hausüberblick und Posteingang stellen die Seitenkarten unter den Inhalt statt daneben, sobald der Platz fehlt; der Posteingang zeigt Warteschlange und Fall nacheinander wie am Handy. Ein Prüfschritt in der Auslieferung sichert alle Breiten von 320 bis 1920 Pixel.",
+			Items:    []NoteItem{{Label: "Darstellung", Text: "Kein seitliches Scrollen mehr auf Tablets; Tabellen und Formulare passen sich der Breite an."}},
+		},
+		{
 			Version:  "1.5.1",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",
