@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/homeconnector"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -254,6 +255,10 @@ func (a *app) persistHomeConnectorReadings(slug string, input []homeconnector.Re
 		logWarn("home connector readings persist failed", "error_type", "store")
 		return false
 	}
+	if err := a.ingestAnnualStatementConsumption(slug, readings, now); err != nil {
+		logWarn("annual statement consumption ingestion failed", "error_type", "store")
+		// A rejected evidence append must not reject unrelated live readings.
+	}
 	return true
 }
 
@@ -302,10 +307,26 @@ func (a *app) selectedHomeConnectorEntities(slug string) []string {
 	if err != nil {
 		return nil
 	}
+	profiles, err := a.energyStore.ListProfiles(slug)
+	if err != nil {
+		return nil
+	}
+	for _, profile := range profiles {
+		if profile.HomeKey == energy.DefaultHomeKey {
+			continue
+		}
+		items, err := a.energyStore.ForHome(profile.HomeKey).ListMappings(slug)
+		if err != nil {
+			return nil
+		}
+		mappings = append(mappings, items...)
+	}
 	selected := make([]string, 0, len(mappings))
+	seen := map[string]bool{}
 	for _, mapping := range mappings {
 		entityID := strings.ToLower(strings.TrimSpace(mapping.EntityID))
-		if mapping.Confirmed && (strings.HasPrefix(entityID, "sensor.") || strings.HasPrefix(entityID, "binary_sensor.")) {
+		if !seen[entityID] && mapping.Confirmed && (strings.HasPrefix(entityID, "sensor.") || strings.HasPrefix(entityID, "binary_sensor.")) {
+			seen[entityID] = true
 			selected = append(selected, entityID)
 		}
 	}

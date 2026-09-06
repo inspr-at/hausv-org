@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.4.0] - 2026-09-06
+
+### Neu
+
+- Jahresabrechnung: Ein Abrechnungslauf berechnet die Abrechnung für alle Einheiten einer Periode aus den hinterlegten Kostenarten, Verteilerschlüsseln, Belegen und Akontozahlungen; jeder Lauf wird unveränderlich mit seinen Eingaben gespeichert. Fehlt etwas, wird der gesamte Lauf angehalten und der Grund benannt.
+- Jahresabrechnung: Heiz- und Warmwasseranteile je Einheit stammen aus gemessenen Verbrauchswerten der Periode; ohne vollständige Messungen bleibt die Kostenart gesperrt statt geschätzt.
+
 ## [1.3.5] - 2026-09-06
 
 ### Stabilität verbessert

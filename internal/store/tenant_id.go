@@ -62,6 +62,7 @@ var tenantIDTables = []tenantIDTable{
 	{name: "annual_statement_periods", slugColumn: "tenant_slug"},
 	{name: "annual_statement_prepayments", slugColumn: "tenant_slug"},
 	{name: "annual_statement_receipts", slugColumn: "tenant_slug"},
+	{name: "annual_statement_runs", slugColumn: "tenant_slug"},
 	{name: "announcement_reads", slugColumn: "tenant_slug"},
 	{name: "announcements", slugColumn: "tenant_slug"},
 	{name: "attachments", slugColumn: "tenant_slug"},

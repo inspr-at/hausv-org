@@ -1426,6 +1426,8 @@ func AuditActionLabel(action string) string {
 		return "Belegbetrag korrigiert"
 	case store.AuditActionAnnualReceiptDelete:
 		return "Belegzuordnung entfernt"
+	case store.AuditActionAnnualRunCreate:
+		return "Abrechnungslauf berechnet"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
 	case store.AuditActionIssueAISuggest:

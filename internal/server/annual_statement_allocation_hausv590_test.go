@@ -51,7 +51,7 @@ func TestFormatAnnualStatementShareRoundsHalfUpWithCarry(t *testing.T) {
 	if preview.Shares[0].SharePPM+preview.Shares[1].SharePPM != 1_000_000 || preview.Shares[0].SharePPM != 666_667 {
 		t.Fatalf("ppm allocation must stay exact: %+v", preview.Shares)
 	}
-	view := annualStatementAllocationView(costTypes, units)
+	view := annualStatementAllocationView(costTypes, units, annualStatementConsumptionData{})
 	if view.Previews[0].Shares[0].Share != "66,67 %" || view.Previews[0].Shares[1].Share != "33,33 %" {
 		t.Fatalf("rendered shares = %q / %q", view.Previews[0].Shares[0].Share, view.Previews[0].Shares[1].Share)
 	}

@@ -116,6 +116,11 @@ func (a *app) sampleEnergyHome(ctx context.Context, tenant tenantConfig, homeKey
 		return nil
 	}
 	tenant.HA = connector
+	if now.IsZero() {
+		now = time.Now()
+	}
+	// Read grid power first; consumer counters also run without a grid mapping.
+	defer a.sampleAnnualStatementConsumption(ctx, tenant, homeKey, now)
 	// The background sampler has a tenantConfig, which carries no identity, so
 	// the reference is resolved here rather than left to the storage layer.
 	// tenantIdentity falls back to the home portal, which is what makes a house

@@ -31,12 +31,12 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("page status = %d", page.Code)
 	}
-	for _, want := range []string{"Verteilerschlüssel", "Vorschau der Anteile", "Lauf möglich", `data-allocation-key="nutzwert"`, "25,00 %", "75,00 %", "erfindet keinen", `name="allocation_key"`} {
+	for _, want := range []string{"Verteilerschlüssel", "Vorschau der Anteile", "Verteilung vollständig", `data-allocation-key="nutzwert"`, "25,00 %", "75,00 %", "erfindet keinen", `name="allocation_key"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("page missing %q", want)
 		}
 	}
-	if strings.Contains(page.Body.String(), "Lauf blockiert") {
+	if strings.Contains(page.Body.String(), "Verteilung blockiert") {
 		t.Fatal("fully mapped Nutzwert catalogue must not block the run")
 	}
 
@@ -60,7 +60,7 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		t.Fatalf("personen cost type status=%d location=%q", saved.Code, saved.Header().Get("Location"))
 	}
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement")
-	for _, want := range []string{"Lauf blockiert", `data-allocation-key="personen"`, "Ohne Wert:</strong> Top 1, Top 2", "Kostenarten: Wasser"} {
+	for _, want := range []string{"Verteilung blockiert", `data-allocation-key="personen"`, "Ohne Wert:</strong> Top 1, Top 2", "Kostenarten: Wasser"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("blocked page missing %q", want)
 		}
@@ -132,12 +132,12 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		t.Fatalf("successful save must record exactly one audit event, got %d", got)
 	}
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement?bases=saved")
-	for _, want := range []string{"Lauf möglich", "Verteilerbasis je Einheit gespeichert.", `value="72,50"`, `name="persons" value="0"`, "100,00 %", "0,00 %"} {
+	for _, want := range []string{"Verteilung vollständig", "Verteilerbasis je Einheit gespeichert.", `value="72,50"`, `name="persons" value="0"`, "100,00 %", "0,00 %"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("unblocked page missing %q", want)
 		}
 	}
-	if strings.Contains(page.Body.String(), "Lauf blockiert") || strings.Contains(page.Body.String(), "Ohne Wert:") {
+	if strings.Contains(page.Body.String(), "Verteilung blockiert") || strings.Contains(page.Body.String(), "Ohne Wert:") {
 		t.Fatal("run must no longer be blocked once every unit has recorded persons")
 	}
 	previews := storepkg.AnnualStatementAllocationPreviews(testRepositories(a, "demo").annualStatementCostTypes.List(), units)
@@ -151,7 +151,7 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		"key": {"reinigung"}, "name": {"Reinigung"}, "allocation": {"allocatable"}, "allocation_key": {"flaeche"},
 	})
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement")
-	if !strings.Contains(page.Body.String(), "Ohne Wert:</strong> Top 2") || !strings.Contains(page.Body.String(), "Lauf blockiert") {
+	if !strings.Contains(page.Body.String(), "Ohne Wert:</strong> Top 2") || !strings.Contains(page.Body.String(), "Verteilung blockiert") {
 		t.Fatal("blank area must block the Flächen key")
 	}
 	zeroArea := authedFormRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement/allocation-bases", url.Values{
@@ -165,7 +165,7 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		t.Fatalf("explicit 0 m² must be recorded: %+v", units[1])
 	}
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement")
-	for _, want := range []string{"Lauf möglich", `name="usable_area_m2" value="0,00"`, `data-allocation-key="flaeche"`, "0,00 m²"} {
+	for _, want := range []string{"Verteilung vollständig", `name="usable_area_m2" value="0,00"`, `data-allocation-key="flaeche"`, "0,00 m²"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("zero-area page missing %q", want)
 		}
@@ -187,7 +187,7 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		t.Fatalf("ordinary unit edit wiped the allocation bases: %+v", units[0])
 	}
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement")
-	if strings.Contains(page.Body.String(), "Lauf blockiert") {
+	if strings.Contains(page.Body.String(), "Verteilung blockiert") {
 		t.Fatal("run must stay possible after an unrelated unit edit")
 	}
 
@@ -196,7 +196,7 @@ func TestAnnualStatementAllocationKeysPreviewAndBlockedRun(t *testing.T) {
 		"key": {"heizung"}, "name": {"Heizung"}, "allocation": {"allocatable"}, "allocation_key": {"verbrauch"},
 	})
 	page = authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement")
-	if !strings.Contains(page.Body.String(), "Noch keine Verbrauchswerte.") || !strings.Contains(page.Body.String(), "Lauf blockiert") {
+	if !strings.Contains(page.Body.String(), "Noch keine Verbrauchswerte.") || !strings.Contains(page.Body.String(), "Verteilung blockiert") {
 		t.Fatal("verbrauch key must block the run until measured values exist")
 	}
 }

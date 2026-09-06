@@ -25,7 +25,13 @@ HAUSV is an open source portal for property communication, administration, and e
 
 ## Scope
 
-HAUSV is a communication and energy management portal. It does not replace property accounting software and does not produce annual statements, bookkeeping records, dunning notices, or payment orders. Structured data can be exchanged with existing systems such as BMD.
+HAUSV is a communication, administration and energy management portal. Annual-statement calculations are working drafts based on the period’s configured cost types, allocation keys, unit bases, confirmed receipts and recorded prepayments. Each successful run saves all unit balances and its input snapshot; missing keys, receipts, original files, prepayments or required measurements block the entire run. Earlier runs remain unchanged when inputs are corrected. Each run keeps only the checked consumption vector and the two boundary facts per unit; interior readings are checked for resets in one streaming scan and are not copied into every run. These calculations do not constitute a legal assessment under Austrian WEG/MRG.
+
+The management page is `/app/settings/annual-statement`; `POST /app/settings/annual-statement/runs` calculates the selected `year` using stored data only. Every allocatable cost type requires a confirmed receipt. An explicit zero prepayment is accepted, while a missing row is not. Nutzwert requires a complete total of 1,000,000 ppm; cents are distributed per cost type by largest remainder, with unit-ID order breaking ties. SQLite and PostgreSQL persist each run with a calculation version and input hash.
+
+Heating and hot-water evidence comes from confirmed consumer-energy mappings of heat pumps and hot-water appliances to a home’s unit. The connector and direct Home Assistant sampler preserve cumulative counters with their original timestamps, converting Wh/kWh/MWh exactly to micro-kWh. Calculations require exact start and end boundaries of the period in Europe/Vienna, one unambiguous source per unit and no counter reset; missing boundaries are never estimated. These are measured appliance-energy shares, not an inferred statutory heating allocation rule.
+
+HAUSV does not replace property accounting software or issue annual-statement PDFs, bookkeeping records, dunning notices or payment orders. Structured data can be exchanged with existing systems such as BMD.
 
 ## Development
 

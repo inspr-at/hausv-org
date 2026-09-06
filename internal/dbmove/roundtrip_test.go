@@ -359,6 +359,15 @@ func seedFull(t *testing.T) *source {
 		}); err != nil {
 			t.Fatalf("%s annual statement receipt: %v", slug, err)
 		}
+		// HAUSV-580: a stored run is an immutable calculation with its input
+		// snapshot. The seed inserts the row directly: a valid run through the
+		// repository would need complete unit bases, receipts and prepayments for
+		// every unit, and the round trip proves table values, not the calculation.
+		if _, err := src.db.Exec(`INSERT INTO annual_statement_runs(tenant_id, tenant_slug, id, period_year, revision, data) VALUES(?, ?, ?, ?, ?, ?)`,
+			tenant.ID, slug, "run-2026-1", 2026, 1,
+			`{"id":"run-2026-1","period_year":2026,"revision":1,"calculation_version":1,"created_at":"2026-09-06T10:00:00Z","created_by":"verwalter@example.com","input_hash":"seed","input":{},"result":{}}`); err != nil {
+			t.Fatalf("%s annual statement run: %v", slug, err)
+		}
 		payments, _ := store.BindUnitPaymentStatusRepository(store.NewSQLUnitPaymentStatusStore(src.lanes), tenant)
 		if _, err := payments.Set(store.UnitPaymentStatus{TenantSlug: slug, UnitID: "top-1", Status: store.UnitPaymentStatusPaid, UpdatedAt: now, UpdatedBy: "verwalter@example.com"}); err != nil {
 			t.Fatalf("%s payment: %v", slug, err)

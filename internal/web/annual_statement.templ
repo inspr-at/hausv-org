@@ -74,6 +74,28 @@ type AnnualStatementAllocationView struct {
 	RunReady         bool
 }
 
+type AnnualStatementConsumptionRowView struct {
+	Label string
+	Value string
+	Share string
+	Explanation string
+	Measured bool
+}
+
+type AnnualStatementConsumptionGroupView struct {
+	Kind string
+	Label string
+	SourceLabel string
+	Rows []AnnualStatementConsumptionRowView
+	MeasuredCount int
+	GapCount int
+	Complete bool
+}
+
+type AnnualStatementConsumptionView struct {
+	Groups []AnnualStatementConsumptionGroupView
+}
+
 type AnnualStatementReceiptDocumentView struct {
 	ID    string
 	Label string
@@ -141,11 +163,13 @@ type AnnualStatementPageData struct {
 	Units                  []AnnualStatementUnitView
 	HasUnits               bool
 	Allocation             AnnualStatementAllocationView
+	Consumption            AnnualStatementConsumptionView
 	BasesMsg               string
 	BasesOK                bool
 	Prepayments            []AnnualStatementPrepaymentView
 	PrepaymentMsg          string
 	PrepaymentOK           bool
+	Run AnnualStatementRunView
 	SettlementReady        bool
 }
 
@@ -176,6 +200,7 @@ templ AnnualStatementHeaderAction() {
 
 templ AnnualStatementBody(data AnnualStatementPageData) {
 	<div data-templ-annual-statement>
+		@AnnualStatementRunPanel(data.Run)
 		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
@@ -219,15 +244,15 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 
 		<section class="panel workspace" id="verteilerschluessel"><header class="workspace-head"><div><h2>Verteilerschlüssel</h2><p>Jede umlagefähige Kostenart wird nach genau einem Schlüssel auf die Einheiten verteilt. Die Vorschau zeigt die Anteile vor dem Abrechnungslauf.</p></div>
 			if data.Allocation.RunReady {
-				<span class="scope personal">Lauf möglich</span>
+				<span class="scope personal">Verteilung vollständig</span>
 			} else {
-				<span class="scope management">Lauf blockiert</span>
+				<span class="scope management">Verteilung blockiert</span>
 			}
 		</header>
 			@SettingsFlash(data.BasesMsg, data.BasesOK)
-			<p class="notice">Nutzwert, Nutzfläche und Personen sind für das gewählte Abrechnungsjahr eingefroren; beim ersten Anlegen stammen sie aus den Einheiten und das System erfindet keinen Wert. Verbrauch folgt aus den Messwerten in einem eigenen Arbeitsschritt. Eine Einheit ohne Wert blockiert den Lauf für diesen Schlüssel.</p>
+			<p class="notice">Nutzwert, Nutzfläche und Personen sind für das gewählte Abrechnungsjahr eingefroren; beim ersten Anlegen stammen sie aus den Einheiten und das System erfindet keinen Wert. Verbrauch folgt aus den gespeicherten Anfangs- und Endmessungen der gewählten Periode. Eine Einheit ohne Wert blockiert den Lauf für diesen Schlüssel.</p>
 			if data.Allocation.KeylessCostTypes != "" {
-				<p class="notice"><strong>Ohne Verteilerschlüssel:</strong> { data.Allocation.KeylessCostTypes }. Jede umlagefähige Kostenart braucht genau einen Schlüssel; bis dahin ist der Lauf blockiert.</p>
+				<p class="notice"><strong>Ohne Verteilerschlüssel:</strong> { data.Allocation.KeylessCostTypes }. Jede umlagefähige Kostenart braucht genau einen Schlüssel; bis dahin ist die Verteilung blockiert.</p>
 			}
 			if data.HasUnits {
 				<form method="post" action="/app/settings/annual-statement/allocation-bases"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
@@ -249,7 +274,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 						}
 					</header>
 					if preview.Sourceless {
-						<p class="notice"><strong>Noch keine Verbrauchswerte.</strong> Die Zuordnung aus Messwerten folgt in einem eigenen Arbeitsschritt; bis dahin blockiert dieser Schlüssel den Lauf.</p>
+						<p class="notice"><strong>Noch keine Verbrauchswerte.</strong> Für diese Kostenart fehlen vollständige Periodenmessungen; bis dahin blockiert dieser Schlüssel den Lauf.</p>
 					} else if preview.Blocked && preview.UnmappedUnits != "" {
 						<p class="notice"><strong>Ohne Wert:</strong> { preview.UnmappedUnits }. Der Abrechnungslauf ist für diesen Schlüssel blockiert, bis jede Einheit einen Wert hat.</p>
 					} else if preview.Blocked {
@@ -262,7 +287,11 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 						for _, share := range preview.Shares {
 							<div class="allocation-row"><label>Einheit<span class="readonly"><strong>{ share.Label }</strong></span></label><label>Basis<span class="readonly">{ share.Basis }</span></label><label>Anteil<span class="readonly"><strong>{ share.Share }</strong></span></label>
 								if share.Mapped {
-									<span class="scope personal">zugeordnet</span>
+									if preview.Key == "verbrauch" {
+										<span class="scope personal">gemessen</span>
+									} else {
+										<span class="scope personal">zugeordnet</span>
+									}
 								} else {
 									<span class="scope management">fehlt</span>
 								}
@@ -275,9 +304,36 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			}
 		</section>
 
+		if len(data.Consumption.Groups) > 0 {
+		<section class="panel workspace" id="verbrauchswerte"><header class="workspace-head"><div><h2>Heizung &amp; Warmwasser aus Messwerten</h2><p>Gespeicherte HAUSV-Messnachweise je Einheit für die gewählte Abrechnungsperiode.</p></div></header>
+			<p class="notice">Für die Berechnung sind Zählerstände exakt am Periodenbeginn und am Beginn des Folgetags nach Periodenende nötig (00:00 Uhr, Europe/Vienna). Ein üblicher Live-Zählerstand ersetzt diese Grenzmessungen nicht. Ohne ein bestätigtes Messkonzept zur Periodengrenze bleibt die Kostenart gesperrt. Eine fehlende Messung bleibt „nicht gemessen“ und wird nicht als 0 gerechnet. HAUSV schätzt keine Werte und legt keine gesetzliche Verteilungsregel fest. Die Eignung des Messkonzepts und des gewählten Schlüssels ist für die konkrete österreichische WEG-/MRG-Abrechnung zu klären.</p>
+			<p>Zuordnung der Gerätetypen: Wärmepumpe (heat-pump) liefert die Messwerte für Heizung; Warmwassergerät (hot-water) und Durchlauferhitzer (instant-water-heater) liefern die Messwerte für Warmwasser.</p>
+			for _, group := range data.Consumption.Groups {
+				<article class="inline-details" data-consumption-kind={ group.Kind }><header class="subhead"><div><h3>{ group.Label }</h3><p>{ group.SourceLabel }</p></div>
+					if group.Complete {
+						<span class="scope personal">Vollständig gemessen</span>
+					} else {
+						<span class="scope management">Keine vollständige Verteilungsbasis</span>
+					}
+				</header>
+				for _, row := range group.Rows {
+					<div class="allocation-row"><label>Einheit<span class="readonly"><strong>{ row.Label }</strong></span></label><label>Gemessener Periodenverbrauch<span class="readonly">{ row.Value }</span></label><label>Anteil<span class="readonly">{ row.Share }</span></label>
+						if row.Measured {
+							<span class="scope personal">gemessen</span>
+						} else {
+							<span class="scope management">nicht gemessen</span>
+						}
+						<p>{ row.Explanation }</p>
+					</div>
+				}
+				</article>
+			}
+		</section>
+		}
+
 		<section class="panel workspace" id="vorauszahlungen"><header class="workspace-head"><div><h2>Vorauszahlungen &amp; Akonto</h2><p>Akonto je Einheit für die gewählte Abrechnungsperiode erfassen und mit den derzeit zugeteilten Belegen vergleichen.</p></div><span class="scope management">Arbeitsvorschau</span></header>
 			@SettingsFlash(data.PrepaymentMsg, data.PrepaymentOK)
-			<p class="notice">Die Zuordnung ist eine Arbeitsvorschau aus den derzeit erfassten Belegen und Verteilerschlüsseln. Der versionierte Abrechnungslauf folgt in einem eigenen Arbeitsschritt.</p>
+			<p class="notice">Die Zuordnung ist eine Arbeitsvorschau aus den derzeit erfassten Belegen und Verteilerschlüsseln. Ein gespeicherter Abrechnungslauf hält den geprüften Stand für alle Einheiten fest.</p>
 			if data.HasPeriods && data.HasUnits {
 				<div class="unit-list">
 					for _, item := range data.Prepayments {
