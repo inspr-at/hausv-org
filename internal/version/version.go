@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.7.0",
+			Date:     "6. September 2026",
+			Kind:     "Neu",
+			Headline: "Archivierte Abrechnungs-PDFs gehen per E-Mail an die Parteien.",
+			Intro:    "Ein Versandprotokoll auf der Lauf-Seite zeigt je Partei Adresse, Zeitpunkt, Dokument und Ergebnis; bereits zugestellte Parteien werden übersprungen, fehlgeschlagene erneut versucht. Verschickt wird nur, was archiviert und unverändert ist.",
+			Items:    []NoteItem{{Label: "Betrieb", Text: "Ohne Mailserver dient ein Postausgang als Datei als Testmodus, damit der Versand vorgeführt werden kann."}},
+		},
+		{
 			Version:  "1.6.0",
 			Date:     "6. September 2026",
 			Kind:     "Neu",
