@@ -170,7 +170,7 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		out.ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling)
 		out.ArchiveAction = "/app/settings/annual-statement/runs/" + url.PathEscape(run.ID) + "/archive"
 		archived := annualStatementArchiveDocuments(documents, run)
-		if len(archived) == len(run.Input.Parties)+1 && out.AllPDFURL != "" {
+		if annualStatementArchiveComplete(run, archived) && out.AllPDFURL != "" {
 			var completedAt time.Time
 			for _, document := range archived {
 				if document.AnnualStatementArchive.ArchivedAt.After(completedAt) {

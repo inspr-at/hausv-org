@@ -4,25 +4,34 @@ import "strconv"
 import "net/url"
 
 type AnnualStatementRunView struct {
-	Year      int
-	Ready     bool
-	Issues    []string
-	Message   string
-	MessageOK bool
-	ID        string
-	Revision  int
-	CreatedAt string
-	CreatedBy string
-	Total     string
-	Excluded  string
-	Units     []AnnualStatementRunUnitView
-	History   []AnnualStatementRunLinkView
-	AllPDFURL string
-	ArchiveAction string
-	ArchiveURL string
-	ArchivedAt string
-	ArchiveCount int
+	Year            int
+	Ready           bool
+	Issues          []string
+	Message         string
+	MessageOK       bool
+	ID              string
+	Revision        int
+	CreatedAt       string
+	CreatedBy       string
+	Total           string
+	Excluded        string
+	Units           []AnnualStatementRunUnitView
+	History         []AnnualStatementRunLinkView
+	AllPDFURL       string
+	ArchiveAction   string
+	ArchiveURL      string
+	ArchivedAt      string
+	SendAction      string
+	SendIssue       string
+	MailMode        string
+	DeliverySummary string
+	Deliveries      []AnnualStatementDeliveryView
+	ArchiveCount    int
 }
+type AnnualStatementDeliveryView struct {
+	Party, Recipient, Time, Status, Error string
+}
+
 type AnnualStatementRunLinkView struct {
 	ID       string
 	Label    string
@@ -34,12 +43,12 @@ type AnnualStatementRunUnitView struct {
 	Prepaid   string
 	Balance   string
 	Costs     []AnnualStatementRunCostView
-	PDFs []AnnualStatementRunPDFView
-	Archives []AnnualStatementRunPDFView
+	PDFs      []AnnualStatementRunPDFView
+	Archives  []AnnualStatementRunPDFView
 }
 type AnnualStatementRunPDFView struct {
 	Label string
-	URL string
+	URL   string
 }
 type AnnualStatementRunCostView struct {
 	Name   string
@@ -50,6 +59,38 @@ type AnnualStatementRunCostView struct {
 
 templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 	<section class="panel workspace" id="abrechnungslauf">
+		<style>
+			.annual-deliveries {
+				max-width: 100%;
+				min-width: 0;
+				overflow-x: auto;
+				margin-block: var(--space-4);
+				border: 1px solid var(--line);
+				border-radius: var(--radius-sm);
+			}
+			.annual-deliveries table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 12px;
+			}
+			.annual-deliveries caption {
+				text-align: left;
+				padding: var(--space-3);
+				font-weight: 700;
+			}
+			.annual-deliveries th,
+			.annual-deliveries td {
+				padding: var(--space-3);
+				text-align: left;
+				vertical-align: top;
+				border-top: 1px solid var(--line);
+				overflow-wrap: anywhere;
+			}
+			.annual-deliveries th {
+				background: var(--panel-soft);
+				color: var(--muted);
+			}
+		</style>
 		<header class="workspace-head">
 			<div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>
 			if data.Ready {
@@ -84,30 +125,53 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p><small>Kennung: { data.ID }</small></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
-                    <a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
-                    if data.ArchivedAt != "" {
-                        <p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
-                        <a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
-                    } else if data.ArchiveAction != "" {
-                        <form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
-                        <p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
-                    }
-                } else {
-                    <p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
-                }
-                <div class="unit-list">
+					<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+					if data.ArchivedAt != "" {
+						<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
+						<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
+					} else if data.ArchiveAction != "" {
+						<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+						<p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
+					}
+				} else {
+					<p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
+				}
+				if data.SendAction != "" {
+					<header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
+					<p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
+					<form method="post" action={ templ.SafeURL(data.SendAction) }><button class="button" type="submit" disabled?={ data.SendIssue != "" }>Per E-Mail senden</button></form>
+					if data.SendIssue != "" {
+						<p class="notice">{ data.SendIssue }</p>
+					}
+					if data.DeliverySummary != "" {
+						<p role="status">{ data.DeliverySummary }</p>
+					}
+					if len(data.Deliveries)>0 {
+						<div class="annual-deliveries">
+							<table>
+								<caption>Versandprotokoll</caption><thead><tr><th scope="col">Partei</th><th scope="col">Adresse</th><th scope="col">Zeit</th><th scope="col">Status</th><th scope="col">Fehler</th></tr></thead>
+								<tbody>
+									for _, delivery := range data.Deliveries {
+										<tr><td>{ delivery.Party }</td><td>{ delivery.Recipient }</td><td>{ delivery.Time }</td><td>{ delivery.Status }</td><td>{ delivery.Error }</td></tr>
+									}
+								</tbody>
+							</table>
+						</div>
+					}
+				}
+				<div class="unit-list">
 					for _,unit:=range data.Units {
 						<article class="inline-details">
 							<header class="subhead"><h4>{ unit.Label }</h4></header>
 							<div class="form-grid"><label>Kostenanteil<span class="readonly">{ unit.Allocated }</span></label><label>Akonto<span class="readonly">{ unit.Prepaid }</span></label><label>Saldo<span class="readonly"><strong>{ unit.Balance }</strong></span></label></div>
-                            <nav class="settings-links" aria-label={ "PDF für " + unit.Label }>
-                                for _, document := range unit.PDFs {
-                                    <a href={ templ.SafeURL(document.URL) } download>PDF für { document.Label }</a>
-                                }
-                                for _, document := range unit.Archives {
-                                    <a href={ templ.SafeURL(document.URL) }>Archiv für { document.Label }</a>
-                                }
-                            </nav>
+							<nav class="settings-links" aria-label={ "PDF für " + unit.Label }>
+								for _, document := range unit.PDFs {
+									<a href={ templ.SafeURL(document.URL) } download>PDF für { document.Label }</a>
+								}
+								for _, document := range unit.Archives {
+									<a href={ templ.SafeURL(document.URL) }>Archiv für { document.Label }</a>
+								}
+							</nav>
 							<details>
 								<summary>Kostenarten und Anteile</summary>
 								for _,cost:=range unit.Costs {

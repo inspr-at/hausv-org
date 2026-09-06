@@ -25,7 +25,7 @@ const (
 )
 
 var expectedTenantTables = []string{
-	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
+	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_deliveries", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
@@ -343,6 +343,15 @@ func tenantTables(t *testing.T, database *sql.DB) []string {
 	return tables
 }
 
+// Delivery rows have required addressing and outcome fields rather than empty
+// defaults. Use a valid row so the generic probe exercises RLS, not NOT NULL.
+func tenantTableSmokeInsert(table string) string {
+	if table == "annual_statement_deliveries" {
+		return `INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES($1,'rls-fixture','delivery','run',1,'party@example.test','top-1','document','hash','party@example.test','2026-09-06T18:00:00Z','sent','','manager@example.test',1)`
+	}
+	return `INSERT INTO ` + table + `(tenant_id) VALUES($1)`
+}
+
 func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	t.Helper()
 	if _, err := database.Exec(`INSERT INTO persons(id,email) VALUES('','rls-fixture@example.test')`); err != nil {
@@ -380,7 +389,7 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {
 			t.Fatalf("unsafe catalog table name %q", table)
 		}
-		if _, err := tx.Exec(`INSERT INTO `+table+`(tenant_id) VALUES($1)`, tenantA); err != nil {
+		if _, err := tx.Exec(tenantTableSmokeInsert(table), tenantA); err != nil {
 			t.Fatalf("seed %s: %v", table, err)
 		}
 	}
@@ -418,7 +427,7 @@ func assertUnscopedSessionSeesNothingAndWritesNothing(t *testing.T, database *sq
 		// The write side, per statement kind. INSERT is refused by WITH CHECK;
 		// UPDATE and DELETE simply find nothing to touch, because USING hides
 		// every row from them.
-		_, err := database.Exec(`INSERT INTO `+table+`(tenant_id) VALUES($1)`, tenantA)
+		_, err := database.Exec(tenantTableSmokeInsert(table), tenantA)
 		if code := sqlState(err); code != "42501" {
 			t.Fatalf("unscoped INSERT into %s: err=%v (SQLSTATE %q), want the policy's 42501", table, err, code)
 		}

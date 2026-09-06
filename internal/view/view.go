@@ -1430,6 +1430,8 @@ func AuditActionLabel(action string) string {
 		return "Belegzuordnung entfernt"
 	case store.AuditActionAnnualRunCreate:
 		return "Abrechnungslauf berechnet"
+	case store.AuditActionAnnualRunSend:
+		return "Jahresabrechnung per E-Mail versendet"
 	case store.AuditActionAnnualRunArchive:
 		return "Jahresabrechnung im Archiv abgelegt"
 	case store.AuditActionAnnualPrepaymentSave:

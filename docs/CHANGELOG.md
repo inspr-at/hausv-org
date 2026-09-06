@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.7.0] - 2026-09-06
+
+### Neu
+
+- Jahresabrechnung: Archivierte Abrechnungs-PDFs lassen sich per E-Mail an die Parteien senden; ein Versandprotokoll auf der Lauf-Seite zeigt je Partei Adresse, Zeitpunkt, Dokument und Ergebnis. Bereits zugestellte Parteien werden übersprungen, fehlgeschlagene erneut versucht; verschickt wird nur, was archiviert und unverändert ist.
+- Betrieb: Ohne Mailserver kann ein Postausgang als Datei konfiguriert werden (Testmodus), sodass der Versand vorgeführt werden kann.
+
 ## [1.6.0] - 2026-09-06
 
 ### Neu

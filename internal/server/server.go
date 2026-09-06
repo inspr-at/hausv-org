@@ -788,47 +788,48 @@ type app struct {
 	// inviteStore serves app-managed user records. Backed by the person/house
 	// N:N model when SQLite is available, otherwise by the JSON store
 	// (HAUSV-169).
-	inviteStore              profileStorage
-	identityStore            *store.SQLIdentityStore
-	activityStore            activityStorage
-	annualStatementCostTypes store.AnnualStatementCostTypeStorage
-	annualStatementPeriods   store.AnnualStatementPeriodStorage
-	annualStatementAkontos   store.AnnualStatementPrepaymentStorage
-	annualStatementReceipts  store.AnnualStatementReceiptStorage
-	annualConsumption        store.AnnualStatementConsumptionStorage
-	annualStatementRuns      store.AnnualStatementRunStorage
-	unitStore                unitStorage
-	unitPaymentStore         unitPaymentStatusStorage
-	issueStore               issueStorage
-	attachmentStore          attachmentStorage
-	contactStore             contactBookStorage
-	auditStore               *auditStore
-	documentStore            documentStorage
-	handoverStore            handoverStorage
-	protocolFiler            protocolFiler
-	voteStore                voteStorage
-	voteReminderInterval     time.Duration
-	parkingStore             *parkingStore
-	parkingSampleInterval    time.Duration
-	parkingHistoryStart      time.Time
-	energyStore              energy.Storage
-	homeReservations         store.HomeReservationStorage
-	homePortals              store.HomePortalStorage
-	homeConnectors           store.HomeConnectorStorage
-	homeConnectorReadings    store.HomeConnectorReadingStorage
-	homeConnectorDownloadDir string
-	energySampleInterval     time.Duration
-	energySamplerMu          sync.Mutex
-	energySamplers           map[string]*energySamplerState
-	retentionFailure         atomic.Bool
-	energyLifecycleLocks     sync.Map
-	energyChartMu            sync.Mutex
-	energyChartCache         map[string]energyChartCacheEntry
-	mapTileMu                sync.Mutex
-	mapTileBaseURL           string
-	geocoder                 addressGeocoder
-	mapPreviewMu             sync.Mutex
-	mapPreviewTiles          map[string]map[mapTileKey]time.Time
+	inviteStore               profileStorage
+	identityStore             *store.SQLIdentityStore
+	activityStore             activityStorage
+	annualStatementCostTypes  store.AnnualStatementCostTypeStorage
+	annualStatementPeriods    store.AnnualStatementPeriodStorage
+	annualStatementAkontos    store.AnnualStatementPrepaymentStorage
+	annualStatementReceipts   store.AnnualStatementReceiptStorage
+	annualConsumption         store.AnnualStatementConsumptionStorage
+	annualStatementRuns       store.AnnualStatementRunStorage
+	annualStatementDeliveries *store.SQLAnnualStatementDeliveryStore
+	unitStore                 unitStorage
+	unitPaymentStore          unitPaymentStatusStorage
+	issueStore                issueStorage
+	attachmentStore           attachmentStorage
+	contactStore              contactBookStorage
+	auditStore                *auditStore
+	documentStore             documentStorage
+	handoverStore             handoverStorage
+	protocolFiler             protocolFiler
+	voteStore                 voteStorage
+	voteReminderInterval      time.Duration
+	parkingStore              *parkingStore
+	parkingSampleInterval     time.Duration
+	parkingHistoryStart       time.Time
+	energyStore               energy.Storage
+	homeReservations          store.HomeReservationStorage
+	homePortals               store.HomePortalStorage
+	homeConnectors            store.HomeConnectorStorage
+	homeConnectorReadings     store.HomeConnectorReadingStorage
+	homeConnectorDownloadDir  string
+	energySampleInterval      time.Duration
+	energySamplerMu           sync.Mutex
+	energySamplers            map[string]*energySamplerState
+	retentionFailure          atomic.Bool
+	energyLifecycleLocks      sync.Map
+	energyChartMu             sync.Mutex
+	energyChartCache          map[string]energyChartCacheEntry
+	mapTileMu                 sync.Mutex
+	mapTileBaseURL            string
+	geocoder                  addressGeocoder
+	mapPreviewMu              sync.Mutex
+	mapPreviewTiles           map[string]map[mapTileKey]time.Time
 
 	annualStatementReceiptSuggester annualStatementReceiptSuggester
 
@@ -1194,6 +1195,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/archive", a.action(a.archiveAnnualStatementRun))
+	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/send", a.action(a.sendAnnualStatementRun))
 	mux.HandleFunc("GET /app/settings/annual-statement/runs/{runID}/pdf", a.page(a.downloadAnnualStatementPDF))
 	mux.HandleFunc("POST /app/settings/annual-statement/prepayments", a.action(a.saveAnnualStatementPrepayment))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
@@ -1252,24 +1254,25 @@ type tenantPathContextKey struct{}
 // for this request. It is deliberately unexported and can only be constructed
 // together with a resolvedTenantRequest by tenantPaths.
 type requestRepositories struct {
-	annualStatementCostTypes store.AnnualStatementCostTypeRepository
-	annualStatementPeriods   store.AnnualStatementPeriodRepository
-	annualStatementAkontos   store.AnnualStatementPrepaymentRepository
-	annualStatementReceipts  store.AnnualStatementReceiptRepository
-	annualConsumption        store.AnnualStatementConsumptionRepository
-	annualStatementRuns      store.AnnualStatementRunRepository
-	announcementReads        store.AnnouncementReadRepository
-	announcements            store.AnnouncementRepository
-	attachments              store.AttachmentRepository
-	contacts                 store.ContactBookRepository
-	documents                store.DocumentRepository
-	events                   store.EventRepository
-	handovers                store.HandoverRepository
-	identity                 store.IdentityRepository
-	issues                   store.IssueRepository
-	unitPayments             store.UnitPaymentStatusRepository
-	units                    store.UnitRepository
-	votes                    store.VoteRepository
+	annualStatementCostTypes  store.AnnualStatementCostTypeRepository
+	annualStatementPeriods    store.AnnualStatementPeriodRepository
+	annualStatementAkontos    store.AnnualStatementPrepaymentRepository
+	annualStatementReceipts   store.AnnualStatementReceiptRepository
+	annualConsumption         store.AnnualStatementConsumptionRepository
+	annualStatementRuns       store.AnnualStatementRunRepository
+	annualStatementDeliveries store.AnnualStatementDeliveryRepository
+	announcementReads         store.AnnouncementReadRepository
+	announcements             store.AnnouncementRepository
+	attachments               store.AttachmentRepository
+	contacts                  store.ContactBookRepository
+	documents                 store.DocumentRepository
+	events                    store.EventRepository
+	handovers                 store.HandoverRepository
+	identity                  store.IdentityRepository
+	issues                    store.IssueRepository
+	unitPayments              store.UnitPaymentStatusRepository
+	units                     store.UnitRepository
+	votes                     store.VoteRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1292,6 +1295,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.annualStatementAkontos != nil {
 		repositories.annualStatementAkontos, _ = store.BindAnnualStatementPrepaymentRepository(a.annualStatementAkontos, tenant)
+	}
+	if a.annualStatementDeliveries != nil {
+		repositories.annualStatementDeliveries, _ = store.BindAnnualStatementDeliveryRepository(a.annualStatementDeliveries, tenant)
 	}
 	if a.annualStatementRuns != nil {
 		repositories.annualStatementRuns, _ = store.BindAnnualStatementRunRepository(a.annualStatementRuns, tenant)
@@ -1546,15 +1552,25 @@ func newApp() (*app, error) {
 		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
 	}
 
+	smtpHost := env("SMTP_HOST", "")
+	mailOutboxDir := strings.TrimSpace(env("MAIL_OUTBOX_DIR", ""))
 	mailTransport := appmail.NewSMTP(
-		env("SMTP_HOST", ""),
+		smtpHost,
 		env("SMTP_PORT", "587"),
 		env("SMTP_USER", ""),
 		env("SMTP_PASS", ""),
 		env("MAIL_FROM", "hausv.org <noreply@example.invalid>"),
-	)
+	).WithOutbox(mailOutboxDir)
 	if err := mailTransport.Validate(); err != nil {
 		return nil, err
+	}
+	switch {
+	case mailOutboxDir != "":
+		logInfo("mail: outbox mode " + mailOutboxDir)
+	case mailTransport.Configured():
+		logInfo("mail: smtp " + smtpHost)
+	default:
+		logInfo("mail: not configured")
 	}
 	oidcCtx, cancelOIDC := context.WithTimeout(context.Background(), 10*time.Second)
 	oidcLogin, err := newOIDCLogin(
@@ -1937,82 +1953,83 @@ func newApp() (*app, error) {
 	var filer protocolFiler = sqlFiler
 
 	a := &app{
-		baseURL:                  baseURL,
-		addr:                     env("ADDR", ":8080"),
-		rootDomain:               rootDomain,
-		defaultTenant:            defaultTenant,
-		tenants:                  tenants,
-		organisations:            organisations,
-		tenantIdentities:         tenantIdentities,
-		sessionSecure:            parsed.Scheme == "https",
-		allowed:                  allowed,
-		admins:                   admins,
-		profiles:                 profiles,
-		localDevLogin:            localDevLogin,
-		demoLogin:                demoLogin,
-		demoLoginCode:            demoLoginCode,
-		serviceAccessEnabled:     serviceProviderAccessEnabled(),
-		templExampleEnabled:      parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
-		sessionTTL:               sessionTTL,
-		tokens:                   auth.NewTokenStore(secret),
-		sessions:                 newSessionStore(secret),
-		homeSetupTokens:          auth.NewTokenStore(homeSetupSecret(secret)),
-		homeSetupSessions:        newSessionStore(homeSetupSecret(secret)),
-		homeConnectorHashKey:     homeConnectorSecret(secret),
-		oidc:                     oidcLogin,
-		oidcFlows:                auth.NewOIDCFlowStore(),
-		mailer:                   mailTransport,
-		trustedProxies:           trustedProxies,
-		templates:                tmpl,
-		pool:                     database,
-		tenantDB:                 tenantDB,
-		scopedDB:                 scoped,
-		dataDir:                  filepath.Dir(dbPath),
-		announcementStore:        annBackend,
-		announcementReadStore:    annReadBackend,
-		eventStore:               eventBackend,
-		notificationPrefs:        notificationBackend,
-		profileOverlays:          profileBackend,
-		tenantOverrides:          tenantOverrides,
-		tenantHeroDir:            tenantHeroDir,
-		tenantHeroSeedDir:        tenantHeroSeedDir,
-		inviteStore:              inviteBackend,
-		identityStore:            identity,
-		activityStore:            activityBackend,
-		annualStatementCostTypes: annualStatementCostTypeBackend,
-		annualStatementPeriods:   annualStatementPeriodBackend,
-		annualStatementAkontos:   annualStatementPrepaymentBackend,
-		annualStatementReceipts:  annualStatementReceiptBackend,
-		annualConsumption:        store.NewSQLAnnualStatementConsumptionStore(tenantDB),
-		annualStatementRuns:      store.NewSQLAnnualStatementRunStore(tenantDB, documentBackend),
-		unitStore:                unitBackend,
-		unitPaymentStore:         unitPaymentBackend,
-		issueStore:               issueBackend,
-		attachmentStore:          attachmentBackend,
-		contactStore:             contactBackend,
-		auditStore:               auditStore,
-		documentStore:            documentBackend,
-		handoverStore:            handoverBackend,
-		protocolFiler:            filer,
-		voteStore:                voteBackend,
-		voteReminderInterval:     voteReminderInterval,
-		parkingStore:             parkingStore,
-		parkingSampleInterval:    parkingSampleInterval,
-		parkingHistoryStart:      parkingHistoryStart,
-		energyStore:              energyBackend,
-		homeReservations:         homeReservationBackend,
-		homePortals:              homePortalBackend,
-		homeConnectors:           homeConnectorBackend,
-		homeConnectorReadings:    homeConnectorReadingBackend,
-		homeConnectorDownloadDir: env("HOME_CONNECTOR_DOWNLOAD_DIR", "/connector-downloads"),
-		energySampleInterval:     energySampleInterval,
-		energySamplers:           map[string]*energySamplerState{},
-		mapTileBaseURL:           env("MAP_TILE_BASE_URL", ""),
-		geocoder:                 newNominatimGeocoder(env("GEOCODING_BASE_URL", "")),
-		mapPreviewTiles:          map[string]map[mapTileKey]time.Time{},
-		inboxSuggestTimeout:      inboxSuggestTimeout,
-		suggestJobs:              map[string]*suggestJob{},
-		triageProviders:          map[string]triageProviderCacheEntry{},
+		baseURL:                   baseURL,
+		addr:                      env("ADDR", ":8080"),
+		rootDomain:                rootDomain,
+		defaultTenant:             defaultTenant,
+		tenants:                   tenants,
+		organisations:             organisations,
+		tenantIdentities:          tenantIdentities,
+		sessionSecure:             parsed.Scheme == "https",
+		allowed:                   allowed,
+		admins:                    admins,
+		profiles:                  profiles,
+		localDevLogin:             localDevLogin,
+		demoLogin:                 demoLogin,
+		demoLoginCode:             demoLoginCode,
+		serviceAccessEnabled:      serviceProviderAccessEnabled(),
+		templExampleEnabled:       parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
+		sessionTTL:                sessionTTL,
+		tokens:                    auth.NewTokenStore(secret),
+		sessions:                  newSessionStore(secret),
+		homeSetupTokens:           auth.NewTokenStore(homeSetupSecret(secret)),
+		homeSetupSessions:         newSessionStore(homeSetupSecret(secret)),
+		homeConnectorHashKey:      homeConnectorSecret(secret),
+		oidc:                      oidcLogin,
+		oidcFlows:                 auth.NewOIDCFlowStore(),
+		mailer:                    mailTransport,
+		trustedProxies:            trustedProxies,
+		templates:                 tmpl,
+		pool:                      database,
+		tenantDB:                  tenantDB,
+		scopedDB:                  scoped,
+		dataDir:                   filepath.Dir(dbPath),
+		announcementStore:         annBackend,
+		announcementReadStore:     annReadBackend,
+		eventStore:                eventBackend,
+		notificationPrefs:         notificationBackend,
+		profileOverlays:           profileBackend,
+		tenantOverrides:           tenantOverrides,
+		tenantHeroDir:             tenantHeroDir,
+		tenantHeroSeedDir:         tenantHeroSeedDir,
+		inviteStore:               inviteBackend,
+		identityStore:             identity,
+		activityStore:             activityBackend,
+		annualStatementCostTypes:  annualStatementCostTypeBackend,
+		annualStatementPeriods:    annualStatementPeriodBackend,
+		annualStatementAkontos:    annualStatementPrepaymentBackend,
+		annualStatementReceipts:   annualStatementReceiptBackend,
+		annualConsumption:         store.NewSQLAnnualStatementConsumptionStore(tenantDB),
+		annualStatementRuns:       store.NewSQLAnnualStatementRunStore(tenantDB, documentBackend),
+		annualStatementDeliveries: store.NewSQLAnnualStatementDeliveryStore(tenantDB),
+		unitStore:                 unitBackend,
+		unitPaymentStore:          unitPaymentBackend,
+		issueStore:                issueBackend,
+		attachmentStore:           attachmentBackend,
+		contactStore:              contactBackend,
+		auditStore:                auditStore,
+		documentStore:             documentBackend,
+		handoverStore:             handoverBackend,
+		protocolFiler:             filer,
+		voteStore:                 voteBackend,
+		voteReminderInterval:      voteReminderInterval,
+		parkingStore:              parkingStore,
+		parkingSampleInterval:     parkingSampleInterval,
+		parkingHistoryStart:       parkingHistoryStart,
+		energyStore:               energyBackend,
+		homeReservations:          homeReservationBackend,
+		homePortals:               homePortalBackend,
+		homeConnectors:            homeConnectorBackend,
+		homeConnectorReadings:     homeConnectorReadingBackend,
+		homeConnectorDownloadDir:  env("HOME_CONNECTOR_DOWNLOAD_DIR", "/connector-downloads"),
+		energySampleInterval:      energySampleInterval,
+		energySamplers:            map[string]*energySamplerState{},
+		mapTileBaseURL:            env("MAP_TILE_BASE_URL", ""),
+		geocoder:                  newNominatimGeocoder(env("GEOCODING_BASE_URL", "")),
+		mapPreviewTiles:           map[string]map[mapTileKey]time.Time{},
+		inboxSuggestTimeout:       inboxSuggestTimeout,
+		suggestJobs:               map[string]*suggestJob{},
+		triageProviders:           map[string]triageProviderCacheEntry{},
 
 		chargingTickInterval:   chargingTickInterval,
 		chargingStaleAfter:     chargingStaleAfter,
