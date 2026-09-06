@@ -161,7 +161,7 @@ fixture_schema() {
         HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv" \
         HAUSV_DEPLOY_POSTGRES_CONTAINER="${fixture_postgres_container-hausv-postgres}" \
         HAUSV_DEPLOY_POSTGRES_DB=hausv \
-        HAUSV_DEPLOY_POSTGRES_USER=postgres \
+        HAUSV_DEPLOY_POSTGRES_USER=hausv_backup \
         HAUSV_DEPLOY_FLOCK_BIN="$test_root/bin/flock" \
         HAUSV_DEPLOY_BASE64_BIN="$test_root/bin/base64" \
         HAUSV_DEPLOY_MKTEMP_BIN="$test_root/bin/mktemp" \
@@ -195,7 +195,7 @@ if grep -qF -- "sudo" "$test_root/schema_with_snapshot/commands.log"; then
 fi
 # HAUSV-562: production runs PostgreSQL. The dry run proves the database
 # container answers, names the full recovery scope, and changes nothing.
-if ! grep -qE -- $'^docker\texec\thausv-postgres\tpg_isready\t-U\tpostgres\t-d\thausv$' \
+if ! grep -qE -- $'^docker\texec\thausv-postgres\tpg_isready\t-U\thausv_backup\t-d\thausv$' \
     "$test_root/schema_with_snapshot/commands.log"; then
     echo "FAIL schema_with_snapshot: PostgreSQL readiness was not probed" >&2
     exit 1
@@ -280,9 +280,19 @@ if ! grep -qF -- "recovery point scope: SQLite + blobs + PostgreSQL dump" \
     echo "FAIL schema_release_success: recovery scope was not reported" >&2
     exit 1
 fi
+# HAUSV-638: the dump runs as the read-only backup role; the printed restore
+# command must name a role that may drop, recreate and own objects.
 if ! grep -qF -- "PostgreSQL restore (service stopped): docker exec -i hausv-postgres pg_restore -U postgres --clean --if-exists --exit-on-error -d hausv < /var/backups/hausv/9.99.0-aaaaaaa/postgres.pgdump" \
     "$test_root/schema_release_success/output.txt"; then
-    echo "FAIL schema_release_success: rollback guidance lacks the PostgreSQL restore command" >&2
+    echo "FAIL schema_release_success: rollback guidance lacks the PostgreSQL restore command as a restore-capable role" >&2
+    exit 1
+fi
+if grep -qF -- "pg_restore -U hausv_backup" "$test_root/schema_release_success/output.txt"; then
+    echo "FAIL schema_release_success: rollback guidance names the read-only dump role for the restore" >&2
+    exit 1
+fi
+if ! grep -qE -- $'^docker\texec\thausv-postgres\tpg_dump\t-U\thausv_backup\t' "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: dump did not run as the configured backup role" >&2
     exit 1
 fi
 

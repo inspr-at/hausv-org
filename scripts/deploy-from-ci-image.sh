@@ -103,7 +103,7 @@ print_rollback() {
         echo "locked recovery shell: ssh to the runner host and run: $flock_bin -w 300 $compose_lock /bin/sh -eu" >&2
         echo "inside that same locked shell, containment command: $4 stop -t 30 $5" >&2
         if [ -n "$postgres_container" ]; then
-            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_user --clean --if-exists --exit-on-error -d $postgres_db < $6/postgres.pgdump" >&2
+            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_restore_user --clean --if-exists --exit-on-error -d $postgres_db < $6/postgres.pgdump" >&2
         fi
         echo "restore procedure: hausv-org docs/production-deploy.md → \"Schema rollback procedure\"; keep the locked shell open through verification, data replacement and recreation." >&2
         echo "inside that same locked shell after the matching data restore: $image_body" >&2
@@ -255,6 +255,7 @@ esac
 # the deployment environment, never guessed from the host (HAUSV-562).
 postgres_container=""
 postgres_user=""
+postgres_restore_user=""
 postgres_db=""
 recovery_scope="SQLite + blobs"
 if [ "$schema_changed" -eq 1 ]; then
@@ -274,6 +275,13 @@ if [ "$schema_changed" -eq 1 ]; then
         esac
         case $postgres_db in
             ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_DB must be a plain database name" ;;
+        esac
+        # The dump role is read-only; a restore drops and recreates objects and
+        # sets their owners, so the printed rollback command names a role that
+        # may do that (HAUSV-638). It is only ever printed, never executed here.
+        postgres_restore_user=${HAUSV_DEPLOY_POSTGRES_RESTORE_USER:-postgres}
+        case $postgres_restore_user in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_RESTORE_USER must be a plain role name" ;;
         esac
         recovery_scope="SQLite + blobs + PostgreSQL dump"
     fi

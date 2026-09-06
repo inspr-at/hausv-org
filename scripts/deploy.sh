@@ -105,7 +105,7 @@ print_rollback() {
         echo "locked schema recovery shell: $(printable_locked_recovery_ssh "$4" "$3")"
         echo "inside that same locked shell, containment command: $containment_body"
         if [ -n "$postgres_container" ]; then
-            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_user --clean --if-exists --exit-on-error -d $postgres_db < $8/postgres.pgdump"
+            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_restore_user --clean --if-exists --exit-on-error -d $postgres_db < $8/postgres.pgdump"
         fi
         # shellcheck disable=SC1111 # German typographic quotes, intentional
         echo "restore procedure: hausv-org docs/production-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
@@ -339,6 +339,7 @@ esac
 # the deployment environment, never guessed from the host (HAUSV-562).
 postgres_container=""
 postgres_user=""
+postgres_restore_user=""
 postgres_db=""
 recovery_scope="SQLite + blobs"
 postgres_helper_flags="--postgres-container none"
@@ -356,6 +357,12 @@ if [ "$schema_changed" -eq 1 ]; then
         esac
         case $postgres_db in
             ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_DB must be a plain database name" ;;
+        esac
+        # The dump role is read-only; the printed rollback command names a role
+        # that may drop, recreate and own objects (HAUSV-638).
+        postgres_restore_user=${HAUSV_DEPLOY_POSTGRES_RESTORE_USER:-postgres}
+        case $postgres_restore_user in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_RESTORE_USER must be a plain role name" ;;
         esac
         recovery_scope="SQLite + blobs + PostgreSQL dump"
         postgres_helper_flags="--postgres-container $postgres_container --postgres-user $postgres_user --postgres-db $postgres_db"

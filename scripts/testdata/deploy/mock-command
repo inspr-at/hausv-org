@@ -310,7 +310,7 @@ def mock_ssh(args: list[str]) -> int:
             print("snapshot helper is not embedded in the locked body", file=sys.stderr)
             return 64
         if POSTGRES and POSTGRES != "none":
-            expected_postgres = f"--postgres-container {POSTGRES} --postgres-user postgres --postgres-db hausv"
+            expected_postgres = f"--postgres-container {POSTGRES} --postgres-user hausv_backup --postgres-db hausv"
         else:
             expected_postgres = "--postgres-container none"
         if expected_postgres not in script:
@@ -493,7 +493,7 @@ def mock_ssh(args: list[str]) -> int:
         )
         if "schema" in CASE and POSTGRES and POSTGRES != "none":
             required = required + (
-                f"docker exec {POSTGRES} pg_isready -U postgres -d hausv",
+                f"docker exec {POSTGRES} pg_isready -U hausv_backup -d hausv",
                 f"docker inspect --format '{{{{.State.Running}}}}' {POSTGRES}",
             )
         elif "pg_isready" in script:
