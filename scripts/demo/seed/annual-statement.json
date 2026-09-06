@@ -1,0 +1,200 @@
+{
+  "cost_types": [
+    {
+      "allocation_key": "nutzwert",
+      "amount_cents": 480000,
+      "invoice_date": "2025-02-01",
+      "key": "versicherung",
+      "name": "Gebäudeversicherung"
+    },
+    {
+      "allocation_key": "flaeche",
+      "amount_cents": 360000,
+      "invoice_date": "2025-06-30",
+      "key": "reinigung",
+      "name": "Hausreinigung"
+    },
+    {
+      "allocation_key": "personen",
+      "amount_cents": 240000,
+      "invoice_date": "2025-12-15",
+      "key": "abfall",
+      "name": "Abfallentsorgung"
+    }
+  ],
+  "ends_on": "2025-12-31",
+  "house": "janusbergweg-123",
+  "recorded_at": "2026-01-15T09:00:00Z",
+  "starts_on": "2025-01-01",
+  "unit_bases": [
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-1",
+      "usable_area_m2_hundredths": 5500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-2",
+      "usable_area_m2_hundredths": 6000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-3",
+      "usable_area_m2_hundredths": 6500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-4",
+      "usable_area_m2_hundredths": 7000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-5",
+      "usable_area_m2_hundredths": 7500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-6",
+      "usable_area_m2_hundredths": 5500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-7",
+      "usable_area_m2_hundredths": 6000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-8",
+      "usable_area_m2_hundredths": 6500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-9",
+      "usable_area_m2_hundredths": 7000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-10",
+      "usable_area_m2_hundredths": 7500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-11",
+      "usable_area_m2_hundredths": 5500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-12",
+      "usable_area_m2_hundredths": 6000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-13",
+      "usable_area_m2_hundredths": 6500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-14",
+      "usable_area_m2_hundredths": 7000
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-15",
+      "usable_area_m2_hundredths": 7500
+    },
+    {
+      "miteigentumsanteil_ppm": 41667,
+      "persons": 1,
+      "prepaid_cents": 60000,
+      "unit_id": "top-16",
+      "usable_area_m2_hundredths": 5500
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 2,
+      "prepaid_cents": 60000,
+      "unit_id": "top-17",
+      "usable_area_m2_hundredths": 6000
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 3,
+      "prepaid_cents": 60000,
+      "unit_id": "top-18",
+      "usable_area_m2_hundredths": 6500
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-1",
+      "usable_area_m2_hundredths": 1200
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-2",
+      "usable_area_m2_hundredths": 1200
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-3",
+      "usable_area_m2_hundredths": 1200
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-4",
+      "usable_area_m2_hundredths": 1200
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-5",
+      "usable_area_m2_hundredths": 1200
+    },
+    {
+      "miteigentumsanteil_ppm": 41666,
+      "persons": 0,
+      "prepaid_cents": 20000,
+      "unit_id": "stellplatz-6",
+      "usable_area_m2_hundredths": 1200
+    }
+  ],
+  "year": 2025
+}

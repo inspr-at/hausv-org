@@ -136,6 +136,7 @@
     ]
   },
   {
+    "address": "Janusbergweg 123/1\n8010 Graz",
     "email": "alina.eigentuemer@musterstadt.example",
     "name": "Alina Auer",
     "title": "",
@@ -146,12 +147,35 @@
         "role": "Eigentümer",
         "units": [
           "Top 1",
-          "Stellplatz 1"
+          "Stellplatz 1",
+          "Top 2",
+          "Top 3",
+          "Top 4",
+          "Top 5",
+          "Top 6",
+          "Top 7",
+          "Top 8",
+          "Top 9",
+          "Top 10",
+          "Top 11",
+          "Top 12",
+          "Top 13",
+          "Top 14",
+          "Top 15",
+          "Top 16",
+          "Top 17",
+          "Top 18",
+          "Stellplatz 2",
+          "Stellplatz 3",
+          "Stellplatz 4",
+          "Stellplatz 5",
+          "Stellplatz 6"
         ]
       }
     ]
   },
   {
+    "address": "Janusbergweg 123/3\n8010 Graz",
     "email": "matthias.mieter@musterstadt.example",
     "name": "Matthias Dorn",
     "title": "",
@@ -169,6 +193,7 @@
     ]
   },
   {
+    "address": "Janusbergweg 123/7\n8010 Graz",
     "email": "sophie.bewohner@musterstadt.example",
     "name": "Sophie Berger",
     "title": "",

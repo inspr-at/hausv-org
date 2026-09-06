@@ -110,7 +110,7 @@ type failedAnnualStatementRunRepository struct {
 	creates int
 }
 
-func (r *failedAnnualStatementRunRepository) Create(int, string, time.Time) (store.AnnualStatementRun, error) {
+func (r *failedAnnualStatementRunRepository) Create(int, string, time.Time, ...store.AnnualStatementRunPresentation) (store.AnnualStatementRun, error) {
 	r.creates++
 	return store.AnnualStatementRun{}, r.err
 }

@@ -11,14 +11,16 @@ const AnnualStatementCalculationVersion = 1
 // AnnualStatementRunInput is an immutable copy of the facts used by a run.
 // Documents contains only originals verified as readable by the repository.
 type AnnualStatementRunInput struct {
-	Period      AnnualStatementPeriod                       `json:"period"`
-	Structure   AnnualStatementPeriodStructure              `json:"structure"`
-	Units       []AnnualStatementRunUnitIdentity            `json:"units"`
-	Receipts    []AnnualStatementReceipt                    `json:"receipts"`
-	Prepayments []AnnualStatementPrepayment                 `json:"prepayments"`
-	Documents   []AnnualStatementRunDocument                `json:"documents"`
-	Consumption map[string]AnnualStatementConsumptionVector `json:"consumption"`
-	Evidence    []AnnualStatementConsumptionEvidence        `json:"evidence"`
+	Presentation AnnualStatementRunPresentation              `json:"presentation"`
+	Parties      []AnnualStatementRunParty                   `json:"parties,omitempty"`
+	Period       AnnualStatementPeriod                       `json:"period"`
+	Structure    AnnualStatementPeriodStructure              `json:"structure"`
+	Units        []AnnualStatementRunUnitIdentity            `json:"units"`
+	Receipts     []AnnualStatementReceipt                    `json:"receipts"`
+	Prepayments  []AnnualStatementPrepayment                 `json:"prepayments"`
+	Documents    []AnnualStatementRunDocument                `json:"documents"`
+	Consumption  map[string]AnnualStatementConsumptionVector `json:"consumption"`
+	Evidence     []AnnualStatementConsumptionEvidence        `json:"evidence"`
 }
 
 type AnnualStatementRunUnitIdentity struct {

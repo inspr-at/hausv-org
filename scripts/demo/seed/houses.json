@@ -16,119 +16,119 @@
         "label": "Top 2",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "matthias.mieter@musterstadt.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "sophie.bewohner@musterstadt.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
         "unit_type": "Wohnung",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
@@ -142,35 +142,35 @@
         "label": "Stellplatz 2",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "matthias.mieter@musterstadt.example"
       },
       {
         "label": "Stellplatz 3",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "sophie.bewohner@musterstadt.example"
       },
       {
         "label": "Stellplatz 4",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Stellplatz 5",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "matthias.mieter@musterstadt.example"
       },
       {
         "label": "Stellplatz 6",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "",
+        "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "sophie.bewohner@musterstadt.example"
       }
     ]

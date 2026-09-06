@@ -37,6 +37,7 @@ type membership struct {
 }
 
 type person struct {
+	Address     string       `json:"address,omitempty"`
 	Email       string       `json:"email"`
 	Name        string       `json:"name"`
 	Title       string       `json:"title"`
@@ -188,6 +189,7 @@ func generate(out string) error {
 		"houses.json": houses, "persons.json": persons, "intake.json": items,
 		"textbausteine.json": templates, "events.json": buildEvents(houses),
 		"announcements.json": buildAnnouncements(houses), "org.json": buildOrg(),
+		"annual-statement.json": buildAnnualStatement(houses[0]),
 	}
 	for name, value := range files {
 		if err := writeJSON(filepath.Join(out, name), value); err != nil {
@@ -243,6 +245,18 @@ func buildHousesAndPersons() ([]house, []person) {
 				people[residentStart+(parking-1)%3].Memberships[0].Units = append(people[residentStart+(parking-1)%3].Memberships[0].Units, label)
 			}
 			units = append(units, unit{Label: label, Floor: "Garage", UnitType: "Stellplatz"})
+		}
+		if hi == 0 {
+			// The home fixture explicitly records one owner for every unit,
+			// including vacant parking spaces. Existing tenant roles remain.
+			for _, unit := range units {
+				if !containsUnit(people[residentStart].Memberships[0].Units, unit.Label) {
+					people[residentStart].Memberships[0].Units = append(people[residentStart].Memberships[0].Units, unit.Label)
+				}
+			}
+			for pi, label := range []string{"1", "3", "7"} {
+				people[residentStart+pi].Address = "Janusbergweg 123/" + label + "\n8010 Graz"
+			}
 		}
 		for index := range units {
 			units[index].OwnerEmail, units[index].TenantEmail = unitParties(people, spec.slug, units[index].Label)

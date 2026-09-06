@@ -29,9 +29,11 @@ HAUSV is a communication, administration and energy management portal. Annual-st
 
 The management page is `/app/settings/annual-statement`; `POST /app/settings/annual-statement/runs` calculates the selected `year` using stored data only. Every allocatable cost type requires a confirmed receipt. An explicit zero prepayment is accepted, while a missing row is not. Nutzwert requires a complete total of 1,000,000 ppm; cents are distributed per cost type by largest remainder, with unit-ID order breaking ties. SQLite and PostgreSQL persist each run with a calculation version and input hash.
 
+Stored runs offer German PDF working drafts per unit and owner/tenant party at `GET /app/settings/annual-statement/runs/{runID}/pdf?unit=...&party=...`; omitting both selectors downloads every party's pages in one PDF. The management capability is required. Downloads read the immutable run only, produce repeatable bytes and create no document record or audit entry. New runs snapshot organisation/building contact details and explicitly imported party names/addresses alongside the owner/renter email assignments. The CSV accepts optional `Name` and `Anschrift` columns; missing addresses are printed as `Anschrift fehlt`. Older runs without recipients require a new run; a bulk export never silently skips a unit. Each page says `Entwurf zur Prüfung — keine Rechtsauskunft nach WEG/MRG`.
+
 Heating and hot-water evidence comes from confirmed consumer-energy mappings of heat pumps and hot-water appliances to a home’s unit. The connector and direct Home Assistant sampler preserve cumulative counters with their original timestamps, converting Wh/kWh/MWh exactly to micro-kWh. Calculations require exact start and end boundaries of the period in Europe/Vienna, one unambiguous source per unit and no counter reset; missing boundaries are never estimated. These are measured appliance-energy shares, not an inferred statutory heating allocation rule.
 
-HAUSV does not replace property accounting software or issue annual-statement PDFs, bookkeeping records, dunning notices or payment orders. Structured data can be exchanged with existing systems such as BMD.
+HAUSV does not replace property accounting software or issue bookkeeping records, dunning notices or payment orders. Structured data can be exchanged with existing systems such as BMD.
 
 ## Development
 

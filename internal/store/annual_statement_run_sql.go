@@ -46,7 +46,7 @@ func (s *SQLAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantRef,
 	}
 	return evaluateAnnualStatementRun(input)
 }
-func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time) (AnnualStatementRun, error) {
+func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error) {
 	tx, err := s.begin(tenant, false)
 	if err != nil {
 		return AnnualStatementRun{}, err
@@ -63,6 +63,9 @@ func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, 
 	var revision int
 	if err := tx.QueryRow(`SELECT COALESCE(MAX(revision),0)+1 FROM annual_statement_runs WHERE tenant_id=$1 AND period_year=$2`, tenant.ID, year).Scan(&revision); err != nil {
 		return AnnualStatementRun{}, err
+	}
+	if len(presentation) > 0 {
+		input.Presentation = presentation[0]
 	}
 	run, err := newAnnualStatementRun(input, result, revision, actor, now)
 	if err != nil {
@@ -174,6 +177,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 			return fmt.Errorf("annual statement unit identity mismatch")
 		}
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{unit.ID, unit.Label})
+		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
 		return nil
 	}, tenant.ID)
 	if err != nil {
@@ -254,4 +258,20 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		input.Evidence = append(input.Evidence, report.BoundaryEvidence...)
 	}
 	return input, nil
+}
+
+func (s *SQLAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, id string) (AnnualStatementRun, bool, error) {
+	var raw string
+	err := s.db.For(tenant).QueryRow(`SELECT data FROM annual_statement_runs WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return AnnualStatementRun{}, false, nil
+	}
+	if err != nil {
+		return AnnualStatementRun{}, false, err
+	}
+	var run AnnualStatementRun
+	if err := json.Unmarshal([]byte(raw), &run); err != nil {
+		return run, false, err
+	}
+	return run, true, nil
 }

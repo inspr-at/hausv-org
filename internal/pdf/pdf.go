@@ -24,6 +24,18 @@ func WrapText(text string, max int) []string {
 		words := strings.Fields(paragraph)
 		line := ""
 		for _, word := range words {
+			runes := []rune(word)
+			if len(runes) > max {
+				if line != "" {
+					out = append(out, line)
+					line = ""
+				}
+				for len(runes) > max {
+					out = append(out, string(runes[:max]))
+					runes = runes[max:]
+				}
+				word = string(runes)
+			}
 			if line == "" {
 				line = word
 				continue
@@ -56,19 +68,26 @@ func Simple(lines []string) []byte {
 	if len(pages) == 0 {
 		pages = [][]string{{"Protokoll"}}
 	}
+	streams := make([]string, len(pages))
+	for i, page := range pages {
+		streams[i] = contentStream(page)
+	}
+	return writeStreams(streams)
+}
+
+func writeStreams(streams []string) []byte {
 	var objects []string
 	objects = append(objects, "<< /Type /Catalog /Pages 2 0 R >>")
 	kids := []string{}
-	for i := range pages {
+	for i := range streams {
 		pageObj := 3 + i*2
 		kids = append(kids, strconv.Itoa(pageObj)+" 0 R")
 	}
-	objects = append(objects, fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d >>", strings.Join(kids, " "), len(pages)))
-	for i, pageLines := range pages {
+	objects = append(objects, fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d >>", strings.Join(kids, " "), len(streams)))
+	for i, stream := range streams {
 		pageObj := 3 + i*2
 		contentObj := pageObj + 1
-		stream := contentStream(pageLines)
-		objects = append(objects, fmt.Sprintf("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents %d 0 R >>", contentObj))
+		objects = append(objects, fmt.Sprintf("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >> /F4 << /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >> >> >> /Contents %d 0 R >>", contentObj))
 		objects = append(objects, fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(stream), stream))
 	}
 	var buf bytes.Buffer
@@ -108,24 +127,35 @@ func contentStream(lines []string) string {
 	return b.String()
 }
 
+// escapeASCII emits ASCII PDF syntax for WinAnsi-encoded text. Octal escapes
+// keep stream lengths and xref offsets byte-exact while preserving German text.
 func escapeASCII(raw string) string {
-	raw = strings.NewReplacer(
-		"Ä", "Ae", "Ö", "Oe", "Ü", "Ue", "ä", "ae", "ö", "oe", "ü", "ue", "ß", "ss", "€", "EUR",
-		"–", "-", "—", "-", "·", "-", "„", "\"", "“", "\"", "”", "\"", "’", "'",
-	).Replace(raw)
 	var b strings.Builder
 	for _, r := range raw {
-		switch r {
-		case '\\', '(', ')':
-			b.WriteRune('\\')
-			b.WriteRune(r)
-		case '\t', '\n', '\r':
-			b.WriteRune(' ')
+		var c byte
+		switch {
+		case r >= 32 && r <= 126, r >= 160 && r <= 255:
+			c = byte(r)
+		case r == '\n' || r == '\r' || r == '\t':
+			c = ' '
 		default:
-			if r >= 32 && r <= 126 {
-				b.WriteRune(r)
+			var ok bool
+			c, ok = winAnsiSpecial[r]
+			if !ok {
+				c = '?'
 			}
+		}
+		switch {
+		case c == '\\' || c == '(' || c == ')':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+		case c > 126:
+			fmt.Fprintf(&b, "\\%03o", c)
+		default:
+			b.WriteByte(c)
 		}
 	}
 	return b.String()
 }
+
+var winAnsiSpecial = map[rune]byte{'€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135, 'ˆ': 136, '‰': 137, 'Š': 138, '‹': 139, 'Œ': 140, 'Ž': 142, '‘': 145, '’': 146, '“': 147, '”': 148, '•': 149, '–': 150, '—': 151, '˜': 152, '™': 153, 'š': 154, '›': 155, 'œ': 156, 'ž': 158, 'Ÿ': 159}

@@ -239,12 +239,13 @@ type Unit struct {
 	// their Recorded flag: a blank entry is "not recorded" and blocks the
 	// key, whereas an explicitly recorded 0 (a Stellplatz without
 	// Nutzfläche, a vacant flat without persons) is mapped with a zero share.
-	UsableAreaM2Hundredths int      `json:"usable_area_m2_hundredths,omitempty"`
-	UsableAreaRecorded     bool     `json:"usable_area_recorded,omitempty"`
-	Persons                int      `json:"persons,omitempty"`
-	PersonsRecorded        bool     `json:"persons_recorded,omitempty"`
-	OwnerEmails            []string `json:"owner_emails,omitempty"`
-	RenterEmails           []string `json:"renter_emails,omitempty"`
+	UsableAreaM2Hundredths int                `json:"usable_area_m2_hundredths,omitempty"`
+	UsableAreaRecorded     bool               `json:"usable_area_recorded,omitempty"`
+	Persons                int                `json:"persons,omitempty"`
+	PersonsRecorded        bool               `json:"persons_recorded,omitempty"`
+	OwnerEmails            []string           `json:"owner_emails,omitempty"`
+	RenterEmails           []string           `json:"renter_emails,omitempty"`
+	PartyContacts          []UnitPartyContact `json:"party_contacts,omitempty"`
 }
 
 // UnitAllocationBasisUpdate changes only the allocation bases of an existing
@@ -261,6 +262,7 @@ type UnitAllocationBasisUpdate struct {
 // a freshly built replacement so that editing label, type or parties in the
 // building settings does not silently wipe them.
 func CarryAllocationBases(existing Unit, item Unit) Unit {
+	item.PartyContacts = append([]UnitPartyContact(nil), existing.PartyContacts...)
 	item.UsableAreaM2Hundredths = existing.UsableAreaM2Hundredths
 	item.UsableAreaRecorded = existing.UsableAreaRecorded
 	item.Persons = existing.Persons
@@ -276,6 +278,7 @@ type UnitPartyUpdate struct {
 	RenterEmails []string
 	SetOwners    bool
 	SetRenters   bool
+	Contacts     []UnitPartyContact
 }
 
 const (
@@ -1099,6 +1102,7 @@ func (s *UnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdat
 		if update.SetRenters {
 			s.data.Units[index].RenterEmails = NormalizeEmailList(update.RenterEmails)
 		}
+		s.data.Units[index].PartyContacts = mergeUnitPartyContacts(s.data.Units[index], update.Contacts)
 	}
 	SortUnits(s.data.Units)
 	return false, s.saveLocked()
@@ -2346,6 +2350,7 @@ func NormalizeUnits(raw []Unit, fallbackTenant string) []Unit {
 		item.BillableWeightPPM = NormalizeUnitBillableWeight(item.UnitType, item.BillableWeightPPM)
 		item.OwnerEmails = NormalizeEmailList(item.OwnerEmails)
 		item.RenterEmails = NormalizeEmailList(item.RenterEmails)
+		item.PartyContacts = mergeUnitPartyContacts(item, nil)
 		key := item.TenantSlug + "/" + item.ID
 		if _, ok := seen[key]; ok {
 			continue
@@ -2388,6 +2393,7 @@ func EmailListContains(list []string, email string) bool {
 func CopyUnit(item Unit) Unit {
 	item.OwnerEmails = append([]string(nil), item.OwnerEmails...)
 	item.RenterEmails = append([]string(nil), item.RenterEmails...)
+	item.PartyContacts = append([]UnitPartyContact(nil), item.PartyContacts...)
 	return item
 }
 
