@@ -202,6 +202,8 @@ type DocumentRecord struct {
 	ContentType    string    `json:"content_type"`
 	UploadedBy     string    `json:"uploaded_by"`
 	UploadedAt     time.Time `json:"uploaded_at"`
+
+	AnnualStatementArchive *AnnualStatementArchiveMetadata `json:"annual_statement_archive,omitempty"`
 }
 
 type ParkingStore struct {
@@ -1284,6 +1286,9 @@ func NewDocumentStore(path string, fileDir string) (*DocumentStore, error) {
 func (*DocumentStore) documentStorage() {}
 
 func (s *DocumentStore) create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
+	if item.AnnualStatementArchive != nil {
+		return DocumentRecord{}, fmt.Errorf("archives require generated documents")
+	}
 	tenantSlug := tenant.Slug
 	if s == nil {
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
@@ -1397,6 +1402,9 @@ func (s *DocumentStore) replace(tenant TenantRef, id string, uploadedBy string, 
 	existing, found := s.get(tenant, id)
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
+	}
+	if existing.AnnualStatementArchive != nil {
+		return DocumentRecord{}, DocumentRecord{}, ErrDocumentArchived
 	}
 	if now.IsZero() {
 		now = time.Now()
@@ -1631,6 +1639,9 @@ func (s *DocumentStore) createGenerated(tenant TenantRef, item DocumentRecord, f
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
 	item.TenantSlug = textutil.Slug(tenantSlug)
+	if item.AnnualStatementArchive != nil {
+		return s.createArchive(item, filename, contentType, data, now)
+	}
 	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
 	if err != nil {
 		return DocumentRecord{}, err
@@ -1719,6 +1730,10 @@ func NormalizeDocumentRecord(item DocumentRecord) DocumentRecord {
 }
 
 func CopyDocument(item DocumentRecord) DocumentRecord {
+	if item.AnnualStatementArchive != nil {
+		metadata := *item.AnnualStatementArchive
+		item.AnnualStatementArchive = &metadata
+	}
 	return item
 }
 

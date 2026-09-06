@@ -190,7 +190,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
-		Run:         annualStatementRunView(ac.repositories.annualStatementRuns, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors),
+		Run:         annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors),
 		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
 	}))
 }

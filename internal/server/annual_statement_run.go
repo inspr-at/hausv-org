@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -61,7 +62,60 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	http.Redirect(w, r, target+"#abrechnungslauf", http.StatusSeeOther)
 }
 
-func annualStatementRunView(repository store.AnnualStatementRunRepository, year int, selectedID, status string, consumption map[string]store.AnnualStatementConsumptionVector) web.AnnualStatementRunView {
+func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actor, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if ac.repositories.annualStatementRuns == nil || ac.repositories.documents == nil {
+		http.Error(w, "Archiv derzeit nicht verfügbar.", http.StatusServiceUnavailable)
+		return
+	}
+	run, found, err := ac.repositories.annualStatementRuns.Get(r.PathValue("runID"))
+	if err != nil {
+		http.Error(w, "Abrechnungslauf konnte nicht gelesen werden.", http.StatusInternalServerError)
+		return
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	selection, err := statementpdf.Documents(run, "", "")
+	if err != nil {
+		http.Error(w, "Für das Archiv fehlen gespeicherte Parteien. Bitte die Parteien zuordnen und einen neuen Lauf berechnen.", http.StatusConflict)
+		return
+	}
+	// The combined document is persisted last. Partial attempts remain immutable
+	// and can be completed by retrying the same action.
+	selection = append(selection, statementpdf.Document{UnitLabel: "Alle Dokumente"})
+	now := time.Now()
+	status := "archived"
+	for _, document := range selection {
+		data, renderErr := statementpdf.Render(run, document.UnitID, document.PartyID)
+		if renderErr != nil {
+			err = renderErr
+			break
+		}
+		_, err = ac.repositories.documents.CreateGenerated(store.DocumentRecord{
+			Title:    fmt.Sprintf("Jahresabrechnung %d · %s · Lauf %d", run.PeriodYear, document.UnitLabel, run.Revision),
+			Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly,
+			UnitID: document.UnitID, UploadedBy: actor,
+			AnnualStatementArchive: &store.AnnualStatementArchiveMetadata{RunID: run.ID, Revision: run.Revision, PeriodYear: run.PeriodYear, PartyID: document.PartyID},
+		}, annualStatementPDFFilename(run, document.UnitID), "application/pdf", data, now)
+		if err != nil {
+			break
+		}
+	}
+	if err != nil {
+		status = "archive-error"
+		logError("annual statement archive failed", err, "tenant", tenant.Slug, "run", run.ID)
+	} else {
+		a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualRunArchive, TargetType: "annual_statement_run", TargetID: run.ID, Summary: "Jahresabrechnung im Archiv abgelegt", Details: map[string]string{"run_id": run.ID, "revision": strconv.Itoa(run.Revision), "document_count": strconv.Itoa(len(selection))}})
+	}
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status="+status+"#abrechnungslauf", http.StatusSeeOther)
+}
+
+func annualStatementRunView(repository store.AnnualStatementRunRepository, documents store.DocumentRepository, year int, selectedID, status string, consumption map[string]store.AnnualStatementConsumptionVector) web.AnnualStatementRunView {
 	out := web.AnnualStatementRunView{Year: year}
 	if repository == nil {
 		out.Issues = []string{"Abrechnungslauf derzeit nicht verfügbar."}
@@ -80,6 +134,11 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 		}
 	}
 	switch status {
+	case "archived":
+		out.Message = "Alle PDFs dieses Laufs sind unveränderlich im Archiv abgelegt."
+		out.MessageOK = true
+	case "archive-error":
+		out.Message = "Die Archivierung konnte nicht abgeschlossen werden. Bereits abgelegte Dokumente bleiben erhalten. Bitte erneut versuchen."
 	case "created":
 		out.Message = "Abrechnungslauf für alle Einheiten gespeichert."
 		out.MessageOK = true
@@ -108,6 +167,26 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 		}
 		out.ID = run.ID
 		out.Revision = run.Revision
+		out.ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling)
+		out.ArchiveAction = "/app/settings/annual-statement/runs/" + url.PathEscape(run.ID) + "/archive"
+		archived := annualStatementArchiveDocuments(documents, run)
+		if len(archived) == len(run.Input.Parties)+1 && out.AllPDFURL != "" {
+			var completedAt time.Time
+			for _, document := range archived {
+				if document.AnnualStatementArchive.ArchivedAt.After(completedAt) {
+					completedAt = document.AnnualStatementArchive.ArchivedAt
+				}
+			}
+			if location, err := time.LoadLocation("Europe/Vienna"); err == nil {
+				out.ArchivedAt = completedAt.In(location).Format("02.01.2006 15:04 MST")
+			} else {
+				out.ArchivedAt = completedAt.Format("02.01.2006 15:04 UTC")
+			}
+			out.ArchiveCount = len(archived)
+		}
+		if combined, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, "", "")]; ok {
+			out.ArchiveURL += "#document-" + url.PathEscape(combined.ID)
+		}
 		if location, err := time.LoadLocation("Europe/Vienna"); err == nil {
 			out.CreatedAt = run.CreatedAt.In(location).Format("02.01.2006 15:04 MST")
 		} else {
@@ -124,9 +203,26 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 			for _, party := range run.Input.Parties {
 				if party.UnitID == unit.UnitID {
 					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
+					if document, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
+						row.Archives = append(row.Archives, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(document.ID)})
+					}
 				}
 			}
 			out.Units = append(out.Units, row)
+		}
+	}
+	return out
+}
+
+func annualStatementArchiveDocuments(repository store.DocumentRepository, run store.AnnualStatementRun) map[string]store.DocumentRecord {
+	out := map[string]store.DocumentRecord{}
+	if repository == nil {
+		return out
+	}
+	for _, document := range repository.List() {
+		metadata := document.AnnualStatementArchive
+		if metadata != nil && metadata.RunID == run.ID && metadata.Revision == run.Revision {
+			out[document.ID] = document
 		}
 	}
 	return out

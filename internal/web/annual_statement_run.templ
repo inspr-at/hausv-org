@@ -18,6 +18,10 @@ type AnnualStatementRunView struct {
 	Units     []AnnualStatementRunUnitView
 	History   []AnnualStatementRunLinkView
 	AllPDFURL string
+	ArchiveAction string
+	ArchiveURL string
+	ArchivedAt string
+	ArchiveCount int
 }
 type AnnualStatementRunLinkView struct {
 	ID       string
@@ -31,6 +35,7 @@ type AnnualStatementRunUnitView struct {
 	Balance   string
 	Costs     []AnnualStatementRunCostView
 	PDFs []AnnualStatementRunPDFView
+	Archives []AnnualStatementRunPDFView
 }
 type AnnualStatementRunPDFView struct {
 	Label string
@@ -80,6 +85,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
                     <a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+                    if data.ArchivedAt != "" {
+                        <p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
+                        <a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
+                    } else if data.ArchiveAction != "" {
+                        <form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+                        <p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
+                    }
                 } else {
                     <p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
                 }
@@ -91,6 +103,9 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
                             <nav class="settings-links" aria-label={ "PDF für " + unit.Label }>
                                 for _, document := range unit.PDFs {
                                     <a href={ templ.SafeURL(document.URL) } download>PDF für { document.Label }</a>
+                                }
+                                for _, document := range unit.Archives {
+                                    <a href={ templ.SafeURL(document.URL) }>Archiv für { document.Label }</a>
                                 }
                             </nav>
 							<details>

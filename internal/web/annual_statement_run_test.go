@@ -60,3 +60,29 @@ func TestAnnualStatementRunPanelPDFLinks(t *testing.T) {
 		}
 	}
 }
+
+func TestAnnualStatementRunArchiveActionAndStatus(t *testing.T) {
+	data := AnnualStatementRunView{ID: "run-1", AllPDFURL: "/pdf", ArchiveAction: "/app/settings/annual-statement/runs/run-1/archive", ArchiveURL: "/app/dokumente?q=Abrechnung"}
+	var body bytes.Buffer
+	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`method="post" action="/app/settings/annual-statement/runs/run-1/archive"`, "Im Archiv ablegen", "Sichtbar nur für die Verwaltung"} {
+		if !strings.Contains(body.String(), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	data.ArchivedAt, data.ArchiveCount = "06.09.2026 20:00", 31
+	body.Reset()
+	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Archiviert am 06.09.2026 20:00 · 31 Dokumente", `href="/app/dokumente?q=Abrechnung"`} {
+		if !strings.Contains(body.String(), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if strings.Contains(body.String(), "Im Archiv ablegen") {
+		t.Fatal("completed archive has create action")
+	}
+}

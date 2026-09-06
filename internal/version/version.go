@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.6.0",
+			Date:     "6. September 2026",
+			Kind:     "Neu",
+			Headline: "Abrechnungsläufe lassen sich revisionssicher archivieren.",
+			Intro:    "Mit einem Klick landen alle PDFs eines Abrechnungslaufs als unveränderliche Kopien im Dokumentenbereich der Verwaltung — mit Prüfsumme und Zeitstempel, nicht ersetzbar, nicht löschbar. Ein zweites Ablegen erzeugt keine Duplikate.",
+			Items:    []NoteItem{{Label: "Jahresabrechnung", Text: "Die Lauf-Seite zeigt, wann und wie viele Dokumente archiviert wurden, und verlinkt in die Dokumente."}},
+		},
+		{
 			Version:  "1.5.3",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",

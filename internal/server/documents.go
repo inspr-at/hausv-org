@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -175,12 +176,20 @@ func (a *app) replaceDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
+	if item, found := ac.repositories.documents.Get(strings.TrimSpace(r.FormValue("id"))); found && item.AnnualStatementArchive != nil {
+		http.Error(w, "Archivierte Jahresabrechnungen können weder ersetzt noch gelöscht werden.", http.StatusConflict)
+		return
+	}
 	header := documentFileHeader(r)
 	if header == nil {
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
 		return
 	}
 	replacement, replaced, err := ac.repositories.documents.Replace(strings.TrimSpace(r.FormValue("id")), email, uploadedFileFromHeader(header), time.Now())
+	if errors.Is(err, store.ErrDocumentArchived) {
+		http.Error(w, "Archivierte Jahresabrechnungen können weder ersetzt noch gelöscht werden.", http.StatusConflict)
+		return
+	}
 	if err != nil {
 		logError("document replace failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		http.Redirect(w, r, "/app/dokumente?doc=invalid", http.StatusSeeOther)
@@ -463,6 +472,9 @@ func (a *app) canViewDocument(tenant store.TenantRef, item documentRecord, email
 	}
 	if can(actorFor(email, tenantSlug, role), capabilityManageDocuments, resourceFor(item.TenantSlug)) {
 		return true
+	}
+	if item.AnnualStatementArchive != nil {
+		return false
 	}
 	switch normalizeDocumentVisibility(item.Visibility) {
 	case documentVisibilityAllResidents:

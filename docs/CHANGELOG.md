@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.6.0] - 2026-09-06
+
+### Neu
+
+- Jahresabrechnung: Ein Abrechnungslauf kann im Archiv abgelegt werden — alle PDFs je Einheit und Partei sowie das Gesamtdokument landen als unveränderliche Kopien im Dokumentenbereich der Verwaltung (mit Prüfsumme und Zeitstempel, nicht ersetzbar, nicht löschbar); ein zweites Ablegen erzeugt keine Duplikate.
+
 ## [1.5.3] - 2026-09-06
 
 ### Stabilität verbessert
