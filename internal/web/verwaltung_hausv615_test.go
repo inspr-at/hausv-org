@@ -33,12 +33,17 @@ func TestHausv615PortfolioShellKeepsTableContentInsideCard(t *testing.T) {
 	// The table stays inside the card by column priority, not by an inner
 	// scroller: overflow-x:auto without a visible bar cut the Zuständig column
 	// at 1280 (HAUSV-637). Below 1260 the column leaves; below 1120 so does
-	// Nächster Termin.
+	// Nächster Termin. Those drops belong to the two-column band and stop at
+	// 1024: below that the card stacks above the side column and is as wide as
+	// the page again, so six columns return from 761 and all seven from 860
+	// (HAUSV-640).
 	for _, want := range []string{
 		"Münzgrabenstraße 12", "Vera Verwalter",
 		".verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{min-width:0;grid-template-columns:",
-		"@media(max-width:1260px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
-		"@media(max-width:1120px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px}",
+		"@media(max-width:1260px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
+		"@media(max-width:1120px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px}",
+		"@media(max-width:859px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
+		"@media(max-width:1023px) and (min-width:860px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.35fr) 36px 58px 56px minmax(88px,.9fr) minmax(76px,.72fr)}}",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portfolio render missing %q", want)
