@@ -45,7 +45,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"Email":               email,
 		"Sent":                r.URL.Query().Get("sent") == "1",
 		"Expired":             r.URL.Query().Get("login") == "expired",
-		"MailConfigured":      a.mailer.Configured(),
+		"MailConfigured":      a.mailer.Delivers(),
 		"DevLoginLink":        "",
 		"Denied":              r.URL.Query().Get("denied") == "1",
 		"OIDCConfigured":      a.oidc.Configured(),
@@ -169,7 +169,7 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	a.tokens.Put(token, email, tenant.Slug, 15*time.Minute)
 
 	link := a.publicBaseURL(r, tenant) + "/auth/verify?token=" + url.QueryEscape(token)
-	devLink := (a.localDevLogin || a.demoLogin) && !a.mailer.Configured()
+	devLink := (a.localDevLogin || a.demoLogin) && !a.mailer.Delivers()
 	if devLink {
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{

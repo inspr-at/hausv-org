@@ -30,6 +30,8 @@ type intakeReplyMailer struct {
 func (m *intakeReplyMailer) SendMagicLink(string, string, string) error { return nil }
 func (m *intakeReplyMailer) SendInvite(string, string, string) error    { return nil }
 func (m *intakeReplyMailer) Configured() bool                           { return true }
+
+func (m *intakeReplyMailer) Delivers() bool { return m.Configured() }
 func (m *intakeReplyMailer) SendNotification(to, subject, body string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
