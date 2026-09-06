@@ -433,13 +433,14 @@ Vorführ-Hilfe für Fixture-Daten, keine Zugangskontrolle: den Host zusätzlich
 per Reverse-Proxy (Basic Auth oder IP-Liste) schützen und den Code nach dem
 Termin ändern.
 
-**Zurücksetzen aus dem Portal (HAUSV-613).** Auf einer Demo-Instanz
-(`DEMO_LOGIN_ENABLED=true` und `DEMO_SEED_DIR`, im Bundle `/seed`) zeigt
-Einstellungen einen Abschnitt „Demo“. „Demo zurücksetzen …“ verlangt das Wort
-ZURÜCKSETZEN plus eine zweite Bestätigung und spielt dann Anliegen,
+**Demodaten aus dem Portal initialisieren (HAUSV-613, HAUSV-636).** Auf einer
+Demo-Instanz (`DEMO_LOGIN_ENABLED=true` und `DEMO_SEED_DIR`, im Bundle `/seed`)
+zeigt Einstellungen die Karte „Demodaten initialisieren“. Der Link öffnet einen
+Bestätigungsdialog („Ja, initialisieren“ / „Abbrechen“); ohne JavaScript führt
+er auf eine einstufige Bestätigungsseite. Die Bestätigung spielt Anliegen,
 Organisationsdaten, Textbausteine, Ankündigungen und Termine aus dem Seed neu
-ein (Anker heute); Benutzer und Sitzungen bleiben. Ohne Demo-Modus antwortet die
-Route mit 404.
+ein (Anker heute); Benutzer und Sitzungen bleiben, der Audit-Eintrag heißt
+„Demodaten initialisiert“. Ohne Demo-Modus antwortet die Route mit 404.
 
 Der Seed enthält pro Haus die Tops samt Eigentümer- und Mieterzuordnung sowie Stellplätze.
 
@@ -449,10 +450,11 @@ only its named data volume, starts it again, and seeds it. Confirm the running
 instance with `deploy/demo/verify.sh`.
 
 Organisationsadministratoren können die laufende Demo außerdem ohne Abmeldung
-unter `/<tenant>/app/verwaltung/einstellungen` im Abschnitt **Demo**
-zurücksetzen. Der Portal-Weg verlangt das Wort `ZURÜCKSETZEN` und eine zweite
-Bestätigung; anschließend werden die gebündelten Anliegen, Organisationsdaten,
-Ankündigungen und Termine mit dem heutigen Datum als Anker neu eingespielt.
+unter `/<tenant>/app/verwaltung/einstellungen` über die Karte **Demodaten
+initialisieren** neu einspielen. Der Portal-Weg ist ein einziger
+Bestätigungsdialog; anschließend werden die gebündelten Anliegen,
+Organisationsdaten, Ankündigungen und Termine mit dem heutigen Datum als Anker
+neu eingespielt.
 
 Auf dem Host bleiben die CLI-Wege für Wartung und vollständige Neuinitialisierung
 verfügbar. Der Compose-Projektname muss dabei ausdrücklich der Demo gehören:

@@ -47,7 +47,7 @@ func TestHausv615DemoResetIsNewestPortfolioActivity(t *testing.T) {
 	a.demoReset = func(context.Context, time.Time, io.Writer) (demo.SeedResult, error) {
 		return demo.SeedResult{}, nil
 	}
-	reset := authedFormRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen/demo", url.Values{"step": {"2"}})
+	reset := authedFormRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen/demo", url.Values{})
 	if reset.Code != http.StatusOK {
 		t.Fatalf("reset status=%d body=%s", reset.Code, reset.Body.String())
 	}
@@ -61,7 +61,7 @@ func TestHausv615DemoResetIsNewestPortfolioActivity(t *testing.T) {
 		t.Fatalf("portfolio recent section missing: %s", body)
 	}
 	recent := body[recentStart:]
-	resetIndex, loginIndex := strings.Index(recent, "Demo zurückgesetzt"), strings.Index(recent, "Anmeldung")
+	resetIndex, loginIndex := strings.Index(recent, "Demodaten initialisiert"), strings.Index(recent, "Anmeldung")
 	if resetIndex < 0 || loginIndex < 0 || resetIndex > loginIndex || strings.Contains(recent[:resetIndex], "Noch keine Aktivitäten") {
 		t.Fatalf("recent activity order is wrong: %s", recent)
 	}
