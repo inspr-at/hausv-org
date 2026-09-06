@@ -328,9 +328,15 @@ func (a *app) verwaltungDemoResetPage(w http.ResponseWriter, r *http.Request, ac
 		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
 		return
 	}
-	a.renderVerwaltungDemoReset(w, r, ac, web.VerwaltungDemoResetData{Step: 1})
+	// Without JavaScript the settings card's link lands here: the same single
+	// confirmation the dialog offers, as a page of its own.
+	a.renderVerwaltungDemoReset(w, r, ac, web.VerwaltungDemoResetData{})
 }
 
+// verwaltungDemoResetAction reseeds the demo in one POST. The confirmation is
+// the dialog on the settings page, or the page above without JavaScript — not a
+// typed word and a second step (HAUSV-636). action() already refuses a POST
+// from a foreign origin, so nothing else on the web can trigger it.
 func (a *app) verwaltungDemoResetAction(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if a.demoReset == nil {
 		http.NotFound(w, r)
@@ -340,62 +346,45 @@ func (a *app) verwaltungDemoResetAction(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "Dieser Bereich ist Organisationsadministratoren vorbehalten.", http.StatusForbidden)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+	anchor := demoResetAnchor(time.Now())
+	started := time.Now()
+	var stats bytes.Buffer
+	result, err := a.demoReset(r.Context(), anchor, &stats)
+	if err != nil {
+		logError("demo reset failed", err)
+		http.Error(w, "Die Demodaten konnten nicht initialisiert werden.", http.StatusInternalServerError)
 		return
 	}
-	switch r.FormValue("step") {
-	case "1":
-		if r.FormValue("confirm_word") != "ZURÜCKSETZEN" || r.FormValue("understood") != "1" {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusBadRequest)
-			a.renderVerwaltungDemoReset(w, r, ac, web.VerwaltungDemoResetData{Step: 1, Error: "Bitte ZURÜCKSETZEN eingeben und die Bestätigung aktivieren."})
-			return
-		}
-		a.renderVerwaltungDemoReset(w, r, ac, web.VerwaltungDemoResetData{Step: 2})
-	case "2":
-		anchor := demoResetAnchor(time.Now())
-		started := time.Now()
-		var stats bytes.Buffer
-		result, err := a.demoReset(r.Context(), anchor, &stats)
-		if err != nil {
-			logError("demo reset failed", err)
-			http.Error(w, "Die Demo konnte nicht zurückgesetzt werden.", http.StatusInternalServerError)
-			return
-		}
-		orgKey, _ := a.inboxOrganisationKey(&ac)
-		for _, tenant := range a.managedTenants(&ac) {
-			a.recordAudit(store.AuditEvent{TenantSlug: tenant.Ref.Slug, ActorEmail: ac.email, ActorRole: tenant.Role, Action: store.AuditActionDemoReset, TargetType: "organisation", TargetID: orgKey, Summary: "Demo zurückgesetzt"})
-		}
-		data := web.VerwaltungDemoResetData{Step: 3, Anchor: anchor.Format("02.01.2006"), Duration: time.Since(started).Round(time.Millisecond).String()}
-		statusKeys := make([]string, 0, len(result.Statuses))
-		for key := range result.Statuses {
-			statusKeys = append(statusKeys, string(key))
-		}
-		sort.Strings(statusKeys)
-		for _, key := range statusKeys {
-			data.Statuses = append(data.Statuses, web.VerwaltungDemoResetCount{Label: key, Count: result.Statuses[store.IntakeStatus(key)]})
-		}
-		categoryLabels := map[string]string{}
-		for _, category := range store.IntakeCategories() {
-			categoryLabels[category.Key] = category.Label
-		}
-		categoryKeys := make([]string, 0, len(result.Categories))
-		for key := range result.Categories {
-			categoryKeys = append(categoryKeys, key)
-		}
-		sort.Strings(categoryKeys)
-		for _, key := range categoryKeys {
-			label := categoryLabels[key]
-			if label == "" {
-				label = key
-			}
-			data.Categories = append(data.Categories, web.VerwaltungDemoResetCount{Label: label, Count: result.Categories[key]})
-		}
-		a.renderVerwaltungDemoReset(w, r, ac, data)
-	default:
-		http.Error(w, "Ungültiger Bestätigungsschritt.", http.StatusBadRequest)
+	orgKey, _ := a.inboxOrganisationKey(&ac)
+	for _, tenant := range a.managedTenants(&ac) {
+		a.recordAudit(store.AuditEvent{TenantSlug: tenant.Ref.Slug, ActorEmail: ac.email, ActorRole: tenant.Role, Action: store.AuditActionDemoReset, TargetType: "organisation", TargetID: orgKey, Summary: "Demodaten initialisiert"})
 	}
+	data := web.VerwaltungDemoResetData{Done: true, Anchor: anchor.Format("02.01.2006"), Duration: time.Since(started).Round(time.Millisecond).String()}
+	statusKeys := make([]string, 0, len(result.Statuses))
+	for key := range result.Statuses {
+		statusKeys = append(statusKeys, string(key))
+	}
+	sort.Strings(statusKeys)
+	for _, key := range statusKeys {
+		data.Statuses = append(data.Statuses, web.VerwaltungDemoResetCount{Label: key, Count: result.Statuses[store.IntakeStatus(key)]})
+	}
+	categoryLabels := map[string]string{}
+	for _, category := range store.IntakeCategories() {
+		categoryLabels[category.Key] = category.Label
+	}
+	categoryKeys := make([]string, 0, len(result.Categories))
+	for key := range result.Categories {
+		categoryKeys = append(categoryKeys, key)
+	}
+	sort.Strings(categoryKeys)
+	for _, key := range categoryKeys {
+		label := categoryLabels[key]
+		if label == "" {
+			label = key
+		}
+		data.Categories = append(data.Categories, web.VerwaltungDemoResetCount{Label: label, Count: result.Categories[key]})
+	}
+	a.renderVerwaltungDemoReset(w, r, ac, data)
 }
 
 func demoResetAnchor(now time.Time) time.Time {
