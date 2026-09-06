@@ -26,6 +26,9 @@ type AnnualStatementRunInput struct {
 type AnnualStatementRunUnitIdentity struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
+	// UnitType is the normalised register type at run time (HAUSV-639). It only
+	// orders the presentation: runs stored before it existed carry none.
+	UnitType string `json:"unit_type,omitempty"`
 }
 
 type AnnualStatementRunDocument struct {

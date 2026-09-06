@@ -37,8 +37,7 @@ func Documents(run store.AnnualStatementRun, unitID, partyID string) ([]Document
 	if (unitID == "") != (partyID == "") {
 		return nil, ErrNotFound
 	}
-	units := append([]store.AnnualStatementRunUnit(nil), run.Result.Units...)
-	sort.SliceStable(units, func(i, j int) bool { return units[i].UnitID < units[j].UnitID })
+	units := store.AnnualStatementRunDisplayOrder(run)
 	parties := append([]store.AnnualStatementRunParty(nil), run.Input.Parties...)
 	sort.SliceStable(parties, func(i, j int) bool { return parties[i].ID < parties[j].ID })
 	var out []Document
