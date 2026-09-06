@@ -6,6 +6,7 @@ from __future__ import annotations
 from contextlib import redirect_stdout
 import importlib.util
 import io
+import json
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -37,6 +38,8 @@ def run_snapshot(
     target: str,
     *,
     compose_project: str = "hausv",
+    postgres_container: str = "none",
+    dump_error: bool = False,
     backup_error: bool = False,
     stop_error: bool = False,
     recovery_error: bool = False,
@@ -56,6 +59,12 @@ def run_snapshot(
         compose_project,
         "--service",
         "hausv-org",
+        "--postgres-container",
+        postgres_container,
+        "--postgres-user",
+        "postgres",
+        "--postgres-db",
+        "hausv",
         "--source-version",
         "0.57.0",
         "--source-commit",
@@ -96,6 +105,19 @@ def run_snapshot(
             raise RuntimeError("fixture backup failure")
         real_sqlite_backup(source_path, destination_path)
 
+    dumps: list[tuple[str, str, str, Path]] = []
+
+    def fake_postgres_dump(
+        container: str, user: str, database: str, destination: Path
+    ) -> tuple[int, str, int]:
+        dumps.append((container, user, database, destination))
+        if dump_error:
+            raise RuntimeError("fixture dump failure")
+        archive = b"PGDMP" + bytes((index * 7 + 3) % 256 for index in range(5, 4096))
+        destination.write_bytes(archive)
+        destination.chmod(0o600)
+        return len(archive), "c" * 64, 3
+
     output = io.StringIO()
     with (
         mock.patch.object(sys, "argv", argv),
@@ -104,6 +126,7 @@ def run_snapshot(
         mock.patch.object(module, "wait_healthy", return_value=True),
         mock.patch.object(module, "run", side_effect=fake_run),
         mock.patch.object(module, "sqlite_backup", side_effect=fake_sqlite_backup),
+        mock.patch.object(module, "postgres_dump", side_effect=fake_postgres_dump),
         redirect_stdout(output),
     ):
         try:
@@ -111,12 +134,12 @@ def run_snapshot(
         except Exception as exc:
             if not expected_error or expected_error not in str(exc):
                 raise
-            return output.getvalue(), commands
+            return output.getvalue(), commands + [("dump",) + dump for dump in dumps]
     if expected_error:
         raise AssertionError(f"snapshot helper did not raise {expected_error!r}")
     if result != 0:
         raise AssertionError(f"snapshot helper returned {result}")
-    return output.getvalue(), commands
+    return output.getvalue(), commands + [("dump",) + dump for dump in dumps]
 
 
 def main() -> int:
@@ -164,6 +187,10 @@ def main() -> int:
             raise AssertionError(f"service was not stopped first: {commands}")
         if commands[-1][-2:] != ("start", "hausv-org"):
             raise AssertionError(f"service was not restarted: {commands}")
+        if any(command[0] == "dump" for command in commands):
+            raise AssertionError("a SQLite-only host took a PostgreSQL dump")
+        if (first / "postgres.pgdump").exists():
+            raise AssertionError("a SQLite-only recovery point carries a PostgreSQL dump")
         if (first.stat().st_mode & 0o777) != 0o700:
             raise AssertionError("snapshot is not root-only")
         if (snapshot_root.stat().st_mode & 0o777) != 0o700:
@@ -293,6 +320,90 @@ def main() -> int:
         )
         if missing_dir_commands:
             raise AssertionError("missing compose project directory touched the service")
+
+        # HAUSV-562: production runs PostgreSQL. The dump is taken while the
+        # service is stopped, lands next to hausv.db in the same write-once
+        # recovery point, and is described by the proof lines and metadata.
+        with_postgres = snapshot_root / "1.3.4-aaaaaaa"
+        output, pg_commands = run_snapshot(
+            module,
+            source,
+            with_postgres,
+            compose,
+            compose_file,
+            "1.3.4",
+            postgres_container="hausv-postgres",
+        )
+        pg_lines = set(output.strip().splitlines())
+        for proof in (
+            f"postgres-dump={with_postgres / 'postgres.pgdump'}",
+            "postgres-dump-bytes=4096",
+            "postgres-dump-sha256=" + "c" * 64,
+            "postgres-dump-tables=3",
+            "service-health=healthy",
+        ):
+            if proof not in pg_lines:
+                raise AssertionError(f"PostgreSQL proof missing {proof!r}: {pg_lines}")
+        dump_calls = [command for command in pg_commands if command[0] == "dump"]
+        expected_dump = (
+            "dump",
+            "hausv-postgres",
+            "postgres",
+            "hausv",
+            with_postgres.with_name(".1.3.4-aaaaaaa.staging") / "postgres.pgdump",
+        )
+        if dump_calls != [expected_dump]:
+            raise AssertionError(f"PostgreSQL dump was not taken into staging: {dump_calls}")
+        archive = (with_postgres / "postgres.pgdump").read_bytes()
+        if not archive.startswith(b"PGDMP") or len(archive) != 4096:
+            raise AssertionError("PostgreSQL dump was not published with the recovery point")
+        if ((with_postgres / "postgres.pgdump").stat().st_mode & 0o777) != 0o600:
+            raise AssertionError("PostgreSQL dump is not root-only")
+        pg_metadata = json.loads(
+            (with_postgres / "PREDEPLOY-SNAPSHOT.json").read_text(encoding="utf-8")
+        )
+        if (
+            pg_metadata.get("postgres_dump") != "postgres.pgdump"
+            or pg_metadata.get("postgres_dump_bytes") != 4096
+            or pg_metadata.get("postgres_dump_sha256") != "c" * 64
+            or pg_metadata.get("scope") != "pre-schema SQLite, blob and PostgreSQL recovery point"
+        ):
+            raise AssertionError(f"metadata does not describe the PostgreSQL dump: {pg_metadata}")
+
+        # A failed dump publishes nothing and recovers the service.
+        failed_dump = snapshot_root / "1.3.5-aaaaaaa"
+        _, failed_dump_commands = run_snapshot(
+            module,
+            source,
+            failed_dump,
+            compose,
+            compose_file,
+            "1.3.5",
+            postgres_container="hausv-postgres",
+            dump_error=True,
+            expected_error="fixture dump failure",
+        )
+        if not any(
+            command[-5:] == ("up", "-d", "--force-recreate", "--no-deps", "hausv-org")
+            for command in failed_dump_commands
+        ):
+            raise AssertionError("failed PostgreSQL dump did not recover the service")
+        if failed_dump.exists() or failed_dump.with_name(f".{failed_dump.name}.staging").exists():
+            raise AssertionError("failed PostgreSQL dump left a publishable recovery directory")
+
+        unsafe_container = snapshot_root / "1.3.6-aaaaaaa"
+        _, unsafe_commands = run_snapshot(
+            module,
+            source,
+            unsafe_container,
+            compose,
+            compose_file,
+            "1.3.6",
+            postgres_container="hausv-postgres; docker rm -f hausv-org",
+            expected_error="unsafe PostgreSQL container name",
+        )
+        if unsafe_commands:
+            raise AssertionError("unsafe PostgreSQL container name touched the service")
 
     print("pre-deploy snapshot fixture: ok")
     return 0

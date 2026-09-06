@@ -6,13 +6,17 @@ Python as root while holding the host's compose lock for the helper's complete
 lifetime. Compose mutations deliberately do not reacquire that non-reentrant
 lock. The helper never prints database rows, filenames from user content, or
 secret/config values. The application is stopped while SQLite and blob files
-are captured as one recovery point.
+are captured as one recovery point — and, when the host runs PostgreSQL, a
+custom-format pg_dump of the production database taken in that same window
+(HAUSV-562), so the recovery point never describes a database the files do
+not match.
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -32,6 +36,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compose-file", required=True)
     parser.add_argument("--compose-project", required=True)
     parser.add_argument("--service", required=True)
+    parser.add_argument("--postgres-container", required=True)
+    parser.add_argument("--postgres-user", default="postgres")
+    parser.add_argument("--postgres-db", default="hausv")
     parser.add_argument("--source-version", required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--target-version", required=True)
@@ -64,6 +71,82 @@ def checked_compose_project(raw: str) -> str:
     if re.fullmatch(r"[a-z0-9][a-z0-9_-]*", raw) is None:
         raise RuntimeError("unsafe compose project")
     return raw
+
+
+def checked_postgres_container(raw: str) -> str:
+    """The database container name, or "" when the host runs SQLite only."""
+    if raw == "none":
+        return ""
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", raw) is None:
+        raise RuntimeError("unsafe PostgreSQL container name")
+    return raw
+
+
+def checked_postgres_identifier(raw: str, *, label: str) -> str:
+    if re.fullmatch(r"[A-Za-z0-9_]+", raw) is None:
+        raise RuntimeError(f"unsafe PostgreSQL {label}")
+    return raw
+
+
+POSTGRES_DUMP_NAME = "postgres.pgdump"
+POSTGRES_DUMP_MAGIC = b"PGDMP"
+
+
+def postgres_dump(
+    container: str, user: str, database: str, destination: Path
+) -> tuple[int, str, int]:
+    """Dump the production database into the staging directory.
+
+    pg_dump runs inside the database container over its local socket, so no
+    credential leaves the host configuration. The archive is verified by its
+    header and by listing it with pg_restore; the count of TABLE DATA entries
+    is the restorability witness printed as proof. Returns (bytes, sha256,
+    tables).
+    """
+    with destination.open("wb") as archive:
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                container,
+                "pg_dump",
+                "-U",
+                user,
+                "--format=custom",
+                database,
+            ],
+            check=True,
+            stdout=archive,
+            stderr=subprocess.DEVNULL,
+        )
+    os.chmod(destination, 0o600)
+    digest = hashlib.sha256()
+    size = 0
+    with destination.open("rb") as archive:
+        header = archive.read(len(POSTGRES_DUMP_MAGIC))
+        if header != POSTGRES_DUMP_MAGIC:
+            raise RuntimeError("PostgreSQL dump is not a custom-format pg_dump archive")
+        digest.update(header)
+        size += len(header)
+        while True:
+            chunk = archive.read(1 << 20)
+            if not chunk:
+                break
+            digest.update(chunk)
+            size += len(chunk)
+    with destination.open("rb") as archive:
+        listing = subprocess.run(
+            ["docker", "exec", "-i", container, "pg_restore", "--list"],
+            check=True,
+            stdin=archive,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).stdout
+    tables = sum(1 for line in listing.splitlines() if "TABLE DATA" in line)
+    if tables < 1:
+        raise RuntimeError("PostgreSQL dump lists no table data")
+    return size, digest.hexdigest(), tables
 
 
 def run(*args: str, capture: bool = False) -> str:
@@ -141,6 +224,9 @@ def main() -> int:
     )
     compose_file = checked_file(args.compose_file, label="compose file")
     compose_project = checked_compose_project(args.compose_project)
+    postgres_container = checked_postgres_container(args.postgres_container)
+    postgres_user = checked_postgres_identifier(args.postgres_user, label="role")
+    postgres_db = checked_postgres_identifier(args.postgres_db, label="database")
     if snapshot.is_relative_to(source) or source.is_relative_to(snapshot):
         raise RuntimeError("source and snapshot paths must be separate")
     staging = snapshot.with_name(f".{snapshot.name}.staging")
@@ -194,6 +280,24 @@ def main() -> int:
             "sqlite_integrity": "ok",
             "scope": "pre-schema SQLite and blob recovery point",
         }
+        postgres_proof: dict[str, object] = {}
+        if postgres_container:
+            dump_bytes, dump_sha256, dump_tables = postgres_dump(
+                postgres_container,
+                postgres_user,
+                postgres_db,
+                staging / POSTGRES_DUMP_NAME,
+            )
+            metadata["scope"] = "pre-schema SQLite, blob and PostgreSQL recovery point"
+            metadata["postgres_dump"] = POSTGRES_DUMP_NAME
+            metadata["postgres_dump_bytes"] = dump_bytes
+            metadata["postgres_dump_sha256"] = dump_sha256
+            postgres_proof = {
+                "postgres-dump": snapshot / POSTGRES_DUMP_NAME,
+                "postgres-dump-bytes": dump_bytes,
+                "postgres-dump-sha256": dump_sha256,
+                "postgres-dump-tables": dump_tables,
+            }
         (staging / "PREDEPLOY-SNAPSHOT.json").write_text(
             json.dumps(metadata, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
@@ -247,6 +351,8 @@ def main() -> int:
     print(f"snapshot-path={snapshot}")
     print(f"snapshot-created={metadata['created_utc']}")
     print("snapshot-integrity=ok")
+    for key, value in postgres_proof.items():
+        print(f"{key}={value}")
     print("service-health=healthy")
     return 0
 

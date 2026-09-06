@@ -52,6 +52,7 @@ fixture() {
         HAUSV_DEPLOY_COMPOSE_PROJECT=hausv \
         HAUSV_DEPLOY_CONTAINER=hausv-demo \
         HAUSV_DEPLOY_COMPOSE_LOCK="$state/compose.lock" \
+        HAUSV_DEPLOY_DATA_DIR="${fixture_data_dir-}" \
         HAUSV_DEPLOY_FLOCK_BIN="$test_root/bin/flock" \
         HAUSV_DEPLOY_BASE64_BIN="$test_root/bin/base64" \
         HAUSV_DEPLOY_MKTEMP_BIN="$test_root/bin/mktemp" \
@@ -77,8 +78,9 @@ fixture() {
     echo "ok $case_name"
 }
 
-# Test schema path with missing snapshot root
-fixture migrations_changed 1 "HAUSV_DEPLOY_SNAPSHOT_ROOT is required"
+# Test schema path with missing snapshot root. A missing setting stops the
+# script at once (a refusal inside $(...) used to exit only the subshell).
+fixture_data_dir=/var/lib/hausv fixture migrations_changed 1 "HAUSV_DEPLOY_SNAPSHOT_ROOT is required"
 if grep -qF -- "pulling CI image from GHCR" "$test_root/migrations_changed/output.txt"; then
     echo "FAIL migrations_changed: pull ran despite missing snapshot config" >&2
     exit 1
@@ -157,6 +159,9 @@ fixture_schema() {
         HAUSV_DEPLOY_COMPOSE_LOCK="$state/compose.lock" \
         HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
         HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv" \
+        HAUSV_DEPLOY_POSTGRES_CONTAINER="${fixture_postgres_container-hausv-postgres}" \
+        HAUSV_DEPLOY_POSTGRES_DB=hausv \
+        HAUSV_DEPLOY_POSTGRES_USER=postgres \
         HAUSV_DEPLOY_FLOCK_BIN="$test_root/bin/flock" \
         HAUSV_DEPLOY_BASE64_BIN="$test_root/bin/base64" \
         HAUSV_DEPLOY_MKTEMP_BIN="$test_root/bin/mktemp" \
@@ -186,6 +191,29 @@ fixture_schema() {
 fixture_schema schema_with_snapshot 0 "all fail-closed preconditions passed"
 if grep -qF -- "sudo" "$test_root/schema_with_snapshot/commands.log"; then
     echo "FAIL schema_with_snapshot: unattended schema preflight still invoked sudo" >&2
+    exit 1
+fi
+# HAUSV-562: production runs PostgreSQL. The dry run proves the database
+# container answers, names the full recovery scope, and changes nothing.
+if ! grep -qE -- $'^docker\texec\thausv-postgres\tpg_isready\t-U\tpostgres\t-d\thausv$' \
+    "$test_root/schema_with_snapshot/commands.log"; then
+    echo "FAIL schema_with_snapshot: PostgreSQL readiness was not probed" >&2
+    exit 1
+fi
+if ! grep -qF -- "($(printf 'SQLite + blobs + PostgreSQL dump')) atomically" "$test_root/schema_with_snapshot/output.txt"; then
+    echo "FAIL schema_with_snapshot: dry run does not announce the PostgreSQL recovery scope" >&2
+    exit 1
+fi
+if grep -qE -- $'\tpg_dump\t' "$test_root/schema_with_snapshot/commands.log"; then
+    echo "FAIL schema_with_snapshot: dry run took a PostgreSQL dump" >&2
+    exit 1
+fi
+
+# The database container is a required setting for every schema release; an
+# empty value refuses before any change instead of silently skipping the dump.
+fixture_postgres_container="" fixture_schema schema_postgres_unset 1 "HAUSV_DEPLOY_POSTGRES_CONTAINER is required"
+if grep -qF -- "pulling CI image from GHCR" "$test_root/schema_postgres_unset/output.txt"; then
+    echo "FAIL schema_postgres_unset: pull ran without a stated PostgreSQL recovery scope" >&2
     exit 1
 fi
 
@@ -222,6 +250,73 @@ if grep -qE -- $'--cap-add\t(CHOWN|FOWNER|DAC_READ_SEARCH)' \
 fi
 if grep -qF -- "sudo" "$test_root/schema_release_success/commands.log"; then
     echo "FAIL schema_release_success: schema release still invoked sudo" >&2
+    exit 1
+fi
+# HAUSV-562: the PostgreSQL dump is taken while the service is stopped, listed
+# for restorability, streamed byte-exact into the same recovery point, and its
+# container-side copy is removed before the service starts again.
+pg_dump_line=$(grep -n $'^docker\texec\thausv-postgres\tpg_dump\t' \
+    "$test_root/schema_release_success/commands.log" | cut -d: -f1)
+pg_list_line=$(grep -n $'^docker\texec\thausv-postgres\tpg_restore\t--list\t' \
+    "$test_root/schema_release_success/commands.log" | cut -d: -f1)
+pg_rm_line=$(grep -n $'^docker\texec\thausv-postgres\trm\t-f\t' \
+    "$test_root/schema_release_success/commands.log" | head -1 | cut -d: -f1)
+if [ -z "$pg_dump_line" ] || [ -z "$pg_list_line" ] || [ -z "$pg_rm_line" ] \
+    || [ "$snapshot_stop_line" -ge "$pg_dump_line" ] \
+    || [ "$pg_dump_line" -ge "$pg_list_line" ] \
+    || [ "$pg_list_line" -ge "$snapshot_run_line" ] \
+    || [ "$snapshot_run_line" -ge "$pg_rm_line" ] \
+    || [ "$pg_rm_line" -ge "$snapshot_start_line" ]; then
+    echo "FAIL schema_release_success: PostgreSQL dump is not taken inside the stop/snapshot/start window" >&2
+    exit 1
+fi
+if ! grep -qE -- $'^docker\trun\t.*\t--postgres-dump-bytes\t4096\t--interactive\t' \
+    "$test_root/schema_release_success/commands.log"; then
+    echo "FAIL schema_release_success: snapshot container did not receive the announced dump size" >&2
+    exit 1
+fi
+if ! grep -qF -- "recovery point scope: SQLite + blobs + PostgreSQL dump" \
+    "$test_root/schema_release_success/output.txt"; then
+    echo "FAIL schema_release_success: recovery scope was not reported" >&2
+    exit 1
+fi
+if ! grep -qF -- "PostgreSQL restore (service stopped): docker exec -i hausv-postgres pg_restore -U postgres --clean --if-exists --exit-on-error -d hausv < /var/backups/hausv/9.99.0-aaaaaaa/postgres.pgdump" \
+    "$test_root/schema_release_success/output.txt"; then
+    echo "FAIL schema_release_success: rollback guidance lacks the PostgreSQL restore command" >&2
+    exit 1
+fi
+
+# A host that runs SQLite only says so explicitly; then no dump is attempted.
+fixture_postgres_container=none fixture_schema schema_sqlite_only 0 "live version: 9.99.0 (aaaaaaa)" release 3
+if grep -qE -- $'^docker\texec\t' "$test_root/schema_sqlite_only/commands.log"; then
+    echo "FAIL schema_sqlite_only: a SQLite-only host reached into a database container" >&2
+    exit 1
+fi
+if ! grep -qFx -- "recovery point: SQLite + blobs" "$test_root/schema_sqlite_only/output.txt"; then
+    echo "FAIL schema_sqlite_only: recovery scope is not SQLite + blobs" >&2
+    exit 1
+fi
+
+# A failed pg_dump refuses the release before the snapshot container runs,
+# recovers the stopped service under the same lock and removes its temp file.
+fixture_schema schema_postgres_dump_fail 1 \
+    "recovery verified: the current production service is healthy" release
+if grep -qE -- $'^docker\trun\t' "$test_root/schema_postgres_dump_fail/commands.log"; then
+    echo "FAIL schema_postgres_dump_fail: snapshot container ran without a PostgreSQL dump" >&2
+    exit 1
+fi
+if ! grep -qE -- $'^docker\tcompose\t.*\tup\t-d\t--force-recreate\t--no-deps\thausv-org$' \
+    "$test_root/schema_postgres_dump_fail/commands.log"; then
+    echo "FAIL schema_postgres_dump_fail: old service was not recovered" >&2
+    exit 1
+fi
+if ! grep -qE -- $'^docker\texec\thausv-postgres\trm\t-f\t' "$test_root/schema_postgres_dump_fail/commands.log"; then
+    echo "FAIL schema_postgres_dump_fail: container-side dump file was not cleaned up" >&2
+    exit 1
+fi
+if grep -qE -- $'^docker\ttag\tsha256:2222222222222222222222222222222222222222222222222222222222222222\t.*:latest$' \
+    "$test_root/schema_postgres_dump_fail/commands.log"; then
+    echo "FAIL schema_postgres_dump_fail: failed dump activated the release image" >&2
     exit 1
 fi
 

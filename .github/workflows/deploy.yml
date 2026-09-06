@@ -90,6 +90,11 @@ jobs:
           HAUSV_DEPLOY_COMPOSE_LOCK: /run/lock/compose-hausv.lock
           HAUSV_DEPLOY_DATA_DIR: /var/lib/csb1-docker/hausv-org
           HAUSV_DEPLOY_SNAPSHOT_ROOT: /var/backups/hausv-predeploy
+          # Production runs PostgreSQL: a schema release dumps this database
+          # into the same recovery point (HAUSV-562). "none" would mean SQLite only.
+          HAUSV_DEPLOY_POSTGRES_CONTAINER: hausv-postgres
+          HAUSV_DEPLOY_POSTGRES_DB: hausv
+          HAUSV_DEPLOY_POSTGRES_USER: postgres
           HAUSV_DEPLOY_LIVE_URL: https://hausv.org/jhw22/
           HAUSV_DEPLOY_HEALTH_URL: https://hausv.org/healthz
           HAUSV_DEPLOY_FLOCK_BIN: /run/current-system/sw/bin/flock

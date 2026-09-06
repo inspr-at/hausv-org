@@ -54,6 +54,9 @@ STATE = Path(required("DEPLOY_FIXTURE_STATE"))
 REPO = Path(required("DEPLOY_FIXTURE_REPO"))
 LIVE_URL = required("HAUSV_DEPLOY_LIVE_URL")
 CONTAINER = required("HAUSV_DEPLOY_CONTAINER")
+# HAUSV-562: "" means the fixture left the setting out, "none" a SQLite-only
+# host, anything else the PostgreSQL container the recovery point must dump.
+POSTGRES = os.environ.get("HAUSV_DEPLOY_POSTGRES_CONTAINER", "")
 APP_VERSION = (REPO / "VERSION").read_text(encoding="utf-8").strip()
 STATE.mkdir(parents=True, exist_ok=True)
 
@@ -306,6 +309,13 @@ def mock_ssh(args: list[str]) -> int:
         if "def main() -> int:" not in script or "HAUSV_PREDEPLOY_PY" not in script:
             print("snapshot helper is not embedded in the locked body", file=sys.stderr)
             return 64
+        if POSTGRES and POSTGRES != "none":
+            expected_postgres = f"--postgres-container {POSTGRES} --postgres-user postgres --postgres-db hausv"
+        else:
+            expected_postgres = "--postgres-container none"
+        if expected_postgres not in script:
+            print(f"snapshot command is missing {expected_postgres}", file=sys.stderr)
+            return 64
         if script.count(IMAGE_ID) < 2 or script.index(IMAGE_ID) >= script.index("sudo -n"):
             print("snapshot did not revalidate the preflight image identity", file=sys.stderr)
             return 64
@@ -322,6 +332,11 @@ def mock_ssh(args: list[str]) -> int:
         print(f"snapshot-path={snapshot_path(script)}")
         print("snapshot-created=2026-07-30T12:00:00Z")
         print("snapshot-integrity=ok")
+        if POSTGRES and POSTGRES != "none":
+            print(f"postgres-dump={snapshot_path(script)}/postgres.pgdump")
+            print("postgres-dump-bytes=4096")
+            print("postgres-dump-sha256=" + "c" * 64)
+            print("postgres-dump-tables=3")
         print("service-health=healthy")
         return 0
 
@@ -476,6 +491,14 @@ def mock_ssh(args: list[str]) -> int:
             'grep -F "$locked_build_marker"',
             f"docker inspect --format '{{{{.Image}}}}' {CONTAINER}",
         )
+        if "schema" in CASE and POSTGRES and POSTGRES != "none":
+            required = required + (
+                f"docker exec {POSTGRES} pg_isready -U postgres -d hausv",
+                f"docker inspect --format '{{{{.State.Running}}}}' {POSTGRES}",
+            )
+        elif "pg_isready" in script:
+            print("preflight probed PostgreSQL although no schema release needs it", file=sys.stderr)
+            return 64
         missing = [fragment for fragment in required if fragment not in script]
         if missing:
             print(

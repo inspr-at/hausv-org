@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.4] - 2026-09-06
+
+### Stabilität verbessert
+
+- Auslieferung: Vor einem Datenbank-Update sichert die Auslieferung jetzt auch die PostgreSQL-Datenbank in denselben Wiederherstellungspunkt wie Dateien und Anhänge; ein fehlgeschlagener Sicherungsschritt hält das Release an, bevor sich etwas ändert.
+
 ## [1.3.3] - 2026-09-05
 
 ### Stabilität verbessert

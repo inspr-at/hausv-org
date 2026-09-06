@@ -30,11 +30,14 @@ Every production release must:
 5. be the CI image that green run pushed to GHCR — both paths pull `release-<version>-<short sha>`, neither builds on the production host;
 6. expose the expected version and commit after activation.
 
-The script preserves the previous image. When migrations changed, both paths
-create a quiesced SQLite and blob snapshot before the swap — the Mac-less path
-inside the green image under the project lock, the attended Mac path on the
-host. A failed snapshot refuses the release; production stays on the previous
-image.
+The script preserves the previous image. When migrations changed (in either
+series, `internal/db/migrations` or `internal/db/postgres/migrations`), both
+paths create one recovery point before the swap: a quiesced SQLite and blob
+snapshot plus, because production runs PostgreSQL, a custom-format `pg_dump`
+of the production database taken in the same stopped-service window — the
+Mac-less path inside the green image under the project lock, the attended Mac
+path on the host. A failed snapshot or dump refuses the release; production
+stays on the previous image (HAUSV-562).
 
 A merge to `main` that does not bump `VERSION` still triggers `Deploy`. The
 unattended script reads the live build, finds this version already there and
@@ -70,20 +73,34 @@ automatically triggers on a self-hosted runner (`csb1-hausv` label) on csb1.
 The runner:
 
 1. Checks out the repository at the exact green CI commit;
-2. Checks whether migrations changed vs. the live version;
+2. Checks whether migrations changed vs. the live version (both series);
 3. Preserves the live image and pulls the CI-built image from GHCR without
    changing the running container;
-4. If migrations changed, runs that green image's restricted snapshot command
-   with read-only data and a dedicated writable backup bind mount under the
-   project lock;
+4. If migrations changed, stops the service under the project lock, dumps the
+   PostgreSQL database inside its own container, and runs that green image's
+   restricted snapshot command with read-only data and a dedicated writable
+   backup bind mount, streaming the dump into the same recovery point;
 5. Swaps the production container under the project lock.
 
-**Schema support:** When `internal/db/migrations` changes, the unattended script
-now captures the same SQLite+blob recovery scope as `scripts/deploy.sh`. The
-runner needs no sudo access: Docker performs the two explicit host bind mounts,
-the snapshot container has no network, and the live service is automatically
-recovered before the script can fail. Snapshot failure refuses the release
-before swapping; production stays on the previous image.
+**Schema support:** When either migration series changes, the unattended
+script captures the same recovery scope as `scripts/deploy.sh`: SQLite + blobs,
+and the PostgreSQL dump named by `HAUSV_DEPLOY_POSTGRES_CONTAINER`. The runner
+needs no sudo access: Docker performs the two explicit host bind mounts, the
+snapshot container has no network, and the live service is automatically
+recovered before the script can fail. Snapshot or dump failure refuses the
+release before swapping; production stays on the previous image.
+
+**PostgreSQL in the recovery point (HAUSV-562):** `pg_dump -U <user>
+--format=custom` runs inside the database container over its local socket, so
+no credential leaves the host. The archive is listed with `pg_restore --list`
+inside that container (the `TABLE DATA` count is the restorability witness),
+then streamed byte-exact into the snapshot command, which verifies the
+announced length and the `PGDMP` header and records the SHA-256 in
+`PREDEPLOY-SNAPSHOT.json`. The result is `postgres.pgdump` (mode 600) next to
+`hausv.db` in the versioned, write-once recovery point. The dump is taken while
+`hausv-org` is stopped, so files and database describe one moment. A host that
+runs SQLite only states that with `HAUSV_DEPLOY_POSTGRES_CONTAINER=none`; an
+unset value refuses every schema release before any change.
 
 The versioned published snapshot is write-once. An interrupted, unpublished
 `.staging` directory for that same version is removed by the next snapshot
@@ -107,7 +124,9 @@ explicit `version` and `commit` inputs for manual or roll-forward deploys.
 break-glass operations. It:
 
 1. Runs preflight checks including migration diff;
-2. Creates a quiesced SQLite snapshot if migrations changed;
+2. Creates a quiesced SQLite snapshot plus the PostgreSQL dump if migrations
+   changed (the root-only helper `scripts/create-predeploy-snapshot.py` runs
+   `pg_dump` inside the database container);
 3. Pulls the CI image and swaps the container over SSH;
 4. Provides rollback commands.
 
@@ -138,6 +157,14 @@ HAUSV_DEPLOY_CONTAINER=hausv-org
 HAUSV_DEPLOY_COMPOSE_LOCK=/run/lock/compose-hausv.lock
 HAUSV_DEPLOY_DATA_DIR=/var/lib/csb1-docker/hausv-org
 HAUSV_DEPLOY_SNAPSHOT_ROOT=/var/backups/hausv-predeploy
+# Production runs PostgreSQL in this container; a schema release dumps this
+# database into the recovery point. "none" would declare a SQLite-only host.
+HAUSV_DEPLOY_POSTGRES_CONTAINER=hausv-postgres
+HAUSV_DEPLOY_POSTGRES_DB=hausv
+# The role pg_dump connects as over the container's local socket. The
+# superuser sees every row despite FORCE ROW LEVEL SECURITY; a dedicated
+# BYPASSRLS backup role (HAUSV-559) can replace it here without code changes.
+HAUSV_DEPLOY_POSTGRES_USER=postgres
 # The live tenant is jhw22. https://hausv.org/demo/ returns 404.
 HAUSV_DEPLOY_LIVE_URL=https://hausv.org/jhw22/
 HAUSV_DEPLOY_HEALTH_URL=https://hausv.org/healthz
@@ -222,7 +249,9 @@ The repository runner is declared in nixcfg at
 4. Access to the compose lock and compose directory;
 5. Docker socket access, with the HAUSV data and pre-deploy snapshot bind-source
    directories already present on the host. The runner process does not need
-   direct filesystem access to those root-only directories.
+   direct filesystem access to those root-only directories; the PostgreSQL
+   dump also travels through `docker exec` and a container stdin, never
+   through a runner-readable file.
 
 **Operator checklist for one-time runner setup:**
 
@@ -277,13 +306,24 @@ against the migrated live database.
 
 1. Open the locked recovery shell printed by `scripts/deploy.sh`.
 2. Stop the `hausv-org` service while holding that lock.
-3. Keep the failed live data directory as a timestamped recovery copy.
+3. Keep the failed live data directory as a timestamped recovery copy, and take
+   a `pg_dump` of the migrated PostgreSQL database the same way (a
+   post-failure copy; never overwrite the pre-deploy dump).
 4. Copy the matching snapshot into a separate restore-check directory.
 5. Run `PRAGMA quick_check` on the restored SQLite database and verify required
    blob files before replacing the live data directory.
-6. Restore ownership expected by the container.
-7. Recreate the service with the previous image command printed by the script.
-8. Verify `/healthz`, the visible version and the application logs before
+6. Restore the PostgreSQL database from `postgres.pgdump` in that snapshot,
+   with the service still stopped:
+   `docker exec -i hausv-postgres pg_restore -U postgres --clean --if-exists
+   --exit-on-error -d hausv < <snapshot>/postgres.pgdump`. `--clean` drops and
+   recreates every object the archive knows, including `schema_migrations`, so
+   the ledger no longer names the migration that failed. Then
+   `docker exec hausv-postgres psql -U postgres -d hausv -c "select version
+   from schema_migrations order by 1 desc limit 3"` must end at the last
+   migration of the previous release.
+7. Restore ownership expected by the container.
+8. Recreate the service with the previous image command printed by the script.
+9. Verify `/healthz`, the visible version and the application logs before
    releasing the lock.
 
 Exact storage paths are intentionally absent from this repository. Use only the

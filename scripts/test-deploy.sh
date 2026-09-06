@@ -95,6 +95,7 @@ fixture() {
             HAUSV_DEPLOY_MKTEMP_BIN="$deploy_fixture_mktemp_bin" \
             HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
             HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
+            HAUSV_DEPLOY_POSTGRES_CONTAINER="${DEPLOY_FIXTURE_POSTGRES-hausv-postgres}" \
             HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
@@ -117,6 +118,7 @@ fixture() {
             HAUSV_DEPLOY_MKTEMP_BIN="$deploy_fixture_mktemp_bin" \
             HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
             HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
+            HAUSV_DEPLOY_POSTGRES_CONTAINER="${DEPLOY_FIXTURE_POSTGRES-hausv-postgres}" \
             HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
@@ -280,6 +282,27 @@ if ! contains_fail_fast_remote_command "$(cat "$deploy_fixture_root/success/outp
     exit 1
 fi
 fixture schema_success 0 "pre-deploy recovery point: fresh, consistent and healthy" release
+# HAUSV-562: the attended path dumps PostgreSQL into the same recovery point
+# and tells the operator how to restore it.
+if ! grep -qF -- "recovery point scope: SQLite + blobs + PostgreSQL dump" \
+    "$deploy_fixture_root/schema_success/output.txt" \
+    || ! grep -qF -- "PostgreSQL restore (service stopped): docker exec -i hausv-postgres pg_restore -U postgres --clean --if-exists --exit-on-error -d hausv < /var/backups/hausv-predeploy/$fixture_app_version-aaaaaaa/postgres.pgdump" \
+    "$deploy_fixture_root/schema_success/output.txt"; then
+    echo "FAIL schema_success: PostgreSQL recovery scope or restore guidance missing" >&2
+    exit 1
+fi
+# The database container is a required setting for a schema release; a host
+# that runs SQLite only says so with "none" and takes no dump.
+DEPLOY_FIXTURE_POSTGRES="" fixture schema_postgres_unset 1 "HAUSV_DEPLOY_POSTGRES_CONTAINER is required" dry-run
+if grep -qF -- "ssh" "$deploy_fixture_root/schema_postgres_unset/commands.log"; then
+    echo "FAIL schema_postgres_unset: contacted the host without a stated recovery scope" >&2
+    exit 1
+fi
+DEPLOY_FIXTURE_POSTGRES=none fixture schema_sqlite_only 0 "recovery point: SQLite + blobs" dry-run
+if grep -qF -- "PostgreSQL" "$deploy_fixture_root/schema_sqlite_only/output.txt"; then
+    echo "FAIL schema_sqlite_only: a SQLite-only host was promised a PostgreSQL dump" >&2
+    exit 1
+fi
 
 python3 "$deploy_fixture_repo/scripts/test-predeploy-snapshot.py" || exit 1
 
