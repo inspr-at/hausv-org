@@ -116,7 +116,7 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, year 
 		out.CreatedBy = run.CreatedBy
 		out.Total = formatAnnualStatementMoney(run.Result.TotalCents)
 		out.Excluded = formatAnnualStatementMoney(run.Result.ExcludedCents)
-		for _, unit := range run.Result.Units {
+		for _, unit := range store.AnnualStatementRunDisplayOrder(run) {
 			row := web.AnnualStatementRunUnitView{Label: unit.Label, Allocated: formatAnnualStatementMoney(unit.AllocatedCents), Prepaid: formatAnnualStatementMoney(unit.PrepaidCents), Balance: formatAnnualStatementBalance(-unit.BalanceCents)}
 			for _, cost := range unit.Costs {
 				row.Costs = append(row.Costs, web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)})

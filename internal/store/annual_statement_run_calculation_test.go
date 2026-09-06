@@ -13,7 +13,7 @@ func annualRunFixture() AnnualStatementRunInput {
 		Structure: AnnualStatementPeriodStructure{
 			CostTypes: []AnnualStatementCostType{{Key: "tax", Name: "Abgabe", Allocatable: true, AllocationKey: AllocationKeyNutzwert}, {Key: "service", Name: "Betreuung", Allocatable: true, AllocationKey: AllocationKeyPersonen}, {Key: "excluded", Name: "Nicht umlagefähig"}},
 			UnitBases: []AnnualStatementPeriodUnitBasis{{UnitID: "a", MiteigentumsanteilPPM: 250000, Persons: 1, PersonsRecorded: true}, {UnitID: "b", MiteigentumsanteilPPM: 750000, Persons: 1, PersonsRecorded: true}}},
-		Units:       []AnnualStatementRunUnitIdentity{{"a", "Top 1"}, {"b", "Top 2"}},
+		Units:       []AnnualStatementRunUnitIdentity{{ID: "a", Label: "Top 1"}, {ID: "b", Label: "Top 2"}},
 		Receipts:    []AnnualStatementReceipt{{ID: "r1", DocumentID: "d1", PeriodYear: 2025, CostTypeKey: "tax", AmountCents: 10001, InvoiceDate: "2025-02-01"}, {ID: "r2", DocumentID: "d2", PeriodYear: 2025, CostTypeKey: "service", AmountCents: 101, InvoiceDate: "2025-02-01"}, {ID: "r3", DocumentID: "d3", PeriodYear: 2025, CostTypeKey: "excluded", AmountCents: 999, InvoiceDate: "2025-02-01"}},
 		Documents:   []AnnualStatementRunDocument{{ID: "d1"}, {ID: "d2"}, {ID: "d3"}},
 		Prepayments: []AnnualStatementPrepayment{{PeriodYear: 2025, UnitID: "a", AmountCents: 3000}, {PeriodYear: 2025, UnitID: "b", AmountCents: 0}},
@@ -47,7 +47,7 @@ func TestAnnualStatementRunMissingInputsBlockAllResults(t *testing.T) {
 		"units":        func(in *AnnualStatementRunInput) { in.Units = nil },
 		"deleted unit": func(in *AnnualStatementRunInput) { in.Units = in.Units[:1] },
 		"new unit": func(in *AnnualStatementRunInput) {
-			in.Units = append(in.Units, AnnualStatementRunUnitIdentity{"c", "Top 3"})
+			in.Units = append(in.Units, AnnualStatementRunUnitIdentity{ID: "c", Label: "Top 3"})
 		},
 		"duplicate unit": func(in *AnnualStatementRunInput) { in.Units[1].ID = "a" },
 		"structure":      func(in *AnnualStatementRunInput) { in.Structure.UnitBases = nil },

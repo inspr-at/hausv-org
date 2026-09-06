@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.5.1",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Einheiten stehen in der Jahresabrechnung in der Reihenfolge des Registers.",
+			Intro:    "Auf der Lauf-Seite und im Gesamt-PDF folgen die Einheiten der natürlichen Reihenfolge des Registers — Wohnungen nach Nummer, danach die Stellplätze — statt der Sortierung nach Kennung.",
+			Items:    []NoteItem{{Label: "Jahresabrechnung", Text: "Die Berechnung und gespeicherte Läufe bleiben unverändert; nur die Darstellung sortiert."}},
+		},
+		{
 			Version:  "1.5.0",
 			Date:     "6. September 2026",
 			Kind:     "Neu",

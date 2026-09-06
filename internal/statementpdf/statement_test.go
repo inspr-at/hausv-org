@@ -139,3 +139,34 @@ func TestMeasuredVectorTotalCannotOverflowOrRoundStoredMicros(t *testing.T) {
 		t.Fatal(docs[0].Costs[1].Measurements)
 	}
 }
+
+// HAUSV-639: the combined document pages units the way the register reads
+// them — parking last, labels naturally — not by ID string.
+func TestDocumentsFollowTheRegisterOrder(t *testing.T) {
+	run := fixture()
+	run.Input.Units = []store.AnnualStatementRunUnitIdentity{
+		{ID: "a", Label: "Top 1", UnitType: store.UnitTypeResidential},
+		{ID: "b", Label: "Top 2", UnitType: store.UnitTypeResidential},
+		{ID: "0-stellplatz", Label: "Stellplatz 1", UnitType: store.UnitTypeParking},
+		{ID: "c", Label: "Top 10", UnitType: store.UnitTypeResidential},
+	}
+	run.Input.Parties = append(run.Input.Parties,
+		store.AnnualStatementRunParty{UnitID: "0-stellplatz", ID: "p@example.com", Name: "Parker", Owner: true},
+		store.AnnualStatementRunParty{UnitID: "c", ID: "ten@example.com", Name: "Zehn", Owner: true})
+	run.Result.Units = append(run.Result.Units,
+		store.AnnualStatementRunUnit{UnitID: "0-stellplatz", Label: "Stellplatz 1"},
+		store.AnnualStatementRunUnit{UnitID: "c", Label: "Top 10"})
+	docs, err := Documents(run, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var labels []string
+	for _, doc := range docs {
+		if len(labels) == 0 || labels[len(labels)-1] != doc.UnitLabel {
+			labels = append(labels, doc.UnitLabel)
+		}
+	}
+	if got := strings.Join(labels, ", "); got != "Top 1, Top 2, Top 10, Stellplatz 1" {
+		t.Fatalf("document order = %q", got)
+	}
+}

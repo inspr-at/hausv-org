@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.5.1] - 2026-09-06
+
+### Stabilität verbessert
+
+- Jahresabrechnung: Einheiten erscheinen auf der Lauf-Seite und im Gesamt-PDF in der Reihenfolge des Gebäude-Registers (Wohnungen nach Nummer, danach Stellplätze).
+
 ## [1.5.0] - 2026-09-06
 
 ### Neu
