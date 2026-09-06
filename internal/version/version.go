@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.7.1",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Demo-Zugang zeigt den Weiter-Link auch mit Datei-Postausgang.",
+			Intro:    "Anmeldelinks landen nie in einem Postausgang, den niemand liest: Nur ein echter Mailserver gilt für die Anmeldung als zustellfähig; der Datei-Postausgang bleibt der Testmodus für den Abrechnungsversand.",
+			Items:    []NoteItem{{Label: "Anmeldung", Text: "Gefunden bei der Live-Abnahme des Versands auf der Demo."}},
+		},
+		{
 			Version:  "1.7.0",
 			Date:     "6. September 2026",
 			Kind:     "Neu",
