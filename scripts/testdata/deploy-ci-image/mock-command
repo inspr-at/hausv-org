@@ -213,6 +213,22 @@ def mock_docker(args: list[str]) -> int:
         return 0
     elif args and args[0] == "run":
         log("docker", args)
+        # docker parses everything before the image as its own options and
+        # rejects unknown ones; the double does the same so a snapshot flag
+        # slipped in front of the image fails here, not on csb1 (HAUSV-562).
+        docker_run_options = {
+            "--rm", "--user", "--network", "--read-only", "--cap-drop", "--cap-add",
+            "--security-opt", "--tmpfs", "--mount", "--interactive", "-i",
+        }
+        try:
+            image_index = args.index(RELEASE_IMAGE_ID)
+        except ValueError:
+            print("snapshot did not name the pinned release image", file=sys.stderr)
+            return 125
+        for option in args[1:image_index]:
+            if option.startswith("-") and option not in docker_run_options:
+                print(f"unknown flag: {option}", file=sys.stderr)
+                return 125
         required = (
             "--user", "0:0", "--network", "none", "--read-only",
             "--cap-drop", "ALL", "--cap-add", "DAC_OVERRIDE",

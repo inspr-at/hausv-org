@@ -270,9 +270,9 @@ if [ -z "$pg_dump_line" ] || [ -z "$pg_list_line" ] || [ -z "$pg_rm_line" ] \
     echo "FAIL schema_release_success: PostgreSQL dump is not taken inside the stop/snapshot/start window" >&2
     exit 1
 fi
-if ! grep -qE -- $'^docker\trun\t.*\t--postgres-dump-bytes\t4096\t--interactive\t' \
+if ! grep -qE -- $'^docker\trun\t.*\t--interactive\tsha256:2222222222222222222222222222222222222222222222222222222222222222\tpredeploy-snapshot\t.*\t--postgres-dump-bytes\t4096$' \
     "$test_root/schema_release_success/commands.log"; then
-    echo "FAIL schema_release_success: snapshot container did not receive the announced dump size" >&2
+    echo "FAIL schema_release_success: stdin must be attached before the image and the dump size passed to the snapshot command after it" >&2
     exit 1
 fi
 if ! grep -qF -- "recovery point scope: SQLite + blobs + PostgreSQL dump" \

@@ -429,6 +429,7 @@ if [ "$schema_changed" -eq 1 ]; then
     # the archive header and records the digest (HAUSV-562).
     postgres_dump_prepare=""
     postgres_dump_stream=""
+    postgres_dump_stdin=""
     postgres_dump_flags=""
     postgres_dump_cleanup=""
     postgres_dump_proof=""
@@ -441,7 +442,11 @@ postgres_dump_tables=\"\$(docker exec $postgres_container pg_restore --list $pos
 test \"\$postgres_dump_bytes\" -gt 0
 test \"\$postgres_dump_tables\" -gt 0"
         postgres_dump_stream="docker exec $postgres_container cat $postgres_dump_file | "
-        postgres_dump_flags="--postgres-dump-bytes \"\$postgres_dump_bytes\" --interactive"
+        # docker's own option goes before the image, the snapshot command's
+        # flag after it: docker refuses an unknown flag in front of the image
+        # (it did, once, on csb1 — release 1.3.4 was refused fail-closed).
+        postgres_dump_stdin="--interactive"
+        postgres_dump_flags="--postgres-dump-bytes \"\$postgres_dump_bytes\""
         postgres_dump_cleanup="docker exec $postgres_container rm -f $postgres_dump_file"
         postgres_dump_proof="printf 'postgres-dump-tables=%s\\n' \"\$postgres_dump_tables\""
     fi
@@ -469,14 +474,14 @@ ${postgres_dump_stream}docker run --rm \
     --security-opt no-new-privileges \
     --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
     --mount $source_mount \
-    --mount $snapshot_mount $postgres_dump_flags \
+    --mount $snapshot_mount $postgres_dump_stdin \
     $expected_release_image_id predeploy-snapshot \
     --source /source \
     --snapshot $container_snapshot \
     --source-version $live_version \
     --source-commit $live_sha \
     --target-version $app_version \
-    --target-commit $head_sha
+    --target-commit $head_sha $postgres_dump_flags
 $postgres_dump_cleanup
 $compose_command start $service
 snapshot_health=none
