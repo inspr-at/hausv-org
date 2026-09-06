@@ -795,6 +795,8 @@ type app struct {
 	annualStatementPeriods   store.AnnualStatementPeriodStorage
 	annualStatementAkontos   store.AnnualStatementPrepaymentStorage
 	annualStatementReceipts  store.AnnualStatementReceiptStorage
+	annualConsumption        store.AnnualStatementConsumptionStorage
+	annualStatementRuns      store.AnnualStatementRunStorage
 	unitStore                unitStorage
 	unitPaymentStore         unitPaymentStatusStorage
 	issueStore               issueStorage
@@ -1190,6 +1192,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/periods/next", a.action(a.cloneNextAnnualStatementPeriod))
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
+	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/prepayments", a.action(a.saveAnnualStatementPrepayment))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/suggest", a.action(a.suggestAnnualStatementReceipt))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/confirm", a.action(a.confirmAnnualStatementReceiptSuggestion))
@@ -1251,6 +1254,8 @@ type requestRepositories struct {
 	annualStatementPeriods   store.AnnualStatementPeriodRepository
 	annualStatementAkontos   store.AnnualStatementPrepaymentRepository
 	annualStatementReceipts  store.AnnualStatementReceiptRepository
+	annualConsumption        store.AnnualStatementConsumptionRepository
+	annualStatementRuns      store.AnnualStatementRunRepository
 	announcementReads        store.AnnouncementReadRepository
 	announcements            store.AnnouncementRepository
 	attachments              store.AttachmentRepository
@@ -1285,6 +1290,12 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.annualStatementAkontos != nil {
 		repositories.annualStatementAkontos, _ = store.BindAnnualStatementPrepaymentRepository(a.annualStatementAkontos, tenant)
+	}
+	if a.annualStatementRuns != nil {
+		repositories.annualStatementRuns, _ = store.BindAnnualStatementRunRepository(a.annualStatementRuns, tenant)
+	}
+	if a.annualConsumption != nil {
+		repositories.annualConsumption, _ = store.BindAnnualStatementConsumptionRepository(a.annualConsumption, tenant)
 	}
 	if a.annualStatementReceipts != nil {
 		repositories.annualStatementReceipts, _ = store.BindAnnualStatementReceiptRepository(a.annualStatementReceipts, tenant)
@@ -1970,6 +1981,8 @@ func newApp() (*app, error) {
 		annualStatementPeriods:   annualStatementPeriodBackend,
 		annualStatementAkontos:   annualStatementPrepaymentBackend,
 		annualStatementReceipts:  annualStatementReceiptBackend,
+		annualConsumption:        store.NewSQLAnnualStatementConsumptionStore(tenantDB),
+		annualStatementRuns:      store.NewSQLAnnualStatementRunStore(tenantDB, documentBackend),
 		unitStore:                unitBackend,
 		unitPaymentStore:         unitPaymentBackend,
 		issueStore:               issueBackend,

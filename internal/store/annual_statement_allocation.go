@@ -1,6 +1,10 @@
 package store
 
-import "sort"
+import (
+	"math"
+	"math/big"
+	"sort"
+)
 
 // AnnualStatementUnitShare is one unit's share of an allocation key. Basis is
 // the raw per-unit value the key reads (Miteigentumsanteil, m² hundredths,
@@ -50,7 +54,7 @@ func AllocationBasis(key string, item Unit) (int, bool) {
 	case AllocationKeyPersonen:
 		return item.Persons, item.PersonsRecorded && item.Persons >= 0
 	default:
-		// Verbrauch has no source until HAUSV-578 wires measured values.
+		// Consumption is supplied separately as period-bound meter evidence.
 		return 0, false
 	}
 }
@@ -104,20 +108,25 @@ func AnnualStatementAllocationPreviews(costTypes []AnnualStatementCostType, unit
 		sort.Strings(costTypeKeys)
 		preview := AnnualStatementAllocationPreview{Key: key, CostTypeKeys: costTypeKeys}
 		total := 0
+		overflow := false
 		for _, item := range units {
 			basis, mapped := AllocationBasis(key, item)
 			share := AnnualStatementUnitShare{UnitID: item.ID, Label: item.Label, Basis: basis, Mapped: mapped}
 			if !mapped {
 				preview.UnmappedUnits = append(preview.UnmappedUnits, item.Label)
 			} else {
-				total += basis
+				if basis > math.MaxInt-total {
+					overflow = true
+				} else {
+					total += basis
+				}
 			}
 			preview.Shares = append(preview.Shares, share)
 		}
 		preview.BasisTotal = total
 		// A key whose mapped bases sum to zero (every unit recorded 0 persons)
 		// has nothing to split; treat it as blocked rather than divide by zero.
-		preview.Blocked = len(units) == 0 || len(preview.UnmappedUnits) > 0 || total <= 0
+		preview.Blocked = overflow || len(units) == 0 || len(preview.UnmappedUnits) > 0 || total <= 0
 		if !preview.Blocked {
 			distributePPM(preview.Shares, total)
 		}
@@ -136,10 +145,12 @@ func distributePPM(shares []AnnualStatementUnitShare, total int) {
 	remainders := make([]struct{ index, remainder int }, 0, len(shares))
 	assigned := 0
 	for index := range shares {
-		scaled := shares[index].Basis * million
-		shares[index].SharePPM = scaled / total
+		scaled := new(big.Int).Mul(big.NewInt(int64(shares[index].Basis)), big.NewInt(million))
+		quotient, rest := new(big.Int), new(big.Int)
+		quotient.QuoRem(scaled, big.NewInt(int64(total)), rest)
+		shares[index].SharePPM = int(quotient.Int64())
 		assigned += shares[index].SharePPM
-		remainders = append(remainders, struct{ index, remainder int }{index, scaled % total})
+		remainders = append(remainders, struct{ index, remainder int }{index, int(rest.Int64())})
 	}
 	sort.SliceStable(remainders, func(i, j int) bool { return remainders[i].remainder > remainders[j].remainder })
 	for step := 0; step < million-assigned && step < len(remainders); step++ {

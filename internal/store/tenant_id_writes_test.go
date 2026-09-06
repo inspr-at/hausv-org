@@ -174,7 +174,7 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("issue: %v", err)
 	}
 	units, _ := BindUnitRepository(NewSQLUnitStore(lanes), tenant)
-	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err != nil {
+	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1", MiteigentumsanteilPPM: 1000000}}); err != nil {
 		t.Fatalf("units: %v", err)
 	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
@@ -220,6 +220,10 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		InvoiceDate: "2026-06-30", CreatedAt: now, CreatedBy: "a@example.com",
 	}); err != nil {
 		t.Fatalf("annual statement receipt: %v", err)
+	}
+	runs, _ := BindAnnualStatementRunRepository(NewSQLAnnualStatementRunStore(lanes, NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs"))), tenant)
+	if _, err := runs.Create(2026, "a@example.com", now); err != nil {
+		t.Fatalf("annual statement run: %v", err)
 	}
 	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, filepath.Join(fileDir, "att")), tenant)
 	if _, err := attachments.CreateUploaded("issue", "i1", "a@example.com",

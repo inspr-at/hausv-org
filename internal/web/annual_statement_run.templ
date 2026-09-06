@@ -1,0 +1,92 @@
+package web
+
+import "strconv"
+import "net/url"
+
+type AnnualStatementRunView struct {
+	Year      int
+	Ready     bool
+	Issues    []string
+	Message   string
+	MessageOK bool
+	ID        string
+	Revision  int
+	CreatedAt string
+	CreatedBy string
+	Total     string
+	Excluded  string
+	Units     []AnnualStatementRunUnitView
+	History   []AnnualStatementRunLinkView
+}
+type AnnualStatementRunLinkView struct {
+	ID       string
+	Label    string
+	Selected bool
+}
+type AnnualStatementRunUnitView struct {
+	Label     string
+	Allocated string
+	Prepaid   string
+	Balance   string
+	Costs     []AnnualStatementRunCostView
+}
+type AnnualStatementRunCostView struct {
+	Name   string
+	Key    string
+	Share  string
+	Amount string
+}
+
+templ AnnualStatementRunPanel(data AnnualStatementRunView) {
+	<section class="panel workspace" id="abrechnungslauf">
+		<header class="workspace-head">
+			<div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>
+			if data.Ready {
+				<span class="scope personal">Bereit zur Berechnung</span>
+			} else {
+				<span class="scope management">Abrechnungslauf gesperrt</span>
+			}
+		</header>
+		@SettingsFlash(data.Message, data.MessageOK)
+		<p>Der Lauf speichert Kostenanteile, Akontos und Salden gemeinsam mit den verwendeten Grundlagen. Er ist eine rechnerische Arbeitsfassung auf Ihren Einstellungen; eine rechtliche Prüfung nach WEG/MRG ist damit nicht verbunden.</p>
+		if len(data.Issues)>0 {
+			<div class="notice" role="status">
+				<strong>Bitte vor der Berechnung ergänzen:</strong>
+				<ul>
+					for _,issue:=range data.Issues {
+						<li>{ issue }</li>
+					}
+				</ul>
+			</div>
+		}
+		<form method="post" action="/app/settings/annual-statement/runs"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button primary" type="submit" disabled?={ !data.Ready }>Für alle Einheiten berechnen</button></form>
+		if len(data.History)>0 {
+			<header class="subhead"><div><h3>Gespeicherte Läufe</h3><p>Jeder Lauf hält seinen damaligen Stand fest. Nach Korrekturen können Sie einen weiteren Lauf berechnen.</p></div></header>
+			<nav class="settings-links" aria-label="Abrechnungsläufe">
+				for _,run:=range data.History {
+					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungslauf") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
+				}
+			</nav>
+		}
+		if data.ID!="" {
+			<article data-annual-statement-run={ data.ID }>
+				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p><small>Kennung: { data.ID }</small></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
+				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
+				<div class="unit-list">
+					for _,unit:=range data.Units {
+						<article class="inline-details">
+							<header class="subhead"><h4>{ unit.Label }</h4></header>
+							<div class="form-grid"><label>Kostenanteil<span class="readonly">{ unit.Allocated }</span></label><label>Akonto<span class="readonly">{ unit.Prepaid }</span></label><label>Saldo<span class="readonly"><strong>{ unit.Balance }</strong></span></label></div>
+							<details>
+								<summary>Kostenarten und Anteile</summary>
+								for _,cost:=range unit.Costs {
+									<div class="allocation-row"><strong>{ cost.Name }</strong><span>{ cost.Key }</span><span>{ cost.Share }</span><strong>{ cost.Amount }</strong></div>
+								}
+							</details>
+						</article>
+					}
+				</div>
+			</article>
+		}
+	</section>
+}

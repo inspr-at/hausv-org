@@ -48,12 +48,14 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	}
 	startsOn, endsOn := "", ""
 	selectedPeriodFound := false
+	var selectedPeriod store.AnnualStatementPeriod
 	followup := web.AnnualStatementFollowupView{}
 	periodViews := make([]web.AnnualStatementPeriodView, 0, len(periods))
 	for _, period := range periods {
 		selected := period.Year == selectedYear
 		if selected {
 			selectedPeriodFound = true
+			selectedPeriod = period
 			startsOn, endsOn = period.StartsOn, period.EndsOn
 			if next, nextOK := annualStatementFollowupPeriod(period, actorEmail); nextOK {
 				followup = web.AnnualStatementFollowupView{
@@ -99,7 +101,8 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			RenterSummary: annualStatementPartySummary(unit.RenterEmails, "Kein Mietverhältnis hinterlegt"),
 		})
 	}
-	allocation := annualStatementAllocationView(costTypes, units)
+	consumption := annualStatementConsumption(ac.repositories.annualConsumption, selectedPeriod, units, costTypes)
+	allocation := annualStatementAllocationView(costTypes, units, consumption)
 	basesMsg, basesOK := annualStatementBasesMessage(r.URL.Query().Get("bases"))
 	periodMsg, periodOK := annualStatementPeriodMessage(r.URL.Query().Get("period"))
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
@@ -107,15 +110,13 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	receiptDocuments := []web.AnnualStatementReceiptDocumentView{}
 	documentByID := map[string]store.DocumentRecord{}
 	if ac.repositories.documents != nil {
-		for _, document := range ac.repositories.documents.ListCurrent() {
-			documentByID[document.ID] = document
-		}
 		usedDocuments := map[string]bool{}
 		for _, receipt := range ac.repositories.annualStatementReceipts.List() {
 			usedDocuments[receipt.DocumentID] = true
 		}
-		for _, document := range ac.repositories.documents.ListCurrent() {
-			if annualStatementReceiptContentTypeSupported(document.ContentType) && !usedDocuments[document.ID] {
+		for _, document := range ac.repositories.documents.List() {
+			documentByID[document.ID] = document
+			if document.Current && annualStatementReceiptContentTypeSupported(document.ContentType) && !usedDocuments[document.ID] {
 				receiptDocuments = append(receiptDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: document.Title + " · " + document.Filename})
 			}
 		}
@@ -132,10 +133,6 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			documentTitle := "Dokument " + receipt.DocumentID
 			if document, found := documentByID[receipt.DocumentID]; found {
 				documentTitle = document.Title + " · " + document.Filename
-			} else if ac.repositories.documents != nil {
-				if document, found := ac.repositories.documents.Get(receipt.DocumentID); found {
-					documentTitle = document.Title + " · " + document.Filename
-				}
 			}
 			invoiceDate := receipt.InvoiceDate
 			if parsed, err := time.Parse("2006-01-02", receipt.InvoiceDate); err == nil {
@@ -192,7 +189,8 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		ReceiptSuggestion: receiptSuggestion, HasReceiptSuggestion: receiptSuggestion.DocumentID != "",
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
-		Allocation: allocation, BasesMsg: basesMsg, BasesOK: basesOK,
+		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
+		Run:         annualStatementRunView(ac.repositories.annualStatementRuns, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors),
 		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
 	}))
 }
@@ -566,7 +564,7 @@ func annualStatementUnitsWithPeriodBases(units []store.Unit, bases []store.Annua
 	return out
 }
 
-func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit) web.AnnualStatementAllocationView {
+func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit, consumptionData annualStatementConsumptionData) web.AnnualStatementAllocationView {
 	names := map[string]string{}
 	for _, costType := range costTypes {
 		names[costType.Key] = costType.Name
@@ -584,6 +582,9 @@ func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, un
 	}
 	out.KeylessCostTypes = strings.Join(keylessNames, ", ")
 	for _, preview := range store.AnnualStatementAllocationPreviews(costTypes, units) {
+		if preview.Key == store.AllocationKeyVerbrauch {
+			continue
+		}
 		previewView := web.AnnualStatementAllocationPreviewView{
 			Key: preview.Key, Label: annualStatementAllocationKeyLabel(preview.Key), Blocked: preview.Blocked,
 			UnmappedUnits: strings.Join(preview.UnmappedUnits, ", "), Sourceless: preview.Key == store.AllocationKeyVerbrauch,
@@ -606,7 +607,13 @@ func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, un
 			out.BlockedCount++
 		}
 	}
-	out.RunReady = len(out.Previews) > 0 && !store.AnnualStatementRunBlocked(costTypes, units)
+	for _, preview := range annualStatementConsumptionAllocationViews(costTypes, units, consumptionData) {
+		out.Previews = append(out.Previews, preview)
+		if preview.Blocked {
+			out.BlockedCount++
+		}
+	}
+	out.RunReady = len(out.Previews) > 0 && out.BlockedCount == 0 && out.KeylessCostTypes == ""
 	return out
 }
 

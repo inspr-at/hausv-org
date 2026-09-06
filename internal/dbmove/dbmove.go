@@ -96,6 +96,7 @@ var TableOrder = []string{
 	"annual_statement_period_unit_bases",
 	"annual_statement_prepayments",
 	"annual_statement_receipts",
+	"annual_statement_runs",
 	"unit_payment_status",
 	"contacts",
 	"announcement_reads",
@@ -486,7 +487,14 @@ func Move(ctx context.Context, source *sql.DB, lane db.Handle, opts Options) (*R
 		}
 		fmt.Fprintf(out, "--force: wiping %d governed tables inside the load transaction\n", len(tables))
 		for i := len(tables) - 1; i >= 0; i-- {
-			if _, err := tx.ExecContext(ctx, `DELETE FROM `+quoteIdent(tables[i].name)); err != nil {
+			wipe := `DELETE FROM ` + quoteIdent(tables[i].name)
+			if tables[i].name == "annual_statement_runs" {
+				// Row-level changes are forbidden for immutable runs. Only this
+				// explicit full-target replacement clears the table as a whole;
+				// TRUNCATE stays inside the load transaction and uses no CASCADE.
+				wipe = `TRUNCATE TABLE ` + quoteIdent(tables[i].name)
+			}
+			if _, err := tx.ExecContext(ctx, wipe); err != nil {
 				return report, fmt.Errorf("dbmove: wipe target %s: %w", tables[i].name, err)
 			}
 		}

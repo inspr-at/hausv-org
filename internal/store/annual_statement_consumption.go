@@ -76,6 +76,7 @@ type AnnualStatementConsumptionVector struct {
 
 type AnnualStatementConsumptionRepository interface {
 	Append(evidence AnnualStatementConsumptionEvidence) (stored AnnualStatementConsumptionEvidence, inserted bool, err error)
+	ConsumptionReport(period AnnualStatementPeriod, costTypeKey string, expectedUnitIDs []string, location *time.Location) (AnnualStatementConsumptionReport, error)
 	ConsumptionVector(period AnnualStatementPeriod, costTypeKey string, expectedUnitIDs []string, location *time.Location) (AnnualStatementConsumptionVector, error)
 }
 
@@ -107,16 +108,26 @@ func (r *boundAnnualStatementConsumptionRepository) Append(evidence AnnualStatem
 }
 
 func (r *boundAnnualStatementConsumptionRepository) ConsumptionVector(period AnnualStatementPeriod, costTypeKey string, expectedUnitIDs []string, location *time.Location) (AnnualStatementConsumptionVector, error) {
+	report, err := r.ConsumptionReport(period, costTypeKey, expectedUnitIDs, location)
+	return report.Vector, err
+}
+
+func (r *boundAnnualStatementConsumptionRepository) ConsumptionReport(period AnnualStatementPeriod, costTypeKey string, expectedUnitIDs []string, location *time.Location) (AnnualStatementConsumptionReport, error) {
 	costTypeKey = strings.ToLower(strings.TrimSpace(costTypeKey))
-	start, endExclusive, expected, err := annualStatementConsumptionQuery(period, costTypeKey, expectedUnitIDs, location)
+	start, end, expected, err := annualStatementConsumptionQuery(period, costTypeKey, expectedUnitIDs, location)
 	if err != nil {
-		return AnnualStatementConsumptionVector{}, err
+		return AnnualStatementConsumptionReport{}, err
 	}
-	evidence, err := r.storage.listAnnualStatementConsumption(r.tenant, costTypeKey, start, endExclusive)
+	if reporter, ok := r.storage.(interface {
+		reportAnnualStatementConsumption(TenantRef, int, string, []string, time.Time, time.Time) (AnnualStatementConsumptionReport, error)
+	}); ok {
+		return reporter.reportAnnualStatementConsumption(r.tenant, period.Year, costTypeKey, expected, start, end)
+	}
+	evidence, err := r.storage.listAnnualStatementConsumption(r.tenant, costTypeKey, start, end)
 	if err != nil {
-		return AnnualStatementConsumptionVector{}, err
+		return AnnualStatementConsumptionReport{}, err
 	}
-	return buildAnnualStatementConsumptionVector(period.Year, costTypeKey, expected, start, endExclusive, evidence), nil
+	return buildAnnualStatementConsumptionReport(period.Year, costTypeKey, expected, start, end, evidence), nil
 }
 
 func annualStatementConsumptionQuery(period AnnualStatementPeriod, costTypeKey string, expectedUnitIDs []string, location *time.Location) (time.Time, time.Time, []string, error) {
@@ -147,83 +158,7 @@ func annualStatementConsumptionQuery(period AnnualStatementPeriod, costTypeKey s
 }
 
 func buildAnnualStatementConsumptionVector(periodYear int, costTypeKey string, expected []string, start, endExclusive time.Time, evidence []AnnualStatementConsumptionEvidence) AnnualStatementConsumptionVector {
-	vector := AnnualStatementConsumptionVector{PeriodYear: periodYear, CostTypeKey: costTypeKey}
-	byUnit := map[string][]AnnualStatementConsumptionEvidence{}
-	for _, item := range evidence {
-		byUnit[item.UnitID] = append(byUnit[item.UnitID], item)
-	}
-	for _, unitID := range expected {
-		items := byUnit[unitID]
-		if len(items) == 0 {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapMissingSourceMapping})
-			continue
-		}
-		sources := map[string]bool{}
-		units := map[string]bool{}
-		for _, item := range items {
-			sources[item.SourceKind+"\x00"+item.SourceID] = true
-			units[item.MeasurementUnit] = true
-		}
-		if len(sources) != 1 {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapAmbiguousSource})
-			continue
-		}
-		if len(units) != 1 || units[""] {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapAmbiguousMeasurementUnit})
-			continue
-		}
-		sort.Slice(items, func(i, j int) bool {
-			if items[i].MeasuredAt.Equal(items[j].MeasuredAt) {
-				return items[i].SourceKey < items[j].SourceKey
-			}
-			return items[i].MeasuredAt.Before(items[j].MeasuredAt)
-		})
-		startIndex, endIndex := -1, -1
-		reset := false
-		for index, item := range items {
-			if item.MeasuredAt.Equal(start) {
-				startIndex = index
-			}
-			if item.MeasuredAt.Equal(endExclusive) {
-				endIndex = index
-			}
-			if index > 0 && item.ValueMicros < items[index-1].ValueMicros {
-				reset = true
-			}
-		}
-		if startIndex < 0 {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapMissingStartEvidence})
-			continue
-		}
-		if endIndex < 0 {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapMissingEndEvidence})
-			continue
-		}
-		if reset || items[endIndex].ValueMicros < items[startIndex].ValueMicros {
-			vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapCounterReset})
-			continue
-		}
-		vector.Units = append(vector.Units, AnnualStatementUnitConsumption{
-			UnitID: unitID, ValueMicros: items[endIndex].ValueMicros - items[startIndex].ValueMicros,
-			MeasurementUnit: items[startIndex].MeasurementUnit,
-		})
-	}
-	if len(vector.Gaps) == 0 {
-		measurementUnits := map[string]bool{}
-		for _, unit := range vector.Units {
-			measurementUnits[unit.MeasurementUnit] = true
-		}
-		if len(measurementUnits) != 1 {
-			vector.Gaps = make([]AnnualStatementConsumptionGap, 0, len(expected))
-			for _, unitID := range expected {
-				vector.Gaps = append(vector.Gaps, AnnualStatementConsumptionGap{UnitID: unitID, Reason: ConsumptionGapAmbiguousMeasurementUnit})
-			}
-		}
-	}
-	if len(vector.Gaps) > 0 {
-		vector.Units = nil
-	}
-	return vector
+	return buildAnnualStatementConsumptionReport(periodYear, costTypeKey, expected, start, endExclusive, evidence).Vector
 }
 
 type MemoryAnnualStatementConsumptionStore struct {
