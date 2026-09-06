@@ -92,7 +92,8 @@ release before swapping; production stays on the previous image.
 
 **PostgreSQL in the recovery point (HAUSV-562):** `pg_dump -U <user>
 --format=custom` runs inside the database container over its local socket, so
-no credential leaves the host. The archive is listed with `pg_restore --list`
+no credential leaves the host; on csb1 the user is the read-only `BYPASSRLS`
+backup role, never the superuser (HAUSV-635). The archive is listed with `pg_restore --list`
 inside that container (the `TABLE DATA` count is the restorability witness),
 then streamed byte-exact into the snapshot command, which verifies the
 announced length and the `PGDMP` header and records the SHA-256 in
@@ -161,10 +162,11 @@ HAUSV_DEPLOY_SNAPSHOT_ROOT=/var/backups/hausv-predeploy
 # database into the recovery point. "none" would declare a SQLite-only host.
 HAUSV_DEPLOY_POSTGRES_CONTAINER=hausv-postgres
 HAUSV_DEPLOY_POSTGRES_DB=hausv
-# The role pg_dump connects as over the container's local socket. The
-# superuser sees every row despite FORCE ROW LEVEL SECURITY; a dedicated
-# BYPASSRLS backup role (HAUSV-559) can replace it here without code changes.
-HAUSV_DEPLOY_POSTGRES_USER=postgres
+# The role pg_dump connects as over the container's local socket: the
+# read-only backup role with BYPASSRLS (HAUSV-559), which sees every row
+# despite FORCE ROW LEVEL SECURITY without being a superuser. The scripts
+# default to postgres only for hosts that have no such role.
+HAUSV_DEPLOY_POSTGRES_USER=hausv_backup
 # The live tenant is jhw22. https://hausv.org/demo/ returns 404.
 HAUSV_DEPLOY_LIVE_URL=https://hausv.org/jhw22/
 HAUSV_DEPLOY_HEALTH_URL=https://hausv.org/healthz
