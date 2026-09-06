@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.7.1] - 2026-09-06
+
+### Stabilität verbessert
+
+- Anmeldung: Der Demo-Zugang zeigt den Weiter-Link auch dann, wenn der Postausgang als Datei konfiguriert ist; Anmeldelinks landen nie in einem Postausgang, den niemand liest.
+
 ## [1.7.0] - 2026-09-06
 
 ### Neu

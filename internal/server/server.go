@@ -1587,7 +1587,7 @@ func newApp() (*app, error) {
 	}
 	// The demo login (HAUSV-609) is the third public login path: fixture-only
 	// instances behind an access code, never real data.
-	if publicURL && !mailTransport.Configured() && !oidcLogin.Configured() && !demoLogin {
+	if publicURL && !mailTransport.Delivers() && !oidcLogin.Configured() && !demoLogin {
 		return nil, fmt.Errorf("SMTP, OIDC or demo login is required when BASE_URL is public")
 	}
 

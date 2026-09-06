@@ -140,6 +140,8 @@ func (m *recordingMailer) SendInvite(to string, _ string, _ string) error {
 	return nil
 }
 func (m *recordingMailer) Configured() bool { return true }
+
+func (m *recordingMailer) Delivers() bool { return m.Configured() }
 func (m *recordingMailer) SendNotification(to string, subject string, body string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

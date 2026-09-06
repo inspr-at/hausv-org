@@ -1,9 +1,11 @@
 package server
 
 import (
+	"github.com/inspr-at/hausv-org/internal/mail"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
@@ -55,5 +57,41 @@ func TestDemoLoginRendersDevLinkOnlyWithAccessCode(t *testing.T) {
 	a.handler().ServeHTTP(home, httptest.NewRequest(http.MethodGet, "http://hausv.org/demo/", nil))
 	if !strings.Contains(home.Body.String(), `name="access_code"`) {
 		t.Fatalf("login form must ask for the access code when demo login is enabled")
+	}
+}
+
+// HAUSV-643: a file outbox makes the mailer "configured" for statement
+// delivery, but nobody reads those files — the demo login must still show
+// the direct link instead of stranding the person.
+func TestDemoLoginRendersDevLinkWithOutboxMailer(t *testing.T) {
+	const email = "manager@example.com"
+	a := newTestPortalApp(t, userProfile{
+		Email: email, FirstName: "Vera", LastName: "Verwaltung", Role: roleManager,
+		Tenants: []string{"demo"}, TenantMemberships: map[string]tenantMembership{"demo": {Role: roleManager}},
+		AuthMethods: defaultAuthMethods(),
+	})
+	a.localDevLogin = false
+	a.demoLogin = true
+	a.demoLoginCode = "musterstadt-2026"
+	outbox := t.TempDir()
+	a.mailer = mail.NewSMTP("", "587", "", "", "hausv <noreply@example.invalid>").WithOutbox(outbox)
+	if !a.mailer.Configured() || a.mailer.Delivers() {
+		t.Fatalf("outbox mailer must be configured but not delivering")
+	}
+	values := url.Values{"email": {email}, "access_code": {"musterstadt-2026"}}
+	req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/auth/request", strings.NewReader(values.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "http://hausv.org")
+	rr := httptest.NewRecorder()
+	a.handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `class="dev-link"`) {
+		t.Fatalf("demo login with outbox mailer: status=%d, dev link missing", rr.Code)
+	}
+	entries, err := os.ReadDir(outbox)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("login link must not be written to the outbox, found %d files", len(entries))
 	}
 }

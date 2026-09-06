@@ -76,7 +76,7 @@ func (a *app) requestHomeStart(w http.ResponseWriter, r *http.Request) {
 	}
 	if !validHomeStartName(r.FormValue("household_name")) || !a.homePathReservableBy(slug, email) ||
 		r.FormValue("authority") != "1" || !validHomeStartEmail(email) || a.homeReservations == nil ||
-		a.homeSetupTokens == nil || a.homeSetupSessions == nil || a.mailer == nil || !a.mailer.Configured() {
+		a.homeSetupTokens == nil || a.homeSetupSessions == nil || a.mailer == nil || !a.mailer.Delivers() {
 		http.Redirect(w, r, "/start?sent=1", http.StatusSeeOther)
 		return
 	}

@@ -31,7 +31,12 @@ type Mailer interface {
 	SendMagicLink(to string, link string, address string) error
 	SendInvite(to string, loginURL string, address string) error
 	SendNotification(to string, subject string, body string) error
+	// Configured reports whether messages can be produced at all (SMTP or the
+	// file outbox). Delivers reports whether a message reaches its recipient:
+	// only real SMTP does; the outbox is a test sink, so login links and
+	// setup tokens must not rely on it (HAUSV-643).
 	Configured() bool
+	Delivers() bool
 }
 
 // NewSMTP builds the SMTP transport. The fields stay unexported so the mailer
@@ -97,6 +102,12 @@ func (event PortalNotification) Body() string {
 
 func (m SmtpMailer) Configured() bool {
 	return m.outboxDir != "" || (m.host != "" && m.port != "" && m.from != "")
+}
+
+// Delivers is true only for a real SMTP transport: an outbox writes files
+// nobody reads, so a login link sent there would strand the person.
+func (m SmtpMailer) Delivers() bool {
+	return m.outboxDir == "" && m.host != "" && m.port != "" && m.from != ""
 }
 
 func (m SmtpMailer) Validate() error {

@@ -49,6 +49,8 @@ func (m *gatedMagicLinkMailer) Configured() bool {
 	return true
 }
 
+func (m *gatedMagicLinkMailer) Delivers() bool { return m.Configured() }
+
 func (m *gatedMagicLinkMailer) sentLinks() []sentMagicLink {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -74,6 +76,8 @@ func (failingMagicLinkMailer) SendNotification(string, string, string) error {
 func (failingMagicLinkMailer) Configured() bool {
 	return true
 }
+
+func (m failingMagicLinkMailer) Delivers() bool { return m.Configured() }
 
 type contextBlockedMagicLinkMailer struct {
 	started  chan struct{}
@@ -110,6 +114,8 @@ func (*contextBlockedMagicLinkMailer) SendNotification(string, string, string) e
 func (*contextBlockedMagicLinkMailer) Configured() bool {
 	return true
 }
+
+func (m *contextBlockedMagicLinkMailer) Delivers() bool { return m.Configured() }
 
 func TestMagicLinkRequestDoesNotWaitForSlowMailer(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{
