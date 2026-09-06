@@ -6,7 +6,7 @@ Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache ge
 
 ### Stabilität verbessert
 
-- Jahresabrechnung: Einheiten erscheinen auf der Lauf-Seite und im Gesamt-PDF in der Reihenfolge des Gebäude-Registers (Top 1, Top 2 … Top 10, danach Stellplätze).
+- Jahresabrechnung: Einheiten erscheinen auf der Lauf-Seite und im Gesamt-PDF in der Reihenfolge des Gebäude-Registers (Wohnungen nach Nummer, danach Stellplätze).
 
 ## [1.5.0] - 2026-09-06
 

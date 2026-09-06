@@ -95,7 +95,7 @@ func Notes() []Note {
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",
 			Headline: "Einheiten stehen in der Jahresabrechnung in der Reihenfolge des Registers.",
-			Intro:    "Auf der Lauf-Seite und im Gesamt-PDF folgen die Einheiten der natürlichen Reihenfolge — Top 1, Top 2 bis Top 10, danach die Stellplätze — statt der Sortierung nach Kennung.",
+			Intro:    "Auf der Lauf-Seite und im Gesamt-PDF folgen die Einheiten der natürlichen Reihenfolge des Registers — Wohnungen nach Nummer, danach die Stellplätze — statt der Sortierung nach Kennung.",
 			Items:    []NoteItem{{Label: "Jahresabrechnung", Text: "Die Berechnung und gespeicherte Läufe bleiben unverändert; nur die Darstellung sortiert."}},
 		},
 		{
