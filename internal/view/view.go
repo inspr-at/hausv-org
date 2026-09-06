@@ -1447,7 +1447,7 @@ func AuditActionLabel(action string) string {
 	case store.AuditActionVerwaltungSettings:
 		return "Verwaltungseinstellungen geändert"
 	case store.AuditActionDemoReset:
-		return "Demo zurückgesetzt"
+		return "Demodaten initialisiert"
 	case store.AuditActionTextbausteinChanged:
 		return "Textbaustein geändert"
 	case store.AuditActionRolePreviewStart:
