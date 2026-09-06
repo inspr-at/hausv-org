@@ -91,6 +91,16 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.3.4",
+			Date:     "6. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Wiederherstellungspunkt vor Datenbank-Updates umfasst jetzt auch PostgreSQL.",
+			Intro:    "Vor einem Datenbank-Update sichert die Auslieferung die PostgreSQL-Datenbank in denselben Wiederherstellungspunkt wie Dateien und Anhänge; ein fehlgeschlagener Sicherungsschritt hält das Release an, bevor sich etwas ändert.",
+			Items: []NoteItem{
+				{Label: "Auslieferung", Text: "Der Sicherungsschritt läuft bei angehaltenem Dienst, prüft das Archiv auf Wiederherstellbarkeit und legt es schreibgeschützt neben die Dateisicherung."},
+			},
+		},
+		{
 			Version:  "1.3.3",
 			Date:     "5. September 2026",
 			Kind:     "Stabilität",

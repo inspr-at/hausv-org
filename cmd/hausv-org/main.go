@@ -102,7 +102,7 @@ func main() {
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "predeploy-snapshot" {
-		if err := runPredeploySnapshot(os.Args[2:], os.Stdout, os.Stderr); err != nil {
+		if err := runPredeploySnapshot(os.Args[2:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 			slog.Error("pre-deploy snapshot failed", "error", err)
 			os.Exit(1)
 		}

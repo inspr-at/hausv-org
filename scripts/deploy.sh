@@ -101,9 +101,12 @@ print_rollback() {
     if [ "$1" = 1 ]; then
         containment_body="$6 stop -t 30 $7"
         echo "data/schema restore required: do NOT run an image-only rollback against a possibly migrated database."
-        echo "restore source: $8 (root-only, pre-deploy SQLite + blobs)."
+        echo "restore source: $8 (root-only, pre-deploy $recovery_scope)."
         echo "locked schema recovery shell: $(printable_locked_recovery_ssh "$4" "$3")"
         echo "inside that same locked shell, containment command: $containment_body"
+        if [ -n "$postgres_container" ]; then
+            echo "inside that same locked shell, PostgreSQL restore (service stopped): docker exec -i $postgres_container pg_restore -U $postgres_user --clean --if-exists --exit-on-error -d $postgres_db < $8/postgres.pgdump"
+        fi
         # shellcheck disable=SC1111 # German typographic quotes, intentional
         echo "restore procedure: hausv-org docs/production-deploy.md → “Schema rollback procedure”; keep the locked shell open through verification, data replacement and recreation."
         echo "inside that same locked shell after the matching data restore: $image_body"
@@ -147,15 +150,15 @@ required_deploy_env() {
     printf '%s' "$value"
 }
 
-ssh_host=$(required_deploy_env HAUSV_DEPLOY_SSH_HOST)
+ssh_host=$(required_deploy_env HAUSV_DEPLOY_SSH_HOST) || exit 1
 ssh_port=${HAUSV_DEPLOY_SSH_PORT:-22}
 github_repo=inspr-at/hausv-org
 workflow=CI
 image=${HAUSV_DEPLOY_IMAGE:-ghcr.io/inspr-at/hausv-org:latest}
 case $image in *:latest) ;; *) fail_before_change "HAUSV_DEPLOY_IMAGE must end in :latest" ;; esac
 image_repo=${image%:latest}
-compose_dir=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_DIR)
-compose_file=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_FILE)
+compose_dir=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_DIR) || exit 1
+compose_file=$(required_deploy_env HAUSV_DEPLOY_COMPOSE_FILE) || exit 1
 compose_project=${HAUSV_DEPLOY_COMPOSE_PROJECT:-hausv}
 compose_lock=${HAUSV_DEPLOY_COMPOSE_LOCK:-/run/lock/hausv-compose.lock}
 compose_lock_dir=${compose_lock%/*}
@@ -168,9 +171,9 @@ container=${HAUSV_DEPLOY_CONTAINER:-$service}
 case $container in
     ""|*[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_CONTAINER must be a valid Docker container name" ;;
 esac
-data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR)
-snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT)
-live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL)
+data_dir=$(required_deploy_env HAUSV_DEPLOY_DATA_DIR) || exit 1
+snapshot_root=$(required_deploy_env HAUSV_DEPLOY_SNAPSHOT_ROOT) || exit 1
+live_url=$(required_deploy_env HAUSV_DEPLOY_LIVE_URL) || exit 1
 health_url=${HAUSV_DEPLOY_HEALTH_URL:-${live_url%/}/healthz}
 verify_attempts=15
 verify_sleep=2
@@ -321,13 +324,43 @@ case $live_sha in
 esac
 
 schema_changed=0
-git diff --quiet "$live_sha" HEAD -- internal/db/migrations
+# Both migration series count: production migrates PostgreSQL, and a change
+# that only touches that series must take the recovery point too (HAUSV-562).
+git diff --quiet "$live_sha" HEAD -- internal/db/migrations internal/db/postgres/migrations
 schema_diff_status=$?
 case $schema_diff_status in
     0) ;;
     1) schema_changed=1 ;;
     *) fail_before_change "cannot determine whether database migrations changed" ;;
 esac
+
+# The recovery point is SQLite + blobs, plus a pg_dump of the production
+# database when the host runs PostgreSQL. Which of the two applies is stated by
+# the deployment environment, never guessed from the host (HAUSV-562).
+postgres_container=""
+postgres_user=""
+postgres_db=""
+recovery_scope="SQLite + blobs"
+postgres_helper_flags="--postgres-container none"
+if [ "$schema_changed" -eq 1 ]; then
+    postgres_container=$(required_deploy_env HAUSV_DEPLOY_POSTGRES_CONTAINER) || exit 1
+    case $postgres_container in
+        none) postgres_container="" ;;
+        *[!A-Za-z0-9_.-]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_CONTAINER must be a Docker container name or none" ;;
+    esac
+    if [ -n "$postgres_container" ]; then
+        postgres_user=${HAUSV_DEPLOY_POSTGRES_USER:-postgres}
+        postgres_db=${HAUSV_DEPLOY_POSTGRES_DB:-hausv}
+        case $postgres_user in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_USER must be a plain role name" ;;
+        esac
+        case $postgres_db in
+            ""|*[!A-Za-z0-9_]*) fail_before_change "HAUSV_DEPLOY_POSTGRES_DB must be a plain database name" ;;
+        esac
+        recovery_scope="SQLite + blobs + PostgreSQL dump"
+        postgres_helper_flags="--postgres-container $postgres_container --postgres-user $postgres_user --postgres-db $postgres_db"
+    fi
+fi
 
 previous_tag="$image_repo:prev-$live_version-$live_commit"
 # The live release's own tag names the same image :latest should name. When
@@ -344,6 +377,13 @@ live_release_tag="$image_repo:release-$live_version-$live_commit"
 sudo_probe=""
 if [ "$schema_changed" -eq 1 ]; then
     sudo_probe="sudo -n /run/current-system/sw/bin/python3 -c 'import sqlite3' >/dev/null;"
+    # A schema release also needs the database container it will dump:
+    # running and accepting connections, proven read-only before any change.
+    if [ -n "$postgres_container" ]; then
+        sudo_probe="$sudo_probe \
+    test \"\$(docker inspect --format '{{.State.Running}}' $postgres_container)\" = true; \
+    docker exec $postgres_container pg_isready -U $postgres_user -d $postgres_db >/dev/null;"
+    fi
 fi
 preflight_body="\
     locked_live_page=\"\$(curl -fsS --max-time 10 $live_url)\"; \
@@ -398,6 +438,7 @@ echo "CI evidence: $ci_url"
 echo "live now: $live_version ($live_commit), health ok"
 if [ "$schema_changed" -eq 1 ]; then
     echo "schema change: yes — a fresh consistent snapshot is mandatory before container replacement"
+    echo "recovery point: $recovery_scope"
 else
     echo "schema change: no"
 fi
@@ -405,7 +446,7 @@ fi
 if [ "$dry_run" -eq 1 ]; then
     echo "[dry-run] all fail-closed preconditions passed; production was not changed."
     if [ "$schema_changed" -eq 1 ]; then
-        echo "[dry-run] actual release will publish $snapshot_dir atomically before starting the new image."
+        echo "[dry-run] actual release will publish $snapshot_dir ($recovery_scope) atomically before starting the new image."
     fi
     exit 0
 fi
@@ -423,6 +464,7 @@ if [ "$schema_changed" -eq 1 ]; then
         --compose-file $compose_file \
         --compose-project $compose_project \
         --service $service \
+        $postgres_helper_flags \
         --source-version $live_version \
         --source-commit $live_sha \
         --target-version $app_version \
@@ -460,7 +502,16 @@ HAUSV_PREDEPLOY_PY"
         echo "recovery verified by the helper: the current production service is healthy; no new image or schema was activated." >&2
         exit 1
     fi
+    if [ -n "$postgres_container" ] && ! { [[ $snapshot_proof == *"postgres-dump=$snapshot_dir/postgres.pgdump"* ]] \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-bytes=[1-9][0-9]*$' \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-sha256=[0-9a-f]{64}$' \
+        && printf '%s\n' "$snapshot_proof" | grep -qE '^postgres-dump-tables=[1-9][0-9]*$'; }; then
+        echo "release refused: snapshot command returned incomplete PostgreSQL proof." >&2
+        echo "recovery verified by the helper: the current production service is healthy; no new image or schema was activated." >&2
+        exit 1
+    fi
     echo "pre-deploy recovery point: fresh, consistent and healthy ✓"
+    echo "recovery point scope: $recovery_scope"
 fi
 
 preserve_body="\
