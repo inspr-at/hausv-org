@@ -933,7 +933,9 @@ func parseAnnualStatementPartyCSV(raw []byte) ([]annualStatementPartyAssignment,
 		optional := func(key string) (string, bool) {
 			index, found := columns[key]
 			if !found || index >= len(row) {
-				return "", found
+				// A row shorter than its header has not stated the value: it
+				// must not clear what an earlier import recorded.
+				return "", false
 			}
 			return strings.TrimSpace(row[index]), true
 		}

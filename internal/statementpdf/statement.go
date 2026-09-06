@@ -268,7 +268,7 @@ func (d Document) Pages() []pdf.Page {
 		flush()
 	}
 	for i := range pages {
-		pages[i].Footer = append(pages[i].Footer, fmt.Sprintf("Einheit %s · Seite %d / %d", d.UnitID, i+1, len(pages)))
+		pages[i].Footer = append(pages[i].Footer, fmt.Sprintf("Einheit %s · Seite %d / %d", d.UnitLabel, i+1, len(pages)))
 	}
 	return pages
 }
