@@ -96,6 +96,7 @@ fixture() {
             HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
             HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
             HAUSV_DEPLOY_POSTGRES_CONTAINER="${DEPLOY_FIXTURE_POSTGRES-hausv-postgres}" \
+            HAUSV_DEPLOY_POSTGRES_USER=hausv_backup \
             HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
@@ -119,6 +120,7 @@ fixture() {
             HAUSV_DEPLOY_DATA_DIR="/var/lib/hausv" \
             HAUSV_DEPLOY_SNAPSHOT_ROOT="/var/backups/hausv-predeploy" \
             HAUSV_DEPLOY_POSTGRES_CONTAINER="${DEPLOY_FIXTURE_POSTGRES-hausv-postgres}" \
+            HAUSV_DEPLOY_POSTGRES_USER=hausv_backup \
             HAUSV_DEPLOY_LIVE_URL="https://portal.example.invalid/demo/" \
             HAUSV_DEPLOY_VERIFY_ATTEMPTS=1 \
             HAUSV_DEPLOY_VERIFY_SLEEP=0 \
@@ -289,6 +291,10 @@ if ! grep -qF -- "recovery point scope: SQLite + blobs + PostgreSQL dump" \
     || ! grep -qF -- "PostgreSQL restore (service stopped): docker exec -i hausv-postgres pg_restore -U postgres --clean --if-exists --exit-on-error -d hausv < /var/backups/hausv-predeploy/$fixture_app_version-aaaaaaa/postgres.pgdump" \
     "$deploy_fixture_root/schema_success/output.txt"; then
     echo "FAIL schema_success: PostgreSQL recovery scope or restore guidance missing" >&2
+    exit 1
+fi
+if grep -qF -- "pg_restore -U hausv_backup" "$deploy_fixture_root/schema_success/output.txt"; then
+    echo "FAIL schema_success: rollback guidance names the read-only dump role for the restore (HAUSV-638)" >&2
     exit 1
 fi
 # The database container is a required setting for a schema release; a host

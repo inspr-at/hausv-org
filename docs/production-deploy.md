@@ -167,6 +167,9 @@ HAUSV_DEPLOY_POSTGRES_DB=hausv
 # despite FORCE ROW LEVEL SECURITY without being a superuser. The scripts
 # default to postgres only for hosts that have no such role.
 HAUSV_DEPLOY_POSTGRES_USER=hausv_backup
+# Only for the printed rollback command: restoring drops, recreates and owns
+# objects, which the read-only dump role may not. Default postgres.
+HAUSV_DEPLOY_POSTGRES_RESTORE_USER=postgres
 # The live tenant is jhw22. https://hausv.org/demo/ returns 404.
 HAUSV_DEPLOY_LIVE_URL=https://hausv.org/jhw22/
 HAUSV_DEPLOY_HEALTH_URL=https://hausv.org/healthz
