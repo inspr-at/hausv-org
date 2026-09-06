@@ -321,7 +321,8 @@ func TestDenseIssueLocationsShareSpaceAndStayBounded(t *testing.T) {
 
 	for _, rule := range []string{
 		".issues-card table{table-layout:fixed}",
-		".issues-card th:nth-child(2),.issues-card td:nth-child(2),.issues-card th:nth-child(3),.issues-card td:nth-child(3){width:auto}",
+		".issues-card th:nth-child(2),.issues-card td:nth-child(2){width:auto}",
+		".issues-card th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
 		".place-text{display:-webkit-box;overflow:hidden;overflow-wrap:normal;word-break:normal;hyphens:auto;-webkit-box-orient:vertical;-webkit-line-clamp:2}",
 	} {
 		if !strings.Contains(html, rule) {

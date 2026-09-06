@@ -87,6 +87,24 @@ for (const [name, route] of ROUTES) {
         // Record the renderer marker so a route cannot silently evade the shell
         // assertions by returning unrelated or obsolete markup.
         templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),
+        // The Hausüberblick swaps its whole body at the breakpoint: the desktop
+        // grid gives way to .mobile-content. A shell rule that hides
+        // .mobile-content unconditionally (HAUSV-637) left the phone page blank
+        // below the hero on every role — and this probe green, because it only
+        // asked for the navigation. Below the breakpoint the phone body must be
+        // visible with real height, and above it it must stay hidden.
+        home: (() => {
+          const m = document.querySelector('.mobile-content');
+          if (!m) return null;
+          const d = document.querySelector('.portal-home-desktop');
+          return {
+            mobileShown: vis(m),
+            mobileHeight: Math.round(m.getBoundingClientRect().height),
+            desktopShown: vis(d),
+            scrollWidth: document.documentElement.scrollWidth,
+            innerWidth: window.innerWidth,
+          };
+        })(),
       };
     }, shown.toString());
     results.push({ route: name, width: w, ...state });
@@ -153,6 +171,23 @@ for (const w of WIDTHS) {
   if (wrongRenderer.length) {
     failures += wrongRenderer.length;
     console.log(`         wrong renderer: ${wrongRenderer.map((r) => r.route).join(', ')}`);
+  }
+
+  // The home body must follow the shell: phone body below the breakpoint, the
+  // desktop grid above it, never both, never neither — and no sideways scroll.
+  const homes = all.filter((r) => r.home);
+  const phoneShell = mob.length > 0 && desktop.length === 0;
+  const blankHome = homes.filter((r) => phoneShell
+    ? !(r.home.mobileShown && r.home.mobileHeight >= 200 && !r.home.desktopShown)
+    : !(r.home.desktopShown && !r.home.mobileShown));
+  const sideways = homes.filter((r) => r.home.scrollWidth > r.home.innerWidth);
+  if (blankHome.length) {
+    failures += blankHome.length;
+    console.log(`         home body does not match the ${phoneShell ? 'phone' : 'desktop'} shell: ${blankHome.map((r) => `${r.route} (mobile ${r.home.mobileShown ? r.home.mobileHeight + 'px' : 'hidden'}, desktop ${r.home.desktopShown ? 'shown' : 'hidden'})`).join(', ')}`);
+  }
+  if (sideways.length) {
+    failures += sideways.length;
+    console.log(`         home scrolls sideways: ${sideways.map((r) => `${r.route} (${r.home.scrollWidth} > ${r.home.innerWidth})`).join(', ')}`);
   }
 }
 

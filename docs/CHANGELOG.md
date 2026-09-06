@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.3.5] - 2026-09-06
+
+### Stabilität verbessert
+
+- Hausüberblick: Am Handy sind Anliegen, Termine und Aushang wieder vollständig sichtbar.
+- Darstellung: Die Vorschau-Leiste „Ansicht als“ und die Tabellen im Portfolio und im Hausüberblick passen sich schmalen Bildschirmen an, ohne Werte abzuschneiden.
+
 ## [1.3.4] - 2026-09-06
 
 ### Stabilität verbessert
