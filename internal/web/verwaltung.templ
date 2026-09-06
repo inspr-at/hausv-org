@@ -29,11 +29,18 @@ type VerwaltungHouse struct {
 }
 
 func PortalVerwaltungPage(shell VerwaltungShell, title string, body templ.Component) templ.Component {
-	return portalVerwaltungPage(shell, title, body)
+	return portalVerwaltungPage(shell, title, nil, body)
 }
 
-templ portalVerwaltungPage(shell VerwaltungShell, title string, body templ.Component) {
-	@PortalDocument(title + " · " + shell.OrganisationName, portalAssetVersion(), nil, VerwaltungPageStyles(), templ.Attributes{"class": "verwaltung-page", "data-templ-verwaltung": true}) {
+// PortalVerwaltungPageWithScripts is PortalVerwaltungPage for a page that needs a
+// script of its own next to the shell's. The portal CSP forbids inline scripts,
+// so page behaviour reaches the browser only as a same-origin asset loaded here.
+func PortalVerwaltungPageWithScripts(shell VerwaltungShell, title string, scripts []string, body templ.Component) templ.Component {
+	return portalVerwaltungPage(shell, title, scripts, body)
+}
+
+templ portalVerwaltungPage(shell VerwaltungShell, title string, scripts []string, body templ.Component) {
+	@PortalDocument(title + " · " + shell.OrganisationName, portalAssetVersion(), scripts, VerwaltungPageStyles(), templ.Attributes{"class": "verwaltung-page", "data-templ-verwaltung": true}) {
 		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
 		@VerwaltungMobileHeader(shell, title)
 		<div class="shell verwaltung-shell" data-portal-shell>

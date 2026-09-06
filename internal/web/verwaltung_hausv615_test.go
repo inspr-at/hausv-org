@@ -68,7 +68,7 @@ func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
 		t.Fatal("Bilanz must follow Automatisierung before the AI cards")
 	}
 
-	result := renderComponent(t, VerwaltungDemoResetPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungDemoResetData{Step: 3}))
+	result := renderComponent(t, VerwaltungDemoResetPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungDemoResetData{Done: true}))
 	for _, want := range []string{"Zum Posteingang", "Zurück zu den Einstellungen"} {
 		if !strings.Contains(result, want) {
 			t.Fatalf("demo result missing %q", want)
