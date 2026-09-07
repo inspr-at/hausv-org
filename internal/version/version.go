@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.7.3",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Die Jahresabrechnung passt auch auf sehr schmale Handys.",
+			Intro:    "Auf 320 und 360 Pixel breiten Bildschirmen bricht die Kopfzeile eines Abrechnungslaufs um, statt die Seite seitlich scrollbar zu machen; der Kennzeichen-Chip rückt unter den Titel.",
+			Items:    []NoteItem{{Label: "Prüfung", Text: "Der automatische Breiten-Sweep beginnt jetzt bei 320 Pixel."}},
+		},
+		{
 			Version:  "1.7.2",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",
