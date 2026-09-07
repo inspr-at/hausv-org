@@ -36,7 +36,7 @@ var (
 	homePathPattern        = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$`)
 	homeReservedPaths      = map[string]struct{}{
 		"app": {}, "assets": {}, "auth": {}, "calendar": {}, "datenschutz": {}, "favicon.ico": {},
-		"favicon.svg": {}, "handover": {}, "healthz": {}, "impressum": {}, "map-tiles": {}, "start": {},
+		"favicon.svg": {}, "handover": {}, "healthz": {}, "impressum": {}, "map-tiles": {}, "profilbild": {}, "start": {},
 		"tenant-hero": {}, "www": {},
 	}
 )

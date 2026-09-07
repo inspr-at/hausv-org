@@ -1313,6 +1313,8 @@ func AuditActionLabel(action string) string {
 		return "Portalbereiche geändert"
 	case store.AuditActionHeroUpdate:
 		return "Hero-Bild geändert"
+	case store.AuditActionProfilePicture:
+		return "Profilbild geändert"
 	case store.AuditActionUnitSave:
 		return "Einheit gespeichert"
 	case store.AuditActionUnitDelete:
@@ -1512,6 +1514,8 @@ func AuditTargetTypeLabel(targetType string) string {
 		return "Gebäude"
 	case "hero":
 		return "Hero-Bild"
+	case "profile_picture":
+		return "Profilbild"
 	case "store.Unit", "unit":
 		return "Einheit"
 	case "parking":

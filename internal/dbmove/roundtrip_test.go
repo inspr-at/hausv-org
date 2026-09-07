@@ -26,6 +26,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -236,6 +239,11 @@ func seedFull(t *testing.T) *source {
 	prefs := store.NewSQLNotificationPrefStore(src.lanes)
 	must(t, "prefs", prefs.Set("owner@example.com", store.NotificationPreferences{Email: map[string]bool{"announcement": true, "ballot": false}}))
 	must(t, "prefs", prefs.Set("resident@example.com", store.NotificationPreferences{Email: map[string]bool{}, Unsubscribed: true}))
+	// person_avatars (HAUSV-675): one re-encoded profile picture, so the BLOB
+	// column crosses to bytea value for value.
+	avatar, err := store.EncodeProfilePicture(qaProfilePicturePNG(t), now)
+	must(t, "avatar encode", err)
+	must(t, "avatar", store.NewSQLPersonAvatarStore(src.lanes).SetAvatar("owner@example.com", avatar))
 	telegram := store.NewSQLTelegramStore(src.lanes)
 	must(t, "telegram offset", telegram.SetOffset(4711))
 	code, err := telegram.CreateLinkCode("owner@example.com", "admin@example.com", time.Hour)
@@ -1240,4 +1248,22 @@ func TestForceWipesAndReloadsUnderFailClosedRLS(t *testing.T) {
 	if plain != 0 || viaLane != 4 {
 		t.Fatalf("after forced reload: plain pool sees %d, lane sees %d; want 0 and 4", plain, viaLane)
 	}
+}
+
+// qaProfilePicturePNG renders a small two-colour square; EncodeProfilePicture
+// turns it into the stored JPEG.
+func qaProfilePicturePNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 64, 64))
+	for y := 0; y < 64; y++ {
+		for x := 0; x < 64; x++ {
+			c := color.RGBA{R: uint8(60 + x*3), G: uint8(90 + y*2), B: 120, A: 255}
+			img.Set(x, y, c)
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatalf("png: %v", err)
+	}
+	return buf.Bytes()
 }

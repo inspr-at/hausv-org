@@ -6187,6 +6187,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		tenantOverrides:          tenantOverrideStore,
 		tenantHeroDir:            filepath.Join(t.TempDir(), "tenant-heroes"),
 		inviteStore:              inviteStore,
+		personAvatars:            storepkg.NewMemoryPersonAvatarStore(),
 		activityStore:            activityStore,
 		annualStatementCostTypes: annualStatementCostTypes,
 		annualStatementPeriods:   annualStatementPeriods,

@@ -51,6 +51,7 @@ func TestEveryAppRouteRefusesUnauthenticated(t *testing.T) {
 		{"POST", "/demo/app/parking/charging/auto"}, {"POST", "/demo/app/parking/charging/settings"},
 		{"POST", "/demo/app/parking/charging/telegram/link"}, {"POST", "/demo/app/parking/charging/telegram/unlink"},
 		{"GET", "/demo/app/settings"}, {"GET", "/demo/app/settings/profile"},
+		{"POST", "/demo/app/settings/profilbild"}, {"POST", "/demo/app/settings/profilbild/entfernen"},
 		{"GET", "/demo/app/settings/notifications"}, {"GET", "/demo/app/settings/building"},
 		{"GET", "/demo/app/settings/users"}, {"GET", "/demo/app/audit"},
 		{"POST", "/demo/app/settings/users"}, {"POST", "/demo/app/settings/users/edit"},

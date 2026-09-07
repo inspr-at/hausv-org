@@ -49,6 +49,10 @@ func (a *app) renderSettingsHubTempl(w http.ResponseWriter, r *http.Request, ac 
 		CanViewAudit:                canViewAudit(ac.actor(), ac.resource()),
 		IsAdmin:                     ac.can(capabilityPlatformAdmin),
 		HomeIdentity:                a.homeIdentityForActor(ac, canViewEnergy),
+		ProfilePictureURL:           data["ProfilePictureURL"].(string),
+		HasProfilePicture:           data["ProfilePictureURL"].(string) != "",
+		ProfilePictureMsg:           data["ProfilePictureMsg"].(string),
+		ProfilePictureOK:            data["ProfilePictureOK"].(bool),
 	}))
 }
 
