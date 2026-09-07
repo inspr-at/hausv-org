@@ -206,7 +206,7 @@ templ IssueWorkCard(issue view.IssueView) {
 	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID }>
 		<header class="issue-card-head"><div><h3>{ issue.Title }</h3><p class="issue-location">{ issue.Author } · { issue.Location }
 			if issue.HasAssignee {
-				<span> · Zuständig: { issue.AssigneeEmail }</span>
+				<span title={ issue.AssigneeEmail }> · Zuständig: { issueAssigneeLabel(issue) }</span>
 			}
 			<span> · { issue.CreatedAt }</span></p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="pill">{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
 		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>

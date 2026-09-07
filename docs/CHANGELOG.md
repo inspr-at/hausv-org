@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.2] - 2026-09-07
+
+### Stabilität verbessert
+
+- Anliegen: Kurzliste und Triage-Board nennen die zuständige Person mit Namen; die E-Mail-Adresse bleibt als Hinweis hinterlegt.
+- Aushang: Der Aufklapper „Neuen Aushang lesen“ zeigt sein Chevron am rechten Rand statt über dem Text.
+- Feinschliff: Kennzeichen-Chips bleiben einzeilig, Kontaktkarten stapeln ihre Aktionen im Tablet-Band, der Status-Chip einer Abstimmung dehnt sich auf dem Telefon nicht mehr, „Kontakt hinzufügen“ schlägt „Dienstleister“ vor, der Preis-Teaser der Startseite bricht sauber um.
+- Demo: Ansprechperson, E-Mail und Telefon der Hausverwaltung gehören zum Demostand.
+
 ## [1.8.1] - 2026-09-07
 
 ### Neu

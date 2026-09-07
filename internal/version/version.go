@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.2",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Zuständige Personen erscheinen mit Namen, Aufklapper und Chips sitzen sauber.",
+			Intro:    "Kurzliste und Triage-Board der Anliegen nennen die zuständige Person mit Namen. Der Aushang-Aufklapper zeigt sein Chevron am rechten Rand, Kennzeichen-Chips bleiben einzeilig, Kontaktkarten stapeln ihre Aktionen im Tablet-Band, und der Preis-Teaser der Startseite bricht sauber um.",
+			Items:    []NoteItem{{Label: "Demo", Text: "Ansprechperson, E-Mail und Telefon der Hausverwaltung gehören zum Demostand."}},
+		},
+		{
 			Version:  "1.8.1",
 			Date:     "7. September 2026",
 			Kind:     "Neu",

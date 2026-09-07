@@ -1494,7 +1494,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"12 Monate kostenlos",
 		"12&nbsp;€ pro Jahr",
 		"<strong>0&nbsp;€ Grundgebühr</strong>",
-		"<span>25 WE kostenlos · danach Verrechnung je WE / Monat</span>",
+		"<span>25 WE kostenlos · danach Verrechnung je&nbsp;WE&nbsp;/&nbsp;Monat</span>",
 		"Home Assistant",
 		"CAMT und ebInterface",
 		"Impressum",

@@ -516,6 +516,7 @@ func buildOrg() map[string]any {
 	trust["beleg"], trust["termin"] = "auto", "auto"
 	return map[string]any{
 		"key": "musterstadt", "name": "Hausverwaltung Musterstadt GmbH", "trust_levels": trust,
+		"contact_name": "Vera Verwalter", "contact_email": "verwaltung@musterstadt.example", "contact_phone": "+43 316 555 100",
 		"auto_threshold": 0.9, "auto_enabled": true,
 		"members":   buildDemoMembers(),
 		"assignees": []map[string]string{{"key": "vera.verwalter", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul.sommer", "email": "paul.verwalter@musterstadt.example", "name": "Paul Sommer"}},
