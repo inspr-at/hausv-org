@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.4",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Feinschliff auf der Startseite.",
+			Intro:    "„E‑Mail“ bricht nicht mehr am Bindestrich, und auf dem Telefon zeigen die Illustrationen ihren oberen Teil vollständig.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.3",
 			Date:     "7. September 2026",
 			Kind:     "Neu",

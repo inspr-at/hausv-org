@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.4] - 2026-09-07
+
+### Stabilität verbessert
+
+- Startseite: „E‑Mail“ bricht nicht mehr am Bindestrich; auf dem Telefon zeigen die Illustrationen ihren oberen Teil vollständig.
+
 ## [1.8.3] - 2026-09-07
 
 ### Neu
