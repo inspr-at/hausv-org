@@ -1993,14 +1993,14 @@ func ContactsAside(data ContactsPageData) templ.Component {
 			templ_7745c5c3_Var90 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<aside class=\"contacts-aside\" aria-label=\"Hilfe zu Kontakten\"><details class=\"panel aside-panel\" open><summary><p class=\"kicker\">Wegweiser</p><h2>Wer ist wofür zuständig?</h2></summary><ul class=\"guide-list\"><li><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></li><li><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></li><li><strong>Hausmeister</strong><span>Schlüssel, Reinigung, Grünflächen und kleine Reparaturen.</span></li><li><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></li><li><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></li></ul></details><section class=\"panel aside-panel\" aria-labelledby=\"contacts-next-title\"><div><p class=\"kicker\">Auch hilfreich</p><h2 id=\"contacts-next-title\">Weiter im Portal</h2></div><nav class=\"portal-links\"><a class=\"portal-link\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<aside class=\"contacts-aside\" aria-label=\"Hilfe zu Kontakten\"><details class=\"panel aside-panel\"><summary><p class=\"kicker\">Wegweiser</p><h2>Wer ist wofür zuständig?</h2></summary><ul class=\"guide-list\"><li><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></li><li><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></li><li><strong>Hausmeister</strong><span>Schlüssel, Reinigung, Grünflächen und kleine Reparaturen.</span></li><li><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></li><li><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></li></ul></details><section class=\"panel aside-panel\" aria-labelledby=\"contacts-next-title\"><div><p class=\"kicker\">Auch hilfreich</p><h2 id=\"contacts-next-title\">Weiter im Portal</h2></div><nav class=\"portal-links\"><a class=\"portal-link\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var91 templ.SafeURL
 		templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(contactsIssuesURL(data.CanManageIssues)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 319, Col: 1068}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 319, Col: 1063}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 		if templ_7745c5c3_Err != nil {
