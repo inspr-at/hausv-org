@@ -1483,7 +1483,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Parken, Laden und Anbinden",
 		"hello [at] hausv [dot] org",
 		"wahlweise hosted oder selbst betrieben",
-		"quelloffen",
+		"Quelloffen · selbst betrieben",
 		"AGPL-3.0",
 		"0&nbsp;€ für immer",
 		"Quellcode ab Version 1.0",
@@ -1491,15 +1491,10 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Dokumente &amp; Aushänge",
 		"Anliegen mit Verlauf",
 		"Energie &amp; Messwerte",
-		"E-Mail-Support",
-		"Telefon- und E-Mail-Support",
-		"Quellcode-Veröffentlichung mit Version 1.0",
 		"12 Monate kostenlos",
 		"12&nbsp;€ pro Jahr",
-		"25 Einheiten kostenlos",
-		"0,12&nbsp;€ je Einheit / Monat",
-		"ohne Grundgebühr",
-		"Hosted oder Self-Hosted",
+		"<strong>0&nbsp;€ Grundgebühr</strong>",
+		"<span>25 WE kostenlos · danach Verrechnung je WE / Monat</span>",
 		"Home Assistant",
 		"CAMT und ebInterface",
 		"Impressum",
@@ -1522,7 +1517,6 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"mark3d-stage",
 		"mark3d-fallback",
 		"Sicherheit & Datenschutz",
-		"Klein starten. Erst mit dem Nutzen wachsen.",
 		"Home oder Professional?",
 		"Gespräch anfragen",
 		`href="/start"`,
@@ -1537,7 +1531,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	if strings.Contains(body, "Parken, Laden und anbinden") {
 		t.Fatal("landing must not render the former lowercase integration heading")
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}

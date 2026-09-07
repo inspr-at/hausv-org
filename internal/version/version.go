@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.1",
+			Date:     "7. September 2026",
+			Kind:     "Neu",
+			Headline: "Die Verwaltung sieht auf „Anliegen“ zuerst die offenen Anliegen des Hauses.",
+			Intro:    "Status, Zuständigkeit und Alter stehen in einer Kurzliste mit Link zum Triage-Board; der Melde-Assistent folgt darunter. In der Jahresabrechnung steht die Vorbereitung nach einem Lauf als Aufklapper direkt unter „Abrechnungslauf berechnen“, und Aufklapper zeigen überall ein Chevron.",
+			Items:    []NoteItem{{Label: "Startseite", Text: "Der Preisabschnitt entfällt; der Einstieg nennt 0 € Grundgebühr und 25 Wohneinheiten kostenlos."}, {Label: "Demo", Text: "„Demodaten initialisieren“ verwirft gespeicherte Läufe, Archiv-PDFs und Versandprotokoll."}},
+		},
+		{
 			Version:  "1.8.0",
 			Date:     "7. September 2026",
 			Kind:     "Neu",

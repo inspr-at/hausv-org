@@ -412,8 +412,11 @@ const PageTemplates = `
     .section-lead { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; text-wrap: pretty; }
     /* Alternating surfaces carry the rhythm; no ghosted photography behind
        content, so the cards keep full contrast. */
-    .features-section, .cost-section { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .products-section, .trust-section, .imprint-section { background: var(--panel); }
+    .features-section { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .products-section, .trust-section { background: var(--panel); }
+    /* The pricing band used to close the trust section with a hairline; imprint
+       now follows trust directly and carries that seam itself. */
+    .imprint-section { background: var(--panel); border-top: 1px solid var(--line); }
 
     /* ---- Panels ---------------------------------------------------------
        One panel language for the whole page: hairline border, 12px radius,
@@ -465,11 +468,6 @@ const PageTemplates = `
     .shared-core-item:last-child { border-right: 0; }
     .shared-core-item strong { font-size: 14px; }
     .shared-core-item span { color: rgba(255,255,255,.68); font-size: 12px; line-height: 1.4; }
-    .boundary-strip { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel-soft); overflow: hidden; }
-    .boundary-strip > div { padding: 21px 22px; }
-    .boundary-strip > div + div { border-left: 1px solid var(--line); }
-    .boundary-strip strong { display: block; font-size: 15px; }
-    .boundary-strip span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.48; }
 
     /* ---- Disclosures ----------------------------------------------------- */
     .landing-more { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -490,30 +488,6 @@ const PageTemplates = `
     .trust-number { width: 30px; height: 30px; margin-bottom: 16px; display: grid; place-items: center; border-radius: 50%; background: rgba(200,153,63,.12); color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .06em; }
     .trust-line strong { font-size: 17px; line-height: 1.3; }
     .trust-line p { margin: 7px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
-
-    /* ---- Price ----------------------------------------------------------- */
-    .offer-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
-    .offer-card { min-width: 0; display: grid; grid-template-rows: auto auto 1fr auto; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: clamp(26px,3vw,36px); background: var(--panel); box-shadow: var(--shadow-md); }
-    .offer-card.free { border-color: rgba(79,91,80,.32); }
-    .offer-card.home { border-color: rgba(47,107,74,.42); }
-    .offer-card.professional { border-color: rgba(200,153,63,.5); }
-    .offer-label { color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
-    .offer-card.free .offer-label { color: var(--muted); }
-    .offer-card.home .offer-label { color: var(--leaf); }
-    .offer-card h3 { margin: 10px 0 0; font-family: var(--font-serif); font-size: clamp(31px,3.2vw,42px); font-weight: 600; line-height: 1; }
-    .offer-card ul { margin: 25px 0 0; padding: 0; list-style: none; }
-    .offer-card li { display: flex; gap: 10px; border-top: 1px solid var(--line); padding: 11px 0; color: var(--muted); line-height: 1.45; }
-    .offer-card li::before { content: "✓"; color: var(--leaf); font-weight: 900; }
-    .offer-card.free li::before { color: var(--muted); }
-    .offer-card.professional li::before { color: var(--gold-ink); }
-    .offer-price { margin-top: 24px; border-radius: var(--radius-md); padding: 18px 20px; background: var(--panel-soft); }
-    .offer-price strong { display: block; font-family: var(--font-serif); font-size: clamp(25px,2.6vw,34px); font-weight: 600; line-height: 1.1; }
-    .offer-price span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
-    .open-source-note { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; border: 1px solid rgba(47,107,74,.28); border-radius: var(--radius-lg); padding: 20px 22px; background: rgba(47,107,74,.06); }
-    .open-source-note strong { display: block; }
-    .open-source-note p { margin: 5px 0 0; color: var(--muted); line-height: 1.55; }
-    .open-source-note a { flex: 0 0 auto; color: var(--leaf); font-weight: 850; }
-    .price-footnote { margin: 0; max-width: 78ch; color: var(--muted); font-size: 14px; line-height: 1.6; text-wrap: pretty; }
 
     /* ---- Imprint and closing --------------------------------------------- */
     .imprint-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
@@ -562,7 +536,6 @@ const PageTemplates = `
       .landing-copy { padding-top: 64px; }
       .section-head { grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
       .section h2 { max-width: 24ch; }
-      .offer-grid { grid-template-columns: minmax(0,1fr); }
       .imprint-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       /* Three cards in two columns would leave a half-width orphan. */
       .imprint-card:last-child { grid-column: 1 / -1; }
@@ -583,8 +556,7 @@ const PageTemplates = `
       .trust-number { grid-row: 1 / span 2; margin-bottom: 0; }
       .trust-line strong, .trust-line p { grid-column: 2; }
       .landing-contact { align-items: flex-start; flex-direction: column; }
-      .product-paths, .offer-grid, .boundary-strip { grid-template-columns: minmax(0,1fr); }
-      .boundary-strip > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .product-paths { grid-template-columns: minmax(0,1fr); }
       .shared-core { grid-template-columns: minmax(0,1fr); }
       .shared-core-head { grid-column: auto; }
       .shared-core-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.12); }
@@ -605,7 +577,6 @@ const PageTemplates = `
       .feature-card { grid-template-columns: minmax(0,1fr); }
       .feature-visual { min-height: 0; aspect-ratio: 16 / 9; }
       .feature-copy { padding: 21px 20px 23px; }
-      .open-source-note { flex-direction: column; gap: 12px; }
       .landing-contact strong { font-size: 24px; }
       footer div { display: grid; }
     }
@@ -642,7 +613,6 @@ const PageTemplates = `
         <a href="#produkte">Produkte</a>
         <a href="#leistungen">Leistungen</a>
         <a href="#sicherheit">Vertrauen</a>
-        <a href="#preise">Preise</a>
         <a href="#impressum">Impressum</a>
         <a href="#kontakt" class="js-mail-link" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a>
       </nav>
@@ -701,7 +671,7 @@ const PageTemplates = `
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V5l6-3 6 3v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg></span><div><span class="product-path-kicker">Für Hausverwaltungen</span><h3>HAUSV Professional</h3></div></header>
           <p>Das volle Hausportal für professionelle Verwaltungen mit mehreren WEGs – gehostet oder auf der eigenen Infrastruktur betrieben.</p>
           <ul class="product-capabilities"><li>Mehrere WEGs &amp; Rollen</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
-          <div class="product-path-price"><strong>25 Einheiten kostenlos</strong><span>danach 0,12&nbsp;€ je Einheit / Monat · ohne Grundgebühr</span></div>
+          <div class="product-path-price"><strong>0&nbsp;€ Grundgebühr</strong><span>25 WE kostenlos · danach Verrechnung je WE / Monat</span></div>
           <a class="product-path-start js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV Professional kennenlernen" data-mail-reveal="false">Professional anfragen</a>
         </article>
       </div>
@@ -760,47 +730,6 @@ const PageTemplates = `
         <div class="trust-line"><span class="trust-number">02</span><strong>Geschützte Dateien</strong><p>Downloads nur über geprüfte App-Wege.</p></div>
         <div class="trust-line"><span class="trust-number">03</span><strong>Datensparsam</strong><p>Nur Angaben, die der Betrieb wirklich braucht.</p></div>
         <div class="trust-line"><span class="trust-number">04</span><strong>KI nur mit Opt-in</strong><p>Keine automatische Auswertung ohne Zustimmung.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="preise" class="section cost-section">
-    <div class="section-inner">
-      <div class="section-head">
-        <div>
-          <p class="section-kicker">Einfach kalkulierbar</p>
-          <h2>Klein starten. Erst mit dem Nutzen wachsen.</h2>
-        </div>
-        <p class="section-lead">Alle drei Produkte starten kostenlos. Danach bleibt die Preislogik bewusst einfach und ohne versteckte Funktionspakete.</p>
-      </div>
-      <div class="offer-grid" aria-label="Produkte und Preise">
-        <article class="offer-card free">
-          <span class="offer-label">Open Source</span>
-          <h3>HAUSV Free</h3>
-          <ul><li>Self-Hosted in eigener Verantwortung</li><li>Der vollständige AGPL-3.0-Kern</li><li>Ab Version 1.0: Support über Tickets und Pull Requests auf GitHub</li></ul>
-          <div class="offer-price"><strong>0&nbsp;€ für immer</strong><span>frei verwenden, anpassen und selbst betreiben</span></div>
-        </article>
-        <article class="offer-card home">
-          <span class="offer-label">Selbstverwaltung</span>
-          <h3>HAUSV Home</h3>
-          <ul><li>Als Hosted Service verfügbar</li><li>Für Wohnung, Haus und kleine Gemeinschaft</li><li>E-Mail-Support inklusive</li><li>12 Monate mit vollem Umfang kostenlos</li></ul>
-          <div class="offer-price"><strong>12&nbsp;€ pro Jahr</strong><span>nach dem kostenlosen ersten Jahr</span></div>
-        </article>
-        <article class="offer-card professional">
-          <span class="offer-label">Hausverwaltungen</span>
-          <h3>HAUSV Professional</h3>
-          <ul><li>Hosted oder Self-Hosted</li><li>Für professionelle Hausverwaltungen</li><li>Telefon- und E-Mail-Support inklusive</li><li>Die ersten 25 Einheiten kostenlos</li></ul>
-          <div class="offer-price"><strong>0,12&nbsp;€ je Einheit / Monat</strong><span>ab der 26. verwalteten Einheit · ohne Grundgebühr</span></div>
-        </article>
-      </div>
-      <div class="open-source-note">
-        <div><strong>HAUSV Free bleibt dauerhaft kostenlos.</strong><p>Die technische Basis wird mit Version 1.0 quelloffen unter der GNU AGPL-3.0 veröffentlicht. Hosting und direkter Support sind davon getrennte Services.</p></div>
-        <span>Quellcode-Veröffentlichung mit Version 1.0</span>
-      </div>
-      <div class="boundary-strip" aria-label="Klare Produktgrenzen">
-        <div><strong>Kommunikation &amp; Energie</strong><span>HAUSV bündelt Hausalltag, Zusammenarbeit und Energieverwaltung.</span></div>
-        <div><strong>Keine eigene Verrechnung</strong><span>Jahresabrechnung und Buchhaltung bleiben in Fachsystemen wie BMD.</span></div>
-        <div><strong>Offen für Schnittstellen</strong><span>Strukturierte Daten werden importiert und an bestehende Systeme weitergegeben.</span></div>
       </div>
     </div>
   </section>

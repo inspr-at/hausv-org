@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.1] - 2026-09-07
+
+### Neu
+
+- Anliegen: Die Verwaltung sieht beim Öffnen von „Anliegen“ zuerst die offenen Anliegen des Hauses mit Status, Zuständigkeit und Alter samt Link zum Triage-Board; der Melde-Assistent folgt darunter und springt nicht mehr automatisch ins Formular.
+- Jahresabrechnung: Nach einem gespeicherten Lauf steht die Vorbereitung (Perioden, Kostenarten, Einheiten, Parteien) als Aufklapper direkt unter „Abrechnungslauf berechnen“; die Aktionen zum Lauf führen zum Ergebnis.
+- Startseite: Der Preisabschnitt mit den drei Produktkarten entfällt; der Einstieg nennt „0 € Grundgebühr“ und „25 WE kostenlos · danach Verrechnung je WE / Monat“.
+
+### Stabilität verbessert
+
+- Oberfläche: Aufklapper (Termindetails, Wegweiser, Kontakt hinzufügen, Aushang-Text) zeigen ein Chevron, das sich beim Öffnen dreht; im Tablet-Band brechen Seitentitel und Hausname um statt abgeschnitten zu werden.
+- Demo: „Demodaten initialisieren“ verwirft gespeicherte Abrechnungsläufe, Archiv-PDFs und das Versandprotokoll, damit die Demo mit einem sauberen Stand startet; Demo-Texte ohne „Muster-“ und „fiktiv“.
+
 ## [1.8.0] - 2026-09-07
 
 ### Neu

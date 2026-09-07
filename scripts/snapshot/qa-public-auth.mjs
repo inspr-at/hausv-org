@@ -231,8 +231,12 @@ async function captureViewport(viewport) {
   }
   const productHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
   if (productHref !== '#produkte') throw new Error(`Landing ${viewport.name}: primary product action is not ready`);
-  for (const id of ['produkte', 'leistungen', 'sicherheit', 'preise', 'impressum', 'kontakt']) {
+  for (const id of ['produkte', 'leistungen', 'sicherheit', 'impressum', 'kontakt']) {
     if (!(await page.locator(`#${id}`).count())) throw new Error(`Landing ${viewport.name}: #${id} destination is missing`);
+  }
+  // HAUSV-664 dropped the pricing section: neither the anchor nor a link to it may survive.
+  if (await page.locator('#preise, .cost-section, .offer-card, a[href="#preise"]').count()) {
+    throw new Error(`Landing ${viewport.name}: the removed pricing section is back`);
   }
 
   if (viewport.width <= 900) {
@@ -395,7 +399,7 @@ async function captureViewport(viewport) {
     const noJSNavigation = await noJSPage.locator('#landing-navigation a:visible').evaluateAll(
       (links) => links.map((link) => link.getAttribute('href')),
     );
-    if (JSON.stringify(noJSNavigation) !== JSON.stringify(['#produkte', '#leistungen', '#sicherheit', '#preise', '#impressum'])) {
+    if (JSON.stringify(noJSNavigation) !== JSON.stringify(['#produkte', '#leistungen', '#sicherheit', '#impressum'])) {
       throw new Error(`Landing ${viewport.name}: no-JS navigation is not fully reachable`);
     }
     await screenshot(noJSPage, `${screenshotPrefix}-landing-no-js-menu-${viewport.name}`);
