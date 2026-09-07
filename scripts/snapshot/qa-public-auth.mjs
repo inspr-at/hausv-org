@@ -256,8 +256,15 @@ async function captureViewport(viewport) {
   const productDetails = page.locator('details.landing-more');
   await productDetails.locator('summary').click();
   await screenshot(page, `${screenshotPrefix}-landing-product-details-${viewport.name}`);
-  if (!(await productDetails.getByRole('heading', { name: 'Kein Verrechnungssystem' }).isVisible())) {
-    throw new Error(`Landing ${viewport.name}: product disclosure does not open`);
+  // HAUSV-668 turned the disclosure from "what we leave out" into the roadmap.
+  if (!(await productDetails.getByRole('heading', { name: 'Verrechnung: gemeinsam mit Friendly Customers' }).isVisible())) {
+    throw new Error(`Landing ${viewport.name}: outlook disclosure does not open`);
+  }
+  if (!(await productDetails.getByRole('heading', { name: 'Energie: kontrolliert statt unbedacht' }).isVisible())) {
+    throw new Error(`Landing ${viewport.name}: the energy column of the outlook is missing`);
+  }
+  if (await page.getByText('Kein Verrechnungssystem', { exact: false }).count()) {
+    throw new Error(`Landing ${viewport.name}: the retired "Kein Verrechnungssystem" disclosure is back`);
   }
   await productDetails.locator('summary').click();
   // The legal details moved to their own /impressum page (0.68.0).

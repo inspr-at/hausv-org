@@ -450,10 +450,20 @@ const PageTemplates = `
     .product-path.professional .product-path-start { background: var(--gold-ink); }
     .product-path.professional .product-path-start:hover { background: #72551e; }
     .feature-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
-    .feature-card { min-width: 0; display: grid; grid-template-columns: 168px minmax(0,1fr); min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
-    .feature-card:nth-child(1), .feature-card:nth-child(9) { border-color: rgba(47,107,74,.42); }
-    .feature-visual { position: relative; min-height: 210px; background: #f4f0e7; overflow: hidden; }
-    .feature-visual img { width: 100%; height: 100%; display: block; object-fit: contain; }
+    /* Every feature card carries the SAME hairline, radius and shadow. The
+       category accent lives in the kicker only — a tinted border on two of ten
+       cards read as an unfinished grid rather than as an accent (HAUSV-668). */
+    .feature-card { min-width: 0; display: grid; grid-template-columns: 200px minmax(0,1fr); min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
+    /* The illustrations are square and bring their own paper ground (#fbf4e8,
+       sampled from the asset edges). object-fit:contain letterboxed them
+       against a colder card ground, so the corner of every non-matching image
+       leaked a different tone; cover fills the box to the card's hairline, the
+       column widths keep the box near-square so the crop stays inside the
+       artwork's margin, and the matching background covers the moment before a
+       lazily loaded image has decoded. .feature-card's overflow:hidden clips it
+       to the radius, and the grid has no gap, so the media meets the border. */
+    .feature-visual { position: relative; min-height: 210px; background: #fbf4e8; overflow: hidden; }
+    .feature-visual img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
     .feature-copy { min-width: 0; display: grid; align-content: center; padding: 24px 24px 25px; }
     .feature-number { margin-bottom: 10px; color: var(--gold-ink); font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
     .feature-card h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(21px,1.8vw,26px); font-weight: 600; line-height: 1.08; text-wrap: balance; }
@@ -513,7 +523,7 @@ const PageTemplates = `
       .product-capabilities { grid-template-rows: repeat(2,minmax(58px,auto)); margin-top: 20px; }
       .product-path-price { min-height: 64px; margin-top: 4px; }
       .product-path-start { margin-top: 4px; }
-      .feature-card { grid-template-columns: 140px minmax(0,1fr); }
+      .feature-card { grid-template-columns: 180px minmax(0,1fr); }
       .trust-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .trust-line { padding-top: 24px; }
       .trust-line:nth-child(-n+2) { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
@@ -540,7 +550,7 @@ const PageTemplates = `
       /* Three cards in two columns would leave a half-width orphan. */
       .imprint-card:last-child { grid-column: 1 / -1; }
       .feature-grid { grid-template-columns: minmax(0,1fr); }
-      .feature-card { grid-template-columns: 190px minmax(0,1fr); }
+      .feature-card { grid-template-columns: 210px minmax(0,1fr); }
       .shared-core { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .shared-core-head { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.16); }
       .shared-core-item:nth-child(3) { border-right: 0; }
@@ -575,7 +585,10 @@ const PageTemplates = `
       .section { padding: 44px 20px; }
       .section h2 { font-size: 36px; }
       .feature-card { grid-template-columns: minmax(0,1fr); }
-      .feature-visual { min-height: 0; aspect-ratio: 16 / 9; }
+      /* Stacked, the media stays as close to the artwork's own square as the
+         page length allows: at 16/9 a cover crop would cut away a third of
+         every illustration. */
+      .feature-visual { min-height: 0; aspect-ratio: 5 / 4; }
       .feature-copy { padding: 21px 20px 23px; }
       .landing-contact strong { font-size: 24px; }
       footer div { display: grid; }
@@ -692,25 +705,25 @@ const PageTemplates = `
           <p class="section-kicker">Top 10 Features</p>
           <h2>Ein Portal für den gesamten Hausalltag.</h2>
         </div>
-        <p class="section-lead">Von der ersten Mitteilung bis zum Live-Energiefluss: Jede Funktion ist so gestaltet, dass Menschen schnell verstehen, was als Nächstes zu tun ist.</p>
+        <p class="section-lead">Von der ersten Mitteilung bis zur versendeten Jahresabrechnung: Jede Funktion ist so gestaltet, dass Menschen schnell verstehen, was als Nächstes zu tun ist.</p>
       </div>
       <div class="feature-grid">
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-overview.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">01 · Orientierung</span><h3>Zentraler Hausüberblick</h3><p>Aufgaben, Termine, Aushänge, offene Anliegen und der Energiezustand des Hauses auf einen Blick.</p></div></article>
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-communication.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">02 · Kommunikation</span><h3>Aushänge, die ankommen</h3><p>Mitteilungen zentral veröffentlichen, bearbeiten und zielgerichtet für Bewohner sichtbar machen.</p></div></article>
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-calendar.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">03 · Termine</span><h3>Kalender, der mitgeht</h3><p>Wartungen, Versammlungen und Ablesungen verwalten und per persönlichem Kalender-Feed abonnieren.</p></div></article>
-        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-issues.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">04 · Anliegen</span><h3>Schäden sauber lösen</h3><p>Mit Fotos melden, priorisieren, zuweisen, Rückfragen klären und die Lösung nachvollziehbar bestätigen.</p></div></article>
+        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-issues.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">04 · Anliegen</span><h3>Vom Mail-Eingang zur Lösung</h3><p>Mit Foto melden oder der Verwaltung schreiben; die KI schlägt Kategorie, Dringlichkeit und Antwort vor – zuweisen und freigeben bleibt bei Ihnen.</p></div></article>
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-documents.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">05 · Dokumente</span><h3>Geschützt und auffindbar</h3><p>Dokumente nach Haus, Eigentümer und Einheit ablegen – mit Sichtbarkeit, Vorschau, Download und Versionen.</p></div></article>
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-handover.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">06 · Übergaben</span><h3>Wohnungen digital übergeben</h3><p>Räume, Zustand, Zählerstände, Schlüssel und Anhänge erfassen und dauerhaft digital bestätigen.</p></div></article>
         <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-voting.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">07 · Entscheidungen</span><h3>Abstimmungen mit Verlauf</h3><p>Berechtigte Personen stimmen sicher ab; Ergebnis, Abschluss und Protokoll bleiben transparent nachvollziehbar.</p></div></article>
-        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-roles.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">08 · Zugriff</span><h3>Kontakte, Rollen und Rechte</h3><p>Verwaltung, Beirat, Bewohner, Eigentümer und Dienstleister erhalten genau die Zugriffe, die sie brauchen.</p></div></article>
-        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-energy.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">09 · Energie</span><h3>Live-Energie verständlich</h3><p>PV, Netz, Speicher, Haus und Verbraucher über Home Assistant verbinden; Messquellen, Farben und Kennzahlen frei konfigurieren.</p></div></article>
-        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-integrations.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">10 · Integration</span><h3>Parken, Laden und Anbinden</h3><p>Ladezustände, Berechtigungen und Monatswerte abbilden; CAMT und ebInterface einlesen und Daten an Fachsysteme übergeben.</p></div></article>
+        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-roles.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">08 · Zugriff</span><h3>Kontakte, Rollen und Rechte</h3><p>Verwaltung, Beirat, Bewohner, Eigentümer und Dienstleister erhalten genau die Zugriffe, die sie brauchen; Mitarbeiter betreuen das ganze Portfolio.</p></div></article>
+        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-energy.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">09 · Energie</span><h3>Live-Energie verständlich</h3><p>PV, Netz, Speicher, Haus und Verbraucher über Home Assistant verbinden; Stellplätze und Ladepunkte zeigen Ladezustand und Monatswerte.</p></div></article>
+        <article class="feature-card"><div class="feature-visual"><img src="/assets/feature-integrations.webp" width="560" height="560" alt="" loading="lazy" decoding="async"></div><div class="feature-copy"><span class="feature-number">10 · Abrechnung</span><h3>Jahresabrechnung bis zum Versand</h3><p>Abrechnungslauf berechnen, PDF je Partei erzeugen, unveränderlich archivieren und per E-Mail zustellen – Belege und Zahlungen lesen Sie per ebInterface und CAMT ein.</p></div></article>
       </div>
       <details id="ausblick" class="landing-more">
-        <summary>Was bewusst nicht Teil des Portals ist</summary>
+        <summary>Was gerade entsteht</summary>
         <div class="landing-more-grid">
-          <div><h3>Kein Verrechnungssystem</h3><ul><li>Keine Jahresabrechnung oder Buchhaltung</li><li>Kein Mahnwesen und keine Zahlungsaufträge</li><li>Übergabe an bestehende Fachsysteme statt Nachbau</li></ul></div>
-          <div><h3>Kontrolliert statt unbedacht</h3><ul><li>Aktive Energiesteuerung nur nach bewusster Freigabe</li><li>Dienstleister-Zugänge ausschließlich rollenbasiert</li><li>Kein öffentlicher Marktplatz oder eigener Zahlungsfluss</li></ul></div>
+          <div><h3>Verrechnung: gemeinsam mit Friendly Customers</h3><ul><li>Die Jahresabrechnung ist da: Lauf, PDF je Partei, Archiv und Versand.</li><li>Buchhaltung, Mahnwesen und Zahlungsläufe folgen – Start später in diesem Jahr.</li><li>Wir bauen sie mit ausgewählten Verwaltungen statt am grünen Tisch.</li></ul></div>
+          <div><h3>Energie: kontrolliert statt unbedacht</h3><ul><li>Aktive Steuerung nach bewusster Freigabe – in Entwicklung, Start später in diesem Jahr.</li><li>Dienstleister-Zugänge bleiben rollenbasiert.</li><li>Kein öffentlicher Marktplatz, kein Handel im Hintergrund.</li></ul></div>
         </div>
       </details>
     </div>

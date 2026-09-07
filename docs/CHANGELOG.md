@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.3] - 2026-09-07
+
+### Neu
+
+- Startseite: Die Feature-Karten zeigen den aktuellen Funktionsumfang, inklusive Jahresabrechnung mit Lauf, PDFs, Archiv und Versand; der Ausblick nennt, was gemeinsam mit Friendly Customers entsteht und später im Jahr startet.
+
+### Stabilität verbessert
+
+- Startseite: Die Illustrationen füllen ihre Bildfläche bis zur Kartenkante, alle Karten tragen dieselbe Hairline.
+
 ## [1.8.2] - 2026-09-07
 
 ### Stabilität verbessert

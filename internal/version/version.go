@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.3",
+			Date:     "7. September 2026",
+			Kind:     "Neu",
+			Headline: "Die Startseite zeigt den aktuellen Funktionsumfang und den Ausblick.",
+			Intro:    "Die Feature-Karten nennen auch die Jahresabrechnung mit Lauf, PDFs, Archiv und Versand; der Ausblick beschreibt, was gemeinsam mit Friendly Customers entsteht und später im Jahr startet. Illustrationen füllen ihre Bildfläche bis zur Kartenkante, alle Karten tragen dieselbe Hairline.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.2",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",
