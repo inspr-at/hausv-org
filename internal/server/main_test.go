@@ -6830,13 +6830,13 @@ func strconvFormatInt(value int64) string {
 // withoutReleaseNotes removes the release-notes panel from a rendered page so
 // page-wide assertions are not disturbed by release copy.
 func withoutReleaseNotes(page string) string {
-	start := strings.Index(page, "<details class=\"release-notes\">")
+	start := strings.Index(page, "<dialog id=\"release-history\"")
 	if start < 0 {
 		return page
 	}
-	end := strings.Index(page[start:], "</details>")
+	end := strings.Index(page[start:], "</dialog>")
 	if end < 0 {
 		return page
 	}
-	return page[:start] + page[start+end+len("</details>"):]
+	return page[:start] + page[start+end+len("</dialog>"):]
 }

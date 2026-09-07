@@ -28,7 +28,7 @@ func TestSettingsDemoCardOpensOneDialog(t *testing.T) {
 			t.Errorf("settings page missing %q", want)
 		}
 	}
-	for _, gone := range []string{"Demo zurücksetzen", "ZURÜCKSETZEN", "confirm_word", `name="step"`, "<script>", `data-dialog=`} {
+	for _, gone := range []string{"Demo zurücksetzen", "ZURÜCKSETZEN", "confirm_word", `name="step"`, "<script>", `data-dialog="demo-init-dialog"`} {
 		if strings.Contains(html, gone) {
 			t.Errorf("settings page still carries %q", gone)
 		}

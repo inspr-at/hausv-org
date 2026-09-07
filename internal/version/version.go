@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.8",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Versionsverlauf öffnet sich als eigenes Fenster über der Seite.",
+			Intro:    "Das Fenster legt sich mit abgedunkeltem Hintergrund über Navigation und Inhalt, schließt per Schaltfläche, mit Escape oder mit einem Klick daneben, und die Bildlaufleisten im Portal sind schmal und im Farbton der Anwendung gehalten.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.7",
 			Date:     "7. September 2026",
 			Kind:     "Neu",

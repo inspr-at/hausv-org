@@ -158,7 +158,11 @@
     var dialog = id ? document.getElementById(id) : null;
     if (!dialog || typeof dialog.showModal !== "function") return;
     trigger.setAttribute("aria-expanded", "false");
-    trigger.addEventListener("click", function () {
+    trigger.addEventListener("click", function (event) {
+      // A trigger may be an anchor pointing at the dialog id so the panel stays
+      // reachable via :target without JavaScript. Once JavaScript runs the
+      // dialog opens modally instead, so cancel the fragment navigation.
+      if (trigger.tagName === "A") event.preventDefault();
       if (!dialog.open) {
         dialog._returnFocus = trigger;
         dialog.showModal();
@@ -193,6 +197,20 @@
   window.addEventListener("hashchange", openHashDialog);
 
   Array.prototype.forEach.call(document.querySelectorAll("dialog"), function (dialog) {
+    // Opt-in backdrop dismissal. Form dialogs stay sticky on purpose; a
+    // read-only panel such as the release history closes on an outside click.
+    if (dialog.hasAttribute("data-light-dismiss")) {
+      dialog.addEventListener("click", function (event) {
+        if (event.target !== dialog) return;
+        var box = dialog.getBoundingClientRect();
+        var inside =
+          event.clientX >= box.left &&
+          event.clientX <= box.right &&
+          event.clientY >= box.top &&
+          event.clientY <= box.bottom;
+        if (!inside) dialog.close();
+      });
+    }
     dialog.addEventListener("cancel", function (event) {
       if (isEnergyFullscreen(dialog)) {
         event.preventDefault();
@@ -526,6 +544,11 @@
     close(true);
   });
   document.addEventListener("click", function (event) {
-    if (menu.open && !menu.contains(event.target)) close(false);
+    if (!menu.open) return;
+    // A modal opened from inside the menu (the release history) sits in the top
+    // layer, so its clicks land outside the <details>. Collapsing the menu there
+    // would delete the trigger the dialog returns focus to.
+    if (event.target.closest && event.target.closest("dialog")) return;
+    if (!menu.contains(event.target)) close(false);
   });
 })();
