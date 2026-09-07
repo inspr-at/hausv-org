@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.1] - 2026-09-07
+
+### Verbessert
+
+- Startseite: Die Karte „Jahresabrechnung bis zum Versand“ zeigt eine eigene Illustration im Stil der übrigen Karten.
+
 ## [1.9.0] - 2026-09-07
 
 ### Neu
