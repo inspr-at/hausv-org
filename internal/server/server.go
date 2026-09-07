@@ -465,7 +465,6 @@ var surplusRate = store.SurplusRate
 var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
 var resizeImageNearest = store.ResizeImageNearest
 var sanitizeDocumentFilename = store.SanitizeDocumentFilename
-var sortDocuments = store.SortDocuments
 var sortHandovers = store.SortHandovers
 var sortIssues = store.SortIssues
 var writeImageAttachmentVariant = store.WriteImageAttachmentVariant

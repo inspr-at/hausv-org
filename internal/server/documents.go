@@ -31,7 +31,11 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
 	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
-	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode, documentSortContext{Units: ac.repositories.units.List(), Runs: documentRunSnapshots(ac.repositories.annualStatementRuns, visible)})
+	var units []store.Unit
+	if ac.repositories.units != nil {
+		units = ac.repositories.units.List()
+	}
+	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode, documentSortContext{Units: units, Runs: documentRunSnapshots(ac.repositories.annualStatementRuns, visible)})
 	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
 	documentCountLabel := fmt.Sprintf("%d Dokumente", len(documents))
 	if len(documents) == 1 {
