@@ -96,7 +96,7 @@ func Notes() []Note {
 			Kind:     "Neu",
 			Headline: "Die Verwaltung sieht auf „Anliegen“ zuerst die offenen Anliegen des Hauses.",
 			Intro:    "Status, Zuständigkeit und Alter stehen in einer Kurzliste mit Link zum Triage-Board; der Melde-Assistent folgt darunter. In der Jahresabrechnung steht die Vorbereitung nach einem Lauf als Aufklapper direkt unter „Abrechnungslauf berechnen“, und Aufklapper zeigen überall ein Chevron.",
-			Items:    []NoteItem{{Label: "Startseite", Text: "Der Preisabschnitt entfällt; der Einstieg nennt 0 € Grundgebühr und 25 Wohneinheiten kostenlos."}, {Label: "Demo", Text: "„Demodaten initialisieren“ verwirft gespeicherte Läufe, Archiv-PDFs und Versandprotokoll."}},
+			Items:    []NoteItem{{Label: "Startseite", Text: "Der Preisabschnitt entfällt; der Einstieg nennt 0 € Grundgebühr und 25 Wohneinheiten kostenlos."}, {Label: "Demo", Text: "Der Demo-Reset verwirft gespeicherte Läufe, Archiv-PDFs und das Versandprotokoll."}},
 		},
 		{
 			Version:  "1.8.0",
