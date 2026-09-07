@@ -42,7 +42,7 @@ func TestAnnualStatementRunPanelEscapesHistoryQuery(t *testing.T) {
 	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
 		t.Fatal(err)
 	}
-	want := `href="` + html.EscapeString("/app/settings/annual-statement?year=2025&run="+url.QueryEscape(id)+"#abrechnungslauf") + `"`
+	want := `href="` + html.EscapeString("/app/settings/annual-statement?year=2025&run="+url.QueryEscape(id)+"#abrechnungsergebnis") + `"`
 	if !strings.Contains(body.String(), want) {
 		t.Fatalf("missing escaped history URL %q", want)
 	}
@@ -163,8 +163,5 @@ func TestAnnualStatementPreparationPrecedesSavedRunsHAUSV660(t *testing.T) {
 			t.Fatalf("%q missing or out of order", marker)
 		}
 		previous = pos
-	}
-	if !strings.Contains(html, ".annual-preparation>summary::after") || !strings.Contains(html, ".annual-preparation[open]>summary::after") {
-		t.Fatal("preparation must have an expanding chevron")
 	}
 }

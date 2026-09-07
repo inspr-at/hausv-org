@@ -162,7 +162,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		IsServiceProvider: isServiceProviderRole(role),
 		Issues:            issues,
 		OpenIssues:        openIssues,
-		HasHouseIssues:    totalIssueCount > 0,
+		HasHouseIssues:    canManageIssues && totalIssueCount > 0,
 		IssuesEmpty:       emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
 		Message:           msg,
 		MessageOK:         msgOK,

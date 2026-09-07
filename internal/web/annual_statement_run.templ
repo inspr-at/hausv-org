@@ -274,7 +274,7 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			<header class="subhead"><div><h3>Gespeicherte Läufe</h3><p>Jeder Lauf hält seinen damaligen Stand fest. Nach Korrekturen können Sie einen weiteren Lauf berechnen.</p></div></header>
 			<nav class="settings-links annual-history" aria-label="Abrechnungsläufe">
 				for _,run:=range data.History {
-					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungslauf") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
+					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungsergebnis") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
 				}
 			</nav>
 		}

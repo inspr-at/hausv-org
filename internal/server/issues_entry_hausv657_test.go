@@ -38,8 +38,12 @@ func TestIssuesEntryByRoleHAUSV657(t *testing.T) {
 				t.Fatalf("status %d", response.Code)
 			}
 			body := response.Body.String()
-			if strings.Contains(body, "Erstes Anliegen melden") {
-				t.Fatal("existing house issues must suppress first-issue heading, including when none belong to viewer")
+			// Management sees the house's issues and gets the plain heading; a
+			// resident whose own list is empty keeps the first-issue heading and
+			// learns nothing about other tenants' filings (review of HAUSV-657).
+			manages := strings.Contains(body, "Alle im Triage-Board")
+			if manages == strings.Contains(body, "Erstes Anliegen melden") {
+				t.Fatalf("first-issue heading must follow the viewer's own visibility (manages=%v)", manages)
 			}
 			if !strings.Contains(body, `id="issue-new"`) || !strings.Contains(body, `data-issue-wizard`) {
 				t.Fatal("wizard missing")
