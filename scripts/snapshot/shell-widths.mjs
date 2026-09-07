@@ -24,7 +24,7 @@ if (!baseURL) {
 }
 
 // Straddle every breakpoint in play, plus real device widths.
-const WIDTHS = [360, 390, 699, 700, 701, 744, 759, 760, 761, 768, 899, 900, 1024, 1049, 1050, 1051, 1100, 1440];
+const WIDTHS = [320, 360, 390, 699, 700, 701, 744, 759, 760, 761, 768, 899, 900, 1024, 1049, 1050, 1051, 1100, 1440];
 
 const ROUTES = [
   ['portal', '/app'], ['announcements', '/app/announcements'], ['events', '/app/events'],

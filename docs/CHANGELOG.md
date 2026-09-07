@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.7.3] - 2026-09-07
+
+### Stabilität verbessert
+
+- Jahresabrechnung: Auf sehr schmalen Handys (320 und 360 px) bricht die Kopfzeile eines Abrechnungslaufs um, statt die Seite seitlich scrollbar zu machen; der Kennzeichen-Chip rückt unter den Titel.
+
 ## [1.7.2] - 2026-09-07
 
 ### Stabilität verbessert
