@@ -55,7 +55,8 @@ func TestSidebarMapUsesOnlyVisibleTilesAndExactHouseCentre(t *testing.T) {
 		MapLongitude: 16.3738,
 		MapZoom:      17,
 	})
-	if !view.Configured || len(view.Tiles) == 0 || len(view.Tiles) > 4 {
+	// The hero card is 288×224 (HAUSV-673), so at most 3×2 tiles can be visible.
+	if !view.Configured || len(view.Tiles) == 0 || len(view.Tiles) > 6 {
 		t.Fatalf("sidebar map = %#v", view)
 	}
 	for _, tile := range view.Tiles {

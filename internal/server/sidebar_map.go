@@ -19,8 +19,8 @@ import (
 const (
 	defaultMapZoom       = 17
 	mapTileSize          = 256
-	sidebarMapWidth      = 264
-	sidebarMapHeight     = 210
+	sidebarMapWidth      = 288
+	sidebarMapHeight     = 224
 	publicMapWidth       = 420
 	publicMapHeight      = 92
 	mapTileCacheMaxAge   = 30 * 24 * time.Hour
