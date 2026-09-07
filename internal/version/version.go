@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.7.2",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Abrechnungsversand bremst den Rest der Anwendung nicht mehr.",
+			Intro:    "Jede Partei wird zuerst im Versandprotokoll vorgemerkt, dann verschickt, dann mit dem Ergebnis abgeschlossen; ein langsamer Mailserver hält keine Datenbanksperre mehr. Ein durch Neustart unterbrochener Versand erscheint als „Versand unterbrochen“ und wird beim nächsten Versand erneut versucht.",
+			Items:    []NoteItem{{Label: "Betrieb", Text: "Voraussetzung für den Versand über einen echten Mailserver auf Installationen mit SQLite."}},
+		},
+		{
 			Version:  "1.7.1",
 			Date:     "6. September 2026",
 			Kind:     "Stabilität",

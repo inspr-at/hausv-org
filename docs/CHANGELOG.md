@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.7.2] - 2026-09-07
+
+### Stabilität verbessert
+
+- Jahresabrechnung: Während E-Mails an die Parteien versendet werden, arbeitet der Rest der Anwendung ungebremst weiter — jede Partei wird zuerst im Versandprotokoll vorgemerkt („Wird gesendet“), dann verschickt, dann mit dem Ergebnis abgeschlossen. Ein Versand, der durch einen Neustart unterbrochen wurde, erscheint im Protokoll als „Versand unterbrochen“ und wird beim nächsten Versand erneut versucht.
+
 ## [1.7.1] - 2026-09-06
 
 ### Stabilität verbessert

@@ -201,11 +201,20 @@ func (a *app) annualStatementDeliveryView(view web.AnnualStatementRunView, repos
 				location = time.UTC
 			}
 			for _, item := range deliveries {
-				status := "Fehlgeschlagen"
-				if item.Status == "sent" {
+				status, detail := "Fehlgeschlagen", item.Error
+				switch item.Status {
+				case "sent":
 					status = "Gesendet"
+				case "pending":
+					// A reservation older than the TTL was left by a process that
+					// died mid-send; the next attempt records it as interrupted.
+					if time.Since(item.SentAt) < store.AnnualStatementDeliveryPendingTTL {
+						status = "Wird gesendet"
+					} else {
+						detail = store.AnnualStatementDeliveryInterrupted
+					}
 				}
-				view.Deliveries = append(view.Deliveries, web.AnnualStatementDeliveryView{Party: firstNonEmpty(partyNames[item.PartyID], item.PartyID) + " · " + firstNonEmpty(unitNames[item.UnitID], item.UnitID), Recipient: item.Recipient, Time: item.SentAt.In(location).Format("02.01.2006 15:04 MST"), Status: status, Error: item.Error})
+				view.Deliveries = append(view.Deliveries, web.AnnualStatementDeliveryView{Party: firstNonEmpty(partyNames[item.PartyID], item.PartyID) + " · " + firstNonEmpty(unitNames[item.UnitID], item.UnitID), Recipient: item.Recipient, Time: item.SentAt.In(location).Format("02.01.2006 15:04 MST"), Status: status, Error: detail})
 			}
 		}
 	}
