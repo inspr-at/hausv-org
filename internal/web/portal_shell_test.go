@@ -644,7 +644,7 @@ func TestSidebarShowsTheLargeLocationMapAboveTheHouseCard(t *testing.T) {
 	if strings.Contains(html, "house-map-thumb") {
 		t.Errorf("the compact house card must not carry the old thumbnail")
 	}
-	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:2px -18px 8px`} {
+	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:2px calc(var(--sidebar-pad-x,16px)*-1) 8px`} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("hero marker %q missing", marker)
 		}
