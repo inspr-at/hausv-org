@@ -38,12 +38,15 @@ func TestIssuesEntryByRoleHAUSV657(t *testing.T) {
 				t.Fatalf("status %d", response.Code)
 			}
 			body := response.Body.String()
-			// Management sees the house's issues and gets the plain heading; a
-			// resident whose own list is empty keeps the first-issue heading and
-			// learns nothing about other tenants' filings (review of HAUSV-657).
-			manages := strings.Contains(body, "Alle im Triage-Board")
-			if manages == strings.Contains(body, "Erstes Anliegen melden") {
-				t.Fatalf("first-issue heading must follow the viewer's own visibility (manages=%v)", manages)
+			// The heading follows what the viewer can see: whoever sees the
+			// common-area filings gets the plain heading, a role that sees none is
+			// still offered a first issue (and learns nothing about the others).
+			sees := strings.Contains(body, "Fremdes Anliegen")
+			if sees == strings.Contains(body, "Erstes Anliegen melden") {
+				t.Fatalf("first-issue heading must follow the viewer's own visibility (sees=%v)", sees)
+			}
+			if tc.management && !sees {
+				t.Fatal("management must see the house's issues")
 			}
 			if !strings.Contains(body, `id="issue-new"`) || !strings.Contains(body, `data-issue-wizard`) {
 				t.Fatal("wizard missing")
@@ -114,5 +117,28 @@ func TestIssuesEntryWithOnlyClosedHouseIssuesHAUSV657(t *testing.T) {
 	}
 	if !strings.Contains(body, "Keine offenen Anliegen im Haus.") {
 		t.Fatal("missing empty open summary")
+	}
+}
+
+// Review of HAUSV-657: a resident whose own list is empty keeps the
+// first-issue heading even when another tenant filed a unit-private issue —
+// the heading must not reveal filings the viewer cannot see.
+func TestFirstIssueHeadingKeepsResidentsBlindToPrivateFilingsHAUSV657(t *testing.T) {
+	email := "viewer@example.com"
+	a := newTestPortalApp(t, userProfile{Email: email, Role: roleRenter, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", Category: "Reparatur", Title: "Fremdes privates Anliegen", Body: "Wasserhahn tropft", LocationType: issueLocationUnit, CreatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	body := authedRequest(t, a, email, "/demo/app/anliegen").Body.String()
+	if !strings.Contains(body, "Erstes Anliegen melden") || strings.Contains(body, "Fremdes privates Anliegen") {
+		t.Fatal("resident must see the first-issue heading and nothing of the private filing")
+	}
+	manager := "vera@example.com"
+	m := newTestPortalApp(t, userProfile{Email: manager, Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := issueRepositoryForTest(m, "demo").Create(residentIssue{TenantSlug: "demo", AuthorEmail: "other@example.com", Category: "Reparatur", Title: "Fremdes privates Anliegen", Body: "Wasserhahn tropft", LocationType: issueLocationUnit, CreatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if body := authedRequest(t, m, manager, "/demo/app/anliegen").Body.String(); strings.Contains(body, "Erstes Anliegen melden") || !strings.Contains(body, "Fremdes privates Anliegen") {
+		t.Fatal("management sees the filing and the plain heading")
 	}
 }
