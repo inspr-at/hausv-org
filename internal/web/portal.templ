@@ -297,9 +297,9 @@ templ PortalBaseStyles() {
 		/* The compact house card must preserve a usable map link without competing
 		   with the picker trigger. Its copy is deliberately allowed two complete
 		   lines; a clipped address makes the current house ambiguous. */
-		.portal-organisation-identity strong{overflow:visible;overflow-wrap:normal;text-overflow:clip;white-space:normal}
+		.portal-organisation-identity strong{overflow:visible;overflow-wrap:anywhere;text-overflow:clip;white-space:normal}
 		.house-header-card{grid-template-columns:56px minmax(0,1fr) 18px}
-		.house-header-copy strong{overflow:visible;overflow-wrap:normal;hyphens:manual;-webkit-line-clamp:unset}
+		.house-header-copy strong{overflow:visible;overflow-wrap:anywhere;hyphens:manual;-webkit-line-clamp:unset}
 		.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}
 		.house-map-thumb{inset:auto;display:block;flex:0 0 56px;border:0;isolation:isolate}
 		.house-map-thumb .side-map-fallback{padding:0;font-size:8px;text-align:center}
@@ -584,7 +584,7 @@ templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool
 		<details class="house-picker" data-house-picker id={ portalHousePickerID(sidebar) } data-house-picker-shell={ portalHousePickerShell(sidebar) }>
 			<summary class="house-header-card" aria-label={ "Liegenschaft wechseln, aktuell " + data.HouseName }>
 				@PortalMapThumbnail(data)
-				<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
+				<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ portalHouseTitle(data.HouseName, data.Address) }</strong><small>{ portalHousePlace(data.Address) }</small></span>
 				<span class="house-header-chevron" aria-hidden="true">⌄</span>
 			</summary>
 			@HousePickerPanel(shell.ManagedHouses, data.TenantSlug)
@@ -592,7 +592,7 @@ templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool
 	} else {
 		<div class="house-header-card house-header-static" aria-label={ "Aktuelle Liegenschaft " + data.HouseName }>
 			@PortalMapThumbnail(data)
-			<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ data.HouseName }</strong><small>{ portalHousePlace(data.Address) }</small></span>
+			<span class="house-header-copy side-address-label" lang="de-AT"><strong>{ portalHouseTitle(data.HouseName, data.Address) }</strong><small>{ portalHousePlace(data.Address) }</small></span>
 		</div>
 	}
 }
@@ -691,6 +691,23 @@ func housePickerMoreHouses(houses []PortalHouse, currentSlug string) []PortalHou
 func portalHousePlace(address string) string {
 	parts := strings.Split(address, ",")
 	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+// portalHouseTitle keeps the house card from naming the place twice: a tenant
+// without a display name falls back to its postal address (houseDisplayName),
+// so "Janischhofweg 22, 8043 Graz" would sit above "8043 Graz". The strong
+// line then carries the street only; the place stays in the small line.
+func portalHouseTitle(name, address string) string {
+	title := strings.TrimSpace(name)
+	place := portalHousePlace(address)
+	if place == "" || !strings.HasSuffix(title, place) || len(title) == len(place) {
+		return title
+	}
+	street := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(title[:len(title)-len(place)]), ","))
+	if street == "" {
+		return title
+	}
+	return street
 }
 
 templ PortalHousePickerScript() {
