@@ -2,6 +2,18 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.0] - 2026-09-07
+
+### Neu
+
+- Jahresabrechnung: Das Ergebnis je Einheit ist eine kompakte Tabelle mit Partei, Kostenanteil, Akonto und Saldo, aufklappbaren Kostenarten-Details und den PDF- und Archiv-Links je Partei; die Aktionen zum Lauf stehen in einer Zeile. Auf dem Telefon werden die Zeilen zu beschrifteten Blöcken.
+- Demodaten: Kontakte mit Wegweiser und Dienstleistern, Mitarbeiter der Verwaltung, Abstimmungen, Termindetails und eine gefüllte Bilanz gehören jetzt zum Demostand.
+
+### Stabilität verbessert
+
+- Dokumente: Einheiten erscheinen in Registerreihenfolge (Top 1, 2, 3 …, dann Stellplätze); der Chip zeigt den Namen der Partei.
+- Oberfläche: Links in Einstellungslisten brechen nicht mehr wortweise um; Seitentitel und Hausname passen auf schmale Telefone; der Hausname in der Seitenleiste wird ohne Trennstrich umbrochen; das Übergaben-Symbol wird korrekt gezeichnet; die Mitarbeiterliste passt in die Tablet-Ansicht.
+
 ## [1.7.3] - 2026-09-07
 
 ### Stabilität verbessert
