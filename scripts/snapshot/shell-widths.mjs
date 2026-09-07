@@ -86,6 +86,10 @@ for (const [name, route] of ROUTES) {
         // only navigation on the page sat below the fold — off-screen on load,
         // and this probe called it visible because it had a bounding box.
         headTop: (() => { const h = document.querySelector('.mobile-head'); return h ? Math.round(h.getBoundingClientRect().top) : null; })(),
+        // The skip link is rendered by every shell but its hiding rule lived in
+        // one of them (HAUSV-647): a visible "Zum Inhalt springen" over the
+        // sidebar is a defect at every width, so record where it sits.
+        skipBottom: (() => { const a = document.querySelector('.skip-link'); return a ? Math.round(a.getBoundingClientRect().bottom) : null; })(),
         // Record the renderer marker so a route cannot silently evade the shell
         // assertions by returning unrelated or obsolete markup.
         templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),
@@ -270,13 +274,15 @@ for (const w of WIDTHS) {
   const noLinks = all.filter((r) => r.links === 0);
   const noMenu = all.filter((r) => r.mobile && !r.menu);
   const buried = all.filter((r) => r.mobile && r.headTop !== null && r.headTop > 0);
+  const skipShown = all.filter((r) => r.skipBottom !== null && r.skipBottom > 0);
 
   let kind = desktop.length && mob.length ? 'SPLIT' : (mob.length ? 'mobile' : 'desktop');
   console.log(`${String(w).padStart(6)}  ${kind.padEnd(8)} ${desktop.length} desktop / ${mob.length} mobile`);
 
   for (const [label, list] of [['no navigation at all', none], ['both shells at once', both],
                                ['no nav links', noLinks], ['mobile head without a usable menu', noMenu],
-                               ['mobile header pushed below the top', buried.map((r) => ({ ...r, route: `${r.route} (y=${r.headTop})` }))]]) {
+                               ['mobile header pushed below the top', buried.map((r) => ({ ...r, route: `${r.route} (y=${r.headTop})` }))],
+                               ['skip link visible without focus', skipShown.map((r) => ({ ...r, route: `${r.route} (bottom=${r.skipBottom})` }))]]) {
     if (list.length) { failures += list.length; console.log(`         ${label}: ${list.map((r) => r.route).join(', ')}`); }
   }
   if (desktop.length && mob.length) {
