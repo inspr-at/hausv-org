@@ -23,11 +23,13 @@ type unit struct {
 }
 
 type house struct {
-	Slug         string `json:"slug"`
-	Name         string `json:"name"`
-	Address      string `json:"address"`
-	Organisation string `json:"organisation"`
-	Units        []unit `json:"units"`
+	Slug         string           `json:"slug"`
+	Name         string           `json:"name"`
+	Address      string           `json:"address"`
+	Organisation string           `json:"organisation"`
+	Units        []unit           `json:"units"`
+	Contacts     []map[string]any `json:"contacts,omitempty"`
+	Ballots      []map[string]any `json:"ballots,omitempty"`
 }
 
 type membership struct {
@@ -74,19 +76,20 @@ type precomputed struct {
 }
 
 type intakeItem struct {
-	ID          string       `json:"id"`
-	Source      string       `json:"source"`
-	ReceivedAt  string       `json:"received_at"`
-	House       string       `json:"house"`
-	Unit        string       `json:"unit"`
-	FromName    string       `json:"from_name"`
-	FromEmail   string       `json:"from_email"`
-	FromPhone   string       `json:"from_phone"`
-	Subject     string       `json:"subject"`
-	Body        string       `json:"body"`
-	Truth       truth        `json:"truth"`
-	Precomputed *precomputed `json:"precomputed"`
-	StatusHint  string       `json:"status_hint"`
+	ID           string       `json:"id"`
+	Source       string       `json:"source"`
+	ReceivedAt   string       `json:"received_at"`
+	House        string       `json:"house"`
+	Unit         string       `json:"unit"`
+	FromName     string       `json:"from_name"`
+	FromEmail    string       `json:"from_email"`
+	FromPhone    string       `json:"from_phone"`
+	Subject      string       `json:"subject"`
+	Body         string       `json:"body"`
+	Truth        truth        `json:"truth"`
+	Precomputed  *precomputed `json:"precomputed"`
+	StatusHint   string       `json:"status_hint"`
+	HandledReply string       `json:"handled_reply,omitempty"`
 }
 
 type textTemplate struct {
@@ -263,6 +266,8 @@ func buildHousesAndPersons() ([]house, []person) {
 		}
 		houses = append(houses, house{Slug: spec.slug, Name: spec.name, Address: spec.address, Organisation: "musterstadt", Units: units})
 	}
+	houses[0].Contacts = buildDemoContacts()
+	houses[0].Ballots = buildDemoBallots()
 	return houses, people
 }
 
@@ -399,6 +404,14 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 			break
 		}
 	}
+	edited := 0
+	for i := range items {
+		if items[i].StatusHint == "approved" && items[i].Precomputed != nil && edited < 6 {
+			items[i].StatusHint = "edited"
+			items[i].HandledReply = items[i].Precomputed.Reply + "\n\nBei Rückfragen nennen Sie bitte die Referenz " + items[i].ID + "."
+			edited++
+		}
+	}
 	return items, nil
 }
 
@@ -470,8 +483,9 @@ func buildEvents(houses []house) []event {
 			day := 7 + (hi+j*4)%12
 			start := time.Date(2026, 9, day, 9+j*4, 0, 0, 0, time.FixedZone("CEST", 2*60*60))
 			titles := []string{"Eigentümerversammlung", "Liftwartung", "Begehung der Allgemeinflächen"}
+			descriptions := []string{"Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für %s. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll.", "Der Lift in %s wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung.", "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von %s. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."}
 			locations := []string{"Gemeinschaftsraum", "Stiegenhaus", "Hauseingang"}
-			out = append(out, event{ID: fmt.Sprintf("ev-%03d", len(out)+1), House: h.Slug, Title: titles[j], StartsAt: start.Format(time.RFC3339), EndsAt: start.Add(time.Duration(2-j/2) * time.Hour).Format(time.RFC3339), Location: locations[j], Description: "Termin für " + h.Name + ". Bitte Aushang und Zugang beachten."})
+			out = append(out, event{ID: fmt.Sprintf("ev-%03d", len(out)+1), House: h.Slug, Title: titles[j], StartsAt: start.Format(time.RFC3339), EndsAt: start.Add(time.Duration(2-j/2) * time.Hour).Format(time.RFC3339), Location: locations[j], Description: fmt.Sprintf(descriptions[j], h.Name)})
 		}
 	}
 	return out
@@ -503,6 +517,7 @@ func buildOrg() map[string]any {
 	return map[string]any{
 		"key": "musterstadt", "name": "Hausverwaltung Musterstadt GmbH", "trust_levels": trust,
 		"auto_threshold": 0.9, "auto_enabled": true,
+		"members":   buildDemoMembers(),
 		"assignees": []map[string]string{{"key": "vera.verwalter", "email": "vera.verwalter@musterstadt.example", "name": "Vera Verwalter"}, {"key": "paul.sommer", "email": "paul.verwalter@musterstadt.example", "name": "Paul Sommer"}},
 	}
 }

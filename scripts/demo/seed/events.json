@@ -6,7 +6,7 @@
     "starts_at": "2026-09-07T09:00:00+02:00",
     "ends_at": "2026-09-07T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Janusbergweg 123. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-002",
@@ -15,7 +15,7 @@
     "starts_at": "2026-09-11T13:00:00+02:00",
     "ends_at": "2026-09-11T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Janusbergweg 123 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-003",
@@ -24,7 +24,7 @@
     "starts_at": "2026-09-15T17:00:00+02:00",
     "ends_at": "2026-09-15T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Janusbergweg 123. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Janusbergweg 123. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-004",
@@ -33,7 +33,7 @@
     "starts_at": "2026-09-08T09:00:00+02:00",
     "ends_at": "2026-09-08T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Grazbachgasse 14. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-005",
@@ -42,7 +42,7 @@
     "starts_at": "2026-09-12T13:00:00+02:00",
     "ends_at": "2026-09-12T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Grazbachgasse 14 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-006",
@@ -51,7 +51,7 @@
     "starts_at": "2026-09-16T17:00:00+02:00",
     "ends_at": "2026-09-16T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Grazbachgasse 14. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Grazbachgasse 14. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-007",
@@ -60,7 +60,7 @@
     "starts_at": "2026-09-09T09:00:00+02:00",
     "ends_at": "2026-09-09T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Annenstraße 71. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-008",
@@ -69,7 +69,7 @@
     "starts_at": "2026-09-13T13:00:00+02:00",
     "ends_at": "2026-09-13T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Annenstraße 71 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-009",
@@ -78,7 +78,7 @@
     "starts_at": "2026-09-17T17:00:00+02:00",
     "ends_at": "2026-09-17T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Annenstraße 71. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Annenstraße 71. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-010",
@@ -87,7 +87,7 @@
     "starts_at": "2026-09-10T09:00:00+02:00",
     "ends_at": "2026-09-10T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Münzgrabenstraße 9. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-011",
@@ -96,7 +96,7 @@
     "starts_at": "2026-09-14T13:00:00+02:00",
     "ends_at": "2026-09-14T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Münzgrabenstraße 9 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-012",
@@ -105,7 +105,7 @@
     "starts_at": "2026-09-18T17:00:00+02:00",
     "ends_at": "2026-09-18T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Münzgrabenstraße 9. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Münzgrabenstraße 9. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-013",
@@ -114,7 +114,7 @@
     "starts_at": "2026-09-11T09:00:00+02:00",
     "ends_at": "2026-09-11T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Schörgelgasse 25. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-014",
@@ -123,7 +123,7 @@
     "starts_at": "2026-09-15T13:00:00+02:00",
     "ends_at": "2026-09-15T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Schörgelgasse 25 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-015",
@@ -132,7 +132,7 @@
     "starts_at": "2026-09-07T17:00:00+02:00",
     "ends_at": "2026-09-07T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Schörgelgasse 25. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Schörgelgasse 25. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-016",
@@ -141,7 +141,7 @@
     "starts_at": "2026-09-12T09:00:00+02:00",
     "ends_at": "2026-09-12T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Leonhardstraße 3. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-017",
@@ -150,7 +150,7 @@
     "starts_at": "2026-09-16T13:00:00+02:00",
     "ends_at": "2026-09-16T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Leonhardstraße 3 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-018",
@@ -159,7 +159,7 @@
     "starts_at": "2026-09-08T17:00:00+02:00",
     "ends_at": "2026-09-08T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Leonhardstraße 3. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Leonhardstraße 3. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-019",
@@ -168,7 +168,7 @@
     "starts_at": "2026-09-13T09:00:00+02:00",
     "ends_at": "2026-09-13T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Körblergasse 40. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-020",
@@ -177,7 +177,7 @@
     "starts_at": "2026-09-17T13:00:00+02:00",
     "ends_at": "2026-09-17T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Körblergasse 40 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-021",
@@ -186,7 +186,7 @@
     "starts_at": "2026-09-09T17:00:00+02:00",
     "ends_at": "2026-09-09T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Körblergasse 40. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Körblergasse 40. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-022",
@@ -195,7 +195,7 @@
     "starts_at": "2026-09-14T09:00:00+02:00",
     "ends_at": "2026-09-14T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Elisabethstraße 12. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-023",
@@ -204,7 +204,7 @@
     "starts_at": "2026-09-18T13:00:00+02:00",
     "ends_at": "2026-09-18T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Elisabethstraße 12 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-024",
@@ -213,7 +213,7 @@
     "starts_at": "2026-09-10T17:00:00+02:00",
     "ends_at": "2026-09-10T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Elisabethstraße 12. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Elisabethstraße 12. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-025",
@@ -222,7 +222,7 @@
     "starts_at": "2026-09-15T09:00:00+02:00",
     "ends_at": "2026-09-15T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Sparbersbachgasse 58. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-026",
@@ -231,7 +231,7 @@
     "starts_at": "2026-09-07T13:00:00+02:00",
     "ends_at": "2026-09-07T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Sparbersbachgasse 58 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-027",
@@ -240,7 +240,7 @@
     "starts_at": "2026-09-11T17:00:00+02:00",
     "ends_at": "2026-09-11T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Sparbersbachgasse 58. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Sparbersbachgasse 58. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-028",
@@ -249,7 +249,7 @@
     "starts_at": "2026-09-16T09:00:00+02:00",
     "ends_at": "2026-09-16T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Mariatroster Straße 101. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-029",
@@ -258,7 +258,7 @@
     "starts_at": "2026-09-08T13:00:00+02:00",
     "ends_at": "2026-09-08T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Mariatroster Straße 101 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-030",
@@ -267,7 +267,7 @@
     "starts_at": "2026-09-12T17:00:00+02:00",
     "ends_at": "2026-09-12T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Mariatroster Straße 101. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Mariatroster Straße 101. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-031",
@@ -276,7 +276,7 @@
     "starts_at": "2026-09-17T09:00:00+02:00",
     "ends_at": "2026-09-17T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Petersgasse 7. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-032",
@@ -285,7 +285,7 @@
     "starts_at": "2026-09-09T13:00:00+02:00",
     "ends_at": "2026-09-09T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Petersgasse 7 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-033",
@@ -294,7 +294,7 @@
     "starts_at": "2026-09-13T17:00:00+02:00",
     "ends_at": "2026-09-13T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Petersgasse 7. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Petersgasse 7. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   },
   {
     "id": "ev-034",
@@ -303,7 +303,7 @@
     "starts_at": "2026-09-18T09:00:00+02:00",
     "ends_at": "2026-09-18T11:00:00+02:00",
     "location": "Gemeinschaftsraum",
-    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Kaiserfeldgasse 19. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
   },
   {
     "id": "ev-035",
@@ -312,7 +312,7 @@
     "starts_at": "2026-09-10T13:00:00+02:00",
     "ends_at": "2026-09-10T15:00:00+02:00",
     "location": "Stiegenhaus",
-    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+    "description": "Der Lift in Kaiserfeldgasse 19 wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
   },
   {
     "id": "ev-036",
@@ -321,6 +321,6 @@
     "starts_at": "2026-09-14T17:00:00+02:00",
     "ends_at": "2026-09-14T18:00:00+02:00",
     "location": "Hauseingang",
-    "description": "Termin für Kaiserfeldgasse 19. Bitte Aushang und Zugang beachten."
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Kaiserfeldgasse 19. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   }
 ]

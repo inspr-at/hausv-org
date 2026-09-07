@@ -45,6 +45,13 @@ type seedOrg struct {
 	AutoThreshold float64           `json:"auto_threshold"`
 	AutoEnabled   bool              `json:"auto_enabled"`
 	Assignees     []seedAssignee    `json:"assignees"`
+	Members       []seedMember      `json:"members"`
+}
+
+type seedMember struct {
+	Email   string            `json:"email"`
+	Role    string            `json:"role"`
+	Granted map[string]string `json:"granted"`
 }
 
 type seedAssignee struct {
@@ -54,11 +61,13 @@ type seedAssignee struct {
 }
 
 type seedHouse struct {
-	Slug         string     `json:"slug"`
-	Name         string     `json:"name"`
-	Address      string     `json:"address"`
-	Organisation string     `json:"organisation"`
-	Units        []seedUnit `json:"units"`
+	Slug         string                 `json:"slug"`
+	Name         string                 `json:"name"`
+	Address      string                 `json:"address"`
+	Organisation string                 `json:"organisation"`
+	Units        []seedUnit             `json:"units"`
+	Contacts     []store.ManagedContact `json:"contacts"`
+	Ballots      []store.Ballot         `json:"ballots"`
 }
 
 type seedUnit struct {
@@ -72,19 +81,20 @@ type seedUnit struct {
 }
 
 type seedIntake struct {
-	ID          string             `json:"id"`
-	Source      store.IntakeSource `json:"source"`
-	ReceivedAt  time.Time          `json:"received_at"`
-	House       string             `json:"house"`
-	Unit        string             `json:"unit"`
-	FromName    string             `json:"from_name"`
-	FromEmail   string             `json:"from_email"`
-	FromPhone   string             `json:"from_phone"`
-	Subject     string             `json:"subject"`
-	Body        string             `json:"body"`
-	Truth       *store.IntakeTruth `json:"truth"`
-	Precomputed *seedSuggestion    `json:"precomputed"`
-	StatusHint  string             `json:"status_hint"`
+	ID           string             `json:"id"`
+	Source       store.IntakeSource `json:"source"`
+	ReceivedAt   time.Time          `json:"received_at"`
+	House        string             `json:"house"`
+	Unit         string             `json:"unit"`
+	FromName     string             `json:"from_name"`
+	FromEmail    string             `json:"from_email"`
+	FromPhone    string             `json:"from_phone"`
+	Subject      string             `json:"subject"`
+	Body         string             `json:"body"`
+	Truth        *store.IntakeTruth `json:"truth"`
+	Precomputed  *seedSuggestion    `json:"precomputed"`
+	StatusHint   string             `json:"status_hint"`
+	HandledReply string             `json:"handled_reply,omitempty"`
 }
 
 type seedSuggestion struct {
@@ -158,6 +168,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	}
 	if !options.Anchor.IsZero() {
 		shiftSeedDates(options.Anchor, intake, events, announcements)
+		shiftHouseDates(options.Anchor, houses)
 	}
 	if options.Reset {
 		if err := reset(ctx, database, org.Key, houses, intake, events, announcements); err != nil {
@@ -168,10 +179,19 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	settings := store.BindOrgSettingsRepository(database, org.Key)
 	if err := settings.Save(ctx, store.OrgSettings{
 		Organisation: org.Key, Name: org.Name, TrustLevels: org.TrustLevels,
-		AutoThreshold: org.AutoThreshold, AutoEnabled: org.AutoEnabled,
+		AutoThreshold: org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
 	}); err != nil {
 		return SeedResult{}, err
 	}
+	memberRepo := store.BindOrganisationMemberRepository(database, org.Key)
+	for _, member := range org.Members {
+		// Preserve the house roles already supplied by persons.json in the
+		// grant record, so removing a demo employee restores those roles.
+		if err := memberRepo.Save(ctx, store.OrganisationMember{Email: member.Email, Role: member.Role, Granted: member.Granted}); err != nil {
+			return SeedResult{}, fmt.Errorf("seed member %s: %w", member.Email, err)
+		}
+	}
+
 	templateRepo := store.BindTextbausteinRepository(database, org.Key)
 	for _, item := range templates {
 		item.Active = true
@@ -233,9 +253,12 @@ func intakeItem(raw seedIntake, orgKey string, index int) store.IntakeItem {
 		status = store.IntakeStatusAuto
 		handling = &store.IntakeHandling{Action: "auto", ByName: "System", At: raw.ReceivedAt}
 		issueID = "issue-" + raw.ID
-	case "approved":
+	case "approved", "edited":
 		status = store.IntakeStatusApproved
-		handling = &store.IntakeHandling{Action: "approved", ByName: "Demo", At: raw.ReceivedAt}
+		handling = &store.IntakeHandling{Action: raw.StatusHint, ByName: "Demo", At: raw.ReceivedAt}
+		if raw.StatusHint == "edited" {
+			status = store.IntakeStatusEdited
+		}
 		issueID = "issue-" + raw.ID
 	case "manual":
 		status = store.IntakeStatusRejected
@@ -250,6 +273,9 @@ func intakeItem(raw seedIntake, orgKey string, index int) store.IntakeItem {
 			TemplateKey: raw.Precomputed.TemplateKey, Reply: raw.Precomputed.Reply,
 			Actions: raw.Precomputed.Actions, Confidence: raw.Precomputed.Confidence, CreatedAt: raw.ReceivedAt,
 		}
+	}
+	if suggestion != nil && raw.StatusHint == "edited" {
+		suggestion.Reply = raw.HandledReply
 	}
 	return store.IntakeItem{
 		ID: raw.ID, Organisation: orgKey, TenantSlug: raw.House, Unit: raw.Unit, Source: raw.Source,
@@ -276,6 +302,29 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 		if !ok {
 			return fmt.Errorf("missing tenant identity for %s", house.Slug)
 		}
+		for _, raw := range house.Contacts {
+			raw.TenantSlug = identity.Slug
+			item, err := store.NormalizeManagedContact(raw)
+			if err != nil || item.ID == "" {
+				return fmt.Errorf("invalid seed contact %s in %s: %v", raw.ID, identity.Slug, err)
+			}
+			if err := upsertJSON(ctx, tx, "contacts", identity, item.ID, item); err != nil {
+				return err
+			}
+			if _, err := tx.ExecContext(ctx, `UPDATE contacts SET active=$1 WHERE tenant_slug=$2 AND id=$3`, item.Active, identity.Slug, item.ID); err != nil {
+				return err
+			}
+		}
+		for _, item := range house.Ballots {
+			item.TenantSlug = identity.Slug
+			item = store.NormalizeBallot(item)
+			if item.ID == "" || item.Title == "" || len(item.Options) < 2 {
+				return fmt.Errorf("invalid seed ballot in %s", identity.Slug)
+			}
+			if err := upsertJSON(ctx, tx, "ballots", identity, item.ID, item); err != nil {
+				return err
+			}
+		}
 		for _, unit := range fixtureUnits(identity.Slug, house.Units) {
 			if err := upsertJSON(ctx, tx, "units", identity, unit.ID, unit); err != nil {
 				return err
@@ -287,7 +336,7 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 		assigneeEmail[assignee.Key] = assignee.Email
 	}
 	for index, raw := range intake {
-		if raw.StatusHint != "auto_done" && raw.StatusHint != "approved" && raw.StatusHint != "manual" {
+		if raw.StatusHint != "auto_done" && raw.StatusHint != "approved" && raw.StatusHint != "edited" && raw.StatusHint != "manual" {
 			continue
 		}
 		identity, ok := identities[textutil.Slug(raw.House)]
@@ -301,9 +350,9 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 			category, priority, assignee = raw.Precomputed.Category, raw.Precomputed.Priority, raw.Precomputed.Assignee
 		}
 		status := store.IssueStatusNew
-		if raw.StatusHint == "auto_done" || (raw.StatusHint == "approved" && index%4 != 0) {
+		if raw.StatusHint == "auto_done" || ((raw.StatusHint == "approved" || raw.StatusHint == "edited") && index%4 != 0) {
 			status = store.IssueStatusDone
-		} else if raw.StatusHint == "approved" {
+		} else if raw.StatusHint == "approved" || raw.StatusHint == "edited" {
 			status = store.IssueStatusProgress
 		}
 		email := raw.FromEmail
@@ -320,6 +369,9 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 			LocationType: location, LocationDetail: raw.Unit, Status: status, Priority: priority,
 			AssigneeEmail: assigneeEmail[assignee], StatusChangedAt: raw.ReceivedAt, StatusChangedBy: "system",
 			CreatedAt: raw.ReceivedAt, UpdatedAt: raw.ReceivedAt, DueAt: dueFor(raw.ReceivedAt, priority),
+		}
+		if raw.StatusHint == "edited" && raw.HandledReply != "" {
+			issue.Comments = []store.IssueComment{{ID: "intake-reply-" + raw.ID, AuthorEmail: assigneeEmail[assignee], AuthorName: "Demo", Body: raw.HandledReply, Kind: store.IssueCommentKindInformation, CreatedAt: raw.ReceivedAt}}
 		}
 		if issue.Title == "" {
 			issue.Title = "Demo-Anliegen"
@@ -462,7 +514,7 @@ func readJSON(path string, target any) error {
 }
 
 func printStats(out io.Writer, result SeedResult) {
-	statuses := []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusApproved, store.IntakeStatusRejected, store.IntakeStatusAuto}
+	statuses := []store.IntakeStatus{store.IntakeStatusOpen, store.IntakeStatusProposed, store.IntakeStatusApproved, store.IntakeStatusEdited, store.IntakeStatusRejected, store.IntakeStatusAuto}
 	for _, status := range statuses {
 		fmt.Fprintf(out, "status %s: %d\n", status, result.Statuses[status])
 	}
@@ -523,5 +575,53 @@ func shiftSeedDates(anchor time.Time, intake []seedIntake, events []seedEvent, a
 	}
 	for i := range announcements {
 		announcements[i].PublishedAt = announcements[i].PublishedAt.Add(shift)
+	}
+}
+
+// seedCounters uses the same action names as the intake pipeline. Assigning
+// totals rather than incrementing keeps repeated loads and resets stable.
+func seedCounters(items []seedIntake) store.OrgCounters {
+	var counters store.OrgCounters
+	for _, item := range items {
+		switch item.StatusHint {
+		case "approved":
+			counters.Approved++
+		case "edited":
+			counters.Edited++
+		case "manual":
+			counters.Rejected++
+		case "auto_done":
+			counters.Auto++
+		}
+	}
+	return counters
+}
+
+func shiftHouseDates(anchor time.Time, houses []seedHouse) {
+	a := anchor.In(seedDemoDay.Location())
+	shift := time.Date(a.Year(), a.Month(), a.Day(), 0, 0, 0, 0, seedDemoDay.Location()).Sub(seedDemoDay)
+	move := func(at time.Time) time.Time {
+		if at.IsZero() {
+			return at
+		}
+		return at.Add(shift)
+	}
+	for i := range houses {
+		for j := range houses[i].Contacts {
+			item := &houses[i].Contacts[j]
+			item.CreatedAt, item.UpdatedAt = move(item.CreatedAt), move(item.UpdatedAt)
+		}
+		for j := range houses[i].Ballots {
+			item := &houses[i].Ballots[j]
+			item.OpensAt, item.ClosesAt = move(item.OpensAt), move(item.ClosesAt)
+			item.CreatedAt, item.UpdatedAt = move(item.CreatedAt), move(item.UpdatedAt)
+			for email, vote := range item.Votes {
+				vote.At = move(vote.At)
+				item.Votes[email] = vote
+			}
+			for email, at := range item.ReminderSentAt {
+				item.ReminderSentAt[email] = move(at)
+			}
+		}
 	}
 }

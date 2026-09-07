@@ -14,6 +14,44 @@
   "auto_enabled": true,
   "auto_threshold": 0.9,
   "key": "musterstadt",
+  "members": [
+    {
+      "email": "vera.verwalter@musterstadt.example",
+      "granted": {
+        "annenstrasse-71": "Admin",
+        "elisabethstrasse-12": "Admin",
+        "grazbachgasse-14": "Admin",
+        "janusbergweg-123": "Admin",
+        "kaiserfeldgasse-19": "Admin",
+        "koerblergasse-40": "Admin",
+        "leonhardstrasse-3": "Admin",
+        "mariatroster-strasse-101": "Admin",
+        "muenzgrabenstrasse-9": "Admin",
+        "petersgasse-7": "Admin",
+        "schoergelgasse-25": "Admin",
+        "sparbersbachgasse-58": "Admin"
+      },
+      "role": "admin"
+    },
+    {
+      "email": "paul.verwalter@musterstadt.example",
+      "granted": {
+        "annenstrasse-71": "Verwalter",
+        "elisabethstrasse-12": "Verwalter",
+        "grazbachgasse-14": "Verwalter",
+        "janusbergweg-123": "Verwalter",
+        "kaiserfeldgasse-19": "Verwalter",
+        "koerblergasse-40": "Verwalter",
+        "leonhardstrasse-3": "Verwalter",
+        "mariatroster-strasse-101": "Verwalter",
+        "muenzgrabenstrasse-9": "Verwalter",
+        "petersgasse-7": "Verwalter",
+        "schoergelgasse-25": "Verwalter",
+        "sparbersbachgasse-58": "Verwalter"
+      },
+      "role": "sachbearbeiter"
+    }
+  ],
   "name": "Hausverwaltung Musterstadt GmbH",
   "trust_levels": {
     "beleg": "auto",
