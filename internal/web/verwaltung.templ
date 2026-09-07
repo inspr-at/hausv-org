@@ -59,6 +59,7 @@ templ portalVerwaltungPage(shell VerwaltungShell, title string, scripts []string
 				</main>
 			</div>
 		</div>
+		@ReleaseHistoryDialog(shell.ReleaseNotes)
 	}
 }
 
@@ -161,16 +162,10 @@ templ VerwaltungPortalSwitch(contexts []PortalContext, mobile bool) {
 	}
 }
 
+// VerwaltungReleaseNotes renders the footer trigger; the notes live in the one
+// ReleaseHistoryDialog the Verwaltung shell renders next to .shell.
 templ VerwaltungReleaseNotes(shell VerwaltungShell) {
-	<details class="release-notes"><summary>v{ shell.DisplayVersion } · Versionsverlauf</summary><div class="release-panel"><h2>Versionsverlauf</h2>
-		for _, note := range shell.ReleaseNotes {
-			<article class="release-entry"><small>v{ note.Version } · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
-				for _, item := range note.Items {
-					<li><strong>{ item.Label }:</strong> { item.Text }</li>
-				}
-			</ul></article>
-		}
-	</div></details>
+	@ReleaseNotesTrigger(shell.DisplayVersion)
 }
 
 templ VerwaltungPlaceholder() {

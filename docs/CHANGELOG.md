@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.8] - 2026-09-07
+
+### Stabilität verbessert
+
+- Versionsverlauf: Das Fenster öffnet sich über der Seite mit abgedunkeltem Hintergrund und schließt per Schaltfläche, Escape oder Klick daneben; die Bildlaufleisten im Portal sind schmal und im Farbton der Anwendung.
+
 ## [1.8.7] - 2026-09-07
 
 ### Neu
