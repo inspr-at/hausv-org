@@ -1168,6 +1168,8 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	flowConfig := buildEnergyFlowConfig(ac.tenant.Slug, live, assets, mappings, metrics, charging, canManageEnergyData)
 	flowConfigJSON, err := json.Marshal(flowConfig)
 	if err != nil {
+		// Never silent: without the config the client keeps the no-JS fallback.
+		logError("energy flow config not encodable", err, "tenant", ac.tenant.Slug)
 		flowConfigJSON = []byte("null")
 	}
 	lucideIconNamesJSON, err := json.Marshal(web.LucideIconNames())
@@ -4925,6 +4927,7 @@ func buildEnergyFlowConfigAt(tenantSlug string, live energyLiveView, assets []en
 	}
 	sort.SliceStable(cfg.Consumers, func(i, j int) bool { return cfg.Consumers[i].Priority < cfg.Consumers[j].Priority })
 	applyEnergyFlowHovers(&cfg, live)
+	sanitizeEnergyFlowConfig(&cfg)
 	return cfg
 }
 
@@ -6514,4 +6517,32 @@ func cleanEnergyText(raw string, limit int) string {
 		value = string(runes[:limit])
 	}
 	return value
+}
+
+// sanitizeEnergyFlowConfig keeps the flow config encodable. A sensor that
+// reports "unavailable" or a division that produced ±Inf must not turn into a
+// json.Marshal error — encoding/json refuses NaN and Inf — because the page
+// then ships "null" and the client renderer silently leaves the no-JS fallback
+// in place (HAUSV-671). Display strings are already formatted; only the kw
+// numerics that drive ribbon widths are replaced with 0.
+func sanitizeEnergyFlowConfig(cfg *energyFlowConfig) {
+	finite := func(kw float64) float64 {
+		if math.IsNaN(kw) || math.IsInf(kw, 0) {
+			return 0
+		}
+		return kw
+	}
+	cfg.Home.KW = finite(cfg.Home.KW)
+	for i := range cfg.Producers {
+		cfg.Producers[i].KW = finite(cfg.Producers[i].KW)
+	}
+	if cfg.Storage != nil {
+		cfg.Storage.KW = finite(cfg.Storage.KW)
+	}
+	if cfg.Grid != nil {
+		cfg.Grid.KW = finite(cfg.Grid.KW)
+	}
+	for i := range cfg.Consumers {
+		cfg.Consumers[i].KW = finite(cfg.Consumers[i].KW)
+	}
 }

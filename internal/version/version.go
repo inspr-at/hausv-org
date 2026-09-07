@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.5",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der Energiefluss wird auch bei einem fehlenden Messwert gezeichnet.",
+			Intro:    "Meldet ein Sensor vorübergehend keinen gültigen Zahlenwert, bleiben Diagramm und Symbole der Energieübersicht trotzdem sichtbar.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.4",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",
