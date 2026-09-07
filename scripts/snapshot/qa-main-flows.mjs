@@ -1033,6 +1033,23 @@ async function assertPublicLanding(viewport) {
       fail(`Öffentliche Startseite ${viewport.name}: „${text}“ fehlt`);
     }
   }
+  // HAUSV-664: the Professional path teases the fee model, and the former
+  // pricing section is gone for good. Non-breaking spaces are normalised so the
+  // oracle compares the words a reader sees.
+  const feeTeaser = await page.locator('.product-path.professional .product-path-price').evaluate((element) => ({
+    headline: (element.querySelector('strong')?.textContent ?? '').replace(/\u00a0/g, ' ').trim(),
+    note: (element.querySelector('span')?.textContent ?? '').replace(/\u00a0/g, ' ').trim(),
+  }));
+  if (feeTeaser.headline !== '0 € Grundgebühr' ||
+      feeTeaser.note !== '25 WE kostenlos · danach Verrechnung je WE / Monat') {
+    fail(`Öffentliche Startseite ${viewport.name}: Preis-Teaser lautet ${JSON.stringify(feeTeaser)}`);
+  }
+  if (await page.locator('#preise, .cost-section, .offer-card, a[href="#preise"]').count()) {
+    fail(`Öffentliche Startseite ${viewport.name}: der entfernte Preisabschnitt ist zurück`);
+  }
+  if (await page.getByRole('heading', { name: 'Klein starten. Erst mit dem Nutzen wachsen.' }).count()) {
+    fail(`Öffentliche Startseite ${viewport.name}: die entfernte Preis-Überschrift ist zurück`);
+  }
   if (process.env.HV_QA_SCREENSHOT_DIR) {
     mkdirSync(process.env.HV_QA_SCREENSHOT_DIR, { recursive: true });
     await page.screenshot({
