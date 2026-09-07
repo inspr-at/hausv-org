@@ -178,6 +178,11 @@
   function openHashDialog() {
     if (!window.location.hash) return;
     var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    var preparation = target && target.closest ? target.closest("details.annual-preparation") : null;
+    if (preparation && !preparation.open) {
+      preparation.open = true;
+      target.scrollIntoView();
+    }
     var dialog = target && target.closest ? target.closest("dialog") : null;
     if (!dialog || dialog.open || typeof dialog.showModal !== "function") return;
     dialog.showModal();

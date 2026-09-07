@@ -99,3 +99,49 @@ func TestAnnualStatementDeliveryPanel(t *testing.T) {
 		}
 	}
 }
+
+func TestAnnualStatementRunCompactRowsKeepPartyDocuments(t *testing.T) {
+	data := AnnualStatementRunView{ID: "run", Units: []AnnualStatementRunUnitView{{Label: "Top 1", Costs: []AnnualStatementRunCostView{{Name: "Wasser", Amount: "12,00 €"}}, PDFs: []AnnualStatementRunPDFView{
+		{Label: "Anna <Groß>", URL: "/pdf?party=anna&unit=top-1", ArchiveURL: "/app/dokumente#document-anna"},
+		{Label: "Anna <Groß>", URL: "/pdf?party=other&unit=top-1", ArchiveURL: "/app/dokumente#document-other"},
+	}}}}
+	var body bytes.Buffer
+	if err := AnnualStatementRunPanel(data).Render(t.Context(), &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`<table class="annual-units" role="table">`, `<th role="columnheader" scope="col">Partei</th>`, `<details class="annual-costs">`, `PDF für Anna &lt;Groß&gt; · Top 1`, `Archiv für Anna &lt;Groß&gt; · Top 1`, `Wasser`, `12,00 €`} {
+		if !strings.Contains(body.String(), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	for _, id := range []string{"anna", "other"} {
+		if strings.Count(body.String(), `href="/app/dokumente#document-`+id+`"`) != 1 {
+			t.Errorf("archive link for %s missing or duplicated", id)
+		}
+	}
+	if strings.Contains(body.String(), `class="readonly"`) || strings.Contains(body.String(), `<details class="annual-costs" open`) {
+		t.Fatal("result must be compact and collapsed")
+	}
+}
+
+func TestAnnualStatementPreparationCollapsesOnlyWithoutFeedback(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		data AnnualStatementPageData
+		open bool
+	}{
+		{"first preparation", AnnualStatementPageData{}, true},
+		{"saved result", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run"}}, false},
+		{"correction feedback", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run"}, ReceiptMsg: "Betrag korrigiert"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var body bytes.Buffer
+			if err := AnnualStatementBody(tc.data).Render(t.Context(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if got := strings.Contains(body.String(), `class="annual-preparation" open`); got != tc.open {
+				t.Fatalf("open=%v want %v", got, tc.open)
+			}
+		})
+	}
+}

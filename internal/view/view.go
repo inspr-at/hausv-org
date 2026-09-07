@@ -150,31 +150,32 @@ type SelectOption struct {
 }
 
 type DocumentView struct {
-	Archived        bool
-	ArchiveParty    string
-	ID              string
-	Title           string
-	Category        string
-	Visibility      string
-	VisibilityClass string
-	UnitLabel       string
-	HasUnit         bool
-	Filename        string
-	FileKind        string
-	Size            string
-	ContentType     string
-	UploadedBy      string
-	UploadedAt      string
-	UploadedDate    string
-	DownloadURL     string
-	PreviewURL      string
-	CanPreview      bool
-	IsImage         bool
-	IsPDF           bool
-	VersionLabel    string
-	ReplaceDialogID string
-	Versions        []DocumentVersionView
-	HasVersions     bool
+	Archived          bool
+	ArchiveParty      string
+	ArchivePartyEmail string
+	ID                string
+	Title             string
+	Category          string
+	Visibility        string
+	VisibilityClass   string
+	UnitLabel         string
+	HasUnit           bool
+	Filename          string
+	FileKind          string
+	Size              string
+	ContentType       string
+	UploadedBy        string
+	UploadedAt        string
+	UploadedDate      string
+	DownloadURL       string
+	PreviewURL        string
+	CanPreview        bool
+	IsImage           bool
+	IsPDF             bool
+	VersionLabel      string
+	ReplaceDialogID   string
+	Versions          []DocumentVersionView
+	HasVersions       bool
 }
 
 type DocumentVersionView struct {
@@ -1923,34 +1924,38 @@ func DocumentVisibilityClass(visibility string) string {
 func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 	contentType := strings.ToLower(strings.TrimSpace(item.ContentType))
 	canPreview := DocumentCanPreview(contentType)
-	archiveParty := ""
+	archiveParty, archiveEmail := "", ""
 	if item.AnnualStatementArchive != nil {
-		archiveParty = item.AnnualStatementArchive.PartyID
+		archiveEmail = item.AnnualStatementArchive.PartyID
+		if archiveEmail != "" {
+			archiveParty = archiveEmail
+		}
 	}
 	return DocumentView{
-		Archived:        item.AnnualStatementArchive != nil,
-		ArchiveParty:    archiveParty,
-		ID:              item.ID,
-		Title:           item.Title,
-		Category:        item.Category,
-		Visibility:      DocumentVisibilityLabel(item.Visibility),
-		VisibilityClass: DocumentVisibilityClass(item.Visibility),
-		UnitLabel:       DocumentUnitLabel(item.UnitID),
-		HasUnit:         store.NormalizeUnitID(item.UnitID) != "",
-		Filename:        item.Filename,
-		FileKind:        DocumentFileKind(item),
-		Size:            FormatBytes(item.Size),
-		ContentType:     item.ContentType,
-		UploadedBy:      item.UploadedBy,
-		UploadedAt:      FormatLocalDateTime(item.UploadedAt),
-		UploadedDate:    FormatLocalDate(item.UploadedAt),
-		DownloadURL:     "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
-		PreviewURL:      "/app/dokumente/" + url.PathEscape(item.ID) + "/preview",
-		CanPreview:      canPreview,
-		IsImage:         store.IsImageContentType(contentType),
-		IsPDF:           strings.Split(contentType, ";")[0] == "application/pdf",
-		VersionLabel:    DocumentVersionLabel(item.Version),
-		ReplaceDialogID: "document-replace-" + item.ID,
+		Archived:          item.AnnualStatementArchive != nil,
+		ArchiveParty:      archiveParty,
+		ArchivePartyEmail: archiveEmail,
+		ID:                item.ID,
+		Title:             item.Title,
+		Category:          item.Category,
+		Visibility:        DocumentVisibilityLabel(item.Visibility),
+		VisibilityClass:   DocumentVisibilityClass(item.Visibility),
+		UnitLabel:         DocumentUnitLabel(item.UnitID),
+		HasUnit:           store.NormalizeUnitID(item.UnitID) != "",
+		Filename:          item.Filename,
+		FileKind:          DocumentFileKind(item),
+		Size:              FormatBytes(item.Size),
+		ContentType:       item.ContentType,
+		UploadedBy:        item.UploadedBy,
+		UploadedAt:        FormatLocalDateTime(item.UploadedAt),
+		UploadedDate:      FormatLocalDate(item.UploadedAt),
+		DownloadURL:       "/app/dokumente/" + url.PathEscape(item.ID) + "/download",
+		PreviewURL:        "/app/dokumente/" + url.PathEscape(item.ID) + "/preview",
+		CanPreview:        canPreview,
+		IsImage:           store.IsImageContentType(contentType),
+		IsPDF:             strings.Split(contentType, ";")[0] == "application/pdf",
+		VersionLabel:      DocumentVersionLabel(item.Version),
+		ReplaceDialogID:   "document-replace-" + item.ID,
 	}
 }
 

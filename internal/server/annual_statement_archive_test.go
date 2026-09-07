@@ -181,6 +181,23 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 	if strings.Count(library.Body.String(), "Archiviert · unveränderlich") != 31 || strings.Contains(library.Body.String(), "Neue Version hochladen") {
 		t.Fatal("archive library badge or immutability missing")
 	}
+	for _, want := range []string{"Für Alina Auer", `title="alina.eigentuemer@musterstadt.example"`} {
+		if !strings.Contains(library.Body.String(), want) {
+			t.Errorf("archive library missing %q", want)
+		}
+	}
+	if strings.Contains(library.Body.String(), "Für alina.eigentuemer@") {
+		t.Fatal("email displayed instead of snapshot name")
+	}
+	last := -1
+	for _, unit := range store.AnnualStatementRunDisplayOrder(run) {
+		label := "Jahresabrechnung 2025 · " + unit.Label + " · Lauf 1"
+		index := strings.Index(library.Body.String(), label)
+		if index <= last {
+			t.Fatalf("archive library out of register order at %s", unit.Label)
+		}
+		last = index
+	}
 	events := a.auditStore.List(auditFilter{TenantSlug: archiveDemoTenant, Action: store.AuditActionAnnualRunArchive, Limit: 10})
 	if len(events) != 1 || events[0].TargetID != run.ID || events[0].Details["run_id"] != run.ID || events[0].Details["revision"] != "1" || events[0].Details["document_count"] != "31" {
 		t.Fatalf("audit=%+v", events)

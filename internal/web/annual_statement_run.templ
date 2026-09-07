@@ -44,11 +44,11 @@ type AnnualStatementRunUnitView struct {
 	Balance   string
 	Costs     []AnnualStatementRunCostView
 	PDFs      []AnnualStatementRunPDFView
-	Archives  []AnnualStatementRunPDFView
 }
 type AnnualStatementRunPDFView struct {
-	Label string
-	URL   string
+	Label      string
+	URL        string
+	ArchiveURL string
 }
 type AnnualStatementRunCostView struct {
 	Name   string
@@ -60,6 +60,160 @@ type AnnualStatementRunCostView struct {
 templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 	<section class="panel workspace" id="abrechnungslauf">
 		<style>
+			#abrechnungslauf {
+				min-width: 0;
+			}
+			#abrechnungslauf .subhead {
+				margin-top: var(--space-4);
+			}
+			#abrechnungslauf .subhead > div {
+				min-width: 0;
+				overflow-wrap: anywhere;
+			}
+			.annual-history {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-2);
+			}
+			.settings-links.annual-history a {
+				display: flex;
+				min-height: 44px;
+				border: 1px solid var(--line);
+				border-radius: var(--radius-sm);
+				white-space: nowrap;
+			}
+			.annual-actions {
+				display: flex;
+				gap: var(--space-3);
+				flex-wrap: wrap;
+				align-items: center;
+				margin-block: var(--space-4);
+				font-size: 12px;
+			}
+			.annual-actions > * {
+				min-width: 0;
+				max-width: 100%;
+			}
+			.annual-actions .button {
+				white-space: normal;
+				text-align: center;
+			}
+			.annual-units {
+				width: 100%;
+				margin-top: var(--space-5);
+				border-collapse: collapse;
+				font-size: 12px;
+			}
+			.annual-units caption {
+				text-align: left;
+				font-weight: 700;
+				font-size: 18px;
+				padding-block: var(--space-3);
+			}
+			.annual-units th,
+			.annual-units td {
+				padding: var(--space-2);
+				text-align: left;
+				vertical-align: top;
+			}
+			.annual-units thead {
+				background: var(--panel-soft);
+				color: var(--muted);
+			}
+			.annual-unit-row {
+				border-top: 1px solid var(--line);
+			}
+			.annual-units .annual-money {
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+			}
+			.annual-party-name {
+				display: -webkit-box;
+				-webkit-box-orient: vertical;
+				-webkit-line-clamp: 2;
+				overflow: hidden;
+			}
+			.annual-party {
+				height: 44px;
+			}
+			.annual-party,
+			.annual-pdf {
+				display: flex;
+				align-items: center;
+				min-height: 44px;
+			}
+			.annual-pdf {
+				gap: var(--space-3);
+			}
+			.annual-pdf a {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
+				color: var(--gold-ink);
+				text-decoration: underline;
+				text-underline-offset: 3px;
+				white-space: nowrap;
+			}
+			.annual-costs summary {
+				cursor: pointer;
+				color: var(--gold-ink);
+				padding-bottom: var(--space-2);
+			}
+			.annual-costs .allocation-row {
+				margin-bottom: var(--space-2);
+			}
+			@media (max-width: 1050px) {
+				.annual-units,
+				.annual-units tbody {
+					display: block;
+				}
+				.annual-units caption {
+					display: block;
+				}
+				.annual-units thead {
+					position: absolute;
+					width: 1px;
+					height: 1px;
+					overflow: hidden;
+					clip-path: inset(50%);
+					white-space: nowrap;
+				}
+				.annual-unit-row {
+					display: grid;
+					grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+					padding-top: var(--space-3);
+				}
+				.annual-unit-row th {
+					grid-column: 1/-1;
+					font-size: 16px;
+				}
+				.annual-unit-row td {
+					min-width: 0;
+					overflow-wrap: anywhere;
+				}
+				.annual-unit-row td::before {
+					content: attr(data-label);
+					display: block;
+					color: var(--muted);
+					font-size: 11px;
+					margin-bottom: var(--space-1);
+				}
+				.annual-units .annual-money {
+					text-align: left;
+				}
+				.annual-unit-row .annual-parties {
+					grid-column: 1;
+					grid-row: 2;
+				}
+				.annual-unit-row .annual-documents {
+					grid-column: 2;
+					grid-row: 2;
+				}
+				.annual-cost-row,
+				.annual-cost-row td {
+					display: block;
+				}
+			}
 			.annual-deliveries {
 				max-width: 100%;
 				min-width: 0;
@@ -114,7 +268,7 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 		<form method="post" action="/app/settings/annual-statement/runs"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button primary" type="submit" disabled?={ !data.Ready }>Für alle Einheiten berechnen</button></form>
 		if len(data.History)>0 {
 			<header class="subhead"><div><h3>Gespeicherte Läufe</h3><p>Jeder Lauf hält seinen damaligen Stand fest. Nach Korrekturen können Sie einen weiteren Lauf berechnen.</p></div></header>
-			<nav class="settings-links" aria-label="Abrechnungsläufe">
+			<nav class="settings-links annual-history" aria-label="Abrechnungsläufe">
 				for _,run:=range data.History {
 					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungslauf") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
 				}
@@ -125,12 +279,16 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p><small>Kennung: { data.ID }</small></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
-					<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
-					if data.ArchivedAt != "" {
-						<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
-						<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
-					} else if data.ArchiveAction != "" {
-						<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+					<div class="annual-actions">
+						<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+						if data.ArchivedAt != "" {
+							<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
+							<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
+						} else if data.ArchiveAction != "" {
+							<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+						}
+					</div>
+					if data.ArchivedAt == "" && data.ArchiveAction != "" {
 						<p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
 					}
 				} else {
@@ -149,8 +307,8 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 					if len(data.Deliveries)>0 {
 						<div class="annual-deliveries">
 							<table>
-								<caption>Versandprotokoll</caption><thead><tr><th scope="col">Partei</th><th scope="col">Adresse</th><th scope="col">Zeit</th><th scope="col">Status</th><th scope="col">Fehler</th></tr></thead>
-								<tbody>
+								<caption>Versandprotokoll</caption><thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col">Adresse</th><th role="columnheader" scope="col">Zeit</th><th role="columnheader" scope="col">Status</th><th role="columnheader" scope="col">Fehler</th></tr></thead>
+								<tbody role="rowgroup">
 									for _, delivery := range data.Deliveries {
 										<tr><td>{ delivery.Party }</td><td>{ delivery.Recipient }</td><td>{ delivery.Time }</td><td>{ delivery.Status }</td><td>{ delivery.Error }</td></tr>
 									}
@@ -159,28 +317,45 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 						</div>
 					}
 				}
-				<div class="unit-list">
-					for _,unit:=range data.Units {
-						<article class="inline-details">
-							<header class="subhead"><h4>{ unit.Label }</h4></header>
-							<div class="form-grid"><label>Kostenanteil<span class="readonly">{ unit.Allocated }</span></label><label>Akonto<span class="readonly">{ unit.Prepaid }</span></label><label>Saldo<span class="readonly"><strong>{ unit.Balance }</strong></span></label></div>
-							<nav class="settings-links" aria-label={ "PDF für " + unit.Label }>
-								for _, document := range unit.PDFs {
-									<a href={ templ.SafeURL(document.URL) } download>PDF für { document.Label }</a>
-								}
-								for _, document := range unit.Archives {
-									<a href={ templ.SafeURL(document.URL) }>Archiv für { document.Label }</a>
-								}
-							</nav>
-							<details>
-								<summary>Kostenarten und Anteile</summary>
-								for _,cost:=range unit.Costs {
-									<div class="allocation-row"><strong>{ cost.Name }</strong><span>{ cost.Key }</span><span>{ cost.Share }</span><strong>{ cost.Amount }</strong></div>
-								}
-							</details>
-						</article>
-					}
-				</div>
+				<table class="annual-units" role="table">
+					<caption>Ergebnis je Einheit</caption>
+					<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Einheit</th><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col" class="annual-money">Kostenanteil</th><th role="columnheader" scope="col" class="annual-money">Akonto</th><th role="columnheader" scope="col" class="annual-money">Saldo</th><th role="columnheader" scope="col">PDF / Archiv</th></tr></thead>
+					<tbody role="rowgroup">
+						for _,unit:=range data.Units {
+							<tr class="annual-unit-row" role="row">
+								<th scope="row" role="rowheader">{ unit.Label }</th>
+								<td role="cell" class="annual-parties" data-label="Partei">
+									for _, document := range unit.PDFs {
+										<span class="annual-party"><span class="annual-party-name" title={ document.Label }>{ document.Label }</span></span>
+									}
+								</td>
+								<td role="cell" class="annual-money" data-label="Kostenanteil">{ unit.Allocated }</td>
+								<td role="cell" class="annual-money" data-label="Akonto">{ unit.Prepaid }</td>
+								<td role="cell" class="annual-money" data-label="Saldo"><strong>{ unit.Balance }</strong></td>
+								<td role="cell" class="annual-documents" data-label="Dokumente">
+									for _, document := range unit.PDFs {
+										<div class="annual-pdf">
+											<a href={ templ.SafeURL(document.URL) } aria-label={ "PDF für " + document.Label + " · " + unit.Label } download>PDF</a>
+											if document.ArchiveURL != "" {
+												<a href={ templ.SafeURL(document.ArchiveURL) } aria-label={ "Archiv für " + document.Label + " · " + unit.Label }>Archiv</a>
+											}
+										</div>
+									}
+								</td>
+							</tr>
+							<tr class="annual-cost-row" role="row">
+								<td role="cell" colspan="6">
+									<details class="annual-costs">
+										<summary>Kostenarten und Anteile<span class="sr-only">· { unit.Label }</span></summary>
+										for _,cost:=range unit.Costs {
+											<div class="allocation-row"><strong>{ cost.Name }</strong><span>{ cost.Key }</span><span>{ cost.Share }</span><strong>{ cost.Amount }</strong></div>
+										}
+									</details>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
 			</article>
 		}
 	</section>
