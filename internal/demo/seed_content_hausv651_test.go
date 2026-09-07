@@ -72,16 +72,18 @@ func TestDemoContentSurvivesReseed(t *testing.T) {
 				t.Fatalf("member: %+v %v", member, err)
 			}
 		}
-		got, err := settings.Get(t.Context())
-		want := store.OrgCounters{Approved: 144, Edited: 6, Rejected: 32, Auto: 30}
-		if err != nil || got.Counters != want {
-			t.Fatalf("counters=%+v want=%+v err=%v", got.Counters, want, err)
-		}
-		repo := store.BindIntakeRepository(database, "musterstadt")
 		var raw []seedIntake
 		if err := readJSON("../../scripts/demo/seed/intake.json", &raw); err != nil {
 			t.Fatal(err)
 		}
+		// The balance must equal the fixture's own totals, whatever they are after a
+		// regeneration; the reseed subtests below prove they do not accumulate.
+		got, err := settings.Get(t.Context())
+		want := seedCounters(raw)
+		if err != nil || got.Counters != want || want.Approved == 0 {
+			t.Fatalf("counters=%+v want=%+v err=%v", got.Counters, want, err)
+		}
+		repo := store.BindIntakeRepository(database, "musterstadt")
 		for _, fixture := range raw {
 			if fixture.StatusHint != "edited" {
 				continue
