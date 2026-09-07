@@ -75,6 +75,7 @@ var TableOrder = []string{
 	"login_activity",
 	"profile_overlays",
 	"notification_prefs",
+	"person_avatars",
 	"telegram_state",
 	"telegram_links",
 	"telegram_link_codes",

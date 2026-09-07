@@ -167,6 +167,7 @@ func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) w
 		RoleLabel:         roleLabel,
 		DisplayName:       profile.DisplayName(),
 		Initials:          profile.Initials(),
+		AvatarURL:         a.profilePictureURL(ac.email),
 		Active:            active,
 		ShowInboxNav:      hasOrganisation,
 		CanManageSettings: a.isOrganisationAdmin(ac),

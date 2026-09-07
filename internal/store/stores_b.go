@@ -36,6 +36,7 @@ const (
 	AuditActionUnitSave             = "building.unit.save"
 	AuditActionUnitDelete           = "building.unit.delete"
 	AuditActionUnitPayment          = "building.unit.payment"
+	AuditActionProfilePicture       = "profile.picture"
 	AuditActionAnnualPeriodSave     = "annual-statement.period.save"
 	AuditActionAnnualPartiesImport  = "annual-statement.parties.import"
 	AuditActionAnnualCostTypeSave   = "annual-statement.cost-type.save"
@@ -2178,7 +2179,7 @@ func NormalizeAuditAction(raw string) string {
 	switch raw {
 	case AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
 		AuditActionBuildingUpdate, AuditActionPortalModulesUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
-		AuditActionUnitPayment,
+		AuditActionUnitPayment, AuditActionProfilePicture,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
 		AuditActionAttachmentView, AuditActionAttachmentDelete, AuditActionIntegrationImport, AuditActionIntegrationExport,
 		AuditActionHandoverCreate, AuditActionHandoverConfirm, AuditActionHandoverFile,

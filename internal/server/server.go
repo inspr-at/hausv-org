@@ -787,8 +787,11 @@ type app struct {
 	// inviteStore serves app-managed user records. Backed by the person/house
 	// N:N model when SQLite is available, otherwise by the JSON store
 	// (HAUSV-169).
-	inviteStore               profileStorage
-	identityStore             *store.SQLIdentityStore
+	inviteStore   profileStorage
+	identityStore *store.SQLIdentityStore
+	// personAvatars holds the profile pictures. Keyed by the person's login
+	// email and free of any house, exactly like profileOverlays (HAUSV-675).
+	personAvatars             store.PersonAvatarStorage
 	activityStore             activityStorage
 	annualStatementCostTypes  store.AnnualStatementCostTypeStorage
 	annualStatementPeriods    store.AnnualStatementPeriodStorage
@@ -1048,6 +1051,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /favicon.svg", favicon)
 	mux.HandleFunc("GET /favicon.ico", favicon)
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)
+	// Outside /app so the response may be cached: securityHeaders forces
+	// no-store there, and this tile is on every page (HAUSV-675).
+	mux.HandleFunc("GET /profilbild/{avatarID}", a.page(a.serveProfilePicture))
 	mux.HandleFunc("GET /map-tiles/{z}/{x}/{tile}", a.mapTile)
 	mux.HandleFunc("GET /healthz", a.health)
 	if a.templExampleEnabled {
@@ -1224,6 +1230,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/data-export/download", a.authedAction(capabilityManageBuilding, a.downloadStructuredExport))
 	mux.HandleFunc("GET /app/settings/profile", a.page(a.profileSettings))
 	mux.HandleFunc("POST /app/settings/profile", a.action(a.updateProfileSettings))
+	mux.HandleFunc("POST /app/settings/profilbild", a.action(a.updateProfilePicture))
+	mux.HandleFunc("POST /app/settings/profilbild/entfernen", a.action(a.removeProfilePicture))
 	mux.HandleFunc("GET /app/settings/notifications", a.page(a.notificationSettings))
 	mux.HandleFunc("POST /app/settings/notifications", a.action(a.updateNotificationSettings))
 	mux.HandleFunc("GET /app/settings/parking-access", a.page(a.parkingAccessSettings))
@@ -1834,6 +1842,7 @@ func newApp() (*app, error) {
 	sqlVotes := newSQLVoteStore(tenantDB)
 	sqlIssues := newSQLIssueStore(tenantDB, issueAttachmentDir)
 	identity := newSQLIdentityStore(tenantDB)
+	personAvatars := store.NewSQLPersonAvatarStore(tenantDB)
 	energyBackend := energy.NewSQLStore(tenantDB)
 	homeReservationBackend := store.NewSQLHomeReservationStore(tenantDB)
 	homePortalBackend := store.NewSQLHomePortalStore(tenantDB)
@@ -1993,6 +2002,7 @@ func newApp() (*app, error) {
 		tenantHeroSeedDir:         tenantHeroSeedDir,
 		inviteStore:               inviteBackend,
 		identityStore:             identity,
+		personAvatars:             personAvatars,
 		activityStore:             activityBackend,
 		annualStatementCostTypes:  annualStatementCostTypeBackend,
 		annualStatementPeriods:    annualStatementPeriodBackend,
@@ -3895,6 +3905,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		homeProfileExists &&
 		!energyProfileUnclaimed(homeProfile) &&
 		a.canManageHomeIdentityProfile(ac, homeProfile, homeProfileExists)
+	profilePictureMsg, profilePictureOK := profilePictureMessage(r.URL.Query().Get("bild"))
 	pageData := map[string]any{
 		"Title":                       "Einstellungen",
 		"ActivePage":                  "settings",
@@ -3904,6 +3915,9 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		"SettingsNotificationSummary": notificationSummary,
 		"SettingsHomeURL":             homeURL,
 		"SettingsCanManageEnergyData": canManageEnergyData,
+		"ProfilePictureURL":           a.profilePictureURL(email),
+		"ProfilePictureMsg":           profilePictureMsg,
+		"ProfilePictureOK":            profilePictureOK,
 	}
 	a.renderSettingsHubTempl(w, r, ac, pageData)
 }

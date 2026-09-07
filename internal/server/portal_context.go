@@ -29,6 +29,9 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	}
 
 	shell.RoleLabel = ac.role
+	// One assembly point for the account tile, so the sidebar, the mobile header
+	// and every section page show the same picture (HAUSV-675).
+	shell.AvatarURL = a.profilePictureURL(ac.email)
 	managed := a.managedTenants(ac)
 	organisation, hasOrganisation := a.organisationFor(ac)
 	// The Verwaltung layer needs someone who actually administers houses: a

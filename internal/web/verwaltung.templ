@@ -11,6 +11,9 @@ type VerwaltungShell struct {
 	RoleLabel        string
 	DisplayName      string
 	Initials         string
+	// AvatarURL is the signed-in person's profile picture, empty when they have
+	// none (HAUSV-675).
+	AvatarURL        string
 	Active           string
 	InboxOpenCount   int
 	ShowInboxNav     bool
@@ -92,7 +95,7 @@ templ VerwaltungSidebar(shell VerwaltungShell) {
 		<header class="organisation-identity"><strong>{ shell.OrganisationName }</strong><small>{ shell.RoleLabel }</small></header>
 		@VerwaltungNavigation(shell, true)
 		@VerwaltungPortalSwitch(shell.Contexts, false)
-		<footer class="account"><span class="avatar" aria-hidden="true">{ shell.Initials }</span><span><strong>{ shell.DisplayName }</strong><small>{ shell.RoleLabel }</small>@VerwaltungReleaseNotes(shell)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
+		<footer class="account"><span class="avatar" aria-hidden="true">@PortalAvatarBadge(shell.AvatarURL, shell.Initials)</span><span><strong>{ shell.DisplayName }</strong><small>{ shell.RoleLabel }</small>@VerwaltungReleaseNotes(shell)</span><form class="logout-form" method="post" action="/auth/logout"><button type="submit" aria-label="Abmelden" title="Abmelden">↪</button></form></footer>
 	</aside>
 }
 
@@ -105,7 +108,7 @@ templ VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) {
 			<form class="logout-form" method="post" action="/auth/logout"><button type="submit">Als { shell.DisplayName } abmelden</button></form>
 		</div></details>
 		<a class="mobile-identity" href="/app/verwaltung"><strong>{ shell.OrganisationName }</strong><small>{ pageLabel }</small></a>
-		<span class="avatar" aria-hidden="true">{ shell.Initials }</span>
+		<span class="avatar" aria-hidden="true">@PortalAvatarBadge(shell.AvatarURL, shell.Initials)</span>
 	</header>
 }
 

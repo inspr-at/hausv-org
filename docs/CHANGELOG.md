@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.0] - 2026-09-07
+
+### Neu
+
+- Profilbild: In den Einstellungen lässt sich ein eigenes Foto hinterlegen, der Ausschnitt wird direkt im Browser verschoben und gezoomt. Das Bild erscheint in der Seitenleiste, in der mobilen Kopfzeile und auf der Profilkarte; „Profilbild entfernen“ zeigt wieder die Initialen.
+
 ## [1.8.8] - 2026-09-07
 
 ### Stabilität verbessert

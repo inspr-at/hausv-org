@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.0",
+			Date:     "7. September 2026",
+			Kind:     "Neu",
+			Headline: "Profilbild: das eigene Foto im Portal.",
+			Intro:    "In den Einstellungen laden Sie ein Bild hoch, verschieben und zoomen den Ausschnitt und speichern. Ihr Foto erscheint dort, wo bisher Ihre Initialen standen: in der Seitenleiste, in der mobilen Kopfzeile und auf Ihrer Profilkarte. Es begleitet Sie in jede Liegenschaft und ist ausschließlich für angemeldete Personen Ihrer Häuser sichtbar; wird es wieder gelöscht, erscheinen sofort die Initialen.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.8",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",
