@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.5] - 2026-09-07
+
+### Stabilität verbessert
+
+- Energie: Der Energiefluss wird auch dann gezeichnet, wenn ein Messwert vorübergehend kein gültiger Zahlenwert ist; Symbole und Diagramm bleiben sichtbar.
+
 ## [1.8.4] - 2026-09-07
 
 ### Stabilität verbessert
