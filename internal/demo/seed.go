@@ -171,7 +171,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		shiftHouseDates(options.Anchor, houses)
 	}
 	if options.Reset {
-		if err := reset(ctx, database, org.Key, houses, intake, events, announcements); err != nil {
+		if err := reset(ctx, database, org.Key, houses, intake, events, announcements, options.DocumentDir); err != nil {
 			return SeedResult{}, err
 		}
 	}
@@ -455,13 +455,14 @@ func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.Tena
 	return err
 }
 
-func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement) error {
+func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement, documentDir string) error {
 	tx, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if strings.Contains(fmt.Sprintf("%T", database.Driver()), "stdlib") {
+	postgres := strings.Contains(fmt.Sprintf("%T", database.Driver()), "stdlib")
+	if postgres {
 		if _, err := tx.ExecContext(ctx, `SET LOCAL hausv.cross_tenant = 'on'`); err != nil {
 			return err
 		}
@@ -499,7 +500,86 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 			return err
 		}
 	}
-	return tx.Commit()
+	// Annual statement runs, their archive documents and the delivery log
+	// belong to the demo day as well (HAUSV-663): a reset must not present
+	// yesterday's "Lauf 6" to the customer. Archive files leave the disk after
+	// the commit; a file that is already gone is not an error.
+	var archived []string
+	for _, house := range houses {
+		slug := textutil.Slug(house.Slug)
+		paths, err := archivedDocumentPaths(ctx, tx, slug, documentDir)
+		if err != nil {
+			return err
+		}
+		archived = append(archived, paths...)
+		for _, query := range []string{
+			`DELETE FROM documents WHERE tenant_slug=$1 AND id LIKE 'annual-archive-%'`,
+			`DELETE FROM annual_statement_deliveries WHERE tenant_slug=$1`,
+		} {
+			if _, err := tx.ExecContext(ctx, query, slug); err != nil {
+				return err
+			}
+		}
+	}
+	// PostgreSQL guards stored runs with a trigger that rejects every UPDATE
+	// and DELETE. The demo reset is the one legitimate way to discard them, so
+	// the trigger is switched off for this transaction only; the DDL rolls
+	// back with everything else if the reset fails.
+	if postgres {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE annual_statement_runs DISABLE TRIGGER annual_statement_run_immutable`); err != nil {
+			return fmt.Errorf("demo reset needs to own annual_statement_runs to discard stored runs: %w", err)
+		}
+	}
+	for _, house := range houses {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM annual_statement_runs WHERE tenant_slug=$1`, textutil.Slug(house.Slug)); err != nil {
+			return err
+		}
+	}
+	if postgres {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE annual_statement_runs ENABLE TRIGGER annual_statement_run_immutable`); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	for _, path := range archived {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove archived demo document %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// archivedDocumentPaths lists the files behind a house's annual statement
+// archive documents, following the store's layout (<dir>/<tenant>/<stored name>).
+func archivedDocumentPaths(ctx context.Context, tx *sql.Tx, slug, documentDir string) ([]string, error) {
+	if documentDir == "" {
+		return nil, nil
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT data FROM documents WHERE tenant_slug=$1 AND id LIKE 'annual-archive-%'`, slug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var paths []string
+	for rows.Next() {
+		var raw []byte
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var record store.DocumentRecord
+		if err := json.Unmarshal(raw, &record); err != nil {
+			return nil, err
+		}
+		name := filepath.Base(record.StoredFilename)
+		tenant := textutil.Slug(record.TenantSlug)
+		if tenant == "" || name == "" || name == "." || name == string(filepath.Separator) {
+			continue
+		}
+		paths = append(paths, filepath.Join(documentDir, tenant, name))
+	}
+	return paths, rows.Err()
 }
 
 func readJSON(path string, target any) error {
