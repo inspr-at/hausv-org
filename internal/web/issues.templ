@@ -7,7 +7,7 @@ import (
 )
 
 type IssueSummaryView struct {
-	Title, Status, StatusClass, Assignee, Age, URL string
+	Title, Status, StatusClass, Assignee, AssigneeEmail, Age, URL string
 }
 
 type IssuesPageData struct {
@@ -102,7 +102,7 @@ templ IssuesOpenSummary(data IssuesPageData) {
 					<li class="issue-summary-row">
 						<a href={ templ.SafeURL(issue.URL) }>{ issue.Title }</a>
 						<span class={ "pill", issue.StatusClass }>{ issue.Status }</span>
-						<span class="issue-summary-assignee"><strong>Zuständig:</strong> { issue.Assignee }</span>
+						<span class="issue-summary-assignee" title={ issue.AssigneeEmail }><strong>Zuständig:</strong> { issue.Assignee }</span>
 						<span class="issue-summary-age"><strong>Gemeldet:</strong> { issue.Age }</span>
 					</li>
 				}
@@ -129,7 +129,7 @@ templ IssueCard(issue view.IssueView) {
 	<article class="issue-card" id={ "issue-" + issue.ID }>
 		<header class="issue-card-head"><div><h3>{ issue.Title }</h3><p class="issue-location">{ issue.Location }
 			if issue.HasAssignee {
-				<span> · Zuständig: { issue.AssigneeEmail }</span>
+				<span title={ issue.AssigneeEmail }> · Zuständig: { issueAssigneeLabel(issue) }</span>
 			}
 		</p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="pill">{ issue.Category }</span><span class="pill">{ issue.Priority }</span><span>{ issue.CreatedAt }</span></div></header>
 		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>
@@ -323,4 +323,12 @@ func issueDetailsSummary(issue view.IssueView) string {
 	}
 	if issue.HasAttachments { return label + " · Anhänge" }
 	return label
+}
+
+// issueAssigneeLabel prefers the directory name; the e-mail stays available as title.
+func issueAssigneeLabel(issue view.IssueView) string {
+	if issue.AssigneeName != "" {
+		return issue.AssigneeName
+	}
+	return issue.AssigneeEmail
 }

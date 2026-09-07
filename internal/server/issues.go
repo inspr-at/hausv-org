@@ -114,6 +114,13 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		if !boardOnly {
 			if canManageIssues {
 				openIssues = newestOpenIssueSummaries(allTenantIssues, time.Now())
+				// The short list names people the way the Hausüberblick does; the
+				// e-mail travels along as the title.
+				for i := range openIssues {
+					if profile, ok := a.directoryProfile(openIssues[i].AssigneeEmail); ok && openIssues[i].AssigneeEmail != "" {
+						openIssues[i].Assignee = profile.DisplayName()
+					}
+				}
 				issues = a.issueViewsForActor(ac.tenantRef, ac.repositories.issues.ListAuthor(email), role, email)
 			} else {
 				issues = a.issueViewsForActor(ac.tenantRef, a.visibleIssuesForActor(ac.tenantRef, email, role), role, email)
@@ -196,7 +203,7 @@ func newestOpenIssueSummaries(items []residentIssue, now time.Time) []web.IssueS
 		}
 		result = append(result, web.IssueSummaryView{
 			Title: item.Title, Status: status, StatusClass: issueStatusClass(status),
-			Assignee: assignee, Age: relativeAge(now, item.CreatedAt),
+			Assignee: assignee, AssigneeEmail: strings.TrimSpace(item.AssigneeEmail), Age: relativeAge(now, item.CreatedAt),
 			URL: "/app/anliegen/board/" + url.PathEscape(item.ID),
 		})
 	}
@@ -1188,6 +1195,12 @@ func (a *app) issueViewsForActor(tenant store.TenantRef, items []residentIssue, 
 		return views
 	}
 	for i := range views {
+		// Name the assignee the way the Hausüberblick does; the e-mail stays as title.
+		if views[i].AssigneeEmail != "" {
+			if profile, ok := a.directoryProfile(views[i].AssigneeEmail); ok {
+				views[i].AssigneeName = profile.DisplayName()
+			}
+		}
 		attachments := a.attachmentViewsForEntity(tenant, "issue", views[i].ID, actorEmail, role)
 		photoCount := 0
 		for _, attachment := range attachments {

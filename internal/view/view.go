@@ -1834,7 +1834,7 @@ func TenantBrandIconOptions(selected string) []SelectOption {
 
 func ContactKindOptions(selected string) []SelectOption {
 	selected = store.NormalizeContactKind(selected)
-	kinds := []string{"Dienstleister", "Energie-Fachbetrieb", "Hausmeister", "Notdienst", "Verwaltung", "Sonstiges"}
+	kinds := []string{"Hausmeister", "Notdienst", "Verwaltung", "Dienstleister", "Energie-Fachbetrieb", "Sonstiges"}
 	options := make([]SelectOption, 0, len(kinds))
 	for _, kind := range kinds {
 		options = append(options, SelectOption{Value: kind, Label: kind, Selected: selected == kind})

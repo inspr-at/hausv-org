@@ -13,6 +13,9 @@
   ],
   "auto_enabled": true,
   "auto_threshold": 0.9,
+  "contact_email": "verwaltung@musterstadt.example",
+  "contact_name": "Vera Verwalter",
+  "contact_phone": "+43 316 555 100",
   "key": "musterstadt",
   "members": [
     {

@@ -46,6 +46,9 @@ type SeedResult struct {
 type seedOrg struct {
 	Key           string            `json:"key"`
 	Name          string            `json:"name"`
+	ContactName   string            `json:"contact_name,omitempty"`
+	ContactEmail  string            `json:"contact_email,omitempty"`
+	ContactPhone  string            `json:"contact_phone,omitempty"`
 	TrustLevels   map[string]string `json:"trust_levels"`
 	AutoThreshold float64           `json:"auto_threshold"`
 	AutoEnabled   bool              `json:"auto_enabled"`
@@ -187,6 +190,22 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		AutoThreshold: org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
 	}); err != nil {
 		return SeedResult{}, err
+	}
+	// The organisation's own contact data (shown in the sidebar and in
+	// resident replies) come from the fixture too; the houses stay as they are.
+	if org.ContactName != "" || org.ContactEmail != "" || org.ContactPhone != "" {
+		orgRepo := store.BindOrganisationRepository(database, org.Key)
+		current, found, err := orgRepo.Get(ctx)
+		if err != nil {
+			return SeedResult{}, err
+		}
+		if !found {
+			current = store.Organisation{Key: org.Key, Name: org.Name}
+		}
+		current.ContactName, current.ContactEmail, current.ContactPhone = org.ContactName, org.ContactEmail, org.ContactPhone
+		if err := orgRepo.Save(ctx, current); err != nil {
+			return SeedResult{}, err
+		}
 	}
 	memberRepo := store.BindOrganisationMemberRepository(database, org.Key)
 	for _, member := range org.Members {

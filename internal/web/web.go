@@ -671,7 +671,7 @@ const PageTemplates = `
           <header class="product-path-head"><span class="product-path-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V5l6-3 6 3v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg></span><div><span class="product-path-kicker">Für Hausverwaltungen</span><h3>HAUSV Professional</h3></div></header>
           <p>Das volle Hausportal für professionelle Verwaltungen mit mehreren WEGs – gehostet oder auf der eigenen Infrastruktur betrieben.</p>
           <ul class="product-capabilities"><li>Mehrere WEGs &amp; Rollen</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
-          <div class="product-path-price"><strong>0&nbsp;€ Grundgebühr</strong><span>25 WE kostenlos · danach Verrechnung je WE / Monat</span></div>
+          <div class="product-path-price"><strong>0&nbsp;€ Grundgebühr</strong><span>25 WE kostenlos · danach Verrechnung je&nbsp;WE&nbsp;/&nbsp;Monat</span></div>
           <a class="product-path-start js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV Professional kennenlernen" data-mail-reveal="false">Professional anfragen</a>
         </article>
       </div>
