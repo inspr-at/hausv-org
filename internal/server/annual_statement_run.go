@@ -204,7 +204,7 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 				if party.UnitID == unit.UnitID {
 					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
 					if document, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
-						row.Archives = append(row.Archives, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(document.ID)})
+						row.PDFs[len(row.PDFs)-1].ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(document.ID)
 					}
 				}
 			}

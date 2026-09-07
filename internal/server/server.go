@@ -465,7 +465,6 @@ var surplusRate = store.SurplusRate
 var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
 var resizeImageNearest = store.ResizeImageNearest
 var sanitizeDocumentFilename = store.SanitizeDocumentFilename
-var sortDocuments = store.SortDocuments
 var sortHandovers = store.SortHandovers
 var sortIssues = store.SortIssues
 var writeImageAttachmentVariant = store.WriteImageAttachmentVariant
@@ -6800,29 +6799,6 @@ func filterDocuments(items []documentRecord, query string) []documentRecord {
 		if strings.Contains(haystack, query) {
 			out = append(out, copyDocument(item))
 		}
-	}
-	return out
-}
-
-func sortDocumentsForView(items []documentRecord, sortMode string) []documentRecord {
-	out := make([]documentRecord, 0, len(items))
-	for _, item := range items {
-		out = append(out, copyDocument(item))
-	}
-	switch selectedDocumentSort(sortMode) {
-	case "oldest":
-		sort.SliceStable(out, func(i, j int) bool {
-			if !out[i].UploadedAt.Equal(out[j].UploadedAt) {
-				return out[i].UploadedAt.Before(out[j].UploadedAt)
-			}
-			return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
-		})
-	case "title":
-		sort.SliceStable(out, func(i, j int) bool {
-			return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
-		})
-	default:
-		sortDocuments(out)
 	}
 	return out
 }

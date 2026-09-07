@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -30,7 +31,11 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
 	sortMode := selectedDocumentSort(r.URL.Query().Get("sort"))
-	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode)
+	var units []store.Unit
+	if ac.repositories.units != nil {
+		units = ac.repositories.units.List()
+	}
+	documents := sortDocumentsForView(filterDocuments(visible, searchQuery), sortMode, documentSortContext{Units: units, Runs: documentRunSnapshots(ac.repositories.annualStatementRuns, visible)})
 	documentMsg, documentOK := documentMessage(r.URL.Query().Get("doc"))
 	documentCountLabel := fmt.Sprintf("%d Dokumente", len(documents))
 	if len(documents) == 1 {
@@ -665,8 +670,13 @@ func (a *app) documentViewsForActor(tenant store.TenantRef, email string, role s
 		return views
 	}
 	documents, _ := store.BindDocumentRepository(a.documentStore, tenant)
+	runs, _ := store.BindAnnualStatementRunRepository(a.annualStatementRuns, tenant)
+	snapshots := documentRunSnapshots(runs, items)
 	for _, item := range items {
 		view := documentViewFrom(item)
+		if archive := item.AnnualStatementArchive; archive != nil {
+			view = documentViewWithArchiveSnapshot(item, snapshots[archive.RunID])
+		}
 		if a != nil && documents != nil {
 			for _, version := range documents.Versions(item.SeriesID) {
 				if version.Current || !a.canViewDocument(tenant, version, email, role) {
@@ -762,4 +772,131 @@ func documentCategorySections(items []documentRecord, includeEmpty bool) []docum
 		})
 	}
 	return sections
+}
+
+func documentRunSnapshots(repository store.AnnualStatementRunRepository, items []documentRecord) map[string]store.AnnualStatementRun {
+	runs := map[string]store.AnnualStatementRun{}
+	if repository == nil {
+		return runs
+	}
+	for _, item := range items {
+		if archive := item.AnnualStatementArchive; archive != nil {
+			if _, loaded := runs[archive.RunID]; !loaded {
+				run, _, _ := repository.Get(archive.RunID)
+				runs[archive.RunID] = run
+			}
+		}
+	}
+	return runs
+}
+
+func documentViewWithArchiveSnapshot(item documentRecord, run store.AnnualStatementRun) documentView {
+	view := documentViewFrom(item)
+	if archive := item.AnnualStatementArchive; archive != nil {
+		for _, unit := range run.Input.Units {
+			if unit.ID == item.UnitID {
+				view.UnitLabel = unit.Label
+			}
+		}
+		for _, party := range run.Input.Parties {
+			if party.ID == archive.PartyID && party.UnitID == item.UnitID && strings.TrimSpace(party.Name) != "" {
+				view.ArchiveParty = party.Name
+				break
+			}
+		}
+	}
+	return view
+}
+
+type documentSortContext struct {
+	Units []store.Unit
+	Runs  map[string]store.AnnualStatementRun
+}
+
+// Keep archived runs together, ordered by their latest archive timestamp, then
+// by their immutable display order. Retrying a partial archive or renaming a
+// unit must not split or reorder the historical result.
+func sortDocumentsForView(items []documentRecord, sortMode string, contexts ...documentSortContext) []documentRecord {
+	out := make([]documentRecord, 0, len(items))
+	for _, item := range items {
+		out = append(out, copyDocument(item))
+	}
+	units := map[string]store.Unit{}
+	ranks := map[string]map[string]int{}
+	for _, context := range contexts {
+		for _, unit := range context.Units {
+			units[unit.ID] = unit
+		}
+		for id, run := range context.Runs {
+			ranks[id] = map[string]int{"": -1}
+			for rank, unit := range store.AnnualStatementRunDisplayOrder(run) {
+				ranks[id][unit.UnitID] = rank
+			}
+		}
+	}
+	archiveTimes := map[string]time.Time{}
+	for _, item := range items {
+		if archive := item.AnnualStatementArchive; archive != nil && item.UploadedAt.After(archiveTimes[archive.RunID]) {
+			archiveTimes[archive.RunID] = item.UploadedAt
+		}
+	}
+	sortTime := func(item documentRecord) time.Time {
+		if archive := item.AnnualStatementArchive; archive != nil {
+			return archiveTimes[archive.RunID]
+		}
+		return item.UploadedAt
+	}
+	unitFor := func(id string) store.Unit {
+		if unit, ok := units[id]; ok {
+			return unit
+		}
+		unit := store.Unit{ID: id, Label: id}
+		if strings.HasPrefix(strings.ToLower(id), "stellplatz") {
+			unit.UnitType = store.UnitTypeParking
+		}
+		return unit
+	}
+	titleKey := func(item documentRecord) string {
+		if archive := item.AnnualStatementArchive; archive != nil {
+			return fmt.Sprintf("Jahresabrechnung %d · Lauf %d · %s", archive.PeriodYear, archive.Revision, archive.RunID)
+		}
+		return item.Title
+	}
+	mode := selectedDocumentSort(sortMode)
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if at, bt := sortTime(a), sortTime(b); mode != "title" && !at.Equal(bt) {
+			if mode == "oldest" {
+				return at.Before(bt)
+			}
+			return at.After(bt)
+		}
+		if ak, bk := titleKey(a), titleKey(b); ak != bk {
+			return store.UnitLabelLess(ak, bk)
+		}
+		if a.UnitID != b.UnitID {
+			if a.AnnualStatementArchive != nil && b.AnnualStatementArchive != nil && a.AnnualStatementArchive.RunID == b.AnnualStatementArchive.RunID {
+				order := ranks[a.AnnualStatementArchive.RunID]
+				ar, aKnown := order[a.UnitID]
+				br, bKnown := order[b.UnitID]
+				if aKnown != bKnown {
+					return aKnown
+				}
+				if aKnown {
+					return ar < br
+				}
+			}
+			au, bu := unitFor(a.UnitID), unitFor(b.UnitID)
+			ap, bp := store.NormalizeUnitType(au.UnitType) == store.UnitTypeParking, store.NormalizeUnitType(bu.UnitType) == store.UnitTypeParking
+			if ap != bp {
+				return !ap
+			}
+			return store.UnitLess(au, bu)
+		}
+		if a.AnnualStatementArchive != nil && b.AnnualStatementArchive != nil && a.AnnualStatementArchive.PartyID != b.AnnualStatementArchive.PartyID {
+			return a.AnnualStatementArchive.PartyID < b.AnnualStatementArchive.PartyID
+		}
+		return a.ID < b.ID
+	})
+	return out
 }
