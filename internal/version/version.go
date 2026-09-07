@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.7",
+			Date:     "7. September 2026",
+			Kind:     "Neu",
+			Headline: "Die Standortkarte ist wieder groß in der Seitenleiste.",
+			Intro:    "Die Karte mit dem Pin steht in voller Breite über dem Hausnamen, der darunter Platz hat und nicht mehr mitten im Wort umbricht.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.6",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",

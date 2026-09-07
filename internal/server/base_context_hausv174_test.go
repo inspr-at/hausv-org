@@ -43,7 +43,7 @@ func TestBaseContextProvidesAuthenticatedPageIdentity(t *testing.T) {
 		t.Fatalf("baseContext sidebar address = %#v", got["SidebarAddress"])
 	}
 	sidebarMap, ok := got["SidebarMap"].(sidebarMapView)
-	if !ok || !sidebarMap.Configured || len(sidebarMap.Tiles) == 0 || len(sidebarMap.Tiles) > 4 {
+	if !ok || !sidebarMap.Configured || len(sidebarMap.Tiles) == 0 || len(sidebarMap.Tiles) > 6 {
 		t.Fatalf("baseContext sidebar map = %#v", got["SidebarMap"])
 	}
 	if got["IsAdmin"] != false || got["CanSeeParking"] != true {

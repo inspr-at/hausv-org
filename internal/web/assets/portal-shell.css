@@ -28,4 +28,4 @@ details:is(.event-details,.aside-panel,.contact-add,.inactive-contacts,.announce
 /* The narrow administration sidebar and a title beside an action need room
    throughout the tablet band, not just at the phone breakpoint. */
 @media(min-width:761px) and (max-width:1023px){.portal-section-title h1{font-size:clamp(28px,4vw,42px);white-space:normal;overflow-wrap:anywhere;text-overflow:clip}.house-header-copy strong{font-size:16px;overflow-wrap:anywhere;white-space:normal}}
-@media(min-width:761px) and (max-width:1023px){.portal-section-header{flex-wrap:wrap}.sidebar .house-header-card{grid-template-columns:minmax(0,1fr) 18px}.sidebar .house-header-card>.house-map-thumb{display:none}.sidebar .house-header-static{grid-template-columns:minmax(0,1fr)}}
+@media(min-width:761px) and (max-width:1023px){.portal-section-header{flex-wrap:wrap}.sidebar .house-header-card{grid-template-columns:minmax(0,1fr) 18px}.sidebar .sidebar .house-header-static{grid-template-columns:minmax(0,1fr)}}

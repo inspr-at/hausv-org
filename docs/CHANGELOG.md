@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.7] - 2026-09-07
+
+### Neu
+
+- Seitenleiste: Die Standortkarte ist wieder groß mit Pin zu sehen; der Hausname steht darunter in voller Breite und bricht nicht mehr mitten im Wort um.
+
 ## [1.8.6] - 2026-09-07
 
 ### Stabilität verbessert

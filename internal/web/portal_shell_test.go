@@ -119,9 +119,14 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
-			// The compact map thumbnail precedes the prominent house copy.
-			if i, j := strings.Index(html, `class="map side-map`), strings.Index(html, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
-				t.Errorf("house copy must come after the map thumbnail")
+			// The large location map precedes the house copy inside the sidebar
+			// (the mobile drawer, rendered earlier, carries the copy without a map).
+			side := html
+			if at := strings.Index(html, `<aside class="sidebar"`); at >= 0 {
+				side = html[at:]
+			}
+			if i, j := strings.Index(side, `class="map side-map"`), strings.Index(side, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
+				t.Errorf("house copy must come after the location map")
 			}
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
 				t.Errorf("map pin is missing the brand mark")
@@ -194,7 +199,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			for _, marker := range []string{
 				`data-portal-shell`, `data-portal-section-landing`,
 				`data-portal-section-header`, `class="sidebar"`,
-				`class="map side-map house-map-thumb"`, `class="house-header-copy side-address-label"`, `class="account"`,
+				`class="map side-map"`, `class="house-header-copy side-address-label"`, `class="account"`,
 			} {
 				if !strings.Contains(html, marker) {
 					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)
@@ -257,7 +262,7 @@ func TestHousePickerUsesDistinctDesktopAndMobileIDs(t *testing.T) {
 	for _, marker := range []string{
 		`id="portal-house-picker"`, `data-house-picker-shell="sidebar"`,
 		`id="portal-house-picker-mobile"`, `data-house-picker-shell="mobile"`,
-		`class="map side-map house-map-thumb"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`,
+		`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`,
 	} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("house picker marker %q missing", marker)
@@ -615,4 +620,38 @@ func between(s, start, end string) string {
 		return rest[:j]
 	}
 	return rest
+}
+
+// HAUSV-673: the location map is the large hero above the house block again,
+// only in the desktop sidebar, and the compact card carries no thumbnail.
+func TestSidebarShowsTheLargeLocationMapAboveTheHouseCard(t *testing.T) {
+	portal := PortalPageData{
+		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
+		MapURL: "https://www.openstreetmap.org/", DisplayName: "Vera Verwaltung", Initials: "VV", Role: "Admin",
+		CanUseResidentAreas: true,
+		Map:                 PortalMap{Configured: true, Tiles: []PortalMapTile{{URL: "/map-tiles/17/1/2.png", Style: "left:calc(50% + 0px);top:calc(50% + 0px)"}}},
+		Shell:               PortalShellData{Ready: true},
+	}
+	html := renderComponent(t, PortalPage(portal))
+	side := html[strings.Index(html, `<aside class="sidebar"`):]
+	hero, card := strings.Index(side, `class="side-map-hero"`), strings.Index(side, `class="house-header-card`)
+	if hero < 0 || card < 0 || hero >= card {
+		t.Fatalf("large map hero must precede the house card (hero=%d card=%d)", hero, card)
+	}
+	if strings.Count(html, `class="side-map-hero`) != 1 {
+		t.Errorf("the hero belongs to the desktop sidebar only, found %d", strings.Count(html, `class="side-map-hero`))
+	}
+	if strings.Contains(html, "house-map-thumb") {
+		t.Errorf("the compact house card must not carry the old thumbnail")
+	}
+	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:2px -18px 8px`} {
+		if !strings.Contains(html, marker) {
+			t.Errorf("hero marker %q missing", marker)
+		}
+	}
+	portal.Map = PortalMap{}
+	html = renderComponent(t, PortalPage(portal))
+	if !strings.Contains(html, `class="side-map-hero side-map-hero-empty"`) || !strings.Contains(html, "Standort nicht hinterlegt") {
+		t.Errorf("without coordinates the hero collapses to the placeholder band")
+	}
 }
