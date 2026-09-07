@@ -42,7 +42,7 @@ func TestAnnualStatementRunPanelEscapesHistoryQuery(t *testing.T) {
 	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
 		t.Fatal(err)
 	}
-	want := `href="` + html.EscapeString("/app/settings/annual-statement?year=2025&run="+url.QueryEscape(id)+"#abrechnungslauf") + `"`
+	want := `href="` + html.EscapeString("/app/settings/annual-statement?year=2025&run="+url.QueryEscape(id)+"#abrechnungsergebnis") + `"`
 	if !strings.Contains(body.String(), want) {
 		t.Fatalf("missing escaped history URL %q", want)
 	}
@@ -143,5 +143,25 @@ func TestAnnualStatementPreparationCollapsesOnlyWithoutFeedback(t *testing.T) {
 				t.Fatalf("open=%v want %v", got, tc.open)
 			}
 		})
+	}
+}
+
+func TestAnnualStatementPreparationPrecedesSavedRunsHAUSV660(t *testing.T) {
+	var body bytes.Buffer
+	data := AnnualStatementPageData{Year: 2025, Run: AnnualStatementRunView{
+		Year: 2025, Ready: true, ID: "run-2025", Revision: 1,
+		History: []AnnualStatementRunLinkView{{ID: "run-2025", Label: "Lauf 1"}},
+	}}
+	if err := AnnualStatementBody(data).Render(t.Context(), &body); err != nil {
+		t.Fatal(err)
+	}
+	html := body.String()
+	previous := -1
+	for _, marker := range []string{`id="abrechnungslauf"`, "Abrechnungslauf berechnen", "Für alle Einheiten berechnen</button></form>", `<details class="annual-preparation"`, "Grundlagen und Belege prüfen oder bearbeiten · 2025", "Kostenarten, Einheiten, Parteien, Periode", "Gespeicherte Läufe", `data-annual-statement-run="run-2025"`} {
+		pos := strings.Index(html, marker)
+		if pos <= previous {
+			t.Fatalf("%q missing or out of order", marker)
+		}
+		previous = pos
 	}
 }

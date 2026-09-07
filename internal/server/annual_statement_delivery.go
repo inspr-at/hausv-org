@@ -95,7 +95,7 @@ func (a *app) sendAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac 
 			failed++
 		}
 	}
-	target := "/app/settings/annual-statement?year=" + strconv.Itoa(run.PeriodYear) + "&run=" + url.QueryEscape(run.ID) + "&sent=" + strconv.Itoa(sent) + "&failed=" + strconv.Itoa(failed) + "&skipped=" + strconv.Itoa(skipped) + "#abrechnungslauf"
+	target := "/app/settings/annual-statement?year=" + strconv.Itoa(run.PeriodYear) + "&run=" + url.QueryEscape(run.ID) + "&sent=" + strconv.Itoa(sent) + "&failed=" + strconv.Itoa(failed) + "&skipped=" + strconv.Itoa(skipped) + "#abrechnungsergebnis"
 	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 

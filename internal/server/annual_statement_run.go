@@ -59,7 +59,7 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	if run.ID != "" {
 		target += "&run=" + url.QueryEscape(run.ID)
 	}
-	http.Redirect(w, r, target+"#abrechnungslauf", http.StatusSeeOther)
+	http.Redirect(w, r, target+"#abrechnungsergebnis", http.StatusSeeOther)
 }
 
 func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -112,7 +112,7 @@ func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 	} else {
 		a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualRunArchive, TargetType: "annual_statement_run", TargetID: run.ID, Summary: "Jahresabrechnung im Archiv abgelegt", Details: map[string]string{"run_id": run.ID, "revision": strconv.Itoa(run.Revision), "document_count": strconv.Itoa(len(selection))}})
 	}
-	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status="+status+"#abrechnungslauf", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status="+status+"#abrechnungsergebnis", http.StatusSeeOther)
 }
 
 func annualStatementRunView(repository store.AnnualStatementRunRepository, documents store.DocumentRepository, year int, selectedID, status string, consumption map[string]store.AnnualStatementConsumptionVector) web.AnnualStatementRunView {

@@ -98,8 +98,8 @@ func TestAnnualStatementRunHandlerAllUnitsAndFailClosed(t *testing.T) {
 	if start < 0 {
 		t.Fatal("missing historical run")
 	}
-	end := strings.Index(body[start:], `id="perioden"`)
-	if start < 0 || end < 0 || !strings.Contains(body[start:start+end], "Guthaben 5,00 €") {
+	end := strings.Index(body[start:], `</article>`)
+	if end < 0 || !strings.Contains(body[start:start+end], "Guthaben 5,00 €") {
 		t.Fatal("historical balance changed")
 	}
 }

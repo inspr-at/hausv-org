@@ -6,7 +6,13 @@ import (
 	"github.com/inspr-at/hausv-org/internal/view"
 )
 
+type IssueSummaryView struct {
+	Title, Status, StatusClass, Assignee, Age, URL string
+}
+
 type IssuesPageData struct {
+	OpenIssues []IssueSummaryView
+	HasHouseIssues bool
 	Portal            PortalPageData
 	AssetVersion      string
 	CalendarFeedURL   string
@@ -35,6 +41,7 @@ templ IssuesStyles() {
 		.issue-estimate{display:grid;gap:var(--space-2)}.issue-estimate-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)}.comment-thread{display:grid;gap:var(--space-2)}.comment{display:grid;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.comment-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}.comment-meta{color:var(--muted);font-size:11px}.comment p{font-size:12px;line-height:1.5}.comment-delete button{border:0;background:transparent;color:var(--gold-ink);font-size:11px}.comment-form{display:grid;gap:var(--space-2)}.comment-upload{display:grid;gap:var(--space-1)}.issue-actions{display:flex;flex-wrap:wrap;align-items:end;gap:var(--space-2)}.issue-actions label{display:grid;flex:1 1 170px;gap:var(--space-1);color:var(--gold-ink);font-size:10px;font-weight:800}.issue-actions form{margin:0}.issue-actions .ghost{background:transparent;color:var(--ink);border-color:var(--line)}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}
 		@media(max-width:1050px){.issue-card-head{grid-template-columns:minmax(0,1fr)}.issue-meta{justify-content:flex-start}}
 		@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.issues-main{padding:var(--space-5) var(--space-4) 48px}.issues-panel,.issue-create-body{padding:var(--space-4)}.issue-category-options{grid-template-columns:repeat(2,minmax(0,1fr))}.issue-location-options{grid-template-columns:minmax(0,1fr)}.issue-review-row{grid-template-columns:minmax(0,1fr)}.issue-wizard-actions{align-items:stretch;display:grid}.wizard-next,.wizard-submit{width:100%}}
+		.issue-summary-list{list-style:none;margin:0;padding:0}.issue-summary-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(100px,1fr) minmax(0,1.5fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-top:1px solid var(--line);font-size:12px}.issue-summary-row>a{display:flex;align-items:center;min-height:44px;color:var(--gold-ink);font-weight:750;overflow-wrap:anywhere}.issue-summary-row>.pill{justify-self:start}.issue-summary-assignee{overflow-wrap:anywhere;color:var(--muted)}.issue-summary-age{color:var(--muted)}.issue-summary-age strong{font-weight:400}@media(max-width:1050px){.issue-summary-row{grid-template-columns:minmax(0,1fr) auto}.issue-summary-assignee{grid-column:1}.issue-summary-age{font-size:11px}}
 	</style>
 }
 
@@ -56,6 +63,9 @@ templ IssuesContent(data IssuesPageData) {
 }
 
 templ IssuesHeaderAction(data IssuesPageData) {
+	if data.CanCreateIssue && data.CanManageIssues {
+		<a class="button" href="/app/anliegen?new=1#issue-new" data-issue-open>Anliegen melden</a>
+	}
 	if data.IsServiceProvider && data.CalendarFeedURL != "" {
 		<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
 	}
@@ -69,6 +79,9 @@ templ IssuesBody(data IssuesPageData) {
 		if data.Message != "" {
 			<p class={ "flash", templ.KV("ok", data.MessageOK) }>{ data.Message }</p>
 		}
+		if data.CanManageIssues {
+			@IssuesOpenSummary(data)
+		}
 		if len(data.Issues) > 0 {
 			@IssuesList(data)
 		}
@@ -78,6 +91,27 @@ templ IssuesBody(data IssuesPageData) {
 			<section class="panel issues-panel"><h2>{ data.IssuesEmpty.Title }</h2><p class="muted">{ data.IssuesEmpty.Message }</p></section>
 		}
 	</div>
+}
+
+templ IssuesOpenSummary(data IssuesPageData) {
+	<section class="panel issues-panel" id="issue-open" aria-labelledby="issue-open-title">
+		<header class="section-head"><div><p class="eyebrow">Verwaltung</p><h2 id="issue-open-title">Offene Anliegen</h2><p>Die acht neuesten offenen Anliegen im Haus.</p></div></header>
+		if len(data.OpenIssues) > 0 {
+			<ul class="issue-summary-list">
+				for _, issue := range data.OpenIssues {
+					<li class="issue-summary-row">
+						<a href={ templ.SafeURL(issue.URL) }>{ issue.Title }</a>
+						<span class={ "pill", issue.StatusClass }>{ issue.Status }</span>
+						<span class="issue-summary-assignee"><strong>Zuständig:</strong> { issue.Assignee }</span>
+						<span class="issue-summary-age"><strong>Gemeldet:</strong> { issue.Age }</span>
+					</li>
+				}
+			</ul>
+		} else {
+			<p class="muted">Keine offenen Anliegen im Haus.</p>
+		}
+		<a class="issue-detail-link" href="/app/anliegen/board"><strong>Alle im Triage-Board</strong><span aria-hidden="true">›</span></a>
+	</section>
 }
 
 templ IssuesList(data IssuesPageData) {
@@ -222,10 +256,16 @@ templ IssueAttachments(attachments []view.AttachmentView) {
 }
 
 templ IssueCreatePanel(data IssuesPageData) {
-	if len(data.Issues) > 0 {
-		<details class="panel issue-create-panel" id="issue-new" open?={ data.OpenIssueCreate }><summary><div><h2>Neues Anliegen</h2><p>In zwei kurzen Schritten verständlich melden.</p></div></summary><div class="issue-create-body">@IssueCreateForm(true)</div></details>
+	if len(data.Issues) > 0 || (data.CanManageIssues && data.HasHouseIssues) {
+		<details class="panel issue-create-panel" id="issue-new" open?={ data.OpenIssueCreate }><summary><div><h2>
+			if data.CanManageIssues {
+				Anliegen melden
+			} else {
+				Neues Anliegen
+			}
+		</h2><p>In zwei kurzen Schritten verständlich melden.</p></div></summary><div class="issue-create-body">@IssueCreateForm(true)</div></details>
 	} else {
-		<div class="issue-start"><section class="panel issue-create-panel" id="issue-new"><div class="issue-create-head"><h2>Erstes Anliegen melden</h2><p>In zwei kurzen Schritten verständlich melden.</p></div><div class="issue-create-body">@IssueCreateForm(false)</div></section></div>
+		<div class="issue-start"><section class="panel issue-create-panel" id="issue-new"><div class="issue-create-head"><h2>{ issueCreateTitle(data) }</h2><p>In zwei kurzen Schritten verständlich melden.</p></div><div class="issue-create-body">@IssueCreateForm(false)</div></section></div>
 	}
 }
 
@@ -243,6 +283,11 @@ templ IssueCreateForm(hasIssues bool) {
 		</fieldset>
 		<fieldset class="issue-wizard-step" data-issue-step="review"><div class="issue-wizard-heading"><span class="issue-wizard-progress" data-issue-progress>Schritt 2 von 2</span><h3>Prüfen &amp; senden</h3><p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p></div><dl class="issue-review issue-review-enhanced" aria-label="Zusammenfassung"><div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div><div class="issue-review-row"><dt>Beschreibung</dt><dd class="issue-review-copy"><span class="issue-review-copy-text" data-issue-summary="body">—</span><button class="issue-review-expand" type="button" data-issue-review-expand aria-expanded="false" hidden>Vollständig lesen</button></dd></div><div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div><div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div></dl><details class="issue-title-option"><summary>Titel ändern <span class="hint">Optional</span></summary><label for="issue-title">Eigener Titel<input id="issue-title" type="text" name="title" maxlength="140" placeholder="Kurzer, passender Titel"/><span class="hint">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span></label></details><div class="issue-wizard-actions"><button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button><button class="wizard-submit" type="submit" data-busy-label="Meldung wird gesendet…">Anliegen melden</button></div></fieldset>
 	</form>
+}
+
+func issueCreateTitle(data IssuesPageData) string {
+	if !data.HasHouseIssues { return "Erstes Anliegen melden" }
+	return "Anliegen melden"
 }
 
 func issuesListTitle(data IssuesPageData) string {

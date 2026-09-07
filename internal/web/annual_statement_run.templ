@@ -58,15 +58,15 @@ type AnnualStatementRunCostView struct {
 }
 
 templ AnnualStatementRunPanel(data AnnualStatementRunView) {
-	<section class="panel workspace" id="abrechnungslauf">
+	<section class="panel workspace annual-run-panel" id="abrechnungslauf">
 		<style>
-			#abrechnungslauf {
+			.annual-run-panel {
 				min-width: 0;
 			}
-			#abrechnungslauf .subhead {
+			.annual-run-panel .subhead {
 				margin-top: var(--space-4);
 			}
-			#abrechnungslauf .subhead > div {
+			.annual-run-panel .subhead > div {
 				min-width: 0;
 				overflow-wrap: anywhere;
 			}
@@ -266,11 +266,15 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			</div>
 		}
 		<form method="post" action="/app/settings/annual-statement/runs"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button primary" type="submit" disabled?={ !data.Ready }>Für alle Einheiten berechnen</button></form>
+	</section>
+	{ children... }
+	if len(data.History) > 0 || data.ID != "" {
+	<section class="panel workspace annual-run-panel" id="abrechnungsergebnis">
 		if len(data.History)>0 {
 			<header class="subhead"><div><h3>Gespeicherte Läufe</h3><p>Jeder Lauf hält seinen damaligen Stand fest. Nach Korrekturen können Sie einen weiteren Lauf berechnen.</p></div></header>
 			<nav class="settings-links annual-history" aria-label="Abrechnungsläufe">
 				for _,run:=range data.History {
-					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungslauf") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
+					<a href={ templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungsergebnis") } aria-current={ portalAriaCurrent(run.Selected) }><strong>{ run.Label }</strong></a>
 				}
 			</nav>
 		}
@@ -359,4 +363,5 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			</article>
 		}
 	</section>
+	}
 }
