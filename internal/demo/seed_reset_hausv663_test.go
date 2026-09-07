@@ -19,13 +19,13 @@ func TestResetClearsAnnualStatementRunsArchiveAndDeliveries(t *testing.T) {
 	database := dbtest.Open(t)
 	dir := t.TempDir()
 	seedDir := "../../scripts/demo/seed"
-	load := func() {
+	load := func(discard bool) {
 		t.Helper()
-		if _, err := Load(t.Context(), database, seedDir, SeedOptions{Reset: true, DocumentDir: dir, Anchor: time.Now()}); err != nil {
+		if _, err := Load(t.Context(), database, seedDir, SeedOptions{Reset: true, DiscardAnnualStatements: discard, DocumentDir: dir, Anchor: time.Now()}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	load()
+	load(false)
 	const slug = "janusbergweg-123"
 	var tenantID string
 	if err := database.QueryRow(`SELECT tenant_id FROM tenant WHERE slug=$1`, slug).Scan(&tenantID); err != nil {
@@ -74,7 +74,18 @@ func TestResetClearsAnnualStatementRunsArchiveAndDeliveries(t *testing.T) {
 		}
 	}
 
-	load()
+	// A plain reset is an input operation and keeps the immutable records.
+	load(false)
+	for table, want := range map[string]int{"annual_statement_runs": 1, "annual_statement_deliveries": 1} {
+		if got, err := countRows(t, database, table); err != nil || got != want {
+			t.Fatalf("%s after plain reset = %d (%v), want %d", table, got, err, want)
+		}
+	}
+	if _, err := os.Stat(file); err != nil {
+		t.Fatalf("plain reset must keep the archive file: %v", err)
+	}
+
+	load(true)
 
 	for _, table := range []string{"annual_statement_runs", "annual_statement_deliveries"} {
 		if got, err := countRows(t, database, table); err != nil || got != 0 {

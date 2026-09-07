@@ -20,8 +20,13 @@ type SeedOptions struct {
 	// DocumentDir is the same original-file directory used by the portal.
 	DocumentDir string
 	Reset       bool
-	Stats       bool
-	Out         io.Writer
+	// DiscardAnnualStatements additionally drops the tenant's stored annual
+	// statement runs, their archive documents and the delivery log. Reset alone
+	// is an input operation and keeps them (they are immutable records); the
+	// demo's "Demodaten initialisieren" wants the clean demo day (HAUSV-663).
+	DiscardAnnualStatements bool
+	Stats                   bool
+	Out                     io.Writer
 	// Units receives the fixture's tenant-scoped unit inventory when supplied.
 	// It is optional so database-only consumers keep their existing behavior.
 	Units store.UnitSink
@@ -171,7 +176,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		shiftHouseDates(options.Anchor, houses)
 	}
 	if options.Reset {
-		if err := reset(ctx, database, org.Key, houses, intake, events, announcements, options.DocumentDir); err != nil {
+		if err := reset(ctx, database, org.Key, houses, intake, events, announcements, options.DocumentDir, options.DiscardAnnualStatements); err != nil {
 			return SeedResult{}, err
 		}
 	}
@@ -455,7 +460,7 @@ func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.Tena
 	return err
 }
 
-func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement, documentDir string) error {
+func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement, documentDir string, discardAnnualStatements bool) error {
 	tx, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -500,11 +505,15 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 			return err
 		}
 	}
-	// Annual statement runs, their archive documents and the delivery log
-	// belong to the demo day as well (HAUSV-663): a reset must not present
-	// yesterday's "Lauf 6" to the customer. Archive files leave the disk after
-	// the commit; a file that is already gone is not an error.
+	// Annual statement runs, their archive documents and the delivery log are
+	// immutable records a plain reset keeps; only the demo's clean-day reset
+	// discards them (HAUSV-663), so the customer never meets yesterday's
+	// "Lauf 6". Archive files leave the disk after the commit; a file that is
+	// already gone is not an error.
 	var archived []string
+	if !discardAnnualStatements {
+		return tx.Commit()
+	}
 	for _, house := range houses {
 		slug := textutil.Slug(house.Slug)
 		paths, err := archivedDocumentPaths(ctx, tx, slug, documentDir)

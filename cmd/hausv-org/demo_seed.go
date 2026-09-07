@@ -20,6 +20,7 @@ func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) st
 	flags.SetOutput(stderr)
 	dir := flags.String("dir", "", "directory containing the demo seed JSON files")
 	reset := flags.Bool("reset", false, "remove fixture-owned rows before loading")
+	discard := flags.Bool("discard-annual-statements", false, "with -reset: also drop stored annual statement runs, archive documents and the delivery log (the clean demo day)")
 	stats := flags.Bool("stats", false, "print intake counts by status and category")
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -56,7 +57,7 @@ func runDemoSeed(args []string, stdout, stderr io.Writer, getenv func(string) st
 		}
 		documentDir = filepath.Join(filepath.Dir(documentDataPath), "documents")
 	}
-	options := demo.SeedOptions{Reset: *reset, Stats: *stats, Out: stdout, Anchor: anchorTime, DocumentDir: documentDir}
+	options := demo.SeedOptions{Reset: *reset, DiscardAnnualStatements: *reset && *discard, Stats: *stats, Out: stdout, Anchor: anchorTime, DocumentDir: documentDir}
 	if unitPath := strings.TrimSpace(getenv("UNIT_DATA_PATH")); unitPath != "" {
 		units, err := store.NewUnitStore(unitPath)
 		if err != nil {
