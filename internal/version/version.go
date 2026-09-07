@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.0",
+			Date:     "7. September 2026",
+			Kind:     "Neu",
+			Headline: "Die Jahresabrechnung zeigt das Ergebnis je Einheit als übersichtliche Tabelle.",
+			Intro:    "Partei, Kostenanteil, Akonto und Saldo stehen je Einheit in einer Zeile, die Kostenarten lassen sich aufklappen, PDF und Archiv sind direkt verlinkt; auf dem Telefon werden die Zeilen zu beschrifteten Blöcken. Dokumente erscheinen in Registerreihenfolge mit dem Namen der Partei.",
+			Items:    []NoteItem{{Label: "Demo", Text: "Kontakte mit Wegweiser, Mitarbeiter, Abstimmungen, Termindetails und Bilanz gehören zum Demostand."}, {Label: "Oberfläche", Text: "Seitentitel und Hausname passen auf schmale Telefone, Listenlinks brechen nicht mehr wortweise um, die Mitarbeiterliste passt in die Tablet-Ansicht."}},
+		},
+		{
 			Version:  "1.7.3",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",
