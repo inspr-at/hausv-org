@@ -574,3 +574,45 @@ func renderComponent(t *testing.T, component templ.Component) string {
 	}
 	return output.String()
 }
+
+// HAUSV-672: a tenant without a display name is shown under its postal address,
+// so the house card would otherwise print the place twice.
+func TestHouseCardDoesNotRepeatThePlaceOfAnAddressUsedAsName(t *testing.T) {
+	for _, tc := range []struct{ name, address, wantTitle, wantPlace string }{
+		{"Janischhofweg 22, 8043 Graz", "Janischhofweg 22, 8043 Graz", "Janischhofweg 22", "8043 Graz"},
+		{"Haus am Park", "Parkgasse 1, 8010 Graz", "Haus am Park", "8010 Graz"},
+		{"Parkgasse 1, 8010 Graz", "Parkgasse 1, 8010 Graz, Österreich", "Parkgasse 1, 8010 Graz", "Österreich"},
+		{"8010 Graz", "8010 Graz", "8010 Graz", "8010 Graz"},
+	} {
+		if got := portalHouseTitle(tc.name, tc.address); got != tc.wantTitle {
+			t.Errorf("portalHouseTitle(%q, %q) = %q, want %q", tc.name, tc.address, got, tc.wantTitle)
+		}
+		if got := portalHousePlace(tc.address); got != tc.wantPlace {
+			t.Errorf("portalHousePlace(%q) = %q, want %q", tc.address, got, tc.wantPlace)
+		}
+	}
+	portal := PortalPageData{
+		Title: "Portal", TenantSlug: "jhw22", HouseName: "Janischhofweg 22, 8043 Graz", Address: "Janischhofweg 22, 8043 Graz",
+		MapURL: "https://www.openstreetmap.org/", DisplayName: "Markus", Initials: "MB", Role: "Admin",
+		Shell: PortalShellData{Ready: true},
+	}
+	html := renderComponent(t, PortalPage(portal))
+	if !strings.Contains(html, `<strong>Janischhofweg 22</strong><small>8043 Graz</small>`) {
+		t.Errorf("house card should show the street above the place once, got %q", between(html, `class="house-header-copy side-address-label"`, `</span>`))
+	}
+	if !strings.Contains(html, `.house-header-copy strong{overflow:visible;overflow-wrap:anywhere;hyphens:manual`) {
+		t.Errorf("sidebar house title must keep overflow-wrap:anywhere as the last resort against overflow")
+	}
+}
+
+func between(s, start, end string) string {
+	i := strings.Index(s, start)
+	if i < 0 {
+		return ""
+	}
+	rest := s[i:]
+	if j := strings.Index(rest, end); j >= 0 {
+		return rest[:j]
+	}
+	return rest
+}

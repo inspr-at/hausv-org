@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.8.6",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Lange Straßennamen bleiben in der Liegenschaftskarte.",
+			Intro:    "Die Karte in der Seitenleiste passt die Schrift an, statt über den Rand zu laufen, und nennt den Ort nur einmal.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.8.5",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",

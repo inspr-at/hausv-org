@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.8.6] - 2026-09-07
+
+### Stabilität verbessert
+
+- Seitenleiste: Die Liegenschaftskarte zeigt lange Straßennamen vollständig innerhalb der Karte; die Schrift passt sich an, ohne Trennstriche, und der Ort erscheint nur einmal.
+
 ## [1.8.5] - 2026-09-07
 
 ### Stabilität verbessert
