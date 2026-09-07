@@ -1474,13 +1474,13 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Zentraler Hausüberblick",
 		"Aushänge, die ankommen",
 		"Kalender, der mitgeht",
-		"Schäden sauber lösen",
+		"Vom Mail-Eingang zur Lösung",
 		"Geschützt und auffindbar",
 		"Wohnungen digital übergeben",
 		"Abstimmungen mit Verlauf",
 		"Kontakte, Rollen und Rechte",
 		"Live-Energie verständlich",
-		"Parken, Laden und Anbinden",
+		"Jahresabrechnung bis zum Versand",
 		"hello [at] hausv [dot] org",
 		"wahlweise hosted oder selbst betrieben",
 		"Quelloffen · selbst betrieben",
@@ -1496,7 +1496,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"<strong>0&nbsp;€ Grundgebühr</strong>",
 		"<span>25 WE kostenlos · danach Verrechnung je&nbsp;WE&nbsp;/&nbsp;Monat</span>",
 		"Home Assistant",
-		"CAMT und ebInterface",
+		"ebInterface und CAMT",
 		"Impressum",
 		"Betreiber laut Host-Konfiguration",
 		"natürliche Person",
@@ -1505,13 +1505,19 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Impressum &amp; Infos",
 		"Datensparsam",
 		"KI nur mit Opt-in",
-		"Keine Jahresabrechnung oder Buchhaltung",
-		"Kein Mahnwesen",
-		"keine Zahlungsaufträge",
-		"Aktive Energiesteuerung nur nach bewusster Freigabe",
-		"Dienstleister-Zugänge ausschließlich rollenbasiert",
-		"Kein öffentlicher Marktplatz oder eigener Zahlungsfluss",
-		"Übergabe an bestehende Fachsysteme statt Nachbau",
+		"Was gerade entsteht",
+		"Verrechnung: gemeinsam mit Friendly Customers",
+		"Die Jahresabrechnung ist da: Lauf, PDF je Partei, Archiv und Versand.",
+		"Buchhaltung, Mahnwesen und Zahlungsläufe folgen",
+		"Wir bauen sie mit ausgewählten Verwaltungen statt am grünen Tisch.",
+		"Energie: kontrolliert statt unbedacht",
+		"Aktive Steuerung nach bewusster Freigabe",
+		"Dienstleister-Zugänge bleiben rollenbasiert.",
+		"Kein öffentlicher Marktplatz, kein Handel im Hintergrund.",
+		// HAUSV-668: the media area fills the card to its hairline, and no card
+		// carries a tinted border any more.
+		"object-fit: cover; object-position: center;",
+		"background: #fbf4e8;",
 		`/assets/landing.js`,
 		"/assets/hausv-landing-hero.png",
 		"mark3d-stage",
@@ -1530,6 +1536,26 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	if strings.Contains(body, "Parken, Laden und anbinden") {
 		t.Fatal("landing must not render the former lowercase integration heading")
+	}
+	// HAUSV-668 replaced the "what we leave out" disclosure with the roadmap the
+	// product actually has; the old promises must not creep back.
+	for _, stale := range []string{
+		"Was bewusst nicht Teil des Portals ist",
+		"Kein Verrechnungssystem",
+		"Keine Jahresabrechnung oder Buchhaltung",
+		"Kein Mahnwesen und keine Zahlungsaufträge",
+		"Übergabe an bestehende Fachsysteme statt Nachbau",
+		"Aktive Energiesteuerung nur nach bewusster Freigabe",
+		"Dienstleister-Zugänge ausschließlich rollenbasiert",
+		"Kein öffentlicher Marktplatz oder eigener Zahlungsfluss",
+		"Parken, Laden und Anbinden",
+		"Schäden sauber lösen",
+		".feature-card:nth-child(1), .feature-card:nth-child(9)",
+		"object-fit: contain",
+	} {
+		if strings.Contains(body, stale) {
+			t.Fatalf("landing page still carries the pre-HAUSV-668 state %q", stale)
+		}
 	}
 	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
 		if strings.Contains(body, forbidden) {

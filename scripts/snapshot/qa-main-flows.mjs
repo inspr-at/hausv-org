@@ -1057,13 +1057,51 @@ async function assertPublicLanding(viewport) {
       fullPage: true,
     });
   }
+  // HAUSV-668: every feature card carries the same hairline, and its image
+  // fills the media box to that hairline — no card ground leaking in a corner.
+  const featureCards = await page.$$eval('.feature-card', (cards) => cards.map((card) => {
+    const visual = card.querySelector('.feature-visual');
+    const image = visual.querySelector('img');
+    const cardBox = card.getBoundingClientRect();
+    const visualBox = visual.getBoundingClientRect();
+    const imageBox = image.getBoundingClientRect();
+    const cardStyle = getComputedStyle(card);
+    return {
+      hairline: `${cardStyle.borderTopWidth} ${cardStyle.borderTopColor}`,
+      radius: cardStyle.borderTopLeftRadius,
+      fit: getComputedStyle(image).objectFit,
+      inset: Math.max(Math.abs(visualBox.left - cardBox.left), Math.abs(visualBox.top - cardBox.top)),
+      letterbox: Math.max(
+        Math.abs(imageBox.left - visualBox.left), Math.abs(imageBox.top - visualBox.top),
+        Math.abs(imageBox.right - visualBox.right), Math.abs(imageBox.bottom - visualBox.bottom),
+      ),
+    };
+  }));
+  if (featureCards.length !== 10) {
+    fail(`Öffentliche Startseite ${viewport.name}: ${featureCards.length} Feature-Karten statt 10`);
+  }
+  const hairlines = new Set(featureCards.map((card) => `${card.hairline} ${card.radius}`));
+  if (hairlines.size !== 1) {
+    fail(`Öffentliche Startseite ${viewport.name}: uneinheitliche Kartenränder ${JSON.stringify([...hairlines])}`);
+  }
+  const leaking = featureCards.filter((card) => card.fit !== 'cover' || card.letterbox > 0.5 || card.inset > 1.5);
+  if (leaking.length) {
+    fail(`Öffentliche Startseite ${viewport.name}: Bildfläche reicht nicht bis zum Kartenrand ${JSON.stringify(leaking)}`);
+  }
   const productDetails = page.locator('details.landing-more').first();
   if (await productDetails.evaluate((element) => element.open)) {
-    fail(`Öffentliche Startseite ${viewport.name}: Produktdetails sind ungefragt offen`);
+    fail(`Öffentliche Startseite ${viewport.name}: Ausblick ist ungefragt offen`);
   }
   await productDetails.locator('summary').click();
-  if (!(await page.getByRole('heading', { name: 'Kein Verrechnungssystem' }).count())) {
-    fail(`Öffentliche Startseite ${viewport.name}: Produktdetails lassen sich nicht öffnen`);
+  for (const heading of ['Verrechnung: gemeinsam mit Friendly Customers', 'Energie: kontrolliert statt unbedacht']) {
+    if (!(await page.getByRole('heading', { name: heading }).count())) {
+      fail(`Öffentliche Startseite ${viewport.name}: „${heading}“ fehlt im Ausblick`);
+    }
+  }
+  for (const stale of ['Kein Verrechnungssystem', 'Keine Jahresabrechnung oder Buchhaltung', 'Was bewusst nicht Teil des Portals ist']) {
+    if (await page.getByText(stale, { exact: false }).count()) {
+      fail(`Öffentliche Startseite ${viewport.name}: „${stale}“ ist zurück`);
+    }
   }
   const metrics = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
