@@ -174,7 +174,7 @@ func IssuesHeaderAction(data IssuesPageData) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if data.CanCreateIssue && data.CanManageIssues {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<a class=\"button primary\" href=\"/app/anliegen?new=1#issue-new\" data-issue-open>Anliegen melden</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<a class=\"button\" href=\"/app/anliegen?new=1#issue-new\" data-issue-open>Anliegen melden</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

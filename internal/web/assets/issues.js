@@ -281,9 +281,16 @@
 
     var requested = new URL(window.location.href).searchParams.get("step");
     var initial = requested === "review" && describeIsValid(form, false) ? "review" : "describe";
-    // Keep a baseline for Back from the review without inserting #issue-new
-    // into an ordinary page load (or making Reload jump down to the wizard).
-    window.history.replaceState(historyState(form, initial), "", window.location.href);
+    // A deliberate entry (?new=1 or #issue-new) records its step in the URL so
+    // Back from the review lands on ?step=describe again; an ordinary page load
+    // keeps its URL and only gets a history baseline, so Reload does not jump
+    // down to the wizard.
+    var location = new URL(window.location.href);
+    if (location.searchParams.get("new") === "1" || location.hash === "#issue-new") {
+      setHistory(initial, "replace");
+    } else {
+      window.history.replaceState(historyState(form, initial), "", window.location.href);
+    }
     show(initial, { scroll: false, focus: false });
   }
 

@@ -64,7 +64,7 @@ templ IssuesContent(data IssuesPageData) {
 
 templ IssuesHeaderAction(data IssuesPageData) {
 	if data.CanCreateIssue && data.CanManageIssues {
-		<a class="button primary" href="/app/anliegen?new=1#issue-new" data-issue-open>Anliegen melden</a>
+		<a class="button" href="/app/anliegen?new=1#issue-new" data-issue-open>Anliegen melden</a>
 	}
 	if data.IsServiceProvider && data.CalendarFeedURL != "" {
 		<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
