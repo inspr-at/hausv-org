@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.1",
+			Date:     "7. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Die Startseite zeigt die Jahresabrechnung mit eigener Illustration.",
+			Intro:    "Die Karte zur Jahresabrechnung trägt nun ein eigenes Bild im Stil der übrigen Funktionskarten statt eines wiederverwendeten Motivs.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.0",
 			Date:     "7. September 2026",
 			Kind:     "Neu",
