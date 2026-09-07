@@ -145,3 +145,26 @@ func TestAnnualStatementPreparationCollapsesOnlyWithoutFeedback(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnualStatementPreparationPrecedesSavedRunsHAUSV660(t *testing.T) {
+	var body bytes.Buffer
+	data := AnnualStatementPageData{Year: 2025, Run: AnnualStatementRunView{
+		Year: 2025, Ready: true, ID: "run-2025", Revision: 1,
+		History: []AnnualStatementRunLinkView{{ID: "run-2025", Label: "Lauf 1"}},
+	}}
+	if err := AnnualStatementBody(data).Render(t.Context(), &body); err != nil {
+		t.Fatal(err)
+	}
+	html := body.String()
+	previous := -1
+	for _, marker := range []string{`id="abrechnungslauf"`, "Abrechnungslauf berechnen", "Für alle Einheiten berechnen</button></form>", `<details class="annual-preparation"`, "Grundlagen und Belege prüfen oder bearbeiten · 2025", "Kostenarten, Einheiten, Parteien, Periode", "Gespeicherte Läufe", `data-annual-statement-run="run-2025"`} {
+		pos := strings.Index(html, marker)
+		if pos <= previous {
+			t.Fatalf("%q missing or out of order", marker)
+		}
+		previous = pos
+	}
+	if !strings.Contains(html, ".annual-preparation>summary::after") || !strings.Contains(html, ".annual-preparation[open]>summary::after") {
+		t.Fatal("preparation must have an expanding chevron")
+	}
+}

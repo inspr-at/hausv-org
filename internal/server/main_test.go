@@ -4174,8 +4174,8 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 			t.Fatalf("manager issues page should contain %q", want)
 		}
 	}
-	if strings.Contains(body, "Tür schließt nicht") {
-		t.Fatalf("manager overview should not duplicate the triage board")
+	if !strings.Contains(body, "Tür schließt nicht") || !strings.Contains(body, `class="issue-summary-row"`) {
+		t.Fatal("manager overview should show the open issue in its compact summary")
 	}
 	if strings.Contains(body, `name="assignee_email"`) {
 		t.Fatalf("manager overview should link to board instead of rendering workflow form")

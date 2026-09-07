@@ -95,6 +95,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	issues := []issueView{}
 	manageIssues := []issueView{}
+	var openIssues []web.IssueSummaryView
 	canManageIssues := ac.can(capabilityManageIssues)
 	canCreateIssue := canCreateResidentIssue(ac.actor(), ac.resource())
 	totalIssueCount := 0
@@ -112,6 +113,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		urgentIssueCount = issuePriorityCount(allTenantIssues, issuePriorityUrgent)
 		if !boardOnly {
 			if canManageIssues {
+				openIssues = newestOpenIssueSummaries(allTenantIssues, time.Now())
 				issues = a.issueViewsForActor(ac.tenantRef, ac.repositories.issues.ListAuthor(email), role, email)
 			} else {
 				issues = a.issueViewsForActor(ac.tenantRef, a.visibleIssuesForActor(ac.tenantRef, email, role), role, email)
@@ -159,11 +161,46 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		CanCreateIssue:    canCreateIssue,
 		IsServiceProvider: isServiceProviderRole(role),
 		Issues:            issues,
+		OpenIssues:        openIssues,
+		HasHouseIssues:    totalIssueCount > 0,
 		IssuesEmpty:       emptyState("Noch kein Anliegen", "Nach dem Absenden erscheint das Anliegen hier mit Status und Rückfragen."),
 		Message:           msg,
 		MessageOK:         msgOK,
 		OpenIssueCreate:   openIssueCreate,
 	})
+}
+
+// newestOpenIssueSummaries uses the same open-state definition as the navigation count.
+func newestOpenIssueSummaries(items []residentIssue, now time.Time) []web.IssueSummaryView {
+	open := make([]residentIssue, 0, len(items))
+	for _, item := range items {
+		if issueIsOpen(item) {
+			open = append(open, item)
+		}
+	}
+	sort.SliceStable(open, func(i, j int) bool {
+		if open[i].CreatedAt.Equal(open[j].CreatedAt) {
+			return open[i].ID > open[j].ID
+		}
+		return open[i].CreatedAt.After(open[j].CreatedAt)
+	})
+	if len(open) > 8 {
+		open = open[:8]
+	}
+	result := make([]web.IssueSummaryView, 0, len(open))
+	for _, item := range open {
+		status := normalizeIssueStatus(item.Status)
+		assignee := strings.TrimSpace(item.AssigneeEmail)
+		if assignee == "" {
+			assignee = "Noch nicht zugewiesen"
+		}
+		result = append(result, web.IssueSummaryView{
+			Title: item.Title, Status: status, StatusClass: issueStatusClass(status),
+			Assignee: assignee, Age: relativeAge(now, item.CreatedAt),
+			URL: "/app/anliegen/board/" + url.PathEscape(item.ID),
+		})
+	}
+	return result
 }
 
 func (a *app) issuesPortalContext(ac authCtx) web.PortalPageData {

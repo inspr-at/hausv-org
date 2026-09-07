@@ -146,7 +146,6 @@
     var steps = Array.prototype.slice.call(form.querySelectorAll("[data-issue-step]"));
     var panel = form.closest(".issue-create-panel");
     var current = "describe";
-    var historyActive = false;
     form.classList.add("is-enhanced");
     form.noValidate = true;
 
@@ -156,7 +155,6 @@
 
     function setHistory(step, mode) {
       window.history[mode + "State"](historyState(form, step), "", historyURL(step));
-      historyActive = true;
     }
 
     function show(step, options) {
@@ -229,7 +227,6 @@
         url.searchParams.delete("step");
         url.hash = "issue-own";
         window.history.replaceState({}, "", url.pathname + url.search + url.hash);
-        historyActive = false;
         show("describe", { scroll: false, focus: false });
         var summaryControl = panel.querySelector(":scope > summary");
         if (summaryControl) summaryControl.focus();
@@ -260,17 +257,33 @@
       show(target);
     });
 
-    if (panel && panel.tagName === "DETAILS") {
-      panel.addEventListener("toggle", function () {
-        if (!panel.open || historyActive) return;
-        setHistory("describe", "replace");
-      });
+    // Start focusing only after a deliberate entry action. A native toggle also
+    // fires for server-rendered open details, so it must not drive focus/history.
+    function enterWizard() {
+      if (panel && panel.tagName === "DETAILS") panel.open = true;
+      setHistory("describe", "replace");
+      show("describe");
     }
 
-    var panelIsOpen = !panel || panel.tagName !== "DETAILS" || panel.open;
+    if (panel && panel.tagName === "DETAILS") {
+      panel.querySelector(":scope > summary").addEventListener("click", function (event) {
+        if (panel.open) return;
+        event.preventDefault();
+        enterWizard();
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("[data-issue-open]"), function (link) {
+      link.addEventListener("click", function (event) {
+        event.preventDefault();
+        enterWizard();
+      });
+    });
+
     var requested = new URL(window.location.href).searchParams.get("step");
     var initial = requested === "review" && describeIsValid(form, false) ? "review" : "describe";
-    if (panelIsOpen) setHistory(initial, "replace");
+    // Keep a baseline for Back from the review without inserting #issue-new
+    // into an ordinary page load (or making Reload jump down to the wizard).
+    window.history.replaceState(historyState(form, initial), "", window.location.href);
     show(initial, { scroll: false, focus: false });
   }
 

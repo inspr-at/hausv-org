@@ -200,10 +200,16 @@ templ AnnualStatementHeaderAction() {
 
 templ AnnualStatementBody(data AnnualStatementPageData) {
 	<div data-templ-annual-statement>
-		@AnnualStatementRunPanel(data.Run)
-		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{padding:var(--space-4);cursor:pointer;font-weight:700}.annual-preparation>.workspace{margin-top:var(--space-4)}</style>
+		@AnnualStatementRunPanel(data.Run) {
+			@AnnualStatementPreparation(data)
+		}
+	</div>
+}
+
+templ AnnualStatementPreparation(data AnnualStatementPageData) {
+		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary::after{content:"";width:9px;height:9px;flex:0 0 9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}.annual-preparation[open]>summary::after{transform:rotate(45deg)}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}</style>
 		<details class="annual-preparation" open?={ data.Run.ID == "" || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.HasReceiptSuggestion }>
-		<summary>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }</summary>
+		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span></summary>
 		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
@@ -427,7 +433,6 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 			<details class="inline-details"><summary>Parteien aus Tabelle übernehmen <small>CSV</small></summary><form method="post" action="/app/settings/annual-statement/parties/import" enctype="multipart/form-data"><p>Spalten: <strong>Einheit</strong>, <strong>Rolle</strong>, <strong>E-Mail</strong>. Optional: <strong>Name</strong> und <strong>Anschrift</strong> für adressierte PDF-Entwürfe. Als Rolle werden „Wohnungseigentümer“ und „Mietverhältnis“ akzeptiert.</p><p class="notice">Nur vorhandene Einheiten werden zugeordnet. Eine unbekannte Einheit bricht den gesamten Import ab.</p><label>CSV-Datei<input type="file" name="parties_file" accept=".csv,text/csv" required/></label><button class="button primary" type="submit">Parteien übernehmen</button></form></details>
 		</section>
 		</details>
-	</div>
 }
 
 func annualStatementYear(year int) string { return strconv.Itoa(year) }
