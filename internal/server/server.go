@@ -2078,7 +2078,7 @@ func newApp() (*app, error) {
 	}
 	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
-			options := demo.SeedOptions{Reset: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
+			options := demo.SeedOptions{Reset: true, DiscardAnnualStatements: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
 			if units, ok := a.unitStore.(store.UnitSink); ok {
 				options.Units = units
 			}
