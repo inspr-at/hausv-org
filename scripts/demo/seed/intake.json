@@ -477,7 +477,8 @@
         "overall": 0.93
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrter Herr Haas,\n\nvielen Dank für Ihre Nachricht. Vera Verwalter prüft, ob die Hausverwaltung zuständig ist, und meldet sich innerhalb von zwei Werktagen.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0013."
   },
   {
     "id": "in-0014",
@@ -517,7 +518,8 @@
         "overall": 0.94
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrte Frau Moser,\n\nvielen Dank für Ihre Meldung zu Annenstraße 71, Top 7. Wir haben unseren zuständigen Fachbetrieb beauftragt, sich innerhalb von zwei Werktagen bei Ihnen zu melden.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0014."
   },
   {
     "id": "in-0015",
@@ -577,7 +579,8 @@
         "overall": 0.88
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrter Herr Thaler,\n\nwir prüfen Ihre Rückfrage zur Vorschreibung für Petersgasse 7, Top 3, unter HV-2026-09 und melden uns mit einer nachvollziehbaren Aufstellung.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0016."
   },
   {
     "id": "in-0017",
@@ -617,7 +620,8 @@
         "overall": 0.89
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrter Herr Leitner,\n\nfür die Prüfung Ihres Vorhabens in Top 3 senden Sie uns bitte Ausführung, Maße und Befestigungsart. Vera Verwalter koordiniert die weitere Freigabe.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0017."
   },
   {
     "id": "in-0018",
@@ -657,7 +661,8 @@
         "overall": 0.9
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrte Frau Almer,\n\nwir haben Ihre Anfrage für Körblergasse 40, Top 1, aufgenommen. Nach Prüfung der Berechtigung erhalten Sie Kosten und Abholtermin.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0018."
   },
   {
     "id": "in-0019",
@@ -777,7 +782,8 @@
         "overall": 0.93
       }
     },
-    "status_hint": "approved"
+    "status_hint": "edited",
+    "handled_reply": "Sehr geehrter Herr Dorn,\n\nwir haben die Schadenmeldung für Janusbergweg 123, Top 3, aufgenommen und prüfen die Einreichung bei der Gebäudeversicherung. Ihre Referenz lautet HV-2026-09.\n\nMit freundlichen Grüßen\nHausverwaltung Musterstadt\n\nBei Rückfragen nennen Sie bitte die Referenz in-0021."
   },
   {
     "id": "in-0022",

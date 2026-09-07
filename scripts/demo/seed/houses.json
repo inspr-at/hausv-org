@@ -173,6 +173,99 @@
         "owner_email": "alina.eigentuemer@musterstadt.example",
         "tenant_email": "sophie.bewohner@musterstadt.example"
       }
+    ],
+    "contacts": [
+      {
+        "active": true,
+        "company": "Musterstadt Liftservice",
+        "created_at": "2026-09-01T09:00:00+02:00",
+        "email": "lift@musterstadt.example",
+        "id": "demo-contact-lift",
+        "kind": "Notdienst",
+        "notes": "Aufzugwartung und Liftstörungen am Janusbergweg 123. Notruf bei eingeschlossenen Personen rund um die Uhr; Standort und Liftnummer bereithalten. Fiktiver Demokontakt.",
+        "phone": "+43 316 555 210",
+        "updated_at": "2026-09-01T09:00:00+02:00"
+      },
+      {
+        "active": true,
+        "company": "Musterstadt Wärme \u0026 Wasser",
+        "created_at": "2026-09-01T09:00:00+02:00",
+        "email": "waerme@musterstadt.example",
+        "id": "demo-contact-waerme",
+        "kind": "Dienstleister",
+        "notes": "Heizung, Sanitär und Wasserleitungen. Termine koordiniert Paul Sommer. Bei Wasseraustritt sofort Verwaltung und Notdienst verständigen. Fiktiver Demokontakt.",
+        "phone": "+43 316 555 211",
+        "updated_at": "2026-09-01T09:00:00+02:00"
+      },
+      {
+        "active": true,
+        "company": "Musterstadt Elektrotechnik",
+        "created_at": "2026-09-01T09:00:00+02:00",
+        "email": "elektrik@musterstadt.example",
+        "id": "demo-contact-elektrik",
+        "kind": "Dienstleister",
+        "notes": "Beleuchtung, Gegensprechanlage und Allgemeinstrom. Störungen mit Ort und betroffener Sicherung an die Verwaltung melden. Fiktiver Demokontakt.",
+        "phone": "+43 316 555 212",
+        "updated_at": "2026-09-01T09:00:00+02:00"
+      },
+      {
+        "active": true,
+        "company": "Musterstadt Hausbetreuung",
+        "created_at": "2026-09-01T09:00:00+02:00",
+        "email": "hausbetreuung@musterstadt.example",
+        "id": "demo-contact-hausbetreuung",
+        "kind": "Hausmeister",
+        "notes": "Reinigung, Winterdienst und Grünflächen am Janusbergweg 123. Erreichbar Mo–Fr 7–16 Uhr; Hinweise zu Glätte bitte telefonisch melden. Fiktiver Demokontakt.",
+        "phone": "+43 316 555 213",
+        "updated_at": "2026-09-01T09:00:00+02:00"
+      }
+    ],
+    "ballots": [
+      {
+        "closes_at": "2026-09-04T18:00:00+02:00",
+        "created_at": "2026-08-19T09:00:00+02:00",
+        "created_by": "vera.verwalter@musterstadt.example",
+        "description": "Muster-Abstimmung: Die Fassade soll 2027 instand gesetzt werden. Die Verwaltung holt drei vergleichbare Angebote ein und legt Kosten und Bauzeiten vor einer Beauftragung zur Freigabe vor.",
+        "id": "demo-ballot-fassade-2027",
+        "opens_at": "2026-08-20T09:00:00+02:00",
+        "options": [
+          "Ja",
+          "Nein",
+          "Enthaltung"
+        ],
+        "quorum_ppm": 500000,
+        "status": "closed",
+        "title": "Sanierung Fassade 2027",
+        "type": "Umlaufbeschluss",
+        "updated_at": "2026-09-04T18:00:00+02:00",
+        "votes": {
+          "alina.eigentuemer@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 1000000
+          }
+        },
+        "weighting": "per-share"
+      },
+      {
+        "closes_at": "2026-09-23T18:00:00+02:00",
+        "created_at": "2026-09-06T09:00:00+02:00",
+        "created_by": "paul.verwalter@musterstadt.example",
+        "description": "Muster-Abstimmung: Soll die Verwaltung die technische Machbarkeit und Kosten von vier abschließbaren Ladepunkten prüfen lassen? Die Prüfung umfasst Stromversorgung, Brandschutz und eine getrennte Verbrauchserfassung. Über die Umsetzung wird anschließend gesondert entschieden.",
+        "id": "demo-ballot-ebikes",
+        "opens_at": "2026-09-07T09:00:00+02:00",
+        "options": [
+          "Ja",
+          "Nein",
+          "Enthaltung"
+        ],
+        "quorum_ppm": 500000,
+        "status": "open",
+        "title": "Fahrradraum: Ladepunkte für E-Bikes",
+        "type": "Umlaufbeschluss",
+        "updated_at": "2026-09-07T09:00:00+02:00",
+        "weighting": "per-share"
+      }
     ]
   },
   {
