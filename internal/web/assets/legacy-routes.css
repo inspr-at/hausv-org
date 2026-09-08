@@ -721,7 +721,7 @@
 .legacy-route .portal-section-header .button { min-height: 40px; background: transparent; color: var(--muted); border: 1px solid var(--line); }
 .legacy-route .portal-section-header-action { display: flex; flex-wrap: wrap; gap: 8px; }
 .legacy-route .energy-mode-strip { position: static; margin-bottom: 20px; }
-.legacy-route :is(button, summary, .button, .attachment-delete button) { min-height: 40px; }
+.legacy-route :is(button, summary, .button, .attachment-delete button) { min-height: 44px; }
 .legacy-route .attachment-delete button { min-width: 40px; }
 .legacy-route :is(input, select, textarea) { max-width: 100%; }
 .legacy-route :is(.panel, .pk-set, .parking-access, .raw-export-grid, .pk-chat, .pk-chat-meta) { min-width: 0; }
