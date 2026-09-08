@@ -5808,7 +5808,7 @@ func prefixTenantHTMLPaths(body string, tenantSlug string) string {
 	if prefix == "/" {
 		return body
 	}
-	for _, attribute := range []string{"href", "action", "formaction", "src", "data-src", "data-glass-src", "data-map-tile", "value"} {
+	for _, attribute := range []string{"href", "action", "formaction", "src", "data-src", "data-glass-src", "data-map-tile", "value", "hx-get", "hx-post", "hx-put", "hx-patch", "hx-delete"} {
 		needle := attribute + `="/`
 		body = strings.ReplaceAll(body, needle+tenantSlug+"/", "\x00HAUSV_TENANT_PATH\x00")
 		body = strings.ReplaceAll(body, needle, attribute+`="`+prefix+"/")

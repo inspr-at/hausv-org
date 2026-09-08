@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.9] - 2026-09-08
+
+### Verbessert
+
+- Posteingang: „Vorschlag anfordern“ zeigt den Status jetzt zuverlässig an, auch wenn die Statusabfrage vorübergehend scheitert; ein klarer Hinweis mit „Erneut versuchen“ ersetzt das stille Verschwinden.
+- KI-Verbindung: der Verbindungstest unterscheidet zwischen einer funktionierenden Verbindung mit unsicherer Antwort und echten Fehlern und nennt die Ursache auf Deutsch.
+
 ## [1.9.8] - 2026-09-08
 
 ### Neu

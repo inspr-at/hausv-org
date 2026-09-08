@@ -81,30 +81,56 @@ func inboxContentSecurityPolicy(nonce string) string {
 func (a *app) inboxSuggestionPartial(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	orgKey, ok := a.inboxOrganisationKey(&ac)
 	if !ok || a.intake == nil {
-		http.Error(w, "Posteingang nicht verfügbar.", http.StatusServiceUnavailable)
+		a.inboxSuggestionStatusError(w, r, ac, http.StatusServiceUnavailable)
 		return
 	}
 	item, err := a.intake(orgKey).Get(r.Context(), strings.TrimSpace(r.PathValue("id")))
 	if err != nil {
-		http.NotFound(w, r)
+		status := http.StatusInternalServerError
+		if errors.Is(err, store.ErrIntakeNotFound) {
+			status = http.StatusNotFound
+		} else {
+			logError("inbox suggestion load failed", err, "organisation", orgKey)
+		}
+		a.inboxSuggestionStatusError(w, r, ac, status)
 		return
 	}
 	if !a.actorCanAccessIntake(&ac, item) {
-		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		a.inboxSuggestionStatusError(w, r, ac, http.StatusForbidden)
 		return
 	}
 	view, err := a.inboxCaseView(r.Context(), orgKey, item, a.inboxHouses(&ac), false)
 	if err != nil {
-		a.inboxError(w, err)
+		logError("inbox suggestion view failed", err, "organisation", orgKey)
+		a.inboxSuggestionStatusError(w, r, ac, http.StatusInternalServerError)
 		return
 	}
 	view.QueueQuery = inboxQueueQuery(r.URL.Query())
 	var rendered bytes.Buffer
 	if err := web.InboxSuggestionPartial(view).Render(r.Context(), &rendered); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		logError("inbox suggestion render failed", err)
+		a.inboxSuggestionStatusError(w, r, ac, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
+}
+
+// A failed status read must not redirect or replace the case workflow. The
+// client preserves its existing controls; direct partial requests get the same
+// recoverable state without exposing repository errors or another tenant's data.
+func (a *app) inboxSuggestionStatusError(w http.ResponseWriter, r *http.Request, ac authCtx, status int) {
+	view := web.InboxCase{
+		ID:              strings.TrimSpace(r.PathValue("id")),
+		QueueQuery:      inboxQueueQuery(r.URL.Query()),
+		SuggestionState: "status_error",
+	}
+	var rendered bytes.Buffer
+	if err := web.InboxSuggestionState(view).Render(context.WithoutCancel(r.Context()), &rendered); err != nil {
+		logError("inbox suggestion error render failed", err)
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
 	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug))
 }
 

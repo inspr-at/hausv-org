@@ -54,6 +54,24 @@ export HV_QA_HA_PORT=${HV_QA_HA_PORT:-$((port + 100))}
 # shellcheck source=scripts/snapshot/env.sh
 . "$repo/scripts/snapshot/env.sh"
 
+capture=${HV_CAPTURE:-capture.mjs}
+runtime=$src
+if [ "$capture" = qa-inbox-suggest.mjs ]; then
+    # The oracle owns the local provider's lifetime. A different default tenant
+    # makes an unprefixed /app poll fail instead of silently hitting Demohaus.
+    export DEFAULT_TENANT=haus-b
+    export HV_QA_AI_PORT=${HV_QA_AI_PORT:-$((port + 200))}
+    export AI_BASE_URL="http://127.0.0.1:$HV_QA_AI_PORT/v1"
+    export AI_MODEL=qa-inbox-suggest
+    export AI_API_KEY=qa-local-fixture
+    export AI_TIMEOUT=40s
+    export AI_MIN_CONFIDENCE=0.6
+    export AI_PROVIDER_LABEL="QA lokal"
+    # newApp loads .env.local from cwd; this oracle must never read a developer
+    # environment file. Assets are embedded and fixture data paths are absolute.
+    runtime=$tmp
+fi
+
 # env.sh points MAP_TILE_BASE_URL and HA_CONNECTORS_JSON at this fixture. Without
 # it the sidebar map renders as a BROKEN IMAGE in every captured page — which
 # looks exactly like a product bug and was once reported as one. qa-main-flows.sh
@@ -73,7 +91,7 @@ fi
 
 echo "── booting on :$port"
 # `exec` so $! is the app itself and the kill below reaches it.
-( cd "$src" && exec "$tmp/app" ) >"$tmp/app.log" 2>&1 &
+( cd "$runtime" && exec "$tmp/app" ) >"$tmp/app.log" 2>&1 &
 pid=$!
 disown %% 2>/dev/null || true
 
@@ -97,7 +115,6 @@ fi
 # Which script gets the booted app. Defaults to the snapshot capture; the
 # responsive probe reuses this whole boot-with-seeded-fixtures dance rather than
 # copying it and drifting from it.
-capture=${HV_CAPTURE:-capture.mjs}
 echo "── running $capture"
 node "$repo/scripts/snapshot/$capture" "http://localhost:$port" "$out"
 rc=$?
