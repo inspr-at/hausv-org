@@ -105,3 +105,57 @@ func TestVerwaltungSettingsRejectsAIURLWithUserinfo(t *testing.T) {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
 	}
 }
+
+// HAUSV-700: a valid answer below the confidence threshold proves the
+// connection works; the test must say so instead of "fehlgeschlagen".
+func TestVerwaltungAITestTreatsUncertainAnswerAsWorkingConnection(t *testing.T) {
+	a, _, _ := newInboxTestApp(t, roleAdmin)
+	t.Setenv("AI_MIN_CONFIDENCE", "0.75")
+	original := newSettingsAISuggester
+	t.Cleanup(func() { newSettingsAISuggester = original })
+	newSettingsAISuggester = func(getenv func(string) string) (ai.TriageSuggester, error) {
+		return settingsAITestSuggester{suggestion: ai.TriageSuggestion{Model: "unsure-model", Confidence: map[string]float64{"overall": 0.42}}, err: ai.ErrUncertain}, nil
+	}
+	response := authedFormRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen/ki-test", url.Values{})
+	body := aiTestResultLine(t, response.Body.String())
+	for _, want := range []string{"Verbindung ok", "unsure-model", "Zuversicht 42 %", "Schwelle 75 %", `data-ok="true"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("status=%d result lacks %q: %s", response.Code, want, body)
+		}
+	}
+	if strings.Contains(body, "fehlgeschlagen") || strings.Contains(body, "uncertain") {
+		t.Fatalf("uncertain answer reported as failure: %s", body)
+	}
+}
+
+// HAUSV-700: real failures stay failures, in German, without raw provider text.
+func TestVerwaltungAITestExplainsRealFailuresInGerman(t *testing.T) {
+	a, _, _ := newInboxTestApp(t, roleAdmin)
+	original := newSettingsAISuggester
+	t.Cleanup(func() { newSettingsAISuggester = original })
+	newSettingsAISuggester = func(getenv func(string) string) (ai.TriageSuggester, error) {
+		return settingsAITestSuggester{err: errors.New("ai: completion status 401 unauthorized: invalid api key sk-secret")}, nil
+	}
+	response := authedFormRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen/ki-test", url.Values{})
+	body := aiTestResultLine(t, response.Body.String())
+	if !strings.Contains(body, "Verbindung fehlgeschlagen · Anmeldung beim Anbieter abgelehnt") || !strings.Contains(body, `data-ok="false"`) {
+		t.Fatalf("status=%d result=%s", response.Code, body)
+	}
+	if strings.Contains(body, "sk-secret") || strings.Contains(body, "unauthorized") {
+		t.Fatalf("raw provider text leaked: %s", body)
+	}
+}
+
+// aiTestResultLine isolates the KI-Verbindung status line from the settings page.
+func aiTestResultLine(t *testing.T, html string) string {
+	t.Helper()
+	start := strings.Index(html, `<p class="settings-result"`)
+	if start < 0 {
+		t.Fatalf("settings result line missing: %s", html)
+	}
+	end := strings.Index(html[start:], "</p>")
+	if end < 0 {
+		t.Fatalf("settings result line unterminated")
+	}
+	return html[start : start+end]
+}

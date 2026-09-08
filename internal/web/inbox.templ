@@ -307,8 +307,21 @@ templ InboxOriginal(item InboxCase) {
 }
 
 templ InboxSuggestionState(item InboxCase) {
-	if item.SuggestionState == "running" {
-		<div class="suggest-state" id="vorschlag" hx-get={ "/app/verwaltung/posteingang/" + item.ID + "/vorschlag" + item.QueueQuery } hx-select="#vorschlag" hx-trigger="every 1s" hx-swap="outerHTML"><div class="suggest-state-main"><span class="spinner" aria-hidden="true"></span><div class="suggest-state-copy"><strong>Vorschlag wird erstellt</strong><span>{ item.ProviderLabel } · { fmt.Sprintf("%d Sek. · max. %d s", item.SuggestionElapsed, item.SuggestionTimeout) }</span></div></div><form method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="suggest_cancel"/><input type="hidden" name="queue_query" value={ item.QueueQuery }/><button class="case-button" type="submit">Abbrechen</button></form><noscript>Seite neu laden, um das Ergebnis zu sehen</noscript></div>
+	if item.SuggestionState == "running" || item.SuggestionState == "status_error" {
+		<div class="suggest-state" id="vorschlag" hx-get={ "/app/verwaltung/posteingang/" + item.ID + "/vorschlag" + item.QueueQuery } hx-select="#vorschlag" hx-trigger={ inboxSuggestionPollTrigger(item) } hx-swap="outerHTML"
+			if item.SuggestionState == "status_error" {
+				role="status" aria-live="polite"
+			}
+		>
+			if item.SuggestionState == "status_error" {
+				@InboxSuggestionPollErrorContent()
+			} else {
+				<div class="suggest-state-main"><span class="spinner" aria-hidden="true"></span><div class="suggest-state-copy"><strong>Vorschlag wird erstellt</strong><span>{ item.ProviderLabel } · { fmt.Sprintf("%d Sek. · max. %d s", item.SuggestionElapsed, item.SuggestionTimeout) }</span></div></div>
+			}
+			<form method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="suggest_cancel"/><input type="hidden" name="queue_query" value={ item.QueueQuery }/><button class="case-button" type="submit">Abbrechen</button></form>
+			<template data-suggestion-poll-error>@InboxSuggestionPollErrorContent()</template>
+			<noscript>Seite neu laden, um das Ergebnis zu sehen</noscript>
+		</div>
 	} else if item.SuggestionState == "arrived" {
 		<div class="arrival-banner" id="vorschlag" role="status" aria-live="polite"><span class="state-icon" aria-hidden="true">✓</span>Vorschlag eingetroffen · { item.SuggestionFinished }</div>
 	} else if item.SuggestionState == "failed" {
@@ -320,6 +333,19 @@ templ InboxSuggestionState(item InboxCase) {
 	} else {
 		<div id="vorschlag"></div>
 	}
+}
+
+// Retrying a status read must never start a second provider job.
+func inboxSuggestionPollTrigger(item InboxCase) string {
+	if item.SuggestionState == "status_error" {
+		return "inbox:suggestion-retry"
+	}
+	return "every 1s"
+}
+
+templ InboxSuggestionPollErrorContent() {
+	<div class="suggest-state-main"><span class="state-icon failed" aria-hidden="true">×</span><div class="suggest-state-copy"><strong>Vorschlagsstatus konnte nicht geladen werden</strong><span>Die Anfrage läuft möglicherweise im Hintergrund weiter. Bitte den Status erneut laden oder die Anfrage abbrechen.</span></div></div>
+	<button class="case-button" type="button" data-suggestion-retry>Erneut versuchen</button>
 }
 
 templ InboxCaseWorkflow(item InboxCase, outOfBand bool) {

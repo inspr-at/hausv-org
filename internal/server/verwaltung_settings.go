@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -304,22 +306,62 @@ func (a *app) verwaltungAITestAction(w http.ResponseWriter, r *http.Request, ac 
 		for _, category := range store.IntakeCategories() {
 			categories = append(categories, ai.CategoryRule{Key: category.Key, Label: category.Label, Description: category.Label, DefaultPriority: store.IssuePriorityNorm})
 		}
-		suggestion, err = suggester.Suggest(ctx, ai.TriageInput{Organisation: orgKey, Source: "settings-test", Subject: "Verbindungstest", Body: "Im Stiegenhaus ist eine Lampe ausgefallen.", ReceivedAt: time.Now(), Categories: categories})
+		suggestion, err = suggester.Suggest(ctx, ai.TriageInput{Organisation: orgKey, Source: "settings-test", Subject: "Verbindungstest: Lampe im Stiegenhaus", Body: "Guten Tag, im Stiegenhaus der Liegenschaft Musterstraße 1, 2. Stock vor Top 7, ist seit gestern die Deckenlampe ausgefallen. Bitte um Reparatur. Mit freundlichen Grüßen, Erika Muster (Top 7)", ReceivedAt: time.Now(), Categories: categories})
 	}
 	elapsed := time.Since(started).Milliseconds()
-	if err != nil {
-		message := err.Error()
-		if apiKey := strings.TrimSpace(os.Getenv("AI_API_KEY")); apiKey != "" {
-			message = strings.ReplaceAll(message, apiKey, "[geschützt]")
-		}
-		a.renderVerwaltungSettings(w, r, ac, settings, "", "Verbindung fehlgeschlagen · "+message, false)
+	// A valid answer below the confidence threshold proves the connection
+	// works; only the suggestion would be flagged as uncertain (HAUSV-700).
+	uncertain := errors.Is(err, ai.ErrUncertain)
+	if err != nil && !uncertain {
+		a.renderVerwaltungSettings(w, r, ac, settings, "", "Verbindung fehlgeschlagen · "+aiConnectionTestFailure(err), false)
 		return
 	}
 	model := strings.TrimSpace(suggestion.Model)
 	if model == "" {
 		model = effectiveAIConfig(os.Getenv, settings).Model
 	}
-	a.renderVerwaltungSettings(w, r, ac, settings, "", fmt.Sprintf("Verbindung ok · %s · %d ms", model, elapsed), true)
+	result := fmt.Sprintf("Verbindung ok · %s · %d ms", model, elapsed)
+	if uncertain {
+		threshold := aiMinConfidence(getenv)
+		result += fmt.Sprintf(" · Antwort unsicher: Zuversicht %d %% liegt unter der Schwelle %d %% (AI_MIN_CONFIDENCE); solche Vorschläge werden im Posteingang als unsicher gekennzeichnet", int(math.Round(suggestion.Confidence["overall"]*100)), int(math.Round(threshold*100)))
+	}
+	a.renderVerwaltungSettings(w, r, ac, settings, "", result, true)
+}
+
+// aiConnectionTestFailure turns a provider error into a customer-facing
+// German cause without leaking secrets or raw provider text (HAUSV-700).
+func aiConnectionTestFailure(err error) string {
+	if errors.Is(err, ai.ErrUnavailable) {
+		return "KI ist nicht konfiguriert (Adresse, Modell oder Schlüssel fehlen)."
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "Zeitüberschreitung: der Anbieter hat nicht rechtzeitig geantwortet."
+	}
+	lower := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(lower, "401") || strings.Contains(lower, "403") || strings.Contains(lower, "unauthorized") || strings.Contains(lower, "forbidden") || strings.Contains(lower, "api key"):
+		return "Anmeldung beim Anbieter abgelehnt (Schlüssel prüfen)."
+	case strings.Contains(lower, "404") || strings.Contains(lower, "model"):
+		return "Modell oder Adresse beim Anbieter nicht gefunden (Modellname und Basis-URL prüfen)."
+	case strings.Contains(lower, "429") || strings.Contains(lower, "rate"):
+		return "Der Anbieter drosselt Anfragen (Limit erreicht), bitte später erneut versuchen."
+	case strings.Contains(lower, "decode") || strings.Contains(lower, "no choices") || strings.Contains(lower, "choice was empty") || strings.Contains(lower, "json"):
+		return "Der Anbieter hat eine unbrauchbare Antwort geliefert (Modell prüfen)."
+	case strings.Contains(lower, "must be") || strings.Contains(lower, "invalid") || strings.Contains(lower, "parse"):
+		return "Die KI-Einstellungen sind ungültig (Adresse, Modell, Schwelle prüfen)."
+	}
+	return "Anbieter nicht erreichbar (Netzwerk oder Adresse prüfen)."
+}
+
+// aiMinConfidence mirrors the provider's threshold parsing for the test
+// message; invalid values fall back to the provider default.
+func aiMinConfidence(getenv func(string) string) float64 {
+	if raw := strings.TrimSpace(getenv("AI_MIN_CONFIDENCE")); raw != "" {
+		if value, err := strconv.ParseFloat(raw, 64); err == nil && !math.IsNaN(value) && value >= 0 && value <= 1 {
+			return value
+		}
+	}
+	return 0.6
 }
 
 func (a *app) verwaltungDemoResetPage(w http.ResponseWriter, r *http.Request, ac authCtx) {

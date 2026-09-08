@@ -66,6 +66,20 @@ func TestInboxSuggestionRunningCancelAndAudit(t *testing.T) {
 		t.Fatalf("start status=%d body=%s", start.Code, start.Body.String())
 	}
 	<-suggester.started
+	for _, path := range []string{
+		"/demo/app/verwaltung/posteingang?status=open",
+		"/demo/app/verwaltung/posteingang/cancel-me?status=open",
+		"/demo/app/verwaltung/posteingang/cancel-me/vorschlag?status=open",
+	} {
+		response := authedRequest(t, a, "vera@example.com", path)
+		want := `hx-get="/demo/app/verwaltung/posteingang/cancel-me/vorschlag?status=open"`
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), want) {
+			t.Fatalf("path-tenant polling URL missing on %s (status %d)", path, response.Code)
+		}
+		if strings.Contains(response.Body.String(), `hx-get="/app/`) {
+			t.Fatalf("unprefixed polling URL on %s", path)
+		}
+	}
 	running := authedRequest(t, a, "vera@example.com", "/demo/app/verwaltung/posteingang/cancel-me/vorschlag")
 	for _, want := range []string{"Vorschlag wird erstellt", "Cloud (OpenRouter)", "max. 1 s", "Abbrechen"} {
 		if running.Code != http.StatusOK || !strings.Contains(running.Body.String(), want) {

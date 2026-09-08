@@ -94,6 +94,7 @@ func TestInboxSuggestionStatesAndUnassignedCase(t *testing.T) {
 		{state: "arrived", want: "Vorschlag eingetroffen"},
 		{state: "failed", want: "Erneut versuchen"},
 		{state: "cancelled", want: "Abgebrochen"},
+		{state: "status_error", want: "Vorschlagsstatus konnte nicht geladen werden"},
 	} {
 		var out bytes.Buffer
 		item := InboxCase{ID: "in-1", SuggestionState: test.state, SuggestionTimeout: 45, ProviderLabel: "Cloud (OpenRouter)", SuggestionError: "Zeitüberschreitung", SuggestionFinished: "12:04", CanSuggest: true}

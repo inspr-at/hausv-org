@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.9",
+			Date:     "8. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Vorschlagsstatus im Posteingang bleibt sichtbar, Verbindungstest erklärt sich.",
+			Intro:    "Beim Anfordern eines Vorschlags bleibt der Status im Posteingang immer sichtbar: Läuft die Abfrage ins Leere, erscheint ein Hinweis mit „Erneut versuchen“ statt eines leeren Bereichs. Der KI-Verbindungstest meldet eine funktionierende Verbindung auch dann, wenn die Antwort unsicher war, und nennt bei echten Fehlern die Ursache.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.8",
 			Date:     "8. September 2026",
 			Kind:     "Neu",
