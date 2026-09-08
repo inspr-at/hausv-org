@@ -8,21 +8,11 @@ package web
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "net/url"
+import "strings"
 
-func portalSourceSerifURL(assetVersion string) string {
-	// AssetVersion is already query-escaped; normalize also test/caller values
-	// before embedding the same URL in HTML and raw CSS.
-	decoded, err := url.QueryUnescape(assetVersion)
-	if err != nil {
-		decoded = assetVersion
-	}
-	return "/assets/source-serif-4-semibold.woff2?v=" + url.QueryEscape(decoded)
-}
-
-// The preload and the sole font-face declaration belong to PortalDocument.
-// swap allows a cold first visit to render; subsequent visits reuse the font.
-func PortalSourceSerifStyles(assetVersion string) templ.Component {
+// Render the checked-in Lucide artwork byte-for-byte. The wrapper hides these
+// decorative icons from assistive technology without editing the asset itself.
+func PortalAssetIcon(name string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,12 +33,29 @@ func PortalSourceSerifStyles(assetVersion string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.Raw(`<style>@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:600;font-display:block;src:url("`+portalSourceSerifURL(assetVersion)+`") format("woff2")}</style>`).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<span aria-hidden=\"true\" style=\"display:contents\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.Raw(portalAssetIconSVG(name)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
+}
+
+func portalAssetIconSVG(name string) string {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if !IsLucideIcon(name) {
+		return ""
+	}
+	contents, _ := Assets.ReadFile("assets/icons/lucide/" + name + ".svg")
+	return string(contents)
 }
 
 var _ = templruntime.GeneratedTemplate

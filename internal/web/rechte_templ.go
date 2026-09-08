@@ -111,191 +111,199 @@ func RechteContent() templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.verwaltung-main:has(.rechte-page)>.portal-section-header{width:100%;max-width:1440px;padding:24px 32px 0;border:0}.verwaltung-main:has(.rechte-page)>.portal-section-content{width:100%;max-width:1440px;padding:8px 32px 48px}.rechte-page{display:grid;gap:16px;min-width:0}.rechte-intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.rechte-intro h2{font-size:20px;line-height:1.4}.rechte-intro p{margin-top:8px;color:var(--muted);font-size:13px}.rechte-readonly{display:flex;align-items:center;gap:8px;white-space:nowrap;color:var(--muted);font-size:12px}.rechte-readonly svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}.rechte-panel{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-table-wrap{overflow-x:auto}.rechte-table{width:100%;min-width:960px;border-collapse:collapse}.rechte-table th,.rechte-table td{height:44px;padding:8px 16px;border:0;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}.rechte-table tr>:not(:first-child){border-left:1px solid var(--line)}.rechte-table thead th{height:56px;background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:750;letter-spacing:0.08em;text-transform:uppercase}.rechte-table thead th small{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-weight:400;letter-spacing:0;text-transform:none}.rechte-table th:first-child{width:19%}.rechte-table th:nth-child(2){width:34%}.rechte-table th:nth-child(3){width:25%}.rechte-table th:nth-child(4){width:22%}.rechte-table .rechte-area{color:var(--ink);font-size:13px;font-weight:750;letter-spacing:0;text-transform:none;background:transparent}.rechte-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.rechte-chip{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:750;white-space:nowrap}.rechte-empty{color:var(--soft);font-size:13px}.rechte-note-link{color:var(--muted);font-size:10px;text-decoration:underline;text-underline-offset:2px}.rechte-notes{columns:2;column-gap:32px;margin:0;padding:8px 24px 8px 40px;background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.rechte-notes li{break-inside:avoid;padding-left:4px}.rechte-notes li:target{background:var(--line)}.rechte-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:16px 8px 0;border-top:1px solid var(--line)}.rechte-legend p{display:grid;grid-template-columns:16px minmax(0,1fr);gap:8px;align-items:start;color:var(--muted);font-size:11px;line-height:1.5}.rechte-dot{width:12px;height:12px;margin-top:2px;border:2px solid var(--gold);border-radius:var(--radius-pill)}.rechte-dot.explicit{border-color:var(--muted)}.rechte-special{display:grid;gap:8px}.rechte-special h2{font-size:32px}.rechte-special>p{color:var(--muted);font-size:13px}.rechte-special-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.rechte-special-card{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-special-card header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}.rechte-special-card h3{font-size:23px}.rechte-special-card header span,.rechte-special-card p{color:var(--muted);font-size:12px;line-height:1.5}@media(max-width:760px){.verwaltung-main:has(.rechte-page)>.portal-section-header{padding:24px 16px 0}.verwaltung-main:has(.rechte-page)>.portal-section-content{padding:8px 16px 48px}.rechte-intro{flex-direction:column}.rechte-legend,.rechte-special-grid{grid-template-columns:minmax(0,1fr)}.rechte-notes{columns:1}.rechte-table th,.rechte-table td{padding:8px}.rechte-table{min-width:880px}}\n\t</style><section class=\"rechte-page\" aria-labelledby=\"rechte-matrix-title\"><div class=\"rechte-intro\"><div><h2 id=\"rechte-matrix-title\">Wer darf was? Rollen und Berechtigungen im Überblick.</h2><p>Ein Strich bedeutet: Für diese Rollenfamilie ist die Aktion nicht freigegeben.</p></div><span class=\"rechte-readonly\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"10\" width=\"14\" height=\"11\" rx=\"2\"></rect><path d=\"M8 10V6a4 4 0 0 1 8 0v4M12 14v3\"></path></svg>Nur zur Ansicht</span></div><section class=\"rechte-panel\" aria-label=\"Rechtematrix der Rollenfamilien\"><div class=\"rechte-table-wrap\" role=\"region\" aria-label=\"Rollenmatrix, horizontal verschiebbar\" tabindex=\"0\"><table class=\"rechte-table\"><thead><tr><th scope=\"col\">Bereich</th>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.verwaltung-main:has(.rechte-page)>.portal-section-header{width:100%;max-width:1440px;padding:24px 32px 0;border:0}.verwaltung-main:has(.rechte-page)>.portal-section-content{width:100%;max-width:1440px;padding:8px 32px 48px}.rechte-page{display:grid;gap:16px;min-width:0}.rechte-intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.rechte-intro h2{font-size:20px;line-height:1.4}.rechte-intro p{margin-top:8px;color:var(--muted);font-size:13px}.rechte-readonly{display:flex;align-items:center;gap:8px;white-space:nowrap;color:var(--muted);font-size:12px}.rechte-readonly svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}.rechte-panel{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-table-wrap{overflow-x:auto}.rechte-table{width:100%;min-width:960px;border-collapse:collapse}.rechte-table th,.rechte-table td{height:44px;padding:8px 16px;border:0;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}.rechte-table tr>:not(:first-child){border-left:1px solid var(--line)}.rechte-table thead th{height:56px;background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:750;letter-spacing:0.08em;text-transform:uppercase}.rechte-table thead th small{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-weight:400;letter-spacing:0;text-transform:none}.rechte-table th:first-child{width:19%}.rechte-table th:nth-child(2){width:34%}.rechte-table th:nth-child(3){width:25%}.rechte-table th:nth-child(4){width:22%}.rechte-table .rechte-area{color:var(--ink);font-size:13px;font-weight:750;letter-spacing:0;text-transform:none;background:transparent}.rechte-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.rechte-chip{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:750;white-space:nowrap}.rechte-empty{color:var(--soft);font-size:13px}.rechte-note-link{color:var(--muted);font-size:10px;text-decoration:underline;text-underline-offset:2px}.rechte-notes{columns:2;column-gap:32px;margin:0;padding:8px 24px 8px 40px;background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.rechte-notes li{break-inside:avoid;padding-left:4px}.rechte-notes li:target{background:var(--line)}.rechte-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:16px 8px 0;border-top:1px solid var(--line)}.rechte-legend p{display:grid;grid-template-columns:16px minmax(0,1fr);gap:8px;align-items:start;color:var(--muted);font-size:11px;line-height:1.5}.rechte-dot{width:12px;height:12px;margin-top:2px;border:2px solid var(--gold);border-radius:var(--radius-pill)}.rechte-dot.explicit{border-color:var(--muted)}.rechte-special{display:grid;gap:8px}.rechte-special h2{font-size:32px}.rechte-special>p{color:var(--muted);font-size:13px}.rechte-special-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.rechte-special-card{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-special-card header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}.rechte-special-card h3{font-size:23px}.rechte-special-card header span,.rechte-special-card p{color:var(--muted);font-size:12px;line-height:1.5}@media(max-width:760px){.verwaltung-main:has(.rechte-page)>.portal-section-header{padding:24px 16px 0}.verwaltung-main:has(.rechte-page)>.portal-section-content{padding:8px 16px 48px}.rechte-intro{flex-direction:column}.rechte-legend,.rechte-special-grid{grid-template-columns:minmax(0,1fr)}.rechte-notes{columns:1}.rechte-table th,.rechte-table td{padding:8px}.rechte-table{min-width:880px}}\n\t</style><section class=\"rechte-page\" aria-labelledby=\"rechte-matrix-title\"><div class=\"rechte-intro\"><div><h2 id=\"rechte-matrix-title\">Wer darf was? Rollen und Berechtigungen im Überblick.</h2><p>Ein Strich bedeutet: Für diese Rollenfamilie ist die Aktion nicht freigegeben.</p></div><span class=\"rechte-readonly\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PortalAssetIcon("lock-keyhole").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "Nur zur Ansicht</span></div><section class=\"rechte-panel\" aria-label=\"Rechtematrix der Rollenfamilien\"><div class=\"rechte-table-wrap\" role=\"region\" aria-label=\"Rollenmatrix, horizontal verschiebbar\" tabindex=\"0\"><table class=\"rechte-table\"><thead><tr><th scope=\"col\">Bereich</th>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, family := range authz.RoleFamilies {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<th scope=\"col\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<th scope=\"col\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(family.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 76, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 77, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(rechteRoleLabels(family.Roles))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 76, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 77, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</small></th>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</small></th>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</tr></thead> <tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, area := range authz.RoleAreas {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<tr><th scope=\"row\" class=\"rechte-area\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<tr><th scope=\"row\" class=\"rechte-area\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(area.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 83, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 84, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</th>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</th>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, family := range authz.RoleFamilies {
 				cell := rechteMatrixCell(family.Key, area.Key)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<td data-family=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<td data-family=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(family.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 86, Col: 37}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 87, Col: 37}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" data-area=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" data-area=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(area.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 86, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 87, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"><div class=\"rechte-actions\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div class=\"rechte-actions\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if len(cell.Grants) > 0 {
 					for _, grant := range cell.Grants {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<span class=\"rechte-chip\" title=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span class=\"rechte-chip\" title=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var8 string
 						templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(rechteGrantTitle(grant))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 90, Col: 70}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 91, Col: 70}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var9 string
 						templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(string(grant.Action))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 90, Col: 95}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 91, Col: 95}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</span> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"rechte-empty\" aria-label=\"keine Aktion\">—</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<span class=\"rechte-empty\" aria-label=\"keine Aktion\">—</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if cell.Note != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<sup><a class=\"rechte-note-link\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<sup><a class=\"rechte-note-link\" href=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var10 templ.SafeURL
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("#rechte-note-%d", rechteNoteNumber(family.Key, area.Key))))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 96, Col: 137}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 97, Col: 137}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" aria-label=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" aria-label=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue("Einschränkung: " + cell.Note)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 96, Col: 183}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 97, Col: 183}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(rechteNoteNumber(family.Key, area.Key)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 96, Col: 238}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 97, Col: 238}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</a></sup>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</a></sup>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div></td>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div></td>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</tbody></table></div><ol class=\"rechte-notes\" aria-label=\"Einschränkungen\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</tbody></table></div><ol class=\"rechte-notes\" aria-label=\"Einschränkungen\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -303,112 +311,112 @@ func RechteContent() templ.Component {
 			for _, family := range authz.RoleFamilies {
 				cell := rechteMatrixCell(family.Key, area.Key)
 				if cell.Note != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<li id=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<li id=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf("rechte-note-%d", rechteNoteNumber(family.Key, area.Key)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 111, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 112, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(cell.Note)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 111, Col: 99}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 112, Col: 99}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ".</li>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, ".</li>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</ol></section><section class=\"rechte-special\" aria-labelledby=\"rechte-special-title\"><h2 id=\"rechte-special-title\">Sonderrollen</h2><p>Eng auf Auftrag oder Freigabe begrenzte Zugriffe.</p><div class=\"rechte-special-grid\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</ol></section><section class=\"rechte-special\" aria-labelledby=\"rechte-special-title\"><h2 id=\"rechte-special-title\">Sonderrollen</h2><p>Eng auf Auftrag oder Freigabe begrenzte Zugriffe.</p><div class=\"rechte-special-grid\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, special := range authz.MatrixSpecialRoles {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<article class=\"rechte-special-card\"><header><h3>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<article class=\"rechte-special-card\"><header><h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(special.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 123, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 124, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</h3><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</h3><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(special.Area)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 123, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 124, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span></header><div class=\"rechte-actions\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</span></header><div class=\"rechte-actions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, action := range special.Actions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"rechte-chip\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"rechte-chip\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(string(action))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 126, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 127, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(special.Scope)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 129, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/rechte.templ`, Line: 130, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</p></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</p></article>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div></section><div class=\"rechte-legend\" aria-label=\"Legende\"><p><span class=\"rechte-dot\" aria-hidden=\"true\"></span><span><strong>Capability-gestützt:</strong> Freigabe direkt aus der zentralen Autorisierung.</span></p><p><span class=\"rechte-dot explicit\" aria-hidden=\"true\"></span><span><strong>Produktregel:</strong> Technische Checks sind mandantengebunden. Bestehende Mandanten-, Zuordnungs- oder Routenprüfung bleibt maßgeblich.</span></p></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div></section><div class=\"rechte-legend\" aria-label=\"Legende\"><p><span class=\"rechte-dot\" aria-hidden=\"true\"></span><span><strong>Capability-gestützt:</strong> Freigabe direkt aus der zentralen Autorisierung.</span></p><p><span class=\"rechte-dot explicit\" aria-hidden=\"true\"></span><span><strong>Produktregel:</strong> Technische Checks sind mandantengebunden. Bestehende Mandanten-, Zuordnungs- oder Routenprüfung bleibt maßgeblich.</span></p></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

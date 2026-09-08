@@ -24,6 +24,10 @@
 - `scripts/deploy.sh` (`--dry-run` to check first) is the attended path for verification or break-glass, run from a Mac against the configured host. It pulls the same CI image from GHCR, swaps the compose service, verifies the live version and prints a rollback command. It refuses to run on a dirty tree, when `VERSION` is already live, when `HEAD` differs from `origin/main`, or when that exact commit has no completed, green CI run on Blacksmith runners. Details in `docs/production-deploy.md`.
 - A merge to `main` **without** a `VERSION` bump still triggers `Deploy`, and that run ends green as `nothing to release: VERSION <x> is already live` (script exit 3, workflow summary "Nothing to release"). Production keeps its image. So a red `Deploy` run always means a release was refused or failed — treat it as one. The attended `scripts/deploy.sh` still errors on an unchanged version, because there someone asked for a release out loud.
 
+## Grafiken
+
+- Keine erfundenen oder freihändig veränderten SVG-Pfade: nur bestehende, geprüfte Icons und Illustrationen unverändert verwenden und bei Bedarf skalieren. Neue Illustrationen als abgenommene Bilddateien einbinden.
+
 ## Secrets
 
 - Never print, commit, or summarize secret values.

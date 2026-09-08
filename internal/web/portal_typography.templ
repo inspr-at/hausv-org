@@ -1,9 +1,19 @@
 package web
 
-// Locally served typeface for the approved portal screen designs.
-templ PortalSourceSerifStyles() {
-	<style>
-		@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:600;font-display:swap;src:url("/assets/source-serif-4-semibold.woff2") format("woff2")}
-		:root{--font-serif:"Source Serif 4",Georgia,serif}
-	</style>
+import "net/url"
+
+func portalSourceSerifURL(assetVersion string) string {
+	// AssetVersion is already query-escaped; normalize also test/caller values
+	// before embedding the same URL in HTML and raw CSS.
+	decoded, err := url.QueryUnescape(assetVersion)
+	if err != nil {
+		decoded = assetVersion
+	}
+	return "/assets/source-serif-4-semibold.woff2?v=" + url.QueryEscape(decoded)
+}
+
+// The preload and the sole font-face declaration belong to PortalDocument.
+// swap allows a cold first visit to render; subsequent visits reuse the font.
+templ PortalSourceSerifStyles(assetVersion string) {
+	@templ.Raw(`<style>@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:600;font-display:block;src:url("` + portalSourceSerifURL(assetVersion) + `") format("woff2")}</style>`)
 }

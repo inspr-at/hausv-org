@@ -260,24 +260,7 @@ templ ParkingMonths(data ParkingPageData) {
 templ ParkingBlank(data ParkingPageData) {
 	<section class="panel parking-empty" aria-label="Parkplatznutzung einrichten">
 		<div class="parking-empty-art" aria-hidden="true">
-			<svg viewBox="0 0 240 190">
-				<circle class="soft-fill" cx="118" cy="94" r="74"></circle>
-				<path d="M55 146h138"></path>
-				<path d="M64 126h30"></path>
-				<path d="M146 126h35"></path>
-				<path d="M91 126h14l13-30h46l16 30h13"></path>
-				<path d="M118 96h24M146 96h18"></path>
-				<circle cx="113" cy="132" r="11"></circle>
-				<circle cx="171" cy="132" r="11"></circle>
-				<path d="M91 126v-16M194 126v-12"></path>
-				<path d="M70 146V68"></path>
-				<path d="M52 68h36v38H52z"></path>
-				<path d="M73 75l-10 15h8l-5 12 13-18h-9z"></path>
-				<path d="M102 64h42l20 18"></path>
-				<path d="M117 64v31"></path>
-				<path d="M159 82h25v24"></path>
-				<path d="M36 129c-10 0-18-7-18-17 0-8 6-15 14-16 3-10 12-17 23-17 12 0 22 8 25 19"></path>
-			</svg>
+			@PortalIcon("parking")
 		</div>
 		<div class="parking-empty-copy">
 			<div class="kicker">Bereit für die erste Abrechnung</div>

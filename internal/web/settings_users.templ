@@ -102,7 +102,7 @@ templ UserCard(data UserSettingsPageData, user view.UserRow) {
 		<div class="user-role"><span class={ user.RoleClass }>{ user.Role }</span><small>{ userAccessProfile(user) }</small></div>
 		@UserStatus(user)
 		if userAccessEditable(data, user) {
-			<button class="icon-button row-edit" type="button" data-edit={ user.Email } aria-label={ user.DisplayName + " bearbeiten" } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z"></path></svg></button>
+			<button class="icon-button row-edit" type="button" data-edit={ user.Email } aria-label={ user.DisplayName + " bearbeiten" } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }>@PortalAssetIcon("pencil")</button>
 			@UserEditDialog(data, user)
 		} else {
 			<span class="user-readonly" title="Schreibgeschützt" aria-label="Schreibgeschützt">—</span>
@@ -121,7 +121,7 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 		<dl class="access-facts"><dt>Rolle</dt><dd>{ user.Role }</dd><dt>Berechtigungsprofil</dt><dd>{ userAccessProfile(user) }</dd></dl>
 		<section class="access-units"><h3>Zugeordnete Einheiten</h3><p>{ len(user.UnitList) } Einheiten insgesamt</p>
 			if user.HasUnits {
-				<details class="unit-tree" open><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6"></path></svg><span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span></summary><div>
+				<details class="unit-tree" open><summary>@PortalAssetIcon("building-2")<span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span></summary><div>
 					for _, group := range userUnitGroups(user) {
 						<details class="unit-branch" open?={ group.Label != "Stellplätze" }><summary><span>{ group.Label }</span><small>{ len(group.Items) }</small></summary><ul>
 							for _, unit := range group.Items {
@@ -160,7 +160,7 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 			}
 		</details>
 		if userAccessEditable(data, user) {
-			<button class="button access-edit" type="button" data-access-edit={ user.Email } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z"></path></svg><span>Zugang bearbeiten</span></button>
+			<button class="button access-edit" type="button" data-access-edit={ user.Email } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }>@PortalAssetIcon("pencil")<span>Zugang bearbeiten</span></button>
 		} else {
 			<p class="access-help">Dieser Zugang ist schreibgeschützt.</p>
 		}

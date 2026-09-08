@@ -1121,12 +1121,20 @@ func BallotCard(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg><span>Protokoll herunterladen</span></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = PortalAssetIcon("download").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<span>Protokoll herunterladen</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</footer></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</footer></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1155,7 +1163,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			templ_7745c5c3_Var53 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<section class=\"vote-result\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<section class=\"vote-result\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1168,27 +1176,27 @@ func BallotResult(ballot view.BallotView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\"><div class=\"vote-result-summary\"><div class=\"vote-result-head\"><div><p class=\"eyebrow\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\"><div class=\"vote-result-summary\"><div class=\"vote-result-head\"><div><p class=\"eyebrow\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if ballot.IsClosed {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<span>Ergebnis</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<span>Ergebnis</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<span>Zwischenstand</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<span>Zwischenstand</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</p><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</p><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if ballot.HasWinner {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1201,17 +1209,17 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<span>Noch keine Stimmen</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span>Noch keine Stimmen</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</strong></div></div><div class=\"vote-result-stats\"><div class=\"vote-result-stat\"><span>Teilnahme</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</strong></div></div><div class=\"vote-result-stats\"><div class=\"vote-result-stat\"><span>Teilnahme</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1224,7 +1232,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</strong></div><div class=\"vote-result-stat\"><span>Stimmen</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</strong></div><div class=\"vote-result-stat\"><span>Stimmen</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1237,7 +1245,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</strong></div><div class=\"vote-result-stat\"><span>Quorum</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</strong></div><div class=\"vote-result-stat\"><span>Quorum</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1250,7 +1258,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</strong></div></div></div><div class=\"vote-result-rows\"><p class=\"vote-weighting\">Gewichtung: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</strong></div></div></div><div class=\"vote-result-rows\"><p class=\"vote-weighting\">Gewichtung: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1263,12 +1271,12 @@ func BallotResult(ballot view.BallotView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range ballot.Options {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<div class=\"vote-result-row\"><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div class=\"vote-result-row\"><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1281,7 +1289,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</strong><span class=\"vote-bar\"><span style=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</strong><span class=\"vote-bar\"><span style=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1294,7 +1302,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\"></span></span><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "\"></span></span><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1307,7 +1315,7 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, " · ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, " · ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1320,12 +1328,12 @@ func BallotResult(ballot view.BallotView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, " Stimmen</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, " Stimmen</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "</div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1355,17 +1363,17 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(attachments) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, attachment := range attachments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<div class=\"attachment-item\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<div class=\"attachment-item\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if attachment.IsImage {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1378,7 +1386,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\" data-lightbox-full=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "\" data-lightbox-full=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1391,7 +1399,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "\" data-lightbox-caption=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\" data-lightbox-caption=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1404,7 +1412,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\"><img src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "\"><img src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1417,7 +1425,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "\" alt=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "\" alt=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1430,7 +1438,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1443,12 +1451,12 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</span></button> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "</span></button> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<a class=\"attachment-open\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<a class=\"attachment-open\" href=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1461,7 +1469,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1474,7 +1482,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</span><span class=\"attachment-name\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</span><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1487,13 +1495,13 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</span></a> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</span></a> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if attachment.CanDelete {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<form class=\"attachment-delete\" method=\"post\" action=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "<form class=\"attachment-delete\" method=\"post\" action=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1506,7 +1514,7 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1519,12 +1527,12 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\"> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "\"> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if attachment.DeleteRedirect != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<input type=\"hidden\" name=\"redirect\" value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<input type=\"hidden\" name=\"redirect\" value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -1537,22 +1545,22 @@ func BallotAttachments(attachments []view.AttachmentView) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "\"> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "\"> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1582,7 +1590,7 @@ func BallotCreateTrigger() templ.Component {
 			templ_7745c5c3_Var77 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<button class=\"button primary\" type=\"button\" data-dialog=\"ballot-create\" aria-haspopup=\"dialog\" aria-controls=\"ballot-create\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg>Abstimmung anlegen</button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<button class=\"button primary\" type=\"button\" data-dialog=\"ballot-create\" aria-haspopup=\"dialog\" aria-controls=\"ballot-create\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg>Abstimmung anlegen</button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1611,7 +1619,7 @@ func BallotCreateDialog(nowInput string) templ.Component {
 			templ_7745c5c3_Var78 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<dialog id=\"ballot-create\" class=\"dialog ballot-dialog\" aria-labelledby=\"ballot-create-title\"><form method=\"post\" action=\"/app/abstimmungen\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><h2 id=\"ballot-create-title\">Abstimmung anlegen</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><p class=\"dialog-intro\">1. Entwurf anlegen · 2. Für Stimmberechtigte öffnen · 3. Abstimmen · 4. Ergebnis & Protokoll. Prüfen Sie vor dem Öffnen Frage, Optionen und Frist.</p><div class=\"dialog-grid\"><label class=\"full\" for=\"ballot-title\">Kurzer Titel<input id=\"ballot-title\" name=\"title\" required autofocus maxlength=\"160\" autocomplete=\"off\" placeholder=\"Zum Beispiel Fassadensanierung 2026\"></label><label class=\"full\" for=\"ballot-description\">Frage oder Erklärung<textarea id=\"ballot-description\" name=\"description\" placeholder=\"Was sollen die Eigentümer entscheiden?\"></textarea></label><label class=\"full\" for=\"ballot-options\">Antwortmöglichkeiten<textarea id=\"ballot-options\" name=\"options_text\" required placeholder=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<dialog id=\"ballot-create\" class=\"dialog ballot-dialog\" aria-labelledby=\"ballot-create-title\"><form method=\"post\" action=\"/app/abstimmungen\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><h2 id=\"ballot-create-title\">Abstimmung anlegen</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><p class=\"dialog-intro\">1. Entwurf anlegen · 2. Für Stimmberechtigte öffnen · 3. Abstimmen · 4. Ergebnis & Protokoll. Prüfen Sie vor dem Öffnen Frage, Optionen und Frist.</p><div class=\"dialog-grid\"><label class=\"full\" for=\"ballot-title\">Kurzer Titel<input id=\"ballot-title\" name=\"title\" required autofocus maxlength=\"160\" autocomplete=\"off\" placeholder=\"Zum Beispiel Fassadensanierung 2026\"></label><label class=\"full\" for=\"ballot-description\">Frage oder Erklärung<textarea id=\"ballot-description\" name=\"description\" placeholder=\"Was sollen die Eigentümer entscheiden?\"></textarea></label><label class=\"full\" for=\"ballot-options\">Antwortmöglichkeiten<textarea id=\"ballot-options\" name=\"options_text\" required placeholder=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1624,7 +1632,7 @@ func BallotCreateDialog(nowInput string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\"></textarea></label><label class=\"full\" for=\"ballot-closes\">Abstimmungsfrist<input id=\"ballot-closes\" type=\"datetime-local\" name=\"closes_at\"></label><details class=\"dialog-optional full\"><summary>Abstimmungsregeln</summary><div class=\"dialog-optional-grid\"><label for=\"ballot-type\">Typ<select id=\"ballot-type\" name=\"type\" required><option value=\"Umlaufbeschluss\">Umlaufbeschluss</option><option value=\"Versammlung\">Versammlung</option></select></label><label for=\"ballot-weighting\">Gewichtung<select id=\"ballot-weighting\" name=\"weighting\" required><option value=\"per-share\">nach Miteigentumsanteil</option><option value=\"per-head\">pro Kopf</option></select></label><label for=\"ballot-opens\">Geplanter Start<input id=\"ballot-opens\" type=\"datetime-local\" name=\"opens_at\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\"></textarea></label><label class=\"full\" for=\"ballot-closes\">Abstimmungsfrist<input id=\"ballot-closes\" type=\"datetime-local\" name=\"closes_at\"></label><details class=\"dialog-optional full\"><summary>Abstimmungsregeln</summary><div class=\"dialog-optional-grid\"><label for=\"ballot-type\">Typ<select id=\"ballot-type\" name=\"type\" required><option value=\"Umlaufbeschluss\">Umlaufbeschluss</option><option value=\"Versammlung\">Versammlung</option></select></label><label for=\"ballot-weighting\">Gewichtung<select id=\"ballot-weighting\" name=\"weighting\" required><option value=\"per-share\">nach Miteigentumsanteil</option><option value=\"per-head\">pro Kopf</option></select></label><label for=\"ballot-opens\">Geplanter Start<input id=\"ballot-opens\" type=\"datetime-local\" name=\"opens_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1637,7 +1645,7 @@ func BallotCreateDialog(nowInput string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\"></label><label for=\"ballot-quorum\">Quorum in %<input id=\"ballot-quorum\" name=\"quorum_percent\" inputmode=\"decimal\" placeholder=\"50\"></label><label class=\"full\" for=\"ballot-reminder\">Erinnerung vor Frist (h)<input id=\"ballot-reminder\" name=\"reminder_before_hours\" inputmode=\"decimal\" value=\"24\"></label></div></details><details class=\"dialog-optional full\"><summary>Unterlagen hinzufügen</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"ballot-attachments\">Anhänge<span class=\"file-control\"><input id=\"ballot-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div></div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Entwurf anlegen</button></footer></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "\"></label><label for=\"ballot-quorum\">Quorum in %<input id=\"ballot-quorum\" name=\"quorum_percent\" inputmode=\"decimal\" placeholder=\"50\"></label><label class=\"full\" for=\"ballot-reminder\">Erinnerung vor Frist (h)<input id=\"ballot-reminder\" name=\"reminder_before_hours\" inputmode=\"decimal\" value=\"24\"></label></div></details><details class=\"dialog-optional full\"><summary>Unterlagen hinzufügen</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"ballot-attachments\">Anhänge<span class=\"file-control\"><input id=\"ballot-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div></div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Entwurf anlegen</button></footer></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1699,7 +1707,7 @@ func BallotsStyles() templ.Component {
 			templ_7745c5c3_Var81 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.flash.ok{border-color:var(--gold)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}\n\t\t.vote-overview{display:grid;grid-template-columns:42px minmax(0,1fr);gap:var(--space-3);align-items:center;margin-bottom:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-3) var(--space-4)}.vote-overview-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf);font-size:21px;font-weight:900}.vote-overview.action .vote-overview-icon{color:var(--gold-ink)}.vote-overview strong{display:block;font-family:var(--font-serif);font-size:19px}.vote-overview p{margin-top:var(--space-1);color:var(--muted);font-size:13px}.vote-library{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head h2{margin-top:var(--space-1);font-size:25px}.vote-list{display:grid;gap:var(--space-3)}.vote-card{display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-panel);scroll-margin-top:82px}.vote-card.needs-action{border-color:var(--gold)}.vote-card form{display:grid;gap:var(--space-3)}.vote-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}.vote-card-head>.pill{flex:0 0 auto}.vote-eyebrow{margin-bottom:var(--space-1);color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.vote-eyebrow.ok{color:var(--leaf)}.vote-card h3{font-size:23px;line-height:1.15;overflow-wrap:anywhere}.vote-deadline{width:fit-content;display:inline-flex;align-items:center;gap:var(--space-2);border-radius:var(--radius-pill);padding:6px var(--space-2);color:var(--gold-ink);background:var(--panel-soft);font-size:12px;font-weight:850}.vote-deadline svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.vote-question{max-width:820px;font-size:17px;line-height:1.45}.vote-weight{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:13px;font-weight:750}.vote-weight svg{width:18px;height:18px;fill:none;stroke:var(--gold-ink);stroke-width:1.7}.vote-options{display:grid;gap:var(--space-2)}.vote-option{min-height:50px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:11px var(--space-3);font-size:14px;font-weight:800;cursor:pointer}.vote-option:has(input:checked){border-color:var(--leaf)}.vote-option input{width:18px;height:18px;min-height:0;accent-color:var(--leaf)}.vote-option-static{cursor:default}.vote-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,auto);gap:var(--space-3);align-items:center}.vote-current{color:var(--muted);font-size:12px}.vote-note{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.45}.vote-management{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border-top:1px solid var(--line);padding-top:var(--space-3)}.vote-management-copy strong,.vote-management-copy span{display:block}.vote-management-copy strong{font-size:13px}.vote-management-copy span{margin-top:var(--space-1);color:var(--muted);font-size:12px}.vote-management-actions{display:flex;gap:var(--space-2);flex-wrap:wrap}.vote-management-actions form{margin:0}.vote-details,.vote-live-result{border-top:1px solid var(--line);padding-top:var(--space-3)}.vote-details>summary,.vote-live-result>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--gold-ink);font-size:12px;font-weight:850}.vote-detail-body{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);color:var(--muted);font-size:12px}.vote-detail-options{flex-basis:100%;display:flex;flex-wrap:wrap;gap:var(--space-2)}\n\t\t.vote-result{display:grid;gap:var(--space-3);border-top:1px solid var(--line);padding-top:var(--space-4)}.vote-live-result .vote-result{border-top:0;padding-top:0}.vote-result-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-3)}.vote-result-head strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif);font-size:24px}.vote-result-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.vote-result-stat{border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:var(--space-2) var(--space-3)}.vote-result-stat span{display:block;color:var(--soft);font-size:10px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}.vote-result-stat strong{display:block;margin-top:var(--space-1);font-size:15px}.vote-result-rows{display:grid;gap:var(--space-2)}.vote-result-row{display:grid;grid-template-columns:minmax(110px,.38fr) minmax(140px,1fr) auto;gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.vote-result-row strong{color:var(--ink);overflow-wrap:anywhere}.vote-bar{height:9px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}.vote-bar span{display:block;height:100%;min-width:2px;border-radius:inherit;background:var(--gold)}\n\t\t.vote-blank{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(272px,.88fr);gap:var(--space-4)}.vote-blank-main{display:grid;align-content:center;gap:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:clamp(22px,3.2vw,36px)}.vote-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.vote-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.vote-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.vote-blank-main h2{font-size:clamp(25px,3vw,31px)}.vote-blank-main p{max-width:54ch;color:var(--muted);font-size:15px;line-height:1.55}.vote-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.vote-blank-side{display:grid;align-content:start;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-5)}.vote-blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.vote-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:vote-step}.vote-blank-steps li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:2px var(--space-3);counter-increment:vote-step}.vote-blank-steps li::before{content:counter(vote-step);grid-row:1/span 2;width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:850}.vote-blank-steps strong,.vote-blank-steps span{grid-column:2}.vote-blank-steps span{color:var(--muted);font-size:12px;line-height:1.4}.vote-blank-facts{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);margin:0;padding:0;list-style:none}.vote-blank-facts li{display:grid;gap:var(--space-1);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:var(--space-3)}.vote-blank-facts span{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-intro{color:var(--muted);font-size:13px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:92px;resize:vertical}.dialog #ballot-options{min-height:104px}.dialog-optional{padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}@media(max-width:1050px){}@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.vote-blank{grid-template-columns:minmax(0,1fr)}.vote-blank-facts{grid-template-columns:minmax(0,1fr)}.vote-card{padding:var(--space-4)}.vote-card-head,.vote-management,.vote-result-head{display:grid}.vote-card-head>.pill{justify-self:start}.vote-actions{grid-template-columns:minmax(0,1fr)}.vote-result-stats{grid-template-columns:1fr 1fr}.vote-result-row{grid-template-columns:minmax(0,1fr) auto}.vote-result-row .vote-bar{grid-column:1/-1;grid-row:2}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full{grid-column:1}}\n\t\t.ballots-main .portal-section-header{align-items:center;padding-top:24px}.ballots-main .button.primary,.ballot-dialog .button.primary{color:var(--nav)}\n\t\t.vote-library{padding:0;gap:16px}.ballot-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:16px}.ballot-toolbar h2{font-size:22px}.ballot-filters{display:flex;flex-wrap:wrap;gap:8px}.ballot-filters button{min-height:40px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-pill);background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}.ballot-filters button span{margin-left:8px}.ballot-filters button[aria-pressed=true]{background:var(--gold-ink);border-color:var(--gold);color:var(--panel)}.ballot-overview{display:flex;align-items:center;gap:8px;margin-left:auto;color:var(--muted);font-size:13px}.ballot-overview>span{color:var(--leaf)}.vote-filter-empty{padding:24px;border:1px solid var(--line);border-radius:8px;color:var(--muted)}\n\t\t.vote-list{gap:16px}.vote-card{gap:16px;padding:24px;box-shadow:none}.vote-card h3{font-size:clamp(24px,2.6vw,32px);line-height:1.2}.vote-card-head{gap:24px}.vote-card-status{display:flex;align-items:center;gap:16px;flex-shrink:0}.vote-card-status .pill{min-height:32px;font-size:12px;padding:8px 16px}.vote-deadline{border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:400}.vote-deadline strong{display:block}.vote-deadline svg{width:24px;height:24px}.vote-question{max-width:100%;font-size:16px;line-height:1.5}.vote-participation{font-size:12px;color:var(--muted)}\n\t\t.vote-cast{border-top:1px solid var(--line);padding-top:16px}.vote-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border:0;margin:0;padding:0;min-width:0}.vote-options legend{margin-bottom:8px;font-weight:700;font-size:14px}.vote-option{min-height:64px;padding:16px;font-size:16px;border-radius:8px;overflow-wrap:anywhere}.vote-option:has(input:checked){background:var(--panel-soft);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}.vote-option input{accent-color:var(--gold-ink);width:24px;height:24px}.vote-actions .button{min-height:48px}\n\t\t.vote-card-footer{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:center;gap:24px;border-top:1px solid var(--line);padding-top:16px}.vote-disclosures{min-width:0}.vote-details,.vote-live-result{border:0;padding:0}.vote-details>summary,.vote-live-result>summary{justify-content:flex-start;gap:16px;min-height:40px;font-size:13px;padding-right:32px}.vote-disclosures summary svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.vote-detail-body{padding:8px 0 16px;line-height:1.6}.vote-management{border-top:0;border-left:1px solid var(--line);padding:0 0 0 24px;gap:24px}.vote-management-copy{max-width:280px}.vote-management-copy strong{font-size:14px}.vote-management-copy span{font-size:13px;line-height:1.5}.vote-management-actions{flex-shrink:0}.vote-protocol{justify-self:end}.vote-card-footer:has(.vote-live-result[open]){grid-template-columns:1fr}.vote-card-footer:has(.vote-live-result[open]) .vote-management{border-left:0;padding-left:0}.vote-live-result[open] .vote-result{padding:16px 0}\n\t\t.vote-result{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:32px;padding-top:16px}.vote-result-summary{display:grid;gap:16px;align-content:start}.vote-result-head strong{font-size:32px}.vote-result-head .eyebrow{font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}.vote-result-stats{gap:8px}.vote-result-stat{padding:8px}.vote-result-stat strong{font-size:14px}.vote-result-rows{border-left:1px solid var(--line);padding-left:32px;align-content:center;gap:8px}.vote-weighting{font-size:12px;font-weight:700}.vote-result-row{grid-template-columns:minmax(64px,.4fr) minmax(64px,1fr) minmax(100px,.8fr);gap:8px;font-size:12px}.vote-result-row>span:last-child{text-align:right;overflow-wrap:anywhere}.vote-bar{height:16px}.vote-bar span{min-width:0}\n\t\t.ballot-dialog{width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border-radius:var(--radius-lg);overflow:hidden}.ballot-dialog>form{display:flex;flex-direction:column;max-height:inherit}.ballot-dialog .dialog-head,.ballot-dialog .dialog-body{padding:24px}.ballot-dialog .dialog-head{position:static;flex-shrink:0}.ballot-dialog .dialog-head h2{font-size:28px}.ballot-dialog .dialog-body{overflow:auto;min-height:0;gap:24px}.ballot-dialog .dialog-grid{grid-template-columns:minmax(0,1fr);gap:16px}.ballot-dialog label{min-width:0;gap:8px;font-size:13px;color:var(--ink)}.ballot-dialog input,.ballot-dialog select,.ballot-dialog textarea{min-width:0;min-height:48px;padding:8px 16px;font-size:16px}.ballot-dialog .dialog-intro{line-height:1.6}.ballot-dialog .dialog-footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid var(--line);flex-shrink:0}.ballot-dialog .dialog-footer .button{min-height:48px}.ballot-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:2px}\n\t\t[data-ballot-filters][hidden],[data-ballot-empty][hidden],.vote-card[hidden]{display:none!important}\n\t\t@media(max-width:1100px){.vote-card-head{flex-wrap:wrap}.vote-card-footer,.vote-result{grid-template-columns:minmax(0,1fr)}.vote-management,.vote-result-rows{border-left:0;padding-left:0}.vote-protocol{justify-self:start}.ballot-overview{margin-left:0}}\n\t\t@media(max-width:760px){.vote-card{padding:16px}.vote-card-head{display:grid;gap:16px}.vote-card-status{flex-wrap:wrap;gap:8px}.vote-options{grid-template-columns:minmax(0,1fr)}.vote-result-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.vote-result-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.vote-result-row .vote-bar{grid-column:1/-1;grid-row:2}.vote-management{display:grid;gap:16px}.ballot-dialog .dialog-head,.ballot-dialog .dialog-body,.ballot-dialog .dialog-footer{padding:16px}}\n\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding-inline:var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}.flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.flash.ok{border-color:var(--gold)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}\n\t\t.vote-overview{display:grid;grid-template-columns:42px minmax(0,1fr);gap:var(--space-3);align-items:center;margin-bottom:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-3) var(--space-4)}.vote-overview-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf);font-size:21px;font-weight:900}.vote-overview.action .vote-overview-icon{color:var(--gold-ink)}.vote-overview strong{display:block;font-family:var(--font-serif);font-size:19px}.vote-overview p{margin-top:var(--space-1);color:var(--muted);font-size:13px}.vote-library{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head h2{margin-top:var(--space-1);font-size:25px}.vote-list{display:grid;gap:var(--space-3)}.vote-card{display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-panel);scroll-margin-top:82px}.vote-card.needs-action{border-color:var(--gold)}.vote-card form{display:grid;gap:var(--space-3)}.vote-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}.vote-card-head>.pill{flex:0 0 auto}.vote-eyebrow{margin-bottom:var(--space-1);color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.vote-eyebrow.ok{color:var(--leaf)}.vote-card h3{font-size:23px;line-height:1.15;overflow-wrap:anywhere}.vote-deadline{width:fit-content;display:inline-flex;align-items:center;gap:var(--space-2);border-radius:var(--radius-pill);padding:6px var(--space-2);color:var(--gold-ink);background:var(--panel-soft);font-size:12px;font-weight:850}.vote-deadline svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.vote-question{max-width:820px;font-size:17px;line-height:1.45}.vote-weight{display:flex;align-items:center;gap:var(--space-2);color:var(--muted);font-size:13px;font-weight:750}.vote-weight svg{width:18px;height:18px;fill:none;stroke:var(--gold-ink);stroke-width:1.7}.vote-options{display:grid;gap:var(--space-2)}.vote-option{min-height:50px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:11px var(--space-3);font-size:14px;font-weight:800;cursor:pointer}.vote-option:has(input:checked){border-color:var(--leaf)}.vote-option input{width:18px;height:18px;min-height:0;accent-color:var(--leaf)}.vote-option-static{cursor:default}.vote-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,auto);gap:var(--space-3);align-items:center}.vote-current{color:var(--muted);font-size:12px}.vote-note{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.45}.vote-management{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border-top:1px solid var(--line);padding-top:var(--space-3)}.vote-management-copy strong,.vote-management-copy span{display:block}.vote-management-copy strong{font-size:13px}.vote-management-copy span{margin-top:var(--space-1);color:var(--muted);font-size:12px}.vote-management-actions{display:flex;gap:var(--space-2);flex-wrap:wrap}.vote-management-actions form{margin:0}.vote-details,.vote-live-result{border-top:1px solid var(--line);padding-top:var(--space-3)}.vote-details>summary,.vote-live-result>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--gold-ink);font-size:12px;font-weight:850}.vote-detail-body{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);color:var(--muted);font-size:12px}.vote-detail-options{flex-basis:100%;display:flex;flex-wrap:wrap;gap:var(--space-2)}\n\t\t.vote-result{display:grid;gap:var(--space-3);border-top:1px solid var(--line);padding-top:var(--space-4)}.vote-live-result .vote-result{border-top:0;padding-top:0}.vote-result-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-3)}.vote-result-head strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif);font-size:24px}.vote-result-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.vote-result-stat{border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:var(--space-2) var(--space-3)}.vote-result-stat span{display:block;color:var(--soft);font-size:10px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}.vote-result-stat strong{display:block;margin-top:var(--space-1);font-size:15px}.vote-result-rows{display:grid;gap:var(--space-2)}.vote-result-row{display:grid;grid-template-columns:minmax(110px,.38fr) minmax(140px,1fr) auto;gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.vote-result-row strong{color:var(--ink);overflow-wrap:anywhere}.vote-bar{height:9px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}.vote-bar span{display:block;height:100%;min-width:2px;border-radius:inherit;background:var(--gold)}\n\t\t.vote-blank{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(272px,.88fr);gap:var(--space-4)}.vote-blank-main{display:grid;align-content:center;gap:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:clamp(22px,3.2vw,36px)}.vote-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.vote-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.vote-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.vote-blank-main h2{font-size:clamp(25px,3vw,31px)}.vote-blank-main p{max-width:54ch;color:var(--muted);font-size:15px;line-height:1.55}.vote-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.vote-blank-side{display:grid;align-content:start;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-5)}.vote-blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.vote-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:vote-step}.vote-blank-steps li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:2px var(--space-3);counter-increment:vote-step}.vote-blank-steps li::before{content:counter(vote-step);grid-row:1/span 2;width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:850}.vote-blank-steps strong,.vote-blank-steps span{grid-column:2}.vote-blank-steps span{color:var(--muted);font-size:12px;line-height:1.4}.vote-blank-facts{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);margin:0;padding:0;list-style:none}.vote-blank-facts li{display:grid;gap:var(--space-1);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);padding:var(--space-3)}.vote-blank-facts span{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}.attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}.attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}.attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}.attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}.dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:24px}.dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}.dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}.dialog-intro{color:var(--muted);font-size:13px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}.dialog-grid .full{grid-column:1/-1}.dialog label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:92px;resize:vertical}.dialog #ballot-options{min-height:104px}.dialog-optional{padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}.dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}.dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}.file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}@media(max-width:1050px){}@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.vote-blank{grid-template-columns:minmax(0,1fr)}.vote-blank-facts{grid-template-columns:minmax(0,1fr)}.vote-card{padding:var(--space-4)}.vote-card-head,.vote-management,.vote-result-head{display:grid}.vote-card-head>.pill{justify-self:start}.vote-actions{grid-template-columns:minmax(0,1fr)}.vote-result-stats{grid-template-columns:1fr 1fr}.vote-result-row{grid-template-columns:minmax(0,1fr) auto}.vote-result-row .vote-bar{grid-column:1/-1;grid-row:2}.dialog-grid,.dialog-optional-grid{grid-template-columns:1fr}.dialog-grid .full{grid-column:1}}\n\t\t.ballots-main .portal-section-header{align-items:center;padding-top:24px}.ballots-main .button.primary,.ballot-dialog .button.primary{color:var(--nav)}\n\t\t.vote-library{padding:0;gap:16px}.ballot-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:16px}.ballot-toolbar h2{font-size:22px}.ballot-filters{display:flex;flex-wrap:wrap;gap:8px}.ballot-filters button{min-height:40px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-pill);background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}.ballot-filters button span{margin-left:8px}.ballot-filters button[aria-pressed=true]{background:var(--gold-ink);border-color:var(--gold);color:var(--panel)}.ballot-overview{display:flex;align-items:center;gap:8px;margin-left:auto;color:var(--muted);font-size:13px}.ballot-overview>span{color:var(--leaf)}.vote-filter-empty{padding:24px;border:1px solid var(--line);border-radius:8px;color:var(--muted)}\n\t\t.vote-list{gap:16px}.vote-card{gap:16px;padding:24px;box-shadow:none}.vote-card h3{font-size:clamp(24px,2.6vw,32px);line-height:1.2}.vote-card-head{gap:24px}.vote-card-status{display:flex;align-items:center;gap:16px;flex-shrink:0}.vote-card-status .pill{min-height:32px;font-size:12px;padding:8px 16px}.vote-deadline{border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:400}.vote-deadline strong{display:block}.vote-deadline svg{width:24px;height:24px}.vote-question{max-width:100%;font-size:16px;line-height:1.5}.vote-participation{font-size:12px;color:var(--muted)}\n\t\t.vote-cast{border-top:1px solid var(--line);padding-top:16px}.vote-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border:0;margin:0;padding:0;min-width:0}.vote-options legend{margin-bottom:8px;font-weight:700;font-size:14px}.vote-option{min-height:64px;padding:16px;font-size:16px;border-radius:8px;overflow-wrap:anywhere}.vote-option:has(input:checked){background:var(--panel-soft);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}.vote-option input{accent-color:var(--gold-ink);width:24px;height:24px}.vote-actions .button{min-height:48px}\n\t\t.vote-card-footer{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:center;gap:24px;border-top:1px solid var(--line);padding-top:16px}.vote-disclosures{min-width:0}.vote-details,.vote-live-result{border:0;padding:0}.vote-details>summary,.vote-live-result>summary{justify-content:flex-start;gap:16px;min-height:40px;font-size:13px;padding-right:32px}.vote-disclosures summary svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.vote-detail-body{padding:8px 0 16px;line-height:1.6}.vote-management{border-top:0;border-left:1px solid var(--line);padding:0 0 0 24px;gap:24px}.vote-management-copy{max-width:280px}.vote-management-copy strong{font-size:14px}.vote-management-copy span{font-size:13px;line-height:1.5}.vote-management-actions{flex-shrink:0}.vote-protocol{justify-self:end}.vote-card-footer:has(.vote-live-result[open]){grid-template-columns:1fr}.vote-card-footer:has(.vote-live-result[open]) .vote-management{border-left:0;padding-left:0}.vote-live-result[open] .vote-result{padding:16px 0}\n\t\t.vote-result{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:32px;padding-top:16px}.vote-result-summary{display:grid;gap:16px;align-content:start}.vote-result-head strong{font-size:32px}.vote-result-head .eyebrow{font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}.vote-result-stats{gap:8px}.vote-result-stat{padding:8px}.vote-result-stat strong{font-size:14px}.vote-result-rows{border-left:1px solid var(--line);padding-left:32px;align-content:center;gap:8px}.vote-weighting{font-size:12px;font-weight:700}.vote-result-row{grid-template-columns:minmax(64px,.4fr) minmax(64px,1fr) minmax(100px,.8fr);gap:8px;font-size:12px}.vote-result-row>span:last-child{text-align:right;overflow-wrap:anywhere}.vote-bar{height:16px}.vote-bar span{min-width:0}\n\t\t.ballot-dialog{width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border-radius:var(--radius-lg);overflow:hidden}.ballot-dialog>form{display:flex;flex-direction:column;max-height:inherit}.ballot-dialog .dialog-head,.ballot-dialog .dialog-body{padding:24px}.ballot-dialog .dialog-head{position:static;flex-shrink:0}.ballot-dialog .dialog-head h2{font-size:28px}.ballot-dialog .dialog-body{overflow:auto;min-height:0;gap:24px}.ballot-dialog .dialog-grid{grid-template-columns:minmax(0,1fr);gap:16px}.ballot-dialog label{min-width:0;gap:8px;font-size:13px;color:var(--ink)}.ballot-dialog input,.ballot-dialog select,.ballot-dialog textarea{min-width:0;min-height:48px;padding:8px 16px;font-size:16px}.ballot-dialog .dialog-intro{line-height:1.6}.ballot-dialog .dialog-footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid var(--line);flex-shrink:0}.ballot-dialog .dialog-footer .button{min-height:48px}.ballot-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:2px}\n\t\t[data-ballot-filters][hidden],[data-ballot-empty][hidden],.vote-card[hidden]{display:none!important}\n\t\t@media(max-width:1100px){.vote-card-head{flex-wrap:wrap}.vote-card-footer,.vote-result{grid-template-columns:minmax(0,1fr)}.vote-management,.vote-result-rows{border-left:0;padding-left:0}.vote-protocol{justify-self:start}.ballot-overview{margin-left:0}}\n\t\t@media(max-width:760px){.vote-card{padding:16px}.vote-card-head{display:grid;gap:16px}.vote-card-status{flex-wrap:wrap;gap:8px}.vote-options{grid-template-columns:minmax(0,1fr)}.vote-result-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.vote-result-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.vote-result-row .vote-bar{grid-column:1/-1;grid-row:2}.vote-management{display:grid;gap:16px}.ballot-dialog .dialog-head,.ballot-dialog .dialog-body,.ballot-dialog .dialog-footer{padding:16px}}\n\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

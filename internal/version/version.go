@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.10",
+			Date:     "8. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Kein Flackern mehr beim Seitenwechsel, saubere Grafiken.",
+			Intro:    "Schrift und Grafiken bleiben im Browser zwischengespeichert und die Überschriftenschrift wird vorgeladen, deshalb springen Logo und Überschriften beim Wechsel zwischen Seiten nicht mehr. Parkplatz & Laden zeigt wieder eine klare Grafik, und die Symbole im Anliegen-Assistenten sowie bei Rechten und Benutzern sind vereinheitlicht.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.9",
 			Date:     "8. September 2026",
 			Kind:     "Verbessert",
