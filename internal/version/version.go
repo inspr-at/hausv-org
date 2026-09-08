@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.5",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Portfolio, Posteingang und Rechte neu gestaltet.",
+			Intro:    "Das Portfolio zeigt Kennzahlen, die Häuser nach Handlungsbedarf und den Tag im Blick, der Posteingang arbeitet zweispaltig mit Warteschlange und geöffnetem Fall, die Rechte sind als Rollenübersicht lesbar. Überschriften erscheinen im ganzen Portal in einer eigenen, mitgelieferten Serifenschrift.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.4",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

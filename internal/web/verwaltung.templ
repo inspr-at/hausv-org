@@ -69,24 +69,7 @@ templ portalVerwaltungPage(shell VerwaltungShell, title string, scripts []string
 templ VerwaltungPageStyles() {
 	@PortalStyles()
 	<style>
-		.verwaltung-page .verwaltung-houses>summary{display:flex}.verwaltung-page .verwaltung-houses .nav-label{flex:1}.verwaltung-house-count{min-width:22px;padding:2px 6px;border:1px solid var(--soft);border-radius:var(--radius-pill);color:var(--line);font-size:10px;text-align:center}.verwaltung-house-chevron{flex:0 0 auto;color:var(--soft);font-size:16px;transition:transform .16s}.verwaltung-houses[open] .verwaltung-house-chevron{transform:rotate(180deg)}.verwaltung-houses-empty{margin:0;padding:var(--space-2);color:var(--soft);font-size:10px}
-		.verwaltung-page .portfolio-page,.verwaltung-page .portfolio-layout,.verwaltung-page .portfolio-houses,.verwaltung-page .portfolio-desktop-table,.verwaltung-page .portfolio-row-form,.verwaltung-page .portfolio-house-row>span{min-width:0}.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{min-width:0;grid-template-columns:12px minmax(128px,1.35fr) 36px 58px 62px minmax(96px,.9fr) minmax(84px,.72fr)}.verwaltung-page .portfolio-house-copy strong{overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere}.verwaltung-page .portfolio-house-row>span:last-child{overflow-wrap:anywhere}.verwaltung-page .portfolio-quiet>summary{justify-content:center;margin-top:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink);font-weight:750;text-decoration:none}
-		/* Column priority for the Häuser table (HAUSV-637). The card is 600px wide at
-		   1440 and 520px at 1280; an inner scroller hid the Zuständig column there
-		   without a visible bar. Drop Zuständig (≤1260), Nächster Termin (≤1120)
-		   and Ältestes (≤950) as the card narrows — never scroll sideways inside
-		   the card. The card itself is under 300px below ~900, which is the
-		   two-column layout's problem, not the table's. */
-		@media(max-width:1365px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{gap:var(--space-2);grid-template-columns:12px minmax(112px,1.35fr) 36px 58px 56px minmax(88px,.9fr) minmax(76px,.72fr)}}
-		@media(max-width:1260px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}
-		@media(max-width:1120px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px}.verwaltung-page .portfolio-table-head>span:nth-child(6),.verwaltung-page .portfolio-house-row>span:nth-child(6){display:none}}
-		/* Tablet portrait (HAUSV-640): below 1024px the Häuser card stacks above the side cards
-		   and is as wide as the page again (450px inside at 761px, 541px at 860px), so the
-		   column drops keyed to the two-column band stop at 1024px. The house column gets
-		   150px so "Münzgrabenstraße" no longer breaks mid-word: six columns from 761px,
-		   all seven from 860px. */
-		@media(max-width:859px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}
-		@media(max-width:1023px) and (min-width:860px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.35fr) 36px 58px 56px minmax(88px,.9fr) minmax(76px,.72fr)}}
+		.verwaltung-page .verwaltung-houses>summary{display:flex}.verwaltung-page .verwaltung-houses .nav-label{flex:1}.verwaltung-house-count{min-width:22px;padding:2px 6px;border:1px solid var(--soft);border-radius:var(--radius-pill);color:var(--line);font-size:10px;text-align:center}.verwaltung-house-chevron{flex:0 0 auto;color:var(--soft);font-size:16px;transition:transform 0.16s}.verwaltung-houses[open] .verwaltung-house-chevron{transform:rotate(180deg)}.verwaltung-houses-empty{margin:0;padding:var(--space-2);color:var(--soft);font-size:10px}
 	</style>
 }
 
