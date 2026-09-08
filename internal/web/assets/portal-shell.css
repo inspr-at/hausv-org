@@ -44,3 +44,8 @@ details:is(.event-details,.aside-panel,.contact-add,.inactive-contacts,.announce
 .release-dialog-body::-webkit-scrollbar-track{background:transparent}
 .release-dialog-body::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:var(--radius-pill);background:var(--soft);background-clip:padding-box}
 .release-dialog-body::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:padding-box}
+
+/* HAUSV-684: define values on the backdrop, including reduced transparency. */
+::backdrop{--portal-backdrop:rgba(23,32,25,.35);--portal-backdrop-filter:blur(10px)}
+dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}
+@media(prefers-reduced-transparency:reduce){::backdrop{--portal-backdrop:rgba(23,32,25,.8);--portal-backdrop-filter:none}}

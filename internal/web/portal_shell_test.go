@@ -119,14 +119,14 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
 			}
-			// The large location map precedes the house copy inside the sidebar
+			// The large location map follows the house copy inside the sidebar
 			// (the mobile drawer, rendered earlier, carries the copy without a map).
 			side := html
 			if at := strings.Index(html, `<aside class="sidebar"`); at >= 0 {
 				side = html[at:]
 			}
-			if i, j := strings.Index(side, `class="map side-map"`), strings.Index(side, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i >= j {
-				t.Errorf("house copy must come after the location map")
+			if i, j := strings.Index(side, `class="map side-map"`), strings.Index(side, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i <= j {
+				t.Errorf("house copy must come before the location map")
 			}
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
 				t.Errorf("map pin is missing the brand mark")
@@ -622,9 +622,9 @@ func between(s, start, end string) string {
 	return rest
 }
 
-// HAUSV-673: the location map is the large hero above the house block again,
+// HAUSV-680: the location map follows the house label and card, before navigation,
 // only in the desktop sidebar, and the compact card carries no thumbnail.
-func TestSidebarShowsTheLargeLocationMapAboveTheHouseCard(t *testing.T) {
+func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	portal := PortalPageData{
 		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
 		MapURL: "https://www.openstreetmap.org/", DisplayName: "Vera Verwaltung", Initials: "VV", Role: "Admin",
@@ -635,8 +635,10 @@ func TestSidebarShowsTheLargeLocationMapAboveTheHouseCard(t *testing.T) {
 	html := renderComponent(t, PortalPage(portal))
 	side := html[strings.Index(html, `<aside class="sidebar"`):]
 	hero, card := strings.Index(side, `class="side-map-hero"`), strings.Index(side, `class="house-header-card`)
-	if hero < 0 || card < 0 || hero >= card {
-		t.Fatalf("large map hero must precede the house card (hero=%d card=%d)", hero, card)
+	label := strings.Index(side, `class="nav-group nav-level-label nav-house-label"`)
+	navigation := strings.Index(side, `class="nav-house-items`)
+	if label < 0 || card <= label || hero <= card || navigation <= hero {
+		t.Fatalf("sidebar must show label, house card, map, navigation (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
 	}
 	if strings.Count(html, `class="side-map-hero`) != 1 {
 		t.Errorf("the hero belongs to the desktop sidebar only, found %d", strings.Count(html, `class="side-map-hero`))
@@ -644,7 +646,7 @@ func TestSidebarShowsTheLargeLocationMapAboveTheHouseCard(t *testing.T) {
 	if strings.Contains(html, "house-map-thumb") {
 		t.Errorf("the compact house card must not carry the old thumbnail")
 	}
-	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:2px calc(var(--sidebar-pad-x,16px)*-1) 8px`} {
+	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:8px calc(var(--sidebar-pad-x,16px)*-1) 8px`} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("hero marker %q missing", marker)
 		}

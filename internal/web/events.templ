@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"github.com/inspr-at/hausv-org/internal/view"
 )
 
@@ -27,7 +28,7 @@ templ EventsPage(data EventsPageData) {
 	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"announcements.js", "attachments.js"}, EventsStyles(), templ.Attributes{"data-templ-events": true}) {
 			@PortalShell(data.Portal, "Termine", EventsContent(data))
 			if data.CanManageEvents {
-				@EventCreateDialog(data.NowInput)
+				@EventCreateDialog(data.NowInput, data.Portal.HouseName, data.Portal.Address)
 			}
 	}
 }
@@ -100,17 +101,17 @@ templ EventsStyles() {
 		.events-main .attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}
 		.events-main .attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}
 		.events-main .attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}
-		.events-main .attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
-		.events-main .attachment-picker.has-files{display:grid}
-		.events-main .attachment-picker-head,.events-main .attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}
-		.events-main .attachment-picker-list{display:grid;gap:var(--space-2)}
-		.events-main .attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}
-		.events-main .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}
-		.events-main .attachment-picker-copy{min-width:0;display:grid;flex:1}
-		.events-main .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-		.events-main .attachment-picker-meta{color:var(--soft)}
-		.events-main .attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}
-		.events-main .attachment-picker-progress{display:none}
+		:is(.events-main,.event-dialog) .attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
+		:is(.events-main,.event-dialog) .attachment-picker.has-files{display:grid}
+		:is(.events-main,.event-dialog) .attachment-picker-head,:is(.events-main,.event-dialog) .attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}
+		:is(.events-main,.event-dialog) .attachment-picker-list{display:grid;gap:var(--space-2)}
+		:is(.events-main,.event-dialog) .attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}
+		:is(.events-main,.event-dialog) .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}
+		:is(.events-main,.event-dialog) .attachment-picker-copy{min-width:0;display:grid;flex:1}
+		:is(.events-main,.event-dialog) .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+		:is(.events-main,.event-dialog) .attachment-picker-meta{color:var(--soft)}
+		:is(.events-main,.event-dialog) .attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}
+		:is(.events-main,.event-dialog) .attachment-picker-progress{display:none}
 		.events-main .attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}
 		.events-main .attachment-lightbox.open{display:grid}
 		.events-main .attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}
@@ -121,27 +122,30 @@ templ EventsStyles() {
 		.events-main .lightbox-prev,.events-main .lightbox-next{width:46px;height:70px;font-size:26px}
 		.events-main .lightbox-prev{grid-column:1;grid-row:2}
 		.events-main .lightbox-next{grid-column:3;grid-row:2}
-		.events-main .dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}
-		.events-main .dialog::backdrop{background:var(--nav)}
-		.events-main .dialog form{display:grid;grid-template-rows:auto minmax(0,1fr);max-height:inherit}
-		.events-main .dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}
-		.events-main .dialog-head h2{font-size:25px}
-		.events-main .dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}
-		.events-main .dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}
-		.events-main .dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
-		.events-main .dialog-grid .full{grid-column:1/-1}
-		.events-main .dialog label{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}
-		.events-main .dialog input,.events-main .dialog select,.events-main .dialog textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}
-		.events-main .dialog textarea{min-height:110px;resize:vertical}
-		.events-main .dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
-		.events-main .dialog-optional>summary{padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}
-		.events-main .dialog-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}
-		.events-main .dialog-optional-grid .full{grid-column:1/-1}
-		.events-main .file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}
-		.events-main .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}
-		.events-main .file-control span{color:var(--gold-ink)}
+		.event-dialog{width:min(640px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:auto;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}
+		.event-dialog form{min-width:0;max-height:inherit;margin:0}
+		.event-dialog .dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);padding:var(--space-6);border-bottom:1px solid var(--line)}
+		.event-dialog .dialog-head h2{margin:0;font-family:var(--font-serif);font-size:28px;line-height:1.2}
+		.event-dialog .dialog-head p{margin:var(--space-2) 0 0;color:var(--muted);font-size:13px;line-height:1.5;overflow-wrap:break-word}
+		.event-dialog .dialog-close{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--ink);font-size:24px}
+		.event-dialog .dialog-body{min-width:0;min-height:0;padding:var(--space-6);overflow:auto;overscroll-behavior:contain}
+		.event-dialog .dialog-grid,.event-dialog .dialog-optional-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}
+		.event-dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--ink);font-size:13px;font-weight:700}
+		.event-dialog input,.event-dialog select,.event-dialog textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--ink);font-size:16px;font-weight:400}
+		.event-dialog textarea{min-height:112px;resize:vertical}
+		.event-dialog .dialog-optional{min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
+		.event-dialog .dialog-optional>summary{min-height:48px;display:flex;align-items:center;padding:var(--space-4) 40px var(--space-4) var(--space-4);cursor:pointer;font-size:13px;font-weight:700}
+		.event-dialog .dialog-optional-grid{padding:var(--space-4);border-top:1px solid var(--line)}
+		.event-dialog .file-control{position:relative;min-height:48px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--gold-ink)}
+		.event-dialog .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}
+		.event-dialog :is(input,select,textarea,button,summary):focus-visible,.event-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:3px}
+		.event-dialog .dialog-footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2);padding:var(--space-4) var(--space-6);border-top:1px solid var(--line);background:var(--panel)}
+		.event-dialog .dialog-footer .button{min-height:48px;margin:0;padding:var(--space-2) var(--space-4)}
+		.event-dialog .button.primary{background:var(--gold);color:var(--nav)}
+		.event-dialog .button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+		@media(max-width:520px){.event-dialog .dialog-head,.event-dialog .dialog-body,.event-dialog .dialog-footer{padding:var(--space-4)}.event-dialog .dialog-head h2{font-size:24px}.event-dialog .dialog-footer .button{flex:1 1 auto}}
 		@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
-		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}.events-main .dialog-grid,.events-main .dialog-optional-grid{grid-template-columns:minmax(0,1fr)}.events-main .dialog-grid .full,.events-main .dialog-optional-grid .full{grid-column:1}}
+		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}
 	</style>
 }
 
@@ -297,16 +301,35 @@ templ EventAttachments(attachments []view.AttachmentView) {
 	}
 }
 
-templ EventCreateDialog(nowInput string) {
-	<dialog id="event-create" class="dialog" aria-labelledby="event-create-title"><form method="post" action="/app/events" enctype="multipart/form-data"><div class="dialog-head"><h2 id="event-create-title">Termin erstellen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body">@EventFormFields(view.HouseEventView{StartsAtInput: nowInput}, false)<button class="button primary" type="submit">Termin veröffentlichen</button></div></form></dialog>
+templ EventCreateDialog(nowInput, houseName, address string) {
+	<dialog id="event-create" class="dialog event-dialog" aria-labelledby="event-create-title" aria-describedby="event-create-house">
+		<form method="post" action="/app/events" enctype="multipart/form-data">
+			<header class="dialog-head"><div><h2 id="event-create-title">Neuer Termin</h2><p id="event-create-house">
+					if eventDialogRepeatsHouse(houseName, address) {
+						{ address }
+					} else {
+						{ houseName }<br/>{ address }
+					}
+				</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></header>
+			<div class="dialog-body">@EventFormFields(view.HouseEventView{StartsAtInput: nowInput}, false)</div>
+			<footer class="dialog-footer"><button class="button ghost" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit">Termin veröffentlichen</button></footer>
+		</form>
+	</dialog>
 }
 
 templ EventEditDialog(event view.HouseEventView) {
-	<dialog id={ event.EditDialogID } class="dialog" aria-labelledby={ event.EditDialogID + "-title" }><form method="post" action="/app/events/edit" enctype="multipart/form-data"><input type="hidden" name="id" value={ event.ID }/><div class="dialog-head"><h2 id={ event.EditDialogID + "-title" }>Termin bearbeiten</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body">@EventFormFields(event, true)<button class="button primary" type="submit">Änderungen speichern</button></div></form></dialog>
+	<dialog id={ event.EditDialogID } class="dialog event-dialog" aria-labelledby={ event.EditDialogID + "-title" }>
+		<form method="post" action="/app/events/edit" enctype="multipart/form-data">
+			<input type="hidden" name="id" value={ event.ID }/>
+			<header class="dialog-head"><h2 id={ event.EditDialogID + "-title" }>Termin bearbeiten</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></header>
+			<div class="dialog-body">@EventFormFields(event, true)</div>
+			<footer class="dialog-footer"><button class="button ghost" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit">Änderungen speichern</button></footer>
+		</form>
+	</dialog>
 }
 
 templ EventFormFields(event view.HouseEventView, editing bool) {
-	<div class="dialog-grid"><label class="full" for={ eventFieldID("event-title", event.ID, editing) }>Titel<input id={ eventFieldID("event-title", event.ID, editing) } name="title" value={ event.Title } required maxlength="140" placeholder="Was findet statt?"/></label><label for={ eventFieldID("event-category", event.ID, editing) }>Kategorie<select id={ eventFieldID("event-category", event.ID, editing) } name="category">@EventCategoryOptions(event.Category)</select></label><label for={ eventFieldID("event-start", event.ID, editing) }>Beginn<input id={ eventFieldID("event-start", event.ID, editing) } type="datetime-local" name="starts_at" value={ event.StartsAtInput } required/></label><label class="full" for={ eventFieldID("event-location", event.ID, editing) }>Ort<input id={ eventFieldID("event-location", event.ID, editing) } name="location" value={ event.Location } maxlength="160" placeholder="Optional"/></label><details class="dialog-optional full"><summary>Ende, Details oder Anhang</summary><div class="dialog-optional-grid"><label class="full" for={ eventFieldID("event-end", event.ID, editing) }>Ende optional<input id={ eventFieldID("event-end", event.ID, editing) } type="datetime-local" name="ends_at" value={ event.EndsAtInput }/></label><label class="full" for={ eventFieldID("event-body", event.ID, editing) }>Details<textarea id={ eventFieldID("event-body", event.ID, editing) } name="body" placeholder="Was müssen Bewohner wissen?">{ event.Body }</textarea></label><label class="full" for={ eventFieldID("event-attachments", event.ID, editing) }>
+	<div class="dialog-grid"><label class="full" for={ eventFieldID("event-title", event.ID, editing) }>Titel<input id={ eventFieldID("event-title", event.ID, editing) } data-autofocus name="title" value={ event.Title } required autofocus maxlength="140" placeholder="Was findet statt?"/></label><label for={ eventFieldID("event-category", event.ID, editing) }>Kategorie<select id={ eventFieldID("event-category", event.ID, editing) } name="category">@EventCategoryOptions(event.Category)</select></label><label for={ eventFieldID("event-start", event.ID, editing) }>Beginn · Datum und Uhrzeit<input id={ eventFieldID("event-start", event.ID, editing) } type="datetime-local" name="starts_at" value={ event.StartsAtInput } required/></label><label class="full" for={ eventFieldID("event-location", event.ID, editing) }>Ort (optional)<input id={ eventFieldID("event-location", event.ID, editing) } name="location" value={ event.Location } maxlength="160" placeholder="Ort hinzufügen"/></label><details class="dialog-optional full"><summary>Ende, Details oder Anhang</summary><div class="dialog-optional-grid"><label class="full" for={ eventFieldID("event-end", event.ID, editing) }>Ende optional<input id={ eventFieldID("event-end", event.ID, editing) } type="datetime-local" name="ends_at" value={ event.EndsAtInput }/></label><label class="full" for={ eventFieldID("event-body", event.ID, editing) }>Details<textarea id={ eventFieldID("event-body", event.ID, editing) } name="body" placeholder="Was müssen Bewohner wissen?">{ event.Body }</textarea></label><label class="full" for={ eventFieldID("event-attachments", event.ID, editing) }>
 		if editing {
 			<span>Anhänge ergänzen</span>
 		}
@@ -338,4 +361,11 @@ func eventsIssuesURL(canManage bool) string {
 func eventFieldID(base, id string, editing bool) string {
 	if editing { return base + "-" + id }
 	return base
+}
+
+// eventDialogRepeatsHouse is true when the house has no display name of its
+// own and falls back to its address, so the dialog would print it twice.
+func eventDialogRepeatsHouse(houseName, address string) bool {
+	name := strings.TrimSpace(houseName)
+	return name == "" || strings.HasPrefix(strings.TrimSpace(address), name)
 }
