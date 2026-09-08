@@ -42,3 +42,27 @@ document.addEventListener(
   },
   true
 );
+
+// Bulk controls enhance the native, individually keyboard-operable disclosures.
+(function () {
+  var toolbar = document.querySelector('[data-announcement-bulk]');
+  if (!toolbar) return;
+  var entries = Array.from(document.querySelectorAll('.announcement-card > .announcement-body'));
+  if (!entries.length) return;
+  toolbar.hidden = false;
+  toolbar.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-announcements-expand]');
+    if (!button) return;
+    entries.forEach(function (entry) { entry.open = button.dataset.announcementsExpand === 'true'; });
+  });
+  var legend = document.querySelector('.announcement-legend');
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && legend && legend.open) {
+      legend.open = false;
+      legend.querySelector('summary').focus();
+    }
+  });
+  document.addEventListener('click', function (event) {
+    if (legend && !legend.contains(event.target)) legend.open = false;
+  });
+})();

@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 import "fmt"
 
 type TextbausteinRow struct {
-	Key, Title, Status, Updated, EditURL string
-	Active                               bool
+	Key, Title, Body, Status, Updated, EditURL string
+	Active                                     bool
 }
 
 type TextbausteinGroup struct {
@@ -96,7 +96,7 @@ func textbausteinListPage(shell VerwaltungShell, data TextbausteinListData) temp
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PortalVerwaltungPage(shell, "Textbausteine", textbausteinListContent(data)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PortalVerwaltungPageWithScripts(shell, "Textbausteine", []string{"textbausteine.js"}, textbausteinListContent(data)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -125,7 +125,7 @@ func textbausteinFormPage(shell VerwaltungShell, data TextbausteinFormData) temp
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PortalVerwaltungPage(shell, "Textbausteine", textbausteinFormContent(data)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PortalVerwaltungPageWithScripts(shell, "Textbausteine", []string{"textbausteine.js"}, textbausteinFormContent(data)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -154,7 +154,7 @@ func textbausteinStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.textbausteine{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-head{min-width:0;display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}.textbausteine-head>div{min-width:0}.textbausteine h1{overflow-wrap:anywhere;font-family:var(--font-serif);font-size:34px;font-weight:550}.textbausteine .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.textbausteine-count{margin-top:var(--space-1);color:var(--muted);font-size:11px}.textbausteine .button.primary{background:var(--gold);color:var(--panel)}.textbausteine .button.ghost{border-color:var(--line);color:var(--muted)}.textbausteine-flash,.textbausteine-error{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.textbausteine-groups{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-group{min-width:0;display:grid;gap:var(--space-2)}.textbausteine-group h2{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.textbausteine-group h2 span{color:var(--muted)}.textbausteine-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-table{width:100%;min-width:650px;table-layout:fixed;border-collapse:collapse}.textbausteine-table th,.textbausteine-table td{padding:var(--space-3);border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:11px}.textbausteine-table thead th{border-top:0;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.textbausteine-table th:nth-child(1){width:34%}.textbausteine-table th:nth-child(2){width:25%}.textbausteine-table th:nth-child(3){width:15%}.textbausteine-table th:nth-child(4){width:16%}.textbausteine-table th:nth-child(5){width:10%}.textbausteine-title{min-width:0;overflow-wrap:anywhere;font-weight:750}.textbausteine-key{overflow-wrap:anywhere;color:var(--muted)}.textbausteine-status{display:inline-flex;align-items:center;gap:6px;padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);white-space:nowrap}.textbausteine-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:var(--radius-pill);background:var(--soft)}.textbausteine-status.active .textbausteine-status-dot{background:var(--leaf)}.textbausteine-action{color:var(--gold-ink);font-weight:750;text-decoration:underline;text-underline-offset:3px}.textbausteine-empty{padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--muted)}.textbausteine-form-card{min-width:0;display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-form-grid{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.textbausteine-field{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.textbausteine-field.full{grid-column:1/-1}.textbausteine-field input,.textbausteine-field select,.textbausteine-field textarea{min-width:0;width:100%;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.textbausteine-field textarea{min-height:260px;resize:vertical;line-height:1.55}.textbausteine-field small{font-weight:500}.textbausteine-check{display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:12px;font-weight:700}.textbausteine-placeholders{display:flex;flex-wrap:wrap;gap:var(--space-2)}.textbausteine-placeholder{min-height:34px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:750}.textbausteine-form-actions,.textbausteine-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.textbausteine-toggle{justify-content:flex-end}.verwaltung-main:has(.textbausteine)>.portal-section-header{display:none}.verwaltung-main:has(.textbausteine)>.portal-section-content{min-width:0;padding-top:42px}@media(max-width:760px){.textbausteine-head{align-items:stretch;flex-direction:column}.textbausteine-head .button{width:100%}.textbausteine-table-wrap{overflow:visible}.textbausteine-table,.textbausteine-table tbody{min-width:0;display:block}.textbausteine-table thead{display:none}.textbausteine-table tr{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);padding:var(--space-4)}.textbausteine-table tr+tr{border-top:1px solid var(--line)}.textbausteine-table td{min-width:0;display:block;padding:0;border:0}.textbausteine-title,.textbausteine-key{grid-column:1/-1}.textbausteine-key{font-size:10px}.textbausteine-status-cell{grid-column:1}.textbausteine-updated{grid-column:1;color:var(--muted);font-size:10px}.textbausteine-action-cell{grid-column:2;grid-row:3/5;align-self:center}.textbausteine-form-grid{grid-template-columns:minmax(0,1fr)}.textbausteine-field.full{grid-column:1}.textbausteine-form-card{padding:var(--space-4)}.textbausteine-form-actions>*{width:100%}.textbausteine-toggle button{width:100%}}\n\t\t@media(max-width:760px){.textbausteine-table tr{row-gap:6px;padding:var(--space-3)}.textbausteine-title,.textbausteine-key,.textbausteine-updated{grid-column:1/-1}.textbausteine-key,.textbausteine-updated{font-size:10px}.textbausteine-updated{color:var(--muted)}.textbausteine-status-cell{grid-column:1;grid-row:4}.textbausteine-action-cell{grid-column:2;grid-row:4;align-self:center}}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>\n\t\t.textbausteine{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-head{min-width:0;display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}.textbausteine-head>div{min-width:0}.textbausteine h1{overflow-wrap:anywhere;font-family:var(--font-serif);font-size:34px;font-weight:550}.textbausteine .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.textbausteine-count{margin-top:var(--space-1);color:var(--muted);font-size:11px}.textbausteine .button.primary{background:var(--gold);color:var(--panel)}.textbausteine .button.ghost{border-color:var(--line);color:var(--muted)}.textbausteine-flash,.textbausteine-error{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.textbausteine-groups{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-group{min-width:0;display:grid;gap:var(--space-2)}.textbausteine-group h2{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.textbausteine-group h2 span{color:var(--muted)}.textbausteine-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-table{width:100%;min-width:650px;table-layout:fixed;border-collapse:collapse}.textbausteine-table th,.textbausteine-table td{padding:var(--space-3);border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:11px}.textbausteine-table thead th{border-top:0;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.textbausteine-table th:nth-child(1){width:34%}.textbausteine-table th:nth-child(2){width:25%}.textbausteine-table th:nth-child(3){width:15%}.textbausteine-table th:nth-child(4){width:16%}.textbausteine-table th:nth-child(5){width:10%}.textbausteine-title{min-width:0;overflow-wrap:anywhere;font-weight:750}.textbausteine-key{overflow-wrap:anywhere;color:var(--muted)}.textbausteine-status{display:inline-flex;align-items:center;gap:6px;padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);white-space:nowrap}.textbausteine-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:var(--radius-pill);background:var(--soft)}.textbausteine-status.active .textbausteine-status-dot{background:var(--leaf)}.textbausteine-action{color:var(--gold-ink);font-weight:750;text-decoration:underline;text-underline-offset:3px}.textbausteine-empty{padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--muted)}.textbausteine-form-card{min-width:0;display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-form-grid{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.textbausteine-field{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.textbausteine-field.full{grid-column:1/-1}.textbausteine-field input,.textbausteine-field select,.textbausteine-field textarea{min-width:0;width:100%;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.textbausteine-field textarea{min-height:260px;resize:vertical;line-height:1.55}.textbausteine-field small{font-weight:500}.textbausteine-check{display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:12px;font-weight:700}.textbausteine-placeholders{display:flex;flex-wrap:wrap;gap:var(--space-2)}.textbausteine-placeholder{min-height:34px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:750}.textbausteine-form-actions,.textbausteine-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.textbausteine-toggle{justify-content:flex-end}.verwaltung-main:has(.textbausteine)>.portal-section-header{display:none}.verwaltung-main:has(.textbausteine)>.portal-section-content{min-width:0;padding-top:42px}@media(max-width:760px){.textbausteine-head{align-items:stretch;flex-direction:column}.textbausteine-head .button{width:100%}.textbausteine-table-wrap{overflow:visible}.textbausteine-table,.textbausteine-table tbody{min-width:0;display:block}.textbausteine-table thead{display:none}.textbausteine-table tr{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);padding:var(--space-4)}.textbausteine-table tr+tr{border-top:1px solid var(--line)}.textbausteine-table td{min-width:0;display:block;padding:0;border:0}.textbausteine-title,.textbausteine-key{grid-column:1/-1}.textbausteine-key{font-size:10px}.textbausteine-status-cell{grid-column:1}.textbausteine-updated{grid-column:1;color:var(--muted);font-size:10px}.textbausteine-action-cell{grid-column:2;grid-row:3/5;align-self:center}.textbausteine-form-grid{grid-template-columns:minmax(0,1fr)}.textbausteine-field.full{grid-column:1}.textbausteine-form-card{padding:var(--space-4)}.textbausteine-form-actions>*{width:100%}.textbausteine-toggle button{width:100%}}\n\t\t@media(max-width:760px){.textbausteine-table tr{row-gap:6px;padding:var(--space-3)}.textbausteine-title,.textbausteine-key,.textbausteine-updated{grid-column:1/-1}.textbausteine-key,.textbausteine-updated{font-size:10px}.textbausteine-updated{color:var(--muted)}.textbausteine-status-cell{grid-column:1;grid-row:4}.textbausteine-action-cell{grid-column:2;grid-row:4;align-self:center}}\n\t\t.textbausteine [hidden]{display:none!important}.textbausteine-search{display:flex;align-items:end;gap:16px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.textbausteine-search label{display:grid;gap:8px;flex:1;min-width:0;color:var(--muted);font-size:12px}.textbausteine-search input{width:100%;min-width:0;min-height:48px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink)}.textbausteine-search output{padding-block:16px;color:var(--muted);font-size:12px;white-space:nowrap}.textbausteine mark{background:rgba(200,153,63,.28);color:var(--ink);border-radius:2px}.textbausteine-body{margin-top:8px;font-weight:400}.textbausteine-body summary{min-height:40px;display:flex;align-items:center;cursor:pointer;color:var(--gold-ink);padding-right:24px}.textbausteine-body p{white-space:pre-wrap;line-height:1.6;font-size:12px;padding-top:8px}.textbausteine-group h2 [data-search-text]{color:inherit}@media(max-width:760px){.textbausteine-search{align-items:stretch;flex-direction:column;gap:8px}.textbausteine-search output{padding:0}}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -194,7 +194,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinCountLabel(data.Count))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 88, Col: 189}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 89, Col: 189}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -212,7 +212,7 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(data.Flash)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 90, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 91, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -229,145 +229,171 @@ func textbausteinListContent(data TextbausteinListData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"textbausteine-groups\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"textbausteine-search\" data-textbausteine-search hidden><label for=\"textbausteine-search\">Textbausteine durchsuchen<input id=\"textbausteine-search\" type=\"search\" placeholder=\"Titel, Kategorie oder Text\" aria-controls=\"textbausteine-results\"></label><output data-textbausteine-count aria-live=\"polite\" aria-atomic=\"true\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d von %d", data.Count, data.Count))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 96, Col: 385}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</output></div><p class=\"textbausteine-empty\" data-textbausteine-no-results hidden>Keine Textbausteine passen zu Ihrer Suche.</p><div class=\"textbausteine-groups\" id=\"textbausteine-results\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, group := range data.Groups {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<section class=\"textbausteine-group\"><h2>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(group.Label)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 97, Col: 59}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<section class=\"textbausteine-group\"><h2><span data-search-text>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(group.Items)))
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(group.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 97, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 100, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</span></h2><div class=\"textbausteine-table-wrap\"><table class=\"textbausteine-table\"><thead><tr><th>Titel</th><th>Schlüssel</th><th>Status</th><th>Geändert</th><th>Aktion</th></tr></thead><tbody>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</span><span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var9 string
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(group.Items)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 100, Col: 127}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</span></h2><div class=\"textbausteine-table-wrap\"><table class=\"textbausteine-table\"><thead><tr><th>Titel</th><th>Schlüssel</th><th>Status</th><th>Geändert</th><th>Aktion</th></tr></thead><tbody>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				for _, item := range group.Items {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<tr><td class=\"textbausteine-title\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var9 string
-					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 55}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"textbausteine-key\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<tr data-textbaustein-row><td class=\"textbausteine-title\"><span data-search-text>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var10 string
-					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(item.Key)
+					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 102}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 100}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</td><td class=\"textbausteine-status-cell\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span><details class=\"textbausteine-body\"><summary>Text ansehen</summary><p data-search-text>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var11 = []any{"textbausteine-status", templ.KV("active", item.Active)}
-					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var11...)
+					var templ_7745c5c3_Var11 string
+					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(item.Body)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 207}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</p></details></td><td class=\"textbausteine-key\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var12 string
-					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var11).String())
+					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(item.Key)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 1, Col: 0}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 268}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"><span class=\"textbausteine-status-dot\" aria-hidden=\"true\"></span>")
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var13 string
-					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 297}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"textbausteine-status-cell\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</span></td><td class=\"textbausteine-updated\">Geändert: ")
+					var templ_7745c5c3_Var13 = []any{"textbausteine-status", templ.KV("active", item.Active)}
+					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var14 string
-					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(item.Updated)
+					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var13).String())
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 370}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 1, Col: 0}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</td><td class=\"textbausteine-action-cell\"><a class=\"textbausteine-action\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><span class=\"textbausteine-status-dot\" aria-hidden=\"true\"></span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var15 templ.SafeURL
-					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.EditURL))
+					var templ_7745c5c3_Var15 string
+					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 99, Col: 481}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 463}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">Bearbeiten</a></td></tr>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></td><td class=\"textbausteine-updated\">Geändert: ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var16 string
+					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(item.Updated)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 536}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</td><td class=\"textbausteine-action-cell\"><a class=\"textbausteine-action\" href=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var17 templ.SafeURL
+					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.EditURL))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 102, Col: 647}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\">Bearbeiten</a></td></tr>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</tbody></table></div></section>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</tbody></table></div></section>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -391,232 +417,232 @@ func textbausteinFormContent(data TextbausteinFormData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var16 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var16 == nil {
-			templ_7745c5c3_Var16 = templ.NopComponent
+		templ_7745c5c3_Var18 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var18 == nil {
+			templ_7745c5c3_Var18 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = textbausteinStyles().Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<section class=\"textbausteine\"><header class=\"textbausteine-head\"><div><div class=\"eyebrow\">Hausverwaltung · Kommunikation</div><h1>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<section class=\"textbausteine\"><header class=\"textbausteine-head\"><div><div class=\"eyebrow\">Hausverwaltung · Kommunikation</div><h1>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinFormHeading(data))
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinFormHeading(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 111, Col: 135}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</h1></div><a class=\"button ghost\" href=\"/app/verwaltung/textbausteine\">Zur Übersicht</a></header>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if data.Error != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"textbausteine-error\" role=\"alert\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var18 string
-			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(data.Error)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 113, Col: 59}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<form class=\"textbausteine-form-card\" method=\"post\" action=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var19 templ.SafeURL
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Action))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 115, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 114, Col: 135}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\"><div class=\"textbausteine-form-grid\"><label class=\"textbausteine-field\">Titel<input type=\"text\" name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</h1></div><a class=\"button ghost\" href=\"/app/verwaltung/textbausteine\">Zur Übersicht</a></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 117, Col: 94}
+		if data.Error != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<p class=\"textbausteine-error\" role=\"alert\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var20 string
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(data.Error)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 116, Col: 59}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<form class=\"textbausteine-form-card\" method=\"post\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" required data-textbaustein-title></label> <label class=\"textbausteine-field\">Kategorie<select name=\"category\" required>")
+		var templ_7745c5c3_Var21 templ.SafeURL
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Action))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 118, Col: 89}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\"><div class=\"textbausteine-form-grid\"><label class=\"textbausteine-field\">Titel<input type=\"text\" name=\"title\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 120, Col: 94}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" required data-textbaustein-title></label> <label class=\"textbausteine-field\">Kategorie<select name=\"category\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, category := range data.Categories {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var21 string
-			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(category.Key)
+			var templ_7745c5c3_Var23 string
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(category.Key)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 120, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 123, Col: 34}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if category.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, ">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(category.Label)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 120, Col: 85}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</option>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</select></label> <label class=\"textbausteine-field full\">Schlüssel<input type=\"text\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Key)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 123, Col: 89}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" placeholder=\"wird aus dem Titel erzeugt\" readonly data-textbaustein-key><small>Der eindeutige Schlüssel wird beim Anlegen aus dem Titel erzeugt und bleibt danach unverändert.</small></label><div class=\"textbausteine-field full\"><span>Platzhalter einfügen</span><div class=\"textbausteine-placeholders\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for _, placeholder := range data.Placeholders {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<button class=\"textbausteine-placeholder\" type=\"button\" data-placeholder=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(placeholder)
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(category.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 126, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 123, Col: 85}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(placeholder)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 126, Col: 108}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div></div><label class=\"textbausteine-field full\">Text<textarea name=\"body\" required data-textbaustein-body>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</select></label> <label class=\"textbausteine-field full\">Schlüssel<input type=\"text\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(data.Body)
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 129, Col: 113}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 126, Col: 89}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</textarea></label> <label class=\"textbausteine-check full\"><input type=\"checkbox\" name=\"active\" value=\"1\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if data.Active {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " checked")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" placeholder=\"wird aus dem Titel erzeugt\" readonly data-textbaustein-key><small>Der eindeutige Schlüssel wird beim Anlegen aus dem Titel erzeugt und bleibt danach unverändert.</small></label><div class=\"textbausteine-field full\"><span>Platzhalter einfügen</span><div class=\"textbausteine-placeholders\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, placeholder := range data.Placeholders {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<button class=\"textbausteine-placeholder\" type=\"button\" data-placeholder=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "> Aktiv und im Posteingang auswählbar</label></div><div class=\"textbausteine-form-actions\"><button class=\"button primary\" type=\"submit\">Textbaustein speichern</button><a class=\"button ghost\" href=\"/app/verwaltung/textbausteine\">Abbrechen</a></div></form>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !data.New {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<form class=\"textbausteine-toggle\" method=\"post\" action=\"")
+			var templ_7745c5c3_Var26 string
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.ResolveAttributeValue(placeholder)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 129, Col: 92}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var27 templ.SafeURL
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(textbausteinToggleAction(data)))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\">")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 135, Col: 106}
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var27 string
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(placeholder)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 129, Col: 108}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><button class=\"button ghost\" type=\"submit\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var28 string
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinToggleLabel(data))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 135, Col: 183}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<script>\n\t\t\t(function(){\n\t\t\t\tconst title=document.querySelector('[data-textbaustein-title]');\n\t\t\t\tconst key=document.querySelector('[data-textbaustein-key]');\n\t\t\t\tconst body=document.querySelector('[data-textbaustein-body]');\n\t\t\t\tif(title&&key&&!key.value){title.addEventListener('input',function(){key.value=title.value.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');});}\n\t\t\t\tdocument.querySelectorAll('[data-placeholder]').forEach(function(button){button.addEventListener('click',function(){if(!body)return;const token=button.dataset.placeholder||'';const start=body.selectionStart||0;const end=body.selectionEnd||0;body.setRangeText(token,start,end,'end');body.focus();});});\n\t\t\t})();\n\t\t</script></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></div><label class=\"textbausteine-field full\">Text<textarea name=\"body\" required data-textbaustein-body>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(data.Body)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 132, Col: 113}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</textarea></label> <label class=\"textbausteine-check full\"><input type=\"checkbox\" name=\"active\" value=\"1\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.Active {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "> Aktiv und im Posteingang auswählbar</label></div><div class=\"textbausteine-form-actions\"><button class=\"button primary\" type=\"submit\">Textbaustein speichern</button><a class=\"button ghost\" href=\"/app/verwaltung/textbausteine\">Abbrechen</a></div></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !data.New {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<form class=\"textbausteine-toggle\" method=\"post\" action=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var29 templ.SafeURL
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(textbausteinToggleAction(data)))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 138, Col: 106}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\"><button class=\"button ghost\" type=\"submit\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var30 string
+			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(textbausteinToggleLabel(data))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/textbausteine.templ`, Line: 138, Col: 183}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -33,6 +33,20 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			}
 		}
 	}
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	status := r.URL.Query().Get("status")
+	if status != "current" && status != "past" {
+		status = "all"
+	}
+	upcoming = filterEvents(upcoming, query)
+	past = filterEvents(past, query)
+	currentCount, pastCount := len(upcoming), len(past)
+	if status == "past" {
+		upcoming = nil
+	}
+	if status == "current" {
+		past = nil
+	}
 	calendarFeedURL := ""
 	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
@@ -60,6 +74,10 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Upcoming:        upcomingViews,
 		Months:          months,
 		Past:            pastViews,
+		SearchQuery:     query,
+		SelectedStatus:  status,
+		CurrentCount:    currentCount,
+		PastCount:       pastCount,
 	})
 }
 
@@ -389,4 +407,19 @@ func (a *app) eventViews(tenant store.TenantRef, items []houseEvent, now time.Ti
 		views[i].HasAttachments = true
 	}
 	return views
+}
+
+// Search before applying the time filter so each segment shows its matching count.
+func filterEvents(items []houseEvent, query string) []houseEvent {
+	query = strings.ToLower(query)
+	if query == "" {
+		return items
+	}
+	filtered := make([]houseEvent, 0, len(items))
+	for _, item := range items {
+		if strings.Contains(strings.ToLower(item.Title+"\n"+item.Category+"\n"+item.Body+"\n"+item.Location), query) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }

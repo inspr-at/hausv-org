@@ -100,3 +100,26 @@ func TestTextbausteinPageRequiresOrganisationAdminAndNavIsRoleScoped(t *testing.
 		t.Fatalf("Eigentümer navigation exposed Verwaltung admin links: %s", ownerPage.Body.String())
 	}
 }
+
+func TestTextbausteinSearchReceivesFullEscapedTextHAUSV681(t *testing.T) {
+	a, _, _ := newInboxTestApp(t, roleAdmin)
+	body := strings.Repeat("Vollständiger Text. ", 30) + `<img src=x onerror=alert(1)> SuchwortAmEnde`
+	if err := a.textbausteine("musterstadt").Upsert(t.Context(), store.Textbaustein{Key: "suche", Category: store.IntakeCategoryRepair, Title: "Suche", Body: body, Active: true}); err != nil {
+		t.Fatal(err)
+	}
+	page := authedRequest(t, a, "vera@example.com", "/demo/app/verwaltung/textbausteine").Body.String()
+	for _, want := range []string{"SuchwortAmEnde", "&lt;img", "Reparatur/Mangel", "textbausteine.js?v=", `data-textbaustein-row`, `data-search-text`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("search list missing %q", want)
+		}
+	}
+	if strings.Contains(page, "<img src=x") {
+		t.Error("template body must be escaped")
+	}
+	for _, route := range []string{"/demo/app/verwaltung/textbausteine", "/demo/app/verwaltung/textbausteine/neu"} {
+		html := authedRequest(t, a, "vera@example.com", route).Body.String()
+		if strings.Contains(html, "<script>") || !strings.Contains(html, "textbausteine.js?v=") {
+			t.Errorf("%s must load behaviour through external asset", route)
+		}
+	}
+}

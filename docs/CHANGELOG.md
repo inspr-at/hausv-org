@@ -2,6 +2,16 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.4] - 2026-09-08
+
+### Verbessert
+
+- Textbausteine: Live-Suche über Titel, Kategorie und Text mit Hervorhebung der Treffer.
+- Aushang: alle Beiträge auf einmal auf- oder zuklappen, Farblegende als Aufklapper, kompaktere geschlossene Beiträge.
+- Termine: Suche und Filter (aktuell, abgelaufen, alle) in einer Leiste mit Zählern.
+- Verwaltungs-Einstellungen: Erklärung, was der Automatisierungs-Status im Posteingang bewirkt.
+- Feinschliff bei Kontakten, Anliegen-Liste, Profil und Verlauf.
+
 ## [1.9.3] - 2026-09-08
 
 ### Verbessert
