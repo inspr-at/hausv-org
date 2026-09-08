@@ -125,8 +125,10 @@ body[data-authenticated-app] details>summary:has(>.disclosure-chevron){position:
 body[data-authenticated-app] details>summary:has(>.disclosure-chevron)::-webkit-details-marker{display:none}
 body[data-authenticated-app] .disclosure-chevron{position:absolute;right:12px;top:50%;width:30px;height:30px;display:grid;place-items:center;transform:translateY(-50%);border:1px solid var(--line);border-radius:50%;background:var(--panel-soft);color:var(--muted);pointer-events:none;transition:background-color .2s ease}
 body[data-authenticated-app] .disclosure-chevron svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;transition:transform .2s ease}
+body[data-authenticated-app] .disclosure-chevron .energy-ui-icon{width:18px;height:18px;transition:transform .2s ease}
 details[open]>summary>.disclosure-chevron{background:var(--panel)}
 details[open]>summary>.disclosure-chevron svg{transform:rotate(180deg)}
+details[open]>summary>.disclosure-chevron .energy-ui-icon{transform:rotate(180deg)}
 :is(.sidebar,.menu-panel,.context-scope) .house-header-card>.disclosure-chevron{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--line)}
 :is(.sidebar,.menu-panel,.context-scope) details[open]>.house-header-card>.disclosure-chevron{background:rgba(255,255,255,.28)}
 body[data-authenticated-app] .context-scope details>.house-header-card:has(>.disclosure-chevron){padding-inline-end:36px}

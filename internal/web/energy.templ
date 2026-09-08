@@ -449,7 +449,7 @@ templ EnergyLead(data EnergyPageData) {
 						</div>
 					</div>
 					<details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span>
-						@DisclosureChevron()
+						@DisclosureChevronMasked()
 					</summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">
 						if data.Live.HasMain {
 							<span>{ data.Live.Main.Label } <strong>{ data.Live.Main.Value }</strong> <small>{ data.Live.Main.Detail }</small></span>
@@ -472,7 +472,7 @@ templ EnergyLead(data EnergyPageData) {
 				<footer class="energy-live-footer">
 					if data.Live.HasAdditional {
 						<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({ strconv.Itoa(data.Live.AdditionalCount) })</strong><small>{ data.Live.AdditionalTopics }</small></span>
-							@DisclosureChevron()
+							@DisclosureChevronMasked()
 						</summary><div class="energy-live-more-list">
 							for _, item := range data.Live.Additional {
 								<div class="energy-live-more-row"><span>{ item.Label }</span><strong>{ item.Value }</strong></div>
@@ -507,7 +507,7 @@ templ EnergyRecommendationDialog(data EnergyPageData) {
 						<h3>{ data.Recommendation.Title }</h3>
 					}
 					<div class="energy-next-status"><span aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-check"></span></span>{ data.Recommendation.Effort } · keine Steuerung</div><details class="energy-next-why" data-energy-disclosure="recommendation"><summary aria-controls="energy-next-explanation">Warum?
-						@DisclosureChevron()
+						@DisclosureChevronMasked()
 					</summary><div id="energy-next-explanation"><p>{ data.Recommendation.Reason }</p><div class="energy-next-meta"><span>{ data.Recommendation.Benefit }</span><span>Aufwand: { data.Recommendation.Effort }</span><span>{ data.Recommendation.ImpactRange }</span></div></div></details>
 				</div></div>
 				if !data.RecommendationDeferred && !data.RecommendationDismissed {
@@ -521,7 +521,7 @@ templ EnergyRecommendationDialog(data EnergyPageData) {
 						<form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button quiet" type="submit" name="status" value="deferred">Später</button></form>
 					</div>
 					<details class="dialog-optional energy-measure-control"><summary>Weitere Optionen
-						@DisclosureChevron()
+						@DisclosureChevronMasked()
 					</summary><div class="energy-next-menu"><form class="energy-measure-form" method="post" action="/app/energie/measure">
 						<h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
 						<label><input type="checkbox" name="share" value="inventory"/><span>Anlageninventar beilegen</span></label><label><input type="checkbox" name="share" value="measurements"/><span>Zusammengefasste Messwerte beilegen</span></label><label><input type="checkbox" name="share" value="contact"/><span>Kontaktdaten beilegen</span></label>
@@ -587,7 +587,7 @@ templ EnergyConsumerDialog(data EnergyPageData) {
 					<p class="energy-consumer-measurement-status" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p>
 				</section>
 				<details class="energy-consumer-recommendations" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen
-					@DisclosureChevron()
+					@DisclosureChevronMasked()
 				</summary><div class="energy-consumer-recommendation-fields">
 					<label class="energy-consumer-field"><span>Kategorie</span><select name="kind">
 						for _, option := range data.ConsumerKindOptions {
@@ -722,7 +722,7 @@ templ EnergyTariffSection(data EnergyPageData) {
 	<section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
 		<header class="energy-card-head">
 			<div class="energy-tariff-heading-copy"><div class="energy-tariff-title-row"><h2 id="energy-tariff-title">Monatsspitze</h2><details class="energy-metric-info energy-tariff-overview-info" name="energy-metric-help" data-energy-help="tariff"><summary aria-label="Monatsspitze und Verrechnung erklären" aria-controls="energy-help-tariff">
-				@DisclosureChevron()
+				@DisclosureChevronMasked()
 			</summary><div id="energy-help-tariff"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>
 				if data.Tariff.HasEstimate {
 					if data.Tariff.MinimumReason != "" {
@@ -760,7 +760,7 @@ templ EnergyTariffSection(data EnergyPageData) {
 			</div>
 			<div class="energy-tariff-cost">
 				<div class="energy-tariff-cost-figure"><div class="energy-metric-label"><span>Leistungsanteil des Netztarifs</span><details class="energy-metric-info" name="energy-metric-help" data-energy-help="annual"><summary aria-label="Jahreswert erklären" aria-controls="energy-help-annual">
-					@DisclosureChevron()
+					@DisclosureChevronMasked()
 				</summary><div id="energy-help-annual"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>@EnergyValue(data.Tariff.AnnualPowerEUR)</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div>
 			</div>
 			if data.Tariff.Basis != "" {
@@ -794,7 +794,7 @@ templ EnergyTariffSection(data EnergyPageData) {
 				<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>
 		}
 		<details class="energy-tariff-disclosure" data-energy-disclosure="tariff"><summary aria-controls="energy-tariff-details"><span>Mehr erfahren</span>
-			@DisclosureChevron()
+			@DisclosureChevronMasked()
 		</summary><div id="energy-tariff-details">
 			<p class="energy-tariff-method">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>
 			if data.Tariff.Basis != "" {
@@ -815,7 +815,7 @@ templ EnergyTariffSection(data EnergyPageData) {
 			if data.CanManageEnergy {
 				<details class="energy-tariff-settings">
 					<summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span>
-						@DisclosureChevron()
+						@DisclosureChevronMasked()
 					</summary>
 					<div class="energy-tariff-forms">
 						<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value={ data.TargetPeakValue } placeholder="z. B. 8,0" required/></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
@@ -908,7 +908,7 @@ templ EnergyMaintenanceSection(data EnergyPageData) {
 				for _, plan := range data.Maintenance {
 					<details class="energy-maintenance-row">
 						<summary class="energy-maintenance-summary"><span><strong>{ plan.Title }</strong><small>{ energyMaintenanceMeta(plan) }</small></span><span class={ "energy-status-" + plan.Tone }>{ plan.DueLabel }</span>
-							@DisclosureChevron()
+							@DisclosureChevronMasked()
 						</summary>
 						<div class="energy-maintenance-body">
 							if plan.ContactName != "" || plan.DocumentTitle != "" || plan.IssueTitle != "" {
@@ -970,7 +970,7 @@ templ EnergyMaintenanceSection(data EnergyPageData) {
 		}
 		if data.CanManageEnergy && data.HasAssets {
 			<details class="energy-compact-create"><summary>Wartung an einer Anlage vormerken
-				@DisclosureChevron()
+				@DisclosureChevronMasked()
 			</summary><form class="energy-inline-form" method="post" action="/app/energie/maintenance">
 				<input type="hidden" name="active" value="true"/>
 				<label>Anlage<select name="asset_id" required>
@@ -1006,7 +1006,7 @@ templ EnergyMeasurementSection(data EnergyPageData) {
 				Home Assistant oder Smart Meter später verbinden.
 			}
 		</p></div>
-			@DisclosureChevron()
+			@DisclosureChevronMasked()
 		</summary>
 		<div class="energy-collapsible-body">
 			switch data.ImportStatus {
@@ -1059,7 +1059,7 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 				Optional eine Vertrauensperson einladen.
 			}
 		</p></div>
-			@DisclosureChevron()
+			@DisclosureChevronMasked()
 		</summary>
 		<div class="energy-collapsible-body">
 			<nav class="energy-related-links"><a href="/app/settings/users">Personen verwalten</a></nav>
@@ -1099,7 +1099,7 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 			}
 			if data.CanInviteEnergyAccess {
 				<details class="energy-compact-create"><summary>Technische Vertrauensperson einladen
-					@DisclosureChevron()
+					@DisclosureChevronMasked()
 				</summary><form class="energy-inline-form" method="post" action="/app/energie/caretaker/invite">
 					<label>Vorname<input name="first_name" maxlength="80"/></label><label>Nachname<input name="last_name" maxlength="80"/></label>
 					<label class="wide">E-Mail<input type="email" name="email" required/></label>
@@ -1121,7 +1121,7 @@ templ EnergySupportSection(data EnergyPageData) {
 				Bekannte Kontakte statt offener Marktplatz.
 			}
 		</p></div>
-			@DisclosureChevron()
+			@DisclosureChevronMasked()
 		</summary>
 		<div class="energy-collapsible-body">
 			<nav class="energy-related-links"><a href="/app/kontakte">Bekannte Kontakte</a></nav>
@@ -1139,7 +1139,7 @@ templ EnergySupportSection(data EnergyPageData) {
 					for _, measure := range data.Measures {
 						<details class="energy-measure-row">
 							<summary class="energy-measure-summary"><span><strong>{ measure.Title }</strong><small>{ energyMeasureMeta(measure) }</small></span><span>Öffnen</span>
-								@DisclosureChevron()
+								@DisclosureChevronMasked()
 							</summary>
 							<div class="energy-measure-body">
 								if measure.HasComparison {
@@ -1408,6 +1408,7 @@ func energyIconMaskCSS(assetVersion string) string {
 		"x",
 		"snowflake",
 		"shower-head",
+		"chevron-down",
 	}
 	var b strings.Builder
 	for _, n := range names {
