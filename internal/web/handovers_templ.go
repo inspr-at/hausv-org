@@ -184,7 +184,7 @@ func HandoverHeaderAction(data HandoversPageData) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if data.HasHandovers {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<button class=\"button primary\" type=\"button\" data-dialog=\"handover-create\" aria-haspopup=\"dialog\" aria-controls=\"handover-create\">Übergabe anlegen</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<button class=\"button\" type=\"button\" data-dialog=\"handover-create\" aria-haspopup=\"dialog\" aria-controls=\"handover-create\">Übergabe anlegen</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
