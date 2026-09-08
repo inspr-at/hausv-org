@@ -36,7 +36,7 @@ func TestIssuesTemplUsesSharedPermissionGatedShellWithoutNewRoleDenials(t *testi
 			}
 			for _, want := range []string{
 				"data-templ-issues",
-				`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
+				`<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 				`<nav class="nav" aria-label="Bereiche"`,
 				`href="` + issuesNavURL + `" class="nav-item active" aria-current="page"`,
 				"Versionsverlauf",
@@ -161,7 +161,7 @@ func TestIssueBoardTemplRendersTheManagerBoardOnTheSharedShell(t *testing.T) {
 	body := response.Body.String()
 	for _, want := range []string{
 		"data-templ-issue-board",
-		`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
+		`<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 		`<nav class="nav" aria-label="Bereiche"`,
 		"Anliegen bearbeiten",
 		`href="/demo/app/anliegen"`,

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"sort"
 	"strings"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/version"
+	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -17,6 +20,63 @@ type portalContextView struct {
 	Address    string
 	Role       string
 	Current    bool
+}
+
+// portalBaseData supplies the same identity, permissions, badges and context on every page.
+func (a *app) portalBaseData(ac authCtx, activePage, title string) web.PortalPageData {
+	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	modules := a.portalModulesFor(ac.tenant.Slug)
+	unreadAnnouncements := 0
+	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(ac.email) != "" {
+		now := time.Now()
+		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(ac.email), now)
+	}
+	openIssues := 0
+	if a.issueStore != nil {
+		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
+	}
+	shell := a.portalShellData(&ac)
+	data := web.PortalPageData{
+		Title:               title + " · " + houseDisplayName(ac.tenant) + " · " + ac.role,
+		TenantSlug:          ac.tenant.Slug,
+		HouseName:           houseDisplayName(ac.tenant),
+		Address:             ac.tenant.Address,
+		MapURL:              tenantMapURL(ac.tenant.Address),
+		HeroImageURL:        ac.tenant.HeroImageURL,
+		BrandIcon:           ac.tenant.BrandIcon,
+		BrandMarkSVG:        tenantBrandMarkSVG(ac.tenant.BrandIcon),
+		Map:                 portalMapForTenant(ac.tenant),
+		DisplayName:         profile.DisplayName(),
+		Initials:            profile.Initials(),
+		Role:                ac.role,
+		DisplayVersion:      version.DisplayVersion(version.Version),
+		ActivePage:          activePage,
+		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
+		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
+		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
+		HomeIdentity:        a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
+		CanManageIssues:     ac.can(capabilityManageIssues),
+		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
+		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
+		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
+		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
+		Issues:              make([]view.IssueView, openIssues),
+		UnreadAnnouncements: unreadAnnouncements,
+		Shell:               shell,
+		ReleaseNotes:        version.Notes(),
+	}
+	data.CanCreateResidentIssue = canCreateResidentIssue(ac.actor(), ac.resource())
+	data.RolePreview = rolePreviewPortalData(&ac)
+	data.RolePreviewChoices = shell.Context.PreviewChoices
+	data.Contexts = shell.PortalContexts
+	data.ShowVerwaltungNav = shell.IsOrganisationMember
+	data.ShowInboxNav = shell.ShowInboxNav
+	data.InboxOpenCount = shell.InboxOpenCount
+	data.Organisation = web.VerwaltungShell{OrganisationName: shell.OrganisationName, RoleLabel: shell.RoleLabel, ShowInboxNav: shell.ShowInboxNav, CanManageSettings: shell.CanManageOrganisationSettings, InboxOpenCount: shell.InboxOpenCount}
+	for _, house := range shell.ManagedHouses {
+		data.Organisation.Houses = append(data.Organisation.Houses, web.VerwaltungHouse{Slug: house.Slug, Name: house.Name, Address: house.Address, Role: house.Role})
+	}
+	return data
 }
 
 // portalShellData is the single assembly point for the shared house shell. It
@@ -32,8 +92,8 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	// One assembly point for the account tile, so the sidebar, the mobile header
 	// and every section page show the same picture (HAUSV-675).
 	shell.AvatarURL = a.profilePictureURL(ac.email)
-	managed := a.managedTenants(ac)
-	organisation, hasOrganisation := a.organisationFor(ac)
+	managed := a.organisationManagedTenants(context.Background(), ac)
+	organisation, hasOrganisation := a.organisationRecordFor(context.Background(), ac)
 	// The Verwaltung layer needs someone who actually administers houses: a
 	// member of an organisation, or somebody who administers more than one
 	// house without one. Residents and owners never see it, even though their
@@ -334,5 +394,16 @@ func (a *app) switchPortalContext(w http.ResponseWriter, r *http.Request, ac aut
 			"role_to":     targetRole,
 		},
 	})
-	http.Redirect(w, r, strings.TrimRight(a.baseURL, "/")+target.PublicURL("/app"), http.StatusSeeOther)
+	next := portalContextNext(r.FormValue("next"))
+	http.Redirect(w, r, strings.TrimRight(a.baseURL, "/")+target.PublicURL(next), http.StatusSeeOther)
+}
+
+// Only known house menu destinations can continue a context switch.
+func portalContextNext(path string) string {
+	switch path {
+	case "/app", "/app/energie", "/app/announcements", "/app/events", "/app/kontakte", "/app/dokumente", "/app/anliegen", "/app/anliegen/board", "/app/abstimmungen", "/app/parking", "/app/uebergaben", "/app/settings/users", "/app/audit", "/app/settings", "/app/hilfe":
+		return path
+	default:
+		return "/app"
+	}
 }

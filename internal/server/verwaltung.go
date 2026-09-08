@@ -9,7 +9,6 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/config"
 	"github.com/inspr-at/hausv-org/internal/store"
-	"github.com/inspr-at/hausv-org/internal/version"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -134,53 +133,24 @@ func (a *app) showVerwaltungNav(ac authCtx) bool {
 	return normalizeSlug(ac.tenant.Organisation) != ""
 }
 
-func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) web.VerwaltungShell {
-	managed := a.organisationManagedTenants(ctx, ac)
-	organisationName := "Verwaltung"
-	organisation, hasOrganisation := a.organisationRecordFor(ctx, ac)
-	if hasOrganisation {
-		organisationName = organisation.Name
+// The authenticated session retains the last selected house when opening an
+// organisation route. Keep that house's permissions and module links; only the
+// switcher's presentation changes to the portfolio overview.
+func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) web.PortalPageData {
+	house := a.organisationHouseContext(ctx, ac)
+	data := a.portalBaseData(house, "organisation-"+active, "Verwaltung")
+	if house.tenant.Slug != ac.tenant.Slug || house.role != ac.role {
+		data.NavigationTenant = house.tenant.Slug
+		data.NavigationRole = house.role
 	}
-	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	roleLabel := ac.role
-	houses := make([]web.VerwaltungHouse, 0, len(managed))
-	for _, tenant := range managed {
-		if tenant.Config.Slug == ac.tenant.Slug {
-			roleLabel = tenant.Role
-		}
-		houses = append(houses, web.VerwaltungHouse{
-			Slug: tenant.Config.Slug, Name: houseDisplayName(tenant.Config), Address: tenant.Config.Address, Role: tenant.Role,
-		})
+	if organisation, ok := a.organisationRecordFor(ctx, ac); ok {
+		data.Organisation.OrganisationName = organisation.Name
+		data.Shell.OrganisationName = organisation.Name
 	}
-	if roleLabel != roleAdmin && roleLabel != roleManager && len(managed) > 0 {
-		roleLabel = managed[0].Role
-	}
-	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
-	portalContexts := make([]web.PortalContext, 0, len(contexts))
-	for _, context := range contexts {
-		portalContexts = append(portalContexts, web.PortalContext{
-			TenantSlug: context.TenantSlug, HouseName: context.HouseName, Address: context.Address, Role: context.Role, Current: context.Current,
-		})
-	}
-	shell := web.VerwaltungShell{
-		Context:           a.scopeContext(ac, organisationName, true),
-		OrganisationName:  organisationName,
-		RoleLabel:         roleLabel,
-		DisplayName:       profile.DisplayName(),
-		Initials:          profile.Initials(),
-		AvatarURL:         a.profilePictureURL(ac.email),
-		Active:            active,
-		ShowInboxNav:      hasOrganisation,
-		CanManageSettings: a.isOrganisationAdmin(ac),
-		Houses:            houses,
-		Contexts:          portalContexts,
-		DisplayVersion:    version.DisplayVersion(version.Version),
-		ReleaseNotes:      version.Notes(),
-	}
-	if hasOrganisation {
-		shell.InboxOpenCount = a.inboxOpenCount(ac)
-	}
-	return shell
+	data.Organisation.Active = active
+	data.Overview = true
+	data.Shell.Context = a.scopeContext(ac, data.Organisation.OrganisationName, true)
+	return data
 }
 
 func (a *app) requireVerwaltung(next authedHandler) authedHandler {
@@ -210,4 +180,54 @@ func (a *app) renderVerwaltungPage(w http.ResponseWriter, r *http.Request, ac au
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte(prefixTenantHTMLPaths(rendered.String(), ac.tenant.Slug)))
+}
+
+// A community session is already the last opened house. If the person visits
+// their private Home in between, the existing, durable context-switch audit
+// retains the last house per person. Revalidate every candidate against today's
+// assignments; a revoked role or house can never be revived by history.
+func (a *app) organisationHouseContext(ctx context.Context, ac *authCtx) authCtx {
+	if a.isSwitcherProperty(ac.tenant.Slug) {
+		return *ac
+	}
+	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	selectHouse := func(slug, role string) (authCtx, bool) {
+		if !a.isSwitcherProperty(slug) {
+			return authCtx{}, false
+		}
+		for _, candidate := range contexts {
+			if candidate.TenantSlug != slug || candidate.Role != role {
+				continue
+			}
+			tenant, found := a.tenantBySlug(slug)
+			identity, identified := a.tenantIdentity(slug)
+			if !found || !identified {
+				continue
+			}
+			house := *ac
+			house.tenant, house.tenantRef, house.role = tenant, identity.Ref(), role
+			house.repositories = a.repositoriesFor(identity.Ref())
+			return house, true
+		}
+		return authCtx{}, false
+	}
+	if a.auditStore != nil {
+		for _, event := range a.auditStore.List(auditFilter{Action: auditActionContextSwitch, Query: ac.email, Limit: 100}) {
+			if normalizeEmail(event.ActorEmail) != normalizeEmail(ac.email) {
+				continue
+			}
+			if house, ok := selectHouse(event.Details["tenant_to"], event.Details["role_to"]); ok {
+				return house
+			}
+			if house, ok := selectHouse(event.Details["tenant_from"], event.Details["role_from"]); ok {
+				return house
+			}
+		}
+	}
+	for _, tenant := range a.organisationManagedTenants(ctx, ac) {
+		if house, ok := selectHouse(tenant.Config.Slug, tenant.Role); ok {
+			return house
+		}
+	}
+	return *ac
 }

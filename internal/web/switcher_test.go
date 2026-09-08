@@ -11,7 +11,7 @@ func TestContextBarInBothShellsAndRoles(t *testing.T) {
 		t.Run(role, func(t *testing.T) {
 			data := PortalPageData{CanUseResidentAreas: true, HouseName: "Annenstraße 71", Address: "8020 Graz", TenantSlug: "annen", DisplayName: "Vera Beispiel", Initials: "VB", Role: role, Contexts: []PortalContext{{TenantSlug: "annen", HouseName: "Annenstraße 71", Address: "8020 Graz", Role: role, Current: true}, {TenantSlug: "park", HouseName: "Langer Liegenschaftsname im Park", Address: "8010 Graz", Role: role}}}
 			portal := renderComponent(t, PortalPage(data))
-			management := renderComponent(t, PortalVerwaltungPage(VerwaltungShell{OrganisationName: "Verwaltung Musterstadt GmbH", DisplayName: data.DisplayName, Initials: data.Initials, RoleLabel: role, Contexts: data.Contexts}, "Portfolio", VerwaltungPlaceholder()))
+			management := renderComponent(t, PortalVerwaltungPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Verwaltung Musterstadt GmbH", RoleLabel: role}, DisplayName: data.DisplayName, Initials: data.Initials, Contexts: data.Contexts}), "Portfolio", VerwaltungPlaceholder()))
 			for _, html := range []string{portal, management} {
 				for _, marker := range []string{"data-context-bar", "data-context-account", "data-switcher", `role="combobox"`, `aria-autocomplete="list"`, "Annenstraße 71", "8020 Graz", role, ">Profil</a>", ">Einstellungen</a>", " Abmelden</button>", `class="sidebar-release"`, `role="separator"`} {
 					if !strings.Contains(html, marker) {

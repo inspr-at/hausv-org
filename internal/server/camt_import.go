@@ -15,6 +15,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 const (
@@ -36,34 +37,11 @@ type camtImportPreview struct {
 	RowFingerprint string
 }
 
-type paymentImportUnitView struct {
-	Label     string
-	Reference string
-}
+type paymentImportUnitView = web.PaymentImportUnitView
 
-type paymentImportRowView struct {
-	Decision      string
-	DecisionClass string
-	Reference     string
-	UnitLabel     string
-	Status        string
-	Amount        string
-	Reason        string
-}
+type paymentImportRowView = web.PaymentImportRowView
 
-type paymentImportPreviewView struct {
-	Token          string
-	Filename       string
-	SourceVersion  string
-	CreatedAt      string
-	Assigned       int
-	Unclear        int
-	Rejected       int
-	Rows           []paymentImportRowView
-	CanApply       bool
-	AlreadyApplied bool
-	Changed        bool
-}
+type paymentImportPreviewView = web.PaymentImportPreviewView
 
 func (a *app) paymentImportPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, _, _, _, ok := a.buildingSettingsContext(w, ac)
@@ -101,16 +79,15 @@ func (a *app) paymentImportPage(w http.ResponseWriter, r *http.Request, ac authC
 		}
 	}
 
-	a.render(w, "paymentImport", a.withBase(ac, map[string]any{
-		"Title":                   "Zahlungen aus Bankdatei",
-		"ActivePage":              "settings",
-		"PaymentImportPeriod":     period,
-		"PaymentImportReferences": references,
-		"HasPaymentImportUnits":   len(references) > 0,
-		"PaymentImportPreview":    previewView,
-		"PaymentImportMsg":        resultMessage,
-		"PaymentImportOK":         resultOK,
-		"MaxCAMTImportSize":       formatBytes(maxCAMTImportBytes),
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.PaymentImportPage(web.PaymentImportPageData{
+		Portal:                  a.settingsPortalContext(ac, "Zahlungen aus Bankdatei", "settings"),
+		PaymentImportPeriod:     period,
+		PaymentImportReferences: references,
+		HasPaymentImportUnits:   len(references) > 0,
+		PaymentImportPreview:    previewView,
+		PaymentImportMsg:        resultMessage,
+		PaymentImportOK:         resultOK,
+		MaxCAMTImportSize:       formatBytes(maxCAMTImportBytes),
 	}))
 }
 

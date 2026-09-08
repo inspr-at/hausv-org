@@ -83,11 +83,10 @@ func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac aut
 		http.Redirect(w, r, "/app/anliegen/board/"+url.PathEscape(item.ID), http.StatusSeeOther)
 		return
 	}
-	a.render(w, "issueResidentDetail", a.withBase(ac, map[string]any{
-		"Title":        item.Title,
-		"ActivePage":   "issues",
-		"Issue":        views[0],
-		"IssueCreated": r.URL.Query().Get("created") == "1" && normalizeEmail(item.AuthorEmail) == normalizeEmail(ac.email),
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.IssueResidentDetailPage(web.IssueResidentDetailPageData{
+		Portal:       a.settingsPortalContext(ac, item.Title, "issues"),
+		Issue:        views[0],
+		IssueCreated: r.URL.Query().Get("created") == "1" && normalizeEmail(item.AuthorEmail) == normalizeEmail(ac.email),
 	}))
 }
 
@@ -211,46 +210,7 @@ func newestOpenIssueSummaries(items []residentIssue, now time.Time) []web.IssueS
 }
 
 func (a *app) issuesPortalContext(ac authCtx) web.PortalPageData {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	profile := a.profileForTenant(email, tenant.Slug)
-	modules := a.portalModulesFor(tenant.Slug)
-	unreadAnnouncements := 0
-	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(email) != "" {
-		now := time.Now()
-		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(email), now)
-	}
-	openIssues := 0
-	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
-	}
-	return web.PortalPageData{
-		Title:               "Anliegen · " + houseDisplayName(tenant) + " · " + role,
-		TenantSlug:          tenant.Slug,
-		HouseName:           houseDisplayName(tenant),
-		Address:             tenant.Address,
-		MapURL:              tenantMapURL(tenant.Address),
-		HeroImageURL:        tenant.HeroImageURL,
-		BrandIcon:           tenant.BrandIcon,
-		BrandMarkSVG:        tenantBrandMarkSVG(tenant.BrandIcon),
-		Map:                 portalMapForTenant(tenant),
-		DisplayName:         profile.DisplayName(),
-		Initials:            profile.Initials(),
-		Role:                role,
-		DisplayVersion:      version.DisplayVersion(version.Version),
-		ActivePage:          "issues",
-		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-		CanUseResidentAreas: roleCanUseResidentAreas(role),
-		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
-		CanManageIssues:     ac.can(capabilityManageIssues),
-		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
-		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
-		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
-		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-		Issues:              make([]view.IssueView, openIssues),
-		UnreadAnnouncements: unreadAnnouncements,
-		Shell:               a.portalShellData(&ac),
-		ReleaseNotes:        version.Notes(),
-	}
+	return a.portalBaseData(ac, "issues", "Anliegen")
 }
 
 func (a *app) renderIssuesTempl(w http.ResponseWriter, r *http.Request, data web.IssuesPageData) {

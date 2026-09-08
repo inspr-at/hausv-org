@@ -66,7 +66,7 @@ func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	if firstName == "" {
 		firstName = profile.DisplayName()
 	}
-	data := buildPortfolio(time.Now(), shell.OrganisationName, firstName, r.URL.Query().Get("sort"), houses)
+	data := buildPortfolio(time.Now(), shell.Organisation.OrganisationName, firstName, r.URL.Query().Get("sort"), houses)
 	data = pagePortfolio(data, r.URL.Query())
 	var rendered bytes.Buffer
 	if err := web.PortfolioPage(shell, data).Render(r.Context(), &rendered); err != nil {

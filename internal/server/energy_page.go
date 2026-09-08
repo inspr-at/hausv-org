@@ -14,9 +14,8 @@ import (
 // stays the household name, exactly as the legacy template rendered it, so the
 // browser tab does not change meaning when the templ switch is flipped.
 func (a *app) energyPortalContext(ac authCtx, title string) web.PortalPageData {
-	data := a.auditPortalContext(ac, title)
+	data := a.portalBaseData(ac, "energy", title)
 	data.Title = title
-	data.ActivePage = "energy"
 	return data
 }
 

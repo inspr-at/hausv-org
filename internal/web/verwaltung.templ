@@ -1,115 +1,31 @@
 package web
 
-import (
-
-	"github.com/inspr-at/hausv-org/internal/version"
-)
-
+// VerwaltungShell is the organisation block of the shared PortalPageData.
+// Identity, preview, switcher and release metadata live on the portal itself.
 type VerwaltungShell struct {
-	Context ScopeContext
-	OrganisationName string
-	RoleLabel        string
-	DisplayName      string
-	Initials         string
-	// AvatarURL is the signed-in person's profile picture, empty when they have
-	// none (HAUSV-675).
-	AvatarURL        string
-	Active           string
-	InboxOpenCount   int
-	ShowInboxNav     bool
-	CanManageSettings bool
-	Houses           []VerwaltungHouse
-	Contexts         []PortalContext
-	DisplayVersion   string
-	ReleaseNotes     []version.Note
+ OrganisationName, RoleLabel, Active string
+ InboxOpenCount int
+ ShowInboxNav, CanManageSettings bool
+ Houses []VerwaltungHouse
 }
 
 type VerwaltungHouse struct {
-	Slug    string
-	Name    string
-	Address string
-	Role    string
+ Slug, Name, Address, Role string
 }
 
-func PortalVerwaltungPage(shell VerwaltungShell, title string, body templ.Component) templ.Component {
-	return portalVerwaltungPage(shell, title, nil, body)
+func PortalVerwaltungPage(data PortalPageData, title string, body templ.Component) templ.Component {
+ return PortalOrganisationPage(data, title, nil, nil, nil, body)
 }
 
-// PortalVerwaltungPageWithScripts is PortalVerwaltungPage for a page that needs a
-// script of its own next to the shell's. The portal CSP forbids inline scripts,
-// so page behaviour reaches the browser only as a same-origin asset loaded here.
-func PortalVerwaltungPageWithScripts(shell VerwaltungShell, title string, scripts []string, body templ.Component) templ.Component {
-	return portalVerwaltungPage(shell, title, scripts, body)
-}
-
-templ portalVerwaltungPage(shell VerwaltungShell, title string, scripts []string, body templ.Component) {
-	@PortalDocument(title + " · " + shell.OrganisationName, portalAssetVersion(), scripts, VerwaltungPageStyles(), templ.Attributes{"class": "verwaltung-page", "data-templ-verwaltung": true}) {
-		<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
-		@VerwaltungMobileHeader(shell, title)
-		<div class="shell verwaltung-shell" data-portal-shell>
-			@VerwaltungSidebar(shell)
-			<div class="portal-shell-content">
-				<main id="main-content" class="portal-section-landing verwaltung-main" tabindex="-1" data-skip-target>
-					@PortalSectionHeader(
-						PortalSectionIdentityData{Label: "Verwaltung", Icon: "settings"},
-						PortalSectionTitle(title),
-						nil,
-						nil,
-					)
-					<div class="portal-section-content">
-						@body
-					</div>
-				</main>
-			</div>
-		</div>
-		@ReleaseHistoryDialog(shell.ReleaseNotes)
-	}
-}
-
-templ VerwaltungPageStyles() {
-	@PortalStyles()
-}
-
-templ VerwaltungSidebar(shell VerwaltungShell) {
-	<aside class="sidebar verwaltung-sidebar" aria-label="Verwaltungsnavigation">
-		<header class="organisation-identity"><strong>{ shell.OrganisationName }</strong><small>{ shell.RoleLabel }</small></header>
-		@VerwaltungNavigation(shell, true)
-		<footer class="sidebar-release">@VerwaltungReleaseNotes(shell)</footer>
-	</aside>
-	@SidebarResizeHandle()
-}
-
-templ VerwaltungMobileHeader(shell VerwaltungShell, pageLabel string) {
-	@Kontextleiste(verwaltungScopeContext(shell), false, nil)
-	@Kontextleiste(verwaltungScopeContext(shell), true, verwaltungMobileNavigation(shell))
-}
-
-templ verwaltungMobileNavigation(shell VerwaltungShell) {
-	@VerwaltungNavigation(shell, false)
-	@VerwaltungReleaseNotes(shell)
-}
-
-templ VerwaltungNavigation(shell VerwaltungShell, icons bool) {
-	<nav class="nav verwaltung-nav" aria-label="Bereiche">
-		@PortalNavItem("home", "Portfolio", "/app/verwaltung", shell.Active == "portfolio", 0, icons)
-		if shell.ShowInboxNav {
-			@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", shell.Active == "inbox", shell.InboxOpenCount, icons)
-		}
-		@LiegenschaftSwitcher(verwaltungScopeContext(shell).Switcher, verwaltungSwitcherID(icons), "Liegenschaften", switcherCountLabel(verwaltungScopeContext(shell).Switcher.Count), portalHousePickerShell(icons))
-		if shell.CanManageSettings {
-			@PortalNavItem("document", "Textbausteine", "/app/verwaltung/textbausteine", shell.Active == "textbausteine", 0, icons)
-			@PortalNavItem("users", "Rechte", "/app/verwaltung/rechte", shell.Active == "rechte", 0, icons)
-			@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", shell.Active == "settings", 0, icons)
-		}
-	</nav>
-}
-
-// VerwaltungReleaseNotes renders the footer trigger; the notes live in the one
-// ReleaseHistoryDialog the Verwaltung shell renders next to .shell.
-templ VerwaltungReleaseNotes(shell VerwaltungShell) {
-	@ReleaseNotesTrigger(shell.DisplayVersion)
+templ PortalOrganisationPage(data PortalPageData, title string, lede, action templ.Component, scripts []string, body templ.Component) {
+ @PortalDocument(title + " · " + data.Organisation.OrganisationName, portalAssetVersion(), scripts, PortalStyles(), templ.Attributes{"data-templ-verwaltung": true}) {
+  @PortalShell(data, title, PortalSectionLanding(
+   PortalSectionLandingData{Portal: data, PageLabel: title, Class: "verwaltung-main", Wide: data.Organisation.Active == "portfolio" || data.Organisation.Active == "inbox" || data.Organisation.Active == "rechte", Identity: PortalSectionIdentityData{Label: data.Organisation.OrganisationName, Icon: "building"}},
+   PortalSectionTitle(title), lede, action, nil, nil, body,
+  ))
+ }
 }
 
 templ VerwaltungPlaceholder() {
-	<div class="card verwaltung-placeholder"><p>Dieser Bereich wird gerade gebaut.</p></div>
+ <div class="card verwaltung-placeholder"><p>Dieser Bereich wird gerade gebaut.</p></div>
 }

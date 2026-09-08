@@ -69,45 +69,7 @@ func (a *app) documents(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) documentsPortalContext(ac authCtx) web.PortalPageData {
-	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	modules := a.portalModulesFor(ac.tenant.Slug)
-	unreadAnnouncements := 0
-	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(ac.email) != "" {
-		now := time.Now()
-		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(ac.email), now)
-	}
-	openIssues := 0
-	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
-	}
-	return web.PortalPageData{
-		Title:               "Dokumente · " + houseDisplayName(ac.tenant) + " · " + ac.role,
-		TenantSlug:          ac.tenant.Slug,
-		HouseName:           houseDisplayName(ac.tenant),
-		Address:             ac.tenant.Address,
-		MapURL:              tenantMapURL(ac.tenant.Address),
-		HeroImageURL:        ac.tenant.HeroImageURL,
-		BrandIcon:           ac.tenant.BrandIcon,
-		BrandMarkSVG:        tenantBrandMarkSVG(ac.tenant.BrandIcon),
-		Map:                 portalMapForTenant(ac.tenant),
-		DisplayName:         profile.DisplayName(),
-		Initials:            profile.Initials(),
-		Role:                ac.role,
-		DisplayVersion:      version.DisplayVersion(version.Version),
-		ActivePage:          "documents",
-		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
-		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
-		CanManageIssues:     ac.can(capabilityManageIssues),
-		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
-		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
-		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
-		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-		Issues:              make([]issueView, openIssues),
-		UnreadAnnouncements: unreadAnnouncements,
-		Shell:               a.portalShellData(&ac),
-		ReleaseNotes:        version.Notes(),
-	}
+	return a.portalBaseData(ac, "documents", "Dokumente")
 }
 
 func (a *app) renderDocumentsTempl(w http.ResponseWriter, r *http.Request, data web.DocumentsPageData) {

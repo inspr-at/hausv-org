@@ -10,7 +10,7 @@ import (
 // single confirmation page. Both end in the same one POST.
 
 func TestSettingsDemoCardOpensOneDialog(t *testing.T) {
-	html := renderComponent(t, VerwaltungSettingsPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungSettingsData{
+	html := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment", DemoResetAvailable: true,
 	}))
 	for _, want := range []string{
@@ -45,7 +45,7 @@ func TestSettingsDemoCardOpensOneDialog(t *testing.T) {
 }
 
 func TestSettingsWithoutDemoLoadsNoDemoScript(t *testing.T) {
-	html := renderComponent(t, VerwaltungSettingsPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungSettingsData{
+	html := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment",
 	}))
 	for _, gone := range []string{"demo-init.js", "<dialog", "Demodaten initialisieren", "data-demo-init-open"} {
@@ -60,7 +60,7 @@ func TestSettingsWithoutDemoLoadsNoDemoScript(t *testing.T) {
 }
 
 func TestDemoConfirmationPageIsOneFormWithoutJavaScript(t *testing.T) {
-	html := renderComponent(t, VerwaltungDemoResetPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungDemoResetData{}))
+	html := renderComponent(t, VerwaltungDemoResetPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungDemoResetData{}))
 	for _, want := range []string{
 		"<title>Demodaten initialisieren · Musterstadt</title>",
 		"<h1>Demodaten initialisieren</h1>",
@@ -84,7 +84,7 @@ func TestDemoConfirmationPageIsOneFormWithoutJavaScript(t *testing.T) {
 		t.Errorf("one confirmation form expected, got %d", got)
 	}
 	// The dialog and the page word the same question, so they cannot drift apart.
-	settings := renderComponent(t, VerwaltungSettingsPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungSettingsData{DemoResetAvailable: true}))
+	settings := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{DemoResetAvailable: true}))
 	for _, shared := range []string{"Demodaten jetzt initialisieren?", "Ja, initialisieren", "Ihre Anmeldung bleibt gültig."} {
 		if !strings.Contains(settings, shared) || !strings.Contains(html, shared) {
 			t.Errorf("dialog and page must share %q", shared)
@@ -93,7 +93,7 @@ func TestDemoConfirmationPageIsOneFormWithoutJavaScript(t *testing.T) {
 }
 
 func TestDemoResultPageNamesTheAnchorAndCounts(t *testing.T) {
-	html := renderComponent(t, VerwaltungDemoResetPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungDemoResetData{
+	html := renderComponent(t, VerwaltungDemoResetPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungDemoResetData{
 		Done: true, Anchor: "06.09.2026", Duration: "1.2s",
 		Statuses:   []VerwaltungDemoResetCount{{Label: "open", Count: 3}},
 		Categories: []VerwaltungDemoResetCount{{Label: "Reparatur/Mangel", Count: 4}},

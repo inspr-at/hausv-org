@@ -62,6 +62,9 @@ type PortalMap struct {
 }
 
 type PortalPageData struct {
+	Organisation VerwaltungShell
+	Overview bool
+	NavigationTenant, NavigationRole string
 	Title, TenantSlug, HouseName, Address, MapURL     string
 	GreetingName, Today, DisplayName, Initials, Role  string
 	DisplayVersion, ActivePage, HeroImageURL          string
@@ -100,6 +103,7 @@ type PortalSectionLandingData struct {
 	PageLabel string
 	Class     string
 	Hero      bool
+	Wide      bool
 	Identity  PortalSectionIdentityData
 }
 
@@ -148,7 +152,7 @@ templ PortalShell(data PortalPageData, pageLabel string, content templ.Component
 templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, status, context, content templ.Component) {
 	<main
 		id="main-content"
-		class={ "portal-section-landing", data.Class, templ.KV("has-hero", data.Hero), templ.KV("has-status", status != nil) }
+		class={ "portal-section-landing", data.Class, templ.KV("has-hero", data.Hero), templ.KV("portal-section-wide", data.Wide), templ.KV("has-status", status != nil) }
 		tabindex="-1"
 		data-skip-target
 		data-portal-section-landing
@@ -234,24 +238,23 @@ templ PortalSectionLede(lede string) {
 
 templ PortalBaseStyles() {
 	<style>
-		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}.skip-link:focus{transform:translateY(0)}.side-brand{flex:0 0 auto;display:grid;gap:0;margin:-22px -16px 0;padding:0 0 8px}.side-map-card{position:relative;min-width:0;height:276px}.side-map{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border:0;border-radius:0;background:#d8d2c4;color:inherit;isolation:isolate}.side-map::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,243,234,.08) 0%,rgba(23,32,25,.06) 48%,rgba(23,32,25,.48) 73%,rgba(23,32,25,.93) 94%,var(--nav) 100%);box-shadow:inset 0 -18px 28px rgba(23,32,25,.42)}.side-map-tiles{position:absolute;inset:0;z-index:1;pointer-events:none;filter:saturate(.54) sepia(.1) contrast(.86) brightness(.97)}.side-map-tile{position:absolute;width:256px;height:256px;max-width:none;display:block;user-select:none;pointer-events:none}.side-map-fallback{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding-bottom:72px;color:rgba(23,32,25,.68);background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9;font-size:10.5px;font-weight:750;letter-spacing:.03em}.side-map-pin{position:absolute;left:50%;top:50%;z-index:4;width:44px;height:56px;color:var(--gold-light);filter:drop-shadow(0 6px 7px rgba(23,32,25,.38));transform:translate(-50%,-100%)}.side-map-pin-shape{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;fill:var(--nav);stroke:rgba(231,216,177,.88);stroke-width:1.25;stroke-linejoin:round}.side-map-pin-mark{position:absolute;left:50%;top:9px;width:25px;height:22px;display:grid;place-items:center;transform:translateX(-50%)}.side-map-pin-mark svg{width:25px;height:21px;display:block;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}.side-place-copy{position:absolute;left:0;right:0;bottom:0;z-index:6;min-width:0;display:grid;gap:4px;padding:0 18px 14px;color:inherit;pointer-events:none}.side-place-copy>*{pointer-events:auto}.side-address-label{min-width:0;display:grid;gap:2px;justify-self:start;color:inherit;font-family:var(--font-sans);line-height:1.2;text-decoration:none}.side-address-label small{overflow:hidden;color:rgba(255,255,255,.6);font-size:10.5px;font-weight:550;text-overflow:ellipsis;white-space:nowrap}.side-address-label:hover small{color:rgba(255,255,255,.86)}@media(min-width:761px) and (max-height:1040px){.side-map-card{height:236px}}@media(min-width:761px) and (max-height:800px){.side-map-card{height:176px!important}.side-map-hero{height:168px}.side-map-pin{width:35px;height:45px}.side-map-pin-mark{top:7px;width:20px;height:18px}.side-map-pin-mark svg{width:20px;height:17px}}.side-place-copy .context-switch{margin:0;font-size:10px;align-self:start}.side-place-copy .context-switch summary{display:inline-flex;align-items:center;gap:2px;padding:2px 6px 2px 4px;cursor:pointer;color:rgba(255,255,255,.52);background:rgba(23,32,25,.72);border-radius:var(--radius-xs);font-size:9.5px;font-weight:550;list-style:none}.side-place-copy .context-switch summary::-webkit-details-marker{display:none}.side-place-copy .context-switch summary:hover{color:rgba(255,255,255,.86);background:rgba(23,32,25,.88)}.side-place-copy .context-switch summary span{line-height:1;font-size:13px}.side-place-copy .context-menu{position:absolute;left:0;right:0;bottom:calc(100% + 4px);z-index:10;margin:0;padding:var(--space-2);background:rgba(23,32,25,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);box-shadow:0 8px 20px rgba(0,0,0,.4)}.context-menu{display:grid;gap:var(--space-2)}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-group{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;overflow:hidden;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.avatar-image{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.release-trigger{min-height:20px;display:inline-flex;align-items:center;margin-top:2px;padding:0;border:0;background:transparent;color:var(--soft);cursor:pointer;font:inherit;font-size:10px;text-align:left}.release-trigger:hover,.release-trigger:focus-visible{color:var(--line);text-decoration:underline}.release-entry{padding-top:var(--space-4)}.release-entry:first-child{padding-top:0}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:"Source Serif 4",ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select,textarea{font:inherit}button{cursor:pointer}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-dialog{width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(80vh,720px);margin:auto;padding:0;overflow:hidden;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.release-dialog-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-3) var(--space-3) var(--space-3) var(--space-5);border-bottom:1px solid var(--line)}.release-dialog-head h2{margin:0;font-family:var(--font-serif);font-size:20px;font-weight:600}.release-dialog-close{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px;line-height:1;text-decoration:none}.release-dialog-close:hover{background:var(--line)}.release-dialog-close-nojs{display:none}.release-dialog-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding:var(--space-4) var(--space-5) var(--space-5)}.release-dialog:not([open]):target{position:fixed;z-index:400;top:50%;right:auto;bottom:auto;left:50%;display:flex;flex-direction:column;transform:translate(-50%,-50%);box-shadow:var(--shadow-dialog),0 0 0 100vmax rgba(23,32,25,.55)}.release-dialog:not([open]):target .release-dialog-close{display:none}.release-dialog:not([open]):target .release-dialog-close-nojs{display:grid}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:10px 18px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.nav-home-identity{display:grid;gap:1px;line-height:1.08;min-width:0}.nav-home-identity strong,.nav-home-identity small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-home-identity small{color:var(--soft);font-size:10px}[hidden]{display:none!important}dialog[open]{display:flex;flex-direction:column}dialog[open]>form{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}dialog[open] .dialog-head,dialog[open] .dialog-footer{flex:0 0 auto}dialog[open] .dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}@media(max-width:760px){.button,.button.small{min-height:44px!important}.dialog-close{min-width:44px!important;min-height:44px!important}details>summary{min-height:44px}}
+		*{box-sizing:border-box}html,body{min-height:100%;margin:0}body{min-width:320px;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}a{color:inherit;text-decoration:none}.skip-link:focus{transform:translateY(0)}.side-map{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border:0;border-radius:0;background:#d8d2c4;color:inherit;isolation:isolate}.side-map::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(247,243,234,.08) 0%,rgba(23,32,25,.06) 48%,rgba(23,32,25,.48) 73%,rgba(23,32,25,.93) 94%,var(--nav) 100%);box-shadow:inset 0 -18px 28px rgba(23,32,25,.42)}.side-map-tiles{position:absolute;inset:0;z-index:1;pointer-events:none;filter:saturate(.54) sepia(.1) contrast(.86) brightness(.97)}.side-map-tile{position:absolute;width:256px;height:256px;max-width:none;display:block;user-select:none;pointer-events:none}.side-map-fallback{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding-bottom:72px;color:rgba(23,32,25,.68);background:linear-gradient(135deg,rgba(255,255,255,.3),transparent 55%),#d9d5c9;font-size:10.5px;font-weight:750;letter-spacing:.03em}.side-map-pin{position:absolute;left:50%;top:50%;z-index:4;width:44px;height:56px;color:var(--gold-light);filter:drop-shadow(0 6px 7px rgba(23,32,25,.38));transform:translate(-50%,-100%)}.side-map-pin-shape{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;fill:var(--nav);stroke:rgba(231,216,177,.88);stroke-width:1.25;stroke-linejoin:round}.side-map-pin-mark{position:absolute;left:50%;top:9px;width:25px;height:22px;display:grid;place-items:center;transform:translateX(-50%)}.side-map-pin-mark svg{width:25px;height:21px;display:block;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}.side-address-label{min-width:0;display:grid;gap:2px;justify-self:start;color:inherit;font-family:var(--font-sans);line-height:1.2;text-decoration:none}.side-address-label small{overflow:hidden;color:rgba(255,255,255,.6);font-size:10.5px;font-weight:550;text-overflow:ellipsis;white-space:nowrap}.side-address-label:hover small{color:rgba(255,255,255,.86)}@media(min-width:761px) and (max-height:800px){.side-map-hero{height:168px}.side-map-pin{width:35px;height:45px}.side-map-pin-mark{top:7px;width:20px;height:18px}.side-map-pin-mark svg{width:20px;height:17px}}.context-menu{display:grid;gap:var(--space-2)}.context-menu small{color:var(--soft)}.nav{margin-top:var(--space-5);display:grid;gap:2px}.nav a{min-height:31px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:var(--space-2);margin-inline:calc(var(--space-2)*-1);padding:5px var(--space-2);border-radius:var(--radius-xs);color:var(--line);font-size:12px}.nav a:hover,.nav a.active{background:var(--nav-2)}.nav a.active{color:var(--panel);font-weight:700}.nav a.active svg{color:var(--gold)}.nav-badge{min-width:19px;padding:2px 5px;text-align:center;background:var(--gold);color:var(--nav);border-radius:var(--radius-pill);font-size:10px}.nav-group{margin:var(--space-3) 0 var(--space-1) 2px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}.account{margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--nav-2);display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--space-3)}.avatar{display:inline-grid;place-items:center;width:34px;height:34px;overflow:hidden;background:var(--gold);color:var(--panel);border-radius:var(--radius-pill);font-size:12px}.avatar-image{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}.account strong,.account small{display:block}.account strong{font-size:12px}.account small{margin-top:2px;color:var(--soft);font-size:10px}.release-trigger{min-height:20px;display:inline-flex;align-items:center;margin-top:2px;padding:0;border:0;background:transparent;color:var(--soft);cursor:pointer;font:inherit;font-size:10px;text-align:left}.release-trigger:hover,.release-trigger:focus-visible{color:var(--line);text-decoration:underline}.release-entry{padding-top:var(--space-4)}.release-entry:first-child{padding-top:0}.release-entry+.release-entry{margin-top:var(--space-4);border-top:1px solid var(--line)}.release-entry>small{color:var(--muted)}.release-entry>strong{display:block;margin-top:var(--space-1);font-family:var(--font-serif)}.release-entry p,.release-entry li{margin-top:var(--space-2);color:var(--muted);font-size:11px}.release-entry ul{padding-left:var(--space-5)}:root{--ink:#20251f;--muted:#6b6f63;--soft:#9a9485;--line:#e7e0d2;--paper:#f7f3ea;--panel:#fffefb;--panel-soft:#fbf8f0;--gold:#c8993f;--gold-ink:#8a7b3f;--gold-light:#e7c574;--leaf:#2f6b4a;--nav:#172019;--nav-2:#20291f;--font-sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--font-serif:"Source Serif 4",ui-serif,Georgia,Cambria,"Times New Roman",serif;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-xs:7px;--radius-sm:8px;--radius-md:10px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;--shadow-panel:0 12px 30px rgba(32,37,31,.04);--shadow-dialog:0 28px 70px rgba(0,0,0,.34);--shadow-md:0 18px 44px rgba(32,37,31,.08);font-family:var(--font-sans)}button,input,select,textarea{font:inherit}button{cursor:pointer}.skip-link{position:fixed;top:var(--space-2);left:var(--space-2);z-index:300;padding:var(--space-2) var(--space-3);background:var(--panel);border-radius:var(--radius-sm);transform:translateY(-160%)}.context-menu button,.context-current{width:100%;display:grid;padding:var(--space-2);border:0;background:transparent;color:var(--panel);text-align:left}.logout-form button{padding:4px;border:0;background:transparent;color:var(--soft)}.release-dialog{width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(80vh,720px);margin:auto;padding:0;overflow:hidden;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}.release-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.release-dialog-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-3) var(--space-3) var(--space-3) var(--space-5);border-bottom:1px solid var(--line)}.release-dialog-head h2{margin:0;font-family:var(--font-serif);font-size:20px;font-weight:600}.release-dialog-close{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px;line-height:1;text-decoration:none}.release-dialog-close:hover{background:var(--line)}.release-dialog-close-nojs{display:none}.release-dialog-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding:var(--space-4) var(--space-5) var(--space-5)}.release-dialog:not([open]):target{position:fixed;z-index:400;top:50%;right:auto;bottom:auto;left:50%;display:flex;flex-direction:column;transform:translate(-50%,-50%);box-shadow:var(--shadow-dialog),0 0 0 100vmax rgba(23,32,25,.55)}.release-dialog:not([open]):target .release-dialog-close{display:none}.release-dialog:not([open]):target .release-dialog-close-nojs{display:grid}.button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:10px 18px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.nav-home-identity{display:grid;gap:1px;line-height:1.08;min-width:0}.nav-home-identity strong,.nav-home-identity small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav-home-identity small{color:var(--soft);font-size:10px}[hidden]{display:none!important}dialog[open]{display:flex;flex-direction:column}dialog[open]>form{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}dialog[open] .dialog-head,dialog[open] .dialog-footer{flex:0 0 auto}dialog[open] .dialog-body{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}@media(max-width:760px){.button,.button.small{min-height:44px!important}.dialog-close{min-width:44px!important;min-height:44px!important}details>summary{min-height:44px}}
 				</style>
 	<style>
-		.portal-page .shell{grid-template-columns:280px minmax(0,1fr)}
-		.portal-page .sidebar{--sidebar-pad-x:18px;padding:16px 18px}
+
 		/* The navigation keeps a real box around every house item. The sidebar,
 		   not this landmark, is the short-viewport scroll container. */
-		.portal-page .sidebar>.nav{display:grid;min-height:max-content}
+		.sidebar>.nav{display:grid;min-height:max-content}
 		.portal-organisation-identity{display:grid;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--nav-2)}
 		.portal-organisation-identity strong{overflow:hidden;font-family:var(--font-serif);font-size:15px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
 		.portal-organisation-identity small{color:var(--soft);font-size:10px}
-		.portal-page .nav{margin-top:12px;gap:2px}
-		.portal-page .nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}
-		.portal-page .nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}
-		.portal-page .nav-organisation,.portal-page .nav-house-items{display:grid;gap:2px}
-		.portal-page .nav>.house-picker,.portal-page .nav>.house-header-card{grid-column:1/-1}
-		.portal-page .nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}
-		.portal-page .nav a.active svg{color:var(--nav)}
+		.nav{margin-top:12px;gap:2px}
+		.nav-level-label{margin:6px 0 4px;color:var(--gold);font-size:9px;letter-spacing:.16em}
+		.nav-house-label{margin-top:14px;padding-top:12px;border-top:1px solid var(--nav-2)}
+		.nav-organisation,.nav-house-items{display:grid;gap:2px}
+		.nav>.house-picker,.nav>.house-header-card{grid-column:1/-1}
+		.nav a.active{background:var(--gold-light);color:var(--nav);font-weight:800}
+		.nav a.active svg{color:var(--nav)}
 		.house-picker{position:relative;min-width:0;margin-bottom:5px}
 		.house-picker>summary{list-style:none}
 		.house-picker>summary::-webkit-details-marker{display:none}
@@ -263,9 +266,9 @@ templ PortalBaseStyles() {
 		.house-header-copy small{overflow:hidden;color:var(--soft);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
 		.house-header-chevron{color:var(--line);font-size:19px;transition:transform .16s}
 		.house-picker[open] .house-header-chevron{transform:rotate(180deg)}
-		/* The hero bleeds exactly to the sidebar edge; both shells publish their
-		   horizontal padding as --sidebar-pad-x (16px legacy shell, 18px portal page). */
-		.side-map-hero{position:relative;min-width:0;height:208px;margin:8px calc(var(--sidebar-pad-x,16px)*-1) 8px;overflow:hidden}
+		/* The hero bleeds exactly to the sidebar edge; both surfaces use
+		   the same --sidebar-pad-x. */
+		.side-map-hero{position:relative;min-width:0;height:208px;margin:8px calc(var(--sidebar-pad-x,18px)*-1) 8px;overflow:hidden}
 		.nav .side-map-hero a.side-map{display:block;min-height:0;margin:0;padding:0;border-radius:0}
 		.side-map-hero-empty{height:72px}
 		.house-map-pin{left:50%;top:50%;right:auto;bottom:auto;width:26px;height:34px;color:var(--gold-light);transform:translate(-50%,-74%)}
@@ -278,16 +281,14 @@ templ PortalBaseStyles() {
 		.house-header-card{grid-template-columns:minmax(0,1fr) 18px}
 		.house-header-copy strong{overflow:visible;overflow-wrap:anywhere;hyphens:manual;-webkit-line-clamp:unset}
 		.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}
-		@media(max-width:1050px) and (min-width:761px){.portal-page .shell{grid-template-columns:250px minmax(0,1fr)}.side-map-hero{height:176px}}
+		@media(max-width:1050px) and (min-width:761px){.side-map-hero{height:176px}}
 		@media(max-width:760px){
-			.portal-page .menu-panel{display:grid;padding:16px 18px 24px}
-			.portal-page .menu-panel .portal-organisation-identity{margin-bottom:10px}
-			.portal-page .menu-panel .nav-organisation,.portal-page .menu-panel .nav-house-items,.portal-page .menu-panel .nav-level-label,.portal-page .menu-panel .house-picker{grid-column:1/-1}
-			.portal-page .menu-panel .nav a{padding:0 10px}
-			.portal-page .house-header-card{min-height:80px}
-			/* Not scoped to .portal-page: settings and detail routes carry a different
-			   body class but the same drawer, and the panel would otherwise stay
-			   absolutely positioned there. */
+			.menu-panel{display:grid;padding:16px 18px 24px}
+			.menu-panel .portal-organisation-identity{margin-bottom:10px}
+			.menu-panel .nav-organisation,.menu-panel .nav-house-items,.menu-panel .nav-level-label,.menu-panel .house-picker{grid-column:1/-1}
+			.menu-panel .nav a{padding:0 10px}
+			.house-header-card{min-height:80px}
+
 			/* The drawer clips its panel while closed; the card must stay a real tap target. */
 			.menu-panel .house-header-card{min-width:44px;min-height:44px}
 		}
@@ -296,7 +297,7 @@ templ PortalBaseStyles() {
 
 
 templ PortalPage(data PortalPageData) {
-	@PortalDocument(data.Title, portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class": templ.Classes("portal-page", templ.KV("dense", data.Dense), templ.KV("calm", !data.Dense)).String(), "data-templ-portal": true}) {
+	@PortalDocument(data.Title, portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class": templ.Classes(templ.KV("dense", data.Dense), templ.KV("calm", !data.Dense)).String(), "data-templ-portal": true}) {
 		@PortalContent(data)
 	}
 }
@@ -338,10 +339,10 @@ func portalBool(value bool) string {
 
 templ PortalSidebar(data PortalPageData) {
 	{{ shell := portalShellData(data) }}
-	<aside class="sidebar" aria-label="Navigation der Liegenschaft">
+	<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">
 		@PortalOrganisationIdentity(shell)
 		@PortalNavigation(data, true, true)
-		<footer class="sidebar-release">@PortalReleaseNotes(data)</footer>
+		<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
 	</aside>
 	@SidebarResizeHandle()
 }
@@ -361,7 +362,7 @@ templ PortalAvatarBadge(avatarURL string, initials string) {
 
 templ PortalOrganisationIdentity(shell PortalShellData) {
 	if shell.IsOrganisationMember {
-		<header class="portal-organisation-identity">
+		<header class="portal-organisation-identity" data-navigation-block="organisation-identity">
 			<strong>{ shell.OrganisationName }</strong>
 			<small>{ shell.RoleLabel }</small>
 		</header>
@@ -377,15 +378,15 @@ templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) 
 	<nav class="nav" aria-label="Bereiche" data-two-level={ portalBool(shell.IsOrganisationMember) } { portalNavAttrs(icons)... }>
 		if shell.IsOrganisationMember {
 			<span class="nav-group nav-level-label">Organisation</span>
-			<span class="nav-organisation">
-				@PortalNavItem("home", "Portfolio", "/app/verwaltung", false, 0, icons)
+			<span class="nav-organisation" data-navigation-block="organisation">
+				@PortalNavItem("home", "Portfolio", "/app/verwaltung", data.Overview && data.Organisation.Active == "portfolio", 0, icons)
 				if shell.ShowInboxNav {
-					@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", false, shell.InboxOpenCount, icons)
+					@PortalNavItem("issue", "Posteingang", "/app/verwaltung/posteingang", data.Overview && data.Organisation.Active == "inbox", shell.InboxOpenCount, icons)
 				}
 				if shell.CanManageOrganisationSettings {
-					@PortalNavItem("document", "Textbausteine", "/app/verwaltung/textbausteine", false, 0, icons)
-					@PortalNavItem("users", "Rechte", "/app/verwaltung/rechte", false, 0, icons)
-					@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", false, 0, icons)
+					@PortalNavItem("document", "Textbausteine", "/app/verwaltung/textbausteine", data.Overview && data.Organisation.Active == "textbausteine", 0, icons)
+					@PortalNavItem("users", "Rechte", "/app/verwaltung/rechte", data.Overview && data.Organisation.Active == "rechte", 0, icons)
+					@PortalNavItem("settings", "Einstellungen", "/app/verwaltung/einstellungen", data.Overview && data.Organisation.Active == "settings", 0, icons)
 				}
 			</span>
 		}
@@ -393,58 +394,58 @@ templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) 
 		if renderHouseHeader {
 			@PortalHouseHeader(data, shell, icons)
 		}
-		if renderHouseHeader && icons {
+		if renderHouseHeader {
 			@PortalSideMapHero(data)
 		}
-		<span class="nav-house-items">
+		<span class="nav-house-items" data-navigation-block="house-navigation">
 			if data.CanUseResidentAreas {
-				@PortalNavItem("home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
+				@PortalHouseNavItem(data, "home", "Hausüberblick", "/app", portalNavActive(data, "home"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.CanViewEnergy {
 				@PortalEnergyNavItem(data, icons, portalIdentityScope(icons))
 			}
 			if data.CanUseResidentAreas && data.Modules.Announcements {
-				@PortalNavItem("announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
+				@PortalHouseNavItem(data, "announcement", "Aushang", "/app/announcements", portalNavActive(data, "announcements"), data.UnreadAnnouncements, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Events {
-				@PortalNavItem("calendar", "Termine", "/app/events", portalNavActive(data, "events"), 0, icons)
+				@PortalHouseNavItem(data, "calendar", "Termine", "/app/events", portalNavActive(data, "events"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Contacts {
-				@PortalNavItem("contact", "Kontakte", "/app/kontakte", portalNavActive(data, "contacts"), 0, icons)
+				@PortalHouseNavItem(data, "contact", "Kontakte", "/app/kontakte", portalNavActive(data, "contacts"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Documents {
-				@PortalNavItem("document", "Dokumente", "/app/dokumente", portalNavActive(data, "documents"), 0, icons)
+				@PortalHouseNavItem(data, "document", "Dokumente", "/app/dokumente", portalNavActive(data, "documents"), 0, icons)
 			}
 			if data.Modules.Issues {
 				if data.CanManageIssues {
-					@PortalNavItem("issue", "Anliegen", "/app/anliegen/board", portalNavActive(data, "issues"), len(data.Issues), icons)
+					@PortalHouseNavItem(data, "issue", "Anliegen", "/app/anliegen/board", portalNavActive(data, "issues"), len(data.Issues), icons)
 				} else {
-					@PortalNavItem("issue", "Anliegen", "/app/anliegen", portalNavActive(data, "issues"), len(data.Issues), icons)
+					@PortalHouseNavItem(data, "issue", "Anliegen", "/app/anliegen", portalNavActive(data, "issues"), len(data.Issues), icons)
 				}
 			}
 			if data.CanUseResidentAreas && data.Modules.Votes {
-				@PortalNavItem("vote", "Abstimmungen", "/app/abstimmungen", portalNavActive(data, "votes"), 0, icons)
+				@PortalHouseNavItem(data, "vote", "Abstimmungen", "/app/abstimmungen", portalNavActive(data, "votes"), 0, icons)
 			}
 			if data.CanUseResidentAreas && ((data.Modules.Parking && data.CanSeeParking) || (data.Modules.Handovers && data.CanManageHandovers) || (data.Modules.Users && data.CanManageUsers)) {
 				<span class="nav-group">Verwaltung</span>
 			}
 			if data.CanUseResidentAreas && data.Modules.Parking && data.CanSeeParking {
-				@PortalNavItem("parking", "Parkplatznutzung", "/app/parking", portalNavActive(data, "parking"), 0, icons)
+				@PortalHouseNavItem(data, "parking", "Parkplatznutzung", "/app/parking", portalNavActive(data, "parking"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Handovers && data.CanManageHandovers {
-				@PortalNavItem("handover", "Übergaben", "/app/uebergaben", portalNavActive(data, "handovers"), 0, icons)
+				@PortalHouseNavItem(data, "handover", "Übergaben", "/app/uebergaben", portalNavActive(data, "handovers"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Users && data.CanManageUsers {
-				@PortalNavItem("users", "Benutzer & Rechte", "/app/settings/users", portalNavActive(data, "users"), 0, icons)
+				@PortalHouseNavItem(data, "users", "Benutzer & Rechte", "/app/settings/users", portalNavActive(data, "users"), 0, icons)
 			}
 			if data.CanUseResidentAreas && data.Modules.Audit && data.CanViewAudit {
-				@PortalNavItem("audit", "Verlauf", "/app/audit", portalNavActive(data, "audit"), 0, icons)
+				@PortalHouseNavItem(data, "audit", "Verlauf", "/app/audit", portalNavActive(data, "audit"), 0, icons)
 			}
 			if data.CanUseResidentAreas {
-				@PortalNavItem("settings", "Einstellungen", "/app/settings", portalNavActive(data, "settings"), 0, icons)
+				@PortalHouseNavItem(data, "settings", "Einstellungen", "/app/settings", portalNavActive(data, "settings"), 0, icons)
 			}
 			if data.Modules.Help {
-				@PortalNavItem("help", "Hilfe", "/app/hilfe", portalNavActive(data, "help"), 0, icons)
+				@PortalHouseNavItem(data, "help", "Hilfe", "/app/hilfe", portalNavActive(data, "help"), 0, icons)
 			}
 		</span>
 	</nav>
@@ -462,7 +463,7 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 templ PortalMobileNavigation(data PortalPageData) {
 	@PortalOrganisationIdentity(portalShellData(data))
 	@PortalNavigation(data, false, true)
-	@PortalReleaseNotes(data)
+	<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
 }
 
 func portalShellData(data PortalPageData) PortalShellData {
@@ -526,14 +527,23 @@ func portalHousePickerShell(sidebar bool) string {
 }
 
 templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool) {
-	@LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), portalHouseTitle(data.HouseName, data.Address), portalHousePlace(data.Address), portalHousePickerShell(sidebar))
+	<div class="nav-house-card" data-navigation-block="house-card">
+  if data.Overview {
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), fmt.Sprintf("Alle Liegenschaften · %d", portalScopeContext(data).Switcher.Count), "Portfolio", portalHousePickerShell(sidebar))
+  } else {
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), portalHouseTitle(data.HouseName, data.Address), portalHousePlace(data.Address), portalHousePickerShell(sidebar))
+  }
+ </div>
 }
 
 // PortalSideMapHero sits between the house selector and house navigation
 // (HAUSV-680): full sidebar width, pin on the address, link to OpenStreetMap.
 // Without coordinates it collapses to a short placeholder band.
 templ PortalSideMapHero(data PortalPageData) {
-	<div class={ "side-map-hero", templ.KV("side-map-hero-empty", !data.Map.Configured) }>
+ if data.Overview {
+  <div class="side-map-hero side-map-portfolio" data-navigation-block="map" aria-label="Portfolioübersicht"><span>@PortalIcon("building")</span></div>
+ } else {
+	<div class={ "side-map-hero", templ.KV("side-map-hero-empty", !data.Map.Configured) } data-navigation-block="map">
 	<a class="map side-map" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title={ data.Address + " in OpenStreetMap öffnen" } data-house-map-link>
 		if data.Map.Configured {
 			<span class="side-map-tiles">
@@ -552,6 +562,7 @@ templ PortalSideMapHero(data PortalPageData) {
 		}
 	</a>
 	</div>
+ }
 }
 
 func portalHousePlace(address string) string {
@@ -577,6 +588,7 @@ func portalHouseTitle(name, address string) string {
 }
 
 func portalNavActive(data PortalPageData, page string) bool {
+ if data.Overview { return false }
 	if data.ActivePage == "" {
 		return page == "home"
 	}
@@ -584,6 +596,9 @@ func portalNavActive(data PortalPageData, page string) bool {
 }
 
 templ PortalEnergyNavItem(data PortalPageData, icons bool, scope string) {
+ if data.NavigationTenant != "" {
+  @PortalHouseNavItem(data, "energy", portalHomeDisplayName(data), "/app/energie", false, 0, icons)
+ } else {
 	<a
 		href="/app/energie"
 		class={ "nav-item", templ.KV("active", portalNavActive(data, "energy")) }
@@ -601,6 +616,7 @@ templ PortalEnergyNavItem(data PortalPageData, icons bool, scope string) {
 			}
 		</span></span>
 	</a>
+ }
 }
 
 // The navigation is rendered twice — sidebar and mobile menu — so the identity
@@ -1075,3 +1091,28 @@ func calmAnswer(data PortalPageData) string {
 // PortalMobileHeader is the compact shell used by portal sub-pages. Keeping it
 // in the shared portal template means every route uses the same permission-gated
 // PortalNavigation instead of growing a second mobile navigation tree.
+
+
+// Usually a house link stays in the authenticated session. Resuming a house
+// after a private Home uses the same validated POST as the switcher, with a
+// bounded continuation path. This also works without JavaScript.
+templ PortalHouseNavItem(data PortalPageData, icon, label, url string, active bool, badge int, icons bool) {
+ if data.NavigationTenant == "" {
+  @PortalNavItem(icon, label, url, active, badge, icons)
+ } else {
+  <form method="post" action="/app/context" class="nav-resume-house">
+   <input type="hidden" name="tenant" value={ data.NavigationTenant }/>
+   <input type="hidden" name="role" value={ data.NavigationRole }/>
+   <input type="hidden" name="next" value={ url }/>
+   <button class="nav-item" type="submit">
+    if icons {
+ <span class="nav-icon">@PortalIcon(icon)</span>
+ }
+    <span class="nav-label">{ label }</span>
+    if badge > 0 {
+ <span class="nav-badge">{ fmt.Sprint(badge) }</span>
+ }
+   </button>
+  </form>
+ }
+}

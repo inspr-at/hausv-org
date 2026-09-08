@@ -105,7 +105,7 @@ templ Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) 
 	{{ id := "context-desktop"; if mobile { id = "context-mobile" } }}
 	<header class={ "context-bar", templ.KV("mobile-head", mobile), templ.KV("desktop-context-bar", !mobile), templ.KV("context-preview", data.Preview != nil) } data-context-bar>
 		if mobile {
-			<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel">@navigation</div></details>
+			<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel" data-navigation-surface="mobile">@navigation</div></details>
 		}
 		@ContextAccount(data, id, mobile)
 		<div class="context-scope" aria-label="Aktueller Bereich">
@@ -158,7 +158,7 @@ templ SidebarResizeHandle() {
 }
 
 templ LiegenschaftenPage(portal PortalPageData, entries []LiegenschaftEntry, query, previous, next string, total, page int) {
-	@PortalDocument("Meine Liegenschaften", portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class":"portal-page", "data-templ-liegenschaften":true}) {
+	@PortalDocument("Meine Liegenschaften", portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"data-templ-liegenschaften":true}) {
 		@PortalShell(portal, "Liegenschaften", liegenschaftenBody(entries, query, previous, next, total, page))
 	}
 }

@@ -70,10 +70,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 // through platform admin, and the handler has already established one of the
 // two. The sidebar entry stays gated on the parking module either way.
 func (a *app) parkingPortalContext(ac authCtx) web.PortalPageData {
-	data := a.auditPortalContext(ac, "Parkplatznutzung")
-	data.ActivePage = "parking"
-	data.CanSeeParking = true
-	return data
+	return a.portalBaseData(ac, "parking", "Parkplatznutzung")
 }
 
 func (a *app) renderParkingTempl(w http.ResponseWriter, r *http.Request, data web.ParkingPageData) {
@@ -112,24 +109,22 @@ func (a *app) parkingSettings(w http.ResponseWriter, r *http.Request, ac authCtx
 	chargingStatus := r.URL.Query().Get("charging")
 	chargingMsg, chargingOK := chargingSettingsMessage(chargingStatus)
 	section := parkingAdminSection(r.URL.Query().Get("section"), chargingStatus)
-	a.render(w, "parkingSettings", a.withBase(ac, map[string]any{
-		"Title": "Parkplatz verwalten",
-		// This route is capability-gated before the handler. Preserve its
-		// deliberate admin presentation for delegated parking managers.
-		"IsAdmin":                true,
-		"CanSeeParking":          true,
-		"ActivePage":             "settings",
-		"Accounting":             a.parkingAccounting(r.Context(), tenant),
-		"SettingsMsg":            settingsMsg,
-		"SettingsOK":             settingsOK,
-		"ChargingMsg":            chargingMsg,
-		"ChargingOK":             chargingOK,
-		"Charging":               a.chargingAdminView(tenant, r.URL.Query()),
-		"ParkingSection":         section,
-		"SectionAccounting":      section == "accounting",
-		"SectionCharging":        section == "charging",
-		"SectionTelegram":        section == "telegram",
-		"CanManageParkingConfig": true,
+	portal := a.settingsPortalContext(ac, "Parkplatz verwalten", "settings")
+	portal.CanSeeParking = true
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ParkingSettingsPage(web.ParkingSettingsPageData{
+		Portal:                 portal,
+		Accounting:             a.parkingAccounting(r.Context(), tenant),
+		SettingsMsg:            settingsMsg,
+		SettingsOK:             settingsOK,
+		ChargingMsg:            chargingMsg,
+		ChargingOK:             chargingOK,
+		Charging:               a.chargingAdminView(tenant, r.URL.Query()),
+		ParkingSection:         section,
+		SectionAccounting:      section == "accounting",
+		SectionCharging:        section == "charging",
+		SectionTelegram:        section == "telegram",
+		CanManageParkingConfig: true,
+		CanManageUsers:         ac.can(capabilityManageUsers),
 	}))
 }
 
@@ -166,15 +161,15 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	parkingMsg, parkingOK := parkingMessage(r.URL.Query().Get("month"), "")
-	a.render(w, "parkingMonth", a.withBase(ac, map[string]any{
-		"Title":                    "Parkplatznutzung · " + view.MonthLabel,
-		"CanSeeParking":            true,
-		"CanManageParkingPayments": ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
-		"CanMarkParkingPayment":    ac.can(capabilityPlatformAdmin) || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
-		"ActivePage":               "parking",
-		"Detail":                   view,
-		"ParkingMsg":               parkingMsg,
-		"ParkingOK":                parkingOK,
+	portal := a.settingsPortalContext(ac, "Parkplatznutzung · "+view.MonthLabel, "parking")
+	portal.CanSeeParking = true
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ParkingMonthPage(web.ParkingMonthPageData{
+		Portal:                   portal,
+		Detail:                   view,
+		ParkingMsg:               parkingMsg,
+		ParkingOK:                parkingOK,
+		CanManageParkingPayments: ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
+		CanMarkParkingPayment:    ac.can(capabilityPlatformAdmin) || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
 	}))
 }
 
@@ -657,17 +652,18 @@ func (a *app) parkingAccessSettings(w http.ResponseWriter, r *http.Request, ac a
 	}
 	accessMsg, accessOK := parkingAccessMessage(r.URL.Query().Get("parking_access"))
 	rows := a.parkingAccessRows(ac.tenantRef)
-	a.render(w, "parkingAccessSettings", a.withBase(ac, map[string]any{
-		"Title":                  "Parkplatz-Zugriff",
-		"ActivePage":             "settings",
-		"ParkingSection":         "access",
-		"CanManageParkingConfig": ac.can(capabilityManageParking),
-		"AccessRows":             rows,
-		"HasAccessRows":          len(rows) > 0,
-		"AccessRowsEmpty":        emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
-		"AccessMsg":              accessMsg,
-		"AccessOK":               accessOK,
-		"StatementYear":          time.Now().In(time.Local).Year(),
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ParkingAccessSettingsPage(web.ParkingAccessSettingsPageData{
+		Portal:                       a.settingsPortalContext(ac, "Parkplatz-Zugriff", "settings"),
+		ParkingSection:               "access",
+		CanManageParkingConfig:       ac.can(capabilityManageParking),
+		CanManageUsers:               ac.can(capabilityManageUsers),
+		AccessRows:                   rows,
+		HasAccessRows:                len(rows) > 0,
+		AccessRowsEmpty:              emptyState("Noch keine Zugänge", "Sobald Personen eingeladen sind, kann der Parkplatz-Zugriff hier gepflegt werden."),
+		AccessMsg:                    accessMsg,
+		AccessOK:                     accessOK,
+		ServiceProviderAccessEnabled: a.serviceAccessEnabled,
+		IsAdmin:                      ac.can(capabilityPlatformAdmin),
 	}))
 }
 

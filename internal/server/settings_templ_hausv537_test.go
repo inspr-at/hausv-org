@@ -45,7 +45,7 @@ func TestSettingsTemplRendersAllFiveRoutesWithSharedNavigation(t *testing.T) {
 				t.Fatalf("templ %s status = %d, want 200", route, response.Code)
 			}
 			body := response.Body.String()
-			for _, want := range append([]string{"data-templ-settings", `<aside class="sidebar" aria-label="Navigation der Liegenschaft">`, `<nav class="nav" aria-label="Bereiche"`}, wants...) {
+			for _, want := range append([]string{"data-templ-settings", `<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`, `<nav class="nav" aria-label="Bereiche"`}, wants...) {
 				if !strings.Contains(body, want) {
 					t.Fatalf("templ %s should contain %q", route, want)
 				}

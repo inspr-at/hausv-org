@@ -25,7 +25,7 @@ func TestEnergyCockpitTemplUsesSharedShellAndKeepsItsScriptAndWritePaths(t *test
 	body := response.Body.String()
 	for _, want := range []string{
 		"data-templ-energy",
-		`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
+		`<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 		`href="/demo/app/energie" class="nav-item active" aria-current="page"`,
 		`<nav class="nav" aria-label="Bereiche"`,
 		"Versionsverlauf",

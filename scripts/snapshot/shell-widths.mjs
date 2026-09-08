@@ -73,6 +73,13 @@ for (const [name, route] of ROUTES) {
       const vis = eval(`(${visibleSrc})`);
       return {
         sidebar: vis(document.querySelector('.sidebar')),
+        // HAUSV-704: every desktop route uses the persisted sidebar token,
+        // including the tablet band that formerly switched to 210/250px.
+        sidebarGeometry: (() => {
+          const el = document.querySelector('.sidebar'); if (!vis(el)) return null;
+          const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+          return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
+        })(),
         mobile: vis(document.querySelector('.mobile-head')),
         // The hamburger must be operable, not merely present — and matched by
         // structure, not by class. Keying this on `.menu` reported eight false
@@ -134,6 +141,13 @@ for (const [name, route] of ROUTES) {
         const h = document.querySelector('.mobile-head');
         return {
           sidebar: vis(document.querySelector('.sidebar')),
+        // HAUSV-704: every desktop route uses the persisted sidebar token,
+        // including the tablet band that formerly switched to 210/250px.
+        sidebarGeometry: (() => {
+          const el = document.querySelector('.sidebar'); if (!vis(el)) return null;
+          const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+          return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
+        })(),
           mobile: vis(h),
           menu: vis(document.querySelector('.mobile-head details > summary')),
           links: document.querySelectorAll('.nav a').length,
@@ -271,6 +285,8 @@ for (const w of WIDTHS) {
   const desktop = all.filter((r) => r.sidebar && !r.mobile).map((r) => r.route);
   const mob = all.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);
   const noLinks = all.filter((r) => r.links === 0);
+  const wrongGeometry = all.filter(r => r.sidebarGeometry && (Math.abs(r.sidebarGeometry.x) > 1 || Math.abs(r.sidebarGeometry.width - r.sidebarGeometry.expectedWidth) > 1 || r.sidebarGeometry.paddingLeft !== '18px' || r.sidebarGeometry.paddingRight !== '18px'));
+  if (wrongGeometry.length) { failures += wrongGeometry.length; console.log(`         inconsistent sidebar width/padding: ${wrongGeometry.map(r => r.route).join(', ')}`); }
   const noMenu = all.filter((r) => r.mobile && !r.menu);
   const buried = all.filter((r) => r.mobile && r.headTop !== null && r.headTop > 0);
   const skipShown = all.filter((r) => r.skipBottom !== null && r.skipBottom > 0);

@@ -10,8 +10,8 @@ import (
 func TestBothShellsPreloadOneVersionedFontHAUSV696(t *testing.T) {
 	for _, page := range []templ.Component{
 		PortalPage(PortalPageData{Title: "Portal"}),
-		PortalVerwaltungPage(VerwaltungShell{}, "Verwaltung", templ.Raw("")),
-		InboxPage(VerwaltungShell{}, InboxData{}),
+		PortalVerwaltungPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), "Verwaltung", templ.Raw("")),
+		InboxPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), InboxData{}),
 		ParkingPage(ParkingPageData{AssetVersion: "test"}),
 		IssuesPage(IssuesPageData{AssetVersion: "test"}),
 		ContactsPage(ContactsPageData{AssetVersion: "test"}),

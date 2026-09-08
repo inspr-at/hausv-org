@@ -21,12 +21,6 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 		`Shared components: panel, button, pill, quick-row, table-wrap, dialog, flash and empty-state.`,
 		`.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-6); box-shadow: var(--shadow-panel); }`,
 		`.empty-state { border: 1px solid var(--line); border-radius: var(--radius-sm);`,
-		`.access-row { display: grid; grid-template-columns: minmax(220px, 1fr) 126px 132px minmax(106px, auto);`,
-		`aria-label="Parkplatz-Verwaltung"`,
-		`.mobile-menu-toggle { min-height: 44px;`,
-		`.side-user { grid-template-columns: 34px minmax(0,1fr) auto; gap: 9px; min-width: 0; }`,
-		`.side-version { min-width: 44px; min-height: 44px; display: grid; place-items: center; }`,
-		`.logout-button { min-height: 44px; }`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(PageTemplates, want) {
@@ -39,8 +33,9 @@ func TestPageTemplatesConsolidateDesignTokensAndComponents(t *testing.T) {
 	if got := strings.Count(PageTemplates, `{{template "designTokens" .}}`); got != 7 {
 		t.Fatalf("design token partial is used %d times, want home, landing, HAUSV Home start, imprint, privacy, app styles and the error page", got)
 	}
-	if got := strings.Count(PageTemplates, `<span class="nav-label">`); got != 14 {
-		t.Fatalf("navigation labels are wrapped inconsistently: got %d, want 14", got)
+	// HAUSV-705: the public templates no longer own authenticated navigation.
+	if strings.Contains(PageTemplates, `<span class="nav-label">`) {
+		t.Fatal("authenticated navigation returned to public templates")
 	}
 }
 
@@ -53,6 +48,9 @@ func TestPageTemplatesExcludeConvertedPortalDefinitions(t *testing.T) {
 		"documents", "ballots", "handovers", "parking", "help", "settingsHub",
 		"homeIdentitySettings", "auditLog", "buildingSettings", "profileSettings",
 		"notificationSettings", "userSettings", "homeOnboarding", "energyCockpit",
+		"issueResidentDetail", "parkingSettings", "parkingMonth", "parkingAccessSettings",
+		"portalModuleSettings", "structuredExport", "energyData", "ebInterfaceImport", "paymentImport",
+		"appOpen", "appClose", "sidebar", "releaseHistoryDialog",
 	} {
 		if strings.Contains(PageTemplates, `{{define "`+name+`"}}`) {
 			t.Errorf("converted portal template %q returned to PageTemplates", name)
@@ -60,48 +58,26 @@ func TestPageTemplatesExcludeConvertedPortalDefinitions(t *testing.T) {
 	}
 }
 
+// HAUSV-705: keyboard semantics now come from the native details menu in
+// PortalShell; the deleted legacy JS toggle is no longer a rendered control.
 func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
+	html := renderComponent(t, ParkingSettingsPage(ParkingSettingsPageData{Portal: legacyShellTestPortal()}))
 	for _, want := range []string{
 		`<a class="skip-link" href="#main-content">Zum Inhalt springen</a>`,
-		`<button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle`,
-		`aria-controls="portal-navigation portal-account"`,
-		`aria-expanded="false" aria-label="Navigation öffnen"`,
-		`<nav id="portal-navigation" class="side-nav">`,
-		`<div id="portal-account" class="side-foot">`,
-		`<noscript><style>`,
-		`.sidebar.nav-open .side-nav, .sidebar.nav-open .side-foot { display: grid; }`,
+		`<main id="main-content" tabindex="-1"`,
+		`class="context-bar mobile-head"`, `data-context-bar`,
+		`<details class="menu"><summary aria-label="Navigation öffnen">`,
+		`class="menu-panel"`, `<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 	} {
-		if !strings.Contains(PageTemplates, want) {
-			t.Fatalf("authenticated app shell missing keyboard convention %q", want)
+		if !strings.Contains(html, want) {
+			t.Fatalf("shared shell missing keyboard convention %q", want)
 		}
 	}
-	if strings.Contains(PageTemplates, `class="nav-toggle"`) {
-		t.Fatal("authenticated app shell must not use a hidden checkbox as its menu control")
+	if strings.Count(html, `id="main-content"`) != 1 {
+		t.Fatal("page needs exactly one skip target")
 	}
-	appOpens := strings.Count(PageTemplates, `{{template "appOpen" .}}`)
-	mainTargets := strings.Count(PageTemplates, `id="main-content" tabindex="-1" class="app-main`)
-	appCloses := strings.Count(PageTemplates, `{{template "appClose" .}}`)
-	if appOpens != 9 || mainTargets != appOpens || appCloses != appOpens {
-		t.Fatalf("authenticated templates must each have one skip target: opens=%d targets=%d closes=%d", appOpens, mainTargets, appCloses)
-	}
-
-	body, err := os.ReadFile("assets/app.js")
-	if err != nil {
-		t.Fatalf("read app shell behavior: %v", err)
-	}
-	text := string(body)
-	for _, want := range []string{
-		`function setMobileMenuOpen(open, options)`,
-		`mobileMenuToggle.setAttribute("aria-expanded"`,
-		`mobileNavigation.hidden`,
-		`mobileAccount.hidden`,
-		`event.key !== "Escape"`,
-		`setMobileMenuOpen(false, { returnFocus: true })`,
-		`mobileMenuQuery.addEventListener("change"`,
-	} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("shared app behavior missing mobile-menu convention %q", want)
-		}
+	if strings.Contains(html, `class="nav-toggle"`) || strings.Contains(html, `data-mobile-menu-toggle`) {
+		t.Fatal("shared shell must use the native, keyboard-operable details menu")
 	}
 }
 
@@ -118,28 +94,29 @@ func TestHandoverKeepsComfortableMobileTouchTargets(t *testing.T) {
 }
 
 func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
-	if !strings.Contains(PageTemplates, `<script src="/assets/app.js?v={{.AssetVersion}}" defer></script>`) {
+	shell := renderComponent(t, ParkingSettingsPage(ParkingSettingsPageData{Portal: legacyShellTestPortal()}))
+	if !strings.Contains(shell, `<script src="/assets/app.js?v=`) {
 		t.Fatal("app shell must load the shared submit guard")
 	}
 	if strings.Contains(PageTemplates, `<a class="side-mark" href="/app">WEG</a>`) || strings.Contains(PageTemplates, `<span class="landing-mark">HV</span>`) || strings.Contains(PageTemplates, `<span class="mark">WEG</span>`) || strings.Contains(PageTemplates, `{{template "hausvMark" .}}`) || strings.Contains(PageTemplates, `class="logo-dot"`) {
 		t.Fatal("app shell should not use the old WEG/HV text or dot placeholder logo")
 	}
 	for _, want := range []string{
-		`<a class="side-map side-address" href="{{.MapURL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Tenant.Address}} in OpenStreetMap öffnen"`,
-		`<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false">`,
-		`<span class="side-map-pin-mark">{{template "tenantBrandMark" .}}</span>`,
 		`{{define "hausvLandingMark"}}`,
 		`{{define "hausvPlatformMark"}}`,
 		`{{template "tenantBrandMark" .}}`,
 		`rel="icon" type="image/svg+xml" href="/favicon.svg"`,
-		`data-dialog="release-history"`,
-		`Versionsverlauf`,
-		`v{{.DisplayVersion}}`,
 	} {
 		if !strings.Contains(PageTemplates, want) {
 			t.Fatalf("app shell missing logo/fav icon convention %q", want)
 		}
 	}
+	for _, want := range []string{`class="map side-map"`, `target="_blank"`, `rel="noopener noreferrer"`, `class="side-map-pin-shape"`, `class="side-map-pin-mark"`, `data-dialog="release-history"`, `Versionsverlauf`, `vtest`} {
+		if !strings.Contains(shell, want) {
+			t.Fatalf("shared shell missing map/version convention %q", want)
+		}
+	}
+
 	landingMarkStart := strings.Index(PageTemplates, `{{define "hausvLandingMark"}}`)
 	if landingMarkStart < 0 {
 		t.Fatal("simple public landing mark template is missing")

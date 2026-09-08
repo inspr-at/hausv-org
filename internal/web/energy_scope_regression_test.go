@@ -1,35 +1,32 @@
 package web
 
 import (
-	"crypto/sha256"
-	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/inspr-at/hausv-org/internal/version"
 )
 
-// The approved energy flow spans the live rail, the recommendation dialog and
-// the lower system inventory. This fingerprint records that deliberate new
-// baseline so later chart/below changes still cannot slip in unnoticed.
+func legacyShellTestPortal() PortalPageData {
+	brand, _ := Assets.ReadFile("assets/icons/lucide/house.svg")
+	return PortalPageData{Map: PortalMap{Configured: true}, BrandMarkSVG: string(brand), Title: "Test", HouseName: "Testhaus", Address: "Testgasse 1", MapURL: "https://www.openstreetmap.org/", DisplayVersion: "test", ReleaseNotes: version.Notes(), CanUseResidentAreas: true}
+}
 
-func TestApprovedCompactSidebarFooterStaysStable(t *testing.T) {
-	const (
-		startMarker = `{{define "sidebar"}}`
-		endMarker   = "\n{{define \"releaseHistoryDialog\"}}"
-		wantSHA256  = "629aa25d472d8ee910644dcf70f63d905618995fe50496541489bc0b44746333"
-	)
-
-	start := strings.Index(PageTemplates, startMarker)
-	if start < 0 {
-		t.Fatal("shared sidebar template is missing")
+// HAUSV-705 retires the hash-protected legacy footer. Guard its removal and
+// require the real shared sidebar on migrated pages instead of hashing dead HTML.
+func TestRetiredSidebarCannotReturn(t *testing.T) {
+	for _, forbidden := range []string{`{{define "sidebar"}}`, `{{define "appOpen"}}`, `{{define "appClose"}}`, `.app-shell`, `.side-foot`, `.side-map-card`, `.portal-context-switch`} {
+		if strings.Contains(PageTemplates, forbidden) {
+			t.Fatalf("retired shell returned: %s", forbidden)
+		}
 	}
-	endOffset := strings.Index(PageTemplates[start:], endMarker)
-	if endOffset < 0 {
-		t.Fatal("release-history boundary after the shared sidebar is missing")
+	portal := legacyShellTestPortal()
+	side := renderComponent(t, PortalSidebar(portal))
+	html := renderComponent(t, EnergyDataPage(EnergyDataPageData{Portal: portal}))
+	if !strings.Contains(html, side) || strings.Count(html, `<aside class="sidebar"`) != 1 {
+		t.Fatal("energy data must render exactly the shared sidebar")
 	}
-
-	protected := PageTemplates[start : start+endOffset]
-	got := fmt.Sprintf("%x", sha256.Sum256([]byte(protected)))
-	if got != wantSHA256 {
-		t.Fatalf("approved compact sidebar footer changed: sha256=%s, want %s", got, wantSHA256)
+	if strings.Contains(html, `class="side-foot"`) {
+		t.Fatal("retired account footer returned")
 	}
 }

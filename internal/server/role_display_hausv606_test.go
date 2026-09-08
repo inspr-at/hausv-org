@@ -18,11 +18,11 @@ func TestRoleDisplayUsesEffectiveRoleInEveryVerwaltungShellHAUSV606(t *testing.T
 			a := newTestPortalApp(t, userProfile{Email: email, Role: test.role, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
 			ac := authCtx{email: email, role: test.role, tenant: a.tenants["demo"], tenantRef: testTenantRef("demo")}
 			shell := a.verwaltungShell(t.Context(), &ac, "rechte")
-			if shell.RoleLabel != test.role {
-				t.Fatalf("shared desktop/mobile role label = %q, want %q", shell.RoleLabel, test.role)
+			if shell.Organisation.RoleLabel != test.role {
+				t.Fatalf("shared desktop/mobile role label = %q, want %q", shell.Organisation.RoleLabel, test.role)
 			}
-			if shell.Active != "rechte" {
-				t.Fatalf("rights shell active key = %q", shell.Active)
+			if shell.Organisation.Active != "rechte" {
+				t.Fatalf("rights shell active key = %q", shell.Organisation.Active)
 			}
 		})
 	}

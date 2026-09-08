@@ -56,6 +56,12 @@ export HV_QA_HA_PORT=${HV_QA_HA_PORT:-$((port + 100))}
 
 capture=${HV_CAPTURE:-capture.mjs}
 runtime=$src
+if [ "$capture" = qa-legacy-routes.mjs ]; then
+    # The existing fixture writer exits before launching Playwright. Month
+    # details must contain real samples rather than silently testing a 404.
+    node "$repo/scripts/snapshot/qa-settings-parking.mjs" --write-populated-fixture "$HV_DATA/parking.json" || exit 1
+    runtime=$tmp
+fi
 if [ "$capture" = qa-inbox-suggest.mjs ]; then
     # The oracle owns the local provider's lifetime. A different default tenant
     # makes an unprefixed /app poll fail instead of silently hitting Demohaus.

@@ -11,7 +11,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/version"
-	"github.com/inspr-at/hausv-org/internal/view"
+
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -68,40 +68,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 }
 
 func (a *app) announcementPortalContext(ac authCtx) web.PortalPageData {
-	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	modules := a.portalModulesFor(ac.tenant.Slug)
-	openIssues := 0
-	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, ac.email, ac.role))
-	}
-	return web.PortalPageData{
-		Title:               "Aushang · " + houseDisplayName(ac.tenant) + " · " + ac.role,
-		TenantSlug:          ac.tenant.Slug,
-		HouseName:           houseDisplayName(ac.tenant),
-		Address:             ac.tenant.Address,
-		MapURL:              tenantMapURL(ac.tenant.Address),
-		HeroImageURL:        ac.tenant.HeroImageURL,
-		BrandIcon:           ac.tenant.BrandIcon,
-		BrandMarkSVG:        tenantBrandMarkSVG(ac.tenant.BrandIcon),
-		Map:                 portalMapForTenant(ac.tenant),
-		DisplayName:         profile.DisplayName(),
-		Initials:            profile.Initials(),
-		Role:                ac.role,
-		DisplayVersion:      version.DisplayVersion(version.Version),
-		ActivePage:          "announcements",
-		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-		CanUseResidentAreas: roleCanUseResidentAreas(ac.role),
-		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
-		CanManageIssues:     ac.can(capabilityManageIssues),
-		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
-		CanManageHandovers:  canManageHandovers(ac.actor(), ac.resource()),
-		CanManageUsers:      ac.can(capabilityManageUsers),
-		CanViewAudit:        canViewAudit(ac.actor(), ac.resource()),
-		Issues:              make([]view.IssueView, openIssues),
-		UnreadAnnouncements: 0,
-		Shell:               a.portalShellData(&ac),
-		ReleaseNotes:        version.Notes(),
-	}
+	return a.portalBaseData(ac, "announcements", "Aushang")
 }
 
 func (a *app) renderAnnouncementsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data web.AnnouncementsPageData) {

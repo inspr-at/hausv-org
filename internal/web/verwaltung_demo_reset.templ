@@ -28,20 +28,20 @@ type VerwaltungDemoResetData struct {
 	Categories []VerwaltungDemoResetCount
 }
 
-func VerwaltungDemoResetPage(shell VerwaltungShell, data VerwaltungDemoResetData) templ.Component {
+func VerwaltungDemoResetPage(shell PortalPageData, data VerwaltungDemoResetData) templ.Component {
 	return verwaltungDemoResetPage(shell, data)
 }
 
-templ verwaltungDemoResetPage(shell VerwaltungShell, data VerwaltungDemoResetData) {
+templ verwaltungDemoResetPage(shell PortalPageData, data VerwaltungDemoResetData) {
 	@PortalVerwaltungPage(shell, demoInitTitle, VerwaltungDemoResetContent(data))
 }
 
 templ VerwaltungDemoResetContent(data VerwaltungDemoResetData) {
 	<style>
 		.demo-reset{display:grid;gap:var(--space-5);max-width:780px}.demo-reset h1,.demo-reset h2{margin:0;font-family:var(--font-serif);font-weight:550}.demo-reset h1{font-size:34px}.demo-reset h2{font-size:22px}.demo-reset-card{display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.demo-reset-card p{margin:0}.demo-reset-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.demo-reset-primary,.demo-reset-cancel{display:inline-flex;min-height:42px;padding:0 var(--space-4);align-items:center;justify-content:center;border:1px solid var(--gold);border-radius:var(--radius-sm);font:inherit;font-weight:800;text-decoration:none}.demo-reset-primary{background:var(--gold);color:var(--panel)}.demo-reset-cancel{background:transparent;color:var(--ink)}.demo-reset-counts{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-4)}.demo-reset-counts ul{margin:0;padding:0;list-style:none}.demo-reset-counts li{display:flex;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:1px solid var(--line)}@media(max-width:640px){.demo-reset-counts{grid-template-columns:1fr}}
-		.verwaltung-main:has(.demo-reset)>.portal-section-header{display:none}.verwaltung-main:has(.demo-reset)>.portal-section-content{padding-top:42px}
+
 	</style>
-	<section class="demo-reset"><div><div class="eyebrow">Hausverwaltung · Demo</div><h1>{ demoInitTitle }</h1></div>
+	<section class="demo-reset">
 		if data.Done {
 			<section class="demo-reset-card"><h2>Demodaten wurden initialisiert</h2><p>Ankerdatum: { data.Anchor } · Dauer: { data.Duration }</p><div class="demo-reset-counts"><div><h2>Status</h2><ul>
 				for _, item := range data.Statuses {
