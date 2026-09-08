@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.17",
+			Date:     "9. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Ruhige Aushang-Liste, Sidebar ohne Überdeckung und ohne Flackern.",
+			Intro:    "Der Aushang zeigt alle Beiträge in einer Karte mit Zeilen, kompakten Titeln und leisen Textaktionen. Die Versionszeile steht unter dem Menü, die Sidebar merkt sich beim Seitenwechsel ihre Scrollposition, und beim Wechsel zwischen Menüpunkten blitzt die Seite nicht mehr auf.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.16",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

@@ -29,6 +29,15 @@ document.addEventListener("click", function (e) {
     var openDialog = closeButton.closest("dialog");
     if (openDialog) openDialog.close();
   }
+
+  var collapseButton = e.target.closest('button[data-announcement-collapse]');
+  if (collapseButton) {
+    var entry = collapseButton.closest('.announcement-body');
+    if (entry) {
+      entry.open = false;
+      entry.querySelector('summary').focus();
+    }
+  }
 });
 
 document.addEventListener(
@@ -45,11 +54,15 @@ document.addEventListener(
 
 // Bulk controls enhance the native, individually keyboard-operable disclosures.
 (function () {
+  document.querySelectorAll('[data-announcement-collapse]').forEach(function (control) {
+    control.hidden = false;
+  });
+  var sort = document.querySelector('[data-announcement-sort]');
+  if (sort) sort.addEventListener('change', function () { sort.form.requestSubmit(); });
   var toolbar = document.querySelector('[data-announcement-bulk]');
   if (!toolbar) return;
   var entries = Array.from(document.querySelectorAll('.announcement-card > .announcement-body'));
-  if (!entries.length) return;
-  toolbar.hidden = false;
+  toolbar.hidden = !entries.length;
   toolbar.addEventListener('click', function (event) {
     var button = event.target.closest('[data-announcements-expand]');
     if (!button) return;

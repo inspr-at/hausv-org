@@ -1,6 +1,58 @@
+// HAUSV-719: loaded synchronously in the head after the blocking stylesheet.
+// The observer runs between parser tasks, before rendering; wait for the last
+// footer link so scrollHeight includes the entire navigation, even in streamed HTML.
+(() => {
+  const install = () => {
+    const sidebar = document.querySelector('aside.sidebar');
+    if (!sidebar?.querySelector('.sidebar-release .release-trigger')) return false;
+    const tenant = sidebar.querySelector('.nav')?.dataset.tenantSlug || location.pathname.split('/app')[0] || 'default';
+    const person = sidebar.querySelector('[data-storage-key]')?.dataset.storageKey || '';
+    const key = `hausv:sidebar-scroll:${encodeURIComponent(person)}:${encodeURIComponent(tenant)}`;
+    const desktop = matchMedia('(min-width:761px)');
+    let timer;
+
+    const restore = () => {
+      if (!desktop.matches) return;
+      let saved;
+      try { saved = sessionStorage.getItem(key); } catch { return; }
+      if (saved === null || saved.trim() === '') return;
+      const top = Number(saved);
+      if (!Number.isFinite(top) || top < 0) return;
+      const previous = sidebar.style.scrollBehavior;
+      sidebar.style.scrollBehavior = 'auto';
+      sidebar.scrollTop = top;
+      sidebar.style.scrollBehavior = previous;
+      // Deliberately preserve the position even when the active link is offscreen.
+    };
+    const save = () => {
+      clearTimeout(timer); timer = undefined;
+      // The hidden mobile aside reports zero: never erase the desktop preference.
+      if (!desktop.matches) return;
+      try { sessionStorage.setItem(key, String(sidebar.scrollTop)); } catch {}
+    };
+
+    restore();
+    sidebar.addEventListener('scroll', () => {
+      if (timer === undefined) timer = setTimeout(save, 100);
+    }, { passive: true });
+    sidebar.addEventListener('click', event => {
+      if (event.target.closest('.nav a')) save();
+    }, { capture: true });
+    window.addEventListener('pagehide', save);
+    // BFCache already retains the DOM position; only a newly shown desktop
+    // sidebar needs restoring after using this document at a phone width.
+    desktop.addEventListener('change', restore);
+    return true;
+  };
+  if (!install()) {
+    const observer = new MutationObserver(() => { if (install()) observer.disconnect(); });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
+})();
+
 // HAUSV-697/701. Store only opaque context IDs per person; fetch all labels and
 // permissions afresh. Storage denial/private mode degrades to the GET form.
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
   const read = key => { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value.filter(v => typeof v === 'string').slice(0, 6) : []; } catch { return []; } };
   const write = (key, value) => { if (!key) return; try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
   const remember = (key, entry) => { if (!key || !entry) return; const previous=read(key); if(previous[0]!==entry) write(key, [entry, ...previous.filter(v => v !== entry)].slice(0, 6)); };
@@ -177,4 +229,4 @@
     handle.addEventListener('dblclick',() => setWidth(280));
     handle.addEventListener('keydown',event => { if (event.key==='ArrowLeft'||event.key==='ArrowRight') { event.preventDefault(); setWidth(Number(handle.getAttribute('aria-valuenow'))+(event.key==='ArrowRight'?10:-10)); } else if (event.key==='Home') { event.preventDefault(); setWidth(280); } });
   });
-})();
+}, { once: true });

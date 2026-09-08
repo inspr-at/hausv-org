@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -24,6 +25,10 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	now := time.Now()
 	selectedCategory := selectedAnnouncementCategory(r.URL.Query().Get("category"))
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
+	selectedSort := "newest"
+	if r.URL.Query().Get("sort") == "oldest" {
+		selectedSort = "oldest"
+	}
 	lastSeen := time.Time{}
 	announcements := ac.repositories.announcements
 	announcementReads := ac.repositories.announcementReads
@@ -38,6 +43,11 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 			archive = announcements.List()
 		}
 		filtered = filterAnnouncements(archive, selectedCategory, searchQuery)
+		if selectedSort == "oldest" {
+			sort.SliceStable(filtered, func(i, j int) bool {
+				return filtered[i].PublishedAt.Before(filtered[j].PublishedAt)
+			})
+		}
 	}
 	views := a.announcementViewsWithReadState(ac.tenantRef, filtered, now, true, lastSeen, email, role)
 	pinned, latest := splitPinnedAnnouncements(views)
@@ -55,7 +65,8 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		NowInput:               formatLocalDateTimeInput(now),
 		SearchQuery:            searchQuery,
 		SelectedCategory:       selectedCategory,
-		CategoryFilters:        announcementFilterViews(searchQuery, selectedCategory),
+		SelectedSort:           selectedSort,
+		CategoryFilters:        announcementFilterViews(searchQuery, selectedCategory, selectedSort),
 		AnnouncementsEmpty:     emptyState("Keine Beiträge", "Für diese Suche oder Kategorie gibt es keinen Aushang."),
 		AnnouncementsBlank:     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
 		HasAnyAnnouncements:    len(archive) > 0,
@@ -258,7 +269,7 @@ func announcementFromForm(r *http.Request, tenantSlug string, author userProfile
 	return item, nil
 }
 
-func announcementFilterViews(query string, selectedCategory string) []announcementFilterView {
+func announcementFilterViews(query string, selectedCategory string, selectedSort string) []announcementFilterView {
 	selectedCategory = selectedAnnouncementCategory(selectedCategory)
 	categories := []string{"", "Info", "Termin", "Wartung", "Dringend"}
 	labels := map[string]string{"": "Alle"}
@@ -269,6 +280,9 @@ func announcementFilterViews(query string, selectedCategory string) []announceme
 			label = category
 		}
 		values := url.Values{}
+		if selectedSort == "oldest" {
+			values.Set("sort", selectedSort)
+		}
 		if strings.TrimSpace(query) != "" {
 			values.Set("q", strings.TrimSpace(query))
 		}

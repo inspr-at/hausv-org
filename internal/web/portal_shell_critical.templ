@@ -2,13 +2,15 @@ package web
 
 // The first paint must have the final navigation surface even while the
 // cacheable stylesheet is in flight. Page styles precede this shared contract.
+// HAUSV-720: the root canvas must also split navigation/content before body exists.
 templ PortalShellCriticalStyles() {
 	<style data-shell-critical>
-		:root{--sidebar-w:280px;--context-bar-h:40px}
-		html{background:var(--nav)}
+		:root{--sidebar-w:280px;--context-bar-h:40px;--shell-background:linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))}
+		html{color-scheme:light;background:linear-gradient(var(--nav),var(--nav)) top/100% var(--context-bar-h) no-repeat,var(--shell-background);background-attachment:fixed}body{background:var(--shell-background)}
 		.shell{min-height:calc(100vh - var(--context-bar-h));display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr)}
 		.sidebar{--sidebar-pad-x:18px;position:sticky;top:var(--context-bar-h);height:calc(100dvh - var(--context-bar-h));display:flex;flex-direction:column;padding:16px var(--sidebar-pad-x);background:var(--nav);color:var(--panel);overflow:auto}
-		.portal-shell-content{min-width:0}
+		.sidebar>.nav,.sidebar>.portal-organisation-identity{flex:0 0 auto}
+		.portal-shell-content{min-width:0;background:var(--paper)}
 		.nav a{min-height:40px}
 		.liegenschaft-switcher .house-header-card{grid-template-columns:18px minmax(0,1fr);gap:8px}
 		.liegenschaft-switcher .house-header-copy strong{display:-webkit-box;overflow:hidden;white-space:normal;overflow-wrap:anywhere;font-size:18px;line-height:1.25;-webkit-box-orient:vertical;-webkit-line-clamp:2}
@@ -27,7 +29,7 @@ templ PortalShellCriticalStyles() {
 		.context-account>summary{min-width:40px;min-height:40px;display:flex;align-items:center;gap:8px;list-style:none}
 		.context-account .avatar{width:24px;height:24px;font-size:9px}
 		.liegenschaft-switcher:not([open])>.switcher-panel,.context-account:not([open])>.context-account-menu,.mobile-head .menu:not([open])>.menu-panel{display:none}
-		@media(min-width:761px){body{background:linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))}.mobile-head,.context-bar.mobile-head,.mobile-content,.thumb-zone{display:none}}
-		@media(max-width:760px){:root{--context-bar-h:74px}html,body{background:var(--paper)}.shell{display:block;min-height:0}.sidebar,.desktop-context-bar{display:none}.context-bar.mobile-head{height:var(--context-bar-h);min-height:var(--context-bar-h);display:grid;grid-template-columns:42px minmax(0,1fr) 40px;gap:12px;padding:0 16px}.context-bar .menu{grid-column:1;grid-row:1}.context-bar .context-scope{grid-column:2;grid-row:1;display:block}.context-bar .context-account{grid-column:3;grid-row:1}.context-person,.context-account>summary>.context-role,.context-scope>.liegenschaft-switcher:not(:last-child),.scope-separator{display:none}}
+		@media(min-width:761px){.mobile-head,.context-bar.mobile-head,.mobile-content,.thumb-zone{display:none}}
+		@media(max-width:760px){:root{--context-bar-h:74px;--shell-background:var(--paper)}.shell{display:block;min-height:0}.sidebar,.desktop-context-bar{display:none}.context-bar.mobile-head{height:var(--context-bar-h);min-height:var(--context-bar-h);display:grid;grid-template-columns:42px minmax(0,1fr) 40px;gap:12px;padding:0 16px}.context-bar .menu{grid-column:1;grid-row:1}.context-bar .context-scope{grid-column:2;grid-row:1;display:block}.context-bar .context-account{grid-column:3;grid-row:1}.context-person,.context-account>summary>.context-role,.context-scope>.liegenschaft-switcher:not(:last-child),.scope-separator{display:none}}
 	</style>
 }

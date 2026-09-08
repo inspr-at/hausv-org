@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.17] - 2026-09-09
+
+### Verbessert
+
+- Aushang: Die Liste ist eine ruhige Karte mit Zeilen: Farbpunkt der Kategorie, kompakter Titel, eine Vorschauzeile, Kategorie, Datum und Aufklappen; Bearbeiten und Löschen als leise Textaktionen im geöffneten Eintrag, Sortierung nach Datum.
+- Navigation: Die Versionszeile steht unter dem Menü und verdeckt keinen Eintrag mehr; die Sidebar merkt sich beim Seitenwechsel ihre Scrollposition; beim Wechsel zwischen Menüpunkten blitzt die Seite nicht mehr dunkel oder hell auf.
+
 ## [1.9.16] - 2026-09-08
 
 ### Neu
