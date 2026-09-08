@@ -10,7 +10,7 @@ function focusFirstDialogField(dialog) {
 }
 
 function openEditDialog(trigger) {
-  var dialog = document.getElementById("edit-" + trigger.dataset.edit);
+  var dialog = document.getElementById("edit-" + (trigger.dataset.edit || trigger.dataset.accessEdit));
   if (!dialog || !dialog.showModal) return;
   dialogTriggers.set(dialog, trigger);
   trigger.setAttribute("aria-expanded", "true");
@@ -19,7 +19,7 @@ function openEditDialog(trigger) {
 }
 
 document.addEventListener("click", function (e) {
-  var b = e.target.closest(".users .row-edit");
+  var b = e.target.closest(".users .row-edit, .users [data-access-edit]");
   if (b) {
     openEditDialog(b);
   }
@@ -59,3 +59,82 @@ document.addEventListener(
   },
   true
 );
+
+// Selection and filters only switch the already authorized server-rendered views.
+(function () {
+  var root = document.querySelector('.users');
+  if (!root) return;
+  var rows = Array.from(root.querySelectorAll('[data-user-row]'));
+  var panels = Array.from(root.querySelectorAll('[data-user-access]'));
+  var search = root.querySelector('[data-user-search]');
+  var role = root.querySelector('[data-user-role]');
+  var selected = '';
+  var invite = root.querySelector('#invite');
+  root.classList.add('users-enhanced');
+  root.querySelector('[data-user-filters]').hidden = false;
+
+  function selectPerson(email) {
+    selected = email;
+    rows.forEach(function (row) {
+      var active = row.dataset.userRow === email;
+      row.classList.toggle('is-selected', active);
+      var link = row.querySelector('[data-user-select]');
+      if (active) link.setAttribute('aria-current', 'true');
+      else link.removeAttribute('aria-current');
+    });
+    panels.forEach(function (panel) { panel.hidden = panel.dataset.userAccess !== email; });
+  }
+
+  function filterPeople() {
+    var query = search.value.trim().toLocaleLowerCase('de-AT');
+    rows.forEach(function (row) {
+      row.hidden = !row.dataset.userSearchText.toLocaleLowerCase('de-AT').includes(query) ||
+        (role.value !== '' && 'filter:' + row.dataset.userRoleValue !== role.value);
+    });
+    var visible = rows.filter(function (row) { return !row.hidden; });
+    if (!visible.some(function (row) { return row.dataset.userRow === selected; })) {
+      selectPerson(visible.length ? visible[0].dataset.userRow : '');
+    }
+    var empty = root.querySelector('[data-user-empty]');
+    if (empty) empty.hidden = visible.length !== 0;
+    var count = root.querySelector('[data-user-count]');
+    if (count) count.textContent = visible.length + ' von ' + rows.length + ' Personen';
+  }
+
+  function followHash() {
+    if (location.hash === '#invite') {
+      invite.open = true;
+      invite.scrollIntoView({ block: 'start' });
+      return;
+    }
+    var id;
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
+    var panel = document.getElementById(id);
+    if (panel && panel.matches('[data-user-access]')) {
+      search.value = ''; role.value = ''; filterPeople();
+      selectPerson(panel.dataset.userAccess);
+      panel.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  root.addEventListener('click', function (event) {
+    var link = event.target.closest('[data-user-select]');
+    if (link) {
+      event.preventDefault();
+      selectPerson(link.dataset.userSelect);
+      if (window.matchMedia('(max-width:1000px)').matches) {
+        var panel = panels.find(function (item) { return !item.hidden; });
+        if (panel) { panel.focus({ preventScroll: true }); panel.scrollIntoView({ block: 'start' }); }
+      }
+    }
+    if (event.target.closest('[data-user-invite]')) {
+      invite.open = true;
+      invite.querySelector('input[type="email"]').focus();
+    }
+  });
+  search.addEventListener('input', filterPeople);
+  role.addEventListener('change', filterPeople);
+  window.addEventListener('hashchange', followHash);
+  selectPerson(rows.length ? rows[0].dataset.userRow : '');
+  followHash();
+})();

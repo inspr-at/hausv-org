@@ -53,7 +53,7 @@ const portalChromeRoutes = [
   { path: '/app/abstimmungen', hero: false, action: 'Abstimmung anlegen' },
   { path: '/app/parking', hero: false, action: 'Mehr' },
   { path: '/app/uebergaben', hero: false },
-  { path: '/app/settings/users', hero: false },
+  { path: '/app/settings/users', hero: false, action: 'Person einladen' },
   { path: '/app/audit', hero: false, action: 'Einstellungen' },
   { path: '/app/settings', hero: false },
   { path: '/app/hilfe', hero: false },
@@ -1736,6 +1736,10 @@ async function assertResidentBallotFlow() {
   const owner = await localLogin(ownerContext, 'owner@example.com');
   await owner.goto(`${baseURL}/app/abstimmungen`, { waitUntil: 'networkidle' });
   let card = owner.locator('.vote-card').filter({ hasText: title });
+  await owner.locator('[data-ballot-filter="closed"]').click();
+  if (await card.isVisible()) fail('Abstimmungsfilter: laufende Abstimmung unter abgeschlossen sichtbar');
+  await owner.locator('[data-ballot-filter="open"]').click();
+  if (!(await card.isVisible())) fail('Abstimmungsfilter: laufende Abstimmung fehlt');
   const option = card.locator('input[name="option"]').first();
   if (!(await option.count())) fail('Abstimmung: stimmberechtigter Eigentümer erhält keine Auswahl');
   await option.check();

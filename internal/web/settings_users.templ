@@ -1,0 +1,217 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/view"
+
+templ UserSettingsPage(data UserSettingsPageData) {
+	@SettingsFrame(data.Portal, "Benutzer & Rechte", []string{"users.js"}, UserSettingsContent(data))
+}
+
+templ UserSettingsContent(data UserSettingsPageData) {
+	@UserSettingsStyles()
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Benutzer & Rechte",
+			Class: "settings-main users",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "users", URL: "/app/settings"},
+		},
+		PortalSectionTitle("Benutzer & Rechte"),
+		PortalSectionLede("Zugänge einladen, prüfen und sicher verwalten."),
+		UserInviteAction(),
+		nil,
+		nil,
+		UserSettingsBody(data),
+	)
+}
+
+templ UserInviteAction() {
+	<a class="button" href="#invite" data-user-invite><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span>Person einladen</span></a>
+}
+
+templ UserSettingsBody(data UserSettingsPageData) {
+	<div data-templ-user-settings>
+		<div class="metrics four"><span><strong>{ data.UserCount }</strong><small>Gesamt</small></span><span><strong>{ data.ActiveUserCount }</strong><small>Aktiv</small></span><span><strong>{ data.InvitedUserCount }</strong><small>Eingeladen</small></span><span><strong>{ data.DisabledUserCount }</strong><small>Deaktiviert</small></span></div>
+		@SettingsFlash(data.InviteMsg, data.InviteOK)
+		@UserInvite(data)
+		<div class="users-layout" id="access-list">
+			<section class="panel people-panel" aria-labelledby="people-title">
+				<header class="people-head"><div><h2 id="people-title">Personen <small>{ data.UserCount }</small></h2><p>Handlungsbedarf zuerst</p></div>
+					<div class="people-filters" data-user-filters hidden><label><span class="sr-only">Person suchen</span><input type="search" placeholder="Person suchen …" data-user-search/></label><label><span class="sr-only">Nach Rolle filtern</span><select data-user-role><option value="">Alle Rollen</option>
+						for _, role := range userFilterRoles(data.Users) {
+							<option value={ "filter:" + role }>{ role }</option>
+						}
+					</select></label></div>
+				</header>
+				if len(data.Users) == 0 {
+					@SettingsEmpty(data.UsersEmpty)
+				} else {
+					<div class="people-columns" aria-hidden="true"><span>Person</span><span>Rolle</span><span>Status</span><span></span></div>
+					<div class="user-list">
+						for _, user := range data.Users {
+							@UserCard(data, user)
+						}
+					</div>
+					<p class="users-no-match" data-user-empty hidden>Keine Personen gefunden. Ändern Sie Suche oder Rollenfilter.</p>
+					<p class="people-count" data-user-count role="status">{ data.UserCount } { personLabel(data.UserCount) }</p>
+				}
+			</section>
+			<aside class="user-access-stack" aria-label="Zugang & Berechtigungen">
+				for _, user := range data.Users {
+					@UserAccessDetail(data, user)
+				}
+			</aside>
+		</div>
+	</div>
+}
+
+func personLabel(count int) string { if count == 1 { return "Person" }; return "Personen" }
+
+templ UserInvite(data UserSettingsPageData) {
+	<details id="invite" class="invite"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small></summary><form method="post" action="/app/settings/users"><div class="form-grid"><label>E-Mail-Adresse<input type="email" name="email" placeholder="name@example.com" autocomplete="email" required/></label><label>Rolle<select class="f-role" name="role">@RoleOptions(data, "")</select></label></div>
+		if !data.ServiceProviderAccessEnabled {
+			<p class="notice">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>
+		}
+		<details class="inline-details"><summary>Name ergänzen <small>optional</small></summary><div class="form-grid three"><input name="title" placeholder="Titel" aria-label="Titel"/><input name="first_name" placeholder="Vorname" aria-label="Vorname"/><input name="last_name" placeholder="Nachname" aria-label="Nachname"/></div></details>
+		<details class="inline-details"><summary>Zugang anpassen <small>optional</small></summary>@AccessOptions(false, false, true, true)</details>
+		<footer class="form-actions"><button class="button primary" type="submit">Einladung senden</button><a class="text-link" href="/app/settings/building?section=units">Danach bei Bedarf: Einheit verknüpfen</a></footer>
+	</form></details>
+}
+
+templ RoleOptions(data UserSettingsPageData, selected string) {
+	<option value="Mieter" data-preset-label="Standardzugriff" data-preset-permissions="" selected?={ selected == "Mieter" }>Mieter</option><option value="Eigentümer" data-preset-label="Eigentümerzugriff" data-preset-permissions="" selected?={ selected == "Eigentümer" }>Eigentümer</option><option value="Beirat" data-preset-label="Beiratszugriff" data-preset-permissions="" selected?={ selected == "Beirat" }>Beirat</option><option value="Verwalter" data-preset-label="Verwalterzugriff" data-preset-permissions="" selected?={ selected == "Verwalter" }>Verwalter</option>
+	if data.IsAdmin {
+		<option value="Admin" data-preset-label="Adminzugriff" data-preset-permissions="parking" selected?={ selected == "Admin" }>Admin</option>
+	}
+	if data.ServiceProviderAccessEnabled {
+		<option value="Dienstleister" data-preset-label="Nur zugewiesene Anliegen" data-preset-permissions="" selected?={ selected == "Dienstleister" }>Dienstleister</option>
+	}
+	<option value="Bewohner" data-preset-label="Bewohnerzugriff" data-preset-permissions="" selected?={ selected == "Bewohner" }>Bewohner</option>
+}
+
+templ UserCard(data UserSettingsPageData, user view.UserRow) {
+	<article class={ "user-card", templ.KV("attention", user.Status == "Eingeladen" || user.Status == "Deaktiviert") } data-user-row={ user.Email } data-user-role-value={ user.Role } data-user-search-text={ user.DisplayName + " " + user.Email + " " + user.Phone }>
+		<span class="user-avatar" aria-hidden="true">{ user.Initials }</span>
+		<div class="user-identity"><a class="user-select" href={ templ.SafeURL("#access-" + user.Email) } data-user-select={ user.Email } aria-controls={ "access-" + user.Email }><strong>{ user.DisplayName }</strong></a><a href={ templ.SafeURL("mailto:" + user.Email) }>{ user.Email }</a>
+			if user.Phone != "" {
+				<small>{ user.Phone }</small>
+			}
+			if user.HasUnits {
+				<small>{ userUnitSummary(user) }</small>
+			}
+		</div>
+		<div class="user-role"><span class={ user.RoleClass }>{ user.Role }</span><small>{ userAccessProfile(user) }</small></div>
+		@UserStatus(user)
+		if userAccessEditable(data, user) {
+			<button class="icon-button row-edit" type="button" data-edit={ user.Email } aria-label={ user.DisplayName + " bearbeiten" } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z"></path></svg></button>
+			@UserEditDialog(data, user)
+		} else {
+			<span class="user-readonly" title="Schreibgeschützt" aria-label="Schreibgeschützt">—</span>
+		}
+	</article>
+}
+
+templ UserStatus(user view.UserRow) {
+	<span class={ "user-status", templ.KV("active", user.Status == "Aktiv") }><span aria-hidden="true"></span>{ user.Status }</span>
+}
+
+templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
+	<section class="panel user-access" id={ "access-" + user.Email } data-user-access={ user.Email } aria-labelledby={ "access-title-" + user.Email } tabindex="-1">
+		<p class="eyebrow">Zugang &amp; Berechtigungen</p>
+		<header class="access-person"><span class="user-avatar" aria-hidden="true">{ user.Initials }</span><div><h2 id={ "access-title-" + user.Email }>{ user.DisplayName }</h2>@UserStatus(user)</div></header>
+		<dl class="access-facts"><dt>Rolle</dt><dd>{ user.Role }</dd><dt>Berechtigungsprofil</dt><dd>{ userAccessProfile(user) }</dd></dl>
+		<section class="access-units"><h3>Zugeordnete Einheiten</h3><p>{ len(user.UnitList) } Einheiten insgesamt</p>
+			if user.HasUnits {
+				<details class="unit-tree" open><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6"></path></svg><span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span></summary><div>
+					for _, group := range userUnitGroups(user) {
+						<details class="unit-branch" open?={ group.Label != "Stellplätze" }><summary><span>{ group.Label }</span><small>{ len(group.Items) }</small></summary><ul>
+							for _, unit := range group.Items {
+								<li>{ unit }</li>
+							}
+						</ul></details>
+					}
+				</div></details>
+				<p class="access-help">Zuordnungen gelten für dieses Haus. Weitere Zugriffe ergeben sich aus Rolle und Sonderrechten.</p>
+			} else {
+				<p class="access-help">Keine Einheiten zugeordnet. Der Zugang richtet sich nach Rolle und Sonderrechten.</p>
+			}
+		</section>
+		<details class="access-permissions"><summary>Berechtigungen im Detail</summary>
+			<details class="permission-family" open><summary>{ userRoleFamily(user.Role) } · { user.Role }</summary>
+				for _, group := range userCapabilityGroups(user) {
+					<details class="permission-area" open><summary>{ group.Label }</summary><ul>
+						for _, right := range group.Items {
+							<li>{ right }</li>
+						}
+					</ul></details>
+				}
+			</details>
+			<details class="permission-family"><summary>Sonderrechte</summary><ul>
+				for _, permission := range user.PermissionList {
+					<li>{ permission }</li>
+				}
+			</ul></details>
+			<details class="permission-family"><summary>Anmeldung</summary><ul>
+				for _, method := range user.AuthList {
+					<li>{ method }</li>
+				}
+			</ul></details>
+			if user.LastSeen != "" {
+				<p class="access-help">{ user.LastSeen }</p>
+			}
+		</details>
+		if userAccessEditable(data, user) {
+			<button class="button access-edit" type="button" data-access-edit={ user.Email } aria-haspopup="dialog" aria-controls={ "edit-" + user.Email }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z"></path></svg><span>Zugang bearbeiten</span></button>
+		} else {
+			<p class="access-help">Dieser Zugang ist schreibgeschützt.</p>
+		}
+	</section>
+}
+
+templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
+	<dialog id={ "edit-" + user.Email } class="user-dialog" aria-labelledby={ "edit-title-" + user.Email }><form method="dialog" class="dialog-close"><button aria-label="Schließen">×</button></form><h2 id={ "edit-title-" + user.Email }>Zugang bearbeiten</h2><p>{ user.Email }
+		if user.IsConfig {
+			<span> (aus Konfiguration)</span>
+		}
+	</p><form method="post" action="/app/settings/users/edit"><input type="hidden" name="orig_email" value={ user.Email }/><label>Rolle in diesem Haus<select class="f-role" name="role" autofocus>@RoleOptions(data, user.Role)</select></label>
+		<details class="inline-details"><summary>Personendaten <small>
+			if data.IsAdmin {
+				bearbeiten
+			} else {
+				zentral gepflegt
+			}
+		</small></summary><div class="form-grid three"><input name="title" value={ user.Title } placeholder="Titel" aria-label="Titel" readonly?={ !data.IsAdmin }/><input name="first_name" value={ user.FirstName } placeholder="Vorname" aria-label="Vorname" readonly?={ !data.IsAdmin }/><input name="last_name" value={ user.LastName } placeholder="Nachname" aria-label="Nachname" readonly?={ !data.IsAdmin }/><input type="email" name="email" value={ user.Email } aria-label="E-Mail-Adresse" autocomplete="email" readonly?={ user.IsConfig || !data.IsAdmin } required?={ !user.IsConfig && data.IsAdmin }/></div></details>
+		<details class="inline-details"><summary>Einheiten <small>{ len(user.UnitList) } verknüpft</small></summary>
+			for _, group := range userUnitGroups(user) {
+				<details class="unit-branch"><summary>{ group.Label } · { len(group.Items) }</summary><ul>
+					for _, unit := range group.Items {
+						<li>{ unit }</li>
+					}
+				</ul></details>
+			}
+			<a class="text-link" href="/app/settings/building?section=units">Zuordnung verwalten</a></details>
+		<details class="inline-details"><summary>Anmeldung &amp; Sonderrechte</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
+		<label class="check-card"><input type="checkbox" name="deactivated" value="1" checked?={ user.Deactivated }/><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class="button primary" type="submit">Änderungen speichern</button></form>
+		if !user.IsConfig {
+			<details class="danger"><summary>Zugang dauerhaft entfernen</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
+		}
+	</dialog>
+}
+
+templ AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) {
+	<div class="access-options"><fieldset><legend>Sonderrechte</legend><span class="scope personal" data-preset-label>Gespeicherte Rechte</span><label class="check-card"><input type="checkbox" name="permissions" value="parking" data-permission="parking" checked?={ parking }/><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class="check-card"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker" checked?={ energyCaretaker }/><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class="check-card"><input type="checkbox" name="auth_methods" value="email" checked?={ emailAuth }/><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class="check-card"><input type="checkbox" name="auth_methods" value="oidc" checked?={ oidcAuth }/><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>
+}
+
+
+templ UserSettingsStyles() {
+ <style>
+  .users .portal-section-header{align-items:center;padding-top:24px}.users .button.primary{color:var(--nav)}.users [data-templ-user-settings]{display:grid;gap:16px}.users .metrics.four{grid-template-columns:repeat(4,minmax(0,1fr));background:var(--panel);border-radius:8px}.users .metrics.four>span{display:grid;padding:16px;border-left:1px solid var(--line)}.users .metrics.four>span:first-child{border-left:0}.users .metrics strong{font-size:28px}.users .metrics small{font-size:13px}
+  .users-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);align-items:start;gap:16px;scroll-margin-top:80px}.people-panel{min-width:0;padding:16px;box-shadow:none}.people-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}.people-head h2{font-size:28px}.people-head h2 small{font-size:16px;color:var(--muted);margin-left:8px}.people-head p{color:var(--muted);font-size:13px;margin-top:4px}.people-filters{display:flex;gap:8px;flex:1 1 256px;justify-content:flex-end}.people-filters label{min-width:0}.people-filters label:first-child{flex:1 1 160px;max-width:224px}.people-filters input,.people-filters select{min-width:0;padding:8px;min-height:40px;font-size:13px}.people-columns{display:grid;grid-template-columns:minmax(0,1fr) 112px 88px 40px;gap:8px;padding:0 8px 8px;color:var(--muted);font-size:12px}.users .user-list{gap:8px}
+  .users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 88px 40px;gap:8px;padding:8px;min-height:72px;position:relative;box-shadow:none}.users .user-card.is-selected{border-color:var(--gold);background:var(--panel-soft)}.users .user-avatar{width:48px;height:48px;font-size:18px}.users .user-identity{gap:2px}.users .user-select{display:block;color:var(--ink);font-size:14px;text-decoration:none}.users .user-select::after{content:"";position:absolute;inset:0;border-radius:8px}.users .user-identity>a:not(.user-select),.users .row-edit{position:relative;z-index:1}.users .user-select:focus-visible::after{outline:2px solid var(--gold-ink);outline-offset:2px}.users .user-identity small,.users .user-identity>a:not(.user-select){font-size:11px;line-height:1.3}.user-role{display:grid;gap:4px;font-size:13px;overflow-wrap:anywhere}.user-role small{color:var(--muted);font-size:11px}.user-status{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.user-status>span{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}.user-status.active>span{background:var(--leaf)}.users .icon-button{width:40px;height:40px;font-size:18px}.users .icon-button svg,.users .access-edit svg,.users .button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}.user-readonly{text-align:center;color:var(--muted)}.people-count,.users-no-match{margin-top:16px;color:var(--muted);font-size:12px}
+  .user-access-stack{display:grid;gap:16px;min-width:0}.user-access{display:grid;gap:24px;padding:24px;min-width:0;box-shadow:none;scroll-margin-top:80px}.user-access>.eyebrow{color:var(--muted);font-size:10px}.access-person{display:flex;align-items:center;gap:16px;min-width:0}.access-person>div{min-width:0}.access-person h2{font-size:26px;line-height:1.2;overflow-wrap:anywhere;margin-bottom:8px}.users .access-person .user-avatar{width:56px;height:56px;flex-shrink:0}.access-facts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}.access-facts dt{color:var(--muted)}.access-facts dd{margin:0;overflow-wrap:anywhere}.access-units h3{font-size:22px}.access-units>p{font-size:12px;color:var(--muted);line-height:1.5}.unit-tree{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 16px}.unit-tree>summary{display:flex;gap:8px;align-items:center;padding:8px 24px 8px 0;cursor:pointer;font-size:13px}.unit-tree>summary svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.unit-tree>summary span{min-width:0;overflow-wrap:anywhere}.unit-tree>summary small{display:block;margin-top:4px;color:var(--muted);font-size:12px}.unit-branch{border-top:1px solid var(--line)}.unit-branch>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:48px;padding:8px 24px 8px 0;font-size:13px;font-weight:700}.unit-branch>summary small{font-weight:400}.unit-branch ul,.permission-family ul{margin:0 0 8px;padding:0 0 0 16px;list-style:none;border-left:1px solid var(--line)}.unit-branch li,.permission-family li{padding:4px 0;color:var(--muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere}.unit-branch ul{max-height:160px;overflow:auto}.access-help{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}.access-permissions{border-block:1px solid var(--line)}.access-permissions>summary{min-height:48px;display:flex;align-items:center;padding-right:24px;cursor:pointer;font-size:13px}.permission-family{padding:8px 0}.permission-family>summary,.permission-area>summary{cursor:pointer;font-size:13px;padding:8px 24px 8px 0}.permission-family>summary{font-weight:700}.permission-area{margin-left:16px}.permission-area>summary{color:var(--gold-ink)}.access-edit{width:100%;min-height:48px}.users .danger>summary,.users .danger button{color:var(--gold-ink);border-color:var(--line)}.users .flash.bad{color:var(--gold-ink);background:var(--panel-soft);border-color:var(--line)}.users .user-dialog{position:fixed;z-index:10}.users .user-dialog .form-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.users .user-dialog label{font-size:12px}.users .user-dialog input,.users .user-dialog select{font-size:16px}.users .user-dialog .check-card input{width:20px;min-height:20px}
+  .users .invite>form{display:grid;gap:16px}.users-enhanced .invite:not([open]){display:none}.users [hidden]{display:none!important}
+  @media(max-width:1200px){.users-layout{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}.users .user-card{grid-template-columns:40px minmax(0,1fr) 88px 40px}.users .user-card>.user-avatar{width:40px;height:40px}.users .user-role{grid-column:2;grid-row:2;display:flex;gap:8px}.users .user-status{grid-column:3;grid-row:1/3}.users .user-card>.row-edit,.users .user-readonly{grid-column:4;grid-row:1/3}.people-columns{display:none}.user-access{padding:16px}}
+  @media(max-width:1000px){.users-layout{grid-template-columns:minmax(0,1fr)}.user-access-stack{grid-row:2}.users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 96px 40px}.users .user-role{grid-column:3;grid-row:1;display:grid}.users .user-status{grid-column:4;grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-column:5;grid-row:1}}
+  @media(max-width:600px){.users .metrics.four{grid-template-columns:repeat(2,minmax(0,1fr))}.users .metrics.four>span:nth-child(3){border-left:0;border-top:1px solid var(--line)}.users .metrics.four>span:nth-child(4){border-top:1px solid var(--line)}.people-panel{padding:8px}.people-head{padding:8px}.people-filters{flex-basis:100%;justify-content:flex-start}.users .user-card{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px}.users .user-card>.user-avatar,.users .user-card>.user-identity{grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-row:1;grid-column:3}.users .user-role{grid-column:2/-1;grid-row:2;display:flex}.users .user-status{grid-column:2/-1;grid-row:3}.users .user-dialog .form-grid.three{grid-template-columns:minmax(0,1fr)}.users .access-options{grid-template-columns:minmax(0,1fr)}}
+  .users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary{position:relative;list-style:none;padding-right:24px}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::-webkit-details-marker{display:none}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::after{content:"";position:absolute;right:4px;top:50%;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-50%) rotate(-45deg)}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)[open]>summary::after{transform:translateY(-70%) rotate(45deg)}
+ </style>
+}

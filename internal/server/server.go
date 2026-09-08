@@ -6412,6 +6412,7 @@ func (a *app) userRows(tenant store.TenantRef) []userRow {
 					label += " · " + relation
 				}
 				rows[i].UnitList = append(rows[i].UnitList, label)
+				rows[i].UnitAssignments = append(rows[i].UnitAssignments, view.UserUnitAssignment{Label: label, Kind: view.UnitTypeLabel(membership.Unit.UnitType)})
 			}
 			rows[i].HasUnits = len(rows[i].UnitList) > 0
 		}
