@@ -58,8 +58,8 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 		`43 316 911`,
 		`class="contact-route" href="mailto:office@example.com"`,
 		`<details class="contact-add" id="contact-add"`,
-		`<summary>Kontakt hinzufügen</summary>`,
-		`<summary>Inaktive Kontakte (1)</summary>`,
+		`<summary>Kontakt hinzufügen<span class="disclosure-chevron" aria-hidden="true">`,
+		`<summary>Inaktive Kontakte (1)<span class="disclosure-chevron" aria-hidden="true">`,
 		`href="/demo/app/settings/building?section=contacts"`,
 	} {
 		if !strings.Contains(body, want) {

@@ -720,84 +720,92 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</p><details class=\"settings-technical\"><summary>Technische Details</summary><p><code>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</p><details class=\"settings-technical\"><summary>Technische Details")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</summary><p><code>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(data.MailLastError)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 148, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 150, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</code></p></details>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "</code></p></details>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else if data.MailLastRun != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<p class=\"settings-result\" role=\"status\" data-ok=\"true\"><span class=\"status-dot\"></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<p class=\"settings-result\" role=\"status\" data-ok=\"true\"><span class=\"status-dot\"></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Zuletzt abgerufen %s · %d Mails seit Start übernommen", data.MailLastRun, data.MailTotal))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 150, Col: 199}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 152, Col: 199}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <p class=\"settings-note\">Ungelesene Mails werden abgeholt, Liegenschaft und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " <p class=\"settings-note\">Ungelesene Mails werden abgeholt, Liegenschaft und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<p class=\"active-provider\" data-provider-state=\"nicht konfiguriert\"><strong>Kein Postfach konfiguriert</strong></p><p class=\"settings-note\">Ein Postfach je Verwaltung wird über die Serverkonfiguration angebunden (INTAKE_MAIL_JSON, Zugangsdaten als Datei- oder Umgebungsreferenz). Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<p class=\"active-provider\" data-provider-state=\"nicht konfiguriert\"><strong>Kein Postfach konfiguriert</strong></p><p class=\"settings-note\">Ein Postfach je Verwaltung wird über die Serverkonfiguration angebunden (INTAKE_MAIL_JSON, Zugangsdaten als Datei- oder Umgebungsreferenz). Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.DemoResetAvailable {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<section class=\"settings-card\" id=\"demodaten\"><h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<section class=\"settings-card\" id=\"demodaten\"><h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(demoInitTitle)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 159, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 161, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</h2><p>Spielt die gebündelten Demodaten mit dem heutigen Datum neu ein: Anliegen, Organisationsdaten, Ankündigungen und Termine werden ersetzt, Ihre Anmeldung bleibt gültig.</p><div class=\"settings-actions\"><a class=\"settings-secondary\" href=\"/app/verwaltung/einstellungen/demo\" data-demo-init-open aria-haspopup=\"dialog\" aria-controls=\"demo-init-dialog\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</h2><p>Spielt die gebündelten Demodaten mit dem heutigen Datum neu ein: Anliegen, Organisationsdaten, Ankündigungen und Termine werden ersetzt, Ihre Anmeldung bleibt gültig.</p><div class=\"settings-actions\"><a class=\"settings-secondary\" href=\"/app/verwaltung/einstellungen/demo\" data-demo-init-open aria-haspopup=\"dialog\" aria-controls=\"demo-init-dialog\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(demoInitTitle + " …")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 159, Col: 453}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/verwaltung_settings.templ`, Line: 161, Col: 453}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</a></div></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</a></div></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -806,7 +814,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -845,7 +853,7 @@ func verwaltungSettingsLede() templ.Component {
 			templ_7745c5c3_Var40 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<p>Hausverwaltung, Kommunikation und Automatisierung.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<p>Hausverwaltung, Kommunikation und Automatisierung.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

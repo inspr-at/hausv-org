@@ -107,7 +107,9 @@ templ portfolioBody(data PortfolioData) {
 					}
 					if len(data.QuietHouses) > 0 {
 						<details class="portfolio-quiet">
-							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }</summary>
+							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }
+								@DisclosureChevron()
+							</summary>
 							for _, house := range data.QuietHouses {
 								@portfolioHouseRow(house)
 							}
@@ -127,7 +129,9 @@ templ portfolioBody(data PortfolioData) {
 					}
 					if len(data.QuietHouses) > 0 {
 						<details class="more-data portfolio-mobile-quiet">
-							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }</summary>
+							<summary>{ portfolioQuietSummary(len(data.QuietHouses)) }
+								@DisclosureChevron()
+							</summary>
 							<ul class="mobile-list">
 								for _, house := range data.QuietHouses {
 									<li>@portfolioMobileHouseRow(house)
@@ -203,7 +207,7 @@ templ portfolioMobileHouseRow(house PortfolioHouse) {
 		<button type="submit" class="portfolio-mobile-row" aria-label={ house.Name + " öffnen" }>
 			<span class={ "dot", house.ActionClass } aria-hidden="true"></span>
 			<span class="item-copy"><strong>{ house.Name }</strong><span>{ portfolioMobileHouseSummary(house) }</span><span>{ portfolioNextSummary(house) }</span></span>
-			<span class="chevron" aria-hidden="true">›</span>
+			<span class="chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
 		</button>
 	</form>
 }

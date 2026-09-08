@@ -3,6 +3,8 @@ package server
 import (
 	"strings"
 	"testing"
+
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func TestContactsFormStaysClosedWhenManagedContactsEmpty(t *testing.T) {
@@ -23,7 +25,7 @@ func TestContactsFormStaysClosedWhenManagedContactsEmpty(t *testing.T) {
 		t.Fatal("contact-add form should NOT be auto-opened when managed contacts are empty")
 	}
 
-	if !strings.Contains(body, `<summary>Kontakt hinzufügen</summary>`) {
+	if !strings.Contains(body, `<summary>Kontakt hinzufügen<span class="disclosure-chevron" aria-hidden="true">`) {
 		t.Fatal("add contact summary missing")
 	}
 
@@ -66,15 +68,17 @@ func TestOptionalFieldsHaveDisclosureMarker(t *testing.T) {
 		t.Fatal("contact-add-optional details missing")
 	}
 
-	if !strings.Contains(body, `<summary>Notiz, Region und Qualifikation</summary>`) {
+	if !strings.Contains(body, `<summary>Notiz, Region und Qualifikation<span class="disclosure-chevron" aria-hidden="true">`) {
 		t.Fatal("optional fields summary missing")
 	}
 
-	styleBlock := body[strings.Index(body, ".contact-form details>summary"):strings.Index(body, ".optional-grid")]
-	if !strings.Contains(styleBlock, `content:"▶"`) {
-		t.Fatal("disclosure marker CSS missing from .contact-form details>summary")
+	css, err := web.Assets.ReadFile("assets/portal-shell.css")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(styleBlock, "rotate(90deg)") {
-		t.Fatal("open state disclosure marker CSS missing")
+	for _, marker := range []string{".disclosure-chevron", "border-radius:50%", "details[open]>summary>.disclosure-chevron svg{transform:rotate(180deg)}", "transition:transform .2s ease", "prefers-reduced-motion:reduce"} {
+		if !strings.Contains(string(css), marker) {
+			t.Errorf("shared disclosure state/animation missing %q", marker)
+		}
 	}
 }

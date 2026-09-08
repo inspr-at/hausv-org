@@ -1,0 +1,33 @@
+package web
+
+// The first paint must have the final navigation surface even while the
+// cacheable stylesheet is in flight. Page styles precede this shared contract.
+templ PortalShellCriticalStyles() {
+	<style data-shell-critical>
+		:root{--sidebar-w:280px;--context-bar-h:40px}
+		html{background:var(--nav)}
+		.shell{min-height:calc(100vh - var(--context-bar-h));display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr)}
+		.sidebar{--sidebar-pad-x:18px;position:sticky;top:var(--context-bar-h);height:calc(100dvh - var(--context-bar-h));display:flex;flex-direction:column;padding:16px var(--sidebar-pad-x);background:var(--nav);color:var(--panel);overflow:auto}
+		.portal-shell-content{min-width:0}
+		.nav a{min-height:40px}
+		.liegenschaft-switcher .house-header-card{grid-template-columns:18px minmax(0,1fr);gap:8px}
+		.liegenschaft-switcher .house-header-copy strong{display:-webkit-box;overflow:hidden;white-space:normal;overflow-wrap:anywhere;font-size:18px;line-height:1.25;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+		.liegenschaft-switcher .house-header-copy small{white-space:normal;overflow-wrap:anywhere;font-size:11px;line-height:1.4}
+		.house-header-card:has(>.disclosure-chevron){position:relative;padding-inline-end:52px}
+		.house-header-card>.disclosure-chevron{position:absolute;right:12px;top:50%;width:30px;height:30px;display:grid;place-items:center;transform:translateY(-50%);border:1px solid rgba(255,255,255,.24);border-radius:50%;background:rgba(255,255,255,.14);color:var(--line)}
+		.house-header-card>.disclosure-chevron svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor}
+		.context-bar{position:sticky;top:0;z-index:220;min-width:0;height:var(--context-bar-h);display:flex;align-items:center;gap:16px;padding:0 18px;background:var(--nav);color:var(--panel);border-bottom:1px solid var(--nav-2);font-size:12px}
+		.context-bar.context-preview{background:#41432c;border-bottom-color:var(--gold)}
+		.context-scope{min-width:0;flex:1;display:flex;align-items:center;gap:10px}
+		.context-scope>.liegenschaft-switcher{min-width:0;flex:0 1 auto;margin:0}
+		.context-scope .house-header-card{display:flex;gap:6px;min-height:40px;margin:0;padding:0 36px 0 0;border:0;background:transparent;color:inherit}
+		.context-scope .house-header-copy strong{font-family:var(--font-sans);font-size:12px;line-height:1.3}
+		.context-scope .house-header-copy small,.context-scope .switcher-building{display:none}
+		.context-scope .disclosure-chevron{right:0}
+		.context-account>summary{min-width:40px;min-height:40px;display:flex;align-items:center;gap:8px;list-style:none}
+		.context-account .avatar{width:24px;height:24px;font-size:9px}
+		.liegenschaft-switcher:not([open])>.switcher-panel,.context-account:not([open])>.context-account-menu,.mobile-head .menu:not([open])>.menu-panel{display:none}
+		@media(min-width:761px){body{background:linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))}.mobile-head,.context-bar.mobile-head,.mobile-content,.thumb-zone{display:none}}
+		@media(max-width:760px){:root{--context-bar-h:74px}html,body{background:var(--paper)}.shell{display:block;min-height:0}.sidebar,.desktop-context-bar{display:none}.context-bar.mobile-head{height:var(--context-bar-h);min-height:var(--context-bar-h);display:grid;grid-template-columns:42px minmax(0,1fr) 40px;gap:12px;padding:0 16px}.context-bar .menu{grid-column:1;grid-row:1}.context-bar .context-scope{grid-column:2;grid-row:1;display:block}.context-bar .context-account{grid-column:3;grid-row:1}.context-person,.context-account>summary>.context-role,.context-scope>.liegenschaft-switcher:not(:last-child),.scope-separator{display:none}}
+	</style>
+}

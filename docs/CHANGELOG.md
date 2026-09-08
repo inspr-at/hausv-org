@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.14] - 2026-09-08
+
+### Verbessert
+
+- Navigation: Das Liegenschafts-Panel öffnet vollständig sichtbar, Auf- und Zuklappen zeigt ein rundes, drehendes Symbol mit erkennbarem Zustand, Menüeinträge reagieren weich auf die Maus, und beim Seitenwechsel blitzt der Hintergrund nicht mehr auf.
+
 ## [1.9.13] - 2026-09-08
 
 ### Neu

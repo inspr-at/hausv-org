@@ -350,7 +350,15 @@ func HandoversBody(data HandoversPageData) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</span></summary><div class=\"handover-list\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</span>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</summary><div class=\"handover-list\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -360,13 +368,13 @@ func HandoversBody(data HandoversPageData) templ.Component {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></details>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></details>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -376,7 +384,7 @@ func HandoversBody(data HandoversPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -405,20 +413,20 @@ func HandoverCard(item HandoverItem) templ.Component {
 			templ_7745c5c3_Var15 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<article class=\"panel handover-card\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<article class=\"panel handover-card\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue("handover-" + item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 116, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 118, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"><header class=\"handover-head\"><div><div class=\"handover-meta\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\"><header class=\"handover-head\"><div><div class=\"handover-meta\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -427,7 +435,7 @@ func HandoverCard(item HandoverItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<span class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -440,70 +448,70 @@ func HandoverCard(item HandoverItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 117, Col: 118}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 119, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(item.Type)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 117, Col: 144}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 119, Col: 144}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span></div><h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</span></div><h3>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 117, Col: 175}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 119, Col: 175}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</h3><p class=\"handover-place\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</h3><p class=\"handover-place\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if item.HasUnit {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"handover-unit\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span class=\"handover-unit\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(item.UnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 119, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 121, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if item.HasScheduledAt {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"handover-date\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"handover-date\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -519,7 +527,7 @@ func HandoverCard(item HandoverItem) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "item.ScheduledAt ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "item.ScheduledAt ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -529,87 +537,87 @@ func HandoverCard(item HandoverItem) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(item.Confirmations) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"handover-confirm-progress\" aria-label=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"handover-confirm-progress\" aria-label=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(handoverConfirmationLabel(item))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 126, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 128, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\"><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\"><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(item.ConfirmedCount)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 126, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 128, Col: 118}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "/")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "/")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(item.ConfirmationCount)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 126, Col: 145}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 128, Col: 145}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</strong><span>bestätigt</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</strong><span>bestätigt</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</header><div class=\"handover-parties\"><div><span>Ausziehend</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</header><div class=\"handover-parties\"><div><span>Ausziehend</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(item.Outgoing)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 129, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 131, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</strong></div><div><span>Einziehend</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</strong></div><div><span>Einziehend</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(item.Incoming)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 129, Col: 151}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 131, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</strong></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</strong></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -618,7 +626,7 @@ func HandoverCard(item HandoverItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<div class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -631,216 +639,224 @@ func HandoverCard(item HandoverItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\"><div><span>Als Nächstes</span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\"><div><span>Als Nächstes</span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(item.NextStep)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 130, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 132, Col: 152}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</strong><small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</strong><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(item.NextStepDetail)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 130, Col: 191}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 132, Col: 191}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</small></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</small></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if item.HasFiledDocument {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<a class=\"button primary small\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<a class=\"button primary small\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var33 templ.SafeURL
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.FiledDocumentURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 132, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 134, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\">Dokument öffnen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\">Dokument öffnen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if item.CanFile && item.CanManageDocuments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<form method=\"post\" action=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<form method=\"post\" action=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var34 templ.SafeURL
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.FileURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 134, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 136, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 134, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 136, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><button class=\"button primary small\" type=\"submit\">Jetzt ablegen</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\"><button class=\"button primary small\" type=\"submit\">Jetzt ablegen</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</div><details class=\"handover-details\"><summary><strong>Details</strong><small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</div><details class=\"handover-details\"><summary><strong>Details</strong><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(handoverDetailsLabel(item))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 137, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 139, Col: 104}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</small></summary><div class=\"handover-detail-grid\"><section class=\"handover-detail\"><h4>Räume</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</small>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</summary><div class=\"handover-detail-grid\"><section class=\"handover-detail\"><h4>Räume</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(item.Rooms) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, room := range item.Rooms {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<li><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<li><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 143, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 147, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</strong> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</strong> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if room.Condition != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(room.Condition)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 145, Col: 32}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 149, Col: 32}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if room.Defects != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<em>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<em>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var39 string
 					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(room.Defects)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 148, Col: 28}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 152, Col: 28}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</em>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</em>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<p>Keine Räume erfasst.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<p>Keine Räume erfasst.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</section><section class=\"handover-detail\"><h4>Zählerstände</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</section><section class=\"handover-detail\"><h4>Zählerstände</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(item.Meters) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "<ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, meter := range item.Meters {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<li><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<li><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var40 string
 				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(meter.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 161, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 165, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</strong><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "</strong><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var41 string
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(meter.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 161, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 165, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, " ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -848,116 +864,116 @@ func HandoverCard(item HandoverItem) templ.Component {
 					var templ_7745c5c3_Var42 string
 					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(" " + meter.Unit)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 163, Col: 28}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 167, Col: 28}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "</span></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</span></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<p>Keine Zählerstände erfasst.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<p>Keine Zählerstände erfasst.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</section><section class=\"handover-detail\"><h4>Schlüssel</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</section><section class=\"handover-detail\"><h4>Schlüssel</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(item.Keys) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, key := range item.Keys {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<li><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<li><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(key.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 176, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 180, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</strong><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</strong><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var44 string
 				templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(key.Count)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 176, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 180, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " Stk.</span></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " Stk.</span></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<p>Keine Schlüssel erfasst.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<p>Keine Schlüssel erfasst.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "</section><section class=\"handover-detail\"><h4>Bestätigungen</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</section><section class=\"handover-detail\"><h4>Bestätigungen</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(item.Confirmations) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, confirmation := range item.Confirmations {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<li><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<li><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var45 string
 				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(confirmation.Role)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 187, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 191, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</strong><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</strong><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var46 string
 				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(handoverConfirmationParty(confirmation))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 187, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 191, Col: 97}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -966,7 +982,7 @@ func HandoverCard(item HandoverItem) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<span class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<span class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -979,53 +995,53 @@ func HandoverCard(item HandoverItem) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var49 string
 				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(confirmation.Status)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 187, Col: 176}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 191, Col: 176}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</span></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<p>Keine externen Bestätigungen vorgesehen.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<p>Keine externen Bestätigungen vorgesehen.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</section></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if item.Notes != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<div class=\"handover-note\"><strong>Notiz</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div class=\"handover-note\"><strong>Notiz</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(item.Notes)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 196, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 200, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1035,90 +1051,90 @@ func HandoverCard(item HandoverItem) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if item.CanChangeFiles {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<form class=\"handover-add-files\" method=\"post\" action=\"/app/uebergaben/attachments\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "<form class=\"handover-add-files\" method=\"post\" action=\"/app/uebergaben/attachments\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 200, Col: 164}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 204, Col: 164}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "\"><label for=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "\"><label for=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue("handover-files-" + item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 200, Col: 208}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 204, Col: 208}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "\">Fotos oder PDF ergänzen<span class=\"file-control\"><input id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "\">Fotos oder PDF ergänzen<span class=\"file-control\"><input id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.ResolveAttributeValue("handover-files-" + item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 200, Col: 301}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 204, Col: 301}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple required><span>Dateien auswählen</span></span></label><button class=\"button small\" type=\"submit\">Dateien ergänzen</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple required><span>Dateien auswählen</span></span></label><button class=\"button small\" type=\"submit\">Dateien ergänzen</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<footer class=\"handover-detail-actions\"><a class=\"button small ghost\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<footer class=\"handover-detail-actions\"><a class=\"button small ghost\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var54 templ.SafeURL
 		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.ProtocolURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 202, Col: 111}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 206, Col: 111}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "\">PDF exportieren</a><span>Angelegt ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "\">PDF exportieren</a><span>Angelegt ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(item.CreatedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 202, Col: 164}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 206, Col: 164}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, " · Aktualisiert ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, " · Aktualisiert ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(item.UpdatedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 202, Col: 199}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 206, Col: 199}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</span></footer></details></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</span></footer></details></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1148,204 +1164,204 @@ func HandoverAttachments(attachments []view.AttachmentView) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(attachments) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, attachment := range attachments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<div class=\"attachment-item\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<div class=\"attachment-item\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if attachment.IsImage {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var58 string
 					templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\" data-lightbox-full=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\" data-lightbox-full=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var59 string
 					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 131}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 131}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\" data-lightbox-caption=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\" data-lightbox-caption=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var60 string
 					templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 177}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 177}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\"><img src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\"><img src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var61 string
 					templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 210}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 210}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\" alt=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\" alt=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var62 string
 					templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 238}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 238}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\" loading=\"lazy\" decoding=\"async\"><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var63 string
 					templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 213, Col: 325}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 217, Col: 325}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</span></button> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</span></button> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<a class=\"attachment-open\" href=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<a class=\"attachment-open\" href=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var64 templ.SafeURL
 					templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 215, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 219, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var65 string
 					templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(handoverAttachmentKind(attachment))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 215, Col: 174}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 219, Col: 174}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</span><span class=\"attachment-name\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</span><span class=\"attachment-name\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var66 string
 					templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 215, Col: 234}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 219, Col: 234}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</span></a> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "</span></a> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if attachment.CanDelete {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<form class=\"attachment-delete\" method=\"post\" action=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<form class=\"attachment-delete\" method=\"post\" action=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var67 templ.SafeURL
 					templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 218, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 222, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var68 string
 					templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 218, Col: 191}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 222, Col: 191}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\"> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "\"> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if attachment.DeleteRedirect != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<input type=\"hidden\" name=\"redirect\" value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<input type=\"hidden\" name=\"redirect\" value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var69 string
 						templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 220, Col: 78}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 224, Col: 78}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "\"> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\"> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1375,7 +1391,7 @@ func HandoverBlank(empty view.EmptyStateView, canManageBuilding bool) templ.Comp
 			templ_7745c5c3_Var70 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<section class=\"handover-blank\" aria-labelledby=\"handover-blank-title\"><div class=\"handover-blank-main\"><div class=\"handover-blank-lead\"><span class=\"handover-blank-icon\" aria-hidden=\"true\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<section class=\"handover-blank\" aria-labelledby=\"handover-blank-title\"><div class=\"handover-blank-main\"><div class=\"handover-blank-lead\"><span class=\"handover-blank-icon\" aria-hidden=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1383,20 +1399,20 @@ func HandoverBlank(empty view.EmptyStateView, canManageBuilding bool) templ.Comp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</span><h2 id=\"handover-blank-title\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</span><h2 id=\"handover-blank-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var71 string
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 232, Col: 264}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 236, Col: 264}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</h2><p>Räume, Zählerstände, Schlüssel und Fotos an einem Ort. Beide Parteien bestätigen über ihren persönlichen Link.</p></div><div class=\"handover-blank-actions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</h2><p>Räume, Zählerstände, Schlüssel und Fotos an einem Ort. Beide Parteien bestätigen über ihren persönlichen Link.</p></div><div class=\"handover-blank-actions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1405,12 +1421,12 @@ func HandoverBlank(empty view.EmptyStateView, canManageBuilding bool) templ.Comp
 			return templ_7745c5c3_Err
 		}
 		if canManageBuilding {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<a class=\"button ghost\" href=\"/app/settings/building?section=units\" title=\"Einheiten in den Gebäude-Einstellungen öffnen\">Einheiten prüfen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<a class=\"button ghost\" href=\"/app/settings/building?section=units\" title=\"Einheiten in den Gebäude-Einstellungen öffnen\">Einheiten prüfen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</div></div><aside class=\"handover-blank-side\"><h2>In drei Schritten</h2><ol class=\"handover-blank-steps\"><li><strong>Erfassen</strong><span>Einheit und Zustand festhalten.</span></li><li><strong>Bestätigen</strong><span>Persönliche Links an beide Parteien senden.</span></li><li><strong>Ablegen</strong><span>Als PDF in den Dokumenten sichern.</span></li></ol></aside></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "</div></div><aside class=\"handover-blank-side\"><h2>In drei Schritten</h2><ol class=\"handover-blank-steps\"><li><strong>Erfassen</strong><span>Einheit und Zustand festhalten.</span></li><li><strong>Bestätigen</strong><span>Persönliche Links an beide Parteien senden.</span></li><li><strong>Ablegen</strong><span>Als PDF in den Dokumenten sichern.</span></li></ol></aside></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1439,20 +1455,20 @@ func HandoverCreateButton(label string) templ.Component {
 			templ_7745c5c3_Var72 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<button class=\"button primary\" type=\"button\" data-dialog=\"handover-create\" aria-haspopup=\"dialog\" aria-controls=\"handover-create\"><span aria-hidden=\"true\">＋</span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<button class=\"button primary\" type=\"button\" data-dialog=\"handover-create\" aria-haspopup=\"dialog\" aria-controls=\"handover-create\"><span aria-hidden=\"true\">＋</span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 240, Col: 173}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 244, Col: 173}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "</button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1481,66 +1497,90 @@ func HandoverCreateDialog(nowInput string, units []view.SelectOption) templ.Comp
 			templ_7745c5c3_Var74 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<dialog id=\"handover-create\" class=\"dialog handover-dialog\" aria-labelledby=\"handover-create-title\" aria-describedby=\"handover-create-intro\"><form method=\"post\" action=\"/app/uebergaben\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><div><h2 id=\"handover-create-title\">Übergabe anlegen</h2><p id=\"handover-create-intro\">Einheit, Titel und einen Raum erfassen. Alles Weitere ist optional.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"handover-form-columns\"><section class=\"handover-form-group\" aria-labelledby=\"handover-basics-title\"><div class=\"handover-form-step\"><span>1</span><div><strong id=\"handover-basics-title\">Übergabe</strong><small>Einheit, Anlass und Termin</small></div></div><div class=\"dialog-grid\"><label for=\"handover-unit\">Einheit<select id=\"handover-unit\" name=\"unit_id\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<dialog id=\"handover-create\" class=\"dialog handover-dialog\" aria-labelledby=\"handover-create-title\" aria-describedby=\"handover-create-intro\"><form method=\"post\" action=\"/app/uebergaben\" enctype=\"multipart/form-data\"><div class=\"dialog-head\"><div><h2 id=\"handover-create-title\">Übergabe anlegen</h2><p id=\"handover-create-intro\">Einheit, Titel und einen Raum erfassen. Alles Weitere ist optional.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></div><div class=\"dialog-body\"><div class=\"handover-form-columns\"><section class=\"handover-form-group\" aria-labelledby=\"handover-basics-title\"><div class=\"handover-form-step\"><span>1</span><div><strong id=\"handover-basics-title\">Übergabe</strong><small>Einheit, Anlass und Termin</small></div></div><div class=\"dialog-grid\"><label for=\"handover-unit\">Einheit<select id=\"handover-unit\" name=\"unit_id\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, unit := range units {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 246, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 250, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if unit.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, ">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var76 string
 			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 246, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 250, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</option>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</select></label><label for=\"handover-type\">Anlass<select id=\"handover-type\" name=\"handover_type\"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label><label class=\"full\" for=\"handover-title\">Titel<input id=\"handover-title\" name=\"title\" required maxlength=\"160\" placeholder=\"Nutzerwechsel Einheit 12\"></label><label class=\"full\" for=\"handover-time\">Termin<input id=\"handover-time\" type=\"datetime-local\" name=\"scheduled_at\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "</select></label><label for=\"handover-type\">Anlass<select id=\"handover-type\" name=\"handover_type\"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label><label class=\"full\" for=\"handover-title\">Titel<input id=\"handover-title\" name=\"title\" required maxlength=\"160\" placeholder=\"Nutzerwechsel Einheit 12\"></label><label class=\"full\" for=\"handover-time\">Termin<input id=\"handover-time\" type=\"datetime-local\" name=\"scheduled_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(nowInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 248, Col: 481}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/handovers.templ`, Line: 252, Col: 481}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\"></label></div></section><section class=\"handover-form-group\" aria-labelledby=\"handover-condition-title\"><div class=\"handover-form-step\"><span>2</span><div><strong id=\"handover-condition-title\">Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div><label for=\"handover-rooms\">Räume<textarea id=\"handover-rooms\" name=\"rooms_text\" required placeholder=\"Wohnzimmer | gut | keine Mängel\"></textarea></label></section></div><details class=\"dialog-optional\"><summary>Personen für Bestätigung</summary><p class=\"dialog-optional-copy\">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p><div class=\"dialog-optional-grid\"><label for=\"handover-out-name\">Ausziehend – Name<input id=\"handover-out-name\" name=\"outgoing_name\" autocomplete=\"name\"></label><label for=\"handover-out-email\">Ausziehend – E-Mail<input id=\"handover-out-email\" type=\"email\" name=\"outgoing_email\" autocomplete=\"email\"></label><label for=\"handover-in-name\">Einziehend – Name<input id=\"handover-in-name\" name=\"incoming_name\" autocomplete=\"name\"></label><label for=\"handover-in-email\">Einziehend – E-Mail<input id=\"handover-in-email\" type=\"email\" name=\"incoming_email\" autocomplete=\"email\"></label></div></details> <details class=\"dialog-optional\"><summary>Zähler, Schlüssel und Notiz</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"handover-meters\">Zählerstände <small>Bezeichnung | Wert | Einheit</small><textarea id=\"handover-meters\" name=\"meters_text\" placeholder=\"Strom | 12345,6 | kWh\"></textarea></label><label class=\"full\" for=\"handover-keys\">Schlüssel <small>Bezeichnung | Anzahl</small><textarea id=\"handover-keys\" name=\"keys_text\" placeholder=\"Wohnungsschlüssel | 3\"></textarea></label><label class=\"full\" for=\"handover-notes\">Notiz<textarea id=\"handover-notes\" name=\"notes\" placeholder=\"Zusätzliche Beobachtungen\"></textarea></label></div></details> <details class=\"dialog-optional\"><summary>Fotos und PDF</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"handover-attachments\">Dateien<span class=\"file-control\"><input id=\"handover-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div><footer class=\"dialog-footer handover-dialog-submit\"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class=\"button primary\" type=\"submit\">Übergabe anlegen</button></footer></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\"></label></div></section><section class=\"handover-form-group\" aria-labelledby=\"handover-condition-title\"><div class=\"handover-form-step\"><span>2</span><div><strong id=\"handover-condition-title\">Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div><label for=\"handover-rooms\">Räume<textarea id=\"handover-rooms\" name=\"rooms_text\" required placeholder=\"Wohnzimmer | gut | keine Mängel\"></textarea></label></section></div><details class=\"dialog-optional\"><summary>Personen für Bestätigung")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</summary><p class=\"dialog-optional-copy\">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p><div class=\"dialog-optional-grid\"><label for=\"handover-out-name\">Ausziehend – Name<input id=\"handover-out-name\" name=\"outgoing_name\" autocomplete=\"name\"></label><label for=\"handover-out-email\">Ausziehend – E-Mail<input id=\"handover-out-email\" type=\"email\" name=\"outgoing_email\" autocomplete=\"email\"></label><label for=\"handover-in-name\">Einziehend – Name<input id=\"handover-in-name\" name=\"incoming_name\" autocomplete=\"name\"></label><label for=\"handover-in-email\">Einziehend – E-Mail<input id=\"handover-in-email\" type=\"email\" name=\"incoming_email\" autocomplete=\"email\"></label></div></details> <details class=\"dialog-optional\"><summary>Zähler, Schlüssel und Notiz")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"handover-meters\">Zählerstände <small>Bezeichnung | Wert | Einheit</small><textarea id=\"handover-meters\" name=\"meters_text\" placeholder=\"Strom | 12345,6 | kWh\"></textarea></label><label class=\"full\" for=\"handover-keys\">Schlüssel <small>Bezeichnung | Anzahl</small><textarea id=\"handover-keys\" name=\"keys_text\" placeholder=\"Wohnungsschlüssel | 3\"></textarea></label><label class=\"full\" for=\"handover-notes\">Notiz<textarea id=\"handover-notes\" name=\"notes\" placeholder=\"Zusätzliche Beobachtungen\"></textarea></label></div></details> <details class=\"dialog-optional\"><summary>Fotos und PDF")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"handover-attachments\">Dateien<span class=\"file-control\"><input id=\"handover-attachments\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div><footer class=\"dialog-footer handover-dialog-submit\"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class=\"button primary\" type=\"submit\">Übergabe anlegen</button></footer></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1609,7 +1649,7 @@ func HandoversStyles() templ.Component {
 			templ_7745c5c3_Var78 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}\n\t\t.handovers-main{min-width:0;padding:var(--space-6)}.page{max-width:1180px;margin:var(--space-5) auto 0}.handover-page{display:grid;gap:var(--space-5)}.handover-scope,.handover-note{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.45}.handover-note strong{color:var(--ink)}.handover-note p{margin-top:var(--space-1);overflow-wrap:anywhere}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.flash{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}\n\t\t.handover-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.handover-metrics>div{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-4);box-shadow:var(--shadow-panel)}.handover-metrics strong{display:block;font-family:var(--font-serif);font-size:27px}.handover-metrics span{display:block;margin-top:var(--space-1);color:var(--muted);font-size:12px;font-weight:750}.handover-sections,.handover-list{display:grid;gap:var(--space-3)}.handover-section{border-top:1px solid var(--line)}.handover-section>summary{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);cursor:pointer;list-style:none}.handover-section>summary::-webkit-details-marker{display:none}.handover-section>summary>span:first-child{display:grid;gap:3px}.handover-section>summary strong{font-family:var(--font-serif);font-size:21px}.handover-section>summary small{color:var(--muted);font-size:12px}.handover-section-count{min-width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-weight:900}\n\t\t.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.handover-card{display:grid;gap:var(--space-3);padding:18px}.handover-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center}.handover-meta{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;color:var(--soft);font-size:12px;font-weight:800}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800}.pill.ok{border-color:var(--leaf);color:var(--leaf)}.pill.unread{border-color:var(--gold);color:var(--gold-ink)}.handover-card h3{margin-top:var(--space-1);font-size:27px;overflow-wrap:anywhere}.handover-place{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-1);color:var(--muted);font-size:13px;font-weight:700}.handover-place span+span::before{content:\"·\";margin-right:var(--space-3);color:var(--soft)}.handover-confirm-progress{min-width:74px;display:grid;justify-items:end;gap:2px}.handover-confirm-progress strong{font-family:var(--font-serif);font-size:22px}.handover-confirm-progress span{color:var(--muted);font-size:11px}.handover-next{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft)}.handover-next div{display:grid;gap:2px}.handover-next span{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.handover-next strong{font-size:14px}.handover-next small{color:var(--muted);font-size:12px}.handover-next form{margin:0}\n\t\t.handover-details{border-top:1px solid var(--line);padding-top:var(--space-2)}.handover-details>summary{min-height:44px;display:flex;align-items:center;gap:var(--space-2);cursor:pointer;color:var(--gold-ink);font-size:13px;font-weight:850}.handover-details>summary small{color:var(--muted);font-size:11px}.handover-details[open]>summary{margin-bottom:var(--space-3)}.handover-parties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2);margin-bottom:var(--space-3)}.handover-parties div,.handover-detail{border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-3);background:var(--panel-soft);min-width:0}.handover-parties span{display:block;color:var(--soft);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.handover-parties strong{display:block;margin-top:3px;font-size:12px;overflow-wrap:anywhere}.handover-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2)}.handover-detail h4{font-size:15px}.handover-detail ul{list-style:none;padding:0;margin:var(--space-2) 0 0;display:grid;gap:var(--space-2)}.handover-detail li{display:grid;gap:3px;color:var(--muted);font-size:13px;line-height:1.35;overflow-wrap:anywhere}.handover-detail li strong{color:var(--ink);font-size:14px}.handover-detail li em{color:var(--gold-ink);font-style:normal}.handover-detail p{margin-top:var(--space-2);color:var(--muted);font-size:13px}.handover-note{margin-top:var(--space-3)}\n\t\t.attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2);margin-top:var(--space-3)}.attachment-item{position:relative;min-width:0}.attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}.attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}.attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}.attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}.attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.attachment-picker.has-files{display:grid}.attachment-picker-head,.attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}.attachment-picker-list{display:grid;gap:var(--space-2)}.attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy{min-width:0;display:grid;flex:1}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--soft)}.attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker-progress{display:none}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t.handover-add-files{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end;border-top:1px solid var(--line);margin-top:var(--space-3);padding-top:var(--space-3)}.handover-add-files label,.dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.handover-detail-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-3);color:var(--soft);font-size:11px}\n\t\t.handover-blank{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(286px,.75fr);gap:var(--space-4)}.handover-blank-main{display:grid;align-content:center;gap:var(--space-5);border:1px dashed var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-6)}.handover-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.handover-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--gold-ink)}.handover-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.handover-blank-main h2{font-size:30px}.handover-blank-main p{max-width:50ch;color:var(--muted);font-size:15px;line-height:1.5}.handover-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.handover-blank-side{align-self:start;display:grid;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-5);box-shadow:var(--shadow-panel)}.handover-blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.handover-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:step}.handover-blank-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:2px var(--space-3);counter-increment:step}.handover-blank-steps li::before{content:counter(step);grid-row:1/span 2;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:850}.handover-blank-steps strong,.handover-blank-steps span{grid-column:2}.handover-blank-steps strong{font-size:13px}.handover-blank-steps span{color:var(--muted);font-size:12px;line-height:1.4}\n\t\t.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head,.dialog-footer{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-footer{border-top:1px solid var(--line);border-bottom:0}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.document-dialog-intro,.dialog-optional-copy{color:var(--muted);font-size:12px}.dialog-grid,.dialog-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1/-1}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:94px;resize:vertical}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-copy{padding:0 var(--space-3)}.dialog-optional-grid{padding:var(--space-3);border-top:1px solid var(--line)}.handover-form-step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:var(--space-3);align-items:center}.handover-form-step>span{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-weight:900}.handover-form-step div{display:grid}.handover-form-step strong{font-family:var(--font-serif);font-size:18px}.handover-form-step small,.handover-dialog-submit span{color:var(--muted);font-size:12px}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}\n\t\t@media(max-width:1050px){.handover-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.handovers-main{padding:var(--space-4)}.page{margin-top:0}.handover-metrics{gap:6px}.handover-metrics>div{padding:var(--space-3) var(--space-2)}.handover-metrics strong{font-size:23px}.handover-metrics span{font-size:10px}.handover-section>summary small{display:none}.handover-card{padding:var(--space-3)}.handover-card h3{font-size:21px}.handover-head{gap:var(--space-2)}.handover-place span{flex-basis:100%}.handover-place span+span::before{display:none}.handover-next,.handover-detail-grid,.handover-parties,.handover-add-files,.dialog-grid,.dialog-optional-grid,.handover-dialog-submit{grid-template-columns:minmax(0,1fr)}.handover-next .button,.handover-next form,.handover-next form button,.handover-add-files .button{width:100%}.handover-blank{grid-template-columns:minmax(0,1fr)}.handover-blank-main{padding:var(--space-5)}.handover-blank-actions{display:grid}.handover-dialog-submit span{display:none}.handover-dialog-submit .button{width:100%}}\n\t\t.handovers-main .button.primary,.handover-dialog .button.primary{color:var(--nav)}.handover-page{gap:24px}.handover-scope{display:flex;align-items:center;gap:16px;padding:16px;font-size:14px}.handover-scope>span{font-size:20px}.handover-card{padding:24px;gap:16px}.handover-date{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--paper);font-size:12px}.handover-date svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}.handover-place{align-items:center;gap:8px 16px;margin-top:8px}.handover-place .handover-date::before{display:none}.handover-parties{gap:16px;margin:0}.handover-parties div{padding:0;border:0;background:transparent}.handover-parties strong{font-size:14px}.handover-next{padding:16px;gap:16px}\n\t\t.handover-blank{gap:24px;grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr)}.handover-blank-main{padding:32px;gap:24px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.handover-blank-lead{gap:16px}.handover-blank-icon{width:72px;height:72px;background:var(--panel-soft)}.handover-blank-icon svg{width:40px;height:40px}.handover-blank-main h2{font-size:40px;line-height:1.1}.handover-blank-main p{font-size:17px;line-height:1.5}.handover-blank-actions{gap:16px}.handover-blank-actions .button{min-height:48px;padding:8px 16px;font-size:14px}.handover-blank-side{align-self:stretch;align-content:start;padding:24px;gap:24px}.handover-blank-steps{gap:32px}.handover-blank-steps li{position:relative;grid-template-columns:40px minmax(0,1fr);gap:4px 16px}.handover-blank-steps li:not(:last-child)::after{content:\"\";position:absolute;left:20px;top:40px;bottom:-32px;width:1px;background:var(--line)}.handover-blank-steps li::before{width:40px;height:40px;font-size:17px;background:var(--nav)}.handover-blank-steps strong{font-size:16px}.handover-blank-steps span{font-size:14px}\n\t\t.handover-dialog{width:min(1040px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border-radius:16px}.handover-dialog .dialog-head{padding:24px;align-items:start}.handover-dialog .dialog-head h2{font-size:32px;line-height:1.1}.handover-dialog .dialog-head p{margin-top:8px;color:var(--muted);font-size:14px;line-height:1.5}.handover-dialog .dialog-close{width:48px;height:48px;flex:none;background:transparent}.handover-dialog .dialog-body{padding:24px;gap:16px;background:var(--paper)}.handover-form-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.handover-form-group{min-width:0;display:grid;align-content:start;gap:24px}.handover-form-group+.handover-form-group{border-left:1px solid var(--line);padding-left:24px}.handover-form-step{grid-template-columns:40px minmax(0,1fr);gap:16px}.handover-form-step>span{width:40px;height:40px;background:var(--nav)}.handover-form-step strong{font-size:24px}.handover-form-step small{font-size:12px}.handover-dialog .dialog-grid,.handover-dialog .dialog-optional-grid{gap:16px}.handover-dialog label{color:var(--ink);font-size:13px}.handover-dialog :is(input,select,textarea){min-width:0;min-height:48px;padding:8px 16px;font-size:14px;font-weight:400}.handover-dialog #handover-rooms{min-height:240px}.handover-dialog .dialog-optional{background:var(--panel)}.handover-dialog .dialog-optional>summary{min-height:56px;padding:16px 40px 16px 16px;font-size:14px}.handover-dialog .dialog-optional-copy{padding:0 16px 16px}.handover-dialog .dialog-optional-grid{padding:16px}.handover-dialog .dialog-footer{padding:16px 24px;gap:16px}.handover-dialog .dialog-footer .button{min-height:48px;flex:none;padding:8px 24px}.handover-dialog :is(input,select,textarea,button,summary):focus-visible,.handover-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:3px}\n\t\t@media(max-width:1050px){.handover-blank{grid-template-columns:minmax(0,1fr)}.handover-blank-main h2{font-size:32px}}\n\t\t@media(max-width:760px){.handover-card,.handover-blank-main,.handover-blank-side{padding:16px}.handover-dialog .dialog-head,.handover-dialog .dialog-body,.handover-dialog .dialog-footer{padding:16px}.handover-dialog .dialog-head h2{font-size:26px}.handover-form-columns{grid-template-columns:minmax(0,1fr);padding:16px;gap:24px}.handover-form-group+.handover-form-group{padding-left:0;padding-top:24px;border-left:0;border-top:1px solid var(--line)}.handover-dialog #handover-rooms{min-height:160px}.handover-dialog .dialog-footer{flex-wrap:wrap}.handover-dialog .handover-dialog-submit>span{display:block;font-size:11px}.handover-place span{flex-basis:auto}.handover-parties{grid-template-columns:repeat(2,minmax(0,1fr))}.handover-dialog .dialog-grid{grid-template-columns:minmax(0,1fr)}}\n\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}\n\t\t.handovers-main{min-width:0;padding:var(--space-6)}.page{max-width:1180px;margin:var(--space-5) auto 0}.handover-page{display:grid;gap:var(--space-5)}.handover-scope,.handover-note{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.45}.handover-note strong{color:var(--ink)}.handover-note p{margin-top:var(--space-1);overflow-wrap:anywhere}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.flash{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--gold)}\n\t\t.handover-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.handover-metrics>div{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-4);box-shadow:var(--shadow-panel)}.handover-metrics strong{display:block;font-family:var(--font-serif);font-size:27px}.handover-metrics span{display:block;margin-top:var(--space-1);color:var(--muted);font-size:12px;font-weight:750}.handover-sections,.handover-list{display:grid;gap:var(--space-3)}.handover-section{border-top:1px solid var(--line)}.handover-section>summary{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);cursor:pointer;list-style:none}.handover-section>summary::-webkit-details-marker{display:none}.handover-section>summary>span:first-child{display:grid;gap:3px}.handover-section>summary strong{font-family:var(--font-serif);font-size:21px}.handover-section>summary small{color:var(--muted);font-size:12px}.handover-section-count{min-width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-weight:900}\n\t\t.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.handover-card{display:grid;gap:var(--space-3);padding:18px}.handover-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center}.handover-meta{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;color:var(--soft);font-size:12px;font-weight:800}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800}.pill.ok{border-color:var(--leaf);color:var(--leaf)}.pill.unread{border-color:var(--gold);color:var(--gold-ink)}.handover-card h3{margin-top:var(--space-1);font-size:27px;overflow-wrap:anywhere}.handover-place{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-1);color:var(--muted);font-size:13px;font-weight:700}.handover-place span+span::before{content:\"·\";margin-right:var(--space-3);color:var(--soft)}.handover-confirm-progress{min-width:74px;display:grid;justify-items:end;gap:2px}.handover-confirm-progress strong{font-family:var(--font-serif);font-size:22px}.handover-confirm-progress span{color:var(--muted);font-size:11px}.handover-next{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);background:var(--panel-soft)}.handover-next div{display:grid;gap:2px}.handover-next span{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.handover-next strong{font-size:14px}.handover-next small{color:var(--muted);font-size:12px}.handover-next form{margin:0}\n\t\t.handover-details{border-top:1px solid var(--line);padding-top:var(--space-2)}.handover-details>summary{min-height:44px;display:flex;align-items:center;gap:var(--space-2);cursor:pointer;color:var(--gold-ink);font-size:13px;font-weight:850}.handover-details>summary small{color:var(--muted);font-size:11px}.handover-details[open]>summary{margin-bottom:var(--space-3)}.handover-parties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2);margin-bottom:var(--space-3)}.handover-parties div,.handover-detail{border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-3);background:var(--panel-soft);min-width:0}.handover-parties span{display:block;color:var(--soft);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.handover-parties strong{display:block;margin-top:3px;font-size:12px;overflow-wrap:anywhere}.handover-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2)}.handover-detail h4{font-size:15px}.handover-detail ul{list-style:none;padding:0;margin:var(--space-2) 0 0;display:grid;gap:var(--space-2)}.handover-detail li{display:grid;gap:3px;color:var(--muted);font-size:13px;line-height:1.35;overflow-wrap:anywhere}.handover-detail li strong{color:var(--ink);font-size:14px}.handover-detail li em{color:var(--gold-ink);font-style:normal}.handover-detail p{margin-top:var(--space-2);color:var(--muted);font-size:13px}.handover-note{margin-top:var(--space-3)}\n\t\t.attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2);margin-top:var(--space-3)}.attachment-item{position:relative;min-width:0}.attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}.attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}.attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}.attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}.attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}.attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.attachment-picker.has-files{display:grid}.attachment-picker-head,.attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}.attachment-picker-list{display:grid;gap:var(--space-2)}.attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}.attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}.attachment-picker-copy{min-width:0;display:grid;flex:1}.attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment-picker-meta{color:var(--soft)}.attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.attachment-picker-progress{display:none}.attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}.attachment-lightbox.open{display:grid}.attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}.attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}.attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}.lightbox-close,.lightbox-prev,.lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}.lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}.lightbox-prev,.lightbox-next{width:46px;height:70px;font-size:26px}.lightbox-prev{grid-column:1;grid-row:2}.lightbox-next{grid-column:3;grid-row:2}\n\t\t.handover-add-files{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end;border-top:1px solid var(--line);margin-top:var(--space-3);padding-top:var(--space-3)}.handover-add-files label,.dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;font-weight:700}.file-control{position:relative;min-height:44px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel)}.file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-control span{color:var(--gold-ink)}.handover-detail-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-3);color:var(--soft);font-size:11px}\n\t\t.handover-blank{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(286px,.75fr);gap:var(--space-4)}.handover-blank-main{display:grid;align-content:center;gap:var(--space-5);border:1px dashed var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);padding:var(--space-6)}.handover-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.handover-blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--gold-ink)}.handover-blank-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.handover-blank-main h2{font-size:30px}.handover-blank-main p{max-width:50ch;color:var(--muted);font-size:15px;line-height:1.5}.handover-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.handover-blank-side{align-self:start;display:grid;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);padding:var(--space-5);box-shadow:var(--shadow-panel)}.handover-blank-side h2{color:var(--gold-ink);font-family:var(--font-sans);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.handover-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:step}.handover-blank-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:2px var(--space-3);counter-increment:step}.handover-blank-steps li::before{content:counter(step);grid-row:1/span 2;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:850}.handover-blank-steps strong,.handover-blank-steps span{grid-column:2}.handover-blank-steps strong{font-size:13px}.handover-blank-steps span{color:var(--muted);font-size:12px;line-height:1.4}\n\t\t.dialog{width:min(680px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog form{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:inherit}.dialog-head,.dialog-footer{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-footer{border-top:1px solid var(--line);border-bottom:0}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto}.document-dialog-intro,.dialog-optional-copy{color:var(--muted);font-size:12px}.dialog-grid,.dialog-optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.dialog-grid .full,.dialog-optional-grid .full{grid-column:1/-1}.dialog input,.dialog select,.dialog textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--radius-xs);padding:var(--space-2) var(--space-3);background:var(--panel);color:var(--ink)}.dialog textarea{min-height:94px;resize:vertical}.dialog-optional{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.dialog-optional>summary{padding:var(--space-3);cursor:pointer;font-size:12px;font-weight:800}.dialog-optional-copy{padding:0 var(--space-3)}.dialog-optional-grid{padding:var(--space-3);border-top:1px solid var(--line)}.handover-form-step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:var(--space-3);align-items:center}.handover-form-step>span{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-weight:900}.handover-form-step div{display:grid}.handover-form-step strong{font-family:var(--font-serif);font-size:18px}.handover-form-step small,.handover-dialog-submit span{color:var(--muted);font-size:12px}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}\n\t\t@media(max-width:1050px){.handover-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.handovers-main{padding:var(--space-4)}.page{margin-top:0}.handover-metrics{gap:6px}.handover-metrics>div{padding:var(--space-3) var(--space-2)}.handover-metrics strong{font-size:23px}.handover-metrics span{font-size:10px}.handover-section>summary small{display:none}.handover-card{padding:var(--space-3)}.handover-card h3{font-size:21px}.handover-head{gap:var(--space-2)}.handover-place span{flex-basis:100%}.handover-place span+span::before{display:none}.handover-next,.handover-detail-grid,.handover-parties,.handover-add-files,.dialog-grid,.dialog-optional-grid,.handover-dialog-submit{grid-template-columns:minmax(0,1fr)}.handover-next .button,.handover-next form,.handover-next form button,.handover-add-files .button{width:100%}.handover-blank{grid-template-columns:minmax(0,1fr)}.handover-blank-main{padding:var(--space-5)}.handover-blank-actions{display:grid}.handover-dialog-submit span{display:none}.handover-dialog-submit .button{width:100%}}\n\t\t.handovers-main .button.primary,.handover-dialog .button.primary{color:var(--nav)}.handover-page{gap:24px}.handover-scope{display:flex;align-items:center;gap:16px;padding:16px;font-size:14px}.handover-scope>span{font-size:20px}.handover-card{padding:24px;gap:16px}.handover-date{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--paper);font-size:12px}.handover-date svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}.handover-place{align-items:center;gap:8px 16px;margin-top:8px}.handover-place .handover-date::before{display:none}.handover-parties{gap:16px;margin:0}.handover-parties div{padding:0;border:0;background:transparent}.handover-parties strong{font-size:14px}.handover-next{padding:16px;gap:16px}\n\t\t.handover-blank{gap:24px;grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr)}.handover-blank-main{padding:32px;gap:24px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.handover-blank-lead{gap:16px}.handover-blank-icon{width:72px;height:72px;background:var(--panel-soft)}.handover-blank-icon svg{width:40px;height:40px}.handover-blank-main h2{font-size:40px;line-height:1.1}.handover-blank-main p{font-size:17px;line-height:1.5}.handover-blank-actions{gap:16px}.handover-blank-actions .button{min-height:48px;padding:8px 16px;font-size:14px}.handover-blank-side{align-self:stretch;align-content:start;padding:24px;gap:24px}.handover-blank-steps{gap:32px}.handover-blank-steps li{position:relative;grid-template-columns:40px minmax(0,1fr);gap:4px 16px}.handover-blank-steps li:not(:last-child)::after{content:\"\";position:absolute;left:20px;top:40px;bottom:-32px;width:1px;background:var(--line)}.handover-blank-steps li::before{width:40px;height:40px;font-size:17px;background:var(--nav)}.handover-blank-steps strong{font-size:16px}.handover-blank-steps span{font-size:14px}\n\t\t.handover-dialog{width:min(1040px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border-radius:16px}.handover-dialog .dialog-head{padding:24px;align-items:start}.handover-dialog .dialog-head h2{font-size:32px;line-height:1.1}.handover-dialog .dialog-head p{margin-top:8px;color:var(--muted);font-size:14px;line-height:1.5}.handover-dialog .dialog-close{width:48px;height:48px;flex:none;background:transparent}.handover-dialog .dialog-body{padding:24px;gap:16px;background:var(--paper)}.handover-form-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.handover-form-group{min-width:0;display:grid;align-content:start;gap:24px}.handover-form-group+.handover-form-group{border-left:1px solid var(--line);padding-left:24px}.handover-form-step{grid-template-columns:40px minmax(0,1fr);gap:16px}.handover-form-step>span{width:40px;height:40px;background:var(--nav)}.handover-form-step strong{font-size:24px}.handover-form-step small{font-size:12px}.handover-dialog .dialog-grid,.handover-dialog .dialog-optional-grid{gap:16px}.handover-dialog label{color:var(--ink);font-size:13px}.handover-dialog :is(input,select,textarea){min-width:0;min-height:48px;padding:8px 16px;font-size:14px;font-weight:400}.handover-dialog #handover-rooms{min-height:240px}.handover-dialog .dialog-optional{background:var(--panel)}.handover-dialog .dialog-optional>summary{min-height:56px;padding:16px 40px 16px 16px;font-size:14px}.handover-dialog .dialog-optional-copy{padding:0 16px 16px}.handover-dialog .dialog-optional-grid{padding:16px}.handover-dialog .dialog-footer{padding:16px 24px;gap:16px}.handover-dialog .dialog-footer .button{min-height:48px;flex:none;padding:8px 24px}.handover-dialog :is(input,select,textarea,button,summary):focus-visible,.handover-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:3px}\n\t\t@media(max-width:1050px){.handover-blank{grid-template-columns:minmax(0,1fr)}.handover-blank-main h2{font-size:32px}}\n\t\t@media(max-width:760px){.handover-card,.handover-blank-main,.handover-blank-side{padding:16px}.handover-dialog .dialog-head,.handover-dialog .dialog-body,.handover-dialog .dialog-footer{padding:16px}.handover-dialog .dialog-head h2{font-size:26px}.handover-form-columns{grid-template-columns:minmax(0,1fr);padding:16px;gap:24px}.handover-form-group+.handover-form-group{padding-left:0;padding-top:24px;border-left:0;border-top:1px solid var(--line)}.handover-dialog #handover-rooms{min-height:160px}.handover-dialog .dialog-footer{flex-wrap:wrap}.handover-dialog .handover-dialog-submit>span{display:block;font-size:11px}.handover-place span{flex-basis:auto}.handover-parties{grid-template-columns:repeat(2,minmax(0,1fr))}.handover-dialog .dialog-grid{grid-template-columns:minmax(0,1fr)}}\n\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

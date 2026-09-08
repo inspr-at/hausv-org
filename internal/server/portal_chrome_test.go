@@ -2,11 +2,57 @@ package server
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/web"
 )
+
+func TestPortalSidebarWidthCookieIsRenderedBeforeAssets(t *testing.T) {
+	a, _, _ := newInboxTestApp(t, roleAdmin)
+	token, _, err := a.sessions.Put("vera@example.com", "demo", authMethodEmail, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, route := range []string{
+		"/demo/app", "/demo/app/announcements", "/demo/app/anliegen/board",
+		"/demo/app/verwaltung", "/demo/app/verwaltung/posteingang",
+		"/demo/app/verwaltung/rechte", "/demo/app/verwaltung/textbausteine",
+		"/demo/app/verwaltung/einstellungen", "/demo/app/settings/modules",
+		"/demo/app/parking/settings",
+	} {
+		for _, tc := range []struct{ cookie, want string }{
+			{"", "280"}, {"240", "240"}, {"360", "360"}, {"420", "420"},
+			{"239", "280"}, {"421", "280"}, {"NaN", "280"}, {"360px", "280"},
+			{"360.5", "280"}, {"9999999999999999999999999", "280"}, {"360;background:red", "280"},
+		} {
+			t.Run(route+"/"+tc.cookie, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodGet, "http://hausv.org"+route, nil)
+				req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+				if tc.cookie != "" {
+					req.Header.Add("Cookie", `hausv-sidebar-w="`+tc.cookie+`"`)
+				}
+				response := httptest.NewRecorder()
+				a.handler().ServeHTTP(response, req)
+				if response.Code != http.StatusOK {
+					t.Fatalf("status %d", response.Code)
+				}
+				html := response.Body.String()
+				want := `<html lang="de-AT" style="--sidebar-w:` + tc.want + `px;">`
+				if !strings.Contains(html, want) {
+					t.Fatalf("document must start with validated width %s", tc.want)
+				}
+				critical := strings.Index(html, "<style data-shell-critical>")
+				asset := strings.Index(html, `/assets/portal-shell.css?v=`)
+				if critical < 0 || asset <= critical || asset >= strings.Index(html, "</head>") {
+					t.Fatal("critical shell must precede the external sheet in the head")
+				}
+			})
+		}
+	}
+}
 
 func TestAuthenticatedPortalShellsIncludeMapTiles(t *testing.T) {
 	a := newTestPortalApp(t, userProfile{

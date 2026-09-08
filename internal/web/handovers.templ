@@ -98,7 +98,9 @@ templ HandoversBody(data HandoversPageData) {
 			<div class="handover-sections">
 				for _, section := range data.Sections {
 					if len(section.Items) > 0 {
-						<details class="handover-section" open?={ section.Open }><summary><span><strong>{ section.Title }</strong><small>{ section.Description }</small></span><span class="handover-section-count">{ len(section.Items) }</span></summary><div class="handover-list">
+						<details class="handover-section" open?={ section.Open }><summary><span><strong>{ section.Title }</strong><small>{ section.Description }</small></span><span class="handover-section-count">{ len(section.Items) }</span>
+							@DisclosureChevron()
+						</summary><div class="handover-list">
 							for _, item := range section.Items {
 								@HandoverCard(item)
 							}
@@ -134,7 +136,9 @@ templ HandoverCard(item HandoverItem) {
 				<form method="post" action={ templ.SafeURL(item.FileURL) }><input type="hidden" name="id" value={ item.ID }/><button class="button primary small" type="submit">Jetzt ablegen</button></form>
 			}
 		</div>
-		<details class="handover-details"><summary><strong>Details</strong><small>{ handoverDetailsLabel(item) }</small></summary>
+		<details class="handover-details"><summary><strong>Details</strong><small>{ handoverDetailsLabel(item) }</small>
+			@DisclosureChevron()
+		</summary>
 			<div class="handover-detail-grid">
 				<section class="handover-detail"><h4>Räume</h4>
 					if len(item.Rooms) > 0 {
@@ -246,9 +250,15 @@ templ HandoverCreateDialog(nowInput string, units []view.SelectOption) {
 			<option value={ unit.Value } selected?={ unit.Selected }>{ unit.Label }</option>
 		}
 	</select></label><label for="handover-type">Anlass<select id="handover-type" name="handover_type"><option>Nutzerwechsel</option><option>Einzug</option><option>Auszug</option></select></label><label class="full" for="handover-title">Titel<input id="handover-title" name="title" required maxlength="160" placeholder="Nutzerwechsel Einheit 12"/></label><label class="full" for="handover-time">Termin<input id="handover-time" type="datetime-local" name="scheduled_at" value={ nowInput }/></label></div></section><section class="handover-form-group" aria-labelledby="handover-condition-title"><div class="handover-form-step"><span>2</span><div><strong id="handover-condition-title">Zustand</strong><small>Raum | Zustand | Mangel · eine Zeile pro Raum</small></div></div><label for="handover-rooms">Räume<textarea id="handover-rooms" name="rooms_text" required placeholder="Wohnzimmer | gut | keine Mängel"></textarea></label></section></div>
-	<details class="dialog-optional"><summary>Personen für Bestätigung</summary><p class="dialog-optional-copy">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p><div class="dialog-optional-grid"><label for="handover-out-name">Ausziehend – Name<input id="handover-out-name" name="outgoing_name" autocomplete="name"/></label><label for="handover-out-email">Ausziehend – E-Mail<input id="handover-out-email" type="email" name="outgoing_email" autocomplete="email"/></label><label for="handover-in-name">Einziehend – Name<input id="handover-in-name" name="incoming_name" autocomplete="name"/></label><label for="handover-in-email">Einziehend – E-Mail<input id="handover-in-email" type="email" name="incoming_email" autocomplete="email"/></label></div></details>
-	<details class="dialog-optional"><summary>Zähler, Schlüssel und Notiz</summary><div class="dialog-optional-grid"><label class="full" for="handover-meters">Zählerstände <small>Bezeichnung | Wert | Einheit</small><textarea id="handover-meters" name="meters_text" placeholder="Strom | 12345,6 | kWh"></textarea></label><label class="full" for="handover-keys">Schlüssel <small>Bezeichnung | Anzahl</small><textarea id="handover-keys" name="keys_text" placeholder="Wohnungsschlüssel | 3"></textarea></label><label class="full" for="handover-notes">Notiz<textarea id="handover-notes" name="notes" placeholder="Zusätzliche Beobachtungen"></textarea></label></div></details>
-	<details class="dialog-optional"><summary>Fotos und PDF</summary><div class="dialog-optional-grid"><label class="full" for="handover-attachments">Dateien<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div><footer class="dialog-footer handover-dialog-submit"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class="button primary" type="submit">Übergabe anlegen</button></footer></form></dialog>
+	<details class="dialog-optional"><summary>Personen für Bestätigung
+		@DisclosureChevron()
+	</summary><p class="dialog-optional-copy">Eine E-Mail-Adresse erzeugt den persönlichen Bestätigungslink.</p><div class="dialog-optional-grid"><label for="handover-out-name">Ausziehend – Name<input id="handover-out-name" name="outgoing_name" autocomplete="name"/></label><label for="handover-out-email">Ausziehend – E-Mail<input id="handover-out-email" type="email" name="outgoing_email" autocomplete="email"/></label><label for="handover-in-name">Einziehend – Name<input id="handover-in-name" name="incoming_name" autocomplete="name"/></label><label for="handover-in-email">Einziehend – E-Mail<input id="handover-in-email" type="email" name="incoming_email" autocomplete="email"/></label></div></details>
+	<details class="dialog-optional"><summary>Zähler, Schlüssel und Notiz
+		@DisclosureChevron()
+	</summary><div class="dialog-optional-grid"><label class="full" for="handover-meters">Zählerstände <small>Bezeichnung | Wert | Einheit</small><textarea id="handover-meters" name="meters_text" placeholder="Strom | 12345,6 | kWh"></textarea></label><label class="full" for="handover-keys">Schlüssel <small>Bezeichnung | Anzahl</small><textarea id="handover-keys" name="keys_text" placeholder="Wohnungsschlüssel | 3"></textarea></label><label class="full" for="handover-notes">Notiz<textarea id="handover-notes" name="notes" placeholder="Zusätzliche Beobachtungen"></textarea></label></div></details>
+	<details class="dialog-optional"><summary>Fotos und PDF
+		@DisclosureChevron()
+	</summary><div class="dialog-optional-grid"><label class="full" for="handover-attachments">Dateien<span class="file-control"><input id="handover-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Bis zu 10 Dateien auswählen</span></span></label></div></details></div><footer class="dialog-footer handover-dialog-submit"><span>Bestätigungslinks entstehen nur für angegebene E-Mail-Adressen.</span><button class="button primary" type="submit">Übergabe anlegen</button></footer></form></dialog>
 }
 
 func handoverConfirmationLabel(item HandoverItem) string { return fmt.Sprintf("%d von %d Bestätigungen", item.ConfirmedCount, item.ConfirmationCount) }

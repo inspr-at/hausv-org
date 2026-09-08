@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.14",
+			Date:     "8. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Ruhigere Navigation: kein Aufblitzen, klare Aufklapper.",
+			Intro:    "Beim Wechsel zwischen Seiten bleibt die Navigation durchgehend ruhig, Menüeinträge reagieren weich auf die Maus, Auf- und Zuklappen zeigt ein rundes, drehendes Symbol, und das Panel zum Wechseln der Liegenschaft öffnet vollständig sichtbar.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.13",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

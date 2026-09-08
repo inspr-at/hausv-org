@@ -156,7 +156,9 @@ templ IssueCard(issue view.IssueView) {
 }
 
 templ IssueInlineDetails(issue view.IssueView) {
-	<details class="issue-card-details"><summary>{ issueDetailsSummary(issue) }</summary><div class="issue-card-details-body">
+	<details class="issue-card-details"><summary>{ issueDetailsSummary(issue) }
+		@DisclosureChevron()
+	</summary><div class="issue-card-details-body">
 		<div class="issue-description"><strong>Beschreibung</strong><p>{ issue.Body }</p></div>
 		@IssueEstimate(issue)
 		@IssueAttachments(issue.Attachments)
@@ -270,7 +272,9 @@ templ IssueCreatePanel(data IssuesPageData) {
 			} else {
 				Neues Anliegen
 			}
-		</h2><p>In zwei kurzen Schritten verständlich melden.</p></div></summary><div class="issue-create-body">@IssueCreateForm(true)</div></details>
+		</h2><p>In zwei kurzen Schritten verständlich melden.</p></div>
+			@DisclosureChevron()
+		</summary><div class="issue-create-body">@IssueCreateForm(true)</div></details>
 	} else {
 		<div class="issue-start"><section class="panel issue-create-panel" id="issue-new"><div class="issue-create-head"><h2>{ issueCreateTitle(data) }</h2><p>In zwei kurzen Schritten verständlich melden.</p></div><div class="issue-create-body">@IssueCreateForm(false)</div></section></div>
 	}
@@ -288,7 +292,9 @@ templ IssueCreateForm(hasIssues bool) {
 				}
 				<button class="wizard-next wizard-only" type="button" data-issue-next>Weiter <span aria-hidden="true">→</span></button></div>
 		</fieldset>
-		<fieldset class="issue-wizard-step" data-issue-step="review"><div class="issue-wizard-heading">@IssueWizardProgress(true)<h3>Prüfen &amp; senden</h3><p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p></div><dl class="issue-review issue-review-enhanced" aria-label="Zusammenfassung"><div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div><div class="issue-review-row"><dt>Beschreibung</dt><dd class="issue-review-copy"><span class="issue-review-copy-text" data-issue-summary="body">—</span><button class="issue-review-expand" type="button" data-issue-review-expand aria-expanded="false" hidden>Vollständig lesen</button></dd></div><div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div><div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div></dl><details class="issue-title-option"><summary>Titel ändern <span class="hint">Optional</span></summary><label for="issue-title">Eigener Titel<input id="issue-title" type="text" name="title" maxlength="140" placeholder="Kurzer, passender Titel"/><span class="hint">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span></label></details><div class="issue-wizard-actions"><button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button><button class="wizard-submit" type="submit" data-busy-label="Meldung wird gesendet…">Anliegen melden</button></div></fieldset>
+		<fieldset class="issue-wizard-step" data-issue-step="review"><div class="issue-wizard-heading">@IssueWizardProgress(true)<h3>Prüfen &amp; senden</h3><p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p></div><dl class="issue-review issue-review-enhanced" aria-label="Zusammenfassung"><div class="issue-review-row"><dt>Art</dt><dd data-issue-summary="category">Reparatur</dd></div><div class="issue-review-row"><dt>Beschreibung</dt><dd class="issue-review-copy"><span class="issue-review-copy-text" data-issue-summary="body">—</span><button class="issue-review-expand" type="button" data-issue-review-expand aria-expanded="false" hidden>Vollständig lesen</button></dd></div><div class="issue-review-row"><dt>Ort</dt><dd data-issue-summary="location">Gemeinschaftsbereich</dd></div><div class="issue-review-row"><dt>Dateien</dt><dd data-issue-summary="files">Keine</dd></div></dl><details class="issue-title-option"><summary>Titel ändern <span class="hint">Optional</span>
+			@DisclosureChevron()
+		</summary><label for="issue-title">Eigener Titel<input id="issue-title" type="text" name="title" maxlength="140" placeholder="Kurzer, passender Titel"/><span class="hint">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span></label></details><div class="issue-wizard-actions"><button class="wizard-back wizard-only" type="button" data-issue-back>Zurück</button><button class="wizard-submit" type="submit" data-busy-label="Meldung wird gesendet…">Anliegen melden</button></div></fieldset>
 	</form>
 }
 

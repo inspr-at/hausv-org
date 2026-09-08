@@ -1,10 +1,26 @@
 package web
 
 import (
+	"os"
 	"regexp"
 	"strings"
 	"testing"
 )
+
+func TestDisclosureChevronUsesUnmodifiedLucideAsset(t *testing.T) {
+	asset, err := os.ReadFile("assets/icons/lucide/chevron-down.svg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := renderComponent(t, DisclosureChevron())
+	if !strings.Contains(html, string(asset)) || !strings.Contains(html, `class="disclosure-chevron" aria-hidden="true"`) {
+		t.Fatal("shared disclosure must wrap the unchanged, decorative Lucide asset")
+	}
+	picker := renderComponent(t, LiegenschaftSwitcher(LiegenschaftSwitcherData{}, "test-picker", "Haus", "Graz", "portal"))
+	if strings.Count(picker, `class="disclosure-chevron"`) != 1 || strings.Contains(picker, "⌄") {
+		t.Fatal("house and scope summaries must use exactly one shared chevron")
+	}
+}
 
 func TestContextBarInBothShellsAndRoles(t *testing.T) {
 	for _, role := range []string{"Admin", "Verwalter", "Eigentümer", "Bewohner"} {

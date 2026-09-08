@@ -7,8 +7,8 @@ import (
 )
 
 // TestPortalShellCSSIsExternalizedHAUSV549 verifies that the portal shell CSS
-// has been extracted to an external, cacheable asset and is no longer inlined
-// in every HTML response (HAUSV-549).
+// remains a cacheable asset. HAUSV-709 deliberately inlines the small first-paint
+// contract; page layout and the rest of the chrome remain external.
 func TestPortalShellCSSIsExternalizedHAUSV549(t *testing.T) {
 	portal := PortalPageData{
 		Title:               "Test Portal",
@@ -51,11 +51,25 @@ func TestPortalShellCSSIsExternalizedHAUSV549(t *testing.T) {
 		t.Error("portal-shell.css link is after <body> tag - this will cause FOUC")
 	}
 
-	// Verify that the inline shell CSS is NOT present
+	// Detailed layout remains external; only the first-paint contract is inline.
 	inlineShellMarkers := []string{
 		".shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr)}",
 		".mobile-context-switch>summary{min-height:44px",
-		"@media(max-width:760px){.shell{display:block",
+		".portal-section-landing{--portal-content-width:",
+	}
+	criticalStart := strings.Index(homeHTML, "<style data-shell-critical>")
+	if criticalStart < 0 || criticalStart > linkIndex {
+		t.Fatal("first-paint shell contract must precede the cacheable stylesheet")
+	}
+	critical := homeHTML[criticalStart:]
+	critical = critical[:strings.Index(critical, "</style>")]
+	for _, marker := range []string{"--sidebar-w:280px", "--context-bar-h:40px", "--context-bar-h:74px", "grid-template-columns:var(--sidebar-w) minmax(0,1fr)", "background:var(--nav)", "linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))", ".sidebar,.desktop-context-bar{display:none}"} {
+		if !strings.Contains(critical, marker) {
+			t.Errorf("first paint lacks %s", marker)
+		}
+	}
+	if len(critical) > 4000 {
+		t.Fatal("critical shell must stay small; detailed styles belong in the external asset")
 	}
 
 	for _, marker := range inlineShellMarkers {

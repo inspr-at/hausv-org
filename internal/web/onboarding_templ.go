@@ -891,148 +891,164 @@ func OnboardingStepMappings(data OnboardingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, " optional</span></summary><div class=\"onboarding-candidates\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, " optional</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</summary><div class=\"onboarding-candidates\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, candidate := range data.AdditionalCandidates {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<label class=\"onboarding-candidate\"><input type=\"checkbox\" name=\"entities\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<label class=\"onboarding-candidate\"><input type=\"checkbox\" name=\"entities\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(candidate.EntityID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 255, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 257, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if candidate.Checked {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, " checked")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "><span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "><span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(candidate.MetricLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 255, Col: 178}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 257, Col: 178}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(candidate.SourceName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 255, Col: 218}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 257, Col: 218}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</small><code>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</small><code>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(candidate.EntityID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 255, Col: 254}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 257, Col: 254}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</code></span><span class=\"onboarding-readonly\">Nur lesen</span></label>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</code></span><span class=\"onboarding-readonly\">Nur lesen</span></label>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</div></details> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</div></details> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<details class=\"onboarding-disclosure\"><summary>Messwert selbst zuordnen <span>nur falls nötig</span></summary><div class=\"optional-grid\"><label><span>Sensor-ID</span><input type=\"text\" name=\"manual_entity_id\" placeholder=\"sensor.netzbezug\"></label> <label><span>Bedeutung</span><select name=\"manual_metric\"><option value=\"grid-import-power\">Netzbezug Leistung</option><option value=\"grid-import-energy\">Netzbezug Energie</option><option value=\"grid-export-power\">Netzeinspeisung</option><option value=\"pv-power\">PV-Leistung</option><option value=\"battery-power\">Batterie-Nettoleistung</option><option value=\"battery-charge-power\">Batterie-Ladeleistung</option><option value=\"battery-discharge-power\">Batterie-Entladeleistung</option><option value=\"battery-soc\">Batterie-Ladestand</option><option value=\"load-power\">Hausverbrauch</option></select></label> <label><span>Verständlicher Name</span><input type=\"text\" name=\"manual_name\" placeholder=\"Netzbezug gesamt\"></label> <label><span>Einheit</span><input type=\"text\" name=\"manual_unit\" placeholder=\"W oder kW\"></label> <label><span>Gehört zu</span><select name=\"manual_asset_id\"><option value=\"\">Gesamtes Haus</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<details class=\"onboarding-disclosure\"><summary>Messwert selbst zuordnen <span>nur falls nötig</span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</summary><div class=\"optional-grid\"><label><span>Sensor-ID</span><input type=\"text\" name=\"manual_entity_id\" placeholder=\"sensor.netzbezug\"></label> <label><span>Bedeutung</span><select name=\"manual_metric\"><option value=\"grid-import-power\">Netzbezug Leistung</option><option value=\"grid-import-energy\">Netzbezug Energie</option><option value=\"grid-export-power\">Netzeinspeisung</option><option value=\"pv-power\">PV-Leistung</option><option value=\"battery-power\">Batterie-Nettoleistung</option><option value=\"battery-charge-power\">Batterie-Ladeleistung</option><option value=\"battery-discharge-power\">Batterie-Entladeleistung</option><option value=\"battery-soc\">Batterie-Ladestand</option><option value=\"load-power\">Hausverbrauch</option></select></label> <label><span>Verständlicher Name</span><input type=\"text\" name=\"manual_name\" placeholder=\"Netzbezug gesamt\"></label> <label><span>Einheit</span><input type=\"text\" name=\"manual_unit\" placeholder=\"W oder kW\"></label> <label><span>Gehört zu</span><select name=\"manual_asset_id\"><option value=\"\">Gesamtes Haus</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range data.MappingAssetOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 266, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 270, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 266, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 270, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</option>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</select></label></div></details><div class=\"onboarding-actions\"><button class=\"button\" type=\"submit\" name=\"action\" value=\"back\">Zurück</button> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</select></label></div></details><div class=\"onboarding-actions\"><button class=\"button\" type=\"submit\" name=\"action\" value=\"back\">Zurück</button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasCandidates {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<button class=\"button ghost onboarding-skip\" type=\"submit\" name=\"action\" value=\"skip-mappings\">Ohne Verbindung starten</button><button class=\"button primary\" type=\"submit\" name=\"action\" value=\"mappings\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<button class=\"button ghost onboarding-skip\" type=\"submit\" name=\"action\" value=\"skip-mappings\">Ohne Verbindung starten</button><button class=\"button primary\" type=\"submit\" name=\"action\" value=\"mappings\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(data.RecommendedCount)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 272, Col: 230}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 276, Col: 230}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, " Messwerte übernehmen</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, " Messwerte übernehmen</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<button class=\"button primary\" type=\"submit\" name=\"action\" value=\"skip-mappings\">Ohne Verbindung starten</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<button class=\"button primary\" type=\"submit\" name=\"action\" value=\"skip-mappings\">Ohne Verbindung starten</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "</div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1061,7 +1077,7 @@ func OnboardingStepFinish(data OnboardingPageData) templ.Component {
 			templ_7745c5c3_Var42 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<header class=\"onboarding-card-head\" data-home-identity=\"onboarding-summary\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<header class=\"onboarding-card-head\" data-home-identity=\"onboarding-summary\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1069,69 +1085,69 @@ func OnboardingStepFinish(data OnboardingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "><span class=\"eyebrow\">Ihr Zuhause ist startklar</span><h1 data-home-display-name>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "><span class=\"eyebrow\">Ihr Zuhause ist startklar</span><h1 data-home-display-name>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var43 string
 		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(data.HouseholdName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 281, Col: 215}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 285, Col: 215}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</h1>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</h1>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasHomeUnit {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<span class=\"onboarding-home-unit\" data-home-unit-label>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<span class=\"onboarding-home-unit\" data-home-unit-label>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(data.HomeUnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 283, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 287, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header><form class=\"onboarding-body\" method=\"post\" action=\"/app/zuhause/onboarding\"><div class=\"onboarding-trust\"><span aria-hidden=\"true\">→</span><div><strong>Als Nächstes: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p></header><form class=\"onboarding-body\" method=\"post\" action=\"/app/zuhause/onboarding\"><div class=\"onboarding-trust\"><span aria-hidden=\"true\">→</span><div><strong>Als Nächstes: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var45 string
 		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(data.FinishRecommendation.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 288, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 292, Col: 128}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</strong><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</strong><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(data.FinishRecommendation.Reason)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 288, Col: 176}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/onboarding.templ`, Line: 292, Col: 176}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</p></div></div><div class=\"onboarding-trust\"><span aria-hidden=\"true\">✓</span><div><strong>Zwölf Monate voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div><div class=\"onboarding-actions\"><button class=\"button\" type=\"submit\" name=\"action\" value=\"back\">Noch einmal prüfen</button><button class=\"button primary\" type=\"submit\" name=\"action\" value=\"finish\">Mein Zuhause öffnen</button></div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</p></div></div><div class=\"onboarding-trust\"><span aria-hidden=\"true\">✓</span><div><strong>Zwölf Monate voller Produktumfang kostenlos</strong><p>Danach gilt nach heutigem Modell: 1 € pro Monat, jährlich als 12 € verrechnet. Noch gibt es keine Zahlung und keine versteckte Einschränkung.</p></div></div><div class=\"onboarding-actions\"><button class=\"button\" type=\"submit\" name=\"action\" value=\"back\">Noch einmal prüfen</button><button class=\"button primary\" type=\"submit\" name=\"action\" value=\"finish\">Mein Zuhause öffnen</button></div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1160,23 +1176,23 @@ func OnboardingGlyph(kind string) templ.Component {
 			templ_7745c5c3_Var47 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch kind {
 		case "play":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<path d=\"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<path d=\"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<path d=\"M20 6 9 17l-5-5\"></path>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<path d=\"M20 6 9 17l-5-5\"></path>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1242,7 +1258,7 @@ func OnboardingStyles() templ.Component {
 			templ_7745c5c3_Var48 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<style>.energy-mode-strip,.energy-page,.onboarding-page,.energy-data-page,.home-identity-page{--soft:#716d62;--gold-ink:#705c22;--energy-focus-ring:#ad862c}\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.onboarding-main{min-width:0;display:flex;flex-direction:column}.button.primary{background:var(--gold);color:var(--panel);border-color:var(--gold)}.button.ghost{border-color:var(--line);color:var(--muted)}\n\t\t.energy-mode-strip{position:sticky;z-index:40;top:var(--context-bar-h);min-height:60px;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) clamp(var(--space-5),4vw,40px);background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow-panel)}.energy-mode-state{min-height:46px;display:inline-flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-5) var(--space-2) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.energy-mode-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf)}.energy-mode-icon svg,.energy-mode-action svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.energy-mode-copy{min-width:0;display:grid;gap:2px}.energy-mode-copy strong{font-family:var(--font-serif);font-size:18px;line-height:1.05}.energy-mode-copy span{color:var(--muted);font-size:12px;line-height:1.3}.energy-mode-control{position:relative;margin-left:auto}.energy-mode-control>summary{list-style:none}.energy-mode-control>summary::-webkit-details-marker{display:none}.energy-mode-action{min-height:44px;display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:12px;font-weight:800;line-height:1.2;cursor:pointer}.energy-mode-action:hover{border-color:var(--gold)}.energy-mode-action-compact{display:none}.energy-mode-capability{margin-left:auto;max-width:220px;color:var(--muted);font-size:12px;font-weight:750;line-height:1.3;text-align:right}.energy-mode-popover{position:absolute;z-index:2;right:0;top:calc(100% + 10px);width:min(410px,calc(100vw - 32px));max-height:calc(100dvh - var(--context-bar-h) - 86px);display:grid;gap:var(--space-4);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.energy-mode-popover h3{font-size:19px}.energy-mode-popover p{color:var(--muted);font-size:14px;line-height:1.45}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:start;font-size:13px;line-height:1.4}.energy-mode-popover input[type=\"text\"]{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t.onboarding-page{width:min(940px,100%);margin:0 auto;padding:28px clamp(var(--space-4),4vw,44px) 64px;display:grid;align-content:start;gap:18px}.onboarding-notice{padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.5}.onboarding-notice strong{color:var(--ink)}\n\t\t.onboarding-progress{display:grid;gap:var(--space-2)}.onboarding-progress-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:12px;font-weight:750}.onboarding-progress-track{height:5px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.onboarding-progress-track span{display:block;height:100%;background:var(--gold)}\n\t\t.onboarding-card{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:var(--shadow-md)}.onboarding-card-head{display:grid;gap:9px;padding:clamp(var(--space-6),4vw,38px);border-bottom:1px solid var(--line)}.onboarding-card-head h1{font-size:clamp(34px,5vw,50px);line-height:1.02}.onboarding-card-head p{max-width:660px;color:var(--muted);font-size:14px;line-height:1.55}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.onboarding-home-unit{margin-top:-4px;color:var(--muted);font-size:13px;font-weight:650;line-height:1.35}\n\t\t.onboarding-body{display:grid;gap:22px;padding:clamp(var(--space-6),4vw,38px)}.onboarding-explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.onboarding-explain article{min-height:142px;padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.onboarding-explain strong{display:block;margin-bottom:var(--space-2);font-size:15px}.onboarding-explain p{color:var(--muted);font-size:13px;line-height:1.45}\n\t\t.onboarding-form{gap:18px}.onboarding-form label>span,.onboarding-legend,.onboarding-form .home-identity-field>span,.onboarding-form .home-identity-field>label>span{display:block;margin-bottom:7px;color:var(--gold-ink);font-size:11px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.onboarding-form input[type=\"text\"],.onboarding-form select{width:100%;min-height:48px;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-form fieldset{margin:0;padding:0;border:0}\n\t\t.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;margin-top:-6px;padding:13px var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:12px;line-height:1.4}\n\t\t.onboarding-form .home-identity-readonly{min-height:50px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.onboarding-form .home-identity-readonly small{color:var(--muted);font-size:12px}.onboarding-form .home-identity-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45;letter-spacing:normal;text-transform:none}\n\t\t.onboarding-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.onboarding-choice{min-height:64px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);cursor:pointer}.onboarding-choice:has(input:checked){border-color:var(--gold);background:rgba(200,153,63,.12)}.onboarding-choice small{display:block;margin-top:2px;color:var(--muted);font-size:11px}\n\t\t.onboarding-recommended{display:grid;gap:10px}.onboarding-recommended .onboarding-legend{margin-bottom:0}.onboarding-candidates{display:grid;gap:var(--space-2)}.onboarding-candidate{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel)}.onboarding-candidate:has(input:checked){border-color:var(--leaf);background:rgba(47,107,74,.08)}.onboarding-candidate strong{display:block;font-size:14px}.onboarding-candidate small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.onboarding-readonly{padding:5px 9px;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf);font-size:11px;font-weight:800;white-space:nowrap}\n\t\t.energy-mapping-guide{display:grid;gap:var(--space-3)}.energy-mapping-guide>header{display:flex;justify-content:space-between;gap:18px;align-items:end}.energy-mapping-guide>header h2{font-size:25px}.energy-mapping-guide>header small{color:var(--muted);font-size:12px}.energy-mapping-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2)}.energy-mapping-slot{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:13px var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel)}.energy-mapping-slot>div{min-width:0}.energy-mapping-slot strong,.energy-mapping-slot span,.energy-mapping-slot small{display:block}.energy-mapping-slot span{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.35}.energy-mapping-slot p{min-width:118px;text-align:right}.energy-mapping-slot b{color:var(--muted);font-size:12px}.energy-mapping-slot small{margin-top:3px;max-width:190px;color:var(--soft);font-size:11px;line-height:1.3}.energy-mapping-slot.good b{color:var(--leaf)}.energy-mapping-slot.warning{border-color:var(--gold);background:rgba(200,153,63,.09)}.energy-mapping-slot.warning b{color:var(--gold-ink)}.energy-mapping-slot.quiet{background:var(--panel-soft)}\n\t\t.onboarding-disclosure{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.onboarding-disclosure>summary{min-height:48px;display:flex;align-items:center;gap:9px;padding:11px var(--space-4);color:var(--ink);cursor:pointer;list-style:none;font-size:13px;font-weight:750}.onboarding-disclosure>summary::-webkit-details-marker{display:none}.onboarding-disclosure>summary::after{content:\"+\";margin-left:auto;color:var(--gold-ink);font-size:18px;font-weight:500}.onboarding-disclosure[open]>summary::after{content:\"−\"}.onboarding-disclosure>summary span{color:var(--muted);font-size:11px;font-weight:650}.onboarding-disclosure .onboarding-candidates,.onboarding-disclosure .optional-grid{display:grid;gap:var(--space-2);padding:var(--space-3);border-top:1px solid var(--line)}.onboarding-disclosure .optional-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.onboarding-additional code{display:block;margin-top:3px;overflow-wrap:anywhere;color:var(--muted);font-size:10px}\n\t\t.onboarding-actions{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding-top:4px}.onboarding-actions .button{min-height:48px}.onboarding-skip{margin-left:auto}\n\t\t.onboarding-trust{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px;align-items:start;padding:15px;border:1px solid var(--leaf);border-radius:var(--radius-sm);background:rgba(47,107,74,.08)}.onboarding-trust>span{color:var(--leaf);font-weight:800}.onboarding-trust strong{display:block;margin-bottom:3px}.onboarding-trust p{color:var(--muted);font-size:13px;line-height:1.4}\n\t\t@media(max-width:1050px){.energy-mapping-slots{grid-template-columns:1fr}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{position:static;flex-wrap:wrap;gap:var(--space-2);padding:var(--space-2) var(--space-4)}.energy-mode-capability{margin-left:0;max-width:none;text-align:left}.energy-mode-control{margin-left:0}.energy-mode-popover{position:static;width:100%;margin-top:var(--space-2)}\n\t\t\t.onboarding-page{padding:18px var(--space-4) 48px}.onboarding-explain,.onboarding-choice-grid{grid-template-columns:1fr}.energy-mapping-guide>header{align-items:start;flex-direction:column;gap:5px}.energy-mapping-slot{grid-template-columns:1fr;gap:7px}.energy-mapping-slot p{min-width:0;text-align:left}.energy-mapping-slot small{max-width:none}.onboarding-actions{align-items:stretch;flex-direction:column-reverse}.onboarding-actions .button{width:100%}.onboarding-candidate{grid-template-columns:auto minmax(0,1fr)}.onboarding-readonly{grid-column:2;justify-self:start}.onboarding-disclosure .optional-grid{grid-template-columns:1fr}.onboarding-skip{margin-left:0}}\n\t\t.onboarding-page-head{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:88px;padding:16px 32px;border-bottom:1px solid var(--line);background:var(--panel)}\n\t\t.onboarding-page-title{font-family:var(--font-serif);font-size:32px;font-weight:600;line-height:1.15;overflow-wrap:anywhere}\n\t\t.onboarding-page-head .energy-mode-strip{position:relative;top:auto;min-height:0;flex-shrink:0;gap:24px;padding:0;border:0;box-shadow:none}\n\t\t.onboarding-page-head .energy-mode-state{min-height:56px;padding:8px 16px;gap:16px;border-radius:8px}.onboarding-page-head .energy-mode-copy strong{font-size:21px}.onboarding-page-head .energy-mode-icon{width:40px;height:40px}.onboarding-page-head .energy-mode-action{min-height:48px;padding:8px 16px;font-size:16px}\n\t\t.onboarding-page{width:min(1072px,100%);padding:40px 40px 64px;gap:24px}.onboarding-progress-head{font-size:16px}.onboarding-progress-track{height:8px}\n\t\t.onboarding-card{border-radius:8px;box-shadow:var(--shadow-panel)}.onboarding-card-head{gap:24px;padding:40px}.onboarding-card-head h1{font-size:clamp(32px,3.7vw,56px);line-height:1.08;text-wrap:pretty}.onboarding-card-head p{max-width:none;font-size:18px;line-height:1.5}.onboarding-card-head .eyebrow{font-size:12px;letter-spacing:.14em}\n\t\t.onboarding-body{padding:32px 40px;gap:32px}.onboarding-explain{gap:16px}.onboarding-explain article{display:grid;grid-template-columns:40px minmax(0,1fr);align-content:start;align-items:center;gap:8px 16px;padding:16px;min-height:160px}.onboarding-step-number{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--line);font-size:18px;font-weight:700}.onboarding-explain strong{margin:0;font-size:18px}.onboarding-explain p{grid-column:1/-1;font-size:16px;line-height:1.5}\n\t\t.onboarding-trust{gap:16px;padding:16px}.onboarding-trust>span{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--leaf);color:var(--panel);font-size:24px}.onboarding-trust strong{font-size:18px;margin-bottom:8px}.onboarding-trust p{font-size:16px;line-height:1.5}\n\t\t.onboarding-actions{gap:16px;padding-top:0}.onboarding-actions .button{min-height:56px;padding:16px 24px;font-size:16px}.onboarding-actions .primary::after{content:\"→\";margin-left:16px;font-size:24px;line-height:1}\n\t\t.onboarding-identity-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.onboarding-identity-form>label:first-child,.onboarding-identity-form>.home-type-explanation,.onboarding-identity-form>.onboarding-actions{grid-column:1/-1}.onboarding-identity-form>*{min-width:0}.onboarding-identity-form label>span,.onboarding-identity-form .home-identity-field>span{font-size:12px;margin-bottom:8px}.onboarding-identity-form input[type=text],.onboarding-identity-form select{min-height:56px;padding:8px 16px;font-size:18px}.onboarding-identity-form .home-identity-field-help{font-size:14px;font-weight:400;margin-top:8px}.onboarding-identity-form .home-identity-readonly{flex-wrap:wrap;min-height:56px}\n\t\t.onboarding-identity-form .home-type-explanation{grid-template-columns:64px minmax(0,1fr);gap:24px;margin:0;padding:24px}.onboarding-identity-form .home-type-explanation-icon{width:64px;height:64px}.home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.onboarding-identity-form .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:16px;margin-top:8px}.onboarding-identity-form>.onboarding-actions{margin:8px -40px -32px;padding:24px 40px;border-top:1px solid var(--line)}\n\t\t@media(max-width:1100px){.onboarding-page-head{gap:16px;padding:16px 24px;flex-wrap:wrap}.onboarding-page-title{font-size:28px}.onboarding-page{padding:32px 24px 48px}.onboarding-card-head{padding:32px}.onboarding-body{padding:32px}.onboarding-identity-form>.onboarding-actions{margin:8px -32px -32px;padding:24px 32px}.onboarding-explain article{grid-template-columns:1fr}.onboarding-explain p{grid-column:auto}}\n\t\t@media(max-width:760px){.onboarding-page-head{padding:0 16px 16px;display:grid}.onboarding-page-head .energy-mode-strip{order:-1;margin:0 -16px 8px;padding:8px 16px;flex-shrink:1;flex-wrap:wrap;gap:8px}.onboarding-page-head .energy-mode-copy strong{font-size:18px}.onboarding-page-head .energy-mode-state{gap:8px;padding:8px}.onboarding-page-head .energy-mode-control{margin-left:0}.onboarding-page-head .energy-mode-popover{position:static;width:100%;max-width:100%;margin-top:8px}.onboarding-page-head .energy-mode-control[open]{width:100%}.onboarding-page{padding:24px 16px 48px}.onboarding-progress-head{font-size:12px}.onboarding-card-head{padding:24px;gap:16px}.onboarding-card-head h1{font-size:32px}.onboarding-card-head p{font-size:16px}.onboarding-body{padding:24px;gap:24px}.onboarding-explain article{grid-template-columns:40px minmax(0,1fr);min-height:0}.onboarding-explain p{grid-column:1/-1}.onboarding-explain strong{font-size:16px}.onboarding-trust{grid-template-columns:32px minmax(0,1fr);gap:8px}.onboarding-trust>span{width:32px;height:32px;font-size:20px}.onboarding-trust strong,.onboarding-trust p{font-size:14px}.onboarding-identity-form{grid-template-columns:minmax(0,1fr)}.onboarding-identity-form .home-type-explanation{grid-template-columns:40px minmax(0,1fr);padding:16px;gap:16px}.onboarding-identity-form .home-type-explanation-icon{width:40px;height:40px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:14px}.onboarding-identity-form>.onboarding-actions{margin:0 -24px -24px;padding:24px}.onboarding-actions .button{padding:8px 16px;font-size:14px}}\n\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<style>.energy-mode-strip,.energy-page,.onboarding-page,.energy-data-page,.home-identity-page{--soft:#716d62;--gold-ink:#705c22;--energy-focus-ring:#ad862c}\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.onboarding-main{min-width:0;display:flex;flex-direction:column}.button.primary{background:var(--gold);color:var(--panel);border-color:var(--gold)}.button.ghost{border-color:var(--line);color:var(--muted)}\n\t\t.energy-mode-strip{position:sticky;z-index:40;top:var(--context-bar-h);min-height:60px;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) clamp(var(--space-5),4vw,40px);background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow-panel)}.energy-mode-state{min-height:46px;display:inline-flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-5) var(--space-2) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.energy-mode-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf)}.energy-mode-icon svg,.energy-mode-action svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.energy-mode-copy{min-width:0;display:grid;gap:2px}.energy-mode-copy strong{font-family:var(--font-serif);font-size:18px;line-height:1.05}.energy-mode-copy span{color:var(--muted);font-size:12px;line-height:1.3}.energy-mode-control{position:relative;margin-left:auto}.energy-mode-control>summary{list-style:none}.energy-mode-control>summary::-webkit-details-marker{display:none}.energy-mode-action{min-height:44px;display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:12px;font-weight:800;line-height:1.2;cursor:pointer}.energy-mode-action:hover{border-color:var(--gold)}.energy-mode-action-compact{display:none}.energy-mode-capability{margin-left:auto;max-width:220px;color:var(--muted);font-size:12px;font-weight:750;line-height:1.3;text-align:right}.energy-mode-popover{position:absolute;z-index:2;right:0;top:calc(100% + 10px);width:min(410px,calc(100vw - 32px));max-height:calc(100dvh - var(--context-bar-h) - 86px);display:grid;gap:var(--space-4);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.energy-mode-popover h3{font-size:19px}.energy-mode-popover p{color:var(--muted);font-size:14px;line-height:1.45}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:start;font-size:13px;line-height:1.4}.energy-mode-popover input[type=\"text\"]{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t.onboarding-page{width:min(940px,100%);margin:0 auto;padding:28px clamp(var(--space-4),4vw,44px) 64px;display:grid;align-content:start;gap:18px}.onboarding-notice{padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:13px;line-height:1.5}.onboarding-notice strong{color:var(--ink)}\n\t\t.onboarding-progress{display:grid;gap:var(--space-2)}.onboarding-progress-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:12px;font-weight:750}.onboarding-progress-track{height:5px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.onboarding-progress-track span{display:block;height:100%;background:var(--gold)}\n\t\t.onboarding-card{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:var(--shadow-md)}.onboarding-card-head{display:grid;gap:9px;padding:clamp(var(--space-6),4vw,38px);border-bottom:1px solid var(--line)}.onboarding-card-head h1{font-size:clamp(34px,5vw,50px);line-height:1.02}.onboarding-card-head p{max-width:660px;color:var(--muted);font-size:14px;line-height:1.55}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.onboarding-home-unit{margin-top:-4px;color:var(--muted);font-size:13px;font-weight:650;line-height:1.35}\n\t\t.onboarding-body{display:grid;gap:22px;padding:clamp(var(--space-6),4vw,38px)}.onboarding-explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.onboarding-explain article{min-height:142px;padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.onboarding-explain strong{display:block;margin-bottom:var(--space-2);font-size:15px}.onboarding-explain p{color:var(--muted);font-size:13px;line-height:1.45}\n\t\t.onboarding-form{gap:18px}.onboarding-form label>span,.onboarding-legend,.onboarding-form .home-identity-field>span,.onboarding-form .home-identity-field>label>span{display:block;margin-bottom:7px;color:var(--gold-ink);font-size:11px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.onboarding-form input[type=\"text\"],.onboarding-form select{width:100%;min-height:48px;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-form fieldset{margin:0;padding:0;border:0}\n\t\t.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;margin-top:-6px;padding:13px var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:12px;line-height:1.4}\n\t\t.onboarding-form .home-identity-readonly{min-height:50px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.onboarding-form .home-identity-readonly small{color:var(--muted);font-size:12px}.onboarding-form .home-identity-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45;letter-spacing:normal;text-transform:none}\n\t\t.onboarding-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.onboarding-choice{min-height:64px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);cursor:pointer}.onboarding-choice:has(input:checked){border-color:var(--gold);background:rgba(200,153,63,.12)}.onboarding-choice small{display:block;margin-top:2px;color:var(--muted);font-size:11px}\n\t\t.onboarding-recommended{display:grid;gap:10px}.onboarding-recommended .onboarding-legend{margin-bottom:0}.onboarding-candidates{display:grid;gap:var(--space-2)}.onboarding-candidate{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel)}.onboarding-candidate:has(input:checked){border-color:var(--leaf);background:rgba(47,107,74,.08)}.onboarding-candidate strong{display:block;font-size:14px}.onboarding-candidate small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.onboarding-readonly{padding:5px 9px;border-radius:var(--radius-pill);background:rgba(47,107,74,.11);color:var(--leaf);font-size:11px;font-weight:800;white-space:nowrap}\n\t\t.energy-mapping-guide{display:grid;gap:var(--space-3)}.energy-mapping-guide>header{display:flex;justify-content:space-between;gap:18px;align-items:end}.energy-mapping-guide>header h2{font-size:25px}.energy-mapping-guide>header small{color:var(--muted);font-size:12px}.energy-mapping-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2)}.energy-mapping-slot{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:13px var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel)}.energy-mapping-slot>div{min-width:0}.energy-mapping-slot strong,.energy-mapping-slot span,.energy-mapping-slot small{display:block}.energy-mapping-slot span{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.35}.energy-mapping-slot p{min-width:118px;text-align:right}.energy-mapping-slot b{color:var(--muted);font-size:12px}.energy-mapping-slot small{margin-top:3px;max-width:190px;color:var(--soft);font-size:11px;line-height:1.3}.energy-mapping-slot.good b{color:var(--leaf)}.energy-mapping-slot.warning{border-color:var(--gold);background:rgba(200,153,63,.09)}.energy-mapping-slot.warning b{color:var(--gold-ink)}.energy-mapping-slot.quiet{background:var(--panel-soft)}\n\t\t.onboarding-disclosure{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.onboarding-disclosure>summary{min-height:48px;display:flex;align-items:center;gap:9px;padding:11px var(--space-4);color:var(--ink);cursor:pointer;list-style:none;font-size:13px;font-weight:750}.onboarding-disclosure>summary::-webkit-details-marker{display:none}.onboarding-disclosure>summary span{color:var(--muted);font-size:11px;font-weight:650}.onboarding-disclosure .onboarding-candidates,.onboarding-disclosure .optional-grid{display:grid;gap:var(--space-2);padding:var(--space-3);border-top:1px solid var(--line)}.onboarding-disclosure .optional-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.onboarding-additional code{display:block;margin-top:3px;overflow-wrap:anywhere;color:var(--muted);font-size:10px}\n\t\t.onboarding-actions{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding-top:4px}.onboarding-actions .button{min-height:48px}.onboarding-skip{margin-left:auto}\n\t\t.onboarding-trust{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px;align-items:start;padding:15px;border:1px solid var(--leaf);border-radius:var(--radius-sm);background:rgba(47,107,74,.08)}.onboarding-trust>span{color:var(--leaf);font-weight:800}.onboarding-trust strong{display:block;margin-bottom:3px}.onboarding-trust p{color:var(--muted);font-size:13px;line-height:1.4}\n\t\t@media(max-width:1050px){.energy-mapping-slots{grid-template-columns:1fr}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{position:static;flex-wrap:wrap;gap:var(--space-2);padding:var(--space-2) var(--space-4)}.energy-mode-capability{margin-left:0;max-width:none;text-align:left}.energy-mode-control{margin-left:0}.energy-mode-popover{position:static;width:100%;margin-top:var(--space-2)}\n\t\t\t.onboarding-page{padding:18px var(--space-4) 48px}.onboarding-explain,.onboarding-choice-grid{grid-template-columns:1fr}.energy-mapping-guide>header{align-items:start;flex-direction:column;gap:5px}.energy-mapping-slot{grid-template-columns:1fr;gap:7px}.energy-mapping-slot p{min-width:0;text-align:left}.energy-mapping-slot small{max-width:none}.onboarding-actions{align-items:stretch;flex-direction:column-reverse}.onboarding-actions .button{width:100%}.onboarding-candidate{grid-template-columns:auto minmax(0,1fr)}.onboarding-readonly{grid-column:2;justify-self:start}.onboarding-disclosure .optional-grid{grid-template-columns:1fr}.onboarding-skip{margin-left:0}}\n\t\t.onboarding-page-head{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:88px;padding:16px 32px;border-bottom:1px solid var(--line);background:var(--panel)}\n\t\t.onboarding-page-title{font-family:var(--font-serif);font-size:32px;font-weight:600;line-height:1.15;overflow-wrap:anywhere}\n\t\t.onboarding-page-head .energy-mode-strip{position:relative;top:auto;min-height:0;flex-shrink:0;gap:24px;padding:0;border:0;box-shadow:none}\n\t\t.onboarding-page-head .energy-mode-state{min-height:56px;padding:8px 16px;gap:16px;border-radius:8px}.onboarding-page-head .energy-mode-copy strong{font-size:21px}.onboarding-page-head .energy-mode-icon{width:40px;height:40px}.onboarding-page-head .energy-mode-action{min-height:48px;padding:8px 16px;font-size:16px}\n\t\t.onboarding-page{width:min(1072px,100%);padding:40px 40px 64px;gap:24px}.onboarding-progress-head{font-size:16px}.onboarding-progress-track{height:8px}\n\t\t.onboarding-card{border-radius:8px;box-shadow:var(--shadow-panel)}.onboarding-card-head{gap:24px;padding:40px}.onboarding-card-head h1{font-size:clamp(32px,3.7vw,56px);line-height:1.08;text-wrap:pretty}.onboarding-card-head p{max-width:none;font-size:18px;line-height:1.5}.onboarding-card-head .eyebrow{font-size:12px;letter-spacing:.14em}\n\t\t.onboarding-body{padding:32px 40px;gap:32px}.onboarding-explain{gap:16px}.onboarding-explain article{display:grid;grid-template-columns:40px minmax(0,1fr);align-content:start;align-items:center;gap:8px 16px;padding:16px;min-height:160px}.onboarding-step-number{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--line);font-size:18px;font-weight:700}.onboarding-explain strong{margin:0;font-size:18px}.onboarding-explain p{grid-column:1/-1;font-size:16px;line-height:1.5}\n\t\t.onboarding-trust{gap:16px;padding:16px}.onboarding-trust>span{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--leaf);color:var(--panel);font-size:24px}.onboarding-trust strong{font-size:18px;margin-bottom:8px}.onboarding-trust p{font-size:16px;line-height:1.5}\n\t\t.onboarding-actions{gap:16px;padding-top:0}.onboarding-actions .button{min-height:56px;padding:16px 24px;font-size:16px}.onboarding-actions .primary::after{content:\"→\";margin-left:16px;font-size:24px;line-height:1}\n\t\t.onboarding-identity-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.onboarding-identity-form>label:first-child,.onboarding-identity-form>.home-type-explanation,.onboarding-identity-form>.onboarding-actions{grid-column:1/-1}.onboarding-identity-form>*{min-width:0}.onboarding-identity-form label>span,.onboarding-identity-form .home-identity-field>span{font-size:12px;margin-bottom:8px}.onboarding-identity-form input[type=text],.onboarding-identity-form select{min-height:56px;padding:8px 16px;font-size:18px}.onboarding-identity-form .home-identity-field-help{font-size:14px;font-weight:400;margin-top:8px}.onboarding-identity-form .home-identity-readonly{flex-wrap:wrap;min-height:56px}\n\t\t.onboarding-identity-form .home-type-explanation{grid-template-columns:64px minmax(0,1fr);gap:24px;margin:0;padding:24px}.onboarding-identity-form .home-type-explanation-icon{width:64px;height:64px}.home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.onboarding-identity-form .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:16px;margin-top:8px}.onboarding-identity-form>.onboarding-actions{margin:8px -40px -32px;padding:24px 40px;border-top:1px solid var(--line)}\n\t\t@media(max-width:1100px){.onboarding-page-head{gap:16px;padding:16px 24px;flex-wrap:wrap}.onboarding-page-title{font-size:28px}.onboarding-page{padding:32px 24px 48px}.onboarding-card-head{padding:32px}.onboarding-body{padding:32px}.onboarding-identity-form>.onboarding-actions{margin:8px -32px -32px;padding:24px 32px}.onboarding-explain article{grid-template-columns:1fr}.onboarding-explain p{grid-column:auto}}\n\t\t@media(max-width:760px){.onboarding-page-head{padding:0 16px 16px;display:grid}.onboarding-page-head .energy-mode-strip{order:-1;margin:0 -16px 8px;padding:8px 16px;flex-shrink:1;flex-wrap:wrap;gap:8px}.onboarding-page-head .energy-mode-copy strong{font-size:18px}.onboarding-page-head .energy-mode-state{gap:8px;padding:8px}.onboarding-page-head .energy-mode-control{margin-left:0}.onboarding-page-head .energy-mode-popover{position:static;width:100%;max-width:100%;margin-top:8px}.onboarding-page-head .energy-mode-control[open]{width:100%}.onboarding-page{padding:24px 16px 48px}.onboarding-progress-head{font-size:12px}.onboarding-card-head{padding:24px;gap:16px}.onboarding-card-head h1{font-size:32px}.onboarding-card-head p{font-size:16px}.onboarding-body{padding:24px;gap:24px}.onboarding-explain article{grid-template-columns:40px minmax(0,1fr);min-height:0}.onboarding-explain p{grid-column:1/-1}.onboarding-explain strong{font-size:16px}.onboarding-trust{grid-template-columns:32px minmax(0,1fr);gap:8px}.onboarding-trust>span{width:32px;height:32px;font-size:20px}.onboarding-trust strong,.onboarding-trust p{font-size:14px}.onboarding-identity-form{grid-template-columns:minmax(0,1fr)}.onboarding-identity-form .home-type-explanation{grid-template-columns:40px minmax(0,1fr);padding:16px;gap:16px}.onboarding-identity-form .home-type-explanation-icon{width:40px;height:40px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:14px}.onboarding-identity-form>.onboarding-actions{margin:0 -24px -24px;padding:24px}.onboarding-actions .button{padding:8px 16px;font-size:14px}}\n\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

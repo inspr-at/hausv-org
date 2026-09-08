@@ -144,7 +144,15 @@ func ParkingHeaderAction(data ParkingPageData) templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<details class=\"parking-more\"><summary class=\"button\"><span aria-hidden=\"true\">•••</span>Mehr</summary><div class=\"parking-more-menu\"><a class=\"button\" href=\"/app/parking\"><span class=\"btn-icon\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<details class=\"parking-more\"><summary class=\"button\"><span aria-hidden=\"true\">•••</span>Mehr")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</summary><div class=\"parking-more-menu\"><a class=\"button\" href=\"/app/parking\"><span class=\"btn-icon\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -152,31 +160,31 @@ func ParkingHeaderAction(data ParkingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span>Aktualisieren</a> <a class=\"button\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span>Aktualisieren</a> <a class=\"button\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/parking/export/" + strconv.Itoa(data.StatementYear)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 57, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 59, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">CSV exportieren</a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\">CSV exportieren</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageParkingPayments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"post\" action=\"/app/parking/reminders\"><button class=\"button ghost\" type=\"submit\" title=\"Nur fällige, noch nicht erinnerte Monate benachrichtigen\">Erinnerungen senden</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form method=\"post\" action=\"/app/parking/reminders\"><button class=\"button ghost\" type=\"submit\" title=\"Nur fällige, noch nicht erinnerte Monate benachrichtigen\">Erinnerungen senden</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a class=\"button ghost\" href=\"/app/parking/settings\"><span class=\"btn-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<a class=\"button ghost\" href=\"/app/parking/settings\"><span class=\"btn-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -184,12 +192,12 @@ func ParkingHeaderAction(data ParkingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span>Abrechnung konfigurieren</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span>Abrechnung konfigurieren</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -218,12 +226,12 @@ func ParkingBody(data ParkingPageData) templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"parking-page\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"parking-page\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Live.Available && data.Accounting.HasMonths {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<nav class=\"parking-switcher\" aria-label=\"Parkplatzbereiche\"><a href=\"#parking-live\">Jetzt</a><a href=\"#parking-months\">Monate</a></nav>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<nav class=\"parking-switcher\" aria-label=\"Parkplatzbereiche\"><a href=\"#parking-live\">Jetzt</a><a href=\"#parking-months\">Monate</a></nav>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -234,7 +242,7 @@ func ParkingBody(data ParkingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -247,20 +255,20 @@ func ParkingBody(data ParkingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 74, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 76, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -280,7 +288,7 @@ func ParkingBody(data ParkingPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -310,33 +318,33 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if live.Available {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<section class=\"panel parking-live\" id=\"parking-live\" aria-label=\"Aktueller Ladezustand Parkplatz 20\"><div class=\"parking-live-head\"><div><span class=\"metric-label\">Jetzt</span><h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<section class=\"panel parking-live\" id=\"parking-live\" aria-label=\"Aktueller Ladezustand Parkplatz 20\"><div class=\"parking-live-head\"><div><span class=\"metric-label\">Jetzt</span><h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(live.ModeLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 89, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 91, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</h2><p class=\"muted\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</h2><p class=\"muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(live.ModeDetail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 89, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 91, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -345,7 +353,7 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<span class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<span class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -358,109 +366,109 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(parkingLiveStateLabel(live))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 90, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 92, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if live.SessionSince != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<p class=\"parking-session-current\">Laufende Sitzung seit ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<p class=\"parking-session-current\">Laufende Sitzung seit ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(live.SessionSince)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 93, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 95, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, " ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if live.SessionKWh != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span>· ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<span>· ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(live.SessionKWh)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 95, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 97, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if live.SessionCost != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span>· ca. ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span>· ca. ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var18 string
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(live.SessionCost)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 98, Col: 38}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 100, Col: 38}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"parking-live-facts\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div class=\"parking-live-facts\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if live.PowerLabel != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span><small>Leistung</small><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span><small>Leistung</small><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(live.PowerLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 104, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 106, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</strong></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</strong></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.BatterySOCLabel != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span><small>Hausakku</small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<span><small>Hausakku</small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -469,7 +477,7 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<strong class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<strong class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -482,189 +490,173 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(live.BatterySOCLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 107, Col: 105}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 109, Col: 105}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</strong></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</strong></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.FeedInLabel != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<span><small>Einspeisung</small><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<span><small>Einspeisung</small><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(live.FeedInLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 110, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 112, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</strong></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</strong></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if live.CanToggle {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"parking-live-actions\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"parking-live-actions\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if live.AutoPaused {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<form method=\"post\" action=\"/app/parking/charging/auto\"><button class=\"button primary\" type=\"submit\">Automatik aktivieren</button></form><details class=\"parking-manual\"><summary class=\"button\">Manuell steuern</summary><form method=\"post\" action=\"/app/parking/charging/on\"><button class=\"button\" type=\"submit\">Jetzt laden · Normaltarif</button></form></details>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<form method=\"post\" action=\"/app/parking/charging/auto\"><button class=\"button primary\" type=\"submit\">Automatik aktivieren</button></form><details class=\"parking-manual\"><summary class=\"button\">Manuell steuern")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</summary><form method=\"post\" action=\"/app/parking/charging/on\"><button class=\"button\" type=\"submit\">Jetzt laden · Normaltarif</button></form></details>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else if live.ToggleOn {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<form method=\"post\" action=\"/app/parking/charging/off\"><button class=\"button\" type=\"submit\">Ladung ausschalten</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<form method=\"post\" action=\"/app/parking/charging/off\"><button class=\"button\" type=\"submit\">Ladung ausschalten</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<form method=\"post\" action=\"/app/parking/charging/on\"><button class=\"button primary\" type=\"submit\">Jetzt laden · Normaltarif</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<form method=\"post\" action=\"/app/parking/charging/on\"><button class=\"button primary\" type=\"submit\">Jetzt laden · Normaltarif</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<details class=\"parking-live-details\"><summary>Ladeverbrauch und technische Details</summary><div class=\"parking-live-details-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<details class=\"parking-live-details\"><summary>Ladeverbrauch und technische Details")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</summary><div class=\"parking-live-details-body\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if live.RateLabel != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<p class=\"mini\">Aktueller Tarif: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<p class=\"mini\">Aktueller Tarif: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(live.RateLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 132, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 138, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.BatteryHint != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<p class=\"mini\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<p class=\"mini\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(live.BatteryHint)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 135, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 141, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.TodaySplit.HasAny || live.MonthSplit.HasAny {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"parking-split-list\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"parking-split-list\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if live.TodaySplit.HasAny {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<p><strong>Heute</strong><span>Überschuss ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<p><strong>Heute</strong><span>Überschuss ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var26 string
 					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(live.TodaySplit.SurplusKWh)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 140, Col: 79}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 146, Col: 79}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, " · ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, " · ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var27 string
 					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(live.TodaySplit.SurplusCost)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 140, Col: 114}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 146, Col: 114}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</span><span>Normal ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span><span>Normal ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var28 string
 					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(live.TodaySplit.NormalKWh)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 140, Col: 163}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 146, Col: 163}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, " · ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var29 string
-					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(live.TodaySplit.NormalCost)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 140, Col: 197}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</span></p>")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				if live.MonthSplit.HasAny {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<p><strong>Monat</strong><span>Überschuss ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var30 string
-					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(live.MonthSplit.SurplusKWh)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 143, Col: 79}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -672,152 +664,184 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
+					var templ_7745c5c3_Var29 string
+					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(live.TodaySplit.NormalCost)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 146, Col: 197}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</span></p>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				if live.MonthSplit.HasAny {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<p><strong>Monat</strong><span>Überschuss ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var30 string
+					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(live.MonthSplit.SurplusKWh)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 149, Col: 79}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, " · ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 					var templ_7745c5c3_Var31 string
 					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(live.MonthSplit.SurplusCost)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 143, Col: 114}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 149, Col: 114}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</span><span>Normal ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</span><span>Normal ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var32 string
 					templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(live.MonthSplit.NormalKWh)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 143, Col: 163}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 149, Col: 163}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, " · ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, " · ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var33 string
 					templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(live.MonthSplit.NormalCost)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 143, Col: 197}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 149, Col: 197}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</span></p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</span></p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.Admin.Show {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<div class=\"parking-admin-state\"><strong>Regler: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<div class=\"parking-admin-state\"><strong>Regler: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var34 string
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(live.Admin.PhaseLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 149, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 155, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</strong> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</strong> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if live.Admin.SinceLabel != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "<span>seit ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "<span>seit ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var35 string
 					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(live.Admin.SinceLabel)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 151, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 157, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if live.Admin.PollLabel != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<span>HA-Poll ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "<span>HA-Poll ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var36 string
 					templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(live.Admin.PollLabel)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 154, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 160, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if live.Admin.LastReason != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var37 string
 					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(live.Admin.LastReason)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 157, Col: 37}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 163, Col: 37}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if live.Admin.ErrorDetail != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"pill dringend\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span class=\"pill dringend\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(live.Admin.ErrorDetail)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 160, Col: 60}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 166, Col: 60}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<a href=\"/app/parking/settings#laderegelung\">Laderegelung öffnen</a></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<a href=\"/app/parking/settings#laderegelung\">Laderegelung öffnen</a></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.HasSessions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<div><h3>Letzte Ladevorgänge</h3>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<div><h3>Letzte Ladevorgänge</h3>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -825,24 +849,24 @@ func ParkingLiveCard(live view.ParkingLiveView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.ShadowMode {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<span class=\"pill\">Testbetrieb</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<span class=\"pill\">Testbetrieb</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if live.StaleData {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<span class=\"pill dringend\">Daten veraltet</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<span class=\"pill dringend\">Daten veraltet</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</div></details></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</div></details></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -874,56 +898,56 @@ func ParkingSessionList(sessions []view.ChargingSessionView) templ.Component {
 			templ_7745c5c3_Var39 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<div class=\"parking-session-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<div class=\"parking-session-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, session := range sessions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<div class=\"parking-session-row\"><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<div class=\"parking-session-row\"><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(session.StartLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 186, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 192, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</span> <span class=\"mini\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span> <span class=\"mini\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(session.DurationLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 187, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 193, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if session.KWh != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var42 string
 				templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(session.KWh)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 189, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 195, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -933,7 +957,7 @@ func ParkingSessionList(sessions []view.ChargingSessionView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<span class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<span class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -946,12 +970,12 @@ func ParkingSessionList(sessions []view.ChargingSessionView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if session.ModeClass == "mode-surplus" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<span aria-hidden=\"true\">☀️ </span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<span aria-hidden=\"true\">☀️ </span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -959,47 +983,47 @@ func ParkingSessionList(sessions []view.ChargingSessionView) templ.Component {
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(session.ModeLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 195, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 201, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if session.Active {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<span class=\"pill ok\">läuft</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<span class=\"pill ok\">läuft</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if session.Cost != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<span class=\"amount\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<span class=\"amount\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var46 string
 				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(session.Cost)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 201, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 207, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1028,140 +1052,140 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 			templ_7745c5c3_Var47 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<section class=\"panel parking-months-panel\" id=\"parking-months\" aria-label=\"Monatsabrechnungen\"><div class=\"parking-months-head\"><div><h2>Monate</h2><p class=\"muted\">Aktueller Betrag und Zahlungsstatus.</p></div><div class=\"parking-months-status\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<section class=\"panel parking-months-panel\" id=\"parking-months\" aria-label=\"Monatsabrechnungen\"><div class=\"parking-months-head\"><div><h2>Monate</h2><p class=\"muted\">Aktueller Betrag und Zahlungsstatus.</p></div><div class=\"parking-months-status\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Accounting.HasOutstanding {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "<span class=\"pill\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<span class=\"pill\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(data.Accounting.Outstanding)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 214, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 220, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, " offen</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, " offen</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.Accounting.HasOverdue {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<span class=\"pill dringend\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<span class=\"pill dringend\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(data.Accounting.Overdue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 217, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 223, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, " überfällig</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, " überfällig</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</div></div><a class=\"parking-current-month\" id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</div></div><a class=\"parking-current-month\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var50 string
 		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue("parking-month-" + data.CurrentMonth.Month)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 221, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 227, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var51 templ.SafeURL
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.CurrentMonth.DetailPath))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 221, Col: 135}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 227, Col: 135}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\"><span><span class=\"metric-label\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\"><span><span class=\"metric-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonthHeading)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 223, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 229, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</span> <strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</span> <strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var53 string
 		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonth.MonthLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 224, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 230, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</strong> <b>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</strong> <b>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var54 string
 		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonth.TotalCost)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 225, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 231, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</b></span> <span class=\"parking-current-facts\"><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</b></span> <span class=\"parking-current-facts\"><span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonth.KWh)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 228, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 234, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</strong><small>Verbrauch</small></span> <span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</strong><small>Verbrauch</small></span> <span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonth.GridCost)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 229, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 235, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</strong><small>Netzgebühr</small></span></span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</strong><small>Netzgebühr</small></span></span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1170,7 +1194,7 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<span class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1183,74 +1207,74 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentMonth.PaidLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 231, Col: 171}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 237, Col: 171}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</span> <span class=\"parking-row-arrow\" aria-hidden=\"true\">›</span></a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</span> <span class=\"parking-row-arrow\" aria-hidden=\"true\">›</span></a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasOlderMonths {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<div class=\"parking-month-list\" aria-label=\"Ältere Monate\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<div class=\"parking-month-list\" aria-label=\"Ältere Monate\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, month := range data.OlderMonths {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<a class=\"parking-compact-month\" id=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<a class=\"parking-compact-month\" id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var60 string
 				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue("parking-month-" + month.Month)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 237, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 243, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var61 templ.SafeURL
 				templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(month.DetailPath))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 237, Col: 114}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 243, Col: 114}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "\"><span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\"><span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var62 string
 				templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(month.MonthLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 238, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 244, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if month.Partial {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span>Teilmonat · </span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span>Teilmonat · </span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1258,26 +1282,26 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 				var templ_7745c5c3_Var63 string
 				templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(month.HourCount))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 242, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 248, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, " Stunden</small></span> <span class=\"amount\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, " Stunden</small></span> <span class=\"amount\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var64 string
 				templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(month.TotalCost)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 243, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 249, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1286,7 +1310,7 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1299,56 +1323,64 @@ func ParkingMonths(data ParkingPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var67 string
 				templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(month.PaidLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 244, Col: 126}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 250, Col: 126}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</span> <span class=\"parking-row-arrow\" aria-hidden=\"true\">›</span></a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</span> <span class=\"parking-row-arrow\" aria-hidden=\"true\">›</span></a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<details class=\"parking-utility\"><summary>Wie wird gerechnet?</summary><div class=\"parking-utility-body\"><p class=\"muted\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<details class=\"parking-utility\"><summary>Wie wird gerechnet?")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</summary><div class=\"parking-utility-body\"><p class=\"muted\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var68 string
 		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(data.Accounting.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 253, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 261, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "</p><p class=\"mini\">Letzter Messpunkt: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "</p><p class=\"mini\">Letzter Messpunkt: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(parkingLastSampleLabel(data.Accounting.LastSampleLabel))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 254, Col: 96}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/parking.templ`, Line: 262, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</p></div></details></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "</p></div></details></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1377,7 +1409,7 @@ func ParkingBlank(data ParkingPageData) templ.Component {
 			templ_7745c5c3_Var70 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<section class=\"panel parking-empty\" aria-label=\"Parkplatznutzung einrichten\"><div class=\"parking-empty-art\" aria-hidden=\"true\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<section class=\"panel parking-empty\" aria-label=\"Parkplatznutzung einrichten\"><div class=\"parking-empty-art\" aria-hidden=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1385,12 +1417,12 @@ func ParkingBlank(data ParkingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</div><div class=\"parking-empty-copy\"><div class=\"kicker\">Bereit für die erste Abrechnung</div><h2>Noch keine Monatswerte</h2><p class=\"muted\">Tarif, zwei Zählerstände und ein Preis genügen. Danach rechnet das Portal automatisch.</p></div><div class=\"parking-empty-actions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</div><div class=\"parking-empty-copy\"><div class=\"kicker\">Bereit für die erste Abrechnung</div><h2>Noch keine Monatswerte</h2><p class=\"muted\">Tarif, zwei Zählerstände und ein Preis genügen. Danach rechnet das Portal automatisch.</p></div><div class=\"parking-empty-actions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.IsAdmin {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<a class=\"button primary\" href=\"/app/parking/settings\"><span class=\"btn-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<a class=\"button primary\" href=\"/app/parking/settings\"><span class=\"btn-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1398,13 +1430,13 @@ func ParkingBlank(data ParkingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "</span>Abrechnung konfigurieren</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</span>Abrechnung konfigurieren</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanManageParkingPayments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<a class=\"button ghost\" href=\"/app/settings/parking-access\" title=\"Festlegen, wer den Parkplatz nutzen darf\"><span class=\"btn-icon\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<a class=\"button ghost\" href=\"/app/settings/parking-access\" title=\"Festlegen, wer den Parkplatz nutzen darf\"><span class=\"btn-icon\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1412,18 +1444,18 @@ func ParkingBlank(data ParkingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</span>Zugriff verwalten</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</span>Zugriff verwalten</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if !data.IsAdmin && !data.CanManageParkingPayments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<a class=\"button ghost\" href=\"/app\">Hausüberblick öffnen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "<a class=\"button ghost\" href=\"/app\">Hausüberblick öffnen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</div><div class=\"parking-empty-steps\"><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">1</span><strong>Tarif</strong></div><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">2</span><strong>Messwerte</strong></div><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">3</span><strong>Monat</strong></div></div><div class=\"parking-empty-note\"><span class=\"parking-empty-note-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 8v5\"></path><path d=\"M12 17h.01\"></path><circle cx=\"12\" cy=\"12\" r=\"9\"></circle></svg></span> <span><strong>Nur Nachweis.</strong> Keine Buchung, kein Mahnwesen, kein Zahlungsauftrag.</span></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</div><div class=\"parking-empty-steps\"><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">1</span><strong>Tarif</strong></div><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">2</span><strong>Messwerte</strong></div><div class=\"parking-empty-step\"><span class=\"parking-empty-step-number\">3</span><strong>Monat</strong></div></div><div class=\"parking-empty-note\"><span class=\"parking-empty-note-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 8v5\"></path><path d=\"M12 17h.01\"></path><circle cx=\"12\" cy=\"12\" r=\"9\"></circle></svg></span> <span><strong>Nur Nachweis.</strong> Keine Buchung, kein Mahnwesen, kein Zahlungsauftrag.</span></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1452,7 +1484,7 @@ func ParkingRefreshIcon() templ.Component {
 			templ_7745c5c3_Var71 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 4v6h6\"></path><path d=\"M20 20v-6h-6\"></path><path d=\"M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3\"></path></svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 4v6h6\"></path><path d=\"M20 20v-6h-6\"></path><path d=\"M5 10a7 7 0 0 1 12-3M19 14a7 7 0 0 1-12 3\"></path></svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1481,7 +1513,7 @@ func ParkingAccessIcon() templ.Component {
 			templ_7745c5c3_Var72 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z\"></path><path d=\"M3.5 20a5 5 0 0 1 10 0\"></path><path d=\"M17 8v8M13 12h8\"></path></svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z\"></path><path d=\"M3.5 20a5 5 0 0 1 10 0\"></path><path d=\"M17 8v8M13 12h8\"></path></svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1527,7 +1559,7 @@ func ParkingStyles() templ.Component {
 			templ_7745c5c3_Var73 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "<style>a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.parking-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.parking-page{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-4)}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.btn-icon svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.panel{padding:var(--space-5);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.flash{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--leaf);color:var(--leaf)}.muted{color:var(--muted);font-size:13px;line-height:1.5}.mini{color:var(--soft);font-size:12px;line-height:1.4;overflow-wrap:anywhere}.metric-label{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.amount{font-weight:800;font-variant-numeric:tabular-nums}\n\t\t.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;white-space:nowrap}.pill.ok{border-color:var(--leaf);color:var(--leaf)}.pill.dringend{border-color:var(--ink);color:var(--ink)}.pill.live-surplus,.pill.mode-surplus{border-color:var(--gold);color:var(--gold-ink)}.pill.live-manual,.pill.mode-normal{color:var(--muted)}.pill.live-idle{color:var(--soft)}\n\t\t.parking-more{position:relative}.parking-more>summary{list-style:none}.parking-more>summary::-webkit-details-marker{display:none}.parking-more-menu{position:absolute;z-index:20;right:0;top:calc(100% + var(--space-2));width:min(270px,calc(100vw - 48px));display:grid;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-dialog)}.parking-more-menu .button,.parking-more-menu form,.parking-more-menu button{width:100%}.parking-more-menu form{margin:0}\n\t\t.parking-switcher{width:min(520px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-1);padding:var(--space-1);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.parking-switcher a{min-height:42px;display:grid;place-items:center;border-radius:var(--radius-xs);color:var(--ink);font-size:12px;font-weight:800}.parking-switcher a:first-child{background:var(--ink);color:var(--panel)}\n\t\t.parking-live{display:grid;gap:var(--space-4);scroll-margin-top:88px}.parking-live-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-5)}.parking-live-head h2{margin-top:var(--space-1);font-size:clamp(26px,3vw,34px)}.parking-live-head p{margin-top:var(--space-1)}.parking-live-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.parking-live-facts>span{min-width:0;min-height:68px;display:grid;align-content:center;gap:3px;padding:var(--space-3) var(--space-4);border-left:1px solid var(--line)}.parking-live-facts>span:first-child{border-left:0}.parking-live-facts small,.parking-current-facts small{color:var(--soft);font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.parking-live-facts strong{font-family:var(--font-serif);font-size:22px;overflow-wrap:anywhere}.battery-full{color:var(--leaf)}.battery-partial{color:var(--gold-ink)}.battery-low{color:var(--ink)}\n\t\t.parking-live-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--space-2)}.parking-live-actions form{margin:0}.parking-manual{position:relative}.parking-manual>summary{list-style:none}.parking-manual>summary::-webkit-details-marker{display:none}.parking-manual>form{position:absolute;z-index:10;top:calc(100% + 7px);left:0;width:max-content;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-dialog)}\n\t\t.parking-live-details,.parking-utility{padding-top:var(--space-3);border-top:1px solid var(--line)}.parking-live-details>summary,.parking-utility>summary{min-height:42px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-weight:800}.parking-live-details-body{display:grid;gap:var(--space-3);padding-top:9px}.parking-live-details-body h3{font-size:17px}.parking-live-details-body .pill{justify-self:start}.parking-split-list{display:grid;gap:7px}.parking-split-list p{display:grid;grid-template-columns:70px repeat(2,minmax(0,1fr));gap:var(--space-2);color:var(--muted);font-size:12px}.parking-split-list strong{color:var(--ink)}.parking-admin-state{display:flex;flex-wrap:wrap;align-items:center;gap:7px var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:12px}.parking-admin-state a{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}\n\t\t.parking-session-list{display:grid;gap:6px;margin-top:var(--space-2)}.parking-session-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:13px}.parking-session-row .amount{margin-left:auto}\n\t\t.parking-months-panel{display:grid;gap:var(--space-4);scroll-margin-top:88px}.parking-months-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.parking-months-head h2{font-size:26px}.parking-months-head p{margin-top:var(--space-1);font-size:12px}.parking-months-status{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2)}\n\t\t.parking-current-month{display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;align-items:center;gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);scroll-margin-top:88px}.parking-current-month:hover{border-color:var(--gold)}.parking-current-month>span:first-child{min-width:0;display:grid;gap:var(--space-1)}.parking-current-month strong{font-family:var(--font-serif);font-size:26px;font-weight:600;line-height:1.05}.parking-current-month b{font-size:15px;font-variant-numeric:tabular-nums}.parking-current-facts{display:flex;flex-wrap:wrap;gap:var(--space-4)}.parking-current-facts>span{display:grid;gap:2px}.parking-current-facts strong{font-variant-numeric:tabular-nums}.parking-row-arrow{color:var(--gold-ink);font-size:20px;text-align:right}\n\t\t.parking-month-list{display:grid;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.parking-compact-month{min-height:60px;display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line);background:var(--panel);scroll-margin-top:88px}.parking-compact-month:first-child{border-top:0}.parking-compact-month:hover{background:var(--panel-soft)}.parking-compact-month strong{display:block;font-size:14px}.parking-compact-month small{display:block;margin-top:2px;color:var(--muted);font-size:11px}\n\t\t.parking-utility-body{display:grid;gap:var(--space-3);padding-top:var(--space-2)}\n\t\t.parking-empty{display:grid;grid-template-columns:190px minmax(0,1fr) auto;gap:var(--space-5) 26px;align-items:center}.parking-empty-art{width:min(190px,100%);aspect-ratio:1.25;justify-self:center;color:var(--gold)}.parking-empty-art svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.parking-empty-art .soft-fill{fill:var(--panel-soft);stroke:none}.parking-empty-copy{min-width:0;display:grid;gap:var(--space-2)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}.parking-empty-copy h2{font-size:clamp(28px,3.4vw,38px)}.parking-empty-actions{display:flex;flex-wrap:wrap;align-self:center;justify-content:flex-end;gap:var(--space-2)}\n\t\t.parking-empty-steps{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.parking-empty-step{min-width:0;min-height:58px;display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.parking-empty-step-number{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--gold);border-radius:var(--radius-pill);color:var(--gold-ink);font-weight:800}.parking-empty-step strong{display:block;font-family:var(--font-serif);font-size:17px;line-height:1.15}\n\t\t.parking-empty-note{grid-column:1/-1;display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--leaf);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:13px}.parking-empty-note-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf)}.parking-empty-note-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.parking-empty-note strong{color:var(--ink)}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}\n\t\t@media(max-width:1050px){.parking-empty{grid-template-columns:150px minmax(0,1fr)}.parking-empty-actions{grid-column:1/-1;justify-content:flex-start}.parking-current-month{grid-template-columns:minmax(0,1fr) auto 18px}.parking-current-facts{grid-column:1/-1}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.parking-main{padding:var(--space-5) var(--space-4) 48px}.parking-more-menu{right:auto;left:0}.panel{padding:var(--space-4)}.parking-live-head{flex-wrap:wrap}.parking-live-facts{grid-template-columns:1fr}.parking-live-facts>span{border-left:0;border-top:1px solid var(--line)}.parking-live-facts>span:first-child{border-top:0}.parking-live-actions{display:grid}.parking-live-actions .button,.parking-manual{width:100%}.parking-split-list p{grid-template-columns:1fr}.parking-months-head{display:grid}.parking-current-month,.parking-compact-month{grid-template-columns:minmax(0,1fr) auto}.parking-current-facts{grid-column:1/-1}.parking-current-month>.pill,.parking-compact-month>.pill{grid-column:1/-1;justify-self:start}.parking-row-arrow{display:none}.parking-empty{grid-template-columns:1fr}.parking-empty-art{grid-row:1}.parking-empty-actions{display:grid}.parking-empty-actions .button{width:100%}.parking-empty-steps{grid-template-columns:1fr}.parking-empty-note{grid-template-columns:1fr}.parking-empty-note-icon{display:none}}\n\t\t.parking-main .portal-section-content{padding-top:24px}.parking-main .portal-section-header h1{font-size:clamp(36px,4vw,56px);line-height:1.1;white-space:normal;overflow-wrap:anywhere}.parking-main .portal-section-lede{font-size:18px}.parking-more>summary{gap:16px;min-height:48px;padding:8px 24px;font-size:16px}.parking-more>summary>span{color:var(--gold);letter-spacing:2px}.parking-page{gap:24px;max-width:1200px}.parking-page .button{min-height:48px;font-size:16px;padding:8px 24px}.parking-empty{grid-template-columns:minmax(0,1fr) 240px;gap:32px;padding:40px 48px;box-shadow:none}.parking-empty-art{grid-column:2;grid-row:1/3;width:240px;aspect-ratio:1.1}.parking-empty-copy{grid-column:1;grid-row:1;gap:16px}.parking-empty-copy .kicker{font-size:12px;letter-spacing:.14em}.parking-empty-copy h2{font-size:clamp(32px,3.6vw,56px);line-height:1.1}.parking-empty-copy .muted{font-size:18px;line-height:1.5}.parking-empty-actions{grid-column:1;grid-row:2;justify-content:flex-start;gap:16px}.parking-empty-steps{gap:40px}.parking-empty-step{position:relative;grid-template-columns:48px minmax(0,1fr);gap:16px;min-height:80px;padding:16px 24px}.parking-empty-step:not(:last-child)::after{content:\"›\";position:absolute;right:-28px;color:var(--muted);font-size:32px}.parking-empty-step-number{width:48px;height:48px;font-size:24px;background:var(--panel)}.parking-empty-step strong{font-size:24px}.parking-empty-note{gap:24px;padding:16px 24px;min-height:80px;font-size:16px;background:rgba(47,107,74,.04)}.parking-empty-note-icon{background:transparent}.parking-empty-note-icon svg{width:32px;height:32px}.parking-live,.parking-months-panel{padding:32px;gap:24px;box-shadow:none}.parking-live-head h2,.parking-months-head h2{font-size:32px}.parking-session-current{font-size:16px;line-height:1.5;color:var(--muted)}.parking-live-facts>span{padding:16px 24px;min-height:88px;gap:8px}.parking-live-facts strong{font-size:32px}.parking-current-month{padding:24px;gap:24px}.parking-compact-month{min-height:72px;padding:16px 24px}.parking-live-details>summary,.parking-utility>summary{min-height:48px}\n\t\t@media(max-width:1100px){.parking-empty{padding:32px;grid-template-columns:minmax(0,1fr) 176px;gap:24px}.parking-empty-art{width:176px}.parking-empty-actions{grid-column:1/-1;grid-row:2}.parking-empty-art{grid-row:1}.parking-empty-steps{gap:32px}.parking-empty-step{padding:16px;grid-template-columns:40px minmax(0,1fr);gap:8px}.parking-empty-step-number{width:40px;height:40px;font-size:20px}.parking-empty-step strong{font-size:20px}.parking-empty-step:not(:last-child)::after{right:-24px}}\n\t\t@media(max-width:760px){.parking-main .portal-section-content{padding-top:24px}.parking-main .portal-section-header h1{font-size:36px}.parking-empty{padding:24px;grid-template-columns:minmax(0,1fr);gap:24px}.parking-empty-copy{grid-column:1;grid-row:1}.parking-empty-art{grid-column:1;grid-row:2;width:176px}.parking-empty-actions{grid-column:1;grid-row:3;display:flex;flex-wrap:wrap}.parking-empty-copy .muted{font-size:16px}.parking-empty-steps{gap:16px}.parking-empty-step:not(:last-child)::after{content:none}.parking-empty-note{grid-template-columns:32px minmax(0,1fr);gap:16px;padding:16px;font-size:14px}.parking-empty-note-icon{display:grid;width:32px;height:32px}.parking-live,.parking-months-panel{padding:24px}.parking-live-facts>span{padding:16px}.parking-current-month{padding:16px}.parking-page .button{font-size:14px;padding:8px 16px}}\n\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<style>a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.parking-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.parking-page{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-4)}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.btn-icon svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.panel{padding:var(--space-5);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.flash{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}.flash.ok{border-color:var(--leaf);color:var(--leaf)}.muted{color:var(--muted);font-size:13px;line-height:1.5}.mini{color:var(--soft);font-size:12px;line-height:1.4;overflow-wrap:anywhere}.metric-label{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.amount{font-weight:800;font-variant-numeric:tabular-nums}\n\t\t.pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;white-space:nowrap}.pill.ok{border-color:var(--leaf);color:var(--leaf)}.pill.dringend{border-color:var(--ink);color:var(--ink)}.pill.live-surplus,.pill.mode-surplus{border-color:var(--gold);color:var(--gold-ink)}.pill.live-manual,.pill.mode-normal{color:var(--muted)}.pill.live-idle{color:var(--soft)}\n\t\t.parking-more{position:relative}.parking-more>summary{list-style:none}.parking-more>summary::-webkit-details-marker{display:none}.parking-more-menu{position:absolute;z-index:20;right:0;top:calc(100% + var(--space-2));width:min(270px,calc(100vw - 48px));display:grid;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-dialog)}.parking-more-menu .button,.parking-more-menu form,.parking-more-menu button{width:100%}.parking-more-menu form{margin:0}\n\t\t.parking-switcher{width:min(520px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-1);padding:var(--space-1);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.parking-switcher a{min-height:42px;display:grid;place-items:center;border-radius:var(--radius-xs);color:var(--ink);font-size:12px;font-weight:800}.parking-switcher a:first-child{background:var(--ink);color:var(--panel)}\n\t\t.parking-live{display:grid;gap:var(--space-4);scroll-margin-top:88px}.parking-live-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-5)}.parking-live-head h2{margin-top:var(--space-1);font-size:clamp(26px,3vw,34px)}.parking-live-head p{margin-top:var(--space-1)}.parking-live-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.parking-live-facts>span{min-width:0;min-height:68px;display:grid;align-content:center;gap:3px;padding:var(--space-3) var(--space-4);border-left:1px solid var(--line)}.parking-live-facts>span:first-child{border-left:0}.parking-live-facts small,.parking-current-facts small{color:var(--soft);font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.parking-live-facts strong{font-family:var(--font-serif);font-size:22px;overflow-wrap:anywhere}.battery-full{color:var(--leaf)}.battery-partial{color:var(--gold-ink)}.battery-low{color:var(--ink)}\n\t\t.parking-live-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--space-2)}.parking-live-actions form{margin:0}.parking-manual{position:relative}.parking-manual>summary{list-style:none}.parking-manual>summary::-webkit-details-marker{display:none}.parking-manual>form{position:absolute;z-index:10;top:calc(100% + 7px);left:0;width:max-content;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--shadow-dialog)}\n\t\t.parking-live-details,.parking-utility{padding-top:var(--space-3);border-top:1px solid var(--line)}.parking-live-details>summary,.parking-utility>summary{min-height:42px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-weight:800}.parking-live-details-body{display:grid;gap:var(--space-3);padding-top:9px}.parking-live-details-body h3{font-size:17px}.parking-live-details-body .pill{justify-self:start}.parking-split-list{display:grid;gap:7px}.parking-split-list p{display:grid;grid-template-columns:70px repeat(2,minmax(0,1fr));gap:var(--space-2);color:var(--muted);font-size:12px}.parking-split-list strong{color:var(--ink)}.parking-admin-state{display:flex;flex-wrap:wrap;align-items:center;gap:7px var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:12px}.parking-admin-state a{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}\n\t\t.parking-session-list{display:grid;gap:6px;margin-top:var(--space-2)}.parking-session-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:13px}.parking-session-row .amount{margin-left:auto}\n\t\t.parking-months-panel{display:grid;gap:var(--space-4);scroll-margin-top:88px}.parking-months-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.parking-months-head h2{font-size:26px}.parking-months-head p{margin-top:var(--space-1);font-size:12px}.parking-months-status{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2)}\n\t\t.parking-current-month{display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;align-items:center;gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);scroll-margin-top:88px}.parking-current-month:hover{border-color:var(--gold)}.parking-current-month>span:first-child{min-width:0;display:grid;gap:var(--space-1)}.parking-current-month strong{font-family:var(--font-serif);font-size:26px;font-weight:600;line-height:1.05}.parking-current-month b{font-size:15px;font-variant-numeric:tabular-nums}.parking-current-facts{display:flex;flex-wrap:wrap;gap:var(--space-4)}.parking-current-facts>span{display:grid;gap:2px}.parking-current-facts strong{font-variant-numeric:tabular-nums}.parking-row-arrow{color:var(--gold-ink);font-size:20px;text-align:right}\n\t\t.parking-month-list{display:grid;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.parking-compact-month{min-height:60px;display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line);background:var(--panel);scroll-margin-top:88px}.parking-compact-month:first-child{border-top:0}.parking-compact-month:hover{background:var(--panel-soft)}.parking-compact-month strong{display:block;font-size:14px}.parking-compact-month small{display:block;margin-top:2px;color:var(--muted);font-size:11px}\n\t\t.parking-utility-body{display:grid;gap:var(--space-3);padding-top:var(--space-2)}\n\t\t.parking-empty{display:grid;grid-template-columns:190px minmax(0,1fr) auto;gap:var(--space-5) 26px;align-items:center}.parking-empty-art{width:min(190px,100%);aspect-ratio:1.25;justify-self:center;color:var(--gold)}.parking-empty-art svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.parking-empty-art .soft-fill{fill:var(--panel-soft);stroke:none}.parking-empty-copy{min-width:0;display:grid;gap:var(--space-2)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}.parking-empty-copy h2{font-size:clamp(28px,3.4vw,38px)}.parking-empty-actions{display:flex;flex-wrap:wrap;align-self:center;justify-content:flex-end;gap:var(--space-2)}\n\t\t.parking-empty-steps{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.parking-empty-step{min-width:0;min-height:58px;display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.parking-empty-step-number{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--gold);border-radius:var(--radius-pill);color:var(--gold-ink);font-weight:800}.parking-empty-step strong{display:block;font-family:var(--font-serif);font-size:17px;line-height:1.15}\n\t\t.parking-empty-note{grid-column:1/-1;display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--leaf);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:13px}.parking-empty-note-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--panel);color:var(--leaf)}.parking-empty-note-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.parking-empty-note strong{color:var(--ink)}.menu>summary{list-style:none}.menu>summary::-webkit-details-marker{display:none}\n\t\t@media(max-width:1050px){.parking-empty{grid-template-columns:150px minmax(0,1fr)}.parking-empty-actions{grid-column:1/-1;justify-content:flex-start}.parking-current-month{grid-template-columns:minmax(0,1fr) auto 18px}.parking-current-facts{grid-column:1/-1}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:48px;display:grid;place-content:center;cursor:pointer}.parking-main{padding:var(--space-5) var(--space-4) 48px}.parking-more-menu{right:auto;left:0}.panel{padding:var(--space-4)}.parking-live-head{flex-wrap:wrap}.parking-live-facts{grid-template-columns:1fr}.parking-live-facts>span{border-left:0;border-top:1px solid var(--line)}.parking-live-facts>span:first-child{border-top:0}.parking-live-actions{display:grid}.parking-live-actions .button,.parking-manual{width:100%}.parking-split-list p{grid-template-columns:1fr}.parking-months-head{display:grid}.parking-current-month,.parking-compact-month{grid-template-columns:minmax(0,1fr) auto}.parking-current-facts{grid-column:1/-1}.parking-current-month>.pill,.parking-compact-month>.pill{grid-column:1/-1;justify-self:start}.parking-row-arrow{display:none}.parking-empty{grid-template-columns:1fr}.parking-empty-art{grid-row:1}.parking-empty-actions{display:grid}.parking-empty-actions .button{width:100%}.parking-empty-steps{grid-template-columns:1fr}.parking-empty-note{grid-template-columns:1fr}.parking-empty-note-icon{display:none}}\n\t\t.parking-main .portal-section-content{padding-top:24px}.parking-main .portal-section-header h1{font-size:clamp(36px,4vw,56px);line-height:1.1;white-space:normal;overflow-wrap:anywhere}.parking-main .portal-section-lede{font-size:18px}.parking-more>summary{gap:16px;min-height:48px;padding:8px 24px;font-size:16px}.parking-more>summary>span{color:var(--gold);letter-spacing:2px}.parking-page{gap:24px;max-width:1200px}.parking-page .button{min-height:48px;font-size:16px;padding:8px 24px}.parking-empty{grid-template-columns:minmax(0,1fr) 240px;gap:32px;padding:40px 48px;box-shadow:none}.parking-empty-art{grid-column:2;grid-row:1/3;width:240px;aspect-ratio:1.1}.parking-empty-copy{grid-column:1;grid-row:1;gap:16px}.parking-empty-copy .kicker{font-size:12px;letter-spacing:.14em}.parking-empty-copy h2{font-size:clamp(32px,3.6vw,56px);line-height:1.1}.parking-empty-copy .muted{font-size:18px;line-height:1.5}.parking-empty-actions{grid-column:1;grid-row:2;justify-content:flex-start;gap:16px}.parking-empty-steps{gap:40px}.parking-empty-step{position:relative;grid-template-columns:48px minmax(0,1fr);gap:16px;min-height:80px;padding:16px 24px}.parking-empty-step:not(:last-child)::after{content:\"›\";position:absolute;right:-28px;color:var(--muted);font-size:32px}.parking-empty-step-number{width:48px;height:48px;font-size:24px;background:var(--panel)}.parking-empty-step strong{font-size:24px}.parking-empty-note{gap:24px;padding:16px 24px;min-height:80px;font-size:16px;background:rgba(47,107,74,.04)}.parking-empty-note-icon{background:transparent}.parking-empty-note-icon svg{width:32px;height:32px}.parking-live,.parking-months-panel{padding:32px;gap:24px;box-shadow:none}.parking-live-head h2,.parking-months-head h2{font-size:32px}.parking-session-current{font-size:16px;line-height:1.5;color:var(--muted)}.parking-live-facts>span{padding:16px 24px;min-height:88px;gap:8px}.parking-live-facts strong{font-size:32px}.parking-current-month{padding:24px;gap:24px}.parking-compact-month{min-height:72px;padding:16px 24px}.parking-live-details>summary,.parking-utility>summary{min-height:48px}\n\t\t@media(max-width:1100px){.parking-empty{padding:32px;grid-template-columns:minmax(0,1fr) 176px;gap:24px}.parking-empty-art{width:176px}.parking-empty-actions{grid-column:1/-1;grid-row:2}.parking-empty-art{grid-row:1}.parking-empty-steps{gap:32px}.parking-empty-step{padding:16px;grid-template-columns:40px minmax(0,1fr);gap:8px}.parking-empty-step-number{width:40px;height:40px;font-size:20px}.parking-empty-step strong{font-size:20px}.parking-empty-step:not(:last-child)::after{right:-24px}}\n\t\t@media(max-width:760px){.parking-main .portal-section-content{padding-top:24px}.parking-main .portal-section-header h1{font-size:36px}.parking-empty{padding:24px;grid-template-columns:minmax(0,1fr);gap:24px}.parking-empty-copy{grid-column:1;grid-row:1}.parking-empty-art{grid-column:1;grid-row:2;width:176px}.parking-empty-actions{grid-column:1;grid-row:3;display:flex;flex-wrap:wrap}.parking-empty-copy .muted{font-size:16px}.parking-empty-steps{gap:16px}.parking-empty-step:not(:last-child)::after{content:none}.parking-empty-note{grid-template-columns:32px minmax(0,1fr);gap:16px;padding:16px;font-size:14px}.parking-empty-note-icon{display:grid;width:32px;height:32px}.parking-live,.parking-months-panel{padding:24px}.parking-live-facts>span{padding:16px}.parking-current-month{padding:16px}.parking-page .button{font-size:14px;padding:8px 16px}}\n\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

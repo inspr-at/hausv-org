@@ -27,7 +27,7 @@ func TestMailIntakeFailureShowsACustomerMessageAndKeepsTheRawErrorInTheDisclosur
 	for _, want := range []string{
 		`data-ok="false"`,
 		"Postfach derzeit nicht erreichbar · letzter erfolgreicher Abruf 07.09.2026 19:40",
-		`<details class="settings-technical"><summary>Technische Details</summary>`,
+		`<details class="settings-technical"><summary>Technische Details<span class="disclosure-chevron" aria-hidden="true">`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("settings page misses %q", want)

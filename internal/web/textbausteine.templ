@@ -98,7 +98,9 @@ templ textbausteinListContent(data TextbausteinListData) {
 				for _, group := range data.Groups {
 					<section class="textbausteine-group"><h2><span data-search-text>{ group.Label }</span><span>{ fmt.Sprint(len(group.Items)) }</span></h2><div class="textbausteine-table-wrap"><table class="textbausteine-table"><thead><tr><th>Titel</th><th>Schlüssel</th><th>Status</th><th>Geändert</th><th>Aktion</th></tr></thead><tbody>
 						for _, item := range group.Items {
-							<tr data-textbaustein-row><td class="textbausteine-title"><span data-search-text>{ item.Title }</span><details class="textbausteine-body"><summary>Text ansehen</summary><p data-search-text>{ item.Body }</p></details></td><td class="textbausteine-key">{ item.Key }</td><td class="textbausteine-status-cell"><span class={ "textbausteine-status", templ.KV("active", item.Active) }><span class="textbausteine-status-dot" aria-hidden="true"></span>{ item.Status }</span></td><td class="textbausteine-updated">Geändert: { item.Updated }</td><td class="textbausteine-action-cell"><a class="textbausteine-action" href={ templ.SafeURL(item.EditURL) }>Bearbeiten</a></td></tr>
+							<tr data-textbaustein-row><td class="textbausteine-title"><span data-search-text>{ item.Title }</span><details class="textbausteine-body"><summary>Text ansehen
+								@DisclosureChevron()
+							</summary><p data-search-text>{ item.Body }</p></details></td><td class="textbausteine-key">{ item.Key }</td><td class="textbausteine-status-cell"><span class={ "textbausteine-status", templ.KV("active", item.Active) }><span class="textbausteine-status-dot" aria-hidden="true"></span>{ item.Status }</span></td><td class="textbausteine-updated">Geändert: { item.Updated }</td><td class="textbausteine-action-cell"><a class="textbausteine-action" href={ templ.SafeURL(item.EditURL) }>Bearbeiten</a></td></tr>
 						}
 					</tbody></table></div></section>
 				}

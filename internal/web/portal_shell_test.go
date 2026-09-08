@@ -85,6 +85,24 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 	for _, page := range pages {
 		t.Run(page.name, func(t *testing.T) {
 			html := renderComponent(t, page.component)
+			if strings.Contains(html, "@DisclosureChevron") || strings.Contains(html, "⌄") {
+				t.Fatal("disclosure component call or text arrow leaked into rendered HTML")
+			}
+			if strings.Count(html, "<style data-shell-critical>") != 1 || !strings.Contains(html, `<html lang="de-AT" style="--sidebar-w:280px;">`) {
+				t.Fatal("every authenticated page needs the initial width and critical shell CSS")
+			}
+			critical := strings.Index(html, "<style data-shell-critical>")
+			asset := strings.Index(html, `/assets/portal-shell.css?v=`)
+			if asset <= critical || asset >= strings.Index(html, "</head>") {
+				t.Fatal("every authenticated page must load critical shell CSS before the external sheet in the head")
+			}
+			var resized bytes.Buffer
+			if err := page.component.Render(WithSidebarWidth(t.Context(), 360), &resized); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(resized.String(), `<html lang="de-AT" style="--sidebar-w:360px;">`) {
+				t.Fatal("every authenticated page must preserve the server-provided sidebar width")
+			}
 			bodyStart := html[strings.Index(html, "<body"):]
 			bodyStart = bodyStart[:strings.Index(bodyStart, ">")]
 			if !strings.Contains(bodyStart, "data-authenticated-app") {
@@ -354,7 +372,8 @@ func TestPortalPagesDoNotOwnSharedChromeCSS(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, source := range sources {
-		if source == "portal.templ" || source == "templ_example.templ" {
+		// The shared first-paint component is part of PortalDocument, not a page.
+		if source == "portal.templ" || source == "portal_shell_critical.templ" || source == "templ_example.templ" {
 			continue
 		}
 		body, err := os.ReadFile(source)
