@@ -802,3 +802,5 @@
 .legacy-route :where(img, svg, video) { max-width: 100%; }
 /* HAUSV-705: the flow suite measures 44px touch targets on the energy data controls. */
 .legacy-route .button, .legacy-route button, .legacy-route button.small, .legacy-route .button.small, .legacy-route .issue-actions button, .legacy-route details > summary, .legacy-route .energy-delete-action > summary, .legacy-route .energy-delete-button { min-height: 44px; }
+/* HAUSV-705: energy data controls are measured at 44px by the flow suite, regardless of the wrapper. */
+.energy-delete-action > summary, .energy-delete-button, .energy-data-export .button, .energy-data-actions button { min-height: 44px; }
