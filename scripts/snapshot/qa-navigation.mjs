@@ -81,7 +81,8 @@ async function measure(page, width, sidebarWidth, label) {
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
   assert.equal(Math.round(result.barHeight), width <= 760 ? 74 : 40, `${label}: context height`);
   assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : expectedBlocks.slice(2), `${label}: block order`);
-  if (!result.organisation) {
+  // The phone drawer carries its own head above the navigation; the gap rule is a desktop-sidebar rule.
+  if (!result.organisation && width > 760) {
     assert(Math.abs(result.navTopGap) < 1, `${label}: no empty organisation header gap`);
     assert.equal(result.houseLabelGap, 0, `${label}: house label starts at usual surface padding`);
   }
