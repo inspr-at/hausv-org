@@ -90,7 +90,18 @@ templ OnboardingPage(data OnboardingPageData) {
 
 templ OnboardingContent(data OnboardingPageData) {
 	<main class="onboarding-main" id="main-content" tabindex="-1">
-		@OnboardingModeStrip(data)
+		<header class="onboarding-page-head">
+			<div class="onboarding-page-title">
+				if data.Step == 1 {
+					Energie-Cockpit
+				} else if data.Step == 2 {
+					Zuhause bearbeiten
+				} else {
+					Zuhause einrichten
+				}
+			</div>
+			@OnboardingModeStrip(data)
+		</header>
 		<div class="onboarding-page">
 			if data.ProfileReset {
 				<div class="onboarding-notice"><strong>Das Energieprofil wurde gelöscht.</strong> Hausname, Anlagen, Zuordnungen, Messverlauf und Auswertungen sind entfernt. Unabhängige Anliegen und das Sicherheitsprotokoll bleiben nach ihren eigenen Fristen bestehen.</div>
@@ -156,9 +167,9 @@ templ OnboardingStepIntro() {
 	</header>
 	<form class="onboarding-body" method="post" action="/app/zuhause/onboarding">
 		<div class="onboarding-explain">
-			<article><strong>1 · Verstehen</strong><p>Welche großen Verbraucher gibt es und was lässt sich zeitlich verschieben?</p></article>
-			<article><strong>2 · Messen</strong><p>Bestehende Messwerte lesen. Home Assistant ist hilfreich, aber keine Voraussetzung.</p></article>
-			<article><strong>3 · Verbessern</strong><p>HAUSV zeigt kleine, nachvollziehbare Schritte. Sie behalten die Kontrolle.</p></article>
+			<article><span class="onboarding-step-number" aria-hidden="true">1</span><strong>1 · Verstehen</strong><p>Welche großen Verbraucher gibt es und was lässt sich zeitlich verschieben?</p></article>
+			<article><span class="onboarding-step-number" aria-hidden="true">2</span><strong>2 · Messen</strong><p>Bestehende Messwerte lesen. Home Assistant ist hilfreich, aber keine Voraussetzung.</p></article>
+			<article><span class="onboarding-step-number" aria-hidden="true">3</span><strong>3 · Verbessern</strong><p>HAUSV zeigt kleine, nachvollziehbare Schritte. Sie behalten die Kontrolle.</p></article>
 		</div>
 		<div class="onboarding-trust"><span aria-hidden="true">✓</span><div><strong>Standard bleibt „Nur beobachten“</strong><p>Während der gesamten Einrichtung wird nichts geschaltet. Eine spätere Freigabe ist separat, dauerhaft sichtbar und nur für Eigentümer oder Hausadministration möglich.</p></div></div>
 		<div class="onboarding-actions"><a class="button" href="/app">Später</a><button class="button primary" type="submit" name="action" value="understand">Verstanden, weiter</button></div>
@@ -167,7 +178,7 @@ templ OnboardingStepIntro() {
 
 templ OnboardingStepIdentity(data OnboardingPageData) {
 	<header class="onboarding-card-head"><span class="eyebrow">Ihr Zuhause</span><h1>Was richten wir gemeinsam ein?</h1><p>Ein Name und die Art des Zuhauses genügen. Technische Details kommen erst, wenn sie wirklich helfen.</p></header>
-	<form class="onboarding-body onboarding-form" method="post" action="/app/zuhause/onboarding">
+	<form class="onboarding-body onboarding-form onboarding-identity-form" method="post" action="/app/zuhause/onboarding">
 		<label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value={ data.HouseholdName } placeholder="z. B. Dachwohnung oder Mein Zuhause" required maxlength="100"/></label>
 		if data.HomeTypeLocked {
 			<div class="home-identity-field"><span>Art</span><input type="hidden" name="home_type" value={ data.HomeType }/><div class="home-identity-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
@@ -190,7 +201,7 @@ templ OnboardingStepIdentity(data OnboardingPageData) {
 			<input type="hidden" name="unit_id" value=""/>
 		}
 		<div class="home-type-explanation" id="home-type-explanation" data-home-type-explanation role="status" aria-live="polite">
-			<span class="home-type-explanation-icon" aria-hidden="true">⌂</span>
+			<span class="home-type-explanation-icon" aria-hidden="true">@PortalIcon("home")</span>
 			<div>
 				<strong data-home-type-label>{ onboardingHomeTypeLabel(data.HomeType) }</strong>
 				<p data-home-type-copy>{ data.HomeTypeDescription }</p>
@@ -349,5 +360,19 @@ templ OnboardingStyles() {
 		@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}
 			.energy-mode-strip{position:static;flex-wrap:wrap;gap:var(--space-2);padding:var(--space-2) var(--space-4)}.energy-mode-capability{margin-left:0;max-width:none;text-align:left}.energy-mode-control{margin-left:0}.energy-mode-popover{position:static;width:100%;margin-top:var(--space-2)}
 			.onboarding-page{padding:18px var(--space-4) 48px}.onboarding-explain,.onboarding-choice-grid{grid-template-columns:1fr}.energy-mapping-guide>header{align-items:start;flex-direction:column;gap:5px}.energy-mapping-slot{grid-template-columns:1fr;gap:7px}.energy-mapping-slot p{min-width:0;text-align:left}.energy-mapping-slot small{max-width:none}.onboarding-actions{align-items:stretch;flex-direction:column-reverse}.onboarding-actions .button{width:100%}.onboarding-candidate{grid-template-columns:auto minmax(0,1fr)}.onboarding-readonly{grid-column:2;justify-self:start}.onboarding-disclosure .optional-grid{grid-template-columns:1fr}.onboarding-skip{margin-left:0}}
+		.onboarding-page-head{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:88px;padding:16px 32px;border-bottom:1px solid var(--line);background:var(--panel)}
+		.onboarding-page-title{font-family:var(--font-serif);font-size:32px;font-weight:600;line-height:1.15;overflow-wrap:anywhere}
+		.onboarding-page-head .energy-mode-strip{position:relative;min-height:0;flex-shrink:0;gap:24px;padding:0;border:0;box-shadow:none}
+		.onboarding-page-head .energy-mode-state{min-height:56px;padding:8px 16px;gap:16px;border-radius:8px}.onboarding-page-head .energy-mode-copy strong{font-size:21px}.onboarding-page-head .energy-mode-icon{width:40px;height:40px}.onboarding-page-head .energy-mode-action{min-height:48px;padding:8px 16px;font-size:16px}
+		.onboarding-page{width:min(1072px,100%);padding:40px 40px 64px;gap:24px}.onboarding-progress-head{font-size:16px}.onboarding-progress-track{height:8px}
+		.onboarding-card{border-radius:8px;box-shadow:var(--shadow-panel)}.onboarding-card-head{gap:24px;padding:40px}.onboarding-card-head h1{font-size:clamp(32px,3.7vw,56px);line-height:1.08;text-wrap:pretty}.onboarding-card-head p{max-width:none;font-size:18px;line-height:1.5}.onboarding-card-head .eyebrow{font-size:12px;letter-spacing:.14em}
+		.onboarding-body{padding:32px 40px;gap:32px}.onboarding-explain{gap:16px}.onboarding-explain article{display:grid;grid-template-columns:40px minmax(0,1fr);align-content:start;align-items:center;gap:8px 16px;padding:16px;min-height:160px}.onboarding-step-number{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--line);font-size:18px;font-weight:700}.onboarding-explain strong{margin:0;font-size:18px}.onboarding-explain p{grid-column:1/-1;font-size:16px;line-height:1.5}
+		.onboarding-trust{gap:16px;padding:16px}.onboarding-trust>span{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--leaf);color:var(--panel);font-size:24px}.onboarding-trust strong{font-size:18px;margin-bottom:8px}.onboarding-trust p{font-size:16px;line-height:1.5}
+		.onboarding-actions{gap:16px;padding-top:0}.onboarding-actions .button{min-height:56px;padding:16px 24px;font-size:16px}.onboarding-actions .primary::after{content:"→";margin-left:16px;font-size:24px;line-height:1}
+		.onboarding-identity-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.onboarding-identity-form>label:first-child,.onboarding-identity-form>.home-type-explanation,.onboarding-identity-form>.onboarding-actions{grid-column:1/-1}.onboarding-identity-form>*{min-width:0}.onboarding-identity-form label>span,.onboarding-identity-form .home-identity-field>span{font-size:12px;margin-bottom:8px}.onboarding-identity-form input[type=text],.onboarding-identity-form select{min-height:56px;padding:8px 16px;font-size:18px}.onboarding-identity-form .home-identity-field-help{font-size:14px;font-weight:400;margin-top:8px}.onboarding-identity-form .home-identity-readonly{flex-wrap:wrap;min-height:56px}
+		.onboarding-identity-form .home-type-explanation{grid-template-columns:64px minmax(0,1fr);gap:24px;margin:0;padding:24px}.onboarding-identity-form .home-type-explanation-icon{width:64px;height:64px}.home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.onboarding-identity-form .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:16px;margin-top:8px}.onboarding-identity-form>.onboarding-actions{margin:8px -40px -32px;padding:24px 40px;border-top:1px solid var(--line)}
+		@media(max-width:1100px){.onboarding-page-head{gap:16px;padding:16px 24px;flex-wrap:wrap}.onboarding-page-title{font-size:28px}.onboarding-page{padding:32px 24px 48px}.onboarding-card-head{padding:32px}.onboarding-body{padding:32px}.onboarding-identity-form>.onboarding-actions{margin:8px -32px -32px;padding:24px 32px}.onboarding-explain article{grid-template-columns:1fr}.onboarding-explain p{grid-column:auto}}
+		@media(max-width:760px){.onboarding-page-head{padding:0 16px 16px;display:grid}.onboarding-page-head .energy-mode-strip{order:-1;margin:0 -16px 8px;padding:8px 16px;flex-shrink:1;flex-wrap:wrap;gap:8px}.onboarding-page-head .energy-mode-copy strong{font-size:18px}.onboarding-page-head .energy-mode-state{gap:8px;padding:8px}.onboarding-page-head .energy-mode-control{margin-left:0}.onboarding-page-head .energy-mode-popover{position:static;width:100%;max-width:100%;margin-top:8px}.onboarding-page-head .energy-mode-control[open]{width:100%}.onboarding-page{padding:24px 16px 48px}.onboarding-progress-head{font-size:12px}.onboarding-card-head{padding:24px;gap:16px}.onboarding-card-head h1{font-size:32px}.onboarding-card-head p{font-size:16px}.onboarding-body{padding:24px;gap:24px}.onboarding-explain article{grid-template-columns:40px minmax(0,1fr);min-height:0}.onboarding-explain p{grid-column:1/-1}.onboarding-explain strong{font-size:16px}.onboarding-trust{grid-template-columns:32px minmax(0,1fr);gap:8px}.onboarding-trust>span{width:32px;height:32px;font-size:20px}.onboarding-trust strong,.onboarding-trust p{font-size:14px}.onboarding-identity-form{grid-template-columns:minmax(0,1fr)}.onboarding-identity-form .home-type-explanation{grid-template-columns:40px minmax(0,1fr);padding:16px;gap:16px}.onboarding-identity-form .home-type-explanation-icon{width:40px;height:40px}.onboarding-identity-form .home-type-explanation p,.onboarding-identity-form .home-type-explanation small{font-size:14px}.onboarding-identity-form>.onboarding-actions{margin:0 -24px -24px;padding:24px}.onboarding-actions .button{padding:8px 16px;font-size:14px}}
+
 	</style>
 }

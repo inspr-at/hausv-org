@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.7",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Energie-Einrichtung, Zuhause und Parkplatz neu gestaltet.",
+			Intro:    "Die Energie-Einrichtung führt mit Titel, Status und nummerierten Schritten durch die Konfiguration, die Zuhause-Einstellungen zeigen Anzeigename, Art und offizielle Wohnung nebeneinander, und Parkplatz & Laden beginnt mit einer großen Einstiegskarte samt Illustration.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.6",
 			Date:     "8. September 2026",
 			Kind:     "Neu",
