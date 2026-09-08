@@ -898,6 +898,10 @@ func IssueInlineDetails(issue view.IssueView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</summary><div class=\"issue-card-details-body\"><div class=\"issue-description\"><strong>Beschreibung</strong><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -905,7 +909,7 @@ func IssueInlineDetails(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var48 string
 		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 160, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 162, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 		if templ_7745c5c3_Err != nil {
@@ -1000,7 +1004,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var50 string
 				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(issue.EstimateAmount)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 184, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 186, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 				if templ_7745c5c3_Err != nil {
@@ -1023,7 +1027,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var51 string
 				templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(issue.EstimateNote)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 188, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 190, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 				if templ_7745c5c3_Err != nil {
@@ -1051,7 +1055,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 194, Col: 153}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 196, Col: 153}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 			if templ_7745c5c3_Err != nil {
@@ -1064,7 +1068,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 194, Col: 212}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 196, Col: 212}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 			if templ_7745c5c3_Err != nil {
@@ -1082,7 +1086,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var54 string
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.Priority)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 196, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 198, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
 				if templ_7745c5c3_Err != nil {
@@ -1095,7 +1099,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var55 string
 				templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.AssigneeEmail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 196, Col: 137}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 198, Col: 137}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 				if templ_7745c5c3_Err != nil {
@@ -1113,7 +1117,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.EstimateAmountValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 198, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 200, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 			if templ_7745c5c3_Err != nil {
@@ -1126,7 +1130,7 @@ func IssueEstimate(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.EstimateNote)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 198, Col: 238}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 200, Col: 238}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
 			if templ_7745c5c3_Err != nil {
@@ -1169,7 +1173,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue("comment-" + comment.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 204, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 206, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
 		if templ_7745c5c3_Err != nil {
@@ -1187,7 +1191,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(comment.KindLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 206, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 208, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
@@ -1201,7 +1205,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(comment.Author)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 208, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 210, Col: 18}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1214,7 +1218,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(comment.CreatedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 208, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 210, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
@@ -1232,7 +1236,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 			var templ_7745c5c3_Var63 templ.SafeURL
 			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(comment.DeleteURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 210, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 212, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
@@ -1245,7 +1249,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 			var templ_7745c5c3_Var64 string
 			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(comment.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 210, Col: 189}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 212, Col: 189}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 			if templ_7745c5c3_Err != nil {
@@ -1263,7 +1267,7 @@ func IssueComment(comment view.IssueCommentView) templ.Component {
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(comment.Body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 212, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 214, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {
@@ -1313,7 +1317,7 @@ func IssueCommentForm(issueID string) templ.Component {
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(issueID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 216, Col: 149}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 218, Col: 149}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
@@ -1356,7 +1360,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var69 string
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 221, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 223, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 			if templ_7745c5c3_Err != nil {
@@ -1374,7 +1378,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var70 string
 				templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 223, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 225, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 				if templ_7745c5c3_Err != nil {
@@ -1397,7 +1401,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var71 string
 				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 223, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 225, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 				if templ_7745c5c3_Err != nil {
@@ -1415,7 +1419,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var72 string
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ServiceStartInput)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 225, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 227, Col: 121}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 			if templ_7745c5c3_Err != nil {
@@ -1428,7 +1432,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var73 string
 			templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ServiceEndInput)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 225, Col: 240}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 227, Col: 240}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 			if templ_7745c5c3_Err != nil {
@@ -1441,7 +1445,7 @@ func IssueServiceWorkflow(issue view.IssueView) templ.Component {
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ServiceProposal)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 225, Col: 349}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 227, Col: 349}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 			if templ_7745c5c3_Err != nil {
@@ -1490,7 +1494,7 @@ func IssueResidentTransitions(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var76 string
 				templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 233, Col: 103}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 235, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 				if templ_7745c5c3_Err != nil {
@@ -1509,7 +1513,7 @@ func IssueResidentTransitions(issue view.IssueView) templ.Component {
 				var templ_7745c5c3_Var77 string
 				templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 236, Col: 103}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 238, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 				if templ_7745c5c3_Err != nil {
@@ -1568,7 +1572,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var79 string
 					templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 					if templ_7745c5c3_Err != nil {
@@ -1581,7 +1585,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var80 string
 					templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 131}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 131}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 					if templ_7745c5c3_Err != nil {
@@ -1594,7 +1598,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var81 string
 					templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 177}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 177}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
 					if templ_7745c5c3_Err != nil {
@@ -1607,7 +1611,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var82 string
 					templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 210}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 210}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var82)
 					if templ_7745c5c3_Err != nil {
@@ -1620,7 +1624,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var83 string
 					templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 238}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 238}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
 					if templ_7745c5c3_Err != nil {
@@ -1633,7 +1637,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var84 string
 					templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 248, Col: 325}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 325}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 					if templ_7745c5c3_Err != nil {
@@ -1651,7 +1655,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var85 templ.SafeURL
 					templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 252, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 					if templ_7745c5c3_Err != nil {
@@ -1664,7 +1668,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var86 string
 					templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(attachmentKind(attachment))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 166}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 252, Col: 166}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 					if templ_7745c5c3_Err != nil {
@@ -1677,7 +1681,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var87 string
 					templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 250, Col: 226}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 252, Col: 226}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 					if templ_7745c5c3_Err != nil {
@@ -1696,7 +1700,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var88 templ.SafeURL
 					templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 253, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 255, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 					if templ_7745c5c3_Err != nil {
@@ -1709,7 +1713,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 					var templ_7745c5c3_Var89 string
 					templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 253, Col: 191}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 255, Col: 191}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var89)
 					if templ_7745c5c3_Err != nil {
@@ -1727,7 +1731,7 @@ func IssueAttachments(attachments []view.AttachmentView) templ.Component {
 						var templ_7745c5c3_Var90 string
 						templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 255, Col: 78}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 257, Col: 78}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var90)
 						if templ_7745c5c3_Err != nil {
@@ -1804,7 +1808,15 @@ func IssueCreatePanel(data IssuesPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</h2><p>In zwei kurzen Schritten verständlich melden.</p></div></summary><div class=\"issue-create-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</h2><p>In zwei kurzen Schritten verständlich melden.</p></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "</summary><div class=\"issue-create-body\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1812,25 +1824,25 @@ func IssueCreatePanel(data IssuesPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "</div></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "</div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<div class=\"issue-start\"><section class=\"panel issue-create-panel\" id=\"issue-new\"><div class=\"issue-create-head\"><h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "<div class=\"issue-start\"><section class=\"panel issue-create-panel\" id=\"issue-new\"><div class=\"issue-create-head\"><h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var92 string
 			templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(issueCreateTitle(data))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 275, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 279, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</h2><p>In zwei kurzen Schritten verständlich melden.</p></div><div class=\"issue-create-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</h2><p>In zwei kurzen Schritten verständlich melden.</p></div><div class=\"issue-create-body\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1838,7 +1850,7 @@ func IssueCreatePanel(data IssuesPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</div></section></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</div></section></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1868,7 +1880,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 			templ_7745c5c3_Var93 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "<form class=\"issue-form\" id=\"issue-create-form\" method=\"post\" action=\"/app/anliegen\" enctype=\"multipart/form-data\" data-issue-wizard><fieldset class=\"issue-wizard-step\" data-issue-step=\"describe\"><div class=\"issue-wizard-heading\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<form class=\"issue-form\" id=\"issue-create-form\" method=\"post\" action=\"/app/anliegen\" enctype=\"multipart/form-data\" data-issue-wizard><fieldset class=\"issue-wizard-step\" data-issue-step=\"describe\"><div class=\"issue-wizard-heading\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1876,7 +1888,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class=\"issue-safety-note\">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href=\"/app/kontakte\">Kontakte der Liegenschaft</a> öffnen. Erst danach hier melden.</p><label for=\"issue-body\">Kurze Beschreibung<textarea id=\"issue-body\" name=\"body\" maxlength=\"4000\" required aria-describedby=\"issue-body-error\" placeholder=\"Zum Beispiel: Das Licht im Keller funktioniert nicht mehr.\"></textarea><span class=\"issue-field-error\" id=\"issue-body-error\" role=\"alert\" hidden></span></label><div class=\"issue-category\"><span id=\"issue-category-label\">Art des Anliegens</span><div class=\"issue-category-options\" role=\"radiogroup\" aria-labelledby=\"issue-category-label\" aria-describedby=\"issue-category-error\"><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Reparatur\" required checked>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class=\"issue-safety-note\">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href=\"/app/kontakte\">Kontakte der Liegenschaft</a> öffnen. Erst danach hier melden.</p><label for=\"issue-body\">Kurze Beschreibung<textarea id=\"issue-body\" name=\"body\" maxlength=\"4000\" required aria-describedby=\"issue-body-error\" placeholder=\"Zum Beispiel: Das Licht im Keller funktioniert nicht mehr.\"></textarea><span class=\"issue-field-error\" id=\"issue-body-error\" role=\"alert\" hidden></span></label><div class=\"issue-category\"><span id=\"issue-category-label\">Art des Anliegens</span><div class=\"issue-category-options\" role=\"radiogroup\" aria-labelledby=\"issue-category-label\" aria-describedby=\"issue-category-error\"><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Reparatur\" required checked>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1884,7 +1896,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<span>Reparatur</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Frage\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<span>Reparatur</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Frage\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1892,7 +1904,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<span>Frage</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Vorschlag\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<span>Frage</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Vorschlag\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1900,7 +1912,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<span>Vorschlag</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Sonstiges\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<span>Vorschlag</span></label><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Sonstiges\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1908,7 +1920,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<span>Sonstiges</span></label></div><p class=\"issue-field-error\" id=\"issue-category-error\" role=\"alert\" hidden></p></div><div class=\"issue-location-options\" role=\"radiogroup\" aria-label=\"Bereich\" aria-describedby=\"issue-location-error\"><label class=\"issue-location-choice\"><input type=\"radio\" name=\"location_type\" value=\"common\" required checked>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span>Sonstiges</span></label></div><p class=\"issue-field-error\" id=\"issue-category-error\" role=\"alert\" hidden></p></div><div class=\"issue-location-options\" role=\"radiogroup\" aria-label=\"Bereich\" aria-describedby=\"issue-location-error\"><label class=\"issue-location-choice\"><input type=\"radio\" name=\"location_type\" value=\"common\" required checked>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1916,7 +1928,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<strong>Gemeinschaftsbereich</strong><span>Stiegenhaus, Keller oder Garage</span></label><label class=\"issue-location-choice\"><input type=\"radio\" name=\"location_type\" value=\"own-unit\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "<strong>Gemeinschaftsbereich</strong><span>Stiegenhaus, Keller oder Garage</span></label><label class=\"issue-location-choice\"><input type=\"radio\" name=\"location_type\" value=\"own-unit\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1924,22 +1936,22 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "<strong>Eigene Einheit</strong><span>Wohnung oder eigener Nebenraum</span></label></div><p class=\"issue-field-error\" id=\"issue-location-error\" role=\"alert\" hidden></p><label for=\"issue-location-detail\">Wo genau? <span class=\"hint\">Optional</span><input id=\"issue-location-detail\" type=\"text\" name=\"location_detail\" maxlength=\"160\" placeholder=\"Zum Beispiel: Vorraum oder neben dem Fahrradraum\"></label><div class=\"issue-file-row\"><label><span class=\"file-control\"><input type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Foto oder Datei hinzufügen</span></span></label><span class=\"hint\">Optional · bis zu 10 Dateien, jeweils 10 MB</span></div><p class=\"hint\">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p><div class=\"issue-wizard-actions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<strong>Eigene Einheit</strong><span>Wohnung oder eigener Nebenraum</span></label></div><p class=\"issue-field-error\" id=\"issue-location-error\" role=\"alert\" hidden></p><label for=\"issue-location-detail\">Wo genau? <span class=\"hint\">Optional</span><input id=\"issue-location-detail\" type=\"text\" name=\"location_detail\" maxlength=\"160\" placeholder=\"Zum Beispiel: Vorraum oder neben dem Fahrradraum\"></label><div class=\"issue-file-row\"><label><span class=\"file-control\"><input type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Foto oder Datei hinzufügen</span></span></label><span class=\"hint\">Optional · bis zu 10 Dateien, jeweils 10 MB</span></div><p class=\"hint\">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p><div class=\"issue-wizard-actions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if hasIssues {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<button class=\"wizard-cancel wizard-only\" type=\"button\">Abbrechen</button><a class=\"wizard-exit wizard-fallback\" href=\"/app/anliegen\">Abbrechen</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "<button class=\"wizard-cancel wizard-only\" type=\"button\">Abbrechen</button><a class=\"wizard-exit wizard-fallback\" href=\"/app/anliegen\">Abbrechen</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "<a class=\"wizard-exit\" href=\"/app\">Abbrechen</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<a class=\"wizard-exit\" href=\"/app\">Abbrechen</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<button class=\"wizard-next wizard-only\" type=\"button\" data-issue-next>Weiter <span aria-hidden=\"true\">→</span></button></div></fieldset><fieldset class=\"issue-wizard-step\" data-issue-step=\"review\"><div class=\"issue-wizard-heading\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<button class=\"wizard-next wizard-only\" type=\"button\" data-issue-next>Weiter <span aria-hidden=\"true\">→</span></button></div></fieldset><fieldset class=\"issue-wizard-step\" data-issue-step=\"review\"><div class=\"issue-wizard-heading\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1947,7 +1959,15 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<h3>Prüfen &amp; senden</h3><p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p></div><dl class=\"issue-review issue-review-enhanced\" aria-label=\"Zusammenfassung\"><div class=\"issue-review-row\"><dt>Art</dt><dd data-issue-summary=\"category\">Reparatur</dd></div><div class=\"issue-review-row\"><dt>Beschreibung</dt><dd class=\"issue-review-copy\"><span class=\"issue-review-copy-text\" data-issue-summary=\"body\">—</span><button class=\"issue-review-expand\" type=\"button\" data-issue-review-expand aria-expanded=\"false\" hidden>Vollständig lesen</button></dd></div><div class=\"issue-review-row\"><dt>Ort</dt><dd data-issue-summary=\"location\">Gemeinschaftsbereich</dd></div><div class=\"issue-review-row\"><dt>Dateien</dt><dd data-issue-summary=\"files\">Keine</dd></div></dl><details class=\"issue-title-option\"><summary>Titel ändern <span class=\"hint\">Optional</span></summary><label for=\"issue-title\">Eigener Titel<input id=\"issue-title\" type=\"text\" name=\"title\" maxlength=\"140\" placeholder=\"Kurzer, passender Titel\"><span class=\"hint\">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span></label></details><div class=\"issue-wizard-actions\"><button class=\"wizard-back wizard-only\" type=\"button\" data-issue-back>Zurück</button><button class=\"wizard-submit\" type=\"submit\" data-busy-label=\"Meldung wird gesendet…\">Anliegen melden</button></div></fieldset></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<h3>Prüfen &amp; senden</h3><p>Ein kurzer Blick, dann ist die Verwaltung informiert.</p></div><dl class=\"issue-review issue-review-enhanced\" aria-label=\"Zusammenfassung\"><div class=\"issue-review-row\"><dt>Art</dt><dd data-issue-summary=\"category\">Reparatur</dd></div><div class=\"issue-review-row\"><dt>Beschreibung</dt><dd class=\"issue-review-copy\"><span class=\"issue-review-copy-text\" data-issue-summary=\"body\">—</span><button class=\"issue-review-expand\" type=\"button\" data-issue-review-expand aria-expanded=\"false\" hidden>Vollständig lesen</button></dd></div><div class=\"issue-review-row\"><dt>Ort</dt><dd data-issue-summary=\"location\">Gemeinschaftsbereich</dd></div><div class=\"issue-review-row\"><dt>Dateien</dt><dd data-issue-summary=\"files\">Keine</dd></div></dl><details class=\"issue-title-option\"><summary>Titel ändern <span class=\"hint\">Optional</span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevron().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "</summary><label for=\"issue-title\">Eigener Titel<input id=\"issue-title\" type=\"text\" name=\"title\" maxlength=\"140\" placeholder=\"Kurzer, passender Titel\"><span class=\"hint\">Ohne Eingabe wird ein kurzer Titel aus der Beschreibung gebildet.</span></label></details><div class=\"issue-wizard-actions\"><button class=\"wizard-back wizard-only\" type=\"button\" data-issue-back>Zurück</button><button class=\"wizard-submit\" type=\"submit\" data-busy-label=\"Meldung wird gesendet…\">Anliegen melden</button></div></fieldset></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2046,7 +2066,7 @@ func IssueWizardProgress(review bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<ol class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "<ol class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2059,33 +2079,33 @@ func IssueWizardProgress(review bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "\" aria-label=\"Schritte der Meldung\" data-issue-progress><li aria-current=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\" aria-label=\"Schritte der Meldung\" data-issue-progress><li aria-current=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var97 string
 		templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.ResolveAttributeValue(issueWizardCurrent(!review))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 345, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 351, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var97)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "\"><span aria-hidden=\"true\">1</span><span>Schritt 1 von 2</span></li><li class=\"track-line\" aria-hidden=\"true\"></li><li aria-current=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "\"><span aria-hidden=\"true\">1</span><span>Schritt 1 von 2</span></li><li class=\"track-line\" aria-hidden=\"true\"></li><li aria-current=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var98 string
 		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.ResolveAttributeValue(issueWizardCurrent(review))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 347, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 353, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var98)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\"><span aria-hidden=\"true\">2</span><span>Schritt 2 von 2</span></li></ol>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "\"><span aria-hidden=\"true\">2</span><span>Schritt 2 von 2</span></li></ol>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

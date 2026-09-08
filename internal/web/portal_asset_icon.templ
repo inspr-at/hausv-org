@@ -8,6 +8,18 @@ templ PortalAssetIcon(name string) {
 	<span aria-hidden="true" style="display:contents">@templ.Raw(portalAssetIconSVG(name))</span>
 }
 
+// Decorative state indicator. The surrounding summary owns the tap target,
+// keyboard interaction and accessible expanded state.
+templ DisclosureChevron() {
+	<span class="disclosure-chevron" aria-hidden="true">@PortalAssetIcon("chevron-down")</span>
+}
+
+// DisclosureChevronMasked is the same circle for the energy redesign, whose
+// contract renders every icon as an external Lucide mask instead of inline SVG.
+templ DisclosureChevronMasked() {
+	<span class="disclosure-chevron" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-chevron-down"></span></span>
+}
+
 func portalAssetIconSVG(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if !IsLucideIcon(name) {

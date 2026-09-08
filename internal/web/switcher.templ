@@ -39,9 +39,10 @@ templ LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surf
 		<summary class="house-header-card" aria-label={ switcherSummaryLabel(surface, label) }>
 			<span class="nav-icon switcher-building">@PortalIcon("building")</span>
 			<span class={ "house-header-copy", templ.KV("side-address-label", !switcherIsScope(surface)) } lang="de-AT"><strong>{ label }</strong><small>{ place }</small></span>
-			<span class="house-header-chevron" aria-hidden="true">⌄</span>
+			@DisclosureChevron()
 		</summary>
 		<div class="switcher-panel" role="group" aria-label="Liegenschaft wechseln">
+			<template data-switcher-forward-icon>@PortalAssetIcon("chevron-right")</template>
 			<header class="switcher-heading"><h2>Liegenschaft wechseln</h2><span>{ switcherCountLabel(data.Count) }</span></header>
 			if data.Current != nil {
 				<section aria-label="Aktueller Kontext" data-switcher-current={ data.Current.Key }>
@@ -94,7 +95,7 @@ templ LiegenschaftRow(entry LiegenschaftEntry) {
 				if entry.Current {
 					<small>aktuell</small>
 				} else {
-					<span aria-hidden="true">›</span>
+					<span class="nav-icon">@PortalAssetIcon("chevron-right")</span>
 				}
 			</span>
 		</button>
@@ -111,7 +112,7 @@ templ Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) 
 		<div class="context-scope" aria-label="Aktueller Bereich">
 			for i, segment := range data.Segments {
 				if i > 0 {
-					<span class="scope-separator" aria-hidden="true">›</span>
+					<span class="scope-separator nav-icon" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
 				}
 				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments)))
 			}

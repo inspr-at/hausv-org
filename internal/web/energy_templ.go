@@ -1113,285 +1113,301 @@ func EnergyLead(data EnergyPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "</div></div><details class=\"energy-info-disclosure energy-flow-hint\" data-energy-disclosure=\"flow\"><summary aria-label=\"Energiefluss verstehen\" aria-controls=\"energy-flow-help\"><span>Energiefluss verstehen</span><span class=\"energy-info-mark\" aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-info\"></span></span></summary><div id=\"energy-flow-help\"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class=\"energy-help-readings\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "</div></div><details class=\"energy-info-disclosure energy-flow-hint\" data-energy-disclosure=\"flow\"><summary aria-label=\"Energiefluss verstehen\" aria-controls=\"energy-flow-help\"><span>Energiefluss verstehen</span><span class=\"energy-info-mark\" aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-info\"></span></span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</summary><div id=\"energy-flow-help\"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class=\"energy-help-readings\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Live.HasMain {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var33 string
 				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Main.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 453, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 455, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, " <strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, " <strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var34 string
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Main.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 453, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 455, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</strong> <small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "</strong> <small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Main.Detail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 453, Col: 110}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 455, Col: 110}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "</small></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</small></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			for _, flow := range data.Live.Flows {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var36 string
 				templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(flow.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 456, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 458, Col: 25}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " <strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(flow.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 456, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 458, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "</strong> <small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</strong> <small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(flow.Detail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 456, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 458, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "</small></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "</small></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if data.Live.HasBattery {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var39 string
 				templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Battery.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 459, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 461, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, " <strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, " <strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var40 string
 				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Battery.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 459, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 461, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</strong> <small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</strong> <small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var41 string
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.Battery.Detail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 459, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 461, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</small></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</small></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if data.Live.HasBatterySOC {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<span>Ladestand <strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<span>Ladestand <strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var42 string
 				templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.BatterySOC.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 462, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 464, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</strong> <small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</strong> <small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.BatterySOC.Detail)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 462, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 464, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</small></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</small></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</div><small>Live aus Home Assistant · nur gelesen</small> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</div><small>Live aus Home Assistant · nur gelesen</small> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.CanManageEnergy {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<a href=\"/app/zuhause/onboarding?step=4\">Messwerte zuordnen</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<a href=\"/app/zuhause/onboarding?step=4\">Messwerte zuordnen</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div></details></div><footer class=\"energy-live-footer\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</div></details></div><footer class=\"energy-live-footer\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Live.HasAdditional {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<details class=\"energy-live-more\"><summary><span><strong>Weitere Messwerte (")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<details class=\"energy-live-more\"><summary><span><strong>Weitere Messwerte (")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var44 string
 				templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.Live.AdditionalCount))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 472, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 474, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, ")</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, ")</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var45 string
 				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(data.Live.AdditionalTopics)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 472, Col: 170}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 474, Col: 170}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</small></span><span class=\"energy-ui-icon energy-ui-icon-chevron-right\" aria-hidden=\"true\"></span></summary><div class=\"energy-live-more-list\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</small></span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</summary><div class=\"energy-live-more-list\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				for _, item := range data.Live.Additional {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<div class=\"energy-live-more-row\"><span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<div class=\"energy-live-more-row\"><span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var46 string
 					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 474, Col: 60}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 478, Col: 60}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</span><strong>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</span><strong>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var47 string
 					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(item.Value)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 474, Col: 89}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 478, Col: 89}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</strong></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</strong></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div></details> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "</div></details> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<span></span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<span></span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<button class=\"energy-recommendation-trigger\" type=\"button\" data-dialog=\"energy-recommendation-dialog\" aria-haspopup=\"dialog\" aria-controls=\"energy-recommendation-dialog\"><span class=\"energy-ui-icon energy-ui-icon-binoculars\" aria-hidden=\"true\"></span><span>Empfehlung</span></button></footer>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<button class=\"energy-recommendation-trigger\" type=\"button\" data-dialog=\"energy-recommendation-dialog\" aria-haspopup=\"dialog\" aria-controls=\"energy-recommendation-dialog\"><span class=\"energy-ui-icon energy-ui-icon-binoculars\" aria-hidden=\"true\"></span><span>Empfehlung</span></button></footer>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<div class=\"energy-live-empty\"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<div class=\"energy-live-empty\"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.CanManageEnergy {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<a href=\"/app/zuhause/onboarding?step=4\">Messwerte zuordnen</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<a href=\"/app/zuhause/onboarding?step=4\">Messwerte zuordnen</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "</aside></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</aside></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1420,406 +1436,422 @@ func EnergyRecommendationDialog(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var48 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<dialog id=\"energy-recommendation-dialog\" class=\"dialog energy-recommendation-dialog\" aria-labelledby=\"energy-recommendation-dialog-title\"><header class=\"dialog-head\"><div><div class=\"kicker\">Nächster Schritt</div><h2 id=\"energy-recommendation-dialog-title\">Empfehlung</h2></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">&times;</button></header><div class=\"dialog-body\"><section class=\"energy-nextstep\" id=\"naechster-schritt\"><div class=\"energy-recommendation-summary\"><span class=\"energy-nextstep-icon\" aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-binoculars\"></span></span><div class=\"energy-nextstep-copy\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<dialog id=\"energy-recommendation-dialog\" class=\"dialog energy-recommendation-dialog\" aria-labelledby=\"energy-recommendation-dialog-title\"><header class=\"dialog-head\"><div><div class=\"kicker\">Nächster Schritt</div><h2 id=\"energy-recommendation-dialog-title\">Empfehlung</h2></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">&times;</button></header><div class=\"dialog-body\"><section class=\"energy-nextstep\" id=\"naechster-schritt\"><div class=\"energy-recommendation-summary\"><span class=\"energy-nextstep-icon\" aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-binoculars\"></span></span><div class=\"energy-nextstep-copy\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Recommendation.ID == "observe" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<h3>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(data.ObservationProgress.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 500, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 504, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</h3><div class=\"energy-next-progress-row\"><div class=\"energy-next-progress\" role=\"progressbar\" aria-label=\"Beobachtungsfortschritt\" aria-valuemin=\"0\" aria-valuemax=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</h3><div class=\"energy-next-progress-row\"><div class=\"energy-next-progress\" role=\"progressbar\" aria-label=\"Beobachtungsfortschritt\" aria-valuemin=\"0\" aria-valuemax=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(data.ObservationProgress.Target))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 501, Col: 213}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 213}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var50)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\" aria-valuenow=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\" aria-valuenow=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(data.ObservationProgress.Completed))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 501, Col: 280}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 280}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\" aria-valuetext=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" aria-valuetext=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.ObservationProgress.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 501, Col: 330}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 330}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\"><span style=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\"><span style=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("width:" + strconv.Itoa(data.ObservationProgress.Percent) + "%")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 501, Col: 410}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 410}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\"></span></div><small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\"></span></div><small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(data.ObservationProgress.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 501, Col: 465}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 465}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</small></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</small></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<h3>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 503, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 507, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</h3>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<div class=\"energy-next-status\"><span aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-check\"></span></span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<div class=\"energy-next-status\"><span aria-hidden=\"true\"><span class=\"energy-ui-icon energy-ui-icon-check\"></span></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.Effort)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 154}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 509, Col: 154}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, " · keine Steuerung</div><details class=\"energy-next-why\" data-energy-disclosure=\"recommendation\"><summary aria-controls=\"energy-next-explanation\">Warum?</summary><div id=\"energy-next-explanation\"><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, " · keine Steuerung</div><details class=\"energy-next-why\" data-energy-disclosure=\"recommendation\"><summary aria-controls=\"energy-next-explanation\">Warum?")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</summary><div id=\"energy-next-explanation\"><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var57 string
 		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.Reason)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 384}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 511, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</p><div class=\"energy-next-meta\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</p><div class=\"energy-next-meta\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var58 string
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.Benefit)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 455}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 511, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "</span><span>Aufwand: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</span><span>Aufwand: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.Effort)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 507}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 511, Col: 203}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</span><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</span><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var60 string
 		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(data.Recommendation.ImpactRange)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 505, Col: 555}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 511, Col: 251}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</span></div></div></details></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</span></div></div></details></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !data.RecommendationDeferred && !data.RecommendationDismissed {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<div class=\"energy-recommendation-actions\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<div class=\"energy-recommendation-actions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.RecommendationURL != "" && data.Recommendation.ID != "simulate" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<a class=\"button primary\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<a class=\"button primary\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var61 templ.SafeURL
 				templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.RecommendationURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 510, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 516, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\">Diesen Schritt öffnen</a> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\">Diesen Schritt öffnen</a> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if data.RecommendationURL == "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span class=\"energy-observation-running\"><span aria-hidden=\"true\">●</span>Beobachtung läuft</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<span class=\"energy-observation-running\"><span aria-hidden=\"true\">●</span>Beobachtung läuft</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<form method=\"post\" action=\"/app/energie/recommendation\"><input type=\"hidden\" name=\"recommendation_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<form method=\"post\" action=\"/app/energie/recommendation\"><input type=\"hidden\" name=\"recommendation_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var62 string
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Recommendation.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 515, Col: 139}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 521, Col: 139}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\"><button class=\"button quiet\" type=\"submit\" name=\"status\" value=\"deferred\">Später</button></form></div><details class=\"dialog-optional energy-measure-control\"><summary>Weitere Optionen</summary><div class=\"energy-next-menu\"><form class=\"energy-measure-form\" method=\"post\" action=\"/app/energie/measure\"><h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p><label><input type=\"checkbox\" name=\"share\" value=\"inventory\"><span>Anlageninventar beilegen</span></label><label><input type=\"checkbox\" name=\"share\" value=\"measurements\"><span>Zusammengefasste Messwerte beilegen</span></label><label><input type=\"checkbox\" name=\"share\" value=\"contact\"><span>Kontaktdaten beilegen</span></label> <input type=\"hidden\" name=\"recommendation_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\"><button class=\"button quiet\" type=\"submit\" name=\"status\" value=\"deferred\">Später</button></form></div><details class=\"dialog-optional energy-measure-control\"><summary>Weitere Optionen")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "</summary><div class=\"energy-next-menu\"><form class=\"energy-measure-form\" method=\"post\" action=\"/app/energie/measure\"><h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p><label><input type=\"checkbox\" name=\"share\" value=\"inventory\"><span>Anlageninventar beilegen</span></label><label><input type=\"checkbox\" name=\"share\" value=\"measurements\"><span>Zusammengefasste Messwerte beilegen</span></label><label><input type=\"checkbox\" name=\"share\" value=\"contact\"><span>Kontaktdaten beilegen</span></label> <input type=\"hidden\" name=\"recommendation_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var63 string
 			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Recommendation.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 520, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 528, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\"><button class=\"button primary\" type=\"submit\">Hausaufgabe anlegen</button></form><form class=\"energy-dismiss-form\" method=\"post\" action=\"/app/energie/recommendation\"><input type=\"hidden\" name=\"recommendation_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "\"><button class=\"button primary\" type=\"submit\">Hausaufgabe anlegen</button></form><form class=\"energy-dismiss-form\" method=\"post\" action=\"/app/energie/recommendation\"><input type=\"hidden\" name=\"recommendation_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var64 string
 			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Recommendation.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 521, Col: 173}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 529, Col: 173}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "\"><button class=\"button quiet\" type=\"submit\" name=\"status\" value=\"dismissed\">Nicht für uns</button></form></div></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "\"><button class=\"button quiet\" type=\"submit\" name=\"status\" value=\"dismissed\">Nicht für uns</button></form></div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasScenarios {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<section class=\"energy-recommendation-scenarios\" id=\"szenarien\"><header><h3>Was-wäre-wenn</h3><p>Direkt im Dialog simulieren – ohne Sprung auf der Seite.</p></header>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<section class=\"energy-recommendation-scenarios\" id=\"szenarien\"><header><h3>Was-wäre-wenn</h3><p>Direkt im Dialog simulieren – ohne Sprung auf der Seite.</p></header>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, scenario := range data.Scenarios {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<article class=\"energy-scenario\"><div class=\"energy-scenario-copy\"><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<article class=\"energy-scenario\"><div class=\"energy-scenario-copy\"><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var65 string
 				templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 528, Col: 97}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 536, Col: 97}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "</strong><p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "</strong><p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var66 string
 				templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.EffectBand)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 528, Col: 132}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 536, Col: 132}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, " · Unsicherheit: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " · Unsicherheit: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var67 string
 				templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.Uncertainty)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 528, Col: 174}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 536, Col: 174}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "</p><p class=\"energy-scenario-assumptions\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</p><p class=\"energy-scenario-assumptions\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var68 string
 				templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.Assumptions)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 528, Col: 241}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 536, Col: 241}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if scenario.BaselineNote != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<p class=\"energy-scenario-assumptions\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<p class=\"energy-scenario-assumptions\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var69 string
 					templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.BaselineNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 530, Col: 70}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 538, Col: 70}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</div><div class=\"energy-scenario-result\"><span>Spitze im Modell</span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</div><div class=\"energy-scenario-result\"><span>Spitze im Modell</span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var70 string
 				templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.PeakBand)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 532, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 540, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</strong> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</strong> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if scenario.HasBilledBand {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<span class=\"energy-scenario-billed\">davon verrechnet <b>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<span class=\"energy-scenario-billed\">davon verrechnet <b>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var71 string
 					templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.BilledBand)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 534, Col: 86}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 542, Col: 86}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</b></span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</b></span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</div></article>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</div></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if scenario.FloorNote != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<p class=\"energy-scenario-floor\"><span aria-hidden=\"true\">!</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<p class=\"energy-scenario-floor\"><span aria-hidden=\"true\">!</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var72 string
 					templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(scenario.FloorNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 538, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 546, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "</p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "<p class=\"energy-scenario-caveat\">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "<p class=\"energy-scenario-caveat\">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</div></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</div></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1848,48 +1880,48 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var73 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<dialog id=\"energy-consumer-dialog\" class=\"dialog energy-consumer-dialog\" aria-labelledby=\"energy-consumer-dialog-title\"><form method=\"post\" action=\"/app/energie/verbraucher\"><input type=\"hidden\" name=\"asset_id\" value=\"\"> <input type=\"hidden\" name=\"node_type\" value=\"consumer\"> <input type=\"hidden\" name=\"measurements_present\" value=\"1\"> <input type=\"hidden\" name=\"icon\" value=\"plug\" data-consumer-icon-value><header class=\"dialog-head\"><div class=\"energy-consumer-dialog-heading\"><h2 id=\"energy-consumer-dialog-title\" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\"><span class=\"energy-ui-icon energy-ui-icon-x\" aria-hidden=\"true\"></span></button></header><div class=\"dialog-body\"><div class=\"energy-consumer-primary\"><label class=\"energy-consumer-field\"><span>Name</span><input type=\"text\" name=\"name\" maxlength=\"80\" required autocomplete=\"off\" placeholder=\"z. B. Sauna\"></label> <label class=\"energy-consumer-field\" data-consumer-priority-field><span>Priorität</span><select name=\"priority\" aria-label=\"Priorität\"></select></label></div><div class=\"energy-consumer-display-fields\"><label class=\"energy-consumer-field energy-consumer-color\"><span>Farbe</span><input type=\"color\" name=\"color\" value=\"#3e704c\" aria-label=\"Farbe der Entität\"></label> <label class=\"energy-consumer-field\"><span>Beschriftung zweite Kennzahl</span><input type=\"text\" name=\"secondary_label\" maxlength=\"60\" autocomplete=\"off\" placeholder=\"z. B. Energie heute\"></label> <label class=\"energy-consumer-field\" data-consumer-stale-field><span>Als veraltet markieren nach</span><input type=\"number\" name=\"stale_after_minutes\" min=\"1\" max=\"1440\" step=\"1\" inputmode=\"numeric\" placeholder=\"Standard: 10 Minuten\"><small>Leer verwendet den Standardwert.</small></label></div><section class=\"energy-icon-picker\" aria-labelledby=\"energy-icon-picker-title\"><div class=\"energy-icon-picker-head\"><div><strong id=\"energy-icon-picker-title\">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class=\"energy-icon-search\"><span class=\"energy-ui-icon energy-ui-icon-search\" aria-hidden=\"true\"></span><span class=\"sr-only\">Symbole durchsuchen</span><input type=\"search\" data-consumer-icon-search placeholder=\"Symbol suchen\"></label></div><div class=\"energy-icon-options energy-icon-presets\" data-consumer-icon-presets>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "<dialog id=\"energy-consumer-dialog\" class=\"dialog energy-consumer-dialog\" aria-labelledby=\"energy-consumer-dialog-title\"><form method=\"post\" action=\"/app/energie/verbraucher\"><input type=\"hidden\" name=\"asset_id\" value=\"\"> <input type=\"hidden\" name=\"node_type\" value=\"consumer\"> <input type=\"hidden\" name=\"measurements_present\" value=\"1\"> <input type=\"hidden\" name=\"icon\" value=\"plug\" data-consumer-icon-value><header class=\"dialog-head\"><div class=\"energy-consumer-dialog-heading\"><h2 id=\"energy-consumer-dialog-title\" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\"><span class=\"energy-ui-icon energy-ui-icon-x\" aria-hidden=\"true\"></span></button></header><div class=\"dialog-body\"><div class=\"energy-consumer-primary\"><label class=\"energy-consumer-field\"><span>Name</span><input type=\"text\" name=\"name\" maxlength=\"80\" required autocomplete=\"off\" placeholder=\"z. B. Sauna\"></label> <label class=\"energy-consumer-field\" data-consumer-priority-field><span>Priorität</span><select name=\"priority\" aria-label=\"Priorität\"></select></label></div><div class=\"energy-consumer-display-fields\"><label class=\"energy-consumer-field energy-consumer-color\"><span>Farbe</span><input type=\"color\" name=\"color\" value=\"#3e704c\" aria-label=\"Farbe der Entität\"></label> <label class=\"energy-consumer-field\"><span>Beschriftung zweite Kennzahl</span><input type=\"text\" name=\"secondary_label\" maxlength=\"60\" autocomplete=\"off\" placeholder=\"z. B. Energie heute\"></label> <label class=\"energy-consumer-field\" data-consumer-stale-field><span>Als veraltet markieren nach</span><input type=\"number\" name=\"stale_after_minutes\" min=\"1\" max=\"1440\" step=\"1\" inputmode=\"numeric\" placeholder=\"Standard: 10 Minuten\"><small>Leer verwendet den Standardwert.</small></label></div><section class=\"energy-icon-picker\" aria-labelledby=\"energy-icon-picker-title\"><div class=\"energy-icon-picker-head\"><div><strong id=\"energy-icon-picker-title\">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class=\"energy-icon-search\"><span class=\"energy-ui-icon energy-ui-icon-search\" aria-hidden=\"true\"></span><span class=\"sr-only\">Symbole durchsuchen</span><input type=\"search\" data-consumer-icon-search placeholder=\"Symbol suchen\"></label></div><div class=\"energy-icon-options energy-icon-presets\" data-consumer-icon-presets>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range data.ConsumerIconOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<label class=\"energy-icon-choice\" data-consumer-icon-choice=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<label class=\"energy-icon-choice\" data-consumer-icon-choice=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Label + " " + option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 578, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "\"><input type=\"radio\" name=\"icon_choice\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "\"><input type=\"radio\" name=\"icon_choice\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 164}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 578, Col: 164}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if option.Value == "plug" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, " checked")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, ">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1898,7 +1930,7 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "<span class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1911,61 +1943,69 @@ func EnergyConsumerDialog(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\" aria-hidden=\"true\"></span><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "\" aria-hidden=\"true\"></span><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 570, Col: 317}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 578, Col: 317}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "</span></label>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "</span></label>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</div><div class=\"energy-icon-options energy-icon-search-results\" data-consumer-icon-results hidden></div><p class=\"energy-icon-result-note\" data-consumer-icon-result-note hidden></p></section><section class=\"energy-consumer-measurements\" aria-labelledby=\"energy-consumer-measurements-title\"><div class=\"energy-consumer-measurements-head\"><div><strong id=\"energy-consumer-measurements-title\">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class=\"pill\">HA</span></div><div class=\"energy-consumer-measurement-fields\" data-consumer-measurement-fields></div><p class=\"energy-consumer-measurement-status\" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p></section><details class=\"energy-consumer-recommendations\" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen</summary><div class=\"energy-consumer-recommendation-fields\"><label class=\"energy-consumer-field\"><span>Kategorie</span><select name=\"kind\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</div><div class=\"energy-icon-options energy-icon-search-results\" data-consumer-icon-results hidden></div><p class=\"energy-icon-result-note\" data-consumer-icon-result-note hidden></p></section><section class=\"energy-consumer-measurements\" aria-labelledby=\"energy-consumer-measurements-title\"><div class=\"energy-consumer-measurements-head\"><div><strong id=\"energy-consumer-measurements-title\">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class=\"pill\">HA</span></div><div class=\"energy-consumer-measurement-fields\" data-consumer-measurement-fields></div><p class=\"energy-consumer-measurement-status\" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p></section><details class=\"energy-consumer-recommendations\" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "</summary><div class=\"energy-consumer-recommendation-fields\"><label class=\"energy-consumer-field\"><span>Kategorie</span><select name=\"kind\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range data.ConsumerKindOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var79 string
 			templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 584, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 594, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var80 string
 			templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 584, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 594, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "</option>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</select></label> <label class=\"energy-consumer-field\"><span>Leistung in kW</span><input type=\"text\" name=\"rated_power_kw\" inputmode=\"decimal\" placeholder=\"z. B. 8,0\"></label> <label class=\"energy-consumer-field\"><span>Flexibilität</span><select name=\"flexibility\"><option value=\"unknown\">noch offen</option><option value=\"shift\">zeitlich verschiebbar</option><option value=\"throttle\">kurz begrenzbar</option><option value=\"fixed\">fest</option></select></label></div></details></div><footer class=\"dialog-footer\"><button class=\"button quiet energy-consumer-delete\" type=\"button\" data-consumer-delete hidden>Verbraucher löschen</button><span class=\"energy-consumer-delete-confirm\" data-consumer-delete-confirm hidden><span>Wirklich löschen?</span><button class=\"button quiet\" type=\"button\" data-consumer-delete-cancel>Nein</button><button class=\"button\" type=\"submit\" formaction=\"/app/energie/verbraucher/entfernen\" formnovalidate>Ja, löschen</button></span><button class=\"button\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\" data-consumer-submit>Änderungen speichern</button></footer></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "</select></label> <label class=\"energy-consumer-field\"><span>Leistung in kW</span><input type=\"text\" name=\"rated_power_kw\" inputmode=\"decimal\" placeholder=\"z. B. 8,0\"></label> <label class=\"energy-consumer-field\"><span>Flexibilität</span><select name=\"flexibility\"><option value=\"unknown\">noch offen</option><option value=\"shift\">zeitlich verschiebbar</option><option value=\"throttle\">kurz begrenzbar</option><option value=\"fixed\">fest</option></select></label></div></details></div><footer class=\"dialog-footer\"><button class=\"button quiet energy-consumer-delete\" type=\"button\" data-consumer-delete hidden>Verbraucher löschen</button><span class=\"energy-consumer-delete-confirm\" data-consumer-delete-confirm hidden><span>Wirklich löschen?</span><button class=\"button quiet\" type=\"button\" data-consumer-delete-cancel>Nein</button><button class=\"button\" type=\"submit\" formaction=\"/app/energie/verbraucher/entfernen\" formnovalidate>Ja, löschen</button></span><button class=\"button\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\" data-consumer-submit>Änderungen speichern</button></footer></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1994,7 +2034,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			templ_7745c5c3_Var81 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<div class=\"energy-chart-legend\" aria-label=\"Diagrammlegende\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "<div class=\"energy-chart-legend\" aria-label=\"Diagrammlegende\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2004,7 +2044,7 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<span class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "<span class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2017,20 +2057,20 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "\"><i aria-hidden=\"true\"></i>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "\"><i aria-hidden=\"true\"></i>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var84 string
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(series.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 599, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 609, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, " <strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, " <strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2038,20 +2078,20 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "</strong></span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "</strong></span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if chart.HasThreshold {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "<span class=\"threshold\"><i aria-hidden=\"true\"></i>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "<span class=\"threshold\"><i aria-hidden=\"true\"></i>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 602, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 612, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -2061,12 +2101,12 @@ func EnergyChartLegend(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "<small>(konfigurierbar)</small></span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<small>(konfigurierbar)</small></span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2095,46 +2135,46 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			templ_7745c5c3_Var86 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "<div class=\"energy-chart-interactive\" data-energy-chart-interactive tabindex=\"0\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "<div class=\"energy-chart-interactive\" data-energy-chart-interactive tabindex=\"0\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var87 string
 		templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.Title + ": Viertelstundenwerte. Mit der Maus erkunden oder mit den Pfeiltasten durchgehen.")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 608, Col: 192}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 618, Col: 192}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var87)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "\"><svg class=\"energy-chart-svg desktop\" viewBox=\"0 0 800 236\" role=\"img\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "\"><svg class=\"energy-chart-svg desktop\" viewBox=\"0 0 800 236\" role=\"img\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var88 string
 		templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.ResolveAttributeValue("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 609, Col: 120}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 619, Col: 120}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var88)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var89 string
 		templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 610, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 620, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "</title><desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "</title><desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2144,7 +2184,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<line class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<line class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2157,117 +2197,117 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "\" x1=\"52\" x2=\"788\" y1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "\" x1=\"52\" x2=\"788\" y1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var92 string
 			templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 115}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "\" y2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "\" y2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var93 string
 			templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 136}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 136}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "\"></line><text class=\"energy-chart-axis-label\" x=\"44\" y=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "\"></line><text class=\"energy-chart-axis-label\" x=\"44\" y=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var94 string
 			templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 208}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 208}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var94)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "\" text-anchor=\"end\" dominant-baseline=\"middle\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "\" text-anchor=\"end\" dominant-baseline=\"middle\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var95 string
 			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 613, Col: 268}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 623, Col: 268}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		for _, tick := range chart.XTicks {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 172, "<line class=\"energy-chart-grid\" x1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, "<line class=\"energy-chart-grid\" x1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var96 string
 			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 626, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var96)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "\" x2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "\" x2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var97 string
 			templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 626, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var97)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "\" y1=\"16\" y2=\"204\"></line><text class=\"energy-chart-axis-label\" x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "\" y1=\"16\" y2=\"204\"></line><text class=\"energy-chart-axis-label\" x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var98 string
 			templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 157}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 626, Col: 157}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var98)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "\" y=\"226\" text-anchor=\"middle\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "\" y=\"226\" text-anchor=\"middle\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var99 string
 			templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 616, Col: 201}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 626, Col: 201}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2279,7 +2319,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, "<path class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "<path class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2292,79 +2332,79 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "\" d=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "\" d=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var102 string
 				templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.AreaPath)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 620, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 630, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var102)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "\"></path> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "\"></path> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
 		if chart.HasThreshold {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "<line class=\"energy-chart-threshold\" x1=\"52\" x2=\"788\" y1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "<line class=\"energy-chart-threshold\" x1=\"52\" x2=\"788\" y1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var103 string
 			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 86}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var103)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "\" y2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "\" y2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var104 string
 			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 117}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 117}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var104)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "\"></line><text class=\"energy-chart-threshold-label\" x=\"782\" y=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\"></line><text class=\"energy-chart-threshold-label\" x=\"782\" y=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var105 string
 			templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 205}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 205}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var105)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "\" dy=\"-6\" text-anchor=\"end\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "\" dy=\"-6\" text-anchor=\"end\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var106 string
 			templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 624, Col: 256}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 256}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2375,7 +2415,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "<path class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "<path class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2388,25 +2428,25 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "\" d=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "\" d=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var109 string
 			templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.Path)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 627, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 637, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var109)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\"></path> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, "\"></path> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "<line class=\"energy-chart-guide\" data-chart-guide x1=\"52\" x2=\"52\" y1=\"16\" y2=\"204\" hidden></line> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, "<line class=\"energy-chart-guide\" data-chart-guide x1=\"52\" x2=\"52\" y1=\"16\" y2=\"204\" hidden></line> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2417,7 +2457,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "<circle class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, "<circle class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2430,134 +2470,134 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "\" data-chart-marker-index=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, "\" data-chart-marker-index=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var112 string
 				templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 642, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var112)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "\" cx=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "\" cx=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var113 string
 				templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Position)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 131}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 642, Col: 131}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var113)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, "\" cy=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "\" cy=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var114 string
 				templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Position)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 632, Col: 153}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 642, Col: 153}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var114)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, "\" r=\"4\" hidden></circle>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, "\" r=\"4\" hidden></circle>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, " <rect class=\"energy-chart-hit\" data-chart-hit data-index=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, " <rect class=\"energy-chart-hit\" data-chart-hit data-index=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var115 string
 			templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var115)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, "\" data-x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, "\" data-x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var116 string
 			templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Position)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 116}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 116}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var116)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "\" x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "\" x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var117 string
 			templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.HitPosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 141}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 141}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var117)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "\" y=\"16\" width=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "\" y=\"16\" width=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var118 string
 			templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.HitWidth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 634, Col: 174}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 174}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var118)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, "\" height=\"188\"></rect>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "\" height=\"188\"></rect>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, "</svg> <svg class=\"energy-chart-svg mobile\" viewBox=\"0 0 400 236\" role=\"img\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "</svg> <svg class=\"energy-chart-svg mobile\" viewBox=\"0 0 400 236\" role=\"img\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var119 string
 		templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.ResolveAttributeValue("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 637, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 647, Col: 119}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, "\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var120 string
 		templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs("Leistungsverlauf: " + chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 638, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 648, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "</title><desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "</title><desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2567,7 +2607,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "<line class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "<line class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2580,117 +2620,117 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "\" x1=\"44\" x2=\"388\" y1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "\" x1=\"44\" x2=\"388\" y1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var123 string
 			templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 121}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 121}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var123)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "\" y2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\" y2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var124 string
 			templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 148}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 148}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var124)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "\"></line><text class=\"energy-chart-axis-label\" x=\"37\" y=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "\"></line><text class=\"energy-chart-axis-label\" x=\"37\" y=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var125 string
 			templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 226}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 226}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var125)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "\" text-anchor=\"end\" dominant-baseline=\"middle\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "\" text-anchor=\"end\" dominant-baseline=\"middle\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var126 string
 			templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 641, Col: 286}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 651, Col: 286}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		for _, tick := range chart.XTicks {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "<line class=\"energy-chart-grid\" x1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "<line class=\"energy-chart-grid\" x1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var127 string
 			templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 654, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var127)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\" x2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\" x2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var128 string
 			templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 654, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var128)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "\" y1=\"16\" y2=\"204\"></line><text class=\"energy-chart-axis-label\" x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "\" y1=\"16\" y2=\"204\"></line><text class=\"energy-chart-axis-label\" x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var129 string
 			templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.ResolveAttributeValue(tick.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 175}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 654, Col: 175}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var129)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "\" y=\"226\" text-anchor=\"middle\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "\" y=\"226\" text-anchor=\"middle\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var130 string
 			templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(tick.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 644, Col: 219}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 654, Col: 219}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2702,7 +2742,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "<path class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "<path class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2715,79 +2755,79 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\" d=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "\" d=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var133 string
 				templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.MobileAreaPath)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 648, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 658, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var133)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "\"></path> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "\"></path> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
 		if chart.HasThreshold {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "<line class=\"energy-chart-threshold\" x1=\"44\" x2=\"388\" y1=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "<line class=\"energy-chart-threshold\" x1=\"44\" x2=\"388\" y1=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var134 string
 			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "\" y2=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, "\" y2=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var135 string
 			templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 129}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 129}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var135)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "\"></line><text class=\"energy-chart-threshold-label\" x=\"382\" y=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "\"></line><text class=\"energy-chart-threshold-label\" x=\"382\" y=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var136 string
 			templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.ResolveAttributeValue(chart.ThresholdMobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 223}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 223}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var136)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "\" dy=\"-5\" text-anchor=\"end\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "\" dy=\"-5\" text-anchor=\"end\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var137 string
 			templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.JoinStringErrs(chart.ThresholdValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 652, Col: 274}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 274}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var137))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "</text> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "</text> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2798,7 +2838,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "<path class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "<path class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2811,25 +2851,25 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, "\" d=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "\" d=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var140 string
 			templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.ResolveAttributeValue(series.MobilePath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 655, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 665, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var140)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "\"></path> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "\"></path> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "<line class=\"energy-chart-guide\" data-chart-guide x1=\"44\" x2=\"44\" y1=\"16\" y2=\"204\" hidden></line> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "<line class=\"energy-chart-guide\" data-chart-guide x1=\"44\" x2=\"44\" y1=\"16\" y2=\"204\" hidden></line> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2840,7 +2880,7 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "<circle class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "<circle class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -2853,193 +2893,193 @@ func EnergyChartInteractive(chart EnergyChartView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "\" data-chart-marker-index=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "\" data-chart-marker-index=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var143 string
 				templ_7745c5c3_Var143, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var143)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "\" cx=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "\" cx=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var144 string
 				templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobilePosition)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 137}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 137}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var144)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "\" cy=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "\" cy=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var145 string
 				templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.MobilePosition)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 660, Col: 165}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 165}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var145)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "\" r=\"4\" hidden></circle>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "\" r=\"4\" hidden></circle>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, " <rect class=\"energy-chart-hit\" data-chart-hit data-index=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, " <rect class=\"energy-chart-hit\" data-chart-hit data-index=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var146 string
 			templ_7745c5c3_Var146, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 672, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var146)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "\" data-x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "\" data-x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var147 string
 			templ_7745c5c3_Var147, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobilePosition)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 672, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var147)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "\" x=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "\" x=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var148 string
 			templ_7745c5c3_Var148, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobileHit)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 145}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 672, Col: 145}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var148)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "\" y=\"16\" width=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "\" y=\"16\" width=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var149 string
 			templ_7745c5c3_Var149, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.MobileHitWidth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 662, Col: 184}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 672, Col: 184}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var149)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "\" height=\"188\"></rect>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "\" height=\"188\"></rect>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "</svg><div class=\"energy-chart-tooltip\" data-chart-tooltip role=\"status\" aria-live=\"polite\" hidden><strong data-chart-tooltip-time></strong><div data-chart-tooltip-values></div></div><div class=\"energy-chart-sample-bank\" data-chart-sample-bank hidden>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "</svg><div class=\"energy-chart-tooltip\" data-chart-tooltip role=\"status\" aria-live=\"polite\" hidden><strong data-chart-tooltip-time></strong><div data-chart-tooltip-values></div></div><div class=\"energy-chart-sample-bank\" data-chart-sample-bank hidden>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, sample := range chart.Samples {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "<div data-chart-sample=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, "<div data-chart-sample=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var150 string
 			templ_7745c5c3_Var150, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(sample.Index))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 668, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 678, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var150)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "\" data-time=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "\" data-time=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var151 string
 			templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.ResolveAttributeValue(sample.Time)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 668, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 678, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var151)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, value := range sample.Values {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "<span data-key=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "<span data-key=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var152 string
 				templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var152)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "\" data-label=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "\" data-label=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var153 string
 				templ_7745c5c3_Var153, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var153)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, "\" data-value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "\" data-value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var154 string
 				templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.ResolveAttributeValue(value.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 670, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var154)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "\"></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, "\"></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3068,74 +3108,74 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var155 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "<section class=\"energy-card energy-chart\" id=\"energieverlauf\" aria-labelledby=\"energy-chart-title\"><header class=\"energy-chart-head\"><div><h2 id=\"energy-chart-title\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, "<section class=\"energy-card energy-chart\" id=\"energieverlauf\" aria-labelledby=\"energy-chart-title\"><header class=\"energy-chart-head\"><div><h2 id=\"energy-chart-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var156 string
 		templ_7745c5c3_Var156, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var156))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class=\"energy-chart-head-actions\"><small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class=\"energy-chart-head-actions\"><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var157 string
 		templ_7745c5c3_Var157, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 220}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 220}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var157))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, "</small><div class=\"energy-chart-toolbar\"><nav class=\"energy-chart-range\" aria-label=\"Zeitraum auswählen\"><a href=\"/app/energie?zeitraum=letzte-24h#energieverlauf\" aria-current=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, "</small><div class=\"energy-chart-toolbar\"><nav class=\"energy-chart-range\" aria-label=\"Zeitraum auswählen\"><a href=\"/app/energie?zeitraum=letzte-24h#energieverlauf\" aria-current=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var158 string
 		templ_7745c5c3_Var158, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(!data.Chart.IsToday))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 440}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 440}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var158)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "\">Letzte 24 h</a><a href=\"/app/energie?zeitraum=heute#energieverlauf\" aria-current=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, "\">Letzte 24 h</a><a href=\"/app/energie?zeitraum=heute#energieverlauf\" aria-current=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var159 string
 		templ_7745c5c3_Var159, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(data.Chart.IsToday))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 680, Col: 563}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 563}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var159)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, "\">Heute</a></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "\">Heute</a></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Chart.HasData {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, "<div class=\"energy-chart-size-actions\"><button class=\"button small energy-chart-size-button\" type=\"button\" data-dialog=\"energy-chart-dialog\" aria-haspopup=\"dialog\" aria-controls=\"energy-chart-dialog\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg>Vergrößern</button><button class=\"button small energy-chart-size-button\" type=\"button\" data-dialog=\"energy-chart-dialog\" data-energy-fullscreen aria-haspopup=\"dialog\" aria-controls=\"energy-chart-dialog\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><span data-fullscreen-label>Vollbild</span></button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, "<div class=\"energy-chart-size-actions\"><button class=\"button small energy-chart-size-button\" type=\"button\" data-dialog=\"energy-chart-dialog\" aria-haspopup=\"dialog\" aria-controls=\"energy-chart-dialog\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg>Vergrößern</button><button class=\"button small energy-chart-size-button\" type=\"button\" data-dialog=\"energy-chart-dialog\" data-energy-fullscreen aria-haspopup=\"dialog\" aria-controls=\"energy-chart-dialog\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><span data-fullscreen-label>Vollbild</span></button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "</div></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, "</div></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Chart.HasData {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, "<div class=\"energy-chart-layout\"><div class=\"energy-chart-plot\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "<div class=\"energy-chart-layout\"><div class=\"energy-chart-plot\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3147,69 +3187,69 @@ func EnergyChartSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, "<small class=\"energy-chart-hint\">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. Die Planungsgrenze ist eine änderbare Modellannahme, kein geltender Tarif. ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "<small class=\"energy-chart-hint\">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. Die Planungsgrenze ist eine änderbare Modellannahme, kein geltender Tarif. ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var160 string
 			templ_7745c5c3_Var160, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Range)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 690, Col: 205}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 700, Col: 205}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var160))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "</small></div><aside class=\"energy-chart-note\"><span>Auf einen Blick</span><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "</small></div><aside class=\"energy-chart-note\"><span>Auf einen Blick</span><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var161 string
 			templ_7745c5c3_Var161, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Summary)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 692, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 702, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var161))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, "</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var162 string
 			templ_7745c5c3_Var162, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 692, Col: 126}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 702, Col: 126}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var162))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, "</p></aside></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "</p></aside></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "<div class=\"energy-chart-empty\"><strong>Noch kein vollständiger Tagesverlauf</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "<div class=\"energy-chart-empty\"><strong>Noch kein vollständiger Tagesverlauf</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var163 string
 			templ_7745c5c3_Var163, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 695, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 705, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var163))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3238,20 +3278,20 @@ func EnergyChartDialog(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var164 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "<dialog id=\"energy-chart-dialog\" class=\"energy-chart-dialog\" aria-labelledby=\"energy-chart-dialog-title\"><div class=\"energy-chart-dialog-shell\" data-energy-fullscreen-surface><header><div><span class=\"eyebrow\">Energieverlauf</span><h2 id=\"energy-chart-dialog-title\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "<dialog id=\"energy-chart-dialog\" class=\"energy-chart-dialog\" aria-labelledby=\"energy-chart-dialog-title\"><div class=\"energy-chart-dialog-shell\" data-energy-fullscreen-surface><header><div><span class=\"eyebrow\">Energieverlauf</span><h2 id=\"energy-chart-dialog-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var165 string
 		templ_7745c5c3_Var165, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.DialogTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 702, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 712, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var165))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><div class=\"energy-chart-dialog-actions\"><button class=\"button\" type=\"button\" data-dialog=\"energy-chart-dialog\" data-energy-fullscreen aria-controls=\"energy-chart-dialog\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><span data-fullscreen-label>Vollbild</span></button><button class=\"button\" type=\"button\" data-close-dialog>Schließen</button></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><div class=\"energy-chart-dialog-actions\"><button class=\"button\" type=\"button\" data-dialog=\"energy-chart-dialog\" data-energy-fullscreen aria-controls=\"energy-chart-dialog\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><span data-fullscreen-label>Vollbild</span></button><button class=\"button\" type=\"button\" data-close-dialog>Schließen</button></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3259,7 +3299,7 @@ func EnergyChartDialog(data EnergyPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "<div class=\"energy-chart-dialog-plot\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "<div class=\"energy-chart-dialog-plot\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3267,20 +3307,20 @@ func EnergyChartDialog(data EnergyPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "</div><small class=\"energy-chart-hint\">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "</div><small class=\"energy-chart-hint\">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var166 string
 		templ_7745c5c3_Var166, templ_7745c5c3_Err = templ.JoinStringErrs(data.Chart.Range)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 707, Col: 126}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 717, Col: 126}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var166))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "</small></div></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "</small></div></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3309,112 +3349,120 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var167 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "<section class=\"energy-card energy-tariff\" id=\"tarif\" aria-labelledby=\"energy-tariff-title\"><header class=\"energy-card-head\"><div class=\"energy-tariff-heading-copy\"><div class=\"energy-tariff-title-row\"><h2 id=\"energy-tariff-title\">Monatsspitze</h2><details class=\"energy-metric-info energy-tariff-overview-info\" name=\"energy-metric-help\" data-energy-help=\"tariff\"><summary aria-label=\"Monatsspitze und Verrechnung erklären\" aria-controls=\"energy-help-tariff\"><span class=\"energy-ui-icon energy-ui-icon-info\" aria-hidden=\"true\"></span></summary><div id=\"energy-help-tariff\"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "<section class=\"energy-card energy-tariff\" id=\"tarif\" aria-labelledby=\"energy-tariff-title\"><header class=\"energy-card-head\"><div class=\"energy-tariff-heading-copy\"><div class=\"energy-tariff-title-row\"><h2 id=\"energy-tariff-title\">Monatsspitze</h2><details class=\"energy-metric-info energy-tariff-overview-info\" name=\"energy-metric-help\" data-energy-help=\"tariff\"><summary aria-label=\"Monatsspitze und Verrechnung erklären\" aria-controls=\"energy-help-tariff\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "</summary><div id=\"energy-help-tariff\"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Tariff.HasEstimate {
 			if data.Tariff.MinimumReason != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "<small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "<small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var168 string
 				templ_7745c5c3_Var168, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MinimumReason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 717, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 729, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var168))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "</small> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "</small> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "<small>Die gemessene Spitze ist maßgeblich.</small> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "<small>Die gemessene Spitze ist maßgeblich.</small> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
 		if data.Tariff.Basis != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "<small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "<small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var169 string
 			templ_7745c5c3_Var169, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 723, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 735, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var169))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "</small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "</small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "</div></details></div><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "</div></details></div><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var170 string
 		templ_7745c5c3_Var170, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MonthLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 725, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 737, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var170))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "</p></div><span class=\"pill\" title=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "</p></div><span class=\"pill\" title=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var171 string
 		templ_7745c5c3_Var171, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 726, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 738, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var171)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var172 string
 		templ_7745c5c3_Var172, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 726, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 738, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var172)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "\">Entwurf</span></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "\">Entwurf</span></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.TargetChanged {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "<div class=\"message success\">Ihr persönliches Peak-Ziel wurde gespeichert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, "<div class=\"message success\">Ihr persönliches Peak-Ziel wurde gespeichert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.AgreedPowerChanged {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "<div class=\"message success\">Die vereinbarte Anschlussleistung wurde gespeichert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "<div class=\"message success\">Die vereinbarte Anschlussleistung wurde gespeichert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.Tariff.HasEstimate {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "<div class=\"energy-billed\" aria-label=\"Verrechnete Leistung nach dem Entwurf\"><div><div class=\"energy-metric-label\"><span>Höchste Viertelstunde</span></div><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "<div class=\"energy-billed\" aria-label=\"Verrechnete Leistung nach dem Entwurf\"><div><div class=\"energy-metric-label\"><span>Höchste Viertelstunde</span></div><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3422,56 +3470,56 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "</strong><progress class=\"energy-tariff-meter peak\" max=\"100\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "</strong><progress class=\"energy-tariff-meter peak\" max=\"100\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var173 string
 			templ_7745c5c3_Var173, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(data.Tariff.PeakMeterPercent))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 736, Col: 235}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 748, Col: 235}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var173)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "\" aria-label=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "\" aria-label=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var174 string
 			templ_7745c5c3_Var174, templ_7745c5c3_Err = templ.ResolveAttributeValue("Gemessene Spitze relativ zur verrechneten Leistung: " + strconv.Itoa(data.Tariff.PeakMeterPercent) + " Prozent")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 736, Col: 363}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 748, Col: 363}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var174)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "\"></progress> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "\"></progress> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Tariff.HasPeakTime {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, "<small>Ø ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, "<small>Ø ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var175 string
 				templ_7745c5c3_Var175, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.PeakTime)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 738, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 750, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var175))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "</small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "</small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "</div><div><div class=\"energy-metric-label\"><span>Verrechnet</span></div><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "</div><div><div class=\"energy-metric-label\"><span>Verrechnet</span></div><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3479,7 +3527,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "</strong><progress class=\"energy-tariff-meter billed\" max=\"100\" value=\"100\" aria-hidden=\"true\"></progress><small>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 290, "</strong><progress class=\"energy-tariff-meter billed\" max=\"100\" value=\"100\" aria-hidden=\"true\"></progress><small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3487,19 +3535,27 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 				var templ_7745c5c3_Var176 string
 				templ_7745c5c3_Var176, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MinimumReason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 743, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 755, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var176))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "die gemessene Spitze ist maßgeblich")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 291, "die gemessene Spitze ist maßgeblich")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "</small></div></div><div class=\"energy-tariff-cost\"><div class=\"energy-tariff-cost-figure\"><div class=\"energy-metric-label\"><span>Leistungsanteil des Netztarifs</span><details class=\"energy-metric-info\" name=\"energy-metric-help\" data-energy-help=\"annual\"><summary aria-label=\"Jahreswert erklären\" aria-controls=\"energy-help-annual\"><span class=\"energy-ui-icon energy-ui-icon-info\" aria-hidden=\"true\"></span></summary><div id=\"energy-help-annual\"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 292, "</small></div></div><div class=\"energy-tariff-cost\"><div class=\"energy-tariff-cost-figure\"><div class=\"energy-metric-label\"><span>Leistungsanteil des Netztarifs</span><details class=\"energy-metric-info\" name=\"energy-metric-help\" data-energy-help=\"annual\"><summary aria-label=\"Jahreswert erklären\" aria-controls=\"energy-help-annual\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 293, "</summary><div id=\"energy-help-annual\"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3507,25 +3563,25 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, "</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 294, "</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Tariff.Basis != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "<p class=\"energy-tariff-basis\" title=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 295, "<p class=\"energy-tariff-basis\" title=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var177 string
 				templ_7745c5c3_Var177, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tariff.Basis)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 753, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 767, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var177)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "\"><span class=\"energy-ui-icon energy-ui-icon-clock\" aria-hidden=\"true\"></span><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 296, "\"><span class=\"energy-ui-icon energy-ui-icon-clock\" aria-hidden=\"true\"></span><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -3533,7 +3589,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var178 string
 					templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.CoverageLabel)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 755, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 769, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var178))
 					if templ_7745c5c3_Err != nil {
@@ -3543,14 +3599,14 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 					var templ_7745c5c3_Var179 string
 					templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 757, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 771, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var179))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 290, "</span></p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 297, "</span></p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -3561,7 +3617,7 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 291, "<div class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 298, "<div class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3574,76 +3630,31 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 292, "\"><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 299, "\"><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Tariff.MissingIsWaiting {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 293, "Noch keine volle Viertelstunde")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 300, "Noch keine volle Viertelstunde")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 294, "Netzbezug noch nicht zugeordnet")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 301, "Netzbezug noch nicht zugeordnet")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 295, "</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 302, "</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var182 string
 			templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.MissingReason)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 770, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 784, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var182))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 296, "</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if !data.Tariff.MissingIsWaiting {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 297, "<a class=\"button\" href=\"#messwerte\">Netzbezug zuordnen</a>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 298, "</div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		switch data.TariffAssessmentStatus {
-		case "saved":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 299, "<div class=\"message success\">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		case "no_data":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 300, "<div class=\"message\">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 301, "<details class=\"energy-tariff-disclosure\" data-energy-disclosure=\"tariff\"><summary aria-controls=\"energy-tariff-details\"><span>Mehr erfahren</span><span class=\"energy-ui-icon energy-ui-icon-chevron-right\" aria-hidden=\"true\"></span></summary><div id=\"energy-tariff-details\"><p class=\"energy-tariff-method\">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if data.Tariff.Basis != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 302, "<p class=\"energy-tariff-detail-basis\"><strong>Grundlage</strong>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var183 string
-			templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 785, Col: 87}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var183))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3651,369 +3662,430 @@ func EnergyTariffSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			if !data.Tariff.MissingIsWaiting {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 304, "<a class=\"button\" href=\"#messwerte\">Netzbezug zuordnen</a>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 305, "</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		switch data.TariffAssessmentStatus {
+		case "saved":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 306, "<div class=\"message success\">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		case "no_data":
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 307, "<div class=\"message\">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 308, "<details class=\"energy-tariff-disclosure\" data-energy-disclosure=\"tariff\"><summary aria-controls=\"energy-tariff-details\"><span>Mehr erfahren</span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 309, "</summary><div id=\"energy-tariff-details\"><p class=\"energy-tariff-method\">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.Tariff.Basis != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 310, "<p class=\"energy-tariff-detail-basis\"><strong>Grundlage</strong>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var183 string
+			templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Basis)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 801, Col: 87}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var183))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 311, "</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		if data.Tariff.HasEstimate {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 304, "<div class=\"energy-tariff-cost-copy\"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 312, "<div class=\"energy-tariff-cost-copy\"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var184 string
 			templ_7745c5c3_Var184, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowRateEUR)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 289}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 289}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var184))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 305, " je kW bis ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 313, " je kW bis ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var185 string
 			templ_7745c5c3_Var185, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.ThresholdKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 327}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 327}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var185))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 306, " und ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 314, " und ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var186 string
 			templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveRateEUR)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 360}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 360}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var186))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 307, " je kW darüber, auf die verrechnete Leistung von ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 315, " je kW darüber, auf die verrechnete Leistung von ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var187 string
 			templ_7745c5c3_Var187, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BilledKW)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 788, Col: 434}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 434}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var187))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 308, ". Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 316, ". Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Tariff.HasTier {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 309, "<div class=\"energy-tariff-tiers\"><div><span>Günstigere Stufe</span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 317, "<div class=\"energy-tariff-tiers\"><div><span>Günstigere Stufe</span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var188 string
 				templ_7745c5c3_Var188, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowKW)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 806, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var188))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 310, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 318, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var189 string
 				templ_7745c5c3_Var189, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.BelowRateEUR)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 146}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 806, Col: 146}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var189))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 311, " je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 319, " je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var190 string
 				templ_7745c5c3_Var190, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveKW)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 237}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 806, Col: 237}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var190))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 312, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 320, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var191 string
 				templ_7745c5c3_Var191, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.AboveRateEUR)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 790, Col: 281}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 806, Col: 281}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var191))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 313, " je kW und Jahr</small></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 321, " je kW und Jahr</small></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 314, " <ul class=\"energy-tariff-notes\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 322, " <ul class=\"energy-tariff-notes\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.Tariff.HasTier {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 315, "<li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 323, "<li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var192 string
 				templ_7745c5c3_Var192, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.TierHint)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 794, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 810, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var192))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 316, "</li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 324, "</li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 317, "<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 325, "<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var193 string
 			templ_7745c5c3_Var193, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Disclaimer)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 796, Col: 158}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 812, Col: 158}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var193))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 318, "</li></ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 326, "</li></ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanManageEnergy {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 319, "<details class=\"energy-tariff-settings\"><summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span></summary><div class=\"energy-tariff-forms\"><form class=\"energy-target-form\" method=\"post\" action=\"/app/energie/target\"><label><span class=\"onboarding-legend\">Persönliches Peak-Ziel in kW</span><input type=\"text\" name=\"target_peak_kw\" inputmode=\"decimal\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 327, "<details class=\"energy-tariff-settings\"><summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 328, "</summary><div class=\"energy-tariff-forms\"><form class=\"energy-target-form\" method=\"post\" action=\"/app/energie/target\"><label><span class=\"onboarding-legend\">Persönliches Peak-Ziel in kW</span><input type=\"text\" name=\"target_peak_kw\" inputmode=\"decimal\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var194 string
 			templ_7745c5c3_Var194, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.TargetPeakValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 803, Col: 246}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 821, Col: 246}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var194)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 320, "\" placeholder=\"z. B. 8,0\" required></label><small class=\"muted\">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class=\"button\" type=\"submit\">Ziel speichern</button></form><form class=\"energy-target-form\" method=\"post\" action=\"/app/energie/anschlussleistung\"><label><span class=\"onboarding-legend\">Vereinbarte Anschlussleistung in kW</span><input type=\"text\" name=\"agreed_power_kw\" inputmode=\"decimal\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 329, "\" placeholder=\"z. B. 8,0\" required></label><small class=\"muted\">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class=\"button\" type=\"submit\">Ziel speichern</button></form><form class=\"energy-target-form\" method=\"post\" action=\"/app/energie/anschlussleistung\"><label><span class=\"onboarding-legend\">Vereinbarte Anschlussleistung in kW</span><input type=\"text\" name=\"agreed_power_kw\" inputmode=\"decimal\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var195 string
 			templ_7745c5c3_Var195, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.AgreedPowerValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 265}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 822, Col: 265}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var195)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 321, "\" placeholder=\"z. B. 14,0\"></label><small class=\"muted\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 330, "\" placeholder=\"z. B. 14,0\"></label><small class=\"muted\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var196 string
 			templ_7745c5c3_Var196, templ_7745c5c3_Err = templ.JoinStringErrs(energyAgreedHint(data.Tariff))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 804, Col: 354}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 822, Col: 354}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var196))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 322, "</small><button class=\"button\" type=\"submit\">Anschlussleistung speichern</button></form></div></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 331, "</small><button class=\"button\" type=\"submit\">Anschlussleistung speichern</button></form></div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 323, "<footer class=\"energy-tariff-foot\"><span>Regelprofil ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 332, "<footer class=\"energy-tariff-foot\"><span>Regelprofil ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var197 string
 		templ_7745c5c3_Var197, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 827, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var197))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 324, " · Stand ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 333, " · Stand ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var198 string
 		templ_7745c5c3_Var198, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 809, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 827, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var198))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 325, "</span> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 334, "</span> <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var199 templ.SafeURL
 		templ_7745c5c3_Var199, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.Tariff.SourceURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 810, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 828, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var199))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 326, "\" target=\"_blank\" rel=\"noopener noreferrer\">Quelle: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 335, "\" target=\"_blank\" rel=\"noopener noreferrer\">Quelle: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var200 string
 		templ_7745c5c3_Var200, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tariff.SourceTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 810, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 828, Col: 128}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var200))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 327, " →</a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 336, " →</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageEnergy && data.Tariff.HasEstimate {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 328, "<form method=\"post\" action=\"/app/energie/tariff/assessment\"><button class=\"button quiet\" type=\"submit\">Diesen Stand festhalten</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 337, "<form method=\"post\" action=\"/app/energie/tariff/assessment\"><button class=\"button quiet\" type=\"submit\">Diesen Stand festhalten</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 329, "</footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 338, "</footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasTariffAssessments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 330, "<div class=\"energy-history\"><h4>Festgehaltene Bewertungen</h4><div aria-label=\"Historische Tarifbewertungen\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 339, "<div class=\"energy-history\"><h4>Festgehaltene Bewertungen</h4><div aria-label=\"Historische Tarifbewertungen\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, assessment := range data.TariffAssessments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 331, "<article class=\"energy-history-row\"><div><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 340, "<article class=\"energy-history-row\"><div><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var201 string
 				templ_7745c5c3_Var201, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Month)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var201))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 332, " · ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 341, " · ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var202 string
 				templ_7745c5c3_Var202, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Peak)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var202))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 333, "</strong><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 342, "</strong><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var203 string
 				templ_7745c5c3_Var203, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Profile)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 133}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 133}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var203))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 334, " · ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 343, " · ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var204 string
 				templ_7745c5c3_Var204, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Quality)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 159}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 159}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var204))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 335, "</span></div><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 344, "</span></div><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var205 string
 				templ_7745c5c3_Var205, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Annual)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 201}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 201}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var205))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 336, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 345, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var206 string
 				templ_7745c5c3_Var206, templ_7745c5c3_Err = templ.JoinStringErrs(assessment.Created)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 818, Col: 239}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 836, Col: 239}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var206))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 337, "</small></article>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 346, "</small></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 338, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 347, "</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 339, "</div></details></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 348, "</div></details></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4042,103 +4114,103 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var207 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 340, "<div class=\"energy-pair\"><section class=\"energy-card\"><header class=\"energy-card-head\"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header><div class=\"energy-quality\"><span aria-hidden=\"true\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 349, "<div class=\"energy-pair\"><section class=\"energy-card\"><header class=\"energy-card-head\"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header><div class=\"energy-quality\"><span aria-hidden=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var208 string
 		templ_7745c5c3_Var208, templ_7745c5c3_Err = templ.JoinStringErrs(energyQualityMark(data.Quality.Status == "measured"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 848, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var208))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 341, "</span><div><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 350, "</span><div><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var209 string
 		templ_7745c5c3_Var209, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.Label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 848, Col: 152}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var209))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 342, "</strong><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 351, "</strong><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var210 string
 		templ_7745c5c3_Var210, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.Effect)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 187}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 848, Col: 187}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var210))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 343, "</p></div><small>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 352, "</p></div><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var211 string
 		templ_7745c5c3_Var211, templ_7745c5c3_Err = templ.JoinStringErrs(data.Quality.NextAction)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 830, Col: 231}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 848, Col: 231}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var211))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 344, "</small></div><div class=\"energy-coverage\" aria-label=\"Messabdeckung\"><div class=\"energy-coverage-head\"><strong>Messabdeckung</strong><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 353, "</small></div><div class=\"energy-coverage\" aria-label=\"Messabdeckung\"><div class=\"energy-coverage-head\"><strong>Messabdeckung</strong><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var212 string
 		templ_7745c5c3_Var212, templ_7745c5c3_Err = templ.JoinStringErrs(data.CoverageSummary)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 831, Col: 151}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 849, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var212))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 345, "</span></div><div class=\"energy-coverage-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 354, "</span></div><div class=\"energy-coverage-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, item := range data.Coverage {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 346, "<div class=\"energy-coverage-row\" title=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 355, "<div class=\"energy-coverage-row\" title=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var213 string
 			templ_7745c5c3_Var213, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 851, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var213)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 347, "\"><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 356, "\"><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var214 string
 			templ_7745c5c3_Var214, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 851, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var214))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 348, "</strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 357, "</strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -4147,7 +4219,7 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 349, "<span class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 358, "<span class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -4160,38 +4232,38 @@ func EnergyDataQuality(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 350, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 359, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var217 string
 			templ_7745c5c3_Var217, templ_7745c5c3_Err = templ.JoinStringErrs(energyCoverageMark(item.Tone == "good"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 183}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 851, Col: 183}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var217))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 351, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 360, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var218 string
 			templ_7745c5c3_Var218, templ_7745c5c3_Err = templ.JoinStringErrs(item.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 833, Col: 199}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 851, Col: 199}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var218))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 352, "</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 361, "</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 353, "</div></div></section></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 362, "</div></div></section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4220,7 +4292,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var219 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 354, "<section class=\"energy-card energy-roadmap-card\" id=\"fahrplan\"><header class=\"energy-card-head\"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header><div class=\"energy-roadmap\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 363, "<section class=\"energy-card energy-roadmap-card\" id=\"fahrplan\"><header class=\"energy-card-head\"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header><div class=\"energy-roadmap\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4230,7 +4302,7 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 355, "<article class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 364, "<article class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -4243,100 +4315,100 @@ func EnergyRoadmapSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 356, "\"><span class=\"energy-roadmap-number\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 365, "\"><span class=\"energy-roadmap-number\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var222 string
 			templ_7745c5c3_Var222, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(step.Number))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 863, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var222))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 357, "</span><span class=\"energy-roadmap-state\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 366, "</span><span class=\"energy-roadmap-state\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var223 string
 			templ_7745c5c3_Var223, templ_7745c5c3_Err = templ.JoinStringErrs(step.State)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 199}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 863, Col: 199}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var223))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 358, "</span><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 367, "</span><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var224 string
 			templ_7745c5c3_Var224, templ_7745c5c3_Err = templ.JoinStringErrs(step.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 228}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 863, Col: 228}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var224))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 359, "</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 368, "</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var225 string
 			templ_7745c5c3_Var225, templ_7745c5c3_Err = templ.JoinStringErrs(step.Detail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 845, Col: 255}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 863, Col: 255}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var225))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 360, "</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 369, "</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if step.Action != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 361, "<a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 370, "<a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var226 templ.SafeURL
 				templ_7745c5c3_Var226, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(step.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 847, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 865, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var226))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 362, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 371, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var227 string
 				templ_7745c5c3_Var227, templ_7745c5c3_Err = templ.JoinStringErrs(step.Action)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 847, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 865, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var227))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 363, " →</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 372, " →</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 364, "</article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 373, "</article>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 365, "</div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 374, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4365,27 +4437,27 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var228 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 366, "<section class=\"energy-card\"><header class=\"energy-card-head\"><div><h2>Ihr Energiesystem</h2><p>Erzeugung und Speicher als Grundlage für Empfehlungen.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 375, "<section class=\"energy-card\"><header class=\"energy-card-head\"><div><h2>Ihr Energiesystem</h2><p>Erzeugung und Speicher als Grundlage für Empfehlungen.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageEnergy {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 367, "<a class=\"button\" href=\"/app/zuhause/onboarding?step=3\">Anlagen bearbeiten</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 376, "<a class=\"button\" href=\"/app/zuhause/onboarding?step=3\">Anlagen bearbeiten</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 368, "</header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 377, "</header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasSystemAssets {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 369, "<div class=\"energy-system-assets\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 378, "<div class=\"energy-system-assets\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, asset := range data.SystemAssets {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 370, "<span class=\"energy-system-asset\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 379, "<span class=\"energy-system-asset\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -4394,7 +4466,7 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 371, "<span class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 380, "<span class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -4407,48 +4479,48 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 372, "\" aria-hidden=\"true\"></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 381, "\" aria-hidden=\"true\"></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var231 string
 				templ_7745c5c3_Var231, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 865, Col: 145}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 883, Col: 145}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var231))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 373, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 382, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 374, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 383, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 375, "<p class=\"muted\">Noch keine Erzeugung oder Speicher erfasst.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 384, "<p class=\"muted\">Noch keine Erzeugung oder Speicher erfasst.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 376, "<p class=\"energy-system-helper\">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p><nav class=\"energy-related-links\" aria-label=\"Service und Unterlagen\"><a href=\"/app/dokumente\">Unterlagen</a><a href=\"/app/events\">Wartungstermine</a><a href=\"/app/anliegen?new=1\">Aufgabe melden</a><a href=\"/app/kontakte\">Fachkontakte</a></nav><div class=\"energy-business-note\"><span aria-hidden=\"true\">◎</span><p><strong>Kostenmodell:</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 385, "<p class=\"energy-system-helper\">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p><nav class=\"energy-related-links\" aria-label=\"Service und Unterlagen\"><a href=\"/app/dokumente\">Unterlagen</a><a href=\"/app/events\">Wartungstermine</a><a href=\"/app/anliegen?new=1\">Aufgabe melden</a><a href=\"/app/kontakte\">Fachkontakte</a></nav><div class=\"energy-business-note\"><span aria-hidden=\"true\">◎</span><p><strong>Kostenmodell:</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var232 string
 		templ_7745c5c3_Var232, templ_7745c5c3_Err = templ.JoinStringErrs(energyCostModelSentence(data.FreeUntil))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 873, Col: 146}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 891, Col: 146}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var232))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 377, "</p></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 386, "</p></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -4477,60 +4549,60 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var233 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 378, "<section class=\"energy-card energy-card-quiet\" id=\"wartung\"><header class=\"energy-card-head\"><div><h2>Wartung, ohne daran denken zu müssen</h2><p>Fälligkeit, Kontakt, Unterlage und Nachweis bleiben an der Anlage.</p></div><a href=\"/app/events\">Termine</a></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 387, "<section class=\"energy-card energy-card-quiet\" id=\"wartung\"><header class=\"energy-card-head\"><div><h2>Wartung, ohne daran denken zu müssen</h2><p>Fälligkeit, Kontakt, Unterlage und Nachweis bleiben an der Anlage.</p></div><a href=\"/app/events\">Termine</a></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch data.MaintenanceStatus {
 		case "saved":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 379, "<div class=\"message success\">Wartungsplan gespeichert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 388, "<div class=\"message success\">Wartungsplan gespeichert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "completed":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 380, "<div class=\"message success\">Erledigt. Der nächste Termin wurde automatisch vorgemerkt.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 389, "<div class=\"message success\">Erledigt. Der nächste Termin wurde automatisch vorgemerkt.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "invalid":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 381, "<div class=\"message error\">Bitte Anlage, Intervall und Fälligkeit prüfen.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 390, "<div class=\"message error\">Bitte Anlage, Intervall und Fälligkeit prüfen.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.HasMaintenance {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 382, "<div class=\"energy-maintenance-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 391, "<div class=\"energy-maintenance-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, plan := range data.Maintenance {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 383, "<details class=\"energy-maintenance-row\"><summary class=\"energy-maintenance-summary\"><span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 392, "<details class=\"energy-maintenance-row\"><summary class=\"energy-maintenance-summary\"><span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var234 string
 				templ_7745c5c3_Var234, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 910, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var234))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 384, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 393, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var235 string
 				templ_7745c5c3_Var235, templ_7745c5c3_Err = templ.JoinStringErrs(energyMaintenanceMeta(plan))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 910, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var235))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 385, "</small></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 394, "</small></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -4539,7 +4611,7 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 386, "<span class=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 395, "<span class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -4552,536 +4624,552 @@ func EnergyMaintenanceSection(data EnergyPageData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 387, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 396, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var238 string
 				templ_7745c5c3_Var238, templ_7745c5c3_Err = templ.JoinStringErrs(plan.DueLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 892, Col: 200}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 910, Col: 200}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var238))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 388, "</span></summary><div class=\"energy-maintenance-body\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 397, "</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 398, "</summary><div class=\"energy-maintenance-body\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if plan.ContactName != "" || plan.DocumentTitle != "" || plan.IssueTitle != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 389, "<nav class=\"energy-related-links\" aria-label=\"Wartungsnachweise\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 399, "<nav class=\"energy-related-links\" aria-label=\"Wartungsnachweise\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if plan.ContactName != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 390, "<a href=\"/app/kontakte\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 400, "<a href=\"/app/kontakte\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var239 string
 						templ_7745c5c3_Var239, templ_7745c5c3_Err = templ.JoinStringErrs(plan.ContactName)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 897, Col: 52}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 917, Col: 52}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var239))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 391, "</a> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 401, "</a> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
 					if plan.DocumentTitle != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 392, "<a href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 402, "<a href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var240 templ.SafeURL
 						templ_7745c5c3_Var240, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/dokumente/" + plan.DocumentID + "/preview"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 900, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 920, Col: 83}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var240))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 393, "\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 403, "\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var241 string
 						templ_7745c5c3_Var241, templ_7745c5c3_Err = templ.JoinStringErrs(plan.DocumentTitle)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 900, Col: 106}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 920, Col: 106}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var241))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 394, "</a> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 404, "</a> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
 					if plan.IssueTitle != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 395, "<a href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 405, "<a href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var242 templ.SafeURL
 						templ_7745c5c3_Var242, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/anliegen/" + plan.IssueID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 903, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 923, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var242))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 396, "\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 406, "\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var243 string
 						templ_7745c5c3_Var243, templ_7745c5c3_Err = templ.JoinStringErrs(plan.IssueTitle)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 903, Col: 86}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 923, Col: 86}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var243))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 397, "</a>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 407, "</a>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 398, "</nav>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 408, "</nav>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if plan.EvidenceNote != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 399, "<p class=\"muted\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 409, "<p class=\"muted\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var244 string
 					templ_7745c5c3_Var244, templ_7745c5c3_Err = templ.JoinStringErrs(plan.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 908, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 928, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var244))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 400, "</p>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 410, "</p>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if data.CanManageEnergy {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 401, "<form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 411, "<form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var245 string
 					templ_7745c5c3_Var245, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 932, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var245)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 402, "\"><input type=\"hidden\" name=\"asset_id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 412, "\"><input type=\"hidden\" name=\"asset_id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var246 string
 					templ_7745c5c3_Var246, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.AssetID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 912, Col: 116}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 932, Col: 116}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var246)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 403, "\"><input type=\"hidden\" name=\"active\" value=\"true\"> <label>Titel<input name=\"title\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 413, "\"><input type=\"hidden\" name=\"active\" value=\"true\"> <label>Titel<input name=\"title\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var247 string
 					templ_7745c5c3_Var247, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 913, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 933, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var247)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 404, "\" maxlength=\"140\" required></label><label>Intervall in Monaten<input type=\"number\" name=\"interval_months\" min=\"1\" max=\"120\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 414, "\" maxlength=\"140\" required></label><label>Intervall in Monaten<input type=\"number\" name=\"interval_months\" min=\"1\" max=\"120\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var248 string
 					templ_7745c5c3_Var248, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(plan.IntervalMonths))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 913, Col: 226}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 933, Col: 226}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var248)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 405, "\" required></label> <label>Nächste Fälligkeit<input type=\"date\" name=\"next_due\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 415, "\" required></label> <label>Nächste Fälligkeit<input type=\"date\" name=\"next_due\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var249 string
 					templ_7745c5c3_Var249, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.NextDueValue)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 914, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 934, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var249)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 406, "\" required></label> <label>Fachkontakt<select name=\"contact_id\"><option value=\"\">Noch offen</option> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 416, "\" required></label> <label>Fachkontakt<select name=\"contact_id\"><option value=\"\">Noch offen</option> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, option := range data.ContactOptions {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 407, "<option value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 417, "<option value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var250 string
 						templ_7745c5c3_Var250, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 917, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var250)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 408, "\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 418, "\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						if option.Value == plan.ContactID {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 409, " selected")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 419, " selected")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 410, ">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 420, ">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var251 string
 						templ_7745c5c3_Var251, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 917, Col: 101}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 101}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var251))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 411, "</option>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 421, "</option>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 412, "</select></label> <label>Unterlage<select name=\"document_id\"><option value=\"\">Keine verknüpft</option> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 422, "</select></label> <label>Unterlage<select name=\"document_id\"><option value=\"\">Keine verknüpft</option> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, option := range data.DocumentOptions {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 413, "<option value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 423, "<option value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var252 string
 						templ_7745c5c3_Var252, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 922, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 942, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var252)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 414, "\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 424, "\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						if option.Value == plan.DocumentID {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 415, " selected")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 425, " selected")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 416, ">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 426, ">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var253 string
 						templ_7745c5c3_Var253, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 922, Col: 102}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 942, Col: 102}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var253))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 417, "</option>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 427, "</option>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 418, "</select></label> <label>Aufgabe / Nachweis<select name=\"issue_id\"><option value=\"\">Keine verknüpft</option> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 428, "</select></label> <label>Aufgabe / Nachweis<select name=\"issue_id\"><option value=\"\">Keine verknüpft</option> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, option := range data.IssueOptions {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 419, "<option value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 429, "<option value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var254 string
 						templ_7745c5c3_Var254, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 927, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 947, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var254)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 420, "\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 430, "\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						if option.Value == plan.IssueID {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 421, " selected")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 431, " selected")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 422, ">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 432, ">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var255 string
 						templ_7745c5c3_Var255, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 927, Col: 99}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 947, Col: 99}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var255))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 423, "</option>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 433, "</option>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 424, "</select></label> <label class=\"wide\">Hinweis<input name=\"evidence_note\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 434, "</select></label> <label class=\"wide\">Hinweis<input name=\"evidence_note\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var256 string
 					templ_7745c5c3_Var256, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 930, Col: 89}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 950, Col: 89}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var256)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 425, "\" maxlength=\"500\" placeholder=\"Was ist beim nächsten Mal wichtig?\"></label><div class=\"actions\"><button class=\"button\" type=\"submit\">Plan speichern</button></div></form><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance/complete\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 435, "\" maxlength=\"500\" placeholder=\"Was ist beim nächsten Mal wichtig?\"></label><div class=\"actions\"><button class=\"button\" type=\"submit\">Plan speichern</button></div></form><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance/complete\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var257 string
 					templ_7745c5c3_Var257, templ_7745c5c3_Err = templ.ResolveAttributeValue(plan.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 934, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 954, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var257)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 426, "\"> <label>Erledigt am<input type=\"date\" name=\"completed_at\" required></label><label>Nachweis-Aufgabe<select name=\"issue_id\"><option value=\"\">Keine</option> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 436, "\"> <label>Erledigt am<input type=\"date\" name=\"completed_at\" required></label><label>Nachweis-Aufgabe<select name=\"issue_id\"><option value=\"\">Keine</option> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, option := range data.IssueOptions {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 427, "<option value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 437, "<option value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var258 string
 						templ_7745c5c3_Var258, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 39}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 957, Col: 39}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var258)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 428, "\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 438, "\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var259 string
 						templ_7745c5c3_Var259, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 937, Col: 56}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 957, Col: 56}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var259))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 429, "</option>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 439, "</option>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 430, "</select></label> <label class=\"wide\">Was wurde gemacht?<input name=\"evidence_note\" maxlength=\"500\" placeholder=\"Kurz und nachvollziehbar\"></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Als erledigt eintragen</button></div></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 440, "</select></label> <label class=\"wide\">Was wurde gemacht?<input name=\"evidence_note\" maxlength=\"500\" placeholder=\"Kurz und nachvollziehbar\"></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Als erledigt eintragen</button></div></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 431, "</div></details>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 441, "</div></details>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 432, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 442, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 433, "<p class=\"muted\">Noch kein wiederkehrender Wartungspunkt hinterlegt.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 443, "<p class=\"muted\">Noch kein wiederkehrender Wartungspunkt hinterlegt.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanManageEnergy && data.HasAssets {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 434, "<details class=\"energy-compact-create\"><summary>Wartung an einer Anlage vormerken</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance\"><input type=\"hidden\" name=\"active\" value=\"true\"> <label>Anlage<select name=\"asset_id\" required>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 444, "<details class=\"energy-compact-create\"><summary>Wartung an einer Anlage vormerken")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 445, "</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/maintenance\"><input type=\"hidden\" name=\"active\" value=\"true\"> <label>Anlage<select name=\"asset_id\" required>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, asset := range data.Assets {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 435, "<option value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 446, "<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var260 string
 				templ_7745c5c3_Var260, templ_7745c5c3_Err = templ.ResolveAttributeValue(asset.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 956, Col: 30}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 978, Col: 30}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var260)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 436, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 447, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var261 string
 				templ_7745c5c3_Var261, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 956, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 978, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var261))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 437, "</option>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 448, "</option>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 438, "</select></label> <label>Titel<input name=\"title\" maxlength=\"140\" placeholder=\"z. B. Wärmepumpe warten\" required></label> <label>Alle wie viele Monate?<input type=\"number\" name=\"interval_months\" min=\"1\" max=\"120\" value=\"12\" required></label> <label>Erstmals fällig<input type=\"date\" name=\"next_due\" required></label> <label>Fachkontakt<select name=\"contact_id\"><option value=\"\">Später wählen</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 449, "</select></label> <label>Titel<input name=\"title\" maxlength=\"140\" placeholder=\"z. B. Wärmepumpe warten\" required></label> <label>Alle wie viele Monate?<input type=\"number\" name=\"interval_months\" min=\"1\" max=\"120\" value=\"12\" required></label> <label>Erstmals fällig<input type=\"date\" name=\"next_due\" required></label> <label>Fachkontakt<select name=\"contact_id\"><option value=\"\">Später wählen</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, option := range data.ContactOptions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 439, "<option value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 450, "<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var262 string
 				templ_7745c5c3_Var262, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 964, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 986, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var262)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 440, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 451, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var263 string
 				templ_7745c5c3_Var263, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 964, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 986, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var263))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 441, "</option>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 452, "</option>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 442, "</select></label> <label>Unterlage<select name=\"document_id\"><option value=\"\">Später verknüpfen</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 453, "</select></label> <label>Unterlage<select name=\"document_id\"><option value=\"\">Später verknüpfen</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, option := range data.DocumentOptions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 443, "<option value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 454, "<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var264 string
 				templ_7745c5c3_Var264, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 969, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 991, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var264)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 444, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 455, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var265 string
 				templ_7745c5c3_Var265, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 969, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 991, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var265))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 445, "</option>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 456, "</option>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 446, "</select></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Wartung vormerken</button></div></form></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 457, "</select></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Wartung vormerken</button></div></form></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 447, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 458, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -5110,85 +5198,93 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var266 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 448, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"messwerte\"><summary class=\"energy-card-head\"><div><h2>Messwerte &amp; Referenz</h2><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 459, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"messwerte\"><summary class=\"energy-card-head\"><div><h2>Messwerte &amp; Referenz</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasPeaks {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 449, "Referenz vorhanden – Details und Import öffnen.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 460, "Referenz vorhanden – Details und Import öffnen.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 450, "Home Assistant oder Smart Meter später verbinden.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 461, "Home Assistant oder Smart Meter später verbinden.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 451, "</p></div></summary><div class=\"energy-collapsible-body\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 462, "</p></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 463, "</summary><div class=\"energy-collapsible-body\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch data.ImportStatus {
 		case "added":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 452, "<div class=\"message success\">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 464, "<div class=\"message success\">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "duplicate":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 453, "<div class=\"message\">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 465, "<div class=\"message\">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "invalid":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 454, "<div class=\"message error\">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 466, "<div class=\"message error\">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.HasPeaks {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 455, "<div class=\"energy-reference-grid\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 467, "<div class=\"energy-reference-grid\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, peak := range data.Peaks {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 456, "<article class=\"energy-reference-item\"><span>Monatsspitze · ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 468, "<article class=\"energy-reference-item\"><span>Monatsspitze · ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var267 string
 				templ_7745c5c3_Var267, templ_7745c5c3_Err = templ.JoinStringErrs(peak.Source)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 999, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1023, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var267))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 457, "</span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 469, "</span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var268 string
 				templ_7745c5c3_Var268, templ_7745c5c3_Err = templ.JoinStringErrs(peak.Value)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 999, Col: 109}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1023, Col: 109}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var268))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 458, "</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 470, "</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 459, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 471, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 460, "<p class=\"muted\">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 472, "<p class=\"muted\">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5199,7 +5295,7 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 461, "<div class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 473, "<div class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5212,105 +5308,105 @@ func EnergyMeasurementSection(data EnergyPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 462, "\"><span aria-hidden=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 474, "\"><span aria-hidden=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var271 string
 			templ_7745c5c3_Var271, templ_7745c5c3_Err = templ.JoinStringErrs(energyQualityMark(data.Comparison.Tone == "good"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 134}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1030, Col: 134}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var271))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 463, "</span><div><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 475, "</span><div><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var272 string
 			templ_7745c5c3_Var272, templ_7745c5c3_Err = templ.JoinStringErrs(data.Comparison.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 179}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1030, Col: 179}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var272))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 464, "</strong><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 476, "</strong><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var273 string
 			templ_7745c5c3_Var273, templ_7745c5c3_Err = templ.JoinStringErrs(data.Comparison.Details)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1006, Col: 218}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1030, Col: 218}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var273))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 465, "</p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 477, "</p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.HasImports {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 466, "<div class=\"energy-assets energy-import-history\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 478, "<div class=\"energy-assets energy-import-history\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, item := range data.Imports {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 467, "<span class=\"energy-asset\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 479, "<span class=\"energy-asset\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var274 string
 				templ_7745c5c3_Var274, templ_7745c5c3_Err = templ.JoinStringErrs(item.Filename)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1011, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1035, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var274))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 468, " · ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 480, " · ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var275 string
 				templ_7745c5c3_Var275, templ_7745c5c3_Err = templ.JoinStringErrs(item.Date)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1011, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1035, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var275))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 469, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 481, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 470, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 482, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanManageEnergy {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 471, "<form class=\"energy-import-form\" method=\"post\" action=\"/app/energie/smart-meter\" enctype=\"multipart/form-data\"><label><span class=\"onboarding-legend\">Smart-Meter-CSV auswählen</span><input type=\"file\" name=\"smart_meter_file\" accept=\".csv,text/csv\" required></label> <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldateien werden nach 30 Tagen, Viertelstundenwerte nach 13 Monaten zur Löschung fällig und spätestens sechs Stunden später entfernt.</small> <button class=\"button\" type=\"submit\">Als Referenz importieren</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 483, "<form class=\"energy-import-form\" method=\"post\" action=\"/app/energie/smart-meter\" enctype=\"multipart/form-data\"><label><span class=\"onboarding-legend\">Smart-Meter-CSV auswählen</span><input type=\"file\" name=\"smart_meter_file\" accept=\".csv,text/csv\" required></label> <small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldateien werden nach 30 Tagen, Viertelstundenwerte nach 13 Monaten zur Löschung fällig und spätestens sechs Stunden später entfernt.</small> <button class=\"button\" type=\"submit\">Als Referenz importieren</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanManageEnergyData {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 472, "<nav class=\"energy-related-links\"><a href=\"/app/settings/energy-data\">Energiedaten ansehen, exportieren oder löschen →</a></nav>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 484, "<nav class=\"energy-related-links\"><a href=\"/app/settings/energy-data\">Energiedaten ansehen, exportieren oder löschen →</a></nav>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 473, "</div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 485, "</div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -5339,172 +5435,188 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var276 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 474, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"betreuung\"><summary class=\"energy-card-head\"><div><h2>Technische Betreuung</h2><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 486, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"betreuung\"><summary class=\"energy-card-head\"><div><h2>Technische Betreuung</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasCaretakers {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 475, "Hilfe für die Liegenschaft ist eingerichtet.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 487, "Hilfe für die Liegenschaft ist eingerichtet.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 476, "Optional eine Vertrauensperson einladen.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 488, "Optional eine Vertrauensperson einladen.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 477, "</p></div></summary><div class=\"energy-collapsible-body\"><nav class=\"energy-related-links\"><a href=\"/app/settings/users\">Personen verwalten</a></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 489, "</p></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 490, "</summary><div class=\"energy-collapsible-body\"><nav class=\"energy-related-links\"><a href=\"/app/settings/users\">Personen verwalten</a></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CaretakerChanged {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 478, "<div class=\"message success\">Der technische Zugriff für diese Liegenschaft wurde geändert und protokolliert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 491, "<div class=\"message success\">Der technische Zugriff für diese Liegenschaft wurde geändert und protokolliert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		switch data.CaretakerInviteStatus {
 		case "invited":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 479, "<div class=\"message success\">Einladung verschickt. Die Person meldet sich mit ihrem eigenen Konto an.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 492, "<div class=\"message success\">Einladung verschickt. Die Person meldet sich mit ihrem eigenen Konto an.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "saved_no_mail":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 480, "<div class=\"message\">Zugang gespeichert; die Einladung konnte nicht zugestellt werden.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 493, "<div class=\"message\">Zugang gespeichert; die Einladung konnte nicht zugestellt werden.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "exists":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 481, "<div class=\"message\">Diese Person gehört bereits zur Liegenschaft. Rechte können unten geändert werden.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 494, "<div class=\"message\">Diese Person gehört bereits zur Liegenschaft. Rechte können unten geändert werden.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "invalid":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 482, "<div class=\"message error\">Bitte eine gültige E-Mail-Adresse angeben.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 495, "<div class=\"message error\">Bitte eine gültige E-Mail-Adresse angeben.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "error":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 483, "<div class=\"message error\">Der Zugang zur Liegenschaft konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 496, "<div class=\"message error\">Der Zugang zur Liegenschaft konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.HasCaretakers {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 484, "<div class=\"energy-caretaker-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 497, "<div class=\"energy-caretaker-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, caretaker := range data.Caretakers {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 485, "<form class=\"energy-caretaker\" method=\"post\" action=\"/app/energie/caretaker\"><input type=\"hidden\" name=\"email\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 498, "<form class=\"energy-caretaker\" method=\"post\" action=\"/app/energie/caretaker\"><input type=\"hidden\" name=\"email\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var277 string
 				templ_7745c5c3_Var277, templ_7745c5c3_Err = templ.ResolveAttributeValue(caretaker.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1059, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1085, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var277)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 486, "\"><div><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 499, "\"><div><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var278 string
 				templ_7745c5c3_Var278, templ_7745c5c3_Err = templ.JoinStringErrs(caretaker.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1060, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1086, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var278))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 487, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 500, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var279 string
 				templ_7745c5c3_Var279, templ_7745c5c3_Err = templ.JoinStringErrs(caretaker.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1060, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1086, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var279))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 488, "</small></div><label><input type=\"checkbox\" name=\"scope\" value=\"view\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 501, "</small></div><label><input type=\"checkbox\" name=\"scope\" value=\"view\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if caretaker.CanView {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 489, " checked")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 502, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if !caretaker.Editable {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 490, " disabled")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 503, " disabled")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 491, "> ansehen</label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 504, "> ansehen</label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if caretaker.CanConfigure {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 492, " checked")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 505, " checked")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				if !caretaker.Editable {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 493, " disabled")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 506, " disabled")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 494, "> einrichten</label> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 507, "> einrichten</label> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if data.CanGrantEnergyAccess && caretaker.Editable {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 495, "<button class=\"button\" type=\"submit\">Zugriff speichern</button>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 508, "<button class=\"button\" type=\"submit\">Zugriff speichern</button>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else if !caretaker.Editable {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 496, "<a href=\"/app/settings/users\">Zuerst als Portalzugang übernehmen</a>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 509, "<a href=\"/app/settings/users\">Zuerst als Portalzugang übernehmen</a>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 497, "</form>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 510, "</form>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 498, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 511, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 499, "<p class=\"muted\">Noch keine weitere Person ist dieser Liegenschaft zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 512, "<p class=\"muted\">Noch keine weitere Person ist dieser Liegenschaft zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanInviteEnergyAccess {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 500, "<details class=\"energy-compact-create\"><summary>Technische Vertrauensperson einladen</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/caretaker/invite\"><label>Vorname<input name=\"first_name\" maxlength=\"80\"></label><label>Nachname<input name=\"last_name\" maxlength=\"80\"></label> <label class=\"wide\">E-Mail<input type=\"email\" name=\"email\" required></label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"> darf Messwerte und Geräte einrichten</label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Zur Liegenschaft einladen</button></div></form></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 513, "<details class=\"energy-compact-create\"><summary>Technische Vertrauensperson einladen")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 514, "</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/caretaker/invite\"><label>Vorname<input name=\"first_name\" maxlength=\"80\"></label><label>Nachname<input name=\"last_name\" maxlength=\"80\"></label> <label class=\"wide\">E-Mail<input type=\"email\" name=\"email\" required></label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"> darf Messwerte und Geräte einrichten</label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Zur Liegenschaft einladen</button></div></form></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 501, "<div class=\"energy-business-note\"><span aria-hidden=\"true\">i</span><p>Technische Vertrauenspersonen dürfen ansehen und einrichten. Den dauerhaft sichtbaren Haus-Schalter dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.</p></div></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 515, "<div class=\"energy-business-note\"><span aria-hidden=\"true\">i</span><p>Technische Vertrauenspersonen dürfen ansehen und einrichten. Den dauerhaft sichtbaren Haus-Schalter dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.</p></div></div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -5533,388 +5645,404 @@ func EnergySupportSection(data EnergyPageData) templ.Component {
 			templ_7745c5c3_Var280 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 502, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"fachhilfe\"><summary class=\"energy-card-head\"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 516, "<details class=\"energy-card energy-card-quiet energy-collapsible\" id=\"fachhilfe\"><summary class=\"energy-card-head\"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.HasMeasures {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 503, "Eine Hausaufgabe ist in Bearbeitung.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 517, "Eine Hausaufgabe ist in Bearbeitung.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 504, "Bekannte Kontakte statt offener Marktplatz.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 518, "Bekannte Kontakte statt offener Marktplatz.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 505, "</p></div></summary><div class=\"energy-collapsible-body\"><nav class=\"energy-related-links\"><a href=\"/app/kontakte\">Bekannte Kontakte</a></nav><p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 519, "</p></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 520, "</summary><div class=\"energy-collapsible-body\"><nav class=\"energy-related-links\"><a href=\"/app/kontakte\">Bekannte Kontakte</a></nav><p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch data.MeasureStatus {
 		case "saved":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 506, "<div class=\"message success\">Maßnahmenstand gespeichert und protokolliert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 521, "<div class=\"message success\">Maßnahmenstand gespeichert und protokolliert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "appointment":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 507, "<div class=\"message error\">Für „Termin vereinbart“ bitte einen Termin eintragen.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 522, "<div class=\"message error\">Für „Termin vereinbart“ bitte einen Termin eintragen.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "ranges":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 508, "<div class=\"message error\">Für den Abschluss brauchen wir zwei getrennte, gültige Vorher-/Nachher-Zeiträume.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 523, "<div class=\"message error\">Für den Abschluss brauchen wir zwei getrennte, gültige Vorher-/Nachher-Zeiträume.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.HasMeasures {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 509, "<div class=\"energy-measure-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 524, "<div class=\"energy-measure-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, measure := range data.Measures {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 510, "<details class=\"energy-measure-row\"><summary class=\"energy-measure-summary\"><span><strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 525, "<details class=\"energy-measure-row\"><summary class=\"energy-measure-summary\"><span><strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var281 string
 				templ_7745c5c3_Var281, templ_7745c5c3_Err = templ.JoinStringErrs(measure.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1111, Col: 76}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1141, Col: 76}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var281))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 511, "</strong><small>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 526, "</strong><small>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var282 string
 				templ_7745c5c3_Var282, templ_7745c5c3_Err = templ.JoinStringErrs(energyMeasureMeta(measure))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1111, Col: 122}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1141, Col: 122}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var282))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 512, "</small></span><span>Öffnen</span></summary><div class=\"energy-measure-body\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 527, "</small></span><span>Öffnen</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = DisclosureChevronMasked().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 528, "</summary><div class=\"energy-measure-body\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if measure.HasComparison {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 513, "<div class=\"energy-comparison\"><div><small>Vorher · ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 529, "<div class=\"energy-comparison\"><div><small>Vorher · ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var283 string
 					templ_7745c5c3_Var283, templ_7745c5c3_Err = templ.JoinStringErrs(measure.BeforeQuality)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1146, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var283))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 514, "</small><strong>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 530, "</small><strong>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var284 string
 					templ_7745c5c3_Var284, templ_7745c5c3_Err = templ.JoinStringErrs(measure.BeforePeak)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1146, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var284))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 515, "</strong></div><span>→ Messbefund →</span><div><small>Nachher · ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 531, "</strong></div><span>→ Messbefund →</span><div><small>Nachher · ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var285 string
 					templ_7745c5c3_Var285, templ_7745c5c3_Err = templ.JoinStringErrs(measure.AfterQuality)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 216}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1146, Col: 216}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var285))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 516, "</small><strong>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 532, "</small><strong>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var286 string
 					templ_7745c5c3_Var286, templ_7745c5c3_Err = templ.JoinStringErrs(measure.AfterPeak)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1114, Col: 253}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1146, Col: 253}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var286))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 517, "</strong></div></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 533, "</strong></div></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 518, "<nav class=\"energy-related-links\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 534, "<nav class=\"energy-related-links\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var287 templ.SafeURL
 				templ_7745c5c3_Var287, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/anliegen/" + measure.IssueID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1116, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1148, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var287))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 519, "\">Anliegen, Rückfragen &amp; Anhänge öffnen</a></nav>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 535, "\">Anliegen, Rückfragen &amp; Anhänge öffnen</a></nav>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if data.CanManageEnergy {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 520, "<form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/measure/update\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 536, "<form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/measure/update\"><input type=\"hidden\" name=\"id\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var288 string
 					templ_7745c5c3_Var288, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1119, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1151, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var288)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 521, "\"> <label>Status<select name=\"status\"><option value=\"requested\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 537, "\"> <label>Status<select name=\"status\"><option value=\"requested\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if measure.Status == "requested" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 522, " selected")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 538, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 523, ">Anfrage vorbereitet</option><option value=\"assigned\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 539, ">Anfrage vorbereitet</option><option value=\"assigned\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if measure.Status == "assigned" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 524, " selected")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 540, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 525, ">Kontakt ausgewählt</option><option value=\"scheduled\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 541, ">Kontakt ausgewählt</option><option value=\"scheduled\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if measure.Status == "scheduled" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 526, " selected")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 542, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 527, ">Termin vereinbart</option><option value=\"completed\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 543, ">Termin vereinbart</option><option value=\"completed\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if measure.Status == "completed" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 528, " selected")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 544, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 529, ">Abgeschlossen</option><option value=\"cancelled\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 545, ">Abgeschlossen</option><option value=\"cancelled\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if measure.Status == "cancelled" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 530, " selected")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 546, " selected")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 531, ">Nicht weiterverfolgt</option></select></label> <label>Bekannter Fachkontakt<select name=\"contact_id\"><option value=\"\">Noch niemand</option> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 547, ">Nicht weiterverfolgt</option></select></label> <label>Bekannter Fachkontakt<select name=\"contact_id\"><option value=\"\">Noch niemand</option> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, option := range data.ContactOptions {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 532, "<option value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 548, "<option value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var289 string
 						templ_7745c5c3_Var289, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1123, Col: 40}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1155, Col: 40}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var289)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 533, "\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 549, "\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						if option.Value == measure.ContactID {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 534, " selected")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 550, " selected")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 535, ">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 551, ">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var290 string
 						templ_7745c5c3_Var290, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1123, Col: 105}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1155, Col: 105}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var290))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 536, "</option>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 552, "</option>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 537, "</select></label> <label>Termin<input type=\"datetime-local\" name=\"appointment_at\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 553, "</select></label> <label>Termin<input type=\"datetime-local\" name=\"appointment_at\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var291 string
 					templ_7745c5c3_Var291, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AppointmentValue)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1126, Col: 106}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1158, Col: 106}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var291)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 538, "\"></label> <label>Angebot / Rückfrage<input name=\"offer_note\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 554, "\"></label> <label>Angebot / Rückfrage<input name=\"offer_note\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var292 string
 					templ_7745c5c3_Var292, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.OfferNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1127, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1159, Col: 87}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var292)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 539, "\" maxlength=\"1000\" placeholder=\"Noch keine Zusage oder Zahlung\"></label> <label class=\"wide\">Ausgeführte Arbeit<input name=\"work_note\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 555, "\" maxlength=\"1000\" placeholder=\"Noch keine Zusage oder Zahlung\"></label> <label class=\"wide\">Ausgeführte Arbeit<input name=\"work_note\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var293 string
 					templ_7745c5c3_Var293, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.WorkNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1128, Col: 97}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1160, Col: 97}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var293)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 540, "\" maxlength=\"1000\"></label> <label class=\"wide\">Nachweis / Fachnachweis<input name=\"evidence_note\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 556, "\" maxlength=\"1000\"></label> <label class=\"wide\">Nachweis / Fachnachweis<input name=\"evidence_note\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var294 string
 					templ_7745c5c3_Var294, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.EvidenceNote)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1129, Col: 109}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1161, Col: 109}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var294)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 541, "\" maxlength=\"1000\" placeholder=\"Dateien im verknüpften Anliegen anhängen\"></label> <label>Vorher von<input type=\"date\" name=\"before_from\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 557, "\" maxlength=\"1000\" placeholder=\"Dateien im verknüpften Anliegen anhängen\"></label> <label>Vorher von<input type=\"date\" name=\"before_from\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var295 string
 					templ_7745c5c3_Var295, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.BeforeFrom)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1162, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var295)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 542, "\"></label><label>Vorher bis<input type=\"date\" name=\"before_to\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 558, "\"></label><label>Vorher bis<input type=\"date\" name=\"before_to\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var296 string
 					templ_7745c5c3_Var296, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.BeforeTo)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1130, Col: 180}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1162, Col: 180}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var296)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 543, "\"></label> <label>Nachher von<input type=\"date\" name=\"after_from\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 559, "\"></label> <label>Nachher von<input type=\"date\" name=\"after_from\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var297 string
 					templ_7745c5c3_Var297, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AfterFrom)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1131, Col: 90}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1163, Col: 90}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var297)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 544, "\"></label><label>Nachher bis<input type=\"date\" name=\"after_to\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 560, "\"></label><label>Nachher bis<input type=\"date\" name=\"after_to\" value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var298 string
 					templ_7745c5c3_Var298, templ_7745c5c3_Err = templ.ResolveAttributeValue(measure.AfterTo)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1131, Col: 178}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1163, Col: 178}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var298)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 545, "\"></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Maßnahmenstand speichern</button></div></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 561, "\"></label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Maßnahmenstand speichern</button></div></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 546, "</div></details>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 562, "</div></details>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 547, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 563, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 548, "<p class=\"muted\">Noch keine Energieempfehlung wurde als Hausaufgabe übernommen.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 564, "<p class=\"muted\">Noch keine Energieempfehlung wurde als Hausaufgabe übernommen.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 549, "<div class=\"energy-marketplace-gate\"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div></div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 565, "<div class=\"energy-marketplace-gate\"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div></div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -6005,7 +6133,7 @@ func EnergyStyles(assetVersion string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 550, "<style>\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.energy-value{white-space:nowrap}.energy-value>.u{display:inline;color:var(--soft);font-family:var(--font-sans);font-size:.58em;font-weight:750;letter-spacing:.03em;vertical-align:super}\n\t\t.energy-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.quiet{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding:6px var(--space-3);font-size:11px}.button:hover{background:var(--panel-soft)}.button.primary:hover{background:var(--gold-ink)}\n\t\t.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em}.energy-tariff>.energy-card-head .pill{border:0;padding:6px 11px;color:#816528;background:#f2ebd9;font-size:11px;letter-spacing:normal}\n\t\t.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}\n\t\t.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}\n\t\t.energy-mode-strip{container-type:inline-size;container-name:energy-strip;position:sticky;top:var(--context-bar-h);z-index:20;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-family:var(--font-serif);font-size:18px;line-height:1.15}.energy-mode-copy span{color:var(--muted);font-size:11px}\n\t\t.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}\n\t\t.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}\n\t\t.energy-main>*,.energy-page,.energy-card,.energy-collapsible-body,.energy-maintenance-body,.energy-measure-body,.energy-lead-side,.energy-live,.energy-billed>div,.energy-scenario-copy,.energy-caretaker>div{min-width:0}.energy-caretaker small,.energy-help-readings span,.energy-history-row,.energy-reference-item strong,.energy-live-more-row,.energy-asset,.energy-tariff-foot a{overflow-wrap:anywhere}\n\t\t.energy-page{width:min(1160px,100%);margin:0 auto;display:grid;gap:22px;padding:clamp(var(--space-5),3vw,40px) clamp(var(--space-4),4vw,56px) 64px}.energy-cockpit-top{display:grid;gap:var(--space-4)}\n\t\t.energy-card{min-width:0;display:grid;gap:var(--space-4);padding:clamp(var(--space-4),2vw,28px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-card-quiet{background:var(--panel-soft);box-shadow:none}.energy-card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.energy-card-head h2{font-size:26px;line-height:1.1}.energy-card-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}.energy-card-head>a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-health{display:grid}.energy-lead-side{min-width:0}.energy-live{min-width:0;display:grid;gap:var(--space-3);padding:clamp(var(--space-4),2vw,26px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-live-head{display:flex;justify-content:space-between;gap:var(--space-3)}.energy-live-title h2{font-size:26px}.energy-live-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:6px;color:var(--muted);font-size:11px}.energy-live-meta strong{color:var(--leaf);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.energy-live-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--leaf)}.is-stale .energy-live-dot{background:var(--soft)}.energy-live-updated{color:var(--soft)}.energy-live-state-offline{color:var(--soft);font-size:11px}\n\t\t.energy-flow-area{container-type:inline-size;position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px;align-items:start;padding:var(--space-3) var(--space-5) 36px}@media(min-width:1180px){.energy-flow-area.has-rail{grid-template-columns:minmax(0,1fr) 258px}}.energy-flow-area .energy-flow-fallback{padding:6px 0 var(--space-3)}.energy-flow-area.is-enhanced .energy-flow-fallback{display:none}.energy-help-readings{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-help-readings span{display:inline-flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px}.energy-help-readings strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-help-readings small{color:var(--soft);font-size:10px}\n\t\tsvg.energy-flow-ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.energy-flow-band{opacity:.2}.energy-flow-dots{opacity:.86;animation:energy-flow-dots 1.15s linear infinite}@keyframes energy-flow-dots{to{stroke-dashoffset:-10.1}}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:transform .16s ease}.energy-live-more[open]>summary .energy-ui-icon,.energy-tariff-disclosure[open]>summary .energy-ui-icon{transform:rotate(90deg)}@media(prefers-reduced-motion:reduce){.energy-flow-dots{animation:none}.energy-live-more>summary .energy-ui-icon,.energy-tariff-disclosure>summary .energy-ui-icon{transition:none}}\n\t\t.energy-flow-grid2{--energy-flow-node-width:258px;--energy-flow-node-height:80px;position:relative;display:grid;grid-template-columns:var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr);grid-template-rows:auto 64px auto 64px auto;align-items:center;justify-items:center}.energy-flow-slot-top{grid-column:3;grid-row:1;display:flex;gap:var(--space-3);justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-left{grid-column:1;grid-row:3;width:100%}.energy-flow-slot-bottom{grid-column:3;grid-row:5;display:flex;justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile{width:var(--energy-flow-node-width)}\n\t\t.energy-flow-tile{position:relative;z-index:1;width:var(--energy-flow-node-width);min-height:92px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:10px var(--space-3);display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:var(--space-2)}.energy-flow-tile .ico{width:34px;height:34px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-tile .ico .energy-ui-icon{width:19px;height:19px}.energy-flow-tile strong{font-family:var(--font-serif);font-weight:550;font-size:17px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-tile>div{min-width:0}.energy-flow-tile>div>span{display:block;margin-top:4px;overflow:hidden;font-size:11px;line-height:1.25;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.energy-flow-tile span.u,.energy-flow-big span.u{display:inline;margin:0;font-family:var(--font-sans);font-size:.55em;font-weight:750;letter-spacing:.03em;color:var(--soft);vertical-align:super}.energy-flow-quiet-row{display:flex!important;align-items:end;gap:8px!important;margin-top:7px!important;padding-top:6px;border-top:1px solid var(--line);overflow:visible!important}.energy-flow-quiet-metric{min-width:0;display:grid!important;gap:2px;margin:0!important}.energy-flow-quiet-metric b{display:block;overflow:hidden;color:var(--ink);font-family:var(--font-sans);font-size:10px;font-weight:750;line-height:1.05;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-quiet-metric small{display:block;overflow:hidden;color:var(--soft);font-size:7px;font-weight:800;letter-spacing:.06em;line-height:1.15;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}\n\t\t.energy-flow-tile.k-pv,.energy-flow-tile.k-grid,.energy-flow-tile.k-batt{background:var(--panel-soft)}.energy-flow-tile.editable{cursor:pointer;transition:border-color .15s ease,background-color .15s ease}.energy-flow-tile.editable .ico>.energy-ui-icon{grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-tile.editable .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-tile.editable:hover,.energy-flow-tile.editable:focus-visible{background:var(--panel-soft)}.energy-flow-tile.editable:hover .energy-flow-icon-default,.energy-flow-tile.editable:focus-visible .energy-flow-icon-default{opacity:0}.energy-flow-tile.editable:hover .energy-flow-icon-edit,.energy-flow-tile.editable:focus-visible .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-hub2{grid-column:3;grid-row:3;width:var(--energy-flow-node-width);z-index:2}\n\t\t.energy-flow-rail{position:relative;z-index:1;align-self:start;display:grid;gap:var(--space-2);align-content:start}.energy-flow-rail>.microlabel{position:absolute;top:-22px;left:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}\n\t\t.energy-flow-big{width:min(258px,100%);max-width:100%;min-height:92px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:9px 8px 9px 10px;display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:start;gap:8px;transition:background-color .15s ease}.energy-flow-main{min-width:0;width:100%;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:start;gap:9px;border:0;padding:0;color:inherit;background:transparent;text-align:left;font:inherit}button.energy-flow-main{cursor:pointer}.energy-flow-big .ico{position:relative;width:32px;height:32px;margin-top:2px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-big .ico .energy-ui-icon{width:18px;height:18px;grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-big .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-copy{min-width:0;display:grid;gap:4px}.energy-flow-big b{display:block;overflow:hidden;font-size:12px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles{display:grid;min-width:0;min-height:14px}.energy-flow-subtitles>span{grid-area:1/1;display:block;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap;transition:opacity .15s ease}.energy-flow-subtitles .energy-flow-edit-copy{color:var(--gold-ink);font-weight:750;opacity:0}.energy-flow-primary{display:flex;align-items:baseline;gap:5px;min-width:0}.energy-flow-primary>strong{font-family:var(--font-serif);font-size:18px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}.energy-flow-primary-label{overflow:hidden;color:var(--soft);font-size:7px;font-weight:800;letter-spacing:.06em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.energy-flow-consumer-metrics{display:flex;align-items:end;gap:10px;margin-top:2px;padding-top:6px;border-top:1px solid var(--line);overflow:hidden}.energy-flow-consumer-metrics .energy-flow-quiet-metric{flex:1 1 0}.energy-flow-consumer-metrics .energy-flow-quiet-metric b{font-size:9.5px}.energy-flow-big.editable:hover,.energy-flow-big.editable:focus-within{background:var(--panel-soft)}.energy-flow-big.editable:hover .energy-flow-icon-default,.energy-flow-big.editable:focus-within .energy-flow-icon-default,.energy-flow-big.editable:hover .energy-flow-state-copy,.energy-flow-big.editable:focus-within .energy-flow-state-copy{opacity:0}.energy-flow-big.editable:hover .energy-flow-icon-edit,.energy-flow-big.editable:focus-within .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-big.editable:hover .energy-flow-edit-copy,.energy-flow-big.editable:focus-within .energy-flow-edit-copy{opacity:1}.energy-flow-big.active{background:var(--panel-soft)}.energy-flow-big.active .energy-flow-primary>strong{color:var(--energy-node-color,var(--leaf))}.energy-flow-big .rcol{display:grid;justify-items:center;gap:7px;align-self:start;padding-top:2px}.energy-flow-big .prio{width:16px;height:16px;background:var(--panel-soft);border-radius:var(--radius-pill);border:1px solid var(--gold-ink);color:var(--gold-ink);font-size:10px;font-weight:800;line-height:1;display:grid;place-items:center;font-variant-numeric:tabular-nums}.energy-flow-big .drag{color:var(--soft);cursor:grab}.energy-flow-big button.drag{border:0;background:none;padding:5px;margin:0 -3px -3px;display:grid;place-items:center}.energy-flow-big .drag .energy-ui-icon{width:10px;height:16px}.energy-flow-big .drag-static{cursor:default;opacity:.55}.energy-flow-big.dragging{opacity:.55}.energy-flow-big.ghost{min-height:80px;border:1.5px dashed var(--line);background:transparent;color:var(--muted);grid-template-columns:minmax(0,1fr);cursor:pointer}.energy-flow-big.ghost .energy-flow-main{cursor:pointer}.energy-flow-big.ghost .plus{width:21px;height:21px;border-radius:var(--radius-pill);border:1.5px dashed var(--soft);display:grid;place-items:center;color:var(--gold-ink);margin:0 auto}.energy-flow-big.ghost .plus .energy-ui-icon{width:11px;height:11px}.energy-flow-big.ghost b{font-size:12px;font-weight:700;color:var(--muted)}\n\t\t.energy-flow-big.has-data-age{min-height:112px}.energy-flow-big.data-stale .energy-flow-state-copy,.energy-flow-big.data-stale .energy-flow-primary>strong,.energy-flow-big.data-unavailable .energy-flow-state-copy,.energy-flow-big.data-unknown .energy-flow-state-copy{color:var(--soft)}.energy-flow-data-meta{min-width:0;display:flex;align-items:center;gap:5px;overflow:hidden;color:var(--soft);font-size:9.5px;line-height:1.25;white-space:nowrap}.energy-flow-data-meta>span:last-child{overflow:hidden;text-overflow:ellipsis}.energy-flow-data-label{flex:0 0 auto;border:1px solid #c9b77d;border-radius:var(--radius-pill);padding:1px 5px;color:#755e1d;background:#f6f0df;font-size:8.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.energy-flow-big.data-sleep .energy-flow-state-copy{color:var(--muted);font-style:italic}\n\t\t.energy-info-disclosure summary{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer;list-style:none}.energy-info-disclosure summary::-webkit-details-marker{display:none}.energy-info-mark{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.energy-info-mark .energy-ui-icon{width:11px;height:11px}.energy-flow-hint{position:absolute;left:26px;bottom:10px}.energy-flow-hint[open]>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-md);padding:var(--space-4) var(--space-5);max-width:460px;position:relative;z-index:3;color:var(--muted);font-size:12px;line-height:1.45}.energy-flow-hint[open]>div>strong{color:var(--ink);font-size:14px}.energy-flow-hint[open]>div>a{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:var(--gold-ink);font-weight:800}\n\t\t.energy-live-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.energy-live-more{min-width:0}.energy-live-more>summary{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;list-style:none;color:var(--muted);font-size:11px}.energy-live-more>summary::-webkit-details-marker{display:none}.energy-live-more strong{display:block;color:var(--ink);font-size:12px}.energy-live-more small{display:block;color:var(--soft);font-size:10px}.energy-live-more .energy-ui-icon{width:14px;height:14px}.energy-live-more-list{display:grid;gap:2px;margin-top:var(--space-2)}.energy-live-more-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.energy-live-more-row strong{color:var(--ink);font-variant-numeric:tabular-nums}\n\t\t.energy-recommendation-trigger{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.energy-recommendation-trigger .energy-ui-icon{width:16px;height:16px}.energy-live-empty{display:grid;gap:5px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:12px}.energy-live-empty strong{color:var(--ink);font-family:var(--font-serif);font-size:17px}.energy-live-empty a{color:var(--gold-ink);font-weight:800}\n\t\t.dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog>form,.dialog{overflow:auto}.dialog-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-5) var(--space-3);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:27px}.dialog-head p{margin-top:4px;color:var(--muted);font-size:12px}.kicker{color:var(--gold-ink);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.dialog-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:17px}.dialog-close .energy-ui-icon{width:14px;height:14px}.dialog-body{min-width:0;min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto;overscroll-behavior:contain}.dialog-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);padding:var(--space-3) var(--space-5) var(--space-5);border-top:1px solid var(--line)}.dialog-optional>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.dialog-optional>summary::-webkit-details-marker{display:none}\n\t\t.energy-nextstep{display:grid;gap:var(--space-4)}.energy-recommendation-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start}.energy-nextstep-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.energy-nextstep-icon .energy-ui-icon{width:24px;height:24px}.energy-nextstep-copy{min-width:0;display:grid;gap:var(--space-2)}.energy-nextstep-copy h3{font-size:21px;line-height:1.2}.energy-next-progress-row{display:grid;gap:5px}.energy-next-progress{height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.energy-next-progress>span{display:block;height:100%;background:var(--gold)}.energy-next-progress-row small{color:var(--muted);font-size:11px}.energy-next-status{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-status .energy-ui-icon{width:13px;height:13px;color:var(--leaf)}.energy-next-why>summary{min-height:44px;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-next-why>summary::-webkit-details-marker{display:none}.energy-next-why p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-next-meta{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--soft);font-size:11px}\n\t\t.energy-recommendation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.energy-observation-running{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-menu{display:grid;gap:var(--space-3);margin-top:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-measure-form{display:grid;gap:var(--space-2)}.energy-measure-form h3{font-size:17px}.energy-measure-form p{color:var(--muted);font-size:12px;line-height:1.5}.energy-measure-form label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.energy-measure-form .button{justify-self:start;margin-top:var(--space-2)}.energy-dismiss-form .button{justify-self:start}\n\t\t.energy-recommendation-scenarios{display:grid;gap:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--line)}.energy-recommendation-scenarios h3{font-size:19px}.energy-recommendation-scenarios header p{margin-top:4px;color:var(--muted);font-size:12px}.energy-scenario{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-scenario-copy strong{display:block;font-family:var(--font-serif);font-size:16px}.energy-scenario-copy p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.energy-scenario-assumptions{color:var(--soft)}.energy-scenario-result{display:grid;justify-items:end;gap:3px;text-align:right}.energy-scenario-result span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-scenario-result strong{font-family:var(--font-serif);font-size:19px;font-variant-numeric:tabular-nums}.energy-scenario-billed{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}.energy-scenario-floor{display:flex;gap:var(--space-2);color:var(--muted);font-size:11px;line-height:1.45}.energy-scenario-caveat{color:var(--soft);font-size:11px;line-height:1.5}\n\t\t.energy-consumer-dialog{width:min(760px,calc(100vw - 32px))}.energy-consumer-dialog-heading h2{font-size:24px}.energy-consumer-primary,.energy-consumer-display-fields,.energy-consumer-recommendation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)}.energy-consumer-field{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-consumer-field small{font-size:10px;font-weight:500;line-height:1.35}.energy-consumer-field input,.energy-consumer-field select{min-height:42px;width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-consumer-color input{padding:4px;min-height:42px}\n\t\t.energy-icon-picker,.energy-consumer-measurements{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-icon-picker-head,.energy-consumer-measurements-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}.energy-icon-picker-head small,.energy-consumer-measurements-head small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-icon-search{min-height:40px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted)}.energy-icon-search .energy-ui-icon{width:14px;height:14px}.energy-icon-search input{min-height:38px;border:0;background:transparent;color:var(--ink)}.energy-icon-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--space-2)}.energy-icon-choice{min-height:64px;display:grid;place-items:center;gap:4px;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:10px;text-align:center;cursor:pointer}.energy-icon-choice .energy-ui-icon{width:20px;height:20px}.energy-icon-choice input{position:absolute;opacity:0;width:1px;height:1px}.energy-icon-choice:has(input:checked){border-color:var(--gold);background:var(--panel-soft);color:var(--ink);font-weight:800}.energy-icon-result-note{color:var(--muted);font-size:11px}.energy-consumer-measurement-fields{display:grid;gap:var(--space-2)}.energy-consumer-measurement-status{color:var(--muted);font-size:11px}.energy-consumer-recommendations>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-consumer-recommendations>summary::-webkit-details-marker{display:none}.energy-consumer-recommendations>div{margin-top:var(--space-3)}.energy-consumer-delete-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-right:auto;color:var(--muted);font-size:11px}.energy-consumer-delete{margin-right:auto}\n\t\t.energy-chart{scroll-margin-top:96px}.energy-chart-head{display:flex;justify-content:space-between;gap:var(--space-4);align-items:end}.energy-chart-head h2{font-size:26px}.energy-chart-head p,.energy-chart-head small{color:var(--muted);font-size:12px}.energy-chart-head p{margin-top:4px}.energy-chart-head small{text-align:right}.energy-chart-head-actions{display:grid;gap:var(--space-2);justify-items:end}.energy-chart-toolbar,.energy-chart-size-actions,.energy-chart-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}.energy-chart-range{display:inline-flex;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-chart-range a{min-height:44px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);color:var(--muted);font-size:11px;font-weight:800}.energy-chart-range a+a{box-shadow:inset 1px 0 0 var(--line)}.energy-chart-range a[aria-current=\"page\"]{background:var(--nav);color:var(--panel)}.energy-chart-range a:hover:not([aria-current=\"page\"]){background:var(--panel-soft);color:var(--ink)}.energy-chart-size-button{flex:0 0 auto;gap:7px}.energy-chart-size-button svg{width:16px;height:16px}\n\t\t.energy-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.28fr);gap:var(--space-6);align-items:stretch}.energy-chart-plot{min-width:0;display:grid;gap:var(--space-2)}.energy-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-chart-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.energy-chart-legend strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-chart-legend i{width:24px;height:3px;border-radius:3px;background:var(--nav)}.energy-chart-legend .load i{background:var(--ink)}.energy-chart-legend .pv i{background:var(--leaf)}.energy-chart-legend .grid i{background:var(--gold)}.energy-chart-legend .battery i{background:var(--soft)}.energy-chart-legend .threshold i{height:0;border-top:2px dashed var(--muted);background:transparent}.energy-chart-legend .threshold small{font-size:10px}\n\t\t.energy-chart-svg{width:100%;height:auto;min-height:220px;display:block;overflow:visible}.energy-chart-svg.mobile{display:none}.energy-chart-grid{stroke:var(--line);stroke-width:1}.energy-chart-grid.zero{stroke:var(--soft);stroke-width:1.35}.energy-chart-axis-label{fill:var(--muted);font-family:var(--font-sans);font-size:11px}.energy-chart-line{fill:none;stroke:var(--nav);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.energy-chart-line.load{stroke:var(--ink)}.energy-chart-line.pv{stroke:var(--leaf)}.energy-chart-line.grid{stroke:var(--gold)}.energy-chart-line.battery{stroke:var(--soft);stroke-width:2.1}.energy-chart-area{stroke:none;fill:none}.energy-chart-area.load{fill:var(--line);opacity:.55}.energy-chart-threshold{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}.energy-chart-threshold-label{fill:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:750}\n\t\t.energy-chart-interactive{position:relative;min-width:0;border-radius:var(--radius-xs);outline:none}.energy-chart-hit{fill:transparent;cursor:crosshair;pointer-events:all}.energy-chart-guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker{fill:var(--panel);stroke:var(--nav);stroke-width:2.5;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker.load{stroke:var(--ink)}.energy-chart-marker.pv{stroke:var(--leaf)}.energy-chart-marker.grid{stroke:var(--gold)}.energy-chart-marker.battery{stroke:var(--soft)}.energy-chart-marker[hidden],.energy-chart-guide[hidden]{display:none}\n\t\t.energy-chart-tooltip{position:absolute;z-index:5;top:12px;width:210px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px var(--space-3);color:var(--ink);background:var(--panel);box-shadow:var(--shadow-md);pointer-events:none}.energy-chart-tooltip>strong{display:block;margin-bottom:7px;font-family:var(--font-serif);font-size:18px}.energy-chart-tooltip [data-chart-tooltip-values]{display:grid;gap:5px}.energy-chart-tooltip-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;color:var(--muted);font-size:11px}.energy-chart-tooltip-row b{color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}.energy-chart-tooltip-row i{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--nav)}.energy-chart-tooltip-row i.load{background:var(--ink)}.energy-chart-tooltip-row i.pv{background:var(--leaf)}.energy-chart-tooltip-row i.grid{background:var(--gold)}.energy-chart-tooltip-row i.battery{background:var(--soft)}\n\t\t.energy-chart-note{display:grid;align-content:center;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-chart-note span{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-chart-note strong{font-family:var(--font-serif);font-size:21px;line-height:1.25}.energy-chart-note p{color:var(--muted);font-size:13px;line-height:1.5}.energy-chart-hint{color:var(--muted);font-size:11px;line-height:1.5}.energy-chart-empty{display:grid;gap:5px;border:1px dashed var(--line);border-radius:var(--radius-sm);padding:var(--space-5)}.energy-chart-empty strong{font-family:var(--font-serif);font-size:17px}.energy-chart-empty p{color:var(--muted);font-size:13px}\n\t\t.energy-chart-dialog{width:min(1320px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);border:0;border-radius:var(--radius-md);padding:0;overflow:hidden;color:var(--ink);background:transparent;box-shadow:var(--shadow-dialog)}.energy-chart-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.energy-chart-dialog-shell{max-height:calc(100dvh - 48px);display:grid;gap:var(--space-4);overflow:auto;overscroll-behavior:contain;padding:clamp(var(--space-6),3vw,40px);background:var(--paper)}.energy-chart-dialog-shell>header{display:flex;justify-content:space-between;gap:var(--space-6);align-items:start}.energy-chart-dialog-shell>header h2{margin-top:5px;font-size:clamp(28px,3vw,42px)}.energy-chart-dialog-shell>header p{margin-top:5px;color:var(--muted);font-size:14px}.energy-chart-dialog-actions .button{gap:7px}.energy-chart-dialog-actions svg{width:16px;height:16px}.energy-chart-dialog-plot{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-5) 4px;background:var(--panel)}.energy-chart-dialog .energy-chart-svg{min-height:min(54vh,520px)}.energy-chart-dialog .energy-chart-tooltip{top:26px}.energy-chart-dialog-shell:fullscreen,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-shell{width:100vw;height:100dvh;max-height:none;grid-template-rows:auto auto minmax(0,1fr) auto;border-radius:0;padding:clamp(var(--space-5),2.5vw,42px);background:var(--paper)}.energy-chart-dialog.is-fullscreen-fallback{position:fixed;inset:0;width:100vw;height:100dvh;max-height:none;margin:0;border-radius:0}.energy-chart-dialog-shell:fullscreen .energy-chart-dialog-plot,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-plot{min-height:0;display:grid;align-items:center}.energy-chart-dialog-shell:fullscreen .energy-chart-svg.desktop,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-svg.desktop{min-height:min(66vh,680px)}\n\t\t.energy-tariff{scroll-margin-top:96px}.energy-tariff-heading-copy p{margin-top:4px;color:var(--muted);font-size:12px}.energy-tariff-title-row{display:flex;align-items:center;gap:var(--space-2)}.energy-metric-info>summary{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink);cursor:pointer;list-style:none}.energy-metric-info>summary::-webkit-details-marker{display:none}.energy-metric-info .energy-ui-icon{width:12px;height:12px}.energy-metric-info{position:relative}.energy-metric-info>div{position:absolute;z-index:30;right:0;top:calc(100% + 7px);width:min(280px,calc(100vw - 42px));display:grid;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5;max-width:520px}.energy-metric-info>div strong{color:var(--ink)}.energy-metric-info>div small{color:var(--soft);font-size:11px}\n\t\t.energy-billed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4)}.energy-billed>div{display:grid;gap:6px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-billed strong{font-family:var(--font-serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}.energy-billed small{color:var(--muted);font-size:11px}.energy-metric-label{display:flex;align-items:center;gap:6px;color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-meter{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--line)}.energy-tariff-meter::-webkit-progress-bar{background:var(--line);border-radius:var(--radius-pill)}.energy-tariff-meter::-webkit-progress-value{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter::-moz-progress-bar{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter.billed::-webkit-progress-value{background:var(--nav)}.energy-tariff-meter.billed::-moz-progress-bar{background:var(--nav)}\n\t\t.energy-tariff-cost{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)}.energy-tariff-cost-figure{display:grid;gap:5px}.energy-tariff-cost-figure p{display:flex;align-items:baseline;gap:5px}.energy-tariff-cost-figure strong{font-family:var(--font-serif);font-size:27px;font-variant-numeric:tabular-nums}.energy-tariff-cost-figure small{color:var(--muted);font-size:11px}.energy-tariff-basis{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-tariff-basis .energy-ui-icon{width:13px;height:13px}\n\t\t.energy-tariff-empty{display:grid;justify-items:start;gap:6px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm)}.energy-tariff-empty.waiting{background:var(--panel-soft);border-style:solid}.energy-tariff-empty strong{font-family:var(--font-serif);font-size:18px}.energy-tariff-empty p{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.energy-tariff-disclosure>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-disclosure>summary::-webkit-details-marker{display:none}.energy-tariff-disclosure .energy-ui-icon{width:14px;height:14px}.energy-tariff-disclosure[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.energy-tariff-disclosure>div{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)}.energy-tariff-method,.energy-tariff-detail-basis{color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-detail-basis strong{display:block;color:var(--ink)}.energy-tariff-cost-copy{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-cost-copy strong{color:var(--ink)}.energy-tariff-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)}.energy-tariff-tiers>div{display:grid;gap:3px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.energy-tariff-tiers span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-tiers strong{font-family:var(--font-serif);font-size:19px}.energy-tariff-tiers small{color:var(--muted);font-size:11px}.energy-tariff-notes{display:grid;gap:var(--space-2);margin:0;padding-left:var(--space-5);color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-tariff-settings>summary{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-settings>summary::-webkit-details-marker{display:none}.energy-tariff-settings>summary span{color:var(--soft);font-weight:600}.energy-tariff-forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-3)}.energy-target-form{display:grid;gap:6px;justify-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-target-form label{width:100%;display:grid;gap:5px}.energy-target-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-legend{color:var(--muted);font-size:11px;font-weight:800}\n\t\t.energy-tariff-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--soft);font-size:11px}.energy-tariff-foot a{color:var(--gold-ink);font-weight:800}.energy-history{display:grid;gap:var(--space-2)}.energy-history h4{font-size:15px}.energy-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-3);align-items:center;padding:var(--space-2) 0;border-top:1px solid var(--line);font-size:12px}.energy-history-row span{display:block;color:var(--muted);font-size:11px}.energy-history-row small{color:var(--soft);font-size:10px}\n\t\t.energy-pair{display:grid;gap:22px}.energy-quality{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-quality>span:first-child{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.energy-quality.warning>span:first-child,.energy-quality.danger>span:first-child{background:var(--gold)}.energy-quality strong{display:block}.energy-quality p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}.energy-quality small{color:var(--gold-ink);font-weight:750;font-size:11px}\n\t\t.energy-coverage{display:grid;gap:var(--space-2)}.energy-coverage-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:11px}.energy-coverage-list{display:grid;gap:2px}.energy-coverage-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-top:1px solid var(--line);font-size:12px}.energy-coverage-state{color:var(--muted);font-size:11px}.energy-coverage-state.good{color:var(--leaf)}\n\t\t.energy-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--space-3)}.energy-roadmap-step{display:grid;align-content:start;gap:5px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-roadmap-step.current{border-color:var(--gold);background:var(--panel)}.energy-roadmap-number{width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:11px;font-weight:800}.energy-roadmap-step.current .energy-roadmap-number{background:var(--gold)}.energy-roadmap-state{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-roadmap-step strong{font-family:var(--font-serif);font-size:16px}.energy-roadmap-step p{color:var(--muted);font-size:12px;line-height:1.45}.energy-roadmap-step a{margin-top:4px;color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-system-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-system-asset{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.energy-system-asset .energy-ui-icon{width:20px;height:20px;color:var(--gold-ink)}.energy-system-helper{color:var(--muted);font-size:12px}.energy-related-links{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-related-links a{min-height:32px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:11px;font-weight:800}.energy-business-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-business-note>span{width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:12px}.energy-business-note strong{color:var(--ink)}\n\t\t.energy-admin{display:grid;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.energy-admin-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-3)}.energy-admin-head h2{font-size:23px}.energy-admin-head span{color:var(--muted);font-size:12px}\n\t\t.energy-collapsible{display:block;padding:0;overflow:hidden}.energy-collapsible>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),2vw,28px);cursor:pointer;list-style:none}.energy-collapsible>summary::-webkit-details-marker{display:none}.energy-collapsible>summary:hover{background:var(--panel)}.energy-collapsible-body{display:grid;gap:var(--space-4);padding:0 clamp(var(--space-4),2vw,28px) clamp(var(--space-4),2vw,28px);border-top:1px solid var(--line);padding-top:var(--space-4)}\n\t\t.energy-maintenance-list,.energy-measure-list{display:grid;gap:var(--space-2)}.energy-maintenance-row,.energy-measure-row{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-maintenance-summary,.energy-measure-summary{min-height:52px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.energy-maintenance-summary::-webkit-details-marker,.energy-measure-summary::-webkit-details-marker{display:none}.energy-maintenance-summary strong,.energy-measure-summary strong{display:block;font-size:13px}.energy-maintenance-summary small,.energy-measure-summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-status-warning{color:var(--gold-ink);font-size:11px;font-weight:800}.energy-status-danger{color:var(--ink);font-size:11px;font-weight:800}.energy-maintenance-summary>span:last-child,.energy-measure-summary>span:last-child{color:var(--muted);font-size:11px;font-weight:800}.energy-maintenance-body,.energy-measure-body{display:grid;gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}\n\t\t.energy-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-inline-form label.wide{grid-column:1/-1}.energy-inline-form input,.energy-inline-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-inline-form .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-compact-create>summary{min-height:40px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-compact-create>summary::-webkit-details-marker{display:none}.energy-compact-create>form{margin-top:var(--space-3)}\n\t\t.energy-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)}.energy-reference-item{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-reference-item span{color:var(--muted);font-size:11px}.energy-reference-item strong{font-family:var(--font-serif);font-size:23px;font-variant-numeric:tabular-nums}.energy-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-asset{padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.energy-import-form{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-import-form label{display:grid;gap:5px}.energy-import-form input[type=file]{min-height:42px;padding:var(--space-2);border:1px dashed var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:12px}.energy-import-form small{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-caretaker-list{display:grid;gap:var(--space-2)}.energy-caretaker{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:12px}.energy-caretaker small{display:block;color:var(--muted);font-size:11px}.energy-caretaker label{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-caretaker a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-comparison small{display:block;color:var(--muted);font-size:11px}.energy-comparison strong{font-family:var(--font-serif);font-size:21px;font-variant-numeric:tabular-nums}.energy-comparison>span{color:var(--soft);font-size:11px}.energy-marketplace-gate{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-marketplace-gate strong{color:var(--ink)}\n\t\t@media(max-width:1050px){.energy-chart-layout{grid-template-columns:1fr;gap:var(--space-4)}.energy-scenario{grid-template-columns:1fr}.energy-scenario-result{justify-items:start;text-align:left}}\n\t\t@media(max-width:760px){body{padding-bottom:0}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{padding-inline:var(--space-4)}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}.energy-peak-chip{grid-column:1/-1;grid-row:2;margin-left:0;width:100%;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-height:44px}.energy-peak-chip>*:nth-child(n+3){display:none}.energy-chart{scroll-margin-top:168px}.energy-chart-head{align-items:start;flex-direction:column;gap:4px}.energy-chart-head small{text-align:left}.energy-chart-head-actions{width:100%;justify-items:stretch}.energy-chart-toolbar{width:100%;justify-content:space-between}.energy-chart-range{flex:1 1 auto}.energy-chart-range a{flex:1 1 50%;justify-content:center}.energy-chart-svg.desktop{display:none}.energy-chart-svg.mobile{min-height:0;display:block}.energy-chart-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:var(--radius-sm)}.energy-chart-dialog-shell{max-height:calc(100dvh - 20px);gap:var(--space-3);padding:var(--space-4)}.energy-chart-dialog-shell>header{align-items:start;flex-direction:column}.energy-chart-dialog-shell>header h2{font-size:27px}.energy-chart-dialog-plot{padding:var(--space-2) 6px 0}.energy-chart-dialog .energy-chart-svg.mobile{min-height:0}.energy-chart-tooltip{top:8px;width:190px}\n\t\t\t.energy-flow-rail{margin-top:34px}.energy-flow-hint{position:static;margin-top:var(--space-3)}.energy-flow-area{padding:28px var(--space-3) 30px}.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}.energy-flow-rail{justify-items:center}.energy-flow-rail>.microlabel{left:max(2px,calc((100% - 258px) / 2))}\n\t\t\t.energy-quality,.energy-comparison,.energy-caretaker,.energy-history-row{grid-template-columns:1fr}.energy-caretaker{justify-items:start}.energy-inline-form{grid-template-columns:1fr}.energy-billed,.energy-tariff-cost,.energy-tariff-forms{grid-template-columns:1fr}.energy-mode-popover{position:absolute;right:0;left:auto;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - var(--context-bar-h) - 58px - 24px);overflow:auto;box-shadow:var(--shadow-dialog)}}\n\t\t@media(max-width:900px){.energy-metric-info>summary{width:44px;height:44px}.button.small,.energy-chart-size-button{min-height:44px}.energy-mode-strip{position:sticky;top:var(--context-bar-h);z-index:20;background:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);min-height:58px;padding:6px 12px;flex-wrap:nowrap}.energy-mode-state{min-height:44px;padding:6px 10px 6px 8px;min-width:0;display:flex;align-items:center;gap:8px;grid-column:1;grid-row:1}.energy-mode-control{justify-self:end;grid-column:2;grid-row:1}.energy-mode-icon{width:30px;height:30px;flex-basis:30px}.energy-mode-copy{min-height:0;padding:0;min-width:0}.energy-mode-copy strong{font-size:12px}.energy-mode-action{width:auto;max-width:126px;min-height:44px;padding:6px 11px;font-size:11px}.energy-card{position:relative}.energy-metric-info{position:static}.energy-metric-info>div{left:var(--space-4);right:var(--space-4);width:auto;max-height:60vh;overflow:auto}}\n\t@container energy-strip (max-width:920px){.energy-peak-chip>*:nth-child(n+3){display:none}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}}@container (max-width:560px){.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}}</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 566, "<style>\n\t\ta:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[data-energy-chart-interactive]:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,h4,p{margin:0}h1,h2,h3,h4{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.muted{color:var(--muted);font-size:12px;line-height:1.5}.eyebrow{color:var(--gold-ink);font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.energy-value{white-space:nowrap}.energy-value>.u{display:inline;color:var(--soft);font-family:var(--font-sans);font-size:.58em;font-weight:750;letter-spacing:.03em;vertical-align:super}\n\t\t.energy-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start}\n\t\t.button.primary{background:var(--gold);color:var(--panel)}.button.quiet{border-color:var(--line);color:var(--muted)}.button.small{min-height:36px;padding:6px var(--space-3);font-size:11px}.button:hover{background:var(--panel-soft)}.button.primary:hover{background:var(--gold-ink)}\n\t\t.pill{display:inline-flex;align-items:center;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.05em}.energy-tariff>.energy-card-head .pill{border:0;padding:6px 11px;color:#816528;background:#f2ebd9;font-size:11px;letter-spacing:normal}\n\t\t.message{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.message.success{border-color:var(--leaf);background:var(--panel);color:var(--ink)}.message.error{border-color:var(--gold);background:var(--panel);color:var(--ink)}\n\t\t.energy-ui-icon{width:1em;height:1em;display:block;flex:0 0 auto;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-image:var(--energy-icon);mask-image:var(--energy-icon)}\n\t\t.energy-mode-strip{container-type:inline-size;container-name:energy-strip;position:sticky;top:var(--context-bar-h);z-index:20;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-4);padding-block:var(--space-2);padding-inline:max(clamp(var(--space-4),4vw,56px),calc(50% - 580px));background:var(--panel);border-bottom:1px solid var(--line)}.energy-mode-strip.active{background:var(--panel-soft);border-bottom-color:var(--gold)}.energy-mode-state{display:flex;align-items:center;gap:var(--space-3)}.energy-mode-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel)}.energy-mode-strip.active .energy-mode-icon{background:var(--gold)}.energy-mode-icon .energy-ui-icon{width:16px;height:16px}.energy-mode-copy{display:flex;align-items:baseline;gap:var(--space-2)}.energy-mode-copy strong{font-family:var(--font-serif);font-size:18px;line-height:1.15}.energy-mode-copy span{color:var(--muted);font-size:11px}\n\t\t.energy-peak-chip{min-height:36px;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:var(--space-1) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.energy-peak-chip b{color:var(--ink);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.energy-peak-chip-label{color:var(--gold-ink);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:9px}.energy-peak-chip .sep{color:var(--soft)}.energy-peak-chip:hover{background:var(--panel)}\n\t\t.energy-mode-action{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800;list-style:none;cursor:pointer}.energy-mode-action::-webkit-details-marker{display:none}.energy-mode-action .energy-ui-icon{width:14px;height:14px}.energy-mode-action-compact{display:none}.energy-mode-control{position:relative}.energy-mode-popover{position:absolute;z-index:60;right:0;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));display:grid;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.energy-mode-popover p{color:var(--muted);font-size:12px;line-height:1.5}.energy-mode-popover label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.45}.energy-mode-popover input[type=text]{min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.energy-mode-capability{margin-left:auto;color:var(--muted);font-size:11px}\n\t\t.energy-main>*,.energy-page,.energy-card,.energy-collapsible-body,.energy-maintenance-body,.energy-measure-body,.energy-lead-side,.energy-live,.energy-billed>div,.energy-scenario-copy,.energy-caretaker>div{min-width:0}.energy-caretaker small,.energy-help-readings span,.energy-history-row,.energy-reference-item strong,.energy-live-more-row,.energy-asset,.energy-tariff-foot a{overflow-wrap:anywhere}\n\t\t.energy-page{width:min(1160px,100%);margin:0 auto;display:grid;gap:22px;padding:clamp(var(--space-5),3vw,40px) clamp(var(--space-4),4vw,56px) 64px}.energy-cockpit-top{display:grid;gap:var(--space-4)}\n\t\t.energy-card{min-width:0;display:grid;gap:var(--space-4);padding:clamp(var(--space-4),2vw,28px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-card-quiet{background:var(--panel-soft);box-shadow:none}.energy-card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3)}.energy-card-head h2{font-size:26px;line-height:1.1}.energy-card-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}.energy-card-head>a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-health{display:grid}.energy-lead-side{min-width:0}.energy-live{min-width:0;display:grid;gap:var(--space-3);padding:clamp(var(--space-4),2vw,26px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.energy-live-head{display:flex;justify-content:space-between;gap:var(--space-3)}.energy-live-title h2{font-size:26px}.energy-live-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-top:6px;color:var(--muted);font-size:11px}.energy-live-meta strong{color:var(--leaf);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.energy-live-dot{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--leaf)}.is-stale .energy-live-dot{background:var(--soft)}.energy-live-updated{color:var(--soft)}.energy-live-state-offline{color:var(--soft);font-size:11px}\n\t\t.energy-flow-area{container-type:inline-size;position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px;align-items:start;padding:var(--space-3) var(--space-5) 36px}@media(min-width:1180px){.energy-flow-area.has-rail{grid-template-columns:minmax(0,1fr) 258px}}.energy-flow-area .energy-flow-fallback{padding:6px 0 var(--space-3)}.energy-flow-area.is-enhanced .energy-flow-fallback{display:none}.energy-help-readings{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-help-readings span{display:inline-flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px}.energy-help-readings strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-help-readings small{color:var(--soft);font-size:10px}\n\t\tsvg.energy-flow-ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.energy-flow-band{opacity:.2}.energy-flow-dots{opacity:.86;animation:energy-flow-dots 1.15s linear infinite}@keyframes energy-flow-dots{to{stroke-dashoffset:-10.1}}@media(prefers-reduced-motion:reduce){.energy-flow-dots{animation:none}}\n\t\t.energy-flow-grid2{--energy-flow-node-width:258px;--energy-flow-node-height:80px;position:relative;display:grid;grid-template-columns:var(--energy-flow-node-width) minmax(26px,1fr) var(--energy-flow-node-width) minmax(26px,1fr);grid-template-rows:auto 64px auto 64px auto;align-items:center;justify-items:center}.energy-flow-slot-top{grid-column:3;grid-row:1;display:flex;gap:var(--space-3);justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-left{grid-column:1;grid-row:3;width:100%}.energy-flow-slot-bottom{grid-column:3;grid-row:5;display:flex;justify-content:center;width:max-content;justify-self:center}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile{width:var(--energy-flow-node-width)}\n\t\t.energy-flow-tile{position:relative;z-index:1;width:var(--energy-flow-node-width);min-height:92px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:10px var(--space-3);display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:var(--space-2)}.energy-flow-tile .ico{width:34px;height:34px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-tile .ico .energy-ui-icon{width:19px;height:19px}.energy-flow-tile strong{font-family:var(--font-serif);font-weight:550;font-size:17px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-tile>div{min-width:0}.energy-flow-tile>div>span{display:block;margin-top:4px;overflow:hidden;font-size:11px;line-height:1.25;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.energy-flow-tile span.u,.energy-flow-big span.u{display:inline;margin:0;font-family:var(--font-sans);font-size:.55em;font-weight:750;letter-spacing:.03em;color:var(--soft);vertical-align:super}.energy-flow-quiet-row{display:flex!important;align-items:end;gap:8px!important;margin-top:7px!important;padding-top:6px;border-top:1px solid var(--line);overflow:visible!important}.energy-flow-quiet-metric{min-width:0;display:grid!important;gap:2px;margin:0!important}.energy-flow-quiet-metric b{display:block;overflow:hidden;color:var(--ink);font-family:var(--font-sans);font-size:10px;font-weight:750;line-height:1.05;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}.energy-flow-quiet-metric small{display:block;overflow:hidden;color:var(--soft);font-size:7px;font-weight:800;letter-spacing:.06em;line-height:1.15;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}\n\t\t.energy-flow-tile.k-pv,.energy-flow-tile.k-grid,.energy-flow-tile.k-batt{background:var(--panel-soft)}.energy-flow-tile.editable{cursor:pointer;transition:border-color .15s ease,background-color .15s ease}.energy-flow-tile.editable .ico>.energy-ui-icon{grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-tile.editable .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-tile.editable:hover,.energy-flow-tile.editable:focus-visible{background:var(--panel-soft)}.energy-flow-tile.editable:hover .energy-flow-icon-default,.energy-flow-tile.editable:focus-visible .energy-flow-icon-default{opacity:0}.energy-flow-tile.editable:hover .energy-flow-icon-edit,.energy-flow-tile.editable:focus-visible .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-hub2{grid-column:3;grid-row:3;width:var(--energy-flow-node-width);z-index:2}\n\t\t.energy-flow-rail{position:relative;z-index:1;align-self:start;display:grid;gap:var(--space-2);align-content:start}.energy-flow-rail>.microlabel{position:absolute;top:-22px;left:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}\n\t\t.energy-flow-big{width:min(258px,100%);max-width:100%;min-height:92px;border:2px solid var(--energy-node-color,var(--line));border-radius:var(--radius-lg);background:var(--panel);padding:9px 8px 9px 10px;display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:start;gap:8px;transition:background-color .15s ease}.energy-flow-main{min-width:0;width:100%;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:start;gap:9px;border:0;padding:0;color:inherit;background:transparent;text-align:left;font:inherit}button.energy-flow-main{cursor:pointer}.energy-flow-big .ico{position:relative;width:32px;height:32px;margin-top:2px;border-radius:var(--radius-pill);display:grid;place-items:center;color:var(--energy-node-color,var(--muted));background:var(--panel-soft)}.energy-flow-big .ico .energy-ui-icon{width:18px;height:18px;grid-area:1/1;transition:opacity .15s ease,transform .15s ease}.energy-flow-big .energy-flow-icon-edit{opacity:0;transform:scale(.86)}.energy-flow-copy{min-width:0;display:grid;gap:4px}.energy-flow-big b{display:block;overflow:hidden;font-size:12px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}.energy-flow-subtitles{display:grid;min-width:0;min-height:14px}.energy-flow-subtitles>span{grid-area:1/1;display:block;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap;transition:opacity .15s ease}.energy-flow-subtitles .energy-flow-edit-copy{color:var(--gold-ink);font-weight:750;opacity:0}.energy-flow-primary{display:flex;align-items:baseline;gap:5px;min-width:0}.energy-flow-primary>strong{font-family:var(--font-serif);font-size:18px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}.energy-flow-primary-label{overflow:hidden;color:var(--soft);font-size:7px;font-weight:800;letter-spacing:.06em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}.energy-flow-consumer-metrics{display:flex;align-items:end;gap:10px;margin-top:2px;padding-top:6px;border-top:1px solid var(--line);overflow:hidden}.energy-flow-consumer-metrics .energy-flow-quiet-metric{flex:1 1 0}.energy-flow-consumer-metrics .energy-flow-quiet-metric b{font-size:9.5px}.energy-flow-big.editable:hover,.energy-flow-big.editable:focus-within{background:var(--panel-soft)}.energy-flow-big.editable:hover .energy-flow-icon-default,.energy-flow-big.editable:focus-within .energy-flow-icon-default,.energy-flow-big.editable:hover .energy-flow-state-copy,.energy-flow-big.editable:focus-within .energy-flow-state-copy{opacity:0}.energy-flow-big.editable:hover .energy-flow-icon-edit,.energy-flow-big.editable:focus-within .energy-flow-icon-edit{opacity:1;transform:scale(1)}.energy-flow-big.editable:hover .energy-flow-edit-copy,.energy-flow-big.editable:focus-within .energy-flow-edit-copy{opacity:1}.energy-flow-big.active{background:var(--panel-soft)}.energy-flow-big.active .energy-flow-primary>strong{color:var(--energy-node-color,var(--leaf))}.energy-flow-big .rcol{display:grid;justify-items:center;gap:7px;align-self:start;padding-top:2px}.energy-flow-big .prio{width:16px;height:16px;background:var(--panel-soft);border-radius:var(--radius-pill);border:1px solid var(--gold-ink);color:var(--gold-ink);font-size:10px;font-weight:800;line-height:1;display:grid;place-items:center;font-variant-numeric:tabular-nums}.energy-flow-big .drag{color:var(--soft);cursor:grab}.energy-flow-big button.drag{border:0;background:none;padding:5px;margin:0 -3px -3px;display:grid;place-items:center}.energy-flow-big .drag .energy-ui-icon{width:10px;height:16px}.energy-flow-big .drag-static{cursor:default;opacity:.55}.energy-flow-big.dragging{opacity:.55}.energy-flow-big.ghost{min-height:80px;border:1.5px dashed var(--line);background:transparent;color:var(--muted);grid-template-columns:minmax(0,1fr);cursor:pointer}.energy-flow-big.ghost .energy-flow-main{cursor:pointer}.energy-flow-big.ghost .plus{width:21px;height:21px;border-radius:var(--radius-pill);border:1.5px dashed var(--soft);display:grid;place-items:center;color:var(--gold-ink);margin:0 auto}.energy-flow-big.ghost .plus .energy-ui-icon{width:11px;height:11px}.energy-flow-big.ghost b{font-size:12px;font-weight:700;color:var(--muted)}\n\t\t.energy-flow-big.has-data-age{min-height:112px}.energy-flow-big.data-stale .energy-flow-state-copy,.energy-flow-big.data-stale .energy-flow-primary>strong,.energy-flow-big.data-unavailable .energy-flow-state-copy,.energy-flow-big.data-unknown .energy-flow-state-copy{color:var(--soft)}.energy-flow-data-meta{min-width:0;display:flex;align-items:center;gap:5px;overflow:hidden;color:var(--soft);font-size:9.5px;line-height:1.25;white-space:nowrap}.energy-flow-data-meta>span:last-child{overflow:hidden;text-overflow:ellipsis}.energy-flow-data-label{flex:0 0 auto;border:1px solid #c9b77d;border-radius:var(--radius-pill);padding:1px 5px;color:#755e1d;background:#f6f0df;font-size:8.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.energy-flow-big.data-sleep .energy-flow-state-copy{color:var(--muted);font-style:italic}\n\t\t.energy-info-disclosure summary{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;cursor:pointer;list-style:none}.energy-info-disclosure summary::-webkit-details-marker{display:none}.energy-info-mark{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}.energy-info-mark .energy-ui-icon{width:11px;height:11px}.energy-flow-hint{position:absolute;left:26px;bottom:10px}.energy-flow-hint[open]>div{display:grid;gap:var(--space-2);margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-md);padding:var(--space-4) var(--space-5);max-width:460px;position:relative;z-index:3;color:var(--muted);font-size:12px;line-height:1.45}.energy-flow-hint[open]>div>strong{color:var(--ink);font-size:14px}.energy-flow-hint[open]>div>a{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:var(--gold-ink);font-weight:800}\n\t\t.energy-live-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line)}.energy-live-more{min-width:0}.energy-live-more>summary{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;list-style:none;color:var(--muted);font-size:11px}.energy-live-more>summary::-webkit-details-marker{display:none}.energy-live-more strong{display:block;color:var(--ink);font-size:12px}.energy-live-more small{display:block;color:var(--soft);font-size:10px}.energy-live-more .energy-ui-icon{width:14px;height:14px}.energy-live-more-list{display:grid;gap:2px;margin-top:var(--space-2)}.energy-live-more-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.energy-live-more-row strong{color:var(--ink);font-variant-numeric:tabular-nums}\n\t\t.energy-recommendation-trigger{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:var(--space-2) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:transparent;color:var(--gold-ink);font-size:12px;font-weight:800}.energy-recommendation-trigger .energy-ui-icon{width:16px;height:16px}.energy-live-empty{display:grid;gap:5px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:12px}.energy-live-empty strong{color:var(--ink);font-family:var(--font-serif);font-size:17px}.energy-live-empty a{color:var(--gold-ink);font-weight:800}\n\t\t.dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog>form,.dialog{overflow:auto}.dialog-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-5) var(--space-3);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:27px}.dialog-head p{margin-top:4px;color:var(--muted);font-size:12px}.kicker{color:var(--gold-ink);font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.dialog-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:17px}.dialog-close .energy-ui-icon{width:14px;height:14px}.dialog-body{min-width:0;min-height:0;display:grid;gap:var(--space-4);padding:var(--space-5);overflow:auto;overscroll-behavior:contain}.dialog-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2);padding:var(--space-3) var(--space-5) var(--space-5);border-top:1px solid var(--line)}.dialog-optional>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);cursor:pointer;font-size:11px;list-style:none;text-decoration:underline;text-underline-offset:3px}.dialog-optional>summary::-webkit-details-marker{display:none}\n\t\t.energy-nextstep{display:grid;gap:var(--space-4)}.energy-recommendation-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start}.energy-nextstep-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft);color:var(--gold-ink)}.energy-nextstep-icon .energy-ui-icon{width:24px;height:24px}.energy-nextstep-copy{min-width:0;display:grid;gap:var(--space-2)}.energy-nextstep-copy h3{font-size:21px;line-height:1.2}.energy-next-progress-row{display:grid;gap:5px}.energy-next-progress{height:6px;overflow:hidden;border-radius:var(--radius-pill);background:var(--line)}.energy-next-progress>span{display:block;height:100%;background:var(--gold)}.energy-next-progress-row small{color:var(--muted);font-size:11px}.energy-next-status{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-status .energy-ui-icon{width:13px;height:13px;color:var(--leaf)}.energy-next-why>summary{min-height:44px;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-next-why>summary::-webkit-details-marker{display:none}.energy-next-why p{margin-top:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-next-meta{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-3);margin-top:var(--space-2);color:var(--soft);font-size:11px}\n\t\t.energy-recommendation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.energy-observation-running{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-next-menu{display:grid;gap:var(--space-3);margin-top:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-measure-form{display:grid;gap:var(--space-2)}.energy-measure-form h3{font-size:17px}.energy-measure-form p{color:var(--muted);font-size:12px;line-height:1.5}.energy-measure-form label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-2);align-items:center;color:var(--muted);font-size:12px}.energy-measure-form .button{justify-self:start;margin-top:var(--space-2)}.energy-dismiss-form .button{justify-self:start}\n\t\t.energy-recommendation-scenarios{display:grid;gap:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--line)}.energy-recommendation-scenarios h3{font-size:19px}.energy-recommendation-scenarios header p{margin-top:4px;color:var(--muted);font-size:12px}.energy-scenario{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-scenario-copy strong{display:block;font-family:var(--font-serif);font-size:16px}.energy-scenario-copy p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.energy-scenario-assumptions{color:var(--soft)}.energy-scenario-result{display:grid;justify-items:end;gap:3px;text-align:right}.energy-scenario-result span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-scenario-result strong{font-family:var(--font-serif);font-size:19px;font-variant-numeric:tabular-nums}.energy-scenario-billed{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}.energy-scenario-floor{display:flex;gap:var(--space-2);color:var(--muted);font-size:11px;line-height:1.45}.energy-scenario-caveat{color:var(--soft);font-size:11px;line-height:1.5}\n\t\t.energy-consumer-dialog{width:min(760px,calc(100vw - 32px))}.energy-consumer-dialog-heading h2{font-size:24px}.energy-consumer-primary,.energy-consumer-display-fields,.energy-consumer-recommendation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)}.energy-consumer-field{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-consumer-field small{font-size:10px;font-weight:500;line-height:1.35}.energy-consumer-field input,.energy-consumer-field select{min-height:42px;width:100%;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-consumer-color input{padding:4px;min-height:42px}\n\t\t.energy-icon-picker,.energy-consumer-measurements{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-icon-picker-head,.energy-consumer-measurements-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}.energy-icon-picker-head small,.energy-consumer-measurements-head small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-icon-search{min-height:40px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted)}.energy-icon-search .energy-ui-icon{width:14px;height:14px}.energy-icon-search input{min-height:38px;border:0;background:transparent;color:var(--ink)}.energy-icon-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--space-2)}.energy-icon-choice{min-height:64px;display:grid;place-items:center;gap:4px;padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:10px;text-align:center;cursor:pointer}.energy-icon-choice .energy-ui-icon{width:20px;height:20px}.energy-icon-choice input{position:absolute;opacity:0;width:1px;height:1px}.energy-icon-choice:has(input:checked){border-color:var(--gold);background:var(--panel-soft);color:var(--ink);font-weight:800}.energy-icon-result-note{color:var(--muted);font-size:11px}.energy-consumer-measurement-fields{display:grid;gap:var(--space-2)}.energy-consumer-measurement-status{color:var(--muted);font-size:11px}.energy-consumer-recommendations>summary{color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-consumer-recommendations>summary::-webkit-details-marker{display:none}.energy-consumer-recommendations>div{margin-top:var(--space-3)}.energy-consumer-delete-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-right:auto;color:var(--muted);font-size:11px}.energy-consumer-delete{margin-right:auto}\n\t\t.energy-chart{scroll-margin-top:96px}.energy-chart-head{display:flex;justify-content:space-between;gap:var(--space-4);align-items:end}.energy-chart-head h2{font-size:26px}.energy-chart-head p,.energy-chart-head small{color:var(--muted);font-size:12px}.energy-chart-head p{margin-top:4px}.energy-chart-head small{text-align:right}.energy-chart-head-actions{display:grid;gap:var(--space-2);justify-items:end}.energy-chart-toolbar,.energy-chart-size-actions,.energy-chart-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}.energy-chart-range{display:inline-flex;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-chart-range a{min-height:44px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);color:var(--muted);font-size:11px;font-weight:800}.energy-chart-range a+a{box-shadow:inset 1px 0 0 var(--line)}.energy-chart-range a[aria-current=\"page\"]{background:var(--nav);color:var(--panel)}.energy-chart-range a:hover:not([aria-current=\"page\"]){background:var(--panel-soft);color:var(--ink)}.energy-chart-size-button{flex:0 0 auto;gap:7px}.energy-chart-size-button svg{width:16px;height:16px}\n\t\t.energy-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.28fr);gap:var(--space-6);align-items:stretch}.energy-chart-plot{min-width:0;display:grid;gap:var(--space-2)}.energy-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-chart-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.energy-chart-legend strong{color:var(--ink);font-variant-numeric:tabular-nums}.energy-chart-legend i{width:24px;height:3px;border-radius:3px;background:var(--nav)}.energy-chart-legend .load i{background:var(--ink)}.energy-chart-legend .pv i{background:var(--leaf)}.energy-chart-legend .grid i{background:var(--gold)}.energy-chart-legend .battery i{background:var(--soft)}.energy-chart-legend .threshold i{height:0;border-top:2px dashed var(--muted);background:transparent}.energy-chart-legend .threshold small{font-size:10px}\n\t\t.energy-chart-svg{width:100%;height:auto;min-height:220px;display:block;overflow:visible}.energy-chart-svg.mobile{display:none}.energy-chart-grid{stroke:var(--line);stroke-width:1}.energy-chart-grid.zero{stroke:var(--soft);stroke-width:1.35}.energy-chart-axis-label{fill:var(--muted);font-family:var(--font-sans);font-size:11px}.energy-chart-line{fill:none;stroke:var(--nav);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.energy-chart-line.load{stroke:var(--ink)}.energy-chart-line.pv{stroke:var(--leaf)}.energy-chart-line.grid{stroke:var(--gold)}.energy-chart-line.battery{stroke:var(--soft);stroke-width:2.1}.energy-chart-area{stroke:none;fill:none}.energy-chart-area.load{fill:var(--line);opacity:.55}.energy-chart-threshold{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}.energy-chart-threshold-label{fill:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:750}\n\t\t.energy-chart-interactive{position:relative;min-width:0;border-radius:var(--radius-xs);outline:none}.energy-chart-hit{fill:transparent;cursor:crosshair;pointer-events:all}.energy-chart-guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker{fill:var(--panel);stroke:var(--nav);stroke-width:2.5;pointer-events:none;vector-effect:non-scaling-stroke}.energy-chart-marker.load{stroke:var(--ink)}.energy-chart-marker.pv{stroke:var(--leaf)}.energy-chart-marker.grid{stroke:var(--gold)}.energy-chart-marker.battery{stroke:var(--soft)}.energy-chart-marker[hidden],.energy-chart-guide[hidden]{display:none}\n\t\t.energy-chart-tooltip{position:absolute;z-index:5;top:12px;width:210px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px var(--space-3);color:var(--ink);background:var(--panel);box-shadow:var(--shadow-md);pointer-events:none}.energy-chart-tooltip>strong{display:block;margin-bottom:7px;font-family:var(--font-serif);font-size:18px}.energy-chart-tooltip [data-chart-tooltip-values]{display:grid;gap:5px}.energy-chart-tooltip-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;color:var(--muted);font-size:11px}.energy-chart-tooltip-row b{color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}.energy-chart-tooltip-row i{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--nav)}.energy-chart-tooltip-row i.load{background:var(--ink)}.energy-chart-tooltip-row i.pv{background:var(--leaf)}.energy-chart-tooltip-row i.grid{background:var(--gold)}.energy-chart-tooltip-row i.battery{background:var(--soft)}\n\t\t.energy-chart-note{display:grid;align-content:center;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-chart-note span{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-chart-note strong{font-family:var(--font-serif);font-size:21px;line-height:1.25}.energy-chart-note p{color:var(--muted);font-size:13px;line-height:1.5}.energy-chart-hint{color:var(--muted);font-size:11px;line-height:1.5}.energy-chart-empty{display:grid;gap:5px;border:1px dashed var(--line);border-radius:var(--radius-sm);padding:var(--space-5)}.energy-chart-empty strong{font-family:var(--font-serif);font-size:17px}.energy-chart-empty p{color:var(--muted);font-size:13px}\n\t\t.energy-chart-dialog{width:min(1320px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);border:0;border-radius:var(--radius-md);padding:0;overflow:hidden;color:var(--ink);background:transparent;box-shadow:var(--shadow-dialog)}.energy-chart-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.energy-chart-dialog-shell{max-height:calc(100dvh - 48px);display:grid;gap:var(--space-4);overflow:auto;overscroll-behavior:contain;padding:clamp(var(--space-6),3vw,40px);background:var(--paper)}.energy-chart-dialog-shell>header{display:flex;justify-content:space-between;gap:var(--space-6);align-items:start}.energy-chart-dialog-shell>header h2{margin-top:5px;font-size:clamp(28px,3vw,42px)}.energy-chart-dialog-shell>header p{margin-top:5px;color:var(--muted);font-size:14px}.energy-chart-dialog-actions .button{gap:7px}.energy-chart-dialog-actions svg{width:16px;height:16px}.energy-chart-dialog-plot{border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-5) 4px;background:var(--panel)}.energy-chart-dialog .energy-chart-svg{min-height:min(54vh,520px)}.energy-chart-dialog .energy-chart-tooltip{top:26px}.energy-chart-dialog-shell:fullscreen,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-shell{width:100vw;height:100dvh;max-height:none;grid-template-rows:auto auto minmax(0,1fr) auto;border-radius:0;padding:clamp(var(--space-5),2.5vw,42px);background:var(--paper)}.energy-chart-dialog.is-fullscreen-fallback{position:fixed;inset:0;width:100vw;height:100dvh;max-height:none;margin:0;border-radius:0}.energy-chart-dialog-shell:fullscreen .energy-chart-dialog-plot,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-dialog-plot{min-height:0;display:grid;align-items:center}.energy-chart-dialog-shell:fullscreen .energy-chart-svg.desktop,.energy-chart-dialog.is-fullscreen-fallback .energy-chart-svg.desktop{min-height:min(66vh,680px)}\n\t\t.energy-tariff{scroll-margin-top:96px}.energy-tariff-heading-copy p{margin-top:4px;color:var(--muted);font-size:12px}.energy-tariff-title-row{display:flex;align-items:center;gap:var(--space-2)}.energy-metric-info>summary{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink);cursor:pointer;list-style:none}.energy-metric-info>summary::-webkit-details-marker{display:none}.energy-metric-info .energy-ui-icon{width:12px;height:12px}.energy-metric-info{position:relative}.energy-metric-info>div{position:absolute;z-index:30;right:0;top:calc(100% + 7px);width:min(280px,calc(100vw - 42px));display:grid;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5;max-width:520px}.energy-metric-info>div strong{color:var(--ink)}.energy-metric-info>div small{color:var(--soft);font-size:11px}\n\t\t.energy-billed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4)}.energy-billed>div{display:grid;gap:6px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-billed strong{font-family:var(--font-serif);font-size:31px;line-height:1;font-variant-numeric:tabular-nums}.energy-billed small{color:var(--muted);font-size:11px}.energy-metric-label{display:flex;align-items:center;gap:6px;color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-meter{width:100%;height:6px;appearance:none;border:0;border-radius:var(--radius-pill);background:var(--line)}.energy-tariff-meter::-webkit-progress-bar{background:var(--line);border-radius:var(--radius-pill)}.energy-tariff-meter::-webkit-progress-value{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter::-moz-progress-bar{background:var(--gold);border-radius:var(--radius-pill)}.energy-tariff-meter.billed::-webkit-progress-value{background:var(--nav)}.energy-tariff-meter.billed::-moz-progress-bar{background:var(--nav)}\n\t\t.energy-tariff-cost{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)}.energy-tariff-cost-figure{display:grid;gap:5px}.energy-tariff-cost-figure p{display:flex;align-items:baseline;gap:5px}.energy-tariff-cost-figure strong{font-family:var(--font-serif);font-size:27px;font-variant-numeric:tabular-nums}.energy-tariff-cost-figure small{color:var(--muted);font-size:11px}.energy-tariff-basis{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-tariff-basis .energy-ui-icon{width:13px;height:13px}\n\t\t.energy-tariff-empty{display:grid;justify-items:start;gap:6px;padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm)}.energy-tariff-empty.waiting{background:var(--panel-soft);border-style:solid}.energy-tariff-empty strong{font-family:var(--font-serif);font-size:18px}.energy-tariff-empty p{color:var(--muted);font-size:12px;line-height:1.5}\n\t\t.energy-tariff-disclosure>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-disclosure>summary::-webkit-details-marker{display:none}.energy-tariff-disclosure .energy-ui-icon{width:14px;height:14px}.energy-tariff-disclosure[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}.energy-tariff-disclosure>div{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)}.energy-tariff-method,.energy-tariff-detail-basis{color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-detail-basis strong{display:block;color:var(--ink)}.energy-tariff-cost-copy{display:grid;gap:var(--space-2);color:var(--muted);font-size:12px;line-height:1.5}.energy-tariff-cost-copy strong{color:var(--ink)}.energy-tariff-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)}.energy-tariff-tiers>div{display:grid;gap:3px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft)}.energy-tariff-tiers span{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-tariff-tiers strong{font-family:var(--font-serif);font-size:19px}.energy-tariff-tiers small{color:var(--muted);font-size:11px}.energy-tariff-notes{display:grid;gap:var(--space-2);margin:0;padding-left:var(--space-5);color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-tariff-settings>summary{min-height:40px;display:flex;align-items:center;gap:var(--space-2);color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-tariff-settings>summary::-webkit-details-marker{display:none}.energy-tariff-settings>summary span{color:var(--soft);font-weight:600}.energy-tariff-forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-4);margin-top:var(--space-3)}.energy-target-form{display:grid;gap:6px;justify-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-target-form label{width:100%;display:grid;gap:5px}.energy-target-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.onboarding-legend{color:var(--muted);font-size:11px;font-weight:800}\n\t\t.energy-tariff-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--soft);font-size:11px}.energy-tariff-foot a{color:var(--gold-ink);font-weight:800}.energy-history{display:grid;gap:var(--space-2)}.energy-history h4{font-size:15px}.energy-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-3);align-items:center;padding:var(--space-2) 0;border-top:1px solid var(--line);font-size:12px}.energy-history-row span{display:block;color:var(--muted);font-size:11px}.energy-history-row small{color:var(--soft);font-size:10px}\n\t\t.energy-pair{display:grid;gap:22px}.energy-quality{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-quality>span:first-child{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--leaf);color:var(--panel);font-weight:900}.energy-quality.warning>span:first-child,.energy-quality.danger>span:first-child{background:var(--gold)}.energy-quality strong{display:block}.energy-quality p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}.energy-quality small{color:var(--gold-ink);font-weight:750;font-size:11px}\n\t\t.energy-coverage{display:grid;gap:var(--space-2)}.energy-coverage-head{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--muted);font-size:11px}.energy-coverage-list{display:grid;gap:2px}.energy-coverage-row{display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-top:1px solid var(--line);font-size:12px}.energy-coverage-state{color:var(--muted);font-size:11px}.energy-coverage-state.good{color:var(--leaf)}\n\t\t.energy-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--space-3)}.energy-roadmap-step{display:grid;align-content:start;gap:5px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.energy-roadmap-step.current{border-color:var(--gold);background:var(--panel)}.energy-roadmap-number{width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:11px;font-weight:800}.energy-roadmap-step.current .energy-roadmap-number{background:var(--gold)}.energy-roadmap-state{color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.energy-roadmap-step strong{font-family:var(--font-serif);font-size:16px}.energy-roadmap-step p{color:var(--muted);font-size:12px;line-height:1.45}.energy-roadmap-step a{margin-top:4px;color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-system-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-system-asset{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.energy-system-asset .energy-ui-icon{width:20px;height:20px;color:var(--gold-ink)}.energy-system-helper{color:var(--muted);font-size:12px}.energy-related-links{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-4)}.energy-related-links a{min-height:32px;display:inline-flex;align-items:center;color:var(--gold-ink);font-size:11px;font-weight:800}.energy-business-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--space-3);align-items:start;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-business-note>span{width:26px;height:26px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--nav);color:var(--panel);font-size:12px}.energy-business-note strong{color:var(--ink)}\n\t\t.energy-admin{display:grid;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.energy-admin-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--space-3)}.energy-admin-head h2{font-size:23px}.energy-admin-head span{color:var(--muted);font-size:12px}\n\t\t.energy-collapsible{display:block;padding:0;overflow:hidden}.energy-collapsible>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),2vw,28px);cursor:pointer;list-style:none}.energy-collapsible>summary::-webkit-details-marker{display:none}.energy-collapsible>summary:hover{background:var(--panel)}.energy-collapsible-body{display:grid;gap:var(--space-4);padding:0 clamp(var(--space-4),2vw,28px) clamp(var(--space-4),2vw,28px);border-top:1px solid var(--line);padding-top:var(--space-4)}\n\t\t.energy-maintenance-list,.energy-measure-list{display:grid;gap:var(--space-2)}.energy-maintenance-row,.energy-measure-row{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-maintenance-summary,.energy-measure-summary{min-height:52px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-4);cursor:pointer;list-style:none}.energy-maintenance-summary::-webkit-details-marker,.energy-measure-summary::-webkit-details-marker{display:none}.energy-maintenance-summary strong,.energy-measure-summary strong{display:block;font-size:13px}.energy-maintenance-summary small,.energy-measure-summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.energy-status-warning{color:var(--gold-ink);font-size:11px;font-weight:800}.energy-status-danger{color:var(--ink);font-size:11px;font-weight:800}.energy-maintenance-summary>span:last-child,.energy-measure-summary>span:last-child{color:var(--muted);font-size:11px;font-weight:800}.energy-maintenance-body,.energy-measure-body{display:grid;gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}\n\t\t.energy-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-inline-form label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:700}.energy-inline-form label.wide{grid-column:1/-1}.energy-inline-form input,.energy-inline-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-weight:400}.energy-inline-form .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-compact-create>summary{min-height:40px;display:flex;align-items:center;color:var(--gold-ink);cursor:pointer;font-size:11px;font-weight:800;list-style:none}.energy-compact-create>summary::-webkit-details-marker{display:none}.energy-compact-create>form{margin-top:var(--space-3)}\n\t\t.energy-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)}.energy-reference-item{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-reference-item span{color:var(--muted);font-size:11px}.energy-reference-item strong{font-family:var(--font-serif);font-size:23px;font-variant-numeric:tabular-nums}.energy-assets{display:flex;flex-wrap:wrap;gap:var(--space-2)}.energy-asset{padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:11px}.energy-import-form{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-import-form label{display:grid;gap:5px}.energy-import-form input[type=file]{min-height:42px;padding:var(--space-2);border:1px dashed var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);font-size:12px}.energy-import-form small{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.energy-caretaker-list{display:grid;gap:var(--space-2)}.energy-caretaker{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);font-size:12px}.energy-caretaker small{display:block;color:var(--muted);font-size:11px}.energy-caretaker label{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.energy-caretaker a{color:var(--gold-ink);font-size:11px;font-weight:800}\n\t\t.energy-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:var(--space-3);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.energy-comparison small{display:block;color:var(--muted);font-size:11px}.energy-comparison strong{font-family:var(--font-serif);font-size:21px;font-variant-numeric:tabular-nums}.energy-comparison>span{color:var(--soft);font-size:11px}.energy-marketplace-gate{display:grid;gap:4px;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.energy-marketplace-gate strong{color:var(--ink)}\n\t\t@media(max-width:1050px){.energy-chart-layout{grid-template-columns:1fr;gap:var(--space-4)}.energy-scenario{grid-template-columns:1fr}.energy-scenario-result{justify-items:start;text-align:left}}\n\t\t@media(max-width:760px){body{padding-bottom:0}.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}\n\t\t\t.energy-mode-strip{padding-inline:var(--space-4)}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}.energy-peak-chip{grid-column:1/-1;grid-row:2;margin-left:0;width:100%;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-height:44px}.energy-peak-chip>*:nth-child(n+3){display:none}.energy-chart{scroll-margin-top:168px}.energy-chart-head{align-items:start;flex-direction:column;gap:4px}.energy-chart-head small{text-align:left}.energy-chart-head-actions{width:100%;justify-items:stretch}.energy-chart-toolbar{width:100%;justify-content:space-between}.energy-chart-range{flex:1 1 auto}.energy-chart-range a{flex:1 1 50%;justify-content:center}.energy-chart-svg.desktop{display:none}.energy-chart-svg.mobile{min-height:0;display:block}.energy-chart-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:var(--radius-sm)}.energy-chart-dialog-shell{max-height:calc(100dvh - 20px);gap:var(--space-3);padding:var(--space-4)}.energy-chart-dialog-shell>header{align-items:start;flex-direction:column}.energy-chart-dialog-shell>header h2{font-size:27px}.energy-chart-dialog-plot{padding:var(--space-2) 6px 0}.energy-chart-dialog .energy-chart-svg.mobile{min-height:0}.energy-chart-tooltip{top:8px;width:190px}\n\t\t\t.energy-flow-rail{margin-top:34px}.energy-flow-hint{position:static;margin-top:var(--space-3)}.energy-flow-area{padding:28px var(--space-3) 30px}.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}.energy-flow-rail{justify-items:center}.energy-flow-rail>.microlabel{left:max(2px,calc((100% - 258px) / 2))}\n\t\t\t.energy-quality,.energy-comparison,.energy-caretaker,.energy-history-row{grid-template-columns:1fr}.energy-caretaker{justify-items:start}.energy-inline-form{grid-template-columns:1fr}.energy-billed,.energy-tariff-cost,.energy-tariff-forms{grid-template-columns:1fr}.energy-mode-popover{position:absolute;right:0;left:auto;top:calc(100% + var(--space-2));width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - var(--context-bar-h) - 58px - 24px);overflow:auto;box-shadow:var(--shadow-dialog)}}\n\t\t@media(max-width:900px){.energy-metric-info>summary{width:44px;height:44px}.button.small,.energy-chart-size-button{min-height:44px}.energy-mode-strip{position:sticky;top:var(--context-bar-h);z-index:20;background:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-2);min-height:58px;padding:6px 12px;flex-wrap:nowrap}.energy-mode-state{min-height:44px;padding:6px 10px 6px 8px;min-width:0;display:flex;align-items:center;gap:8px;grid-column:1;grid-row:1}.energy-mode-control{justify-self:end;grid-column:2;grid-row:1}.energy-mode-icon{width:30px;height:30px;flex-basis:30px}.energy-mode-copy{min-height:0;padding:0;min-width:0}.energy-mode-copy strong{font-size:12px}.energy-mode-action{width:auto;max-width:126px;min-height:44px;padding:6px 11px;font-size:11px}.energy-card{position:relative}.energy-metric-info{position:static}.energy-metric-info>div{left:var(--space-4);right:var(--space-4);width:auto;max-height:60vh;overflow:auto}}\n\t@container energy-strip (max-width:920px){.energy-peak-chip>*:nth-child(n+3){display:none}.energy-mode-action-full{display:none}.energy-mode-action-compact{display:inline}}@container (max-width:560px){.energy-flow-grid2{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 40px auto 40px auto 40px auto}.energy-flow-slot-top{grid-column:1;grid-row:1;width:100%;flex-wrap:wrap;justify-self:stretch}.energy-flow-slot-left{grid-column:1;grid-row:3;display:flex;justify-content:center}.energy-flow-hub2{grid-column:1;grid-row:5}.energy-flow-slot-bottom{grid-column:1;grid-row:7;width:100%;justify-self:stretch}.energy-flow-slot-top .energy-flow-tile,.energy-flow-slot-bottom .energy-flow-tile,.energy-flow-slot-left .energy-flow-tile,.energy-flow-hub2{width:min(258px,100%)}}</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -6034,56 +6162,56 @@ func EnergyValue(value string) templ.Component {
 			templ_7745c5c3_Var300 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 551, "<span class=\"energy-value\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 567, "<span class=\"energy-value\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var301 string
 		templ_7745c5c3_Var301, templ_7745c5c3_Err = templ.ResolveAttributeValue(value)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1273, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1305, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var301)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 552, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 568, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var302 string
 		templ_7745c5c3_Var302, templ_7745c5c3_Err = templ.JoinStringErrs(energyValueNumber(value))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1274, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1306, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var302))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 553, " ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 569, " ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if energyValueUnit(value) != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 554, "<span class=\"u\" aria-hidden=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 570, "<span class=\"u\" aria-hidden=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var303 string
 			templ_7745c5c3_Var303, templ_7745c5c3_Err = templ.JoinStringErrs("\u00a0" + energyValueUnit(value))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1276, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/energy.templ`, Line: 1308, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var303))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 555, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 571, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 556, "</span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 572, "</span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -6189,6 +6317,7 @@ func energyIconMaskCSS(assetVersion string) string {
 		"x",
 		"snowflake",
 		"shower-head",
+		"chevron-down",
 	}
 	var b strings.Builder
 	for _, n := range names {

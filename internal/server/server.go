@@ -1256,7 +1256,7 @@ func (a *app) routes() *http.ServeMux {
 func (a *app) handler() http.Handler {
 	// recoverAndLog is outermost so it captures panics and the final status from
 	// every inner layer, including securityHeaders (HAUSV-141).
-	return a.recoverAndLog(a.securityHeaders(a.canonicalHost(a.tenantPaths(a.routes()))))
+	return a.recoverAndLog(a.securityHeaders(a.canonicalHost(a.tenantPaths(portalChromePreferences(a.routes())))))
 }
 
 type tenantPathContextKey struct{}

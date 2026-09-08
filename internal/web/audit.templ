@@ -64,7 +64,9 @@ templ AuditStream(data AuditPageData) {
 				if data.AuditStats.HasActiveFilters {
 					<span class="chip">{ len(data.AuditStats.ActiveFilters) }</span>
 				}
-			</span></summary>
+			</span>
+				@DisclosureChevron()
+			</summary>
 			<div class="filter-content">
 				<header><strong>Filter</strong>
 					if data.AuditIsFull {
@@ -99,7 +101,9 @@ templ AuditStream(data AuditPageData) {
 					}
 					if event.HasDetails {
 						<details class={ "audit-event", "audit-" + event.ActionTone }>
-							<summary>@AuditRow(event, true)</summary>
+							<summary>@AuditRow(event, true)
+								@DisclosureChevron()
+							</summary>
 							<dl class="detail-list">
 								for _, detail := range event.Details {
 									<div><dt>{ detail.Key }</dt><dd>{ detail.Value }</dd></div>
@@ -141,7 +145,7 @@ templ AuditRow(event view.AuditEventView, expandable bool) {
 			}
 		</span>
 		if expandable {
-			<span class="chevron" aria-hidden="true">›</span><span class="sr-only">Details zu { event.DisplayTitle }</span>
+			<span class="chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span><span class="sr-only">Details zu { event.DisplayTitle }</span>
 		} else {
 			<span></span>
 		}
@@ -149,7 +153,9 @@ templ AuditRow(event view.AuditEventView, expandable bool) {
 }
 
 templ AuditHelp(data AuditPageData) {
-	<details class="help-disclosure"><summary>Einträge verstehen</summary><div class="note-grid">
+	<details class="help-disclosure"><summary>Einträge verstehen
+		@DisclosureChevron()
+	</summary><div class="note-grid">
 		<section class="note"><h2>Lesehilfe</h2><ul class="legend"><li><i class="add"></i><span><strong>Angelegt</strong><small>Ein Eintrag, eine Freigabe oder ein Zugang ist neu entstanden.</small></span></li><li><i></i><span><strong>Geändert oder angesehen</strong><small>Bestehendes wurde bearbeitet, geöffnet oder heruntergeladen.</small></span></li><li><i class="danger"></i><span><strong>Entfernt</strong><small>Etwas wurde gelöscht oder ein Zugriff wurde entzogen.</small></span></li></ul><p>Zeitangaben in Ortszeit. Zeilen mit Pfeil lassen sich für technische Details aufklappen.</p></section>
 		<section class="note"><h2>Umfang</h2><ul class="facts">
 			if data.AuditIsFull {

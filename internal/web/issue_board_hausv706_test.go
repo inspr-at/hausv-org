@@ -22,7 +22,7 @@ func TestIssueBoardWideLayoutAndAccessibleMoves(t *testing.T) {
 		`data-board-status="Angenommen"`, `data-board-status="Termin vereinbart"`,
 		`role="status" aria-live="polite" aria-atomic="true" data-board-feedback`,
 		`aria-label="Karte ziehen: Tür prüfen"`, `touch-action:none`,
-		`<summary>Verschieben nach …</summary>`,
+		`<summary>Verschieben nach …<span class="disclosure-chevron" aria-hidden="true">`,
 		`method="post" action="/app/anliegen/workflow" data-board-move`,
 		`name="id" value="board-706"`, `name="priority" value="Hoch"`,
 		`name="assignee_email" value="manager@example.com"`,

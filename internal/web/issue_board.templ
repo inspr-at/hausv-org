@@ -122,7 +122,7 @@ templ IssueTriageBlock() {
 		.issue-triage-done{grid-template-columns:auto minmax(0,1fr);align-items:start}.issue-triage-done-mark{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--leaf);border-radius:var(--radius-pill);color:var(--leaf);font-size:20px;font-weight:800}.issue-triage-done .kicker{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.issue-triage-done h2{margin-top:var(--space-2);font-size:clamp(23px,2.8vw,31px)}.issue-triage-done p{margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.issue-triage-done .issue-triage-actions{grid-column:1/-1;width:100%}
 		.issue-message-form{display:grid;gap:var(--space-5)}.issue-message-body{display:grid;gap:var(--space-2);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.issue-message-body textarea{min-height:130px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;letter-spacing:0;line-height:1.5;text-transform:none;resize:vertical}.issue-resolution-propose{display:flex;align-items:center;justify-content:space-between;gap:var(--space-5);padding-top:var(--space-5);border-top:1px solid var(--line)}.issue-resolution-propose>span{display:grid;gap:3px;font-size:13px}.issue-resolution-propose small{color:var(--muted);font-size:12px}.issue-resolution-propose button{min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--ink);font-weight:800}
 		.issue-triage-aside{min-width:0;display:grid;align-content:start;gap:var(--space-3)}.issue-triage-state{display:grid;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.issue-triage-state h2{font-family:var(--font-sans);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.issue-triage-state dl{display:grid;margin:0}.issue-triage-state dl>div{min-width:0;display:grid;grid-template-columns:84px minmax(0,1fr);gap:var(--space-3);align-items:baseline;padding:var(--space-2) 0;border-top:1px solid var(--line)}.issue-triage-state dl>div:first-child{align-items:center;padding-top:0;border-top:0}.issue-triage-state dt{color:var(--muted);font-size:11px;font-weight:750}.issue-triage-state dd{min-width:0;margin:0;font-size:13px;font-weight:750;overflow-wrap:anywhere}.issue-triage-state-line{color:var(--muted);font-size:12px;line-height:1.45}.issue-triage-state-line strong{color:var(--ink)}.issue-triage-state-next{padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.45}
-		.issue-triage-more{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.issue-triage-more>summary{min-height:44px;display:flex;align-items:center;padding:var(--space-3) var(--space-4);color:var(--muted);cursor:pointer;font-size:12px;font-weight:800;list-style:none}.issue-triage-more>summary::-webkit-details-marker{display:none}.issue-triage-more>summary::after{content:"+";margin-left:auto;color:var(--gold-ink);font-size:17px}.issue-triage-more[open]>summary::after{content:"−"}.issue-triage-more-body{display:grid;gap:var(--space-4);padding:var(--space-4);border-top:1px solid var(--line)}
+		.issue-triage-more{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}.issue-triage-more>summary{min-height:44px;display:flex;align-items:center;padding:var(--space-3) var(--space-4);color:var(--muted);cursor:pointer;font-size:12px;font-weight:800;list-style:none}.issue-triage-more>summary::-webkit-details-marker{display:none}.issue-triage-more-body{display:grid;gap:var(--space-4);padding:var(--space-4);border-top:1px solid var(--line)}
 		.issue-details-edit{display:grid;gap:var(--space-4)}.issue-details-edit label{display:grid;gap:var(--space-2);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.issue-details-edit textarea,.issue-details-edit input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.issue-details-edit textarea{min-height:110px;resize:vertical}.issue-details-edit button{min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--ink);border-radius:var(--radius-xs);background:var(--ink);color:var(--panel);font-weight:800}.issue-location-type{display:grid;gap:var(--space-2)}.issue-field-label{color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
 		@media(max-width:1050px){.issue-triage-layout{grid-template-columns:minmax(0,1fr)}.issue-triage-state dl{grid-template-columns:repeat(auto-fit,minmax(164px,1fr));gap:0 var(--space-5)}.issue-triage-state dl>div{grid-template-columns:minmax(0,1fr);gap:2px;align-items:start;padding:var(--space-2) 0;border-top:0;border-bottom:1px solid var(--line)}.issue-triage-state dl>div:first-child{align-items:start;padding-top:var(--space-2)}}
 		@media(max-width:760px){.triage-page{gap:var(--space-4)}.issue-triage-context{gap:var(--space-2);padding-bottom:var(--space-4)}.issue-triage-context h1{font-size:32px}.issue-triage-card{gap:var(--space-5);padding:var(--space-4)}.issue-triage-card legend{margin-bottom:var(--space-4);font-size:25px}.issue-triage-choice{gap:var(--space-3);padding:var(--space-3)}.issue-triage-actions{align-items:stretch;display:grid}.issue-triage-actions button,.issue-triage-actions .button{min-width:0;width:100%}.issue-triage-done{grid-template-columns:minmax(0,1fr)}.issue-triage-done .issue-triage-actions{grid-column:1}.issue-resolution-propose{align-items:stretch;flex-direction:column}.issue-resolution-propose button{width:100%}}
@@ -201,7 +201,9 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 			<span class="pill">{ strconv.Itoa(data.TotalIssueCount) } gesamt</span>
 		</div>
 		<details class="board-tools" open?={ data.Filters.HasActive }>
-			<summary><strong>Filter &amp; Sortierung</strong><span>{ boardFilterState(data.Filters) }</span></summary>
+			<summary><strong>Filter &amp; Sortierung</strong><span>{ boardFilterState(data.Filters) }</span>
+				@DisclosureChevron()
+			</summary>
 			<form class="board-filter" method="get" action={ templ.SafeURL(data.BoardAction) }>
 				<label>Status<select name="status">
 					for _, option := range data.Filters.StatusOptions {
@@ -273,7 +275,9 @@ templ IssueWorkCard(issue view.IssueView) {
 		}
 		<p class="issue-next-step">{ issue.NextStep }</p>
 		<details class="board-move-menu">
-			<summary>Verschieben nach …</summary>
+			<summary>Verschieben nach …
+				@DisclosureChevron()
+			</summary>
 			<form method="post" action="/app/anliegen/workflow" data-board-move>
 				<input type="hidden" name="id" value={ issue.ID }/>
 				<input type="hidden" name="priority" value={ issue.Priority }/>
@@ -496,13 +500,17 @@ templ IssueTriageAside(data IssueTriagePageData) {
 			<p class="issue-triage-state-next">{ data.Issue.NextStep }</p>
 		</section>
 		<details class="issue-triage-more">
-			<summary>Details bearbeiten</summary>
+			<summary>Details bearbeiten
+				@DisclosureChevron()
+			</summary>
 			<div class="issue-triage-more-body">
 				<form class="issue-details-edit" method="post" action="/app/anliegen/workflow"><input type="hidden" name="id" value={ data.Issue.ID }/><input type="hidden" name="status" value={ data.Issue.Status }/><input type="hidden" name="priority" value={ data.Issue.Priority }/><input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/><input type="hidden" name="update_details" value="1"/><label>Beschreibung<textarea name="body" maxlength="4000" placeholder="Was ist das Problem?" required>{ data.Issue.Body }</textarea><span class="hint">Max. 4000 Zeichen</span></label><div class="issue-location-type"><span class="issue-field-label">Bereich</span><div class="issue-location-options"><label class="issue-location-choice"><input type="radio" name="location_type" value="common" required checked?={ data.Issue.LocationType == "common" }/><strong>Gemeinschaftsbereich</strong><span>Stiegenhaus, Keller oder Garage</span></label><label class="issue-location-choice"><input type="radio" name="location_type" value="own-unit" required checked?={ data.Issue.LocationType == "own-unit" }/><strong>Eigene Einheit</strong><span>Wohnung oder eigener Nebenraum</span></label></div></div><label>Wo genau?<input type="text" name="location_detail" value={ data.Issue.LocationDetail } maxlength="160" placeholder="Zum Beispiel: Heizungsraum"/><span class="hint">Nur Ort, weitere Details in die Beschreibung · Max. 160 Zeichen</span></label><button type="submit">Details speichern</button></form>
 			</div>
 		</details>
 		<details class="issue-triage-more">
-			<summary>{ issueTriageMoreSummary(data.Issue) }</summary>
+			<summary>{ issueTriageMoreSummary(data.Issue) }
+				@DisclosureChevron()
+			</summary>
 			<div class="issue-triage-more-body">
 				@IssueAttachments(data.Issue.Attachments)
 				if data.Issue.HasComments {

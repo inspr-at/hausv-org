@@ -350,7 +350,9 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 							<tr class="annual-cost-row" role="row">
 								<td role="cell" colspan="6">
 									<details class="annual-costs">
-										<summary>Kostenarten und Anteile<span class="sr-only"> · { unit.Label }</span></summary>
+										<summary>Kostenarten und Anteile<span class="sr-only"> · { unit.Label }</span>
+											@DisclosureChevron()
+										</summary>
 										for _,cost:=range unit.Costs {
 											<div class="allocation-row"><strong>{ cost.Name }</strong><span>{ cost.Key }</span><span>{ cost.Share }</span><strong>{ cost.Amount }</strong></div>
 										}

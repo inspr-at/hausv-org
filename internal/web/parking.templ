@@ -51,7 +51,9 @@ templ ParkingContent(data ParkingPageData) {
 
 templ ParkingHeaderAction(data ParkingPageData) {
 	<details class="parking-more">
-		<summary class="button"><span aria-hidden="true">•••</span>Mehr</summary>
+		<summary class="button"><span aria-hidden="true">•••</span>Mehr
+			@DisclosureChevron()
+		</summary>
 		<div class="parking-more-menu">
 			<a class="button" href="/app/parking"><span class="btn-icon">@ParkingRefreshIcon()</span>Aktualisieren</a>
 			<a class="button" href={ templ.SafeURL("/app/parking/export/" + strconv.Itoa(data.StatementYear)) }>CSV exportieren</a>
@@ -115,7 +117,9 @@ templ ParkingLiveCard(live view.ParkingLiveView) {
 					if live.AutoPaused {
 						<form method="post" action="/app/parking/charging/auto"><button class="button primary" type="submit">Automatik aktivieren</button></form>
 						<details class="parking-manual">
-							<summary class="button">Manuell steuern</summary>
+							<summary class="button">Manuell steuern
+								@DisclosureChevron()
+							</summary>
 							<form method="post" action="/app/parking/charging/on"><button class="button" type="submit">Jetzt laden · Normaltarif</button></form>
 						</details>
 					} else if live.ToggleOn {
@@ -126,7 +130,9 @@ templ ParkingLiveCard(live view.ParkingLiveView) {
 				</div>
 			}
 			<details class="parking-live-details">
-				<summary>Ladeverbrauch und technische Details</summary>
+				<summary>Ladeverbrauch und technische Details
+					@DisclosureChevron()
+				</summary>
 				<div class="parking-live-details-body">
 					if live.RateLabel != "" {
 						<p class="mini">Aktueller Tarif: { live.RateLabel }</p>
@@ -248,7 +254,9 @@ templ ParkingMonths(data ParkingPageData) {
 			</div>
 		}
 		<details class="parking-utility">
-			<summary>Wie wird gerechnet?</summary>
+			<summary>Wie wird gerechnet?
+				@DisclosureChevron()
+			</summary>
 			<div class="parking-utility-body">
 				<p class="muted">{ data.Accounting.Message }</p>
 				<p class="mini">Letzter Messpunkt: { parkingLastSampleLabel(data.Accounting.LastSampleLabel) }</p>

@@ -29,7 +29,7 @@ func TestRolePreviewAdminLifecycleIsReadOnlyHAUSV605(t *testing.T) {
 		t.Fatalf("preview page status = %d: %s", page.Code, page.Body.String())
 	}
 	body := page.Body.String()
-	for _, want := range []string{"context-preview", "Ansicht als Eigentümer", "schreibgeschützt", "calm-main"} {
+	for _, want := range []string{`data-preview-role="Eigentümer"`, "Ansicht als Eigentümer", "schreibgeschützt", "calm-main"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("preview page missing %q", want)
 		}
@@ -49,7 +49,7 @@ func TestRolePreviewAdminLifecycleIsReadOnlyHAUSV605(t *testing.T) {
 	}
 	restoredCookie := rolePreviewResponseCookie(t, end)
 	restored := rolePreviewTestRequest(t, a, http.MethodGet, "/demo/app", nil, restoredCookie)
-	if restored.Code != http.StatusOK || strings.Contains(restored.Body.String(), "context-preview") || !strings.Contains(restored.Body.String(), `href="/demo/app/settings/users"`) {
+	if restored.Code != http.StatusOK || strings.Contains(restored.Body.String(), `data-preview-role=`) || !strings.Contains(restored.Body.String(), `href="/demo/app/settings/users"`) {
 		t.Fatalf("restored admin page is not normal: status=%d", restored.Code)
 	}
 

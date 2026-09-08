@@ -57,6 +57,7 @@ templ IssueResidentDetailContent(data IssueResidentDetailPageData) {
 						if data.Issue.HasComments {
 							{ " · " + fmt.Sprint(len(data.Issue.Comments)) + " " + legacyRouteChoice((len(data.Issue.Comments) == 1), "Beitrag", "Beiträge") }
 						}
+						@DisclosureChevron()
 					</summary>
 					<div class="issue-resident-history-body">
 						if data.Issue.HasServiceAppointment {
@@ -131,7 +132,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 					</form>
 					if data.Accounting.HasTariffs {
 						<details class="pk-disclosure">
-							<summary><span>{ "Frühere Tarife" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Accounting.Tariffs)) + " Einträge" }</span></summary>
+							<summary><span>{ "Frühere Tarife" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Accounting.Tariffs)) + " Einträge" }</span>
+								@DisclosureChevron()
+							</summary>
 							<div class="pk-disclosure-body">
 								<div class="legend" aria-label="Tarifhistorie">
 									for _, item2 := range data.Accounting.Tariffs {
@@ -142,7 +145,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 						</details>
 					}
 				</section>
-				<section class="panel settings-card" aria-labelledby="payment-flow-title"><div class="pk-head"><div><h2 id="payment-flow-title">{ "Monate & Zahlungen" }</h2><p class="muted">{ "Vom Monatsbetrag bis zur Erinnerung in einer nachvollziehbaren Reihenfolge." }</p></div></div><div class="pk-flow"><div class="pk-flow-row"><span class="pk-flow-step">{ "1" }</span><span class="pk-flow-copy"><strong>{ "Tarif und Zeitraum" }</strong><span>{ "Oben festlegen, ab wann neue Preise gelten." }</span></span></div><a class="pk-flow-row" href="/app/parking?view=months#monate"><span class="pk-flow-step">{ "2" }</span><span class="pk-flow-copy"><strong>{ "Zahlungsstände prüfen" }</strong><span>{ "Monate öffnen, Zahlungseingang bestätigen oder Beleg ansehen." }</span></span><span class="pk-flow-arrow">{ "›" }</span></a></div><details class="pk-disclosure"><summary><span>{ "Offene Zahlungen erinnern" }</span><span class="pk-disclosure-note">{ "nur überfällige Monate" }</span></summary><div class="pk-disclosure-body"><p class="muted">{ "Es erhält nur eine Person eine Nachricht, wenn ein überfälliger Betrag offen ist und noch keine Erinnerung für diesen Monat versandt wurde." }</p><form method="post" action="/app/parking/reminders"><button class="button ghost" type="submit">{ "Erinnerungen jetzt senden" }</button></form></div></details></section>
+				<section class="panel settings-card" aria-labelledby="payment-flow-title"><div class="pk-head"><div><h2 id="payment-flow-title">{ "Monate & Zahlungen" }</h2><p class="muted">{ "Vom Monatsbetrag bis zur Erinnerung in einer nachvollziehbaren Reihenfolge." }</p></div></div><div class="pk-flow"><div class="pk-flow-row"><span class="pk-flow-step">{ "1" }</span><span class="pk-flow-copy"><strong>{ "Tarif und Zeitraum" }</strong><span>{ "Oben festlegen, ab wann neue Preise gelten." }</span></span></div><a class="pk-flow-row" href="/app/parking?view=months#monate"><span class="pk-flow-step">{ "2" }</span><span class="pk-flow-copy"><strong>{ "Zahlungsstände prüfen" }</strong><span>{ "Monate öffnen, Zahlungseingang bestätigen oder Beleg ansehen." }</span></span><span class="pk-flow-arrow">{ "›" }</span></a></div><details class="pk-disclosure"><summary><span>{ "Offene Zahlungen erinnern" }</span><span class="pk-disclosure-note">{ "nur überfällige Monate" }</span>
+					@DisclosureChevron()
+				</summary><div class="pk-disclosure-body"><p class="muted">{ "Es erhält nur eine Person eine Nachricht, wenn ein überfälliger Betrag offen ist und noch keine Erinnerung für diesen Monat versandt wurde." }</p><form method="post" action="/app/parking/reminders"><button class="button ghost" type="submit">{ "Erinnerungen jetzt senden" }</button></form></div></details></section>
 			}
 			if data.SectionCharging {
 				<section class="panel settings-card" id="laderegelung">
@@ -161,7 +166,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 						<div class="pk-toggles"><label class="pk-toggle" for="controller_enabled"><input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" checked?={ data.Charging.Enabled }/><strong>{ "Regler aktiv" }</strong><small>{ "Überwacht Akku und Einspeisung und startet Ladevorgänge." }</small></label><label class="pk-toggle" for="shadow_mode"><input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" checked?={ (data.Charging.ShadowMode || !(data.Charging.Enabled)) }/><strong>{ "Testbetrieb" }</strong><small>{ "Nur beobachten und protokollieren — die Steckdose bleibt unberührt." }</small></label></div>
 						<div class="pk-rule-summary" aria-label="Zusammenfassung der Laderegeln"><div class="pk-rule"><strong>{ "Start" }</strong><span>{ "Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " W Einspeisung." }</span></div><div class="pk-rule pk-safety"><strong>{ "Stopp & Schutz" }</strong><span>{ "Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " W; Schaltpausen bleiben aktiv." }</span></div></div>
 						<details class="pk-disclosure">
-							<summary><span>{ "Erweiterte Grenzwerte" }</span><span class="pk-disclosure-note">{ "7 Werte" }</span></summary>
+							<summary><span>{ "Erweiterte Grenzwerte" }</span><span class="pk-disclosure-note">{ "7 Werte" }</span>
+								@DisclosureChevron()
+							</summary>
 							<div class="pk-disclosure-body">
 								<div class="pk-group">
 									<div class="pk-group-head"><h3>{ "Starten" }</h3><span>{ "beide Bedingungen müssen erfüllt sein" }</span></div>
@@ -212,7 +219,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 					</form>
 				</section>
 				<details class="panel pk-disclosure pk-status" id="regler-status">
-					<summary><span>{ "Regler-Status & Ereignisse" }</span><span class="pk-disclosure-note">{ data.Charging.State.PhaseLabel }</span></summary>
+					<summary><span>{ "Regler-Status & Ereignisse" }</span><span class="pk-disclosure-note">{ data.Charging.State.PhaseLabel }</span>
+						@DisclosureChevron()
+					</summary>
 					<div class="pk-disclosure-body">
 						<div class="pk-strip">
 							if data.Charging.State.SinceLabel != "" {
@@ -266,7 +275,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 					</form>
 					if data.Charging.Telegram.HasChats {
 						<details class="pk-disclosure">
-							<summary><span>{ "Verknüpfte Chats" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Charging.Telegram.Chats)) + " aktiv" }</span></summary>
+							<summary><span>{ "Verknüpfte Chats" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Charging.Telegram.Chats)) + " aktiv" }</span>
+								@DisclosureChevron()
+							</summary>
 							<div class="pk-disclosure-body">
 								<div class="pk-chats" aria-label="Verknüpfte Chats">
 									for _, item5 := range data.Charging.Telegram.Chats {
@@ -332,7 +343,9 @@ templ ParkingMonthContent(data ParkingMonthPageData) {
 								<input type="hidden" name="month" value={ data.Detail.Summary.Month }/><input type="hidden" name="paid" value="true"/>
 								<div class="pay-row"><p class="muted">{ legacyRouteChoice(data.CanManageParkingPayments, "Zahlungseingang für diesen Monat bestätigen.", "Nach der Zahlung können Sie den Monat hier abschließen.") }</p><button class="button primary" type="submit">{ legacyRouteChoice(data.CanManageParkingPayments, "Bezahlung erhalten", "Als bezahlt markieren") }</button></div>
 								<details class="pay-details">
-									<summary>{ "Details (optional)" }</summary>
+									<summary>{ "Details (optional)" }
+										@DisclosureChevron()
+									</summary>
 									<div class="pay-fields">
 										<label>
 											{ "Datum" }
@@ -352,7 +365,9 @@ templ ParkingMonthContent(data ParkingMonthPageData) {
 						}
 					</div>
 					<details class="parking-month-disclosure">
-						<summary>{ "Kosten aufschlüsseln" }</summary>
+						<summary>{ "Kosten aufschlüsseln" }
+							@DisclosureChevron()
+						</summary>
 						<dl class="parking-cost-list">
 							if data.Detail.Summary.HasSurplus {
 								<div><dt>{ "PV-Überschuss · " + data.Detail.Summary.SurplusKWh }</dt><dd>{ data.Detail.Summary.SurplusCost }</dd></div>
@@ -365,12 +380,16 @@ templ ParkingMonthContent(data ParkingMonthPageData) {
 						</dl>
 					</details>
 					<details class="parking-month-disclosure">
-						<summary>{ "Stundenwerte · " + fmt.Sprint(data.Detail.Summary.HourCount) + " Stunden" }</summary>
+						<summary>{ "Stundenwerte · " + fmt.Sprint(data.Detail.Summary.HourCount) + " Stunden" }
+							@DisclosureChevron()
+						</summary>
 						if data.Detail.HasHours {
 							<div class="parking-hour-list">
 								for _, item6 := range data.Detail.Hours {
 									<details class="parking-hour-row">
-										<summary><span>{ item6.AtLabel }</span><span>{ item6.KWh }</span><strong>{ item6.TotalCost }</strong></summary>
+										<summary><span>{ item6.AtLabel }</span><span>{ item6.KWh }</span><strong>{ item6.TotalCost }</strong>
+											@DisclosureChevron()
+										</summary>
 										<dl class="parking-hour-details">
 											<div>
 												<dt>{ "Überschuss" }</dt>
@@ -395,7 +414,9 @@ templ ParkingMonthContent(data ParkingMonthPageData) {
 					</details>
 					if data.Detail.HasSessions {
 						<details class="parking-month-disclosure">
-							<summary>{ "Ladevorgänge" }</summary>
+							<summary>{ "Ladevorgänge" }
+								@DisclosureChevron()
+							</summary>
 							@ParkingSessionList(data.Detail.Sessions)
 						</details>
 					}
@@ -605,7 +626,9 @@ templ EnergyDataContent(data EnergyDataPageData) {
 			<section class="energy-data-section energy-data-danger">
 				<header><h2>{ "Daten löschen" }</h2><p>{ "Die zwei Stufen trennen Messhistorie von der vollständigen Energie-Einrichtung. Beide Aktionen sind sofort wirksam. Vorgang, ausführende Person, Zeitpunkt und nur betroffene Anzahlen werden protokolliert; gelöschte Inhalte nicht." }</p></header>
 				<details class="energy-delete-action">
-					<summary><span><strong>{ "Nur Messverlauf löschen" }</strong><small>{ "Originaldateien, Viertelstundenwerte, Tarifstände und Vorher-/Nachher-Messvergleiche. Anlagen und Zuordnungen bleiben." }</small></span></summary>
+					<summary><span><strong>{ "Nur Messverlauf löschen" }</strong><small>{ "Originaldateien, Viertelstundenwerte, Tarifstände und Vorher-/Nachher-Messvergleiche. Anlagen und Zuordnungen bleiben." }</small></span>
+						@DisclosureChevron()
+					</summary>
 					<form class="energy-delete-form" method="post" action="/app/settings/energy-data/history/delete">
 						<label>
 							{ "Zur Bestätigung " }
@@ -616,7 +639,9 @@ templ EnergyDataContent(data EnergyDataPageData) {
 					</form>
 				</details>
 				<details class="energy-delete-action">
-					<summary><span><strong>{ "Ganzes Energieprofil löschen" }</strong><small>{ "Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Beginn und Ende des kostenlosen Anspruchs bleiben erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet." }</small></span></summary>
+					<summary><span><strong>{ "Ganzes Energieprofil löschen" }</strong><small>{ "Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Beginn und Ende des kostenlosen Anspruchs bleiben erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet." }</small></span>
+						@DisclosureChevron()
+					</summary>
 					<form class="energy-delete-form" method="post" action="/app/settings/energy-data/profile/delete">
 						<label>
 							{ "Zur Bestätigung " }
@@ -723,7 +748,9 @@ templ PaymentImportContent(data PaymentImportPageData) {
 				</div>
 				if data.HasPaymentImportUnits {
 					<details class="reference-disclosure">
-						<summary><strong>{ fmt.Sprint(len(data.PaymentImportReferences)) + " Zahlungsreferenzen" }</strong><span>{ "Bei Bedarf anzeigen" }</span></summary>
+						<summary><strong>{ fmt.Sprint(len(data.PaymentImportReferences)) + " Zahlungsreferenzen" }</strong><span>{ "Bei Bedarf anzeigen" }</span>
+							@DisclosureChevron()
+						</summary>
 						<div class="reference-list">
 							for _, item15 := range data.PaymentImportReferences {
 								<div class="reference-row"><strong>{ item15.Label }</strong><code>{ item15.Reference }</code></div>
@@ -814,7 +841,9 @@ templ LegacyParkingMonthActions(data ParkingMonthPageData) {
 	@LegacyRouteBack(data.Detail.BackPath+"#parking-months", "Zurück zu Monaten")
 	if data.Detail.Summary.Month != "" {
 		<details class="parking-more">
-			<summary class="button ghost">Exportieren</summary>
+			<summary class="button ghost">Exportieren
+				@DisclosureChevron()
+			</summary>
 			<div class="parking-more-menu">
 				<a class="button ghost" href={ templ.SafeURL("/app/parking/month/" + data.Detail.Month + "/export") }>CSV herunterladen</a>
 				<button class="button ghost" type="button" data-print>Drucken / PDF</button>

@@ -4,7 +4,21 @@
   const read = key => { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value.filter(v => typeof v === 'string').slice(0, 6) : []; } catch { return []; } };
   const write = (key, value) => { if (!key) return; try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
   const remember = (key, entry) => { if (!key || !entry) return; const previous=read(key); if(previous[0]!==entry) write(key, [entry, ...previous.filter(v => v !== entry)].slice(0, 6)); };
+  const positioners = [];
+  let positionFrame;
+  const positionOpenPanels = () => {
+    cancelAnimationFrame(positionFrame);
+    positionFrame = requestAnimationFrame(() => positioners.forEach(position => position()));
+  };
+  window.addEventListener('resize', positionOpenPanels);
+  window.visualViewport?.addEventListener('resize', positionOpenPanels);
+  window.visualViewport?.addEventListener('scroll', positionOpenPanels);
+  document.addEventListener('scroll', event => {
+    if (!event.target.closest?.('.switcher-panel')) positionOpenPanels();
+  }, true);
   document.querySelectorAll('[data-switcher]').forEach(picker => {
+    const summary = picker.querySelector(':scope > summary');
+    const panel = picker.querySelector('.switcher-panel');
     const input = picker.querySelector('[data-switcher-search]');
     const results = picker.querySelector('[data-switcher-results]');
     const initial = picker.querySelector('[data-switcher-initial]');
@@ -13,7 +27,38 @@
     const recentSection = picker.querySelector('[data-switcher-recent-section]');
     const storage = picker.dataset.storageKey;
     const endpoint = picker.dataset.searchUrl;
-    if (!input || !endpoint) return;
+    if (!input || !endpoint || !summary || !panel) return;
+    // Top-layer painting escapes the sticky sidebar and the drawer's scroll
+    // clip without moving the panel away from its native details/form owner.
+    const topLayer = typeof panel.showPopover === 'function';
+    if (topLayer) panel.setAttribute('popover', 'manual');
+    const positionPanel = () => {
+      if (!picker.open) return;
+      const card = summary.getBoundingClientRect();
+      if (!card.width || !card.height) { picker.open = false; return; }
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop || 0;
+      const viewportLeft = viewport?.offsetLeft || 0;
+      const viewportWidth = viewport?.width || document.documentElement.clientWidth;
+      const viewportBottom = viewportTop + (viewport?.height || innerHeight);
+      const barHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--context-bar-h'));
+      const minTop = viewportTop + barHeight + 8;
+      const width = Math.min(440, viewportWidth - 24);
+      const besideCard = !!picker.closest('.sidebar');
+      // Keep at least the heading/current/search area available when a card is
+      // low in a short viewport; the rest scrolls inside the panel.
+      const maxTop = Math.max(minTop, viewportBottom - 8 - Math.min(panel.scrollHeight, 320));
+      const top = Math.max(minTop, Math.min(besideCard ? card.top : card.bottom + 8, maxTop));
+      const left = Math.max(viewportLeft + 12, Math.min(besideCard ? card.right + 8 : card.left, viewportLeft + viewportWidth - width - 12));
+      panel.style.setProperty('--switcher-top', `${top}px`);
+      panel.style.setProperty('--switcher-left', `${left}px`);
+      panel.style.setProperty('--switcher-width', `${width}px`);
+      panel.style.setProperty('--switcher-max-height', `${Math.max(0, viewportBottom - top - 8)}px`);
+    };
+    positioners.push(positionPanel);
+    new ResizeObserver(positionOpenPanels).observe(summary);
+    const drawer = picker.closest('details.menu');
+    drawer?.addEventListener('toggle', () => { if (!drawer.open) picker.open = false; });
     const current = picker.querySelector('[data-switcher-current]')?.dataset.switcherCurrent;
     remember(storage, current);
     let timer, request, generation = 0, active = -1, entries = [], options = [];
@@ -46,7 +91,8 @@
       const address = document.createElement('small'); address.textContent = entry.address;
       const role = document.createElement('small'); role.textContent = `${entry.group} · ${entry.role}`;
       copy.append(name, address, role);
-      const state = document.createElement('span'); state.className = 'switcher-row-status'; state.textContent = `${entry.open} offen${entry.current ? ' · aktuell' : ' ›'}`;
+      const state = document.createElement('span'); state.className = 'switcher-row-status nav-icon'; state.textContent = `${entry.open} offen${entry.current ? ' · aktuell' : ''}`;
+      if (!entry.current) state.append(picker.querySelector('[data-switcher-forward-icon]').content.cloneNode(true));
       element.append(copy, state); element.addEventListener('click', () => choose(entry));
       return element;
     };
@@ -83,9 +129,13 @@
     });
     picker.addEventListener('keydown',event => { if (event.key==='Escape') { event.preventDefault(); event.stopPropagation(); picker.open=false; picker.querySelector(':scope > summary').focus(); } });
     picker.addEventListener('toggle',() => {
-      if (!picker.open) { clearTimeout(timer); ++generation; request?.abort(); input.setAttribute('aria-expanded','false'); return; }
+      if (!picker.open) { if (topLayer && panel.matches(':popover-open')) panel.hidePopover(); clearTimeout(timer); ++generation; request?.abort(); input.setAttribute('aria-expanded','false'); return; }
       document.querySelectorAll('[data-switcher][open]').forEach(other => { if (other!==picker) other.open=false; });
-      input.focus({preventScroll:true}); if (input.value.trim()) search(); else loadRecent();
+      positionPanel();
+      if (topLayer && !panel.matches(':popover-open')) panel.showPopover();
+      positionPanel();
+      input.focus({preventScroll:true}); panel.scrollTop = 0;
+      if (input.value.trim()) search(); else loadRecent();
     });
     picker.addEventListener('submit',event => { const key=event.target.dataset.switcherEntry; if (key) remember(storage,key); });
   });
@@ -97,12 +147,22 @@
   const widthKey='hausv:sidebar-width';
   const handles=[...document.querySelectorAll('[data-sidebar-resize]')];
   const setWidth = value => {
+    if (!Number.isFinite(value)) return;
     const width=Math.round(Math.max(240,Math.min(420,value)));
     document.documentElement.style.setProperty('--sidebar-w',`${width}px`);
     handles.forEach(handle => handle.setAttribute('aria-valuenow',String(width)));
     try { localStorage.setItem(widthKey,String(width)); } catch {}
+    document.cookie=`hausv-sidebar-w=${width}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;
+    positionOpenPanels();
   };
-  try { const saved=Number(localStorage.getItem(widthKey)); if (saved>=240 && saved<=420) setWidth(saved); } catch {}
+  // A cookie-backed document already has its final width. Only migrate the
+  // legacy localStorage preference once; never replay stale storage over HTML.
+  const cookieWidth = Number(document.cookie.match(/(?:^|;\s*)hausv-sidebar-w=(\d+)(?:;|$)/)?.[1]);
+  const initialWidth = parseFloat(document.documentElement.style.getPropertyValue('--sidebar-w')) || 280;
+  handles.forEach(handle => handle.setAttribute('aria-valuenow', String(initialWidth)));
+  if (!(cookieWidth >= 240 && cookieWidth <= 420)) {
+    try { const saved=Number(localStorage.getItem(widthKey)); if (saved>=240 && saved<=420) setWidth(saved); } catch {}
+  }
   handles.forEach(handle => {
     let dragging=false;
     // Track the drag on the window: the handle is 10 px wide, so the pointer

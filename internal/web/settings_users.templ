@@ -67,12 +67,18 @@ templ UserSettingsBody(data UserSettingsPageData) {
 func personLabel(count int) string { if count == 1 { return "Person" }; return "Personen" }
 
 templ UserInvite(data UserSettingsPageData) {
-	<details id="invite" class="invite"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small></summary><form method="post" action="/app/settings/users"><div class="form-grid"><label>E-Mail-Adresse<input type="email" name="email" placeholder="name@example.com" autocomplete="email" required/></label><label>Rolle<select class="f-role" name="role">@RoleOptions(data, "")</select></label></div>
+	<details id="invite" class="invite"><summary><span>＋</span><strong>Person einladen</strong><small>Neuen Zugang anlegen</small>
+		@DisclosureChevron()
+	</summary><form method="post" action="/app/settings/users"><div class="form-grid"><label>E-Mail-Adresse<input type="email" name="email" placeholder="name@example.com" autocomplete="email" required/></label><label>Rolle<select class="f-role" name="role">@RoleOptions(data, "")</select></label></div>
 		if !data.ServiceProviderAccessEnabled {
 			<p class="notice">Dienstleister-Zugänge können noch nicht angelegt oder geändert werden.</p>
 		}
-		<details class="inline-details"><summary>Name ergänzen <small>optional</small></summary><div class="form-grid three"><input name="title" placeholder="Titel" aria-label="Titel"/><input name="first_name" placeholder="Vorname" aria-label="Vorname"/><input name="last_name" placeholder="Nachname" aria-label="Nachname"/></div></details>
-		<details class="inline-details"><summary>Zugang anpassen <small>optional</small></summary>@AccessOptions(false, false, true, true)</details>
+		<details class="inline-details"><summary>Name ergänzen <small>optional</small>
+			@DisclosureChevron()
+		</summary><div class="form-grid three"><input name="title" placeholder="Titel" aria-label="Titel"/><input name="first_name" placeholder="Vorname" aria-label="Vorname"/><input name="last_name" placeholder="Nachname" aria-label="Nachname"/></div></details>
+		<details class="inline-details"><summary>Zugang anpassen <small>optional</small>
+			@DisclosureChevron()
+		</summary>@AccessOptions(false, false, true, true)</details>
 		<footer class="form-actions"><button class="button primary" type="submit">Einladung senden</button><a class="text-link" href="/app/settings/building?section=units">Danach bei Bedarf: Einheit verknüpfen</a></footer>
 	</form></details>
 }
@@ -121,9 +127,13 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 		<dl class="access-facts"><dt>Rolle</dt><dd>{ user.Role }</dd><dt>Berechtigungsprofil</dt><dd>{ userAccessProfile(user) }</dd></dl>
 		<section class="access-units"><h3>Zugeordnete Einheiten</h3><p>{ len(user.UnitList) } Einheiten insgesamt</p>
 			if user.HasUnits {
-				<details class="unit-tree" open><summary>@PortalAssetIcon("building-2")<span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span></summary><div>
+				<details class="unit-tree" open><summary>@PortalAssetIcon("building-2")<span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span>
+					@DisclosureChevron()
+				</summary><div>
 					for _, group := range userUnitGroups(user) {
-						<details class="unit-branch" open?={ group.Label != "Stellplätze" }><summary><span>{ group.Label }</span><small>{ len(group.Items) }</small></summary><ul>
+						<details class="unit-branch" open?={ group.Label != "Stellplätze" }><summary><span>{ group.Label }</span><small>{ len(group.Items) }</small>
+							@DisclosureChevron()
+						</summary><ul>
 							for _, unit := range group.Items {
 								<li>{ unit }</li>
 							}
@@ -135,22 +145,32 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 				<p class="access-help">Keine Einheiten zugeordnet. Der Zugang richtet sich nach Rolle und Sonderrechten.</p>
 			}
 		</section>
-		<details class="access-permissions"><summary>Berechtigungen im Detail</summary>
-			<details class="permission-family" open><summary>{ userRoleFamily(user.Role) } · { user.Role }</summary>
+		<details class="access-permissions"><summary>Berechtigungen im Detail
+			@DisclosureChevron()
+		</summary>
+			<details class="permission-family" open><summary>{ userRoleFamily(user.Role) } · { user.Role }
+				@DisclosureChevron()
+			</summary>
 				for _, group := range userCapabilityGroups(user) {
-					<details class="permission-area" open><summary>{ group.Label }</summary><ul>
+					<details class="permission-area" open><summary>{ group.Label }
+						@DisclosureChevron()
+					</summary><ul>
 						for _, right := range group.Items {
 							<li>{ right }</li>
 						}
 					</ul></details>
 				}
 			</details>
-			<details class="permission-family"><summary>Sonderrechte</summary><ul>
+			<details class="permission-family"><summary>Sonderrechte
+				@DisclosureChevron()
+			</summary><ul>
 				for _, permission := range user.PermissionList {
 					<li>{ permission }</li>
 				}
 			</ul></details>
-			<details class="permission-family"><summary>Anmeldung</summary><ul>
+			<details class="permission-family"><summary>Anmeldung
+				@DisclosureChevron()
+			</summary><ul>
 				for _, method := range user.AuthList {
 					<li>{ method }</li>
 				}
@@ -179,20 +199,30 @@ templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
 			} else {
 				zentral gepflegt
 			}
-		</small></summary><div class="form-grid three"><input name="title" value={ user.Title } placeholder="Titel" aria-label="Titel" readonly?={ !data.IsAdmin }/><input name="first_name" value={ user.FirstName } placeholder="Vorname" aria-label="Vorname" readonly?={ !data.IsAdmin }/><input name="last_name" value={ user.LastName } placeholder="Nachname" aria-label="Nachname" readonly?={ !data.IsAdmin }/><input type="email" name="email" value={ user.Email } aria-label="E-Mail-Adresse" autocomplete="email" readonly?={ user.IsConfig || !data.IsAdmin } required?={ !user.IsConfig && data.IsAdmin }/></div></details>
-		<details class="inline-details"><summary>Einheiten <small>{ len(user.UnitList) } verknüpft</small></summary>
+		</small>
+			@DisclosureChevron()
+		</summary><div class="form-grid three"><input name="title" value={ user.Title } placeholder="Titel" aria-label="Titel" readonly?={ !data.IsAdmin }/><input name="first_name" value={ user.FirstName } placeholder="Vorname" aria-label="Vorname" readonly?={ !data.IsAdmin }/><input name="last_name" value={ user.LastName } placeholder="Nachname" aria-label="Nachname" readonly?={ !data.IsAdmin }/><input type="email" name="email" value={ user.Email } aria-label="E-Mail-Adresse" autocomplete="email" readonly?={ user.IsConfig || !data.IsAdmin } required?={ !user.IsConfig && data.IsAdmin }/></div></details>
+		<details class="inline-details"><summary>Einheiten <small>{ len(user.UnitList) } verknüpft</small>
+			@DisclosureChevron()
+		</summary>
 			for _, group := range userUnitGroups(user) {
-				<details class="unit-branch"><summary>{ group.Label } · { len(group.Items) }</summary><ul>
+				<details class="unit-branch"><summary>{ group.Label } · { len(group.Items) }
+					@DisclosureChevron()
+				</summary><ul>
 					for _, unit := range group.Items {
 						<li>{ unit }</li>
 					}
 				</ul></details>
 			}
 			<a class="text-link" href="/app/settings/building?section=units">Zuordnung verwalten</a></details>
-		<details class="inline-details"><summary>Anmeldung &amp; Sonderrechte</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
+		<details class="inline-details"><summary>Anmeldung &amp; Sonderrechte
+			@DisclosureChevron()
+		</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
 		<label class="check-card"><input type="checkbox" name="deactivated" value="1" checked?={ user.Deactivated }/><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class="button primary" type="submit">Änderungen speichern</button></form>
 		if !user.IsConfig {
-			<details class="danger"><summary>Zugang dauerhaft entfernen</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Zuordnung zur Liegenschaft dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
+			<details class="danger"><summary>Zugang dauerhaft entfernen
+				@DisclosureChevron()
+			</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Zuordnung zur Liegenschaft dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
 		}
 	</dialog>
 }
@@ -212,6 +242,6 @@ templ UserSettingsStyles() {
   @media(max-width:1200px){.users-layout{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}.users .user-card{grid-template-columns:40px minmax(0,1fr) 88px 40px}.users .user-card>.user-avatar{width:40px;height:40px}.users .user-role{grid-column:2;grid-row:2;display:flex;gap:8px}.users .user-status{grid-column:3;grid-row:1/3}.users .user-card>.row-edit,.users .user-readonly{grid-column:4;grid-row:1/3}.people-columns{display:none}.user-access{padding:16px}}
   @media(max-width:1000px){.users-layout{grid-template-columns:minmax(0,1fr)}.user-access-stack{grid-row:2}.users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 96px 40px}.users .user-role{grid-column:3;grid-row:1;display:grid}.users .user-status{grid-column:4;grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-column:5;grid-row:1}}
   @media(max-width:600px){.users .metrics.four{grid-template-columns:repeat(2,minmax(0,1fr))}.users .metrics.four>span:nth-child(3){border-left:0;border-top:1px solid var(--line)}.users .metrics.four>span:nth-child(4){border-top:1px solid var(--line)}.people-panel{padding:8px}.people-head{padding:8px}.people-filters{flex-basis:100%;justify-content:flex-start}.users .user-card{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px}.users .user-card>.user-avatar,.users .user-card>.user-identity{grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-row:1;grid-column:3}.users .user-role{grid-column:2/-1;grid-row:2;display:flex}.users .user-status{grid-column:2/-1;grid-row:3}.users .user-dialog .form-grid.three{grid-template-columns:minmax(0,1fr)}.users .access-options{grid-template-columns:minmax(0,1fr)}}
-  .users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary{position:relative;list-style:none;padding-right:24px}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::-webkit-details-marker{display:none}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::after{content:"";position:absolute;right:4px;top:50%;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-50%) rotate(-45deg)}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)[open]>summary::after{transform:translateY(-70%) rotate(45deg)}
+  .users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary{position:relative;list-style:none;padding-right:24px}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::-webkit-details-marker{display:none}
  </style>
 }

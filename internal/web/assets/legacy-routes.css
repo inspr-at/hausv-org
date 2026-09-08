@@ -53,8 +53,6 @@
 .legacy-route .energy-delete-action { border-top: 1px solid rgba(140,52,52,.16); }
 .legacy-route .energy-delete-action > summary { min-height: 66px; display: flex; justify-content: space-between; gap: 18px; align-items: center; padding: 14px 24px; list-style: none; cursor: pointer; }
 .legacy-route .energy-delete-action > summary::-webkit-details-marker { display: none; }
-.legacy-route .energy-delete-action > summary::after { content: "+"; color: #8c3434; font-size: 21px; }
-.legacy-route .energy-delete-action[open] > summary::after { content: "−"; }
 .legacy-route .energy-delete-action > summary span { display: grid; gap: 3px; }
 .legacy-route .energy-delete-action > summary strong { font-size: 14px; }
 .legacy-route .energy-delete-action > summary small { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.4; }
@@ -166,8 +164,6 @@
 .legacy-route .issue-resident-history { width: min(780px,100%); justify-self: center; border-top: 1px solid var(--line); }
 .legacy-route .issue-resident-history > summary { cursor: pointer; list-style: none; padding: 17px 2px; color: var(--ink); font-size: 14px; font-weight: 850; }
 .legacy-route .issue-resident-history > summary::-webkit-details-marker { display: none; }
-.legacy-route .issue-resident-history > summary::after { content: "›"; float: right; color: var(--gold-ink); font-size: 19px; }
-.legacy-route .issue-resident-history[open] > summary::after { transform: rotate(90deg); }
 .legacy-route .issue-resident-history-body { display: grid; gap: 18px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; background: var(--panel); }
 .legacy-route .comment-thread { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .legacy-route .comment { display: grid; gap: 5px; border-left: 3px solid rgba(200,153,63,.35); padding-left: 9px; color: var(--ink); }
@@ -209,8 +205,6 @@
 .legacy-route .pay-details { border-top: 1px solid var(--line); padding-top: 11px; }
 .legacy-route .pay-details > summary { list-style: none; cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--gold-ink); user-select: none; display: inline-flex; align-items: center; gap: 7px; }
 .legacy-route .pay-details > summary::-webkit-details-marker { display: none; }
-.legacy-route .pay-details > summary::after { content: "▾"; font-size: 11px; transition: transform .15s ease; }
-.legacy-route .pay-details[open] > summary::after { transform: rotate(180deg); }
 .legacy-route .pay-details[open] > summary { margin-bottom: 11px; }
 .legacy-route .pay-fields { display: grid; grid-template-columns: 150px 170px minmax(0,1fr); gap: 11px; }
 .legacy-route .pay-fields label { font-size: 11px; }
@@ -371,11 +365,8 @@
 .legacy-route details.pk-disclosure { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-soft); overflow: hidden; }
 .legacy-route details.pk-disclosure > summary { min-height: 54px; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 11px; font-weight: 700; color: var(--ink); }
 .legacy-route details.pk-disclosure > summary::-webkit-details-marker { display: none; }
-.legacy-route details.pk-disclosure > summary::after { content: "›"; margin-left: auto; color: var(--gold-ink); font-size: 23px; transform: rotate(90deg); transition: transform .15s ease; }
-.legacy-route details.pk-disclosure[open] > summary::after { transform: rotate(-90deg); }
 .legacy-route details.pk-disclosure[open] > summary { border-bottom: 1px solid var(--line); }
 .legacy-route .pk-disclosure-note { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 600; }
-.legacy-route details.pk-disclosure > summary::after { margin-left: 0; }
 .legacy-route .pk-disclosure-body { padding: 14px; display: grid; gap: 13px; }
 .legacy-route .pk-rule-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .legacy-route .pk-rule { min-height: 68px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255,255,255,.55); display: grid; gap: 3px; }

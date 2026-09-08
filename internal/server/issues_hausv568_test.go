@@ -124,7 +124,7 @@ func TestManagerCanEditIssueDetailsFromTriagePage(t *testing.T) {
 	triageBody := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board/"+issue.ID).Body.String()
 
 	// Verify the edit form exists
-	if !strings.Contains(triageBody, `<summary>Details bearbeiten</summary>`) {
+	if !strings.Contains(triageBody, `<summary>Details bearbeiten<span class="disclosure-chevron" aria-hidden="true">`) {
 		t.Fatal("triage page must have a 'Details bearbeiten' section")
 	}
 
