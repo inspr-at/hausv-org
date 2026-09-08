@@ -73,7 +73,7 @@ async function geometry(page,width,label) {
     // OSM tile images deliberately extend inside a clipped map; all controls,
     // panels, text and their containers must stay inside the viewport.
     const left=[...document.querySelectorAll('body *')].filter(e=>visible(e)&& !e.closest('.sr-only,.skip-link,.side-map-tiles') && e.getBoundingClientRect().left < -1).map(e=>`${e.tagName}.${e.className}`);
-    const names=[...document.querySelectorAll('[data-switcher] > summary .house-header-copy strong, [data-switcher][open] .switcher-row-copy strong, [data-switcher][open] .switcher-option strong')].filter(visible).map(e=>({summary:!!e.closest('summary'),width:e.getBoundingClientRect().width,lines:getComputedStyle(e).webkitLineClamp,white:getComputedStyle(e).whiteSpace,overflow:getComputedStyle(e).overflow,textOverflow:getComputedStyle(e).textOverflow,text:e.textContent}));
+    const names=[...document.querySelectorAll('[data-switcher] > summary .house-header-copy strong, [data-switcher][open] .switcher-row-copy strong, [data-switcher][open] .switcher-option strong')].filter(visible).map(e=>({summary:!!e.closest('summary'),card:!!e.closest('.nav-house-card'),width:e.getBoundingClientRect().width,lines:getComputedStyle(e).webkitLineClamp,white:getComputedStyle(e).whiteSpace,overflow:getComputedStyle(e).overflow,textOverflow:getComputedStyle(e).textOverflow,text:e.textContent}));
     const pills=[...document.querySelectorAll('.context-bar .context-account > summary,.context-bar .context-scope summary')].filter(visible).map(e=>{
       const box=e.getBoundingClientRect(),style=getComputedStyle(e),paint=getComputedStyle(e,'::before');
       const text=e.querySelector('.house-header-copy strong'),circle=e.querySelector('.disclosure-chevron');
@@ -92,7 +92,11 @@ async function geometry(page,width,label) {
   }
   for(const name of probe.names){
     assert(name.width>=Math.min(100, name.text.trim().length*5),`${label}: name reduced to a few characters (${JSON.stringify(name)})`);
-    if(name.summary){
+    if(name.summary&&name.card){
+      // HAUSV-715: the sidebar medallion card keeps the full address on up to two lines instead of an ellipsis.
+      assert.equal(name.lines,'2',`${label}: sidebar card address allows two lines`);
+      assert.equal(name.overflow,'hidden',`${label}: sidebar card address stays within its slot`);
+    }else if(name.summary){
       assert.equal(name.white,'nowrap',`${label}: HAUSV-715 summary stays on one line`);
       assert.equal(name.overflow,'hidden',`${label}: long summary stays within its slot`);
       assert.equal(name.textOverflow,'ellipsis',`${label}: long summary uses ellipsis`);
