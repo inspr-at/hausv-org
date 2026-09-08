@@ -125,3 +125,5 @@ dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(-
 .nav-resume-house>button{min-height:40px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;margin-inline:-8px;padding:5px 8px;border:0;border-radius:var(--radius-xs);background:transparent;color:var(--line);font:inherit;font-size:12px;text-align:left}
 .nav-resume-house>button:hover{background:var(--nav-2)}
 @media(max-width:760px){.menu-panel .nav-resume-house>button{min-height:44px;display:flex;margin:0;padding:0 10px}}
+/* HAUSV-704: form controls never widen a page beyond its column (annual statement at 761–768px). */
+main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { max-width: 100%; min-width: 0; box-sizing: border-box; }
