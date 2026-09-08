@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -16,9 +17,47 @@ func TestDisclosureChevronUsesUnmodifiedLucideAsset(t *testing.T) {
 	if !strings.Contains(html, string(asset)) || !strings.Contains(html, `class="disclosure-chevron" aria-hidden="true"`) {
 		t.Fatal("shared disclosure must wrap the unchanged, decorative Lucide asset")
 	}
-	picker := renderComponent(t, LiegenschaftSwitcher(LiegenschaftSwitcherData{}, "test-picker", "Haus", "Graz", "portal"))
+	picker := renderComponent(t, LiegenschaftSwitcher(LiegenschaftSwitcherData{}, "test-picker", "Haus", "Graz", "portal", "Liegenschaft", "building-2"))
 	if strings.Count(picker, `class="disclosure-chevron"`) != 1 || strings.Contains(picker, "⌄") {
 		t.Fatal("house and scope summaries must use exactly one shared chevron")
+	}
+}
+
+func TestHouseMedallionReflectsRoleAndPortfolio(t *testing.T) {
+	for _, tc := range []struct {
+		role, icon string
+		overview   bool
+	}{
+		{"Admin", "building-2", false},
+		{"Verwalter", "building-2", false},
+		{"Bewohner", "house", false},
+		{"Eigentümer", "house", false},
+		{"Admin", "building-2", true},
+	} {
+		t.Run(fmt.Sprintf("%s/overview=%t", tc.role, tc.overview), func(t *testing.T) {
+			data := PortalPageData{Role: tc.role, Overview: tc.overview, HouseName: "Janischhofweg 22, 8043 Graz", Address: "Janischhofweg 22, 8043 Graz"}
+			data.Shell.Context = ScopeContext{Ready: true, Switcher: LiegenschaftSwitcherData{Count: 12}}
+			shell := PortalShellData{IsOrganisationMember: true, CurrentHousePosition: 4, ManagedHouses: make([]PortalHouse, 12)}
+			asset, err := os.ReadFile("assets/icons/lucide/" + tc.icon + ".svg")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, sidebar := range []bool{true, false} {
+				html := renderComponent(t, PortalHouseHeader(data, shell, sidebar))
+				if !strings.Contains(html, string(asset)) {
+					t.Fatal("medallion must use the unchanged Lucide asset for the current role")
+				}
+				want := "Liegenschaft · 4 von 12"
+				if tc.overview {
+					want = "Alle Liegenschaften · 12"
+				} else if !strings.Contains(html, "<strong>Janischhofweg 22</strong><small>8043 Graz</small>") {
+					t.Fatal("street and place must remain distinct")
+				}
+				if !strings.Contains(html, want) || strings.Count(html, `class="disclosure-chevron"`) != 1 {
+					t.Fatal("card must preserve the current context count and one disclosure")
+				}
+			}
+		})
 	}
 }
 

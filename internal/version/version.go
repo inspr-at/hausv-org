@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.16",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Triage-Board mit Detail-Panel und klaren Übergaben, feinere Navigation.",
+			Intro:    "Das Triage-Board zeigt kompakte Karten in fünf Spuren und öffnet das Anliegen rechts als Panel mit Zuständigkeit, Statuswechsel und Verlauf. Wer eine Karte nach „Angenommen“ oder „In Bearbeitung“ zieht, legt gleich fest, wer übernimmt; „Termin vereinbart“ fragt den Termin ab. Die Liegenschafts-Karte trägt ein Medaillon, die Aufklapp-Pfeile sind kleiner und ruhiger, und im Wechsler stehen die „offen“-Zahlen in einer eigenen Spalte.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.15",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

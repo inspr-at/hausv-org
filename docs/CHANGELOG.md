@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.16] - 2026-09-08
+
+### Neu
+
+- Triage-Board: Kompakte Karten mit Priorität, Kategorie, Alter und Zuständigkeit, fünf Spuren in voller Breite und leere Spuren als Ablagefläche „Hierher ziehen“. Ein Klick öffnet rechts das Detail mit Beschreibung, Zuständigkeit, Statuswechsel und Verlauf; Esc schließt, J und K springen zwischen Anliegen.
+- Triage-Board: Wer ein Anliegen nach „Angenommen“ oder „In Bearbeitung“ zieht, legt gleich fest, wer es übernimmt; „Termin vereinbart“ fragt den Termin ab. Abbrechen legt die Karte zurück, die Regeln gelten auch ohne Skript.
+
+### Verbessert
+
+- Navigation: Die Liegenschafts-Karte zeigt das Gebäude als Medaillon neben der Adresse, die Kontextleiste hat ruhige Abstände, und alle Aufklapp-Pfeile sind kleiner, zurückhaltend bis zur Berührung und drehen sich beim Öffnen.
+- Liegenschaft wechseln: Die „offen“-Zahlen stehen in einer eigenen Spalte, die aktuelle Liegenschaft trägt ein Häkchen, lange Adressen brechen sauber um.
+- Anliegen: Kategorien erscheinen als lesbare Bezeichnungen.
+
 ## [1.9.15] - 2026-09-08
 
 ### Neu

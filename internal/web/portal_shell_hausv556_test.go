@@ -24,7 +24,7 @@ func TestPortalSwitcherUsesOneSharedPanelHAUSV556(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, contract := range []string{".context-scope .house-header-card", ".switcher-row-copy strong", "-webkit-line-clamp:2", "minmax(0,1fr) 64px"} {
+	for _, contract := range []string{".context-scope .house-header-card", ".switcher-row-copy strong", "-webkit-line-clamp:2", "minmax(0,1fr) auto 28px"} {
 		if !strings.Contains(string(css), contract) {
 			t.Errorf("missing %s", contract)
 		}

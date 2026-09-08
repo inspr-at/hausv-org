@@ -275,13 +275,12 @@ templ PortalBaseStyles() {
 		.house-map-pin{left:50%;top:50%;right:auto;bottom:auto;width:26px;height:34px;color:var(--gold-light);transform:translate(-50%,-74%)}
 		.house-map-pin .side-map-pin-mark{top:5px;width:15px;height:14px}
 		.house-map-pin .side-map-pin-mark svg{width:15px;height:13px}
-		/* The compact house card must preserve a usable map link without competing
-		   with the picker trigger. Its copy is deliberately allowed two complete
-		   lines; a clipped address makes the current house ambiguous. */
+		/* The map remains a separate link. HAUSV-715 keeps the card's street and
+		   place on individual lines; the summary title exposes a long address. */
 		.portal-organisation-identity strong{overflow:visible;overflow-wrap:anywhere;text-overflow:clip;white-space:normal}
 		.house-header-card{grid-template-columns:minmax(0,1fr) 18px}
-		.house-header-copy strong{overflow:visible;overflow-wrap:anywhere;hyphens:manual;-webkit-line-clamp:unset}
-		.house-header-copy small{overflow:visible;text-overflow:clip;white-space:nowrap}
+		.house-header-copy strong{display:block;overflow:hidden;overflow-wrap:normal;text-overflow:ellipsis;white-space:nowrap;-webkit-line-clamp:unset}
+		.house-header-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 		@media(max-width:1050px) and (min-width:761px){.side-map-hero{height:176px}}
 		@media(max-width:760px){
 			.menu-panel{display:grid;padding:16px 18px 24px}
@@ -528,11 +527,12 @@ func portalHousePickerShell(sidebar bool) string {
 }
 
 templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool) {
+	{{ icon := "building-2"; if !data.Overview && (data.Role == "Bewohner" || data.Role == "Eigentümer") { icon = "house" } }}
 	<div class="nav-house-card" data-navigation-block="house-card">
   if data.Overview {
-   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), fmt.Sprintf("Alle Liegenschaften · %d", portalScopeContext(data).Switcher.Count), "Portfolio", portalHousePickerShell(sidebar))
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), fmt.Sprintf("Alle Liegenschaften · %d", portalScopeContext(data).Switcher.Count), "Portfolio", portalHousePickerShell(sidebar), "Liegenschaften", icon)
   } else {
-   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), portalHouseTitle(data.HouseName, data.Address), portalHousePlace(data.Address), portalHousePickerShell(sidebar))
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), portalHouseTitle(data.HouseName, data.Address), portalHousePlace(data.Address), portalHousePickerShell(sidebar), portalHouseGroupLabel(shell), icon)
   }
  </div>
 }

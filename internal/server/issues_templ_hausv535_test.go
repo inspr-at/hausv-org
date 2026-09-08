@@ -204,7 +204,7 @@ func TestIssueBoardTemplKeepsFiltersAndTriageEntryReachable(t *testing.T) {
 		`href="/demo/app/anliegen/board?status=Neu"`,
 		// the address is query-escaped: an unescaped `+` in an email arrives as a space
 		`href="/demo/app/anliegen/board?assignee=manager%40example.com"`,
-		`href="/demo/app/anliegen/board/` + issue.ID + `"`,
+		`href="/demo/app/anliegen/board/` + issue.ID + `/panel"`,
 		"1 dringend",
 	} {
 		if !strings.Contains(body, want) {
@@ -248,7 +248,7 @@ func TestIssueTriageTemplKeepsEveryStepActionable(t *testing.T) {
 		"2": {
 			`name="redirect" value="` + base + `?step=done"`,
 			`value="In Bearbeitung"`,
-			`name="assignee_email" value="manager@example.com"`,
+			`select name="assignee_email" required`, `value="manager@example.com" selected>Ich übernehme</option>`,
 		},
 		"done": {
 			`href="` + base + `?step=message"`,

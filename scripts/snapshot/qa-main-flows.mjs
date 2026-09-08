@@ -2271,6 +2271,11 @@ async function assertRoleActions(page, persona) {
       if (!(await action.count())) fail(`${persona.name}: Aktion „${label}“ fehlt`);
     }
     const board = await page.goto(`${baseURL}/app/anliegen/board`, { waitUntil: 'networkidle' });
+    // HAUSV-717: „Bearbeiten“ lives in the detail panel that opens from a card.
+    if (board && board.status() === 200 && (await page.locator('[data-board-card]').count())) {
+      await page.locator('[data-board-card]').first().click();
+      await page.locator('[data-board-panel] a, [data-board-panel] button').filter({ hasText: /^Bearbeiten$/ }).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    }
     if (!board || board.status() !== 200 || !(await page.getByText('Bearbeiten', { exact: true }).count())) {
       fail(`${persona.name}: Anliegen-Bearbeitung fehlt`);
     }

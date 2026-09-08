@@ -4203,13 +4203,12 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 
 	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board")
 	boardBody := board.Body.String()
-	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `href="/demo/app/anliegen/board/` + issue.ID + `"`} {
+	for _, want := range []string{"Anliegen bearbeiten", "Tür schließt nicht", issuePriorityUrgent, `href="/demo/app/anliegen/board/` + issue.ID + `/panel"`} {
 		if !strings.Contains(boardBody, want) {
 			t.Fatalf("manager issue board should contain %q", want)
 		}
 	}
-	// HAUSV-706 adds a status-only move menu. Assignment and priority remain
-	// hidden snapshots; the full editor still lives in the focused triage.
+	// HAUSV-717 moves all card actions to the fetched detail panel.
 	assertIssueBoardStatusMenus(t, boardBody)
 	if strings.Contains(boardBody, "Bearbeitung aktualisieren") {
 		t.Fatal("manager issue board must keep the full editor in focused triage")
@@ -4261,7 +4260,7 @@ func TestManagerIssueTriageKeepsTheIssueContextAcrossBothSteps(t *testing.T) {
 		t.Fatalf("triage step one redirect = %d %q", stepOne.Code, stepOne.Header().Get("Location"))
 	}
 	stepTwoPage := authedRequest(t, a, "manager@example.com", stepOneRedirect)
-	for _, want := range []string{"Schritt 2 von 2", "Wer kümmert sich als Nächstes?", "Ich übernehme", "Noch offen lassen"} {
+	for _, want := range []string{"Schritt 2 von 2", "Wer kümmert sich als Nächstes?", "Ich übernehme", `select name="assignee_email" required`} {
 		if !strings.Contains(stepTwoPage.Body.String(), want) {
 			t.Fatalf("triage step two should contain %q", want)
 		}

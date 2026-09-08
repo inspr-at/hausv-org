@@ -634,8 +634,11 @@ func TestHouseCardDoesNotRepeatThePlaceOfAnAddressUsedAsName(t *testing.T) {
 	if !strings.Contains(html, `<strong>Janischhofweg 22</strong><small>8043 Graz</small>`) {
 		t.Errorf("house card should show the street above the place once, got %q", between(html, `class="house-header-copy side-address-label"`, `</span>`))
 	}
-	if !strings.Contains(html, `.house-header-copy strong{overflow:visible;overflow-wrap:anywhere;hyphens:manual`) {
-		t.Errorf("sidebar house title must keep overflow-wrap:anywhere as the last resort against overflow")
+	if !strings.Contains(html, `.house-header-copy strong{display:block;overflow:hidden;overflow-wrap:normal;text-overflow:ellipsis;white-space:nowrap`) {
+		t.Errorf("sidebar house title must stay on one line and ellipsize long addresses")
+	}
+	if !strings.Contains(html, `title="Janischhofweg 22"`) {
+		t.Errorf("sidebar house title must remain available in full when truncated")
 	}
 }
 
@@ -716,11 +719,11 @@ func TestIssueBoardColumnsPreserveIssuesAndStatusOrder(t *testing.T) {
 		Issues: issues, TotalIssueCount: len(issues), Filters: view.IssueBoardFilterView{StatusOptions: options},
 	}))
 	for _, issue := range issues {
-		if strings.Count(body, `id="issue-`+issue.ID+`"`) != 1 || !strings.Contains(body, `href="/app/anliegen/board/`+issue.ID+`"`) {
+		if strings.Count(body, `id="issue-`+issue.ID+`"`) != 1 || !strings.Contains(body, `href="/app/anliegen/board/`+issue.ID+`/panel"`) {
 			t.Errorf("issue %s must appear exactly once and keep its edit action", issue.ID)
 		}
 	}
-	if !strings.Contains(body, `Gemeldet: vor 2 T.`) || !strings.Contains(body, `Keine Anliegen`) {
+	if !strings.Contains(body, `vor 2 T.`) || !strings.Contains(body, `Hierher ziehen`) {
 		t.Error("board must show actual age and distinguish an empty status")
 	}
 }
