@@ -180,7 +180,10 @@ async function geometry(page, viewport, label) {
     const mapLink = document.querySelector('a.map');
     // HAUSV-621: the address label is the house header card (a picker summary for
     // organisation members, a static card otherwise); the map link keeps the full address.
-    const homeLink = document.querySelector('.house-header-card');
+    // HAUSV-701: the context bar puts the organisation segment first; the house
+    // segment is the last scope switcher, the sidebar card is the fallback.
+    const scopeCards = [...document.querySelectorAll('.context-scope .house-header-card')];
+    const homeLink = scopeCards.at(-1) || document.querySelector('.house-header-card');
     const menu = document.querySelector('.mobile-head > details.menu > summary');
     const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;

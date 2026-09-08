@@ -65,7 +65,7 @@ dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(-
 .context-account-menu a,.context-account-menu form>button{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px;border:0;background:transparent;color:var(--ink);text-align:left;font-size:13px}
 .context-account-menu a:hover,.context-account-menu button:hover{background:var(--panel-soft)}
 .context-scope{min-width:0;flex:1;display:flex;align-items:center;gap:10px}.scope-separator{color:var(--soft)}
-.context-scope>.liegenschaft-switcher{min-width:0;flex:0 1 auto;margin:0}.context-scope .house-header-card{display:flex;gap:6px;min-height:32px;margin:0;padding:0;border:0;background:transparent;color:inherit}
+.context-scope>.liegenschaft-switcher{min-width:0;flex:0 1 auto;margin:0}.context-scope .house-header-card{display:flex;gap:6px;min-height:40px;margin:0;padding:0;border:0;background:transparent;color:inherit}
 .context-scope .house-header-copy strong{font-family:var(--font-sans);font-size:12px;line-height:1.3;overflow:hidden;overflow-wrap:anywhere;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .context-scope .house-header-copy small,.context-scope .switcher-building{display:none}.context-scope .house-header-chevron{font-size:14px}
 .context-logout button{display:flex;padding:5px;border:0;background:transparent;color:var(--line);cursor:pointer}

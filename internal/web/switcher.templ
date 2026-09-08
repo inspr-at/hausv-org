@@ -36,9 +36,9 @@ type LiegenschaftSwitcherData struct {
 // breadcrumb. Native details and the GET form also work without JavaScript.
 templ LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surface string) {
 	<details class="liegenschaft-switcher house-picker" id={ id } data-switcher data-house-picker data-house-picker-shell={ surface } data-search-url={ data.SearchURL } data-storage-key={ data.StorageKey }>
-		<summary class="house-header-card" aria-label={ "Liegenschaft wechseln, aktuell " + label }>
+		<summary class="house-header-card" aria-label={ switcherSummaryLabel(surface, label) }>
 			<span class="nav-icon switcher-building">@PortalIcon("building")</span>
-			<span class={ "house-header-copy", templ.KV("side-address-label", surface != "scope") } lang="de-AT"><strong>{ label }</strong><small>{ place }</small></span>
+			<span class={ "house-header-copy", templ.KV("side-address-label", !switcherIsScope(surface)) } lang="de-AT"><strong>{ label }</strong><small>{ place }</small></span>
 			<span class="house-header-chevron" aria-hidden="true">⌄</span>
 		</summary>
 		<div class="switcher-panel" role="group" aria-label="Liegenschaft wechseln">
@@ -113,7 +113,7 @@ templ Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) 
 				if i > 0 {
 					<span class="scope-separator" aria-hidden="true">›</span>
 				}
-				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", "scope")
+				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments)))
 			}
 		</div>
 		if !mobile {

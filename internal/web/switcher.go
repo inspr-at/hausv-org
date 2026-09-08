@@ -79,3 +79,25 @@ func switcherCountLabel(count int) string {
 	}
 	return fmt.Sprintf("%d Liegenschaften", count)
 }
+
+// scopeSurface names the breadcrumb segment: the organisation comes first when
+// a person belongs to one, the Liegenschaft is always the last segment.
+func scopeSurface(index, count int) string {
+	if count > 1 && index == 0 {
+		return "scope-org"
+	}
+	return "scope"
+}
+
+func switcherIsScope(surface string) bool {
+	return surface == "scope" || surface == "scope-org"
+}
+
+// switcherSummaryLabel keeps the accessible name honest: the organisation
+// segment changes the Verwaltung context, every other one the Liegenschaft.
+func switcherSummaryLabel(surface, label string) string {
+	if surface == "scope-org" {
+		return "Verwaltung wechseln, aktuell " + label
+	}
+	return "Liegenschaft wechseln, aktuell " + label
+}

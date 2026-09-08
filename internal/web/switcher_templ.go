@@ -120,9 +120,9 @@ func LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surfa
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue("Liegenschaft wechseln, aktuell " + label)
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.ResolveAttributeValue(switcherSummaryLabel(surface, label))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 39, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 39, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 		if templ_7745c5c3_Err != nil {
@@ -140,7 +140,7 @@ func LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surfa
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var7 = []any{"house-header-copy", templ.KV("side-address-label", surface != "scope")}
+		var templ_7745c5c3_Var7 = []any{"house-header-copy", templ.KV("side-address-label", !switcherIsScope(surface))}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var7...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -165,7 +165,7 @@ func LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surfa
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 41, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 41, Col: 126}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -178,7 +178,7 @@ func LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surfa
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(place)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 41, Col: 144}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/switcher.templ`, Line: 41, Col: 151}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -684,7 +684,7 @@ func Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) t
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", "scope").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments))).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
