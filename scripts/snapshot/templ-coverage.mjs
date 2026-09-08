@@ -6,7 +6,7 @@ import { writeFile } from 'node:fs/promises';
 const baseURL = process.argv[2];
 const ROUTES = [
   '/app', '/app/announcements', '/app/events', '/app/anliegen', '/app/anliegen/board',
-  '/app/dokumente', '/app/abstimmungen', '/app/uebergaben', '/app/kontakte', '/app/hilfe',
+  '/app/dokumente', '/app/abstimmungen', '/app/uebergaben', '/app/kontakte', '/app/hilfe', '/app/hilfe/energie',
   '/app/energie', '/app/parking', '/app/zuhause/onboarding',
   '/app/settings', '/app/settings/profile', '/app/settings/notifications',
   '/app/settings/building', '/app/settings/annual-statement', '/app/settings/users', '/app/settings/home', '/app/audit',

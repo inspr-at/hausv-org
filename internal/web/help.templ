@@ -1,6 +1,11 @@
 package web
 
+import "github.com/inspr-at/hausv-org/internal/view"
+
 type HelpPageData struct {
+	EnergyHelp bool
+	ShowVotes bool
+	ManagerContacts []view.ContactCardView
 	Portal                  PortalPageData
 	ConnectorAvailable      bool
 	ConnectorState          string
@@ -21,7 +26,11 @@ type HelpPageData struct {
 
 templ HelpPage(data HelpPageData) {
 	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, HelpStyles(), templ.Attributes{"data-templ-help": true}) {
-			@PortalShell(data.Portal, "Hilfe", HelpContent(data))
+			if data.EnergyHelp {
+				@PortalShell(data.Portal, "Hilfe", HelpContent(data))
+			} else {
+				@PortalShell(data.Portal, "Hilfe", GeneralHelpContent(data))
+			}
 	}
 }
 
@@ -43,6 +52,7 @@ templ HelpContent(data HelpPageData) {
 }
 
 templ HelpContext() {
+	<a href="/app/hilfe">Allgemeine Hilfe</a>
 	<span class="help-mode">@PortalIcon("audit")<span>Standard: nur beobachten</span></span>
 }
 

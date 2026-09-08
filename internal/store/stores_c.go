@@ -53,6 +53,7 @@ const (
 
 	DocumentVisibilityAllResidents = "all-residents"
 	DocumentVisibilityOwnersOnly   = "owners-only"
+	DocumentVisibilityBoardOnly    = "board-only"
 	DocumentVisibilityManagerOnly  = "verwalter-only"
 )
 
@@ -1813,6 +1814,8 @@ func NormalizeDocumentVisibility(raw string) string {
 		return DocumentVisibilityAllResidents
 	case DocumentVisibilityOwnersOnly, "owner", "owners", "eigentuemer", "eigentümer":
 		return DocumentVisibilityOwnersOnly
+	case DocumentVisibilityBoardOnly, "beirat":
+		return DocumentVisibilityBoardOnly
 	case DocumentVisibilityManagerOnly, "manager", "verwalter", "verwaltung":
 		return DocumentVisibilityManagerOnly
 	default:

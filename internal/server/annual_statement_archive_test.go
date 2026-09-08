@@ -129,8 +129,8 @@ func replaceArchiveDemoDocument(t *testing.T, a *app, id string) *httptest.Respo
 
 func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 	a, repos, reseed := newArchiveDemoApp(t)
-	if len(repos.documents.List()) != 3 {
-		t.Fatal("seed must contain only original receipts")
+	if len(repos.documents.List()) != 9 {
+		t.Fatal("seed must contain three original receipts and six portal documents")
 	}
 	run := createArchiveDemoRun(t, a, repos)
 	if len(run.Result.Units) != 24 || len(run.Input.Parties) != 30 {
@@ -139,7 +139,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 	route := "/app/settings/annual-statement/runs/" + run.ID + "/archive"
 	pageRoute := "/app/settings/annual-statement?year=2025&run=" + run.ID
 	beforePage := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, pageRoute, nil)
-	if !strings.Contains(beforePage.Body.String(), "Im Archiv ablegen") || len(repos.documents.List()) != 3 {
+	if !strings.Contains(beforePage.Body.String(), "Im Archiv ablegen") || len(repos.documents.List()) != 9 {
 		t.Fatal("GET archive action missing or wrote documents")
 	}
 	response := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
@@ -147,7 +147,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatalf("archive=%d %s", response.Code, response.Header().Get("Location"))
 	}
 	archived := annualStatementArchiveDocuments(repos.documents, run)
-	if len(archived) != 31 || len(repos.documents.List()) != 34 {
+	if len(archived) != 31 || len(repos.documents.List()) != 40 {
 		t.Fatalf("archive=%d total=%d", len(archived), len(repos.documents.List()))
 	}
 	bytesBefore := map[string][]byte{}
@@ -178,8 +178,17 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatal("completed archive still offered")
 	}
 	library := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, "/app/dokumente?q=Jahresabrechnung", nil)
-	if strings.Count(library.Body.String(), "Archiviert · unveränderlich") != 31 || strings.Contains(library.Body.String(), "Neue Version hochladen") {
-		t.Fatal("archive library badge or immutability missing")
+	if strings.Count(library.Body.String(), "Archiviert · unveränderlich") != 31 {
+		t.Fatal("archive library badges missing")
+	}
+	// The public demo summary is replaceable; each archived row must remain immutable.
+	for _, item := range archived {
+		marker := `<article class="document-row" id="document-` + item.ID + `">`
+		_, row, found := strings.Cut(library.Body.String(), marker)
+		row, _, closed := strings.Cut(row, "</article>")
+		if !found || !closed || !strings.Contains(row, "Archiviert · unveränderlich") || strings.Contains(row, "Neue Version hochladen") {
+			t.Fatalf("archive row %s is missing or mutable", item.ID)
+		}
 	}
 	for _, want := range []string{"Für Alina Auer", `title="alina.eigentuemer@musterstadt.example"`} {
 		if !strings.Contains(library.Body.String(), want) {
@@ -203,7 +212,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatalf("audit=%+v", events)
 	}
 	response = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if response.Code != http.StatusSeeOther || !reflect.DeepEqual(archived, annualStatementArchiveDocuments(repos.documents, run)) || len(repos.documents.List()) != 34 {
+	if response.Code != http.StatusSeeOther || !reflect.DeepEqual(archived, annualStatementArchiveDocuments(repos.documents, run)) || len(repos.documents.List()) != 40 {
 		t.Fatal("second archive changed documents")
 	}
 	for _, item := range archived {
@@ -230,7 +239,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 	}
 	next := createArchiveDemoRun(t, a, repos)
 	response = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs/"+next.ID+"/archive", nil)
-	if next.Revision != 2 || response.Code != http.StatusSeeOther || len(annualStatementArchiveDocuments(repos.documents, next)) != 31 || len(repos.documents.List()) != 65 {
+	if next.Revision != 2 || response.Code != http.StatusSeeOther || len(annualStatementArchiveDocuments(repos.documents, next)) != 31 || len(repos.documents.List()) != 71 {
 		t.Fatal("new revision archive failed")
 	}
 	// Reset remains an input operation and cannot destroy previously archived files.
@@ -272,7 +281,7 @@ func TestAnnualStatementArchiveAuthorizationAndTenantIsolation(t *testing.T) {
 	if w := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs/missing/archive", nil); w.Code != http.StatusNotFound {
 		t.Fatal("missing run accepted")
 	}
-	if len(repos.documents.List()) != 3 {
+	if len(repos.documents.List()) != 9 {
 		t.Fatal("refused archive wrote documents")
 	}
 	foreignRepos := a.repositoriesForTenant(testTenantRef("other"))
@@ -306,10 +315,13 @@ func TestAnnualStatementArchiveAuthorizationAndTenantIsolation(t *testing.T) {
 	}
 	for _, actor := range privacyActors {
 		page := archiveDemoRequest(t, a, actor, http.MethodGet, "/app/dokumente", nil)
-		if page.Code != http.StatusOK || strings.Contains(page.Body.String(), "Jahresabrechnung 2025") {
+		if page.Code != http.StatusOK || strings.Contains(page.Body.String(), "Archiviert · unveränderlich") {
 			t.Fatal("resident archive listing leak", page.Code)
 		}
 		for _, item := range annualStatementArchiveDocuments(repos.documents, run) {
+			if strings.Contains(page.Body.String(), item.ID) || strings.Contains(page.Body.String(), item.Title) {
+				t.Fatal("resident archive metadata leaked")
+			}
 			for _, suffix := range []string{"/download", "/preview"} {
 				w := archiveDemoRequest(t, a, actor, http.MethodGet, "/app/dokumente/"+item.ID+suffix, nil)
 				if w.Code != http.StatusForbidden {
@@ -359,7 +371,7 @@ func TestAnnualStatementArchiveIncompleteRunAndInterruptedAttempt(t *testing.T) 
 	if w := request(); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "fehlen gespeicherte Parteien") {
 		t.Fatal("incomplete run archived", w.Code)
 	}
-	if len(repos.documents.List()) != 3 {
+	if len(repos.documents.List()) != 9 {
 		t.Fatal("incomplete run wrote documents")
 	}
 	ac.repositories.annualStatementRuns = repos.annualStatementRuns

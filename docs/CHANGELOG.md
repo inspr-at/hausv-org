@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.15] - 2026-09-08
+
+### Neu
+
+- Hilfe: Eine allgemeine Hilfe erklärt das Portal je Rolle; die Hilfe zur Energieverbindung ist eine eigene Unterseite.
+- Demo: Die Dokumentenablage enthält freigegebene Unterlagen je Liegenschaft.
+
+### Verbessert
+
+- Hausüberblick: Die Zusammenfassung nutzt die volle Breite, Ort und Einheit brechen nicht mehr um, die Sidebar beginnt ohne Leerraum.
+
 ## [1.9.14] - 2026-09-08
 
 ### Verbessert

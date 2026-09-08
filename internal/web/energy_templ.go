@@ -4507,7 +4507,7 @@ func EnergySystemSection(data EnergyPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 385, "<p class=\"energy-system-helper\">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p><nav class=\"energy-related-links\" aria-label=\"Service und Unterlagen\"><a href=\"/app/dokumente\">Unterlagen</a><a href=\"/app/events\">Wartungstermine</a><a href=\"/app/anliegen?new=1\">Aufgabe melden</a><a href=\"/app/kontakte\">Fachkontakte</a></nav><div class=\"energy-business-note\"><span aria-hidden=\"true\">◎</span><p><strong>Kostenmodell:</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 385, "<p class=\"energy-system-helper\">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p><nav class=\"energy-related-links\" aria-label=\"Service und Unterlagen\"><a href=\"/app/dokumente\">Unterlagen</a><a href=\"/app/events\">Wartungstermine</a><a href=\"/app/anliegen?new=1\">Aufgabe melden</a><a href=\"/app/kontakte\">Fachkontakte</a><a href=\"/app/hilfe/energie\">Hilfe zur Energieverbindung</a></nav><div class=\"energy-business-note\"><span aria-hidden=\"true\">◎</span><p><strong>Kostenmodell:</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

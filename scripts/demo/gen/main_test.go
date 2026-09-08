@@ -250,3 +250,18 @@ func assertUnitMemberships(t *testing.T, houses []house, persons []person) {
 		}
 	}
 }
+
+func TestCommittedDocumentsMatchDeterministicGenerator(t *testing.T) {
+	houses, _ := buildHousesAndPersons()
+	want, err := json.MarshalIndent(buildDocuments(houses), "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join("..", "seed", "documents.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(got)) != string(want) {
+		t.Fatal("documents.json differs from deterministic generator")
+	}
+}

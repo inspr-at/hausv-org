@@ -448,6 +448,8 @@ func (a *app) canViewDocument(tenant store.TenantRef, item documentRecord, email
 		return true
 	case documentVisibilityOwnersOnly:
 		return a.isDocumentOwner(tenant, email, role, item.UnitID)
+	case store.DocumentVisibilityBoardOnly:
+		return normalizeRole(role) == roleBeirat
 	case documentVisibilityManagerOnly:
 		return false
 	default:

@@ -4,21 +4,34 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-
+	"strings"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
-
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 func (a *app) helpPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
-	a.renderHelpPage(w, r, ac, false, "", time.Now())
+	a.renderHelpTempl(w, r, web.HelpPageData{
+		Portal:          a.helpPortalContext(ac),
+		ManagerContacts: managerContactViews(ac.tenant),
+		ShowVotes:       ac.role == roleOwner || ac.role == roleBeirat,
+	})
+}
+
+func (a *app) energyHelpPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	a.renderEnergyHelpPage(w, r, ac, false, "", time.Now())
 }
 
 func (a *app) startAppHomeConnectorPairing(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if !a.canManageEnergy(ac) {
 		http.Error(w, "Nur Eigentümer, Hausadministration oder freigegebene technische Vertrauenspersonen können die Verbindung vorbereiten.", http.StatusForbidden)
+		return
+	}
+	// Keep the established form action, but show the one-time code at the
+	// energy-help URL without persisting it or putting it in a query string.
+	if strings.HasSuffix(r.URL.Path, "/connector/pairing") {
+		http.Redirect(w, r, "/app/hilfe/energie", http.StatusTemporaryRedirect)
 		return
 	}
 	if a.homeConnectors == nil || len(a.homeConnectorHashKey) == 0 {
@@ -37,7 +50,7 @@ func (a *app) startAppHomeConnectorPairing(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Kopplung konnte nicht vorbereitet werden", http.StatusInternalServerError)
 		return
 	}
-	a.renderHelpPage(w, r, ac, true, pairingCode, now)
+	a.renderEnergyHelpPage(w, r, ac, true, pairingCode, now)
 }
 
 func (a *app) revokeAppHomeConnector(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -61,10 +74,10 @@ func (a *app) revokeAppHomeConnector(w http.ResponseWriter, r *http.Request, ac 
 			return
 		}
 	}
-	http.Redirect(w, r, "/app/hilfe?connector=revoked", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/hilfe/energie?connector=revoked", http.StatusSeeOther)
 }
 
-func (a *app) renderHelpPage(w http.ResponseWriter, r *http.Request, ac authCtx, pairingCreated bool, pairingCode string, now time.Time) {
+func (a *app) renderEnergyHelpPage(w http.ResponseWriter, r *http.Request, ac authCtx, pairingCreated bool, pairingCode string, now time.Time) {
 	connector := store.HomeConnector{}
 	connectorAvailable := a.homeConnectors != nil && len(a.homeConnectorHashKey) > 0
 	if connectorAvailable {
@@ -116,6 +129,7 @@ func (a *app) renderHelpPage(w http.ResponseWriter, r *http.Request, ac authCtx,
 	modules := a.portalModulesFor(ac.tenant.Slug)
 	a.renderHelpTempl(w, r, web.HelpPageData{
 		Portal:                  a.helpPortalContext(ac),
+		EnergyHelp:              true,
 		ConnectorAvailable:      connectorAvailable,
 		ConnectorState:          state,
 		ConnectorStateTone:      stateTone,

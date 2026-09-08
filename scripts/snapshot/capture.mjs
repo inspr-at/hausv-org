@@ -57,7 +57,7 @@ const ROUTES = [
   ['ballots', '/app/abstimmungen'],
   ['handovers', '/app/uebergaben'],
   ['contacts', '/app/kontakte'],
-  ['help', '/app/hilfe'],
+  ['help', '/app/hilfe'], ['energy-help', '/app/hilfe/energie'],
   ['parking', '/app/parking'],
   ['onboarding', '/app/zuhause/onboarding'],
   ['settings', '/app/settings'],

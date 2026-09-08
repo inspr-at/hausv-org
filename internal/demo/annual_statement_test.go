@@ -55,7 +55,8 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		}
 		originals[doc.ID] = raw
 	}
-	if len(originals) != 3 {
+	// Three original receipts plus six portal documents (HAUSV-711).
+	if len(originals) != 9 {
 		t.Fatalf("original count=%d", len(originals))
 	}
 	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt", EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: "Vera Verwalter", ContactEmail: "vera.verwalter@musterstadt.example"}
