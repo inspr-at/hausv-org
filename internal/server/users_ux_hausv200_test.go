@@ -48,6 +48,9 @@ func TestHAUSV200UserRowsPutAttentionFirstAndExposeUnits(t *testing.T) {
 	if !owner.HasUnits || len(owner.UnitList) != 1 || owner.UnitList[0] != "Einheit 12 · Eigentümer" {
 		t.Fatalf("owner units = %+v, has=%v", owner.UnitList, owner.HasUnits)
 	}
+	if len(owner.UnitAssignments) != 1 || owner.UnitAssignments[0].Label != owner.UnitList[0] || owner.UnitAssignments[0].Kind != "Wohnung" {
+		t.Fatalf("typed assignment must preserve stored unit kind and relation: %+v", owner.UnitAssignments)
+	}
 }
 
 func TestHAUSV200UserSettingsUsesProgressiveDisclosureAndContextualGate(t *testing.T) {

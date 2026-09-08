@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.8",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Abstimmungen und Benutzer & Rechte neu gestaltet.",
+			Intro:    "Abstimmungen erscheinen als eigenständige Karten mit Statusfilter, Frist, Zwischenstand und einem Ergebnis mit Balken und Quorum. Benutzer & Rechte zeigt Kennzahlen, eine durchsuchbare Personenliste mit Rollenfilter und eine Detailkarte mit zugeordneten Einheiten und Berechtigungen.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.7",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

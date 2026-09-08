@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.8] - 2026-09-08
+
+### Neu
+
+- Abstimmungen: eigenständige Karten mit Statusfilter, Frist, Zwischenstand und Ergebnis mit Balken und Quorum; Anlegen im gewohnten Dialogstil.
+- Benutzer & Rechte: Kennzahlen, Personenliste mit Suche und Rollenfilter, Detailkarte mit zugeordneten Einheiten und aufklappbaren Berechtigungen.
+
 ## [1.9.7] - 2026-09-08
 
 ### Neu

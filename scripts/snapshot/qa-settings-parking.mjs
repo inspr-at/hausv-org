@@ -486,7 +486,19 @@ async function exerciseInviteLifecycle() {
     fail('Einladung anlegen: angelegter Testzugang fehlt');
   }
 
-  await page.locator(`[data-edit="${email}"]`).click();
+  // HAUSV-687: selecting/filtering a person must preserve the existing edit lifecycle.
+  await page.locator('[data-user-search]').fill(email);
+  if (await page.locator('[data-user-row]:visible').count() !== 1) fail('Personensuche: erwarteter Zugang nicht eindeutig');
+  await page.locator(`[data-user-select="${email}"]`).click();
+  const access = page.locator(`[data-user-access="${email}"]`);
+  if (!(await access.isVisible()) || await page.locator('[data-user-access]:visible').count() !== 1) fail('Zugangsdetail: Auswahl nicht eindeutig');
+  await page.locator('[data-user-role]').selectOption('filter:Bewohner');
+  if (await access.isVisible()) fail('Rollenfilter: nicht passende Zugangsdetails bleiben sichtbar');
+  await page.locator('[data-user-role]').selectOption('filter:Mieter');
+  if (!(await access.isVisible())) fail('Rollenfilter: Mieter-Zugang fehlt');
+  await access.locator('details.access-permissions > summary').click();
+  if (!(await access.getByText('Bewohnerbereich', { exact: true }).isVisible())) fail('Berechtigungsgruppen: bestehendes Rollenrecht fehlt');
+  await access.locator('[data-access-edit]').click();
   let dialog = page.locator('dialog.user-dialog').filter({ hasText: email });
   await dialog.waitFor({ state: 'visible' });
   await dialog.locator('select[name="role"]').selectOption({ label: 'Bewohner' });

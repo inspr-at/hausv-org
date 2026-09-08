@@ -2021,6 +2021,12 @@ type ParkingBalanceView struct {
 	Overdue     float64
 }
 
+// UserUnitAssignment preserves the stored unit type for grouped access presentation.
+type UserUnitAssignment struct {
+	Label string
+	Kind  string
+}
+
 type UserRow struct {
 	Email                  string
 	Title                  string
@@ -2045,6 +2051,7 @@ type UserRow struct {
 	AuthList               []string
 	EmailAuthChecked       bool
 	OIDCAuthChecked        bool
+	UnitAssignments        []UserUnitAssignment
 	UnitList               []string
 	HasUnits               bool
 	Editable               bool
