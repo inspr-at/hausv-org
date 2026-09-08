@@ -6,44 +6,27 @@ import (
 	"testing"
 )
 
-func TestPortalSwitcherIsOneSubduedLineHAUSV556(t *testing.T) {
-	portal := PortalPageData{
-		Title:       "Test Portal",
-		HouseName:   "A deliberately long active portal name",
-		Address:     "Test Street 1",
-		DisplayName: "Test User",
-		Initials:    "TU",
-		Role:        "Admin",
-		Contexts: []PortalContext{
-			{HouseName: "A deliberately long active portal name", TenantSlug: "active", Role: "Admin", Current: true},
-			{HouseName: "Another portal", TenantSlug: "other", Role: "Admin"},
-		},
-		Shell: PortalShellData{Ready: true, PortalContexts: []PortalContext{
-			{HouseName: "A deliberately long active portal name", TenantSlug: "active", Role: "Admin", Current: true},
-			{HouseName: "Another portal", TenantSlug: "other", Role: "Admin"},
-		}},
-	}
-
+// HAUSV-697 supersedes the one-line third dropdown. The same quiet, readable
+// trigger now belongs to the unified panel in the sidebar, drawer and scope.
+func TestPortalSwitcherUsesOneSharedPanelHAUSV556(t *testing.T) {
+	portal := PortalPageData{HouseName: "A deliberately long active portal name", DisplayName: "Test User", Role: "Admin", Contexts: []PortalContext{{TenantSlug: "active", HouseName: "Active portal", Role: "Admin", Current: true}, {TenantSlug: "other", HouseName: "Another portal", Role: "Admin"}}}
 	html := renderComponent(t, PortalPage(portal))
-	trigger := `<summary aria-label="Portal wechseln">Portal wechseln<span class="context-switch-chevron" aria-hidden="true">⌄</span></summary>`
-	if got := strings.Count(html, trigger); got != 2 {
-		t.Fatalf("desktop and mobile switchers must use the same one-line trigger; got %d", got)
+	if got := strings.Count(html, `id="portal-house-picker"`) + strings.Count(html, `id="portal-house-picker-mobile"`); got != 2 {
+		t.Fatalf("sidebar/drawer picker count: %d", got)
 	}
-	if got := strings.Count(html, `action="/app/context"`); got != 2 {
-		t.Fatalf("one atomic switch form per surface must remain rendered; got %d", got)
+	if strings.Contains(html, ">Portal wechseln<") {
+		t.Fatal("third dropdown remains")
 	}
-
+	if !strings.Contains(html, `name="tenant" value="other"`) || !strings.Contains(html, `action="/app/context"`) {
+		t.Fatal("atomic POST switch missing")
+	}
 	css, err := os.ReadFile("assets/portal-shell.css")
 	if err != nil {
-		t.Fatalf("read portal shell CSS: %v", err)
+		t.Fatal(err)
 	}
-	for _, contract := range []string{
-		".mobile-context-switch>summary{min-width:0;min-height:44px",
-		"white-space:nowrap",
-		"text-overflow:ellipsis",
-	} {
+	for _, contract := range []string{".context-scope .house-header-card", ".switcher-row-copy strong", "-webkit-line-clamp:2", "minmax(0,1fr) 64px"} {
 		if !strings.Contains(string(css), contract) {
-			t.Errorf("mobile switcher CSS is missing %q", contract)
+			t.Errorf("missing %s", contract)
 		}
 	}
 }

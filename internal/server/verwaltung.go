@@ -163,6 +163,7 @@ func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) w
 		})
 	}
 	shell := web.VerwaltungShell{
+		Context:           a.scopeContext(ac, organisationName, true),
 		OrganisationName:  organisationName,
 		RoleLabel:         roleLabel,
 		DisplayName:       profile.DisplayName(),

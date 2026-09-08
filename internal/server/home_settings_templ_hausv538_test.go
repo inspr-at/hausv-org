@@ -101,10 +101,10 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 		}
 	}
 	// Script parity: the legacy page loaded app.js and nothing else. app.js and
-	// house-picker.js belong to the shell itself and ship with every portal page.
+	// switcher.js belong to the shell itself and ship with every portal page.
 	var extra []string
 	for _, match := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(body, -1) {
-		if match[1] != "app.js" && match[1] != "house-picker.js" {
+		if match[1] != "app.js" && match[1] != "switcher.js" {
 			extra = append(extra, match[1])
 		}
 	}

@@ -94,7 +94,7 @@ func TestPortalShellCSSIsExternalizedHAUSV549(t *testing.T) {
 	criticalClasses := []string{
 		`class="shell"`,
 		`class="sidebar"`,
-		`class="mobile-head"`,
+		`class="context-bar mobile-head"`,
 		`data-portal-section-landing`, // attribute, not class
 	}
 

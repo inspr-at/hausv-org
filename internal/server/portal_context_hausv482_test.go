@@ -211,7 +211,7 @@ func TestPortalContextSwitcherListsOnlyOwnedContexts(t *testing.T) {
 		t.Fatalf("portal status = %d", page.Code)
 	}
 	body := page.Body.String()
-	for _, want := range []string{"Portal wechseln", "Musterweg 1", "Haus B", roleOwner, roleRenter, `action="/demo/app/context"`} {
+	for _, want := range []string{"Liegenschaft wechseln", "Musterweg 1", "Haus B", roleOwner, roleRenter, `action="/demo/app/context"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("switcher missing %q", want)
 		}

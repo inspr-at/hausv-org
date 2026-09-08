@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.11] - 2026-09-08
+
+### Neu
+
+- Kontextleiste: In allen Sichten zeigt eine schmale Leiste oben, wer angemeldet ist, in welcher Rolle und welche Liegenschaft oder Verwaltung gerade zu sehen ist; Profil, Einstellungen und Abmelden liegen im Konto-Menü, die Rollen-Vorschau daneben.
+- Liegenschaften wechseln: Ein gemeinsamer Wechsler mit Suche, zuletzt geöffneten Einträgen und „Alle Liegenschaften“ ersetzt die bisherigen drei Varianten; das Portfolio bekommt Suche, Filter, Sortierung und Seiten und bleibt auch bei tausenden Objekten schnell.
+- Sidebar: Breite per Griff anpassbar, Namen werden nicht mehr abgeschnitten, Liegenschaften haben ein eigenes Symbol.
+
 ## [1.9.10] - 2026-09-08
 
 ### Verbessert

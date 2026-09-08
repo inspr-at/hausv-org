@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.11",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Kontextleiste und ein Wechsler für alle Liegenschaften.",
+			Intro:    "Eine schmale Leiste oben zeigt in jeder Sicht, wer angemeldet ist, in welcher Rolle und welche Liegenschaft oder Verwaltung gerade zu sehen ist; Abmelden, Profil und die Rollen-Vorschau liegen direkt dort. Liegenschaften wechselt man überall mit demselben Wechsler samt Suche und zuletzt geöffneten Einträgen, das Portfolio bekommt Suche, Filter, Sortierung und Seiten, und die Sidebar lässt sich breiter ziehen.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.10",
 			Date:     "8. September 2026",
 			Kind:     "Verbessert",
