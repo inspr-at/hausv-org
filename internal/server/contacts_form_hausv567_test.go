@@ -66,7 +66,7 @@ func TestOptionalFieldsHaveDisclosureMarker(t *testing.T) {
 		t.Fatal("contact-add-optional details missing")
 	}
 
-	if !strings.Contains(body, `<summary>Region, Qualifikation und Energie-Fähigkeiten</summary>`) {
+	if !strings.Contains(body, `<summary>Notiz, Region und Qualifikation</summary>`) {
 		t.Fatal("optional fields summary missing")
 	}
 

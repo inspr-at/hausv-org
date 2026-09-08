@@ -1260,6 +1260,7 @@ func issueViews(items []residentIssue) []issueView {
 
 func issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
 	views := make([]issueView, 0, len(items))
+	now := time.Now()
 	actorEmail = normalizeEmail(actorEmail)
 	for _, item := range items {
 		actor := actorFor(actorEmail, tenantSlug, role)
@@ -1337,6 +1338,7 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			LocationType:          item.LocationType,
 			LocationDetail:        item.LocationDetail,
 			CreatedAt:             formatLocalDateTime(item.CreatedAt),
+			Age:                   relativeAge(now, item.CreatedAt),
 			CanComment:            canManage || canResidentAct || canServiceAct,
 			CanClose:              canResidentAct && canResidentTransition(status, issueStatusDone),
 			CanReopen:             canResidentAct && canResidentTransition(status, issueStatusNew),

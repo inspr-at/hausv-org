@@ -49,12 +49,13 @@ type ContactsPageData struct {
 }
 
 templ ContactsPage(data ContactsPageData) {
-	@PortalDocument(data.Portal.Title, data.AssetVersion, nil, ContactsStyles(), templ.Attributes{"data-templ-contacts": true}) {
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"contacts.js"}, ContactsStyles(), templ.Attributes{"data-templ-contacts": true}) {
 			@PortalShell(data.Portal, "Kontakte", ContactsContent(data))
 	}
 }
 
 templ ContactsStyles() {
+	@PortalSourceSerifStyles()
 	<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}
 		.contacts-main{min-width:0;padding:var(--space-6)}.contacts-main h1,.contacts-main h2,.contacts-main h3,.contacts-main p{margin:0}.contacts-main h1,.contacts-main h2,.contacts-main h3{font-family:var(--font-serif);font-weight:600}.page{max-width:1180px;margin:var(--space-5) auto 0}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}
 		.contacts-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}.contacts-column,.contacts-aside{min-width:0;display:grid;gap:var(--space-4)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.contact-section{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.section-head h2,.aside-panel h2{margin-top:var(--space-1);font-size:25px}.section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.count{color:var(--muted);font-size:11px;white-space:nowrap}.quick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-3)}.quick-card{min-width:0;display:grid;align-content:start;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.quick-card.urgent{border-color:var(--gold)}.quick-label{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.quick-card h3{font-size:21px;overflow-wrap:anywhere}.quick-card p,.contact-description{color:var(--muted);font-size:12px;line-height:1.45}.contact-meta{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);color:var(--muted);font-size:11px;overflow-wrap:anywhere}.route-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:auto}.contact-route{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);font-size:11px;font-weight:800}.contact-route svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -66,6 +67,17 @@ templ ContactsStyles() {
 		@media(min-width:761px) and (max-width:1023px){.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{justify-content:flex-start}}
 @media(max-width:760px){.contact-form{grid-template-columns:minmax(0,1fr)}.contact-form select,.contact-form input{min-width:0;width:100%}.contacts-main{padding:var(--space-4)}.page{margin-top:0}.contacts-layout{margin-top:var(--space-4);gap:var(--space-3)}.contacts-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.contact-section{padding:var(--space-4)}.section-head{display:grid}.quick-list,.contact-form,.optional-grid{grid-template-columns:minmax(0,1fr)}.contact-form .wide,.contact-form .actions,.contact-form details,.optional-grid fieldset{grid-column:1}.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{display:grid;justify-content:stretch}.contact-actions>.button,.contact-actions>form,.contact-actions>form>.button,.route-actions{width:100%}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.contact-route{min-height:44px}.occupancy-head{display:none}.occupancy-row{grid-template-columns:minmax(0,1fr);gap:var(--space-2)}.occupancy-row span{display:grid;gap:3px}.occupancy-row span::before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.blank{min-height:0}.blank-actions{width:100%;display:grid}.contact-danger,.contact-reactivate{align-items:stretch;flex-direction:column}.dialog-footer .button{width:100%}}
 		.contact-add{min-width:0}.contact-add>summary{min-height:48px;padding:8px 40px 8px 16px}.contact-add-body{display:grid;gap:16px;padding:16px}.contacts-main .contact-add-hint{margin:0;line-height:1.6}.contact-add .contact-form{min-width:0;gap:16px;align-items:start}.contact-add .contact-form label{min-width:0;line-height:1.5}.contact-add .contact-form input:not([type=checkbox]),.contact-add .contact-form select{min-width:0;min-height:48px;padding:8px 16px}.contact-add .contact-form .actions{padding-top:8px}.contact-add .contact-form .actions .button{min-height:48px}.contact-add .contact-form details>summary{min-height:48px;padding:8px 40px 8px 16px;overflow-wrap:anywhere}.contact-add .optional-grid{gap:16px;padding:16px}.contact-add .permission-grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:8px 16px}.contact-add .permission-grid label{align-items:start}.contact-add .permission-grid input{flex:none;margin-top:2px}@media(max-width:760px){.contact-add .contact-form .actions .button{width:100%}}
+		.contacts-main .button.primary{color:var(--nav)}
+		.contacts-layout{grid-template-columns:minmax(0,1.9fr) minmax(288px,1fr);gap:16px;margin-top:16px}
+		.contact-section{padding:16px;gap:16px}.section-head h2,.aside-panel h2{font-size:24px;line-height:1.15}.section-head{align-items:center;flex-wrap:wrap;gap:8px}
+		.quick-list{grid-template-columns:minmax(0,1fr);gap:8px}.quick-card{grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:16px;padding:16px;background:var(--panel)}.quick-card.urgent{border-color:var(--line)}.quick-copy{display:grid;gap:8px;min-width:0}.quick-card h3{font-size:22px}.quick-label{justify-content:flex-start;gap:8px}.quick-card .route-actions{margin:0}
+		.contact-avatar{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--paper);color:var(--ink);font-size:14px;font-weight:700}
+		.contact-groups{gap:16px}.contact-group{gap:0}.group-head{padding-bottom:8px}.contact-list{gap:0}.contact-row{grid-template-columns:40px minmax(0,1fr) auto;gap:16px;padding:16px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}.contact-row:last-child{border-bottom:0}.contact-row .contact-avatar{width:40px;height:40px;align-self:start}.contact-title strong{font-size:19px}.contact-note{padding:0;border:0;background:transparent;font-size:12px}.contact-meta{gap:8px 16px;font-size:12px}.contact-meta>span{overflow-wrap:anywhere}.contact-actions{flex-wrap:wrap;gap:8px}.contact-route{min-height:40px;padding:8px;font-size:12px}.contact-form .actions{gap:8px}.contact-form label{font-size:13px}
+		.occupancy-scroll{max-height:360px;overflow:auto;overscroll-behavior:contain}.occupancy-row{grid-template-columns:minmax(64px,.8fr) repeat(2,minmax(0,1fr));gap:8px;padding:8px;font-size:11px}.occupancy-row>strong{font-size:13px}.occupancy-head{position:sticky;top:0}.occupancy-head>strong{font-size:9px}.unit-occupancies .section-head h2{font-size:23px}
+		@media(max-width:1200px){.quick-card{grid-template-columns:40px minmax(0,1fr)}.quick-card>.route-actions{grid-column:2}.contact-row{grid-template-columns:40px minmax(0,1fr)}.contact-actions{grid-column:2;justify-content:flex-start}}
+		@media(max-width:1050px){.contacts-layout{grid-template-columns:minmax(0,1fr)}.unit-occupancies{grid-column:1/-1}}
+		@media(max-width:760px){.contact-row{gap:8px 16px}.contacts-aside{grid-template-columns:minmax(0,1fr)}.contact-actions{display:flex}.contact-actions>.button,.contact-actions>form,.route-actions{width:auto}.contact-route{min-height:48px}.occupancy-row{grid-template-columns:minmax(64px,.8fr) repeat(2,minmax(0,1fr))}.occupancy-head{display:grid}.occupancy-row span{display:block}.occupancy-row span::before{display:none}.contact-form .actions{flex-wrap:wrap}}
+
 	</style>
 	<style>
 		.flash.ok{border-color:var(--leaf);background:rgba(47,107,74,.08);color:var(--leaf)}
@@ -91,7 +103,7 @@ templ ContactsContent(data ContactsPageData) {
 
 templ ContactsHeaderAction(data ContactsPageData) {
 	if data.CanManageContacts {
-		<a class="button" href="#contact-add">Kontakt hinzufügen</a>
+		<a class="button" href="#contact-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Kontakt hinzufügen</a>
 	}
 }
 
@@ -106,9 +118,6 @@ templ ContactsBody(data ContactsPageData) {
 		if data.CanManageContacts || len(data.ManagedContacts) > 0 {
 			@ManagedContacts(data)
 		}
-		if data.CanViewUnitOccupancies {
-			@UnitOccupancies(data.UnitOccupancies)
-		}
 		if len(data.ResidentContacts) > 0 {
 			@ResidentDirectory(data)
 		}
@@ -119,11 +128,11 @@ templ ContactsBody(data ContactsPageData) {
 }
 
 templ UnitOccupancies(items []UnitOccupancy) {
-	<section class="panel contact-section unit-occupancies" aria-labelledby="unit-occupancies-title"><header class="section-head"><div><p class="kicker">Einheiten</p><h2 id="unit-occupancies-title">Bewohner je Einheit</h2><p>Zuordnung laut Einheitenstammdaten.</p></div></header><div class="occupancy-table" role="table" aria-label="Bewohner je Einheit"><div class="occupancy-row occupancy-head" role="row"><strong role="columnheader">Einheit</strong><strong role="columnheader">Eigentümer</strong><strong role="columnheader">Mieter</strong></div>
+	<section class="panel contact-section unit-occupancies" aria-labelledby="unit-occupancies-title"><header class="section-head"><div><p class="kicker">Einheiten</p><h2 id="unit-occupancies-title">Bewohner je Einheit</h2><p>Zuordnung laut Einheitenstammdaten.</p></div></header><div class="occupancy-scroll" role="region" aria-label="Einheiten und Bewohner" tabindex="0"><div class="occupancy-table" role="table" aria-label="Bewohner je Einheit"><div class="occupancy-row occupancy-head" role="row"><strong role="columnheader">Einheit</strong><strong role="columnheader">Eigentümer</strong><strong role="columnheader">Mieter</strong></div>
 		for _, item := range items {
 			<div class="occupancy-row" role="row"><strong role="cell">{ item.UnitLabel }<small>{ item.UnitType }</small></strong><span role="cell" data-label="Eigentümer">{ occupancyPeopleText(item.Owners, "unbewohnt") }</span><span role="cell" data-label="Mieter">{ occupancyPeopleText(item.Renters, "frei") }</span></div>
 		}
-	</div></section>
+	</div></div></section>
 }
 
 templ QuickContacts(data ContactsPageData) {
@@ -152,21 +161,23 @@ templ QuickContacts(data ContactsPageData) {
 }
 
 templ QuickContact(item view.ContactCardView, urgent bool) {
-	<article class={ "quick-card", templ.KV("urgent", urgent) }><div class="quick-label"><span>{ contactRoleLabel(item) }</span>
-		if urgent {
-			<span>Dringend</span>
-		}
-	</div><h3>{ item.Name }</h3>
-		if item.Description != "" {
+	<article class={ "quick-card", templ.KV("urgent", urgent) }>
+		<span class="contact-avatar" aria-hidden="true">{ contactInitials(item.Name) }</span>
+		<div class="quick-copy"><div class="quick-label"><span>{ contactRoleLabel(item) }</span>
+			if urgent {
+				<span>Dringend</span>
+			}
+		</div><h3>{ item.Name }</h3>
+		if item.Description != "" && item.Description != item.Role {
 			<p>{ item.Description }</p>
 		}
 		@ContactMeta(item.Phone, item.Email, item.HasPhone, item.HasEmail)
-		@ContactRoutes(item.Phone, item.Email, item.HasPhone, item.HasEmail)
+		</div>@ContactRoutes(item.Phone, item.Email, item.HasPhone, item.HasEmail)
 	</article>
 }
 
 templ ManagedContacts(data ContactsPageData) {
-	<section class="panel contact-section" id="contact-book" aria-labelledby="managed-contacts-title"><header class="section-head"><div><p class="kicker">Adressbuch</p><h2 id="managed-contacts-title">Weitere wichtige Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p></div>
+	<section class="panel contact-section" id="contact-book" aria-labelledby="managed-contacts-title"><header class="section-head"><div><p class="kicker">Adressbuch</p><h2 id="managed-contacts-title">Weitere Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p></div>
 		if len(data.ManagedContacts) > 0 {
 			<span class="count">{ len(data.ManagedContacts) } im Adressbuch</span>
 		}
@@ -198,11 +209,7 @@ templ ManagedContacts(data ContactsPageData) {
 }
 
 templ ContactCreateForm(data ContactsPageData) {
-	<details class="contact-add" id="contact-add" open?={ data.ContactFormOpen }><summary>Kontakt hinzufügen</summary><div class="contact-add-body"><p class="contact-add-hint">Name oder Firma und mindestens Telefon oder E-Mail angeben.
-		if !data.ServiceProviderAccessEnabled {
-			<span> Dienstleister-Zugänge sind derzeit nicht verfügbar.</span>
-		}
-	</p><form class="contact-form" method="post" action="/app/kontakte"><input type="hidden" name="active" value="true"/>@ContactFields(data.ContactKindOptions, view.ManagedContactView{})<div class="actions"><button class="button primary" type="submit">Kontakt anlegen</button></div></form></div></details>
+	<details class="contact-add" id="contact-add" open?={ data.ContactFormOpen }><summary>Kontakt hinzufügen</summary><div class="contact-add-body"><p class="contact-add-hint">Name oder Firma und Telefon oder E-Mail angeben.</p><form class="contact-form" method="post" action="/app/kontakte"><input type="hidden" name="active" value="true"/>@ContactFields(data.ContactKindOptions, view.ManagedContactView{})<div class="actions"><button class="button ghost" type="button" data-contact-cancel hidden>Abbrechen</button><button class="button primary" type="submit">Kontakt hinzufügen</button></div></form></div></details>
 }
 
 templ ContactFields(options []view.SelectOption, item view.ManagedContactView) {
@@ -215,8 +222,7 @@ templ ContactFields(options []view.SelectOption, item view.ManagedContactView) {
 	<label>Firma / Organisation<input name="company" value={ item.Company } maxlength="140" placeholder="z. B. Elektro Süd"/></label>
 	<label>Telefon<input name="phone" value={ item.Phone } maxlength="80" placeholder="+43 ..."/></label>
 	<label>E-Mail<input type="email" name="email" value={ item.Email } placeholder="kontakt@example.com"/></label>
-	<label class="wide">Notiz<input name="notes" value={ item.Notes } maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"/></label>
-	<details class="contact-add-optional"><summary>Region, Qualifikation und Energie-Fähigkeiten</summary><div class="optional-grid"><label>Region<input name="service_region" value={ item.ServiceRegion } maxlength="120" placeholder="z. B. Wien und Umgebung"/></label><label>Qualifikation<input name="qualification" value={ item.Qualification } maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"/></label><fieldset><legend>Energie-Fähigkeiten (optional, kein Portalzugang)</legend><div class="permission-grid">
+	<details class="contact-add-optional"><summary>Notiz, Region und Qualifikation</summary><div class="optional-grid"><label class="wide">Notiz<input name="notes" value={ item.Notes } maxlength="300" placeholder="z. B. Lift, Elektrik oder Erreichbarkeit"/></label><label>Region<input name="service_region" value={ item.ServiceRegion } maxlength="120" placeholder="z. B. Wien und Umgebung"/></label><label>Qualifikation<input name="qualification" value={ item.Qualification } maxlength="240" placeholder="z. B. konzessionierter Elektrobetrieb"/></label><fieldset><legend>Energie-Fähigkeiten (optional, kein Portalzugang)</legend><div class="permission-grid">
 		@CapabilityCheckbox(item, "metering", "Leistungsmessung") @CapabilityCheckbox(item, "smart-meter", "Smart Meter") @CapabilityCheckbox(item, "home-assistant", "Home Assistant") @CapabilityCheckbox(item, "pv", "PV") @CapabilityCheckbox(item, "battery", "Speicher") @CapabilityCheckbox(item, "wallbox", "Wallbox") @CapabilityCheckbox(item, "heat-pump", "Wärmepumpe") @CapabilityCheckbox(item, "electrical", "Elektro-Fachnachweis")
 	</div></fieldset></div></details>
 }
@@ -226,7 +232,7 @@ templ CapabilityCheckbox(item view.ManagedContactView, value, label string) {
 }
 
 templ ManagedContact(item view.ManagedContactView, canManage bool) {
-	<article class={ "contact-row", templ.KV("inactive", !item.Active) }><div class="contact-copy"><span class="contact-title"><strong>{ item.DisplayName }</strong><span class="pill">{ item.Kind }</span>
+	<article class={ "contact-row", templ.KV("inactive", !item.Active) }><span class="contact-avatar" aria-hidden="true">{ contactInitials(item.DisplayName) }</span><div class="contact-copy"><span class="contact-title"><strong>{ item.DisplayName }</strong><span class="pill">{ item.Kind }</span>
 		if !item.Active {
 			<span class="pill">Inaktiv</span>
 		}
@@ -287,7 +293,7 @@ templ ResidentDirectory(data ContactsPageData) {
 }
 
 templ DirectoryContact(item view.ContactCardView) {
-	<article class="contact-row"><div class="contact-copy"><span class="contact-title"><strong>{ item.Name }</strong><span class="pill">{ item.Role }</span></span>
+	<article class="contact-row"><span class="contact-avatar" aria-hidden="true">{ contactInitials(item.Name) }</span><div class="contact-copy"><span class="contact-title"><strong>{ item.Name }</strong><span class="pill">{ item.Role }</span></span>
 		if item.Description != "" {
 			<span class="contact-description">{ item.Description }</span>
 		}
@@ -325,7 +331,11 @@ templ ContactsAside(data ContactsPageData) {
 		if data.CanJoinDirectory {
 			<a class="portal-link" href="/app/settings/profile"><span><strong>Eigener Verzeichniseintrag</strong><small>{ directoryStatus(data.DirectoryOptIn) }</small></span></a>
 		}
-	</nav></section></aside>
+	</nav></section>
+		if data.CanViewUnitOccupancies {
+			@UnitOccupancies(data.UnitOccupancies)
+		}
+	</aside>
 }
 
 func contactsHaveQuick(data ContactsPageData) bool { return len(data.ManagerContacts)+len(data.EmergencyContacts)+len(data.BoardContacts) > 0 }
@@ -337,3 +347,11 @@ func contactShowsDescription(item view.ManagedContactView) bool { return item.De
 func contactHasCapability(item view.ManagedContactView, capability string) bool { for _, current := range item.EnergyCapabilities { if current == capability { return true } }; return false }
 func contactActiveValue(active bool) string { if active { return "true" }; return "false" }
 func directoryStatus(optedIn bool) string { if optedIn { return "Ihr Kontakt ist für die Hausgemeinschaft sichtbar." }; return "Ihr Kontakt ist derzeit nicht sichtbar." }
+
+func contactInitials(name string) string {
+	words := strings.Fields(name)
+	if len(words) == 0 { return "?" }
+	initials := string([]rune(words[0])[0])
+	if len(words) > 1 { initials += string([]rune(words[len(words)-1])[0]) }
+	return strings.ToUpper(initials)
+}
