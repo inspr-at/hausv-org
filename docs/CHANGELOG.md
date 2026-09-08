@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.3] - 2026-09-08
+
+### Verbessert
+
+- Termine: Der Dialog „Neuer Termin“ ist neu gestaltet, mit Hauskontext, gruppierten Feldern und Fokus im Titelfeld.
+- Seitenleiste: Die Standortkarte steht unter der Liegenschaftsauswahl; die Liste zum Wechseln der Liegenschaft ist einheitlich ausgerichtet.
+- Dialoge: Der Hintergrund wird leicht abgedunkelt und weichgezeichnet statt deckend.
+
 ## [1.9.2] - 2026-09-08
 
 ### Stabilität verbessert

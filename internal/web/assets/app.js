@@ -62,7 +62,9 @@
   });
 
   function focusFirstDialogField(dialog) {
-    var target = dialog.querySelector(
+    // A dialog may name the field that deserves the first focus (a form that
+    // starts with typing); otherwise the close control stays first.
+    var target = dialog.querySelector("[data-autofocus]") || dialog.querySelector(
       "button[data-close-dialog], input:not([type='hidden']), select, textarea, button, a[href], [tabindex]:not([tabindex='-1'])"
     );
     if (target && typeof target.focus === "function") {

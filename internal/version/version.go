@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.3",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Termin-Dialog neu gestaltet, Karte unter der Liegenschaftsauswahl, weiche Dialog-Hintergründe.",
+			Intro:    "Der Dialog für neue Termine führt mit Hauskontext und gruppierten Feldern durch die Eingabe, die Standortkarte steht in der Seitenleiste unter der Auswahl der Liegenschaft, und alle Dialoge legen sich mit weichgezeichnetem Hintergrund über die Seite.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.2",
 			Date:     "8. September 2026",
 			Kind:     "Stabilität",
