@@ -124,7 +124,7 @@ func ContactsStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}\n\t\t.contacts-main{min-width:0;padding:var(--space-6)}.contacts-main h1,.contacts-main h2,.contacts-main h3,.contacts-main p{margin:0}.contacts-main h1,.contacts-main h2,.contacts-main h3{font-family:var(--font-serif);font-weight:600}.page{max-width:1180px;margin:var(--space-5) auto 0}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}\n\t\t.contacts-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}.contacts-column,.contacts-aside{min-width:0;display:grid;gap:var(--space-4)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.contact-section{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.section-head h2,.aside-panel h2{margin-top:var(--space-1);font-size:25px}.section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.count{color:var(--muted);font-size:11px;white-space:nowrap}.quick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-3)}.quick-card{min-width:0;display:grid;align-content:start;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.quick-card.urgent{border-color:var(--gold)}.quick-label{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.quick-card h3{font-size:21px;overflow-wrap:anywhere}.quick-card p,.contact-description{color:var(--muted);font-size:12px;line-height:1.45}.contact-meta{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);color:var(--muted);font-size:11px;overflow-wrap:anywhere}.route-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:auto}.contact-route{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);font-size:11px;font-weight:800}.contact-route svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}\n\t\t.contact-add{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-add>summary,.inactive-contacts>summary{min-height:46px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-size:12px;font-weight:800}.contact-add-body{padding:var(--space-4);border-top:1px solid var(--line)}.contact-add-hint{margin-bottom:var(--space-3);color:var(--muted);font-size:12px}.contact-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);align-items:end}.contact-form label{display:grid;gap:var(--space-2);color:var(--muted);font-size:11px;font-weight:700}.contact-form input,.contact-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.contact-form .wide,.contact-form .actions,.contact-form details{grid-column:1/-1}.contact-form .actions{display:flex;justify-content:flex-end}.contact-form details{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.contact-form details>summary{min-height:44px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;font-size:12px;font-weight:800;color:var(--muted)}.contact-form details>summary::before{content:\"▶\";display:inline-block;width:1em;margin-right:var(--space-2);font-size:10px;transition:transform .15s ease}.contact-form details[open]>summary::before{transform:rotate(90deg)}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.optional-grid fieldset{grid-column:1/-1;margin:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs)}.optional-grid legend{color:var(--gold-ink);font-size:10px;font-weight:800}.permission-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:var(--space-2) var(--space-3);margin-top:var(--space-2)}.permission-grid label{display:flex;align-items:center;color:var(--ink)}.permission-grid input{width:16px;height:16px;min-height:0}\n\t\t.contact-groups{display:grid;gap:var(--space-5)}.contact-group{display:grid;gap:var(--space-2)}.group-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.contact-list{display:grid;gap:var(--space-2)}.contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-row.inactive{opacity:.72}.contact-copy{min-width:0;display:grid;gap:var(--space-1)}.contact-title{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.contact-title strong{font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--gold-ink);font-size:9px;font-weight:800}.contact-note{margin-top:var(--space-1);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:11px;line-height:1.45}.contact-actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2)}.contact-actions form{margin:0}.inactive-contacts{border-top:1px solid var(--line)}.inactive-contacts .contact-list{padding-top:var(--space-3)}.empty-line{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:12px}.directory-note{color:var(--muted);font-size:10px}.occupancy-table{display:grid;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}.occupancy-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1.25fr) minmax(0,1.25fr);gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);background:var(--panel-soft);font-size:12px;overflow-wrap:anywhere}.occupancy-row:first-child{border-top:0}.occupancy-row>strong{font-family:var(--font-serif);font-size:15px}.occupancy-row small{display:block;margin-top:3px;color:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:700}.occupancy-head{background:var(--panel);color:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.occupancy-head>strong{font-family:var(--font-sans);font-size:10px}.blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);text-align:center}.blank h2{font-size:27px}.blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}\n\t\t.aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}.aside-panel>summary{cursor:pointer;list-style:none}.aside-panel>summary::-webkit-details-marker{display:none}.guide-list{display:grid;gap:var(--space-3);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}.guide-list li{display:grid;gap:var(--space-1)}.guide-list span{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid}.portal-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2);padding:var(--space-3) 0;border-top:1px solid var(--line)}.portal-link:first-child{border-top:0}.portal-link strong,.portal-link small{display:block}.portal-link strong{font-size:12px}.portal-link small{margin-top:var(--space-1);color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t.dialog{width:min(720px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{padding:var(--space-5)}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line)}.contact-danger,.contact-reactivate{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-4);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-danger p,.contact-reactivate p{margin-top:var(--space-1);color:var(--muted);font-size:11px}\n\t\t@media(max-width:1050px){.contacts-layout{grid-template-columns:minmax(0,1fr)}.contacts-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}\n\t\t@media(min-width:761px) and (max-width:1023px){.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{justify-content:flex-start}}\n@media(max-width:760px){.contact-form{grid-template-columns:minmax(0,1fr)}.contact-form select,.contact-form input{min-width:0;width:100%}.contacts-main{padding:var(--space-4)}.page{margin-top:0}.contacts-layout{margin-top:var(--space-4);gap:var(--space-3)}.contacts-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.contact-section{padding:var(--space-4)}.section-head{display:grid}.quick-list,.contact-form,.optional-grid{grid-template-columns:minmax(0,1fr)}.contact-form .wide,.contact-form .actions,.contact-form details,.optional-grid fieldset{grid-column:1}.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{display:grid;justify-content:stretch}.contact-actions>.button,.contact-actions>form,.contact-actions>form>.button,.route-actions{width:100%}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.contact-route{min-height:44px}.occupancy-head{display:none}.occupancy-row{grid-template-columns:minmax(0,1fr);gap:var(--space-2)}.occupancy-row span{display:grid;gap:3px}.occupancy-row span::before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.blank{min-height:0}.blank-actions{width:100%;display:grid}.contact-danger,.contact-reactivate{align-items:stretch;flex-direction:column}.dialog-footer .button{width:100%}}\n\t</style><style>\n\t\t.flash.ok{border-color:var(--leaf);background:rgba(47,107,74,.08);color:var(--leaf)}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}\n\t\t.contacts-main{min-width:0;padding:var(--space-6)}.contacts-main h1,.contacts-main h2,.contacts-main h3,.contacts-main p{margin:0}.contacts-main h1,.contacts-main h2,.contacts-main h3{font-family:var(--font-serif);font-weight:600}.page{max-width:1180px;margin:var(--space-5) auto 0}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.button.small{min-height:34px;padding:var(--space-1) var(--space-3)}.button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}\n\t\t.contacts-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}.contacts-column,.contacts-aside{min-width:0;display:grid;gap:var(--space-4)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}.contact-section{display:grid;gap:var(--space-4);padding:var(--space-5)}.section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4)}.kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.section-head h2,.aside-panel h2{margin-top:var(--space-1);font-size:25px}.section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}.count{color:var(--muted);font-size:11px;white-space:nowrap}.quick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-3)}.quick-card{min-width:0;display:grid;align-content:start;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.quick-card.urgent{border-color:var(--gold)}.quick-label{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--gold-ink);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.quick-card h3{font-size:21px;overflow-wrap:anywhere}.quick-card p,.contact-description{color:var(--muted);font-size:12px;line-height:1.45}.contact-meta{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);color:var(--muted);font-size:11px;overflow-wrap:anywhere}.route-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:auto}.contact-route{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);font-size:11px;font-weight:800}.contact-route svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}\n\t\t.contact-add{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-add>summary,.inactive-contacts>summary{min-height:46px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-size:12px;font-weight:800}.contact-add-body{padding:var(--space-4);border-top:1px solid var(--line)}.contact-add-hint{margin-bottom:var(--space-3);color:var(--muted);font-size:12px}.contact-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);align-items:end}.contact-form label{display:grid;gap:var(--space-2);color:var(--muted);font-size:11px;font-weight:700}.contact-form input,.contact-form select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.contact-form .wide,.contact-form .actions,.contact-form details{grid-column:1/-1}.contact-form .actions{display:flex;justify-content:flex-end}.contact-form details{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.contact-form details>summary{min-height:44px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;font-size:12px;font-weight:800;color:var(--muted)}.contact-form details>summary::before{content:\"▶\";display:inline-block;width:1em;margin-right:var(--space-2);font-size:10px;transition:transform .15s ease}.contact-form details[open]>summary::before{transform:rotate(90deg)}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line)}.optional-grid fieldset{grid-column:1/-1;margin:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs)}.optional-grid legend{color:var(--gold-ink);font-size:10px;font-weight:800}.permission-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:var(--space-2) var(--space-3);margin-top:var(--space-2)}.permission-grid label{display:flex;align-items:center;color:var(--ink)}.permission-grid input{width:16px;height:16px;min-height:0}\n\t\t.contact-groups{display:grid;gap:var(--space-5)}.contact-group{display:grid;gap:var(--space-2)}.group-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}.group-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}.group-head span{color:var(--soft);font-size:11px}.contact-list{display:grid;gap:var(--space-2)}.contact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-row.inactive{opacity:.72}.contact-copy{min-width:0;display:grid;gap:var(--space-1)}.contact-title{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.contact-title strong{font-family:var(--font-serif);font-size:18px;overflow-wrap:anywhere}.pill{display:inline-flex;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--gold-ink);font-size:9px;font-weight:800}.contact-note{margin-top:var(--space-1);padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--muted);font-size:11px;line-height:1.45}.contact-actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2)}.contact-actions form{margin:0}.inactive-contacts{border-top:1px solid var(--line)}.inactive-contacts .contact-list{padding-top:var(--space-3)}.empty-line{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--muted);font-size:12px}.directory-note{color:var(--muted);font-size:10px}.occupancy-table{display:grid;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}.occupancy-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1.25fr) minmax(0,1.25fr);gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);background:var(--panel-soft);font-size:12px;overflow-wrap:anywhere}.occupancy-row:first-child{border-top:0}.occupancy-row>strong{font-family:var(--font-serif);font-size:15px}.occupancy-row small{display:block;margin-top:3px;color:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:700}.occupancy-head{background:var(--panel);color:var(--muted);font-family:var(--font-sans);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.occupancy-head>strong{font-family:var(--font-sans);font-size:10px}.blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);text-align:center}.blank h2{font-size:27px}.blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}.blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}\n\t\t.aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}.aside-panel>summary{cursor:pointer;list-style:none}.aside-panel>summary::-webkit-details-marker{display:none}.guide-list{display:grid;gap:var(--space-3);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}.guide-list li{display:grid;gap:var(--space-1)}.guide-list span{color:var(--muted);font-size:11px;line-height:1.45}.portal-links{display:grid}.portal-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2);padding:var(--space-3) 0;border-top:1px solid var(--line)}.portal-link:first-child{border-top:0}.portal-link strong,.portal-link small{display:block}.portal-link strong{font-size:12px}.portal-link small{margin-top:var(--space-1);color:var(--muted);font-size:10px;line-height:1.4}.portal-link::after{content:\"›\";color:var(--gold-ink);font-size:20px}\n\t\t.dialog{width:min(720px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:0;overflow:hidden;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-5);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:25px}.dialog-close{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--ink);font-size:22px}.dialog-body{padding:var(--space-5)}.dialog-footer{display:flex;justify-content:flex-end;padding:var(--space-4) var(--space-5);border-top:1px solid var(--line)}.contact-danger,.contact-reactivate{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-4);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.contact-danger p,.contact-reactivate p{margin-top:var(--space-1);color:var(--muted);font-size:11px}\n\t\t@media(max-width:1050px){.contacts-layout{grid-template-columns:minmax(0,1fr)}.contacts-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}\n\t\t@media(min-width:761px) and (max-width:1023px){.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{justify-content:flex-start}}\n@media(max-width:760px){.contact-form{grid-template-columns:minmax(0,1fr)}.contact-form select,.contact-form input{min-width:0;width:100%}.contacts-main{padding:var(--space-4)}.page{margin-top:0}.contacts-layout{margin-top:var(--space-4);gap:var(--space-3)}.contacts-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.contact-section{padding:var(--space-4)}.section-head{display:grid}.quick-list,.contact-form,.optional-grid{grid-template-columns:minmax(0,1fr)}.contact-form .wide,.contact-form .actions,.contact-form details,.optional-grid fieldset{grid-column:1}.contact-row{grid-template-columns:minmax(0,1fr)}.contact-actions{display:grid;justify-content:stretch}.contact-actions>.button,.contact-actions>form,.contact-actions>form>.button,.route-actions{width:100%}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.contact-route{min-height:44px}.occupancy-head{display:none}.occupancy-row{grid-template-columns:minmax(0,1fr);gap:var(--space-2)}.occupancy-row span{display:grid;gap:3px}.occupancy-row span::before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.blank{min-height:0}.blank-actions{width:100%;display:grid}.contact-danger,.contact-reactivate{align-items:stretch;flex-direction:column}.dialog-footer .button{width:100%}}\n\t\t.contact-add{min-width:0}.contact-add>summary{min-height:48px;padding:8px 40px 8px 16px}.contact-add-body{display:grid;gap:16px;padding:16px}.contacts-main .contact-add-hint{margin:0;line-height:1.6}.contact-add .contact-form{min-width:0;gap:16px;align-items:start}.contact-add .contact-form label{min-width:0;line-height:1.5}.contact-add .contact-form input:not([type=checkbox]),.contact-add .contact-form select{min-width:0;min-height:48px;padding:8px 16px}.contact-add .contact-form .actions{padding-top:8px}.contact-add .contact-form .actions .button{min-height:48px}.contact-add .contact-form details>summary{min-height:48px;padding:8px 40px 8px 16px;overflow-wrap:anywhere}.contact-add .optional-grid{gap:16px;padding:16px}.contact-add .permission-grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:8px 16px}.contact-add .permission-grid label{align-items:start}.contact-add .permission-grid input{flex:none;margin-top:2px}@media(max-width:760px){.contact-add .contact-form .actions .button{width:100%}}\n\t</style><style>\n\t\t.flash.ok{border-color:var(--leaf);background:rgba(47,107,74,.08);color:var(--leaf)}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -252,7 +252,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.ContactMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 99, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 100, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -299,7 +299,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.ManagedEmpty.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 115, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 116, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -312,7 +312,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.ManagedEmpty.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 115, Col: 125}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 116, Col: 125}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -325,7 +325,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var12 templ.SafeURL
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(contactsIssuesURL(data.CanManageIssues)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 115, Col: 245}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 116, Col: 245}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -385,7 +385,7 @@ func UnitOccupancies(items []UnitOccupancy) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(item.UnitLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 123, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -398,7 +398,7 @@ func UnitOccupancies(items []UnitOccupancy) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(item.UnitType)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 123, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -411,7 +411,7 @@ func UnitOccupancies(items []UnitOccupancy) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(occupancyPeopleText(item.Owners, "unbewohnt"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 123, Col: 210}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 210}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -424,7 +424,7 @@ func UnitOccupancies(items []UnitOccupancy) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(occupancyPeopleText(item.Renters, "frei"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 123, Col: 300}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 300}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -560,7 +560,7 @@ func QuickContact(item view.ContactCardView, urgent bool) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(contactRoleLabel(item))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 154, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 155, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -583,7 +583,7 @@ func QuickContact(item view.ContactCardView, urgent bool) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(item.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 158, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 159, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -601,7 +601,7 @@ func QuickContact(item view.ContactCardView, urgent bool) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(item.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 160, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 161, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -661,7 +661,7 @@ func ManagedContacts(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.ManagedContacts))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 170, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 171, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -695,7 +695,7 @@ func ManagedContacts(data ContactsPageData) templ.Component {
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(group.Kind)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 179, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 180, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
@@ -708,7 +708,7 @@ func ManagedContacts(data ContactsPageData) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(len(group.Contacts))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 179, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 180, Col: 113}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -747,7 +747,7 @@ func ManagedContacts(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.InactiveContacts))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 190, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 191, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -866,7 +866,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 210, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 211, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 			if templ_7745c5c3_Err != nil {
@@ -889,7 +889,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 210, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 211, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -907,7 +907,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 213, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 214, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 		if templ_7745c5c3_Err != nil {
@@ -920,7 +920,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Company)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 214, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 215, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 		if templ_7745c5c3_Err != nil {
@@ -933,7 +933,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Phone)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 215, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 216, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
 		if templ_7745c5c3_Err != nil {
@@ -946,7 +946,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 216, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 217, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 		if templ_7745c5c3_Err != nil {
@@ -959,7 +959,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Notes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 217, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 218, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 		if templ_7745c5c3_Err != nil {
@@ -972,7 +972,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ServiceRegion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 218, Col: 199}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 219, Col: 199}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 		if templ_7745c5c3_Err != nil {
@@ -985,7 +985,7 @@ func ContactFields(options []view.SelectOption, item view.ManagedContactView) te
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Qualification)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 218, Col: 339}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 219, Col: 339}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 		if templ_7745c5c3_Err != nil {
@@ -1063,7 +1063,7 @@ func CapabilityCheckbox(item view.ManagedContactView, value, label string) templ
 		var templ_7745c5c3_Var42 string
 		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.ResolveAttributeValue(value)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 224, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 225, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 		if templ_7745c5c3_Err != nil {
@@ -1086,7 +1086,7 @@ func CapabilityCheckbox(item view.ManagedContactView, value, label string) templ
 		var templ_7745c5c3_Var43 string
 		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 224, Col: 130}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 225, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
@@ -1146,7 +1146,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 		var templ_7745c5c3_Var47 string
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(item.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 228, Col: 150}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 229, Col: 150}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
@@ -1159,7 +1159,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 		var templ_7745c5c3_Var48 string
 		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(item.Kind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 228, Col: 191}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 229, Col: 191}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 		if templ_7745c5c3_Err != nil {
@@ -1187,7 +1187,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(item.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 234, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 235, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1206,7 +1206,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(item.EnergySummary)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 237, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 238, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -1224,7 +1224,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 				var templ_7745c5c3_Var51 string
 				templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(item.Qualification)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 239, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 240, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 				if templ_7745c5c3_Err != nil {
@@ -1248,7 +1248,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(item.Notes)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 244, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 245, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 			if templ_7745c5c3_Err != nil {
@@ -1281,7 +1281,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 252, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 253, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
 			if templ_7745c5c3_Err != nil {
@@ -1294,7 +1294,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 252, Col: 136}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 253, Col: 136}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
 			if templ_7745c5c3_Err != nil {
@@ -1312,7 +1312,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.DeleteConfirmLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 254, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 255, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 			if templ_7745c5c3_Err != nil {
@@ -1325,7 +1325,7 @@ func ManagedContact(item view.ManagedContactView, canManage bool) templ.Componen
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 254, Col: 140}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 255, Col: 140}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 			if templ_7745c5c3_Err != nil {
@@ -1378,7 +1378,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var58 string
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
 		if templ_7745c5c3_Err != nil {
@@ -1391,7 +1391,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
 		if templ_7745c5c3_Err != nil {
@@ -1404,7 +1404,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var60 string
 		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-title")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 197}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 197}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 		if templ_7745c5c3_Err != nil {
@@ -1417,7 +1417,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(item.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 218}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 218}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1430,7 +1430,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-form")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 396}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 396}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 		if templ_7745c5c3_Err != nil {
@@ -1443,7 +1443,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 503}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 503}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 		if templ_7745c5c3_Err != nil {
@@ -1456,7 +1456,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(contactActiveValue(item.Active))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 263, Col: 581}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 264, Col: 581}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
 		if templ_7745c5c3_Err != nil {
@@ -1482,7 +1482,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 			var templ_7745c5c3_Var65 string
 			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.DeleteConfirmLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 265, Col: 235}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 266, Col: 235}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 			if templ_7745c5c3_Err != nil {
@@ -1495,7 +1495,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 			var templ_7745c5c3_Var66 string
 			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 265, Col: 284}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 266, Col: 284}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 			if templ_7745c5c3_Err != nil {
@@ -1518,7 +1518,7 @@ func ContactEditDialog(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.EditDialogID + "-form")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 269, Col: 113}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 270, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
@@ -1560,7 +1560,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 		if templ_7745c5c3_Err != nil {
@@ -1573,7 +1573,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var70 string
 		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Kind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 171}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 171}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 		if templ_7745c5c3_Err != nil {
@@ -1586,7 +1586,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var71 string
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 225}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 225}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 		if templ_7745c5c3_Err != nil {
@@ -1599,7 +1599,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Company)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 285}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 285}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
@@ -1612,7 +1612,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 341}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 341}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
@@ -1625,7 +1625,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var74 string
 		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Phone)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 397}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 397}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 		if templ_7745c5c3_Err != nil {
@@ -1638,7 +1638,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var75 string
 		templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Notes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 453}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 453}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 		if templ_7745c5c3_Err != nil {
@@ -1651,7 +1651,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var76 string
 		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.ServiceRegion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 526}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 526}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 		if templ_7745c5c3_Err != nil {
@@ -1664,7 +1664,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.Qualification)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 273, Col: 598}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 274, Col: 598}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 		if templ_7745c5c3_Err != nil {
@@ -1682,7 +1682,7 @@ func ContactReactivate(item view.ManagedContactView) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue(capability)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 275, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 276, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 			if templ_7745c5c3_Err != nil {
@@ -1768,7 +1768,7 @@ func DirectoryContact(item view.ContactCardView) templ.Component {
 		var templ_7745c5c3_Var81 string
 		templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(item.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 289, Col: 103}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 290, Col: 103}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 		if templ_7745c5c3_Err != nil {
@@ -1781,7 +1781,7 @@ func DirectoryContact(item view.ContactCardView) templ.Component {
 		var templ_7745c5c3_Var82 string
 		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(item.Role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 289, Col: 144}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 290, Col: 144}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 		if templ_7745c5c3_Err != nil {
@@ -1799,7 +1799,7 @@ func DirectoryContact(item view.ContactCardView) templ.Component {
 			var templ_7745c5c3_Var83 string
 			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs(item.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 291, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 292, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 			if templ_7745c5c3_Err != nil {
@@ -1863,7 +1863,7 @@ func ContactMeta(phone, email string, hasPhone, hasEmail bool) templ.Component {
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(phone)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 300, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 301, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -1882,7 +1882,7 @@ func ContactMeta(phone, email string, hasPhone, hasEmail bool) templ.Component {
 			var templ_7745c5c3_Var86 string
 			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 303, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 304, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 			if templ_7745c5c3_Err != nil {
@@ -1934,7 +1934,7 @@ func ContactRoutes(phone, email string, hasPhone, hasEmail bool) templ.Component
 			var templ_7745c5c3_Var88 templ.SafeURL
 			templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("tel:" + phone))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 311, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 312, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 			if templ_7745c5c3_Err != nil {
@@ -1953,7 +1953,7 @@ func ContactRoutes(phone, email string, hasPhone, hasEmail bool) templ.Component
 			var templ_7745c5c3_Var89 templ.SafeURL
 			templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("mailto:" + email))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 314, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 315, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 			if templ_7745c5c3_Err != nil {
@@ -2000,7 +2000,7 @@ func ContactsAside(data ContactsPageData) templ.Component {
 		var templ_7745c5c3_Var91 templ.SafeURL
 		templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(contactsIssuesURL(data.CanManageIssues)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 320, Col: 1063}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 321, Col: 1063}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 		if templ_7745c5c3_Err != nil {
@@ -2024,7 +2024,7 @@ func ContactsAside(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var92 string
 			templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(directoryStatus(data.DirectoryOptIn))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 325, Col: 149}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 326, Col: 149}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 			if templ_7745c5c3_Err != nil {

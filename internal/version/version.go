@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.4",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Textbausteine durchsuchen, Aushang auf einmal auf- und zuklappen, Termine filtern.",
+			Intro:    "Die Textbausteine haben eine Live-Suche mit hervorgehobenen Treffern, der Aushang lässt sich komplett auf- oder zuklappen und zeigt die Farblegende auf Wunsch, die Termine haben eine Leiste für Suche und Filter, und die Verwaltungs-Einstellungen erklären den Automatisierungs-Status.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.3",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

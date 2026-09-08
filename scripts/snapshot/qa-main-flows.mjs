@@ -1462,7 +1462,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
     { width: 1440, height: 900 },
   ]) {
   const routeChecks = [
-    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: 'aside.aside > details.guide', guideOpen: true },
+    { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: '.announcement-legend' },
     { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside > details.guide' },
     { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside > details.aside-panel', guide: '.contacts-aside > details.aside-panel' },
     { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.file-details' },
@@ -1623,6 +1623,22 @@ async function assertResidentContentClickFlows() {
   const announcementBody = announcement.locator('.announcement-body');
   if (!(await announcementBody.evaluate((node) => node.open))) await announcementBody.locator('summary').click();
   if (!(await announcementBody.locator('.announcement-body-content').isVisible())) fail('Aushang lesen: Inhalt bleibt verborgen');
+  await page.getByRole('button', { name: 'Alle einklappen', exact: true }).click();
+  if (await page.locator('.announcement-card > details[open]').count()) fail('Aushang: Alle einklappen lässt Beiträge offen');
+  const collapsedHeight = await announcement.evaluate(node => node.getBoundingClientRect().height);
+  if (await announcementBody.locator('.announcement-body-content').isVisible()) fail('Aushang: geschlossener Volltext ist sichtbar');
+  await page.getByRole('button', { name: 'Alle ausklappen', exact: true }).click();
+  if (await page.locator('.announcement-card > details:not([open])').count()) fail('Aushang: Alle ausklappen lässt Beiträge geschlossen');
+  const expandedHeight = await announcement.evaluate(node => node.getBoundingClientRect().height);
+  if (expandedHeight < collapsedHeight + 24) fail('Aushang: eingeklappte Karte spart nicht sichtbar Platz');
+  if (await announcement.locator('.announcement-card-preview').isVisible()) fail('Aushang: Auszug wiederholt den offenen Volltext');
+  const legend = page.locator('.announcement-legend');
+  await legend.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  if (!(await legend.locator('.announcement-legend-popover').isVisible())) fail('Aushang: Farblegende ist nicht per Tastatur erreichbar');
+  await page.keyboard.press('Escape');
+  if (await legend.evaluate(node => node.open)) fail('Aushang: Escape schließt die Farblegende nicht');
+
 
   await page.goto(`${baseURL}/app/events`, { waitUntil: 'networkidle' });
   const calendar = page.getByRole('link', { name: 'Kalender abonnieren' });

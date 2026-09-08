@@ -9,8 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/inspr-at/hausv-org/internal/view"
+	"net/url"
 	"strings"
+
+	"github.com/inspr-at/hausv-org/internal/view"
 )
 
 type EventsMonth struct {
@@ -19,17 +21,20 @@ type EventsMonth struct {
 }
 
 type EventsPageData struct {
-	Portal          PortalPageData
-	AssetVersion    string
-	NowInput        string
-	CalendarFeedURL string
-	Message         string
-	MessageOK       bool
-	CanManageEvents bool
-	CanManageIssues bool
-	Upcoming        []view.HouseEventView
-	Months          []EventsMonth
-	Past            []view.HouseEventView
+	SearchQuery             string
+	SelectedStatus          string
+	CurrentCount, PastCount int
+	Portal                  PortalPageData
+	AssetVersion            string
+	NowInput                string
+	CalendarFeedURL         string
+	Message                 string
+	MessageOK               bool
+	CanManageEvents         bool
+	CanManageIssues         bool
+	Upcoming                []view.HouseEventView
+	Months                  []EventsMonth
+	Past                    []view.HouseEventView
 }
 
 func EventsPage(data EventsPageData) templ.Component {
@@ -110,7 +115,7 @@ func EventsStyles() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<style>.events-main{min-width:0;padding:var(--space-6)}\n\t\t.events-main .page{max-width:1180px;margin:var(--space-5) auto 0}\n\t\t.events-main .flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}\n\t\t.events-main .flash.ok{border-color:var(--gold)}\n\t\t.events-main .events-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}\n\t\t.events-main .events-column,.events-main .events-aside{min-width:0;display:grid;gap:var(--space-4)}\n\t\t.events-main .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}\n\t\t.events-main .agenda-panel{padding:var(--space-5)}\n\t\t.events-main .section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-4)}\n\t\t.events-main .kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}\n\t\t.events-main .section-head h2{margin-top:var(--space-1);font-size:26px}\n\t\t.events-main .section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}\n\t\t.events-main .count{color:var(--muted);font-size:11px;white-space:nowrap}\n\t\t.events-main .event-month{margin-top:var(--space-5)}\n\t\t.events-main .event-month:first-child{margin-top:0}\n\t\t.events-main .month-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-3)}\n\t\t.events-main .month-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}\n\t\t.events-main .month-head span{color:var(--soft);font-size:11px}\n\t\t.events-main .agenda-list{display:grid;gap:var(--space-3)}\n\t\t.events-main .event-card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}\n\t\t.events-main .event-card.past{opacity:.65}\n\t\t.events-main .date-badge{width:60px;height:60px;display:grid;place-content:center;border-radius:var(--radius-sm);background:var(--leaf);color:var(--panel);text-align:center}\n\t\t.events-main .event-card.past .date-badge{background:var(--muted)}\n\t\t.events-main .date-badge strong{font-family:var(--font-serif);font-size:24px;line-height:.85}\n\t\t.events-main .date-badge span{margin-top:6px;font-size:9px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}\n\t\t.events-main .event-copy{min-width:0;display:flex;flex-direction:column;gap:var(--space-2)}\n\t\t.events-main .event-card-head{display:flex;align-items:start;gap:var(--space-3);flex-wrap:wrap}\n\t\t.events-main .event-title-group{display:flex;flex-direction:column;gap:var(--space-1);flex:1;min-width:0}\n\t\t.events-main .next-label{display:inline-block;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}\n\t\t.events-main .event-card-head h3{font-size:19px;line-height:1.3}\n\t\t.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:700;white-space:nowrap}\n\t\t.events-main .event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}\n\t\t.events-main .event-meta>span{white-space:nowrap}\n\t\t.events-main .event-details{margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t.events-main .event-details>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}\n\t\t.events-main .event-details-body{display:grid;gap:var(--space-3);padding:0 var(--space-3) var(--space-3);border-top:1px solid var(--line)}\n\t\t.events-main .entry-body{padding-top:var(--space-3);font-size:13px;line-height:1.55;white-space:normal}\n\t\t.events-main .event-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}\n\t\t.events-main .event-actions form{margin:0}\n\t\t.events-main .history{border-top:1px solid var(--line)}\n\t\t.events-main .history>summary{min-height:48px;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:12px;font-weight:800}\n\t\t.events-main .blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}\n\t\t.events-main .blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}\n\t\t.events-main .blank h2{font-size:27px}\n\t\t.events-main .blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}\n\t\t.events-main .blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}\n\t\t.events-main .aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}\n\t\t.events-main .aside-panel h2{margin-top:var(--space-1);font-size:17px}\n\t\t.events-main .aside-panel>p{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.events-main .aside-panel .button{min-height:38px;font-size:12px}\n\t\t.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:10px;line-height:1.4}\n\t\t.events-main .guide>summary{cursor:pointer;list-style:none}\n\t\t.events-main .guide>summary::-webkit-details-marker{display:none}\n\t\t.events-main .guide .kicker{font-size:9px}\n\t\t.events-main .guide h2{font-size:14px}\n\t\t.events-main .legend{display:grid;gap:var(--space-2);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}\n\t\t.events-main .legend li{display:grid;gap:var(--space-1)}\n\t\t.events-main .legend li .tag{font-size:9px}\n\t\t.events-main .legend li>span:last-child{color:var(--muted);font-size:10px;line-height:1.4}\n\t\t.events-main .attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2)}\n\t\t.events-main .attachment-item{position:relative;min-width:0}\n\t\t.events-main .attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}\n\t\t.events-main .attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}\n\t\t.events-main .attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}\n\t\t.events-main .attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}\n\t\t.events-main .attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}\n\t\t.events-main .attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker.has-files{display:grid}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-head,:is(.events-main,.event-dialog) .attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-list{display:grid;gap:var(--space-2)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-copy{min-width:0;display:grid;flex:1}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-meta{color:var(--soft)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-progress{display:none}\n\t\t.events-main .attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}\n\t\t.events-main .attachment-lightbox.open{display:grid}\n\t\t.events-main .attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}\n\t\t.events-main .attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}\n\t\t.events-main .attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}\n\t\t.events-main .lightbox-close,.events-main .lightbox-prev,.events-main .lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}\n\t\t.events-main .lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}\n\t\t.events-main .lightbox-prev,.events-main .lightbox-next{width:46px;height:70px;font-size:26px}\n\t\t.events-main .lightbox-prev{grid-column:1;grid-row:2}\n\t\t.events-main .lightbox-next{grid-column:3;grid-row:2}\n\t\t.event-dialog{width:min(640px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:auto;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}\n\t\t.event-dialog form{min-width:0;max-height:inherit;margin:0}\n\t\t.event-dialog .dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);padding:var(--space-6);border-bottom:1px solid var(--line)}\n\t\t.event-dialog .dialog-head h2{margin:0;font-family:var(--font-serif);font-size:28px;line-height:1.2}\n\t\t.event-dialog .dialog-head p{margin:var(--space-2) 0 0;color:var(--muted);font-size:13px;line-height:1.5;overflow-wrap:break-word}\n\t\t.event-dialog .dialog-close{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--ink);font-size:24px}\n\t\t.event-dialog .dialog-body{min-width:0;min-height:0;padding:var(--space-6);overflow:auto;overscroll-behavior:contain}\n\t\t.event-dialog .dialog-grid,.event-dialog .dialog-optional-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}\n\t\t.event-dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--ink);font-size:13px;font-weight:700}\n\t\t.event-dialog input,.event-dialog select,.event-dialog textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--ink);font-size:16px;font-weight:400}\n\t\t.event-dialog textarea{min-height:112px;resize:vertical}\n\t\t.event-dialog .dialog-optional{min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t.event-dialog .dialog-optional>summary{min-height:48px;display:flex;align-items:center;padding:var(--space-4) 40px var(--space-4) var(--space-4);cursor:pointer;font-size:13px;font-weight:700}\n\t\t.event-dialog .dialog-optional-grid{padding:var(--space-4);border-top:1px solid var(--line)}\n\t\t.event-dialog .file-control{position:relative;min-height:48px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--gold-ink)}\n\t\t.event-dialog .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}\n\t\t.event-dialog :is(input,select,textarea,button,summary):focus-visible,.event-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:3px}\n\t\t.event-dialog .dialog-footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2);padding:var(--space-4) var(--space-6);border-top:1px solid var(--line);background:var(--panel)}\n\t\t.event-dialog .dialog-footer .button{min-height:48px;margin:0;padding:var(--space-2) var(--space-4)}\n\t\t.event-dialog .button.primary{background:var(--gold);color:var(--nav)}\n\t\t.event-dialog .button.ghost{border-color:transparent;background:transparent;color:var(--muted)}\n\t\t@media(max-width:520px){.event-dialog .dialog-head,.event-dialog .dialog-body,.event-dialog .dialog-footer{padding:var(--space-4)}.event-dialog .dialog-head h2{font-size:24px}.event-dialog .dialog-footer .button{flex:1 1 auto}}\n\t\t@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}\n\t\t@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<style>.events-main{min-width:0;padding:var(--space-6)}\n\t\t.events-main .page{max-width:1180px;margin:var(--space-5) auto 0}\n\t\t.events-main .flash{margin-top:var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:13px}\n\t\t.events-main .flash.ok{border-color:var(--gold)}\n\t\t.events-main .events-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--space-5);margin-top:var(--space-5);align-items:start}\n\t\t.events-main .events-column,.events-main .events-aside{min-width:0;display:grid;gap:var(--space-4)}\n\t\t.events-main .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}\n\t\t.events-main .agenda-panel{padding:var(--space-5)}\n\t\t.events-main .section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-4)}\n\t\t.events-main .kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}\n\t\t.events-main .section-head h2{margin-top:var(--space-1);font-size:26px}\n\t\t.events-main .section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}\n\t\t.events-main .count{color:var(--muted);font-size:11px;white-space:nowrap}\n\t\t.events-main .event-month{margin-top:var(--space-5)}\n\t\t.events-main .event-month:first-child{margin-top:0}\n\t\t.events-main .month-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-3)}\n\t\t.events-main .month-head h3{color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}\n\t\t.events-main .month-head span{color:var(--soft);font-size:11px}\n\t\t.events-main .agenda-list{display:grid;gap:var(--space-3)}\n\t\t.events-main .event-card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}\n\t\t.events-main .event-card.past{opacity:.65}\n\t\t.events-main .date-badge{width:60px;height:60px;display:grid;place-content:center;border-radius:var(--radius-sm);background:var(--leaf);color:var(--panel);text-align:center}\n\t\t.events-main .event-card.past .date-badge{background:var(--muted)}\n\t\t.events-main .date-badge strong{font-family:var(--font-serif);font-size:24px;line-height:.85}\n\t\t.events-main .date-badge span{margin-top:6px;font-size:9px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}\n\t\t.events-main .event-copy{min-width:0;display:flex;flex-direction:column;gap:var(--space-2)}\n\t\t.events-main .event-card-head{display:flex;align-items:start;gap:var(--space-3);flex-wrap:wrap}\n\t\t.events-main .event-title-group{display:flex;flex-direction:column;gap:var(--space-1);flex:1;min-width:0}\n\t\t.events-main .next-label{display:inline-block;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}\n\t\t.events-main .event-card-head h3{font-size:19px;line-height:1.3}\n\t\t.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:700;white-space:nowrap}\n\t\t.events-main .event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}\n\t\t.events-main .event-meta>span{white-space:nowrap}\n\t\t.events-main .event-details{margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t.events-main .event-details>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}\n\t\t.events-main .event-details-body{display:grid;gap:var(--space-3);padding:0 var(--space-3) var(--space-3);border-top:1px solid var(--line)}\n\t\t.events-main .entry-body{padding-top:var(--space-3);font-size:13px;line-height:1.55;white-space:normal}\n\t\t.events-main .event-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}\n\t\t.events-main .event-actions form{margin:0}\n\t\t.events-main .history{border-top:1px solid var(--line)}\n\t\t.events-main .history>summary{min-height:48px;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:12px;font-weight:800}\n\t\t.events-main .blank{min-height:320px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}\n\t\t.events-main .blank-icon{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--gold-ink)}\n\t\t.events-main .blank h2{font-size:27px}\n\t\t.events-main .blank p{max-width:48ch;color:var(--muted);font-size:13px;line-height:1.5}\n\t\t.events-main .blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}\n\t\t.events-main .aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}\n\t\t.events-main .aside-panel h2{margin-top:var(--space-1);font-size:17px}\n\t\t.events-main .aside-panel>p{color:var(--muted);font-size:11px;line-height:1.5}\n\t\t.events-main .aside-panel .button{min-height:38px;font-size:12px}\n\t\t.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:10px;line-height:1.4}\n\t\t.events-main .guide>summary{cursor:pointer;list-style:none}\n\t\t.events-main .guide>summary::-webkit-details-marker{display:none}\n\t\t.events-main .guide .kicker{font-size:9px}\n\t\t.events-main .guide h2{font-size:14px}\n\t\t.events-main .legend{display:grid;gap:var(--space-2);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}\n\t\t.events-main .legend li{display:grid;gap:var(--space-1)}\n\t\t.events-main .legend li .tag{font-size:9px}\n\t\t.events-main .legend li>span:last-child{color:var(--muted);font-size:10px;line-height:1.4}\n\t\t.events-main .attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2)}\n\t\t.events-main .attachment-item{position:relative;min-width:0}\n\t\t.events-main .attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}\n\t\t.events-main .attachment-open img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-xs);background:var(--line)}\n\t\t.events-main .attachment-file-icon{width:100%;aspect-ratio:4/3;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:900}\n\t\t.events-main .attachment-name{min-width:0;color:var(--muted);font-size:11px;font-weight:700;overflow-wrap:anywhere}\n\t\t.events-main .attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);margin:0}\n\t\t.events-main .attachment-delete button{width:30px;height:30px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker{display:none;gap:var(--space-2);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker.has-files{display:grid}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-head,:is(.events-main,.event-dialog) .attachment-picker-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:11px}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-list{display:grid;gap:var(--space-2)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-thumb{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-xs);overflow:hidden}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-copy{min-width:0;display:grid;flex:1}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-meta{color:var(--soft)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-remove{width:34px;height:34px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}\n\t\t:is(.events-main,.event-dialog) .attachment-picker-progress{display:none}\n\t\t.events-main .attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:48px minmax(0,1fr) 48px;grid-template-rows:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}\n\t\t.events-main .attachment-lightbox.open{display:grid}\n\t\t.events-main .attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-3);min-width:0;min-height:0;margin:0}\n\t\t.events-main .attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);background:var(--nav-2)}\n\t\t.events-main .attachment-lightbox figcaption{text-align:center;font-size:12px;overflow-wrap:anywhere}\n\t\t.events-main .lightbox-close,.events-main .lightbox-prev,.events-main .lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}\n\t\t.events-main .lightbox-close{grid-column:3;grid-row:1;width:42px;height:42px}\n\t\t.events-main .lightbox-prev,.events-main .lightbox-next{width:46px;height:70px;font-size:26px}\n\t\t.events-main .lightbox-prev{grid-column:1;grid-row:2}\n\t\t.events-main .lightbox-next{grid-column:3;grid-row:2}\n\t\t.event-dialog{width:min(640px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:auto;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}\n\t\t.event-dialog form{min-width:0;max-height:inherit;margin:0}\n\t\t.event-dialog .dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);padding:var(--space-6);border-bottom:1px solid var(--line)}\n\t\t.event-dialog .dialog-head h2{margin:0;font-family:var(--font-serif);font-size:28px;line-height:1.2}\n\t\t.event-dialog .dialog-head p{margin:var(--space-2) 0 0;color:var(--muted);font-size:13px;line-height:1.5;overflow-wrap:break-word}\n\t\t.event-dialog .dialog-close{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--ink);font-size:24px}\n\t\t.event-dialog .dialog-body{min-width:0;min-height:0;padding:var(--space-6);overflow:auto;overscroll-behavior:contain}\n\t\t.event-dialog .dialog-grid,.event-dialog .dialog-optional-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}\n\t\t.event-dialog label{min-width:0;display:grid;gap:var(--space-2);color:var(--ink);font-size:13px;font-weight:700}\n\t\t.event-dialog input,.event-dialog select,.event-dialog textarea{box-sizing:border-box;min-width:0;width:100%;max-width:100%;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--ink);font-size:16px;font-weight:400}\n\t\t.event-dialog textarea{min-height:112px;resize:vertical}\n\t\t.event-dialog .dialog-optional{min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}\n\t\t.event-dialog .dialog-optional>summary{min-height:48px;display:flex;align-items:center;padding:var(--space-4) 40px var(--space-4) var(--space-4);cursor:pointer;font-size:13px;font-weight:700}\n\t\t.event-dialog .dialog-optional-grid{padding:var(--space-4);border-top:1px solid var(--line)}\n\t\t.event-dialog .file-control{position:relative;min-height:48px;display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-4);background:var(--panel);color:var(--gold-ink)}\n\t\t.event-dialog .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}\n\t\t.event-dialog :is(input,select,textarea,button,summary):focus-visible,.event-dialog .file-control:focus-within{outline:2px solid var(--gold-ink);outline-offset:3px}\n\t\t.event-dialog .dialog-footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2);padding:var(--space-4) var(--space-6);border-top:1px solid var(--line);background:var(--panel)}\n\t\t.event-dialog .dialog-footer .button{min-height:48px;margin:0;padding:var(--space-2) var(--space-4)}\n\t\t.event-dialog .button.primary{background:var(--gold);color:var(--nav)}\n\t\t.event-dialog .button.ghost{border-color:transparent;background:transparent;color:var(--muted)}\n\t\t@media(max-width:520px){.event-dialog .dialog-head,.event-dialog .dialog-body,.event-dialog .dialog-footer{padding:var(--space-4)}.event-dialog .dialog-head h2{font-size:24px}.event-dialog .dialog-footer .button{flex:1 1 auto}}\n\t\t@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}\n\t\t@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}\n\t\t.events-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}\n\t\t.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}.event-search{display:flex;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--panel)}\n\t\t.event-search input{min-width:0;width:100%;border:0;padding:8px 16px;background:transparent;color:var(--ink);font-size:14px}\n\t\t.event-search button{flex:none;border:0;border-left:1px solid var(--line);padding:8px 16px;background:var(--panel-soft);color:var(--gold-ink);font-weight:750}\n\t\t.event-segments{display:flex;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper)}\n\t\t.event-segments a{display:flex;justify-content:center;align-items:center;gap:8px;padding:8px 16px;font-size:12px;color:var(--muted);border-radius:var(--radius-sm);white-space:nowrap}\n\t\t.event-segments a[aria-current=page]{background:var(--nav);color:var(--panel);font-weight:750}\n\t\t.event-segments a span{min-width:24px;padding:2px 4px;border-radius:var(--radius-pill);background:rgba(128,128,128,.12);font-variant-numeric:tabular-nums;text-align:center}\n\t\t@media(max-width:1100px){.events-toolbar{grid-template-columns:minmax(0,1fr)}.event-segments a{flex:1}}\n\t\t@media(max-width:480px){.events-toolbar{padding:8px;gap:8px}.event-segments a{gap:4px;padding:8px;font-size:11px}.event-search button{padding-inline:8px}}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -239,7 +244,7 @@ func EventsBody(data EventsPageData) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 179, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 194, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -249,6 +254,10 @@ func EventsBody(data EventsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+		}
+		templ_7745c5c3_Err = EventsToolbar(data).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"events-layout\"><div class=\"events-column\">")
 		if templ_7745c5c3_Err != nil {
@@ -262,7 +271,7 @@ func EventsBody(data EventsPageData) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Upcoming))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 185, Col: 253}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 201, Col: 253}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -280,7 +289,7 @@ func EventsBody(data EventsPageData) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(month.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 187, Col: 81}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 203, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -293,7 +302,7 @@ func EventsBody(data EventsPageData) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(len(month.Events))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 187, Col: 113}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 203, Col: 113}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -306,7 +315,7 @@ func EventsBody(data EventsPageData) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(eventCountWord(len(month.Events)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 187, Col: 151}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 203, Col: 151}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -337,8 +346,41 @@ func EventsBody(data EventsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+		} else if len(data.Past) > 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<section class=\"panel agenda-panel\"><header class=\"section-head\"><h2>Abgelaufene Termine</h2><span class=\"count\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var14 string
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Past))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 214, Col: 135}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " Termine</span></header><div class=\"agenda-list\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for _, event := range data.Past {
+				templ_7745c5c3_Err = EventCard(event).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></section>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else if data.SearchQuery != "" || data.SelectedStatus == "past" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<section class=\"panel blank\"><h2>Keine passenden Termine</h2><p>Für diese Suche und diesen Zeitraum sind keine Termine vorhanden.</p><a class=\"button\" href=\"/app/events?status=all\">Alle Termine ansehen</a></section>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<section class=\"panel blank\" aria-label=\"Termine des Hauses\"><span class=\"blank-icon\" aria-hidden=\"true\">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class=\"blank-actions\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel blank\" aria-label=\"Termine des Hauses\"><span class=\"blank-icon\" aria-hidden=\"true\">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class=\"blank-actions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -348,72 +390,218 @@ func EventsBody(data EventsPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<a class=\"button primary\" href=\"/app/announcements\">Aushang ansehen</a> <a class=\"button ghost\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a class=\"button primary\" href=\"/app/announcements\">Aushang ansehen</a> <a class=\"button ghost\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var14 templ.SafeURL
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(eventsIssuesURL(data.CanManageIssues)))
+				var templ_7745c5c3_Var15 templ.SafeURL
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(eventsIssuesURL(data.CanManageIssues)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 203, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 227, Col: 91}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">Anliegen melden</a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\">Anliegen melden</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(data.Past) > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel agenda-panel\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = EventHistory(data.Past).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</section>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div><aside class=\"events-aside\" aria-label=\"Hinweise zu Terminen\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><aside class=\"events-aside\" aria-label=\"Hinweise zu Terminen\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CalendarFeedURL != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<section class=\"panel aside-panel\" aria-labelledby=\"events-feed-title\"><div><span class=\"kicker\">Eigener Kalender</span><h2 id=\"events-feed-title\">Einmal abonnieren</h2></div><p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class=\"button primary\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<section class=\"panel aside-panel\" aria-labelledby=\"events-feed-title\"><div><span class=\"kicker\">Eigener Kalender</span><h2 id=\"events-feed-title\">Einmal abonnieren</h2></div><p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class=\"button primary\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var15 templ.SafeURL
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.CalendarFeedURL))
+			var templ_7745c5c3_Var16 templ.SafeURL
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.CalendarFeedURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 213, Col: 360}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 234, Col: 360}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\">Kalender abonnieren</a><p class=\"feed-note\">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\">Kalender abonnieren</a><p class=\"feed-note\">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<details class=\"panel aside-panel guide\" aria-labelledby=\"events-legend-title\"><summary><span class=\"kicker\">Was hier erscheint</span><h2 id=\"events-legend-title\">Termine im Haus</h2></summary><ul class=\"legend\"><li><span class=\"tag\">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class=\"tag\">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class=\"tag\">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li><li><span class=\"tag\">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class=\"tag\">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details></aside></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<details class=\"panel aside-panel guide\" aria-labelledby=\"events-legend-title\"><summary><span class=\"kicker\">Was hier erscheint</span><h2 id=\"events-legend-title\">Termine im Haus</h2></summary><ul class=\"legend\"><li><span class=\"tag\">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class=\"tag\">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class=\"tag\">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li><li><span class=\"tag\">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class=\"tag\">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details></aside></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
+}
+
+func EventsToolbar(data EventsPageData) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var17 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var17 == nil {
+			templ_7745c5c3_Var17 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div class=\"events-toolbar\"><form class=\"event-search\" method=\"get\" action=\"/app/events\" role=\"search\"><input type=\"hidden\" name=\"status\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.SelectedStatus)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 243, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\"><label class=\"sr-only\" for=\"event-search\">Termine suchen</label><input id=\"event-search\" type=\"search\" name=\"q\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.SearchQuery)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 243, Col: 279}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" placeholder=\"Termine suchen\"><button type=\"submit\">Suchen</button></form><nav class=\"event-segments\" aria-label=\"Zeitraum der Termine\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = EventSegment("Aktuell", "current", data.CurrentCount, data).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = EventSegment("Abgelaufen", "past", data.PastCount, data).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = EventSegment("Alle", "all", data.CurrentCount+data.PastCount, data).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</nav></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func EventSegment(label, status string, count int, data EventsPageData) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var20 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var20 == nil {
+			templ_7745c5c3_Var20 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var21 templ.SafeURL
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(eventFilterURL(status, data.SearchQuery)))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 253, Col: 66}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" aria-current=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(data.SelectedStatus == status || (data.SelectedStatus == "" && status == "all")))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 253, Col: 182}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 253, Col: 192}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var24 string
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(count)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 253, Col: 207}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</span></a>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func eventFilterURL(status, query string) string {
+	params := url.Values{"status": {status}}
+	if query != "" {
+		params.Set("q", query)
+	}
+	return "/app/events?" + params.Encode()
 }
 
 func EventCreateButton(label string) templ.Component {
@@ -432,25 +620,25 @@ func EventCreateButton(label string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var16 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var16 == nil {
-			templ_7745c5c3_Var16 = templ.NopComponent
+		templ_7745c5c3_Var25 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var25 == nil {
+			templ_7745c5c3_Var25 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<button class=\"button primary\" type=\"button\" data-dialog=\"event-create\" aria-haspopup=\"dialog\" aria-controls=\"event-create\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<button class=\"button primary\" type=\"button\" data-dialog=\"event-create\" aria-haspopup=\"dialog\" aria-controls=\"event-create\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+		var templ_7745c5c3_Var26 string
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 221, Col: 216}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 263, Col: 216}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -474,25 +662,25 @@ func EventHistory(events []view.HouseEventView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var18 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var18 == nil {
-			templ_7745c5c3_Var18 = templ.NopComponent
+		templ_7745c5c3_Var27 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var27 == nil {
+			templ_7745c5c3_Var27 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<details class=\"history\"><summary>Vergangene Termine · ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<details class=\"history\"><summary>Vergangene Termine · ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(len(events))
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(len(events))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 225, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 267, Col: 70}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</summary><div class=\"agenda-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</summary><div class=\"agenda-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -502,7 +690,7 @@ func EventHistory(events []view.HouseEventView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div></details>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -526,184 +714,184 @@ func EventCard(event view.HouseEventView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var20 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var20 == nil {
-			templ_7745c5c3_Var20 = templ.NopComponent
+		templ_7745c5c3_Var29 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var29 == nil {
+			templ_7745c5c3_Var29 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var21 = []any{"event-card", templ.KV("past", event.Past)}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var21...)
+		var templ_7745c5c3_Var30 = []any{"event-card", templ.KV("past", event.Past)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var30...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<article id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<article id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue("event-" + event.ID)
+		var templ_7745c5c3_Var31 string
+		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.ResolveAttributeValue("event-" + event.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 233, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 275, Col: 34}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" class=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var21).String())
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var32 string
+		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var30).String())
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 1, Col: 0}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"><time class=\"date-badge\"><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><time class=\"date-badge\"><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeDay)
+		var templ_7745c5c3_Var33 string
+		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeDay)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 234, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 276, Col: 55}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</strong><span>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeMonth)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 234, Col: 94}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</strong><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</span></time><div class=\"event-copy\"><header class=\"event-card-head\"><div class=\"event-title-group\">")
+		var templ_7745c5c3_Var34 string
+		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(event.DateBadgeMonth)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 276, Col: 94}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</span></time><div class=\"event-copy\"><header class=\"event-card-head\"><div class=\"event-title-group\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if event.IsNext {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<span class=\"next-label\">Als Nächstes</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<span class=\"next-label\">Als Nächstes</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<h3>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(event.Title)
+		var templ_7745c5c3_Var35 string
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(event.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 239, Col: 20}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 281, Col: 20}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</h3></div><span class=\"event-category\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(event.Category)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 239, Col: 78}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</h3></div><span class=\"event-category\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</span> ")
+		var templ_7745c5c3_Var36 string
+		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(event.Category)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 281, Col: 78}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if event.Status != "" && event.Status != "Geplant" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<span class=\"tag\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<span class=\"tag\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var28 string
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(event.Status)
+			var templ_7745c5c3_Var37 string
+			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(event.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 241, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 283, Col: 36}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</header><div class=\"event-meta\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</header><div class=\"event-meta\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var29 string
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(event.TimeRange)
+		var templ_7745c5c3_Var38 string
+		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(event.TimeRange)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 243, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 285, Col: 58}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if event.HasLocation {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "<span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var30 string
-			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(event.Location)
+			var templ_7745c5c3_Var39 string
+			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(event.Location)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 245, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 287, Col: 26}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if event.HasBody || event.HasAttachments {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<details class=\"event-details\"><summary>Details ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<details class=\"event-details\"><summary>Details ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if event.HasAttachments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<span>&nbsp;&amp; Anhänge</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<span>&nbsp;&amp; Anhänge</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</summary><div class=\"event-details-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</summary><div class=\"event-details-body\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if event.HasBody {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"entry-body\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "<div class=\"entry-body\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -711,7 +899,7 @@ func EventCard(event view.HouseEventView) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -720,70 +908,70 @@ func EventCard(event view.HouseEventView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</div></details> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</div></details> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if event.CanManage {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"event-actions\"><button class=\"button small\" type=\"button\" data-dialog=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "<div class=\"event-actions\"><button class=\"button small\" type=\"button\" data-dialog=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var31 string
-			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
+			var templ_7745c5c3_Var40 string
+			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 261, Col: 105}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 303, Col: 105}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\" aria-haspopup=\"dialog\" aria-controls=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var32 string
-			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 261, Col: 165}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" aria-haspopup=\"dialog\" aria-controls=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\">Bearbeiten</button><form method=\"post\" action=\"/app/events/delete\" data-confirm=\"")
+			var templ_7745c5c3_Var41 string
+			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 303, Col: 165}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var41)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var33 string
-			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.DeleteConfirmLabel)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 261, Col: 274}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\">Bearbeiten</button><form method=\"post\" action=\"/app/events/delete\" data-confirm=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			var templ_7745c5c3_Var42 string
+			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.DeleteConfirmLabel)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 303, Col: 274}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var34 string
-			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.ID)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 261, Col: 324}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\"><input type=\"hidden\" name=\"id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\"><button class=\"button small ghost\" type=\"submit\">Löschen</button></form></div>")
+			var templ_7745c5c3_Var43 string
+			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.ID)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 303, Col: 324}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "\"><button class=\"button small ghost\" type=\"submit\">Löschen</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</div></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</div></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -813,214 +1001,214 @@ func EventAttachments(attachments []view.AttachmentView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var35 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var35 == nil {
-			templ_7745c5c3_Var35 = templ.NopComponent
+		templ_7745c5c3_Var44 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var44 == nil {
+			templ_7745c5c3_Var44 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(attachments) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<div class=\"attachment-strip\" aria-label=\"Anhänge\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, attachment := range attachments {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"attachment-item\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"attachment-item\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if attachment.IsImage {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var36 string
-					templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 276, Col: 93}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "\" data-lightbox-full=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var37 string
-					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 276, Col: 131}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\" data-lightbox-caption=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var38 string
-					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 276, Col: 177}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\"><img src=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var39 string
-					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 277, Col: 37}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" alt=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var40 string
-					templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 277, Col: 65}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40)
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\" loading=\"lazy\" decoding=\"async\"> <span class=\"attachment-name\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var41 string
-					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 278, Col: 58}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</span></button> ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				if !attachment.IsImage {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<a class=\"attachment-open\" href=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var42 templ.SafeURL
-					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 282, Col: 69}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					if attachment.IsPDF {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span>PDF</span> ")
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-					}
-					if !attachment.IsPDF {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<span>Datei</span>")
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</span><span class=\"attachment-name\">")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var43 string
-					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 289, Col: 64}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "</span></a> ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				if attachment.CanDelete {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<form class=\"attachment-delete\" method=\"post\" action=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var44 templ.SafeURL
-					templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 292, Col: 96}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<button class=\"attachment-open\" type=\"button\" data-lightbox-src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var45 string
-					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
+					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.PreviewURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 292, Col: 191}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 318, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\"> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "\" data-lightbox-full=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var46 string
+					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.URL)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 318, Col: 131}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "\" data-lightbox-caption=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var47 string
+					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 318, Col: 177}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\"><img src=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var48 string
+					templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ThumbURL)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 319, Col: 37}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\" alt=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var49 string
+					templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.Filename)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 319, Col: 65}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var49)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "\" loading=\"lazy\" decoding=\"async\"> <span class=\"attachment-name\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var50 string
+					templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 320, Col: 58}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</span></button> ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				if !attachment.IsImage {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<a class=\"attachment-open\" href=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var51 templ.SafeURL
+					templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.URL))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 324, Col: 69}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "\" target=\"_blank\" rel=\"noopener\"><span class=\"attachment-file-icon\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					if attachment.IsPDF {
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<span>PDF</span> ")
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+					}
+					if !attachment.IsPDF {
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<span>Datei</span>")
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</span><span class=\"attachment-name\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var52 string
+					templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(attachment.Filename)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 331, Col: 64}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</span></a> ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				if attachment.CanDelete {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<form class=\"attachment-delete\" method=\"post\" action=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var53 templ.SafeURL
+					templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(attachment.DeleteURL))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 334, Col: 96}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "\" data-confirm=\"Diesen Anhang entfernen?\"><input type=\"hidden\" name=\"id\" value=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var54 string
+					templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.ID)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 334, Col: 191}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\"> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					if attachment.DeleteRedirect != "" {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<input type=\"hidden\" name=\"redirect\" value=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<input type=\"hidden\" name=\"redirect\" value=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var46 string
-						templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
+						var templ_7745c5c3_Var55 string
+						templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(attachment.DeleteRedirect)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 294, Col: 78}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 336, Col: 78}
 						}
-						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
+						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "\"> ")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\"> ")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<button type=\"submit\" aria-label=\"Anhang entfernen\">×</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1045,50 +1233,50 @@ func EventCreateDialog(nowInput, houseName, address string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var47 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var47 == nil {
-			templ_7745c5c3_Var47 = templ.NopComponent
+		templ_7745c5c3_Var56 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var56 == nil {
+			templ_7745c5c3_Var56 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<dialog id=\"event-create\" class=\"dialog event-dialog\" aria-labelledby=\"event-create-title\" aria-describedby=\"event-create-house\"><form method=\"post\" action=\"/app/events\" enctype=\"multipart/form-data\"><header class=\"dialog-head\"><div><h2 id=\"event-create-title\">Neuer Termin</h2><p id=\"event-create-house\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<dialog id=\"event-create\" class=\"dialog event-dialog\" aria-labelledby=\"event-create-title\" aria-describedby=\"event-create-house\"><form method=\"post\" action=\"/app/events\" enctype=\"multipart/form-data\"><header class=\"dialog-head\"><div><h2 id=\"event-create-title\">Neuer Termin</h2><p id=\"event-create-house\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if eventDialogRepeatsHouse(houseName, address) {
-			var templ_7745c5c3_Var48 string
-			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(address)
+			var templ_7745c5c3_Var57 string
+			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(address)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 309, Col: 15}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 351, Col: 15}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			var templ_7745c5c3_Var49 string
-			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(houseName)
+			var templ_7745c5c3_Var58 string
+			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(houseName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 311, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 353, Col: 17}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<br>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var50 string
-			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(address)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<br>")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 311, Col: 33}
+				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
+			var templ_7745c5c3_Var59 string
+			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(address)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 353, Col: 33}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></header><div class=\"dialog-body\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</p></div><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></header><div class=\"dialog-body\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1096,7 +1284,7 @@ func EventCreateDialog(nowInput, houseName, address string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Termin veröffentlichen</button></footer></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Termin veröffentlichen</button></footer></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1120,64 +1308,64 @@ func EventEditDialog(event view.HouseEventView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var51 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var51 == nil {
-			templ_7745c5c3_Var51 = templ.NopComponent
+		templ_7745c5c3_Var60 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var60 == nil {
+			templ_7745c5c3_Var60 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<dialog id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<dialog id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var52 string
-		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
+		var templ_7745c5c3_Var61 string
+		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 321, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 363, Col: 32}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var52)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\" class=\"dialog event-dialog\" aria-labelledby=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var53 string
-		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID + "-title")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 321, Col: 110}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var53)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "\" class=\"dialog event-dialog\" aria-labelledby=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\"><form method=\"post\" action=\"/app/events/edit\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
+		var templ_7745c5c3_Var62 string
+		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID + "-title")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 363, Col: 110}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var54 string
-		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.ID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 323, Col: 50}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var54)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "\"><form method=\"post\" action=\"/app/events/edit\" enctype=\"multipart/form-data\"><input type=\"hidden\" name=\"id\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\"><header class=\"dialog-head\"><h2 id=\"")
+		var templ_7745c5c3_Var63 string
+		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.ID)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 365, Col: 50}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var55 string
-		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID + "-title")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 324, Col: 69}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\"><header class=\"dialog-head\"><h2 id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "\">Termin bearbeiten</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></header><div class=\"dialog-body\">")
+		var templ_7745c5c3_Var64 string
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EditDialogID + "-title")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 366, Col: 69}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\">Termin bearbeiten</h2><button class=\"dialog-close\" type=\"button\" data-close-dialog aria-label=\"Schließen\">×</button></header><div class=\"dialog-body\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1185,7 +1373,7 @@ func EventEditDialog(event view.HouseEventView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></footer></form></dialog>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</div><footer class=\"dialog-footer\"><button class=\"button ghost\" type=\"button\" data-close-dialog>Abbrechen</button><button class=\"button primary\" type=\"submit\">Änderungen speichern</button></footer></form></dialog>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1209,77 +1397,77 @@ func EventFormFields(event view.HouseEventView, editing bool) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var56 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var56 == nil {
-			templ_7745c5c3_Var56 = templ.NopComponent
+		templ_7745c5c3_Var65 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var65 == nil {
+			templ_7745c5c3_Var65 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<div class=\"dialog-grid\"><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<div class=\"dialog-grid\"><label class=\"full\" for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var57 string
-		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-title", event.ID, editing))
+		var templ_7745c5c3_Var66 string
+		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-title", event.ID, editing))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 98}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "\">Titel<input id=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var58 string
-		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-title", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 164}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var58)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\">Titel<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "\" data-autofocus name=\"title\" value=\"")
+		var templ_7745c5c3_Var67 string
+		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-title", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 164}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var59 string
-		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.Title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 214}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var59)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\" data-autofocus name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "\" required autofocus maxlength=\"140\" placeholder=\"Was findet statt?\"></label><label for=\"")
+		var templ_7745c5c3_Var68 string
+		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.Title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 214}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var60 string
-		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-category", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 355}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\" required autofocus maxlength=\"140\" placeholder=\"Was findet statt?\"></label><label for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "\">Kategorie<select id=\"")
+		var templ_7745c5c3_Var69 string
+		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-category", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 355}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var61 string
-		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-category", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 429}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\">Kategorie<select id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\" name=\"category\">")
+		var templ_7745c5c3_Var70 string
+		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-category", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 429}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\" name=\"category\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1287,205 +1475,205 @@ func EventFormFields(event view.HouseEventView, editing bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</select></label><label for=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var62 string
-		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-start", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 561}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "\">Beginn · Datum und Uhrzeit<input id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var63 string
-		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-start", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 649}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var63)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "\" type=\"datetime-local\" name=\"starts_at\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.StartsAtInput)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 718}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var64)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\" required></label><label class=\"full\" for=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var65 string
-		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-location", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 814}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\">Ort (optional)<input id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var66 string
-		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-location", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 892}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "\" name=\"location\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var67 string
-		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.Location)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 933}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" maxlength=\"160\" placeholder=\"Ort hinzufügen\"></label><details class=\"dialog-optional full\"><summary>Ende, Details oder Anhang</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var68 string
-		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-end", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1177}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "\">Ende optional<input id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var69 string
-		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-end", event.ID, editing))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1249}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\" type=\"datetime-local\" name=\"ends_at\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var70 string
-		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EndsAtInput)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1314}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "\"></label><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</select></label><label for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var71 string
-		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-body", event.ID, editing))
+		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-start", event.ID, editing))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1397}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 561}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\">Details<textarea id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "\">Beginn · Datum und Uhrzeit<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var72 string
-		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-body", event.ID, editing))
+		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-start", event.ID, editing))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1467}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 649}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "\" name=\"body\" placeholder=\"Was müssen Bewohner wissen?\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\" type=\"datetime-local\" name=\"starts_at\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var73 string
-		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(event.Body)
+		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.StartsAtInput)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1537}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 718}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</textarea></label><label class=\"full\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "\" required></label><label class=\"full\" for=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var74 string
-		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-attachments", event.ID, editing))
+		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-location", event.ID, editing))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 332, Col: 1636}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 814}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if editing {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<span>Anhänge ergänzen</span> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		if !editing {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span>Anhänge</span> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span class=\"file-control\"><input id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\">Ort (optional)<input id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var75 string
-		templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-attachments", event.ID, editing))
+		templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-location", event.ID, editing))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 339, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 892}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div></details></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "\" name=\"location\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var76 string
+		templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.Location)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 933}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\" maxlength=\"160\" placeholder=\"Ort hinzufügen\"></label><details class=\"dialog-optional full\"><summary>Ende, Details oder Anhang</summary><div class=\"dialog-optional-grid\"><label class=\"full\" for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var77 string
+		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-end", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1177}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\">Ende optional<input id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var78 string
+		templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-end", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1249}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "\" type=\"datetime-local\" name=\"ends_at\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var79 string
+		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue(event.EndsAtInput)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1314}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\"></label><label class=\"full\" for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var80 string
+		templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-body", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1397}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\">Details<textarea id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var81 string
+		templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-body", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1467}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" name=\"body\" placeholder=\"Was müssen Bewohner wissen?\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var82 string
+		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(event.Body)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1537}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</textarea></label><label class=\"full\" for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var83 string
+		templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-attachments", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 374, Col: 1636}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if editing {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<span>Anhänge ergänzen</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if !editing {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<span>Anhänge</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<span class=\"file-control\"><input id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var84 string
+		templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.ResolveAttributeValue(eventFieldID("event-attachments", event.ID, editing))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 381, Col: 93}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "\" type=\"file\" name=\"attachments\" accept=\"image/jpeg,image/png,image/webp,image/gif,application/pdf\" multiple><span>Fotos oder PDF auswählen</span></span></label></div></details></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1509,72 +1697,72 @@ func EventCategoryOptions(selected string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var76 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var76 == nil {
-			templ_7745c5c3_Var76 = templ.NopComponent
+		templ_7745c5c3_Var85 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var85 == nil {
+			templ_7745c5c3_Var85 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<option value=\"Eigentümerversammlung\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<option value=\"Eigentümerversammlung\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "" || selected == "Eigentümerversammlung" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, ">Eigentümerversammlung</option> <option value=\"Reinigung\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, ">Eigentümerversammlung</option> <option value=\"Reinigung\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Reinigung" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, ">Reinigung</option> <option value=\"Wartung\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, ">Reinigung</option> <option value=\"Wartung\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Wartung" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, ">Wartung</option> <option value=\"Ablesung\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, ">Wartung</option> <option value=\"Ablesung\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Ablesung" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, ">Ablesung</option> <option value=\"Frist\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, ">Ablesung</option> <option value=\"Frist\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Frist" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, ">Frist</option> <option value=\"Sonstiges\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, ">Frist</option> <option value=\"Sonstiges\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if selected == "Sonstiges" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, ">Sonstiges</option>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, ">Sonstiges</option>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

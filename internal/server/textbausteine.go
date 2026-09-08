@@ -36,7 +36,7 @@ func (a *app) textbausteinListPage(w http.ResponseWriter, r *http.Request, ac au
 			updated = item.UpdatedAt.Local().Format("02.01.2006, 15:04")
 		}
 		byCategory[item.Category] = append(byCategory[item.Category], web.TextbausteinRow{
-			Key: item.Key, Title: item.Title, Status: status, Active: item.Active, Updated: updated,
+			Key: item.Key, Title: item.Title, Body: item.Body, Status: status, Active: item.Active, Updated: updated,
 			EditURL: "/app/verwaltung/textbausteine/" + url.PathEscape(item.Key),
 		})
 	}

@@ -53,7 +53,7 @@ func TestAnnouncementsPageKeepsFeatureCSSAndUsesSharedChrome(t *testing.T) {
 }
 
 // TestAnnouncementCategoryPillsHaveColors validates that category pills in the
-// legend have the same background colors as their corresponding card ticks.
+// legend have the same background colors as their corresponding category dots.
 func TestAnnouncementCategoryPillsHaveColors(t *testing.T) {
 	portal := PortalPageData{Title: "Aushang"}
 	data := AnnouncementsPageData{
@@ -70,43 +70,38 @@ func TestAnnouncementCategoryPillsHaveColors(t *testing.T) {
 
 	html := renderComponent(t, AnnouncementsPage(data))
 
-	// Check that category pills have matching colors to card ticks
+	// Check that category pills have matching colors to category dots
 	categoryColors := map[string]string{
 		"info":     "#c8993f",
 		"termin":   "#8a7b3f",
 		"wartung":  "#2f6b4a",
-		"dringend": "#a8593c",
+		"dringend": "#172019",
 	}
 
 	for category, color := range categoryColors {
-		// Pills should have background color matching the tick
+		// Pills should have background color matching the dot
 		pillRule := ".pill." + category + "{background:" + color
 		if !strings.Contains(html, pillRule) {
 			t.Errorf("Category pill .%s is missing its background color %s", category, color)
 		}
 
-		// Ticks should have the same color
-		tickRule := ".announcement-card-tick." + category + "{background:" + color
-		if !strings.Contains(html, tickRule) {
-			t.Errorf("Card tick .%s is missing its background color %s", category, color)
+		// Dots should have the same color
+		dotRule := ".announcement-category-dot." + category + "{background:" + color
+		if !strings.Contains(html, dotRule) {
+			t.Errorf("Category dot .%s is missing its background color %s", category, color)
 		}
 	}
 }
 
-// TestKategorienLegendIsVisible validates that the Kategorien legend sidebar
-// is visible by having the open attribute on the details element.
-func TestKategorienLegendIsVisible(t *testing.T) {
-	portal := PortalPageData{Title: "Aushang"}
-	data := AnnouncementsPageData{
-		Portal:       portal,
-		AssetVersion: "test",
-	}
-
+// The category help floats on demand and starts closed (HAUSV-682).
+func TestKategorienLegendIsPopover(t *testing.T) {
+	data := AnnouncementsPageData{Portal: PortalPageData{Title: "Aushang"}, HasAnyAnnouncements: true}
 	html := renderComponent(t, AnnouncementsPage(data))
-
-	// The legend must either have open attribute or not be a closed details
-	if !strings.Contains(html, `class="aside-panel guide" open`) {
-		t.Error("Kategorien legend details element is missing the 'open' attribute - legend will be hidden")
+	if !strings.Contains(html, `class="announcement-legend guide"`) || strings.Contains(html, `class="announcement-legend guide" open`) {
+		t.Error("Category legend must be a closed native disclosure")
+	}
+	if strings.Contains(html, "Weiter im Portal") {
+		t.Error("Redundant portal links remain")
 	}
 
 	// Verify the legend content is present

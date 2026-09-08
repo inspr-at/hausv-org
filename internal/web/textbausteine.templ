@@ -3,7 +3,7 @@ package web
 import "fmt"
 
 type TextbausteinRow struct {
-	Key, Title, Status, Updated, EditURL string
+	Key, Title, Body, Status, Updated, EditURL string
 	Active bool
 }
 
@@ -68,17 +68,18 @@ func textbausteinCountLabel(count int) string {
 }
 
 templ textbausteinListPage(shell VerwaltungShell, data TextbausteinListData) {
-	@PortalVerwaltungPage(shell, "Textbausteine", textbausteinListContent(data))
+	@PortalVerwaltungPageWithScripts(shell, "Textbausteine", []string{"textbausteine.js"}, textbausteinListContent(data))
 }
 
 templ textbausteinFormPage(shell VerwaltungShell, data TextbausteinFormData) {
-	@PortalVerwaltungPage(shell, "Textbausteine", textbausteinFormContent(data))
+	@PortalVerwaltungPageWithScripts(shell, "Textbausteine", []string{"textbausteine.js"}, textbausteinFormContent(data))
 }
 
 templ textbausteinStyles() {
 	<style>
 		.textbausteine{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-head{min-width:0;display:flex;align-items:end;justify-content:space-between;gap:var(--space-4)}.textbausteine-head>div{min-width:0}.textbausteine h1{overflow-wrap:anywhere;font-family:var(--font-serif);font-size:34px;font-weight:550}.textbausteine .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.textbausteine-count{margin-top:var(--space-1);color:var(--muted);font-size:11px}.textbausteine .button.primary{background:var(--gold);color:var(--panel)}.textbausteine .button.ghost{border-color:var(--line);color:var(--muted)}.textbausteine-flash,.textbausteine-error{padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:12px}.textbausteine-groups{min-width:0;display:grid;gap:var(--space-5)}.textbausteine-group{min-width:0;display:grid;gap:var(--space-2)}.textbausteine-group h2{display:flex;justify-content:space-between;gap:var(--space-3);color:var(--gold-ink);font-family:var(--font-sans);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.textbausteine-group h2 span{color:var(--muted)}.textbausteine-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-table{width:100%;min-width:650px;table-layout:fixed;border-collapse:collapse}.textbausteine-table th,.textbausteine-table td{padding:var(--space-3);border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:11px}.textbausteine-table thead th{border-top:0;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.textbausteine-table th:nth-child(1){width:34%}.textbausteine-table th:nth-child(2){width:25%}.textbausteine-table th:nth-child(3){width:15%}.textbausteine-table th:nth-child(4){width:16%}.textbausteine-table th:nth-child(5){width:10%}.textbausteine-title{min-width:0;overflow-wrap:anywhere;font-weight:750}.textbausteine-key{overflow-wrap:anywhere;color:var(--muted)}.textbausteine-status{display:inline-flex;align-items:center;gap:6px;padding:4px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);white-space:nowrap}.textbausteine-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:var(--radius-pill);background:var(--soft)}.textbausteine-status.active .textbausteine-status-dot{background:var(--leaf)}.textbausteine-action{color:var(--gold-ink);font-weight:750;text-decoration:underline;text-underline-offset:3px}.textbausteine-empty{padding:var(--space-6);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--muted)}.textbausteine-form-card{min-width:0;display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.textbausteine-form-grid{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4)}.textbausteine-field{min-width:0;display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:750}.textbausteine-field.full{grid-column:1/-1}.textbausteine-field input,.textbausteine-field select,.textbausteine-field textarea{min-width:0;width:100%;padding:10px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}.textbausteine-field textarea{min-height:260px;resize:vertical;line-height:1.55}.textbausteine-field small{font-weight:500}.textbausteine-check{display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:12px;font-weight:700}.textbausteine-placeholders{display:flex;flex-wrap:wrap;gap:var(--space-2)}.textbausteine-placeholder{min-height:34px;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--gold-ink);font-size:11px;font-weight:750}.textbausteine-form-actions,.textbausteine-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}.textbausteine-toggle{justify-content:flex-end}.verwaltung-main:has(.textbausteine)>.portal-section-header{display:none}.verwaltung-main:has(.textbausteine)>.portal-section-content{min-width:0;padding-top:42px}@media(max-width:760px){.textbausteine-head{align-items:stretch;flex-direction:column}.textbausteine-head .button{width:100%}.textbausteine-table-wrap{overflow:visible}.textbausteine-table,.textbausteine-table tbody{min-width:0;display:block}.textbausteine-table thead{display:none}.textbausteine-table tr{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);padding:var(--space-4)}.textbausteine-table tr+tr{border-top:1px solid var(--line)}.textbausteine-table td{min-width:0;display:block;padding:0;border:0}.textbausteine-title,.textbausteine-key{grid-column:1/-1}.textbausteine-key{font-size:10px}.textbausteine-status-cell{grid-column:1}.textbausteine-updated{grid-column:1;color:var(--muted);font-size:10px}.textbausteine-action-cell{grid-column:2;grid-row:3/5;align-self:center}.textbausteine-form-grid{grid-template-columns:minmax(0,1fr)}.textbausteine-field.full{grid-column:1}.textbausteine-form-card{padding:var(--space-4)}.textbausteine-form-actions>*{width:100%}.textbausteine-toggle button{width:100%}}
 		@media(max-width:760px){.textbausteine-table tr{row-gap:6px;padding:var(--space-3)}.textbausteine-title,.textbausteine-key,.textbausteine-updated{grid-column:1/-1}.textbausteine-key,.textbausteine-updated{font-size:10px}.textbausteine-updated{color:var(--muted)}.textbausteine-status-cell{grid-column:1;grid-row:4}.textbausteine-action-cell{grid-column:2;grid-row:4;align-self:center}}
+		.textbausteine [hidden]{display:none!important}.textbausteine-search{display:flex;align-items:end;gap:16px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.textbausteine-search label{display:grid;gap:8px;flex:1;min-width:0;color:var(--muted);font-size:12px}.textbausteine-search input{width:100%;min-width:0;min-height:48px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink)}.textbausteine-search output{padding-block:16px;color:var(--muted);font-size:12px;white-space:nowrap}.textbausteine mark{background:rgba(200,153,63,.28);color:var(--ink);border-radius:2px}.textbausteine-body{margin-top:8px;font-weight:400}.textbausteine-body summary{min-height:40px;display:flex;align-items:center;cursor:pointer;color:var(--gold-ink);padding-right:24px}.textbausteine-body p{white-space:pre-wrap;line-height:1.6;font-size:12px;padding-top:8px}.textbausteine-group h2 [data-search-text]{color:inherit}@media(max-width:760px){.textbausteine-search{align-items:stretch;flex-direction:column;gap:8px}.textbausteine-search output{padding:0}}
 	</style>
 }
 
@@ -92,11 +93,13 @@ templ textbausteinListContent(data TextbausteinListData) {
 		if len(data.Groups) == 0 {
 			<div class="textbausteine-empty"><strong>Noch keine Textbausteine angelegt.</strong><p>Erstellen Sie den ersten Baustein für wiederkehrende Antworten aus der Hausverwaltung.</p></div>
 		} else {
-			<div class="textbausteine-groups">
+			<div class="textbausteine-search" data-textbausteine-search hidden><label for="textbausteine-search">Textbausteine durchsuchen<input id="textbausteine-search" type="search" placeholder="Titel, Kategorie oder Text" aria-controls="textbausteine-results"/></label><output data-textbausteine-count aria-live="polite" aria-atomic="true">{ fmt.Sprintf("%d von %d", data.Count, data.Count) }</output></div>
+			<p class="textbausteine-empty" data-textbausteine-no-results hidden>Keine Textbausteine passen zu Ihrer Suche.</p>
+			<div class="textbausteine-groups" id="textbausteine-results">
 				for _, group := range data.Groups {
-					<section class="textbausteine-group"><h2>{ group.Label }<span>{ fmt.Sprint(len(group.Items)) }</span></h2><div class="textbausteine-table-wrap"><table class="textbausteine-table"><thead><tr><th>Titel</th><th>Schlüssel</th><th>Status</th><th>Geändert</th><th>Aktion</th></tr></thead><tbody>
+					<section class="textbausteine-group"><h2><span data-search-text>{ group.Label }</span><span>{ fmt.Sprint(len(group.Items)) }</span></h2><div class="textbausteine-table-wrap"><table class="textbausteine-table"><thead><tr><th>Titel</th><th>Schlüssel</th><th>Status</th><th>Geändert</th><th>Aktion</th></tr></thead><tbody>
 						for _, item := range group.Items {
-							<tr><td class="textbausteine-title">{ item.Title }</td><td class="textbausteine-key">{ item.Key }</td><td class="textbausteine-status-cell"><span class={ "textbausteine-status", templ.KV("active", item.Active) }><span class="textbausteine-status-dot" aria-hidden="true"></span>{ item.Status }</span></td><td class="textbausteine-updated">Geändert: { item.Updated }</td><td class="textbausteine-action-cell"><a class="textbausteine-action" href={ templ.SafeURL(item.EditURL) }>Bearbeiten</a></td></tr>
+							<tr data-textbaustein-row><td class="textbausteine-title"><span data-search-text>{ item.Title }</span><details class="textbausteine-body"><summary>Text ansehen</summary><p data-search-text>{ item.Body }</p></details></td><td class="textbausteine-key">{ item.Key }</td><td class="textbausteine-status-cell"><span class={ "textbausteine-status", templ.KV("active", item.Active) }><span class="textbausteine-status-dot" aria-hidden="true"></span>{ item.Status }</span></td><td class="textbausteine-updated">Geändert: { item.Updated }</td><td class="textbausteine-action-cell"><a class="textbausteine-action" href={ templ.SafeURL(item.EditURL) }>Bearbeiten</a></td></tr>
 						}
 					</tbody></table></div></section>
 				}
@@ -134,14 +137,6 @@ templ textbausteinFormContent(data TextbausteinFormData) {
 		if !data.New {
 			<form class="textbausteine-toggle" method="post" action={ templ.SafeURL(textbausteinToggleAction(data)) }><button class="button ghost" type="submit">{ textbausteinToggleLabel(data) }</button></form>
 		}
-		<script>
-			(function(){
-				const title=document.querySelector('[data-textbaustein-title]');
-				const key=document.querySelector('[data-textbaustein-key]');
-				const body=document.querySelector('[data-textbaustein-body]');
-				if(title&&key&&!key.value){title.addEventListener('input',function(){key.value=title.value.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');});}
-				document.querySelectorAll('[data-placeholder]').forEach(function(button){button.addEventListener('click',function(){if(!body)return;const token=button.dataset.placeholder||'';const start=body.selectionStart||0;const end=body.selectionEnd||0;body.setRangeText(token,start,end,'end');body.focus();});});
-			})();
-		</script>
+
 	</section>
 }
