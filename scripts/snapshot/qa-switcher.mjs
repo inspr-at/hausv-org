@@ -31,6 +31,28 @@ async function login(context,email) {
   sessions.set(email,(await context.storageState()).cookies);return page;
 }
 const visibleBar=page => page.locator('[data-context-bar]:visible');
+async function quietChevron(page,picker,label) {
+  const summary=picker.locator(':scope > summary');
+  const indicator=summary.locator(':scope > .disclosure-chevron');
+  const opacity=async value=>{
+    await page.waitForFunction(({id,value})=>getComputedStyle(document.getElementById(id).querySelector(':scope > summary > .disclosure-chevron')).opacity===value,{id:await picker.getAttribute('id'),value});
+  };
+  await page.mouse.move(0,899);
+  await summary.evaluate(element=>element.blur());
+  await opacity('0.4');
+  const resting=await indicator.evaluate(element=>getComputedStyle(element).backgroundColor);
+  await summary.hover();await opacity('1');
+  await page.mouse.move(0,899);await page.keyboard.press('Tab');await summary.focus();await opacity('1');
+  await summary.press('Enter');await opacity('1');
+  await page.waitForFunction(id=>{
+    const svg=document.getElementById(id).querySelector(':scope > summary > .disclosure-chevron svg');
+    return Math.abs(new DOMMatrixReadOnly(getComputedStyle(svg).transform).a+1)<.001;
+  },await picker.getAttribute('id'));
+  assert.notEqual(await indicator.evaluate(element=>getComputedStyle(element).backgroundColor),resting,`${label}: open fill becomes lighter`);
+  await page.keyboard.press('Escape');
+  await summary.evaluate(element=>element.blur());await opacity('0.4');
+  checks.push(`${label}: quiet/hover/focus/open chevron`);
+}
 async function alignedNavigation(page,label) {
   const positions=await page.locator('nav[aria-label="Bereiche"]:visible').evaluateAll(navs => navs.flatMap(nav => {
     const organisation=nav.querySelector('.nav-organisation');
@@ -51,12 +73,34 @@ async function geometry(page,width,label) {
     // OSM tile images deliberately extend inside a clipped map; all controls,
     // panels, text and their containers must stay inside the viewport.
     const left=[...document.querySelectorAll('body *')].filter(e=>visible(e)&& !e.closest('.sr-only,.skip-link,.side-map-tiles') && e.getBoundingClientRect().left < -1).map(e=>`${e.tagName}.${e.className}`);
-    const names=[...document.querySelectorAll('[data-switcher] > summary .house-header-copy strong, [data-switcher][open] .switcher-row-copy strong, [data-switcher][open] .switcher-option strong')].filter(visible).map(e=>({width:e.getBoundingClientRect().width,lines:getComputedStyle(e).webkitLineClamp,white:getComputedStyle(e).whiteSpace,text:e.textContent}));
-    return {left,overflow:document.documentElement.scrollWidth>innerWidth+1,navs:[...document.querySelectorAll('nav[aria-label="Bereiche"]')].filter(visible).length,names};
+    const names=[...document.querySelectorAll('[data-switcher] > summary .house-header-copy strong, [data-switcher][open] .switcher-row-copy strong, [data-switcher][open] .switcher-option strong')].filter(visible).map(e=>({summary:!!e.closest('summary'),width:e.getBoundingClientRect().width,lines:getComputedStyle(e).webkitLineClamp,white:getComputedStyle(e).whiteSpace,overflow:getComputedStyle(e).overflow,textOverflow:getComputedStyle(e).textOverflow,text:e.textContent}));
+    const pills=[...document.querySelectorAll('.context-bar .context-account > summary,.context-bar .context-scope summary')].filter(visible).map(e=>{
+      const box=e.getBoundingClientRect(),style=getComputedStyle(e),paint=getComputedStyle(e,'::before');
+      const text=e.querySelector('.house-header-copy strong'),circle=e.querySelector('.disclosure-chevron');
+      const center=element=>{const r=element.getBoundingClientRect();return r.top+r.height/2;};
+      return {width:box.width,height:box.height,paintHeight:box.height-parseFloat(paint.top)-parseFloat(paint.bottom),gap:style.gap,paddingLeft:style.paddingLeft,scope:!!text,centered:!text||Math.abs(center(text)-center(circle))<1};
+    });
+    return {left,overflow:document.documentElement.scrollWidth>innerWidth+1,navs:[...document.querySelectorAll('nav[aria-label="Bereiche"]')].filter(visible).length,names,pills};
   });
   assert.deepEqual(probe.left,[],`${label}: element left of viewport`);assert(!probe.overflow,`${label}: horizontal overflow`);
   assert(probe.names.length,`${label}: scope text missing`);
-  for(const name of probe.names){assert(name.width>=Math.min(100, name.text.trim().length*5),`${label}: name reduced to a few characters (${JSON.stringify(name)})`);assert.equal(name.lines,'2',`${label}: allow two lines`);assert.notEqual(name.white,'nowrap',`${label}: name must wrap`);}
+  for(const pill of probe.pills){
+    assert(pill.width>=44&&pill.height>=44,`${label}: context summary has a 44px tap target`);
+    assert.equal(pill.paintHeight,32,`${label}: visible context pill is 32px high`);
+    assert.equal(pill.gap,'10px',`${label}: context elements have 10px spacing`);
+    if(pill.scope){assert.equal(pill.paddingLeft,'14px',`${label}: scope left inset`);assert(pill.centered,`${label}: text and chevron vertically centred`);}
+  }
+  for(const name of probe.names){
+    assert(name.width>=Math.min(100, name.text.trim().length*5),`${label}: name reduced to a few characters (${JSON.stringify(name)})`);
+    if(name.summary){
+      assert.equal(name.white,'nowrap',`${label}: HAUSV-715 summary stays on one line`);
+      assert.equal(name.overflow,'hidden',`${label}: long summary stays within its slot`);
+      assert.equal(name.textOverflow,'ellipsis',`${label}: long summary uses ellipsis`);
+    }else{
+      assert.equal(name.lines,'2',`${label}: results allow two lines`);
+      assert.notEqual(name.white,'nowrap',`${label}: result name must wrap`);
+    }
+  }
   if(width>760) {assert.equal(probe.navs,1,`${label}: exactly one desktop navigation`);await alignedNavigation(page,label);}
 }
 async function panelGeometry(page,picker,label) {
@@ -90,11 +134,12 @@ async function panelGeometry(page,picker,label) {
   if(state.sidebar && state.cardTop>=state.bar+8 && state.cardTop<=state.height-328) assert(Math.abs(state.top-state.cardTop)<=1,`${label}: panel aligns with card`);
   const indicator=picker.locator(':scope > summary > .disclosure-chevron');
   assert.equal(await indicator.count(),1,`${label}: one shared disclosure indicator`);
-  const circle=await indicator.boundingBox();assert(circle.width>=28 && circle.width<=32 && circle.height===circle.width,`${label}: round chevron`);
-  const target=await picker.locator(':scope > summary').boundingBox();assert(target.height>=40 && target.width>=40,`${label}: summary tap target`);
+  const circle=await indicator.boundingBox();assert.equal(circle.width,18,`${label}: 18px chevron`);assert.equal(circle.height,18,`${label}: round chevron`);
+  const icon=await indicator.locator('svg').evaluate(svg=>{const cs=getComputedStyle(svg);return {width:parseFloat(cs.width),height:parseFloat(cs.height)};});assert.equal(icon.width,12,`${label}: 12px icon`);assert.equal(icon.height,12,`${label}: square icon`);
+  const target=await picker.locator(':scope > summary').boundingBox();assert(target.height>=44 && target.width>=44,`${label}: summary tap target`);
   await page.waitForFunction(id=>{
     const svg=document.getElementById(id)?.querySelector(':scope > summary > .disclosure-chevron svg');
-    return svg && Math.abs(new DOMMatrixReadOnly(getComputedStyle(svg).transform).a+1)<.001;
+    return svg && Math.abs(new DOMMatrixReadOnly(getComputedStyle(svg).transform).a+1)<.001 && getComputedStyle(svg.closest('.disclosure-chevron')).opacity==='1';
   },pickerID);
   await panel.evaluate(element=>{element.scrollTop=element.scrollHeight;});
   await page.keyboard.press('Escape');assert.equal(await picker.getAttribute('open'),null,`${label}: Escape closes picker`);
@@ -198,6 +243,8 @@ try {
     try{
       const page=await login(context,persona.email);
       page.on('pageerror',error=>failures.push(`${persona.email}: ${error.message}`));
+      await quietChevron(page,page.locator('aside.sidebar [data-switcher]').first(),persona.email+' sidebar');
+      await quietChevron(page,visibleBar(page).locator('.context-scope [data-switcher]').last(),persona.email+' context');
       for(const width of [1440,1024,768,760,390]){
         await page.setViewportSize({width,height:900});
         for(const path of persona.paths) await checkRoute(page,width,path,`${persona.email} ${width} ${path}`);

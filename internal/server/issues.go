@@ -60,7 +60,65 @@ func (a *app) issueTriage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		ActorEmail:   normalizeEmail(ac.email),
 		Issue:        views[0],
 		TriageStep:   step,
+		Assignees:    a.issueBoardAssignees(ac, views[0]),
 	})
+}
+
+// Panels share the triage permission boundary, including tenant isolation.
+func (a *app) issueBoardPanel(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	if !ac.can(capabilityManageIssues) {
+		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
+		return
+	}
+	item, found := ac.repositories.issues.Get(strings.TrimSpace(r.PathValue("id")))
+	if !found {
+		http.Error(w, "Dieses Anliegen wurde nicht gefunden.", http.StatusNotFound)
+		return
+	}
+	views := a.issueViewsForActor(ac.tenantRef, []residentIssue{item}, ac.role, ac.email)
+	if len(views) != 1 {
+		http.Error(w, "Dieses Anliegen ist nicht sichtbar.", http.StatusForbidden)
+		return
+	}
+	data := web.IssueBoardPanelData{Issue: views[0], ActorEmail: normalizeEmail(ac.email), Assignees: a.issueBoardAssignees(ac, views[0])}
+	for i := len(item.StatusHistory) - 1; i >= 0; i-- {
+		change := item.StatusHistory[i]
+		actor := strings.TrimSpace(change.ActorName)
+		if actor == "" {
+			actor = change.ActorEmail
+		}
+		data.History = append(data.History, web.IssueBoardHistoryView{Action: change.From + " → " + change.To, Actor: actor, Age: relativeAge(time.Now(), change.ChangedAt)})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.IssueBoardPanel(data))
+}
+
+func (a *app) issueBoardAssignees(ac authCtx, issue view.IssueView) []view.SelectOption {
+	actor := normalizeEmail(ac.email)
+	selected := normalizeEmail(issue.AssigneeEmail)
+	if selected == "" {
+		selected = actor
+	}
+	options := []view.SelectOption{{Value: actor, Label: "Ich übernehme", Selected: selected == actor}}
+	seen := map[string]bool{actor: true}
+	add := func(email, label string) {
+		email = normalizeEmail(email)
+		if email == "" || seen[email] {
+			return
+		}
+		seen[email] = true
+		options = append(options, view.SelectOption{Value: email, Label: label, Selected: email == selected})
+	}
+	emails := a.issueManagerEmails(ac.tenant.Slug)
+	sort.Strings(emails)
+	for _, email := range emails {
+		add(email, "Mitarbeiter · "+email)
+	}
+	for _, contact := range a.serviceContactOptions(ac.repositories.contacts) {
+		add(contact.Email, "Dienstleister · "+contact.Label)
+	}
+	add(issue.AssigneeEmail, "Aktuell · "+issue.AssigneeEmail)
+	return options
 }
 
 func (a *app) issueResidentDetail(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -100,6 +158,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	totalIssueCount := 0
 	openIssueCount := 0
 	urgentIssueCount := 0
+	newIssueCount, progressIssueCount, assignedIssueCount := 0, 0, 0
 	if boardOnly && !canManageIssues {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -108,6 +167,17 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	if ac.repositories.issues != nil {
 		allTenantIssues := ac.repositories.issues.List()
 		totalIssueCount = len(allTenantIssues)
+		for _, item := range allTenantIssues {
+			if normalizeIssueStatus(item.Status) == issueStatusNew {
+				newIssueCount++
+			}
+			if normalizeIssueStatus(item.Status) == issueStatusProgress {
+				progressIssueCount++
+			}
+			if normalizeEmail(item.AssigneeEmail) == normalizeEmail(email) {
+				assignedIssueCount++
+			}
+		}
 		openIssueCount = issueOpenCount(allTenantIssues)
 		urgentIssueCount = issuePriorityCount(allTenantIssues, issuePriorityUrgent)
 		if !boardOnly {
@@ -155,6 +225,11 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 			TotalIssueCount:         totalIssueCount,
 			OpenIssueCount:          openIssueCount,
 			UrgentIssueCount:        urgentIssueCount,
+			NewIssueCount:           newIssueCount,
+			ProgressIssueCount:      progressIssueCount,
+			AssignedIssueCount:      assignedIssueCount,
+			Message:                 msg,
+			MessageOK:               msgOK,
 			IssuesEmpty:             emptyState("Keine Anliegen in der Liegenschaft", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
 		})
 		return
@@ -258,6 +333,8 @@ func issueMessage(status string) (string, bool) {
 		return "Anhänge konnten nicht übernommen werden. Erlaubt sind Bilddateien oder PDF bis 10 MB, maximal 10 Dateien.", false
 	case "missing":
 		return "Dieses Anliegen wurde nicht gefunden.", false
+	case "zustaendig":
+		return "Bitte eine zuständige Person auswählen.", false
 	case "termin":
 		return "Für den Status \"Termin vereinbart\" bitte Datum und Uhrzeit angeben.", false
 	case "error":
@@ -563,7 +640,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	id := strings.TrimSpace(r.FormValue("id"))
 	existing, found := ac.repositories.issues.Get(id)
 	if !found {
-		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "missing"), http.StatusSeeOther)
 		return
 	}
 
@@ -578,7 +655,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	isOwner := normalizeEmail(existing.AuthorEmail) == normalizeEmail(email)
 	status := normalizeIssueStatus(r.FormValue("status"))
 	if status == "" {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 		return
 	}
 	priority := normalizeIssuePriority(r.FormValue("priority"))
@@ -592,23 +669,23 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	}
 	proposal, serviceProposalProvided, err := issueServiceProposalFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 		return
 	}
 	estimateAmount, estimateNote, estimateProvided, err := issueEstimateFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 		return
 	}
 	estimateHeaders, err := attachmentFormHeaders(r, 1, "estimate_attachment")
 	if err != nil {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 		return
 	}
 	if len(estimateHeaders) > 0 {
 		estimateProvided = true
 		if a.attachmentStore == nil {
-			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 			return
 		}
 	}
@@ -634,7 +711,11 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		assignee = normalizeEmail(existing.AssigneeEmail)
 	}
 	if priority == "" {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
+		return
+	}
+	if canManage && (status == issueStatusAccepted || status == issueStatusProgress) && assignee == "" {
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "zustaendig"), http.StatusSeeOther)
 		return
 	}
 	if status == issueStatusScheduled {
@@ -643,14 +724,14 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 			scheduledStart = proposal.Start
 		}
 		if scheduledStart.IsZero() {
-			http.Redirect(w, r, "/app/anliegen?issue=termin", http.StatusSeeOther)
+			http.Redirect(w, r, issueWorkflowRedirect(r, id, "termin"), http.StatusSeeOther)
 			return
 		}
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	detailsUpdate, detailsProvided, err := issueDetailsFromForm(r.Form)
 	if err != nil {
-		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 		return
 	}
 	if detailsProvided && !canManage {
@@ -662,7 +743,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		uploadedEstimates, err = ac.repositories.attachments.CreateUploaded("issue-estimate", id, email, uploadedFilesFromHeaders(estimateHeaders), time.Now())
 		if err != nil {
 			logError("issue estimate upload failed", err, "tenant", tenant.Slug, "issue_id", id)
-			http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
+			http.Redirect(w, r, issueWorkflowRedirect(r, id, "invalid"), http.StatusSeeOther)
 			return
 		}
 	}
@@ -690,7 +771,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 			_, _, _ = ac.repositories.attachments.Delete(attachment.ID, time.Now())
 		}
 		logError("issue workflow update failed", err, "tenant", tenant.Slug, "issue_id", id)
-		http.Redirect(w, r, "/app/anliegen?issue=error", http.StatusSeeOther)
+		http.Redirect(w, r, issueWorkflowRedirect(r, id, "error"), http.StatusSeeOther)
 		return
 	}
 	a.recordAudit(auditEvent{
@@ -731,6 +812,9 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	a.notifyIssueUpdated(tenant, updated, email, "Anliegen \""+updated.Title+"\" aktualisiert")
 	if canManage {
 		if redirect := issueContextRedirect(updated.ID, internalTenantPath(r, r.FormValue("redirect"))); redirect != "" {
+			if redirect == "/app/anliegen/board" {
+				redirect += "?issue=updated"
+			}
 			http.Redirect(w, r, redirect, http.StatusSeeOther)
 			return
 		}
@@ -740,10 +824,22 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	http.Redirect(w, r, "/app/anliegen?issue=updated", http.StatusSeeOther)
 }
 
+func issueWorkflowRedirect(r *http.Request, id, code string) string {
+	target := issueContextRedirect(id, internalTenantPath(r, r.FormValue("redirect")))
+	if target == "" {
+		target = "/app/anliegen"
+	}
+	u, _ := url.Parse(target)
+	q := u.Query()
+	q.Set("issue", code)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
 func issueContextRedirect(issueID string, requested string) string {
 	base := "/app/anliegen/board/" + url.PathEscape(strings.TrimSpace(issueID))
 	switch strings.TrimSpace(requested) {
-	case base, base + "?step=1", base + "?step=2", base + "?step=done", base + "?step=message", base + "?step=sent", base + "?step=resolution-sent":
+	case "/app/anliegen/board", base, base + "?step=1", base + "?step=2", base + "?step=done", base + "?step=message", base + "?step=sent", base + "?step=resolution-sent":
 		return strings.TrimSpace(requested)
 	default:
 		return ""

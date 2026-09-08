@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -68,8 +67,8 @@ func TestIssueBoardWorkflowAcceptsAndRejectsMoves(t *testing.T) {
 				body := authedRequest(t, a, actor, location.RequestURI()).Body.String()
 				for _, want := range []string{
 					`id="issue-` + issue.ID + `" draggable="true" data-board-card data-issue-status="` + tc.target + `"`,
-					`action="/demo/app/anliegen/workflow" data-board-move`,
-					`name="assignee_email" value="` + actor + `"`,
+					`data-board-panel`,
+					`data-assignee="` + actor + `"`,
 					`/assets/issue-board.js?v=`,
 				} {
 					if !strings.Contains(body, want) {
@@ -101,39 +100,20 @@ func TestIssueBoardWorkflowRejectsForeignOrigin(t *testing.T) {
 	}
 }
 
-// Preserve the old board's ban on inline assignment/service editors, with the
-// one intentional exception: hidden current values in the new status menu.
+// HAUSV-717 moves workflow editors into the fetched detail panel. Cards remain
+// compact and keyboard reachable; the board does not embed hidden full editors.
 func assertIssueBoardStatusMenus(t *testing.T, body string) {
 	t.Helper()
-	forms := regexp.MustCompile(`(?s)<form method="post" action="[^"]*/app/anliegen/workflow" data-board-move>.*?</form>`).FindAllString(body, -1)
-	if len(forms) != strings.Count(body, `data-board-card`) || len(forms) != strings.Count(body, `/app/anliegen/workflow"`) {
-		t.Fatal("each board card must have exactly one status-only workflow form")
+	cards := strings.Count(body, ` data-board-card `)
+	if cards == 0 || strings.Count(body, `tabindex="0" role="button"`) != cards {
+		t.Fatal("each board card must be keyboard reachable")
 	}
-	for _, form := range forms {
-		for _, name := range []string{"id", "priority", "assignee_email"} {
-			if !strings.Contains(form, `<input type="hidden" name="`+name+`"`) {
-				t.Errorf("move must preserve %s in a hidden field", name)
-			}
-		}
-		for _, field := range regexp.MustCompile(`<(?:input|select|textarea|button)[^>]*name="([^"]+)"[^>]*>`).FindAllStringSubmatch(form, -1) {
-			switch field[1] {
-			case "id", "priority", "assignee_email":
-				if !strings.HasPrefix(field[0], `<input type="hidden"`) {
-					t.Errorf("%s must not be editable on the board", field[1])
-				}
-			case "status":
-				if !strings.HasPrefix(field[0], `<select `) {
-					t.Error("status must use the accessible native select")
-				}
-			default:
-				t.Errorf("unexpected editor field %s on board", field[1])
-			}
-		}
-		body = strings.Replace(body, form, "", 1)
+	if !strings.Contains(body, `data-board-panel`) {
+		t.Fatal("board must contain the detail panel host")
 	}
-	for _, forbidden := range []string{`name="assignee_email"`, `name="service_start"`, `name="service_end"`, `name="service_proposal"`} {
+	for _, forbidden := range []string{`data-board-move`, `name="assignee_email"`, `name="service_start"`, `name="service_end"`, `name="service_proposal"`, `issue-description-preview`} {
 		if strings.Contains(body, forbidden) {
-			t.Errorf("board must not expose %s outside the status-only form", forbidden)
+			t.Errorf("compact cards must not embed %s", forbidden)
 		}
 	}
 }

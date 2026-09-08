@@ -3,6 +3,8 @@ package web
 import (
 	"net/url"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/inspr-at/hausv-org/internal/view"
 )
@@ -26,6 +28,11 @@ type IssueBoardPageData struct {
 	TotalIssueCount         int
 	OpenIssueCount          int
 	UrgentIssueCount        int
+	NewIssueCount int
+	ProgressIssueCount int
+	AssignedIssueCount int
+	Message string
+	MessageOK bool
 	IssuesEmpty             view.EmptyStateView
 }
 
@@ -37,6 +44,7 @@ type IssueTriagePageData struct {
 	ActorEmail   string
 	Issue        view.IssueView
 	TriageStep   string
+	Assignees []view.SelectOption
 }
 
 templ IssueBoardPage(data IssueBoardPageData) {
@@ -62,61 +70,107 @@ templ IssueTriageStyles() {
 }
 
 templ IssueBoardBlock() {
-	<style>.board-panel{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-4)}.board-toolbar{display:grid;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.board-summary{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line)}.board-summary .pill{min-height:28px;padding-inline:var(--space-3);font-size:11px}.pill.dringend{border-color:var(--gold);background:var(--panel);color:var(--gold-ink)}
-		.board-tools>summary{min-height:56px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);cursor:pointer;list-style:none}.board-tools>summary::-webkit-details-marker{display:none}.board-tools>summary strong{font-size:13px}.board-tools>summary>span{min-width:0;color:var(--muted);font-size:12px}.board-tools>summary::after{content:"Filter öffnen";margin-left:auto;color:var(--gold-ink);font-size:12px;font-weight:800}.board-tools[open]>summary::after{content:"Filter schließen"}.board-tools[open]>summary{border-bottom:1px solid var(--line)}
-		.board-filter{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--space-3);align-items:end;padding:var(--space-4)}.board-filter label{display:grid;grid-column:span 2;gap:var(--space-2);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.board-filter label.assignee,.board-filter label.sort{grid-column:span 3}.board-filter input,.board-filter select{width:100%;min-height:40px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none}.board-filter-actions{display:flex;grid-column:span 2;align-items:center;gap:var(--space-2)}.board-filter-actions button{min-height:40px;padding:var(--space-2) var(--space-4);border:1px solid var(--ink);border-radius:var(--radius-xs);background:var(--ink);color:var(--panel);font-size:12px;font-weight:800}.board-filter-actions a{min-height:40px;display:inline-flex;align-items:center;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);color:var(--muted);font-size:12px;font-weight:800}
-		.board-quick{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line);background:var(--panel-soft)}.board-quick>span{margin-right:var(--space-1);color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.board-quick a{min-height:32px;display:inline-flex;align-items:center;padding:0 var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);font-size:12px;font-weight:800}.board-quick a:hover{border-color:var(--gold);color:var(--gold-ink)}.board-quick a[aria-current="true"]{border-color:var(--ink);background:var(--ink);color:var(--panel)}
-		.issue-work-card{box-shadow:var(--shadow-panel)}.issue-work-card.status-open{border-color:var(--gold);background:var(--panel-soft)}.issue-work-card.status-progress,.issue-work-card.status-done,.issue-work-card.status-closed{border-color:var(--leaf)}.issue-work-card .issue-card-head{align-items:center}.issue-card-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding-top:var(--space-3);border-top:1px solid var(--line)}.issue-description-preview p{display:-webkit-box;max-height:3em;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}.issue-triage-link{min-width:118px}
-		.board-filter-blank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.board-filter-blank h2{font-size:21px}.board-filter-blank p{margin-top:var(--space-1);max-width:62ch;color:var(--muted);font-size:13px;line-height:1.5}
+	<style>.board-filter-blank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.board-filter-blank h2{font-size:21px}.board-filter-blank p{margin-top:var(--space-1);max-width:62ch;color:var(--muted);font-size:13px;line-height:1.5}
 		.board-blank{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(286px,.9fr);gap:var(--space-4)}.board-blank-main{display:grid;align-content:center;gap:var(--space-5);padding:clamp(22px,3.2vw,36px);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.board-blank-lead{display:grid;justify-items:start;gap:var(--space-3)}.board-blank-main h2{font-size:clamp(25px,3vw,31px)}.board-blank-main p{max-width:56ch;color:var(--muted);font-size:14px;line-height:1.55}.board-blank-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.board-blank-actions .button{min-height:44px}
 		.board-blank-side{display:grid;align-content:start;gap:var(--space-3);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel-soft)}.board-blank-side h2{font-family:var(--font-sans);color:var(--gold-ink);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.board-blank-steps{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none;counter-reset:board-step}.board-blank-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:2px var(--space-3);align-items:start;counter-increment:board-step}.board-blank-steps li::before{content:counter(board-step);grid-row:1/span 2;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-pill);background:var(--ink);color:var(--panel);font-size:12px;font-weight:800}.board-blank-steps strong{grid-column:2;font-size:13px}.board-blank-steps span{grid-column:2;color:var(--muted);font-size:12px;line-height:1.4}.board-blank-note{padding-top:var(--space-3);border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.5}
 		.board-blank-facts{display:grid;grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin:0;padding:0;list-style:none}.board-blank-facts li{display:grid;gap:var(--space-1);padding-top:var(--space-3);border-top:2px solid var(--ink)}.board-blank-facts strong{font-size:13px}.board-blank-facts span{color:var(--muted);font-size:12px;line-height:1.5}
-		@media(max-width:1050px){.board-blank{grid-template-columns:minmax(0,1fr)}.board-filter label,.board-filter label.assignee,.board-filter label.sort,.board-filter-actions{grid-column:1/-1}.board-blank-facts{grid-template-columns:minmax(0,1fr)}}
-		@media(max-width:760px){.board-filter{grid-template-columns:minmax(0,1fr);padding:var(--space-3)}.board-summary,.board-quick,.board-tools>summary{padding-inline:var(--space-3)}.issue-card-foot{grid-template-columns:minmax(0,1fr)}.issue-triage-link{width:100%}.board-filter-blank{grid-template-columns:minmax(0,1fr);justify-items:start;padding:var(--space-4)}.board-filter-blank .button{width:100%}.board-blank-main,.board-blank-side{padding:var(--space-4)}.board-blank-actions{display:grid}.board-blank-actions .button{width:100%}}
-		.board-panel{max-width:none;min-width:0;gap:24px}.board-toolbar{box-shadow:none}.board-summary,.board-quick,.board-tools>summary{padding:16px}.board-quick{background:var(--panel)}.board-quick a{min-height:40px;padding:8px 16px;font-weight:600}.board-filter{gap:16px;padding:16px}.board-filter :is(input,select){min-height:48px}.board-filter-actions button{min-height:48px;background:var(--gold);color:var(--nav);border-color:var(--gold)}
-		.board-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;min-width:0;max-width:100%;overflow-x:auto;padding:0 0 16px;align-items:start;overscroll-behavior-x:contain}.board-column{min-width:0;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper)}.board-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:16px}.board-column-head h2{font-size:22px;line-height:1.1}.board-column .issue-list{gap:16px}.board-column-empty{padding:24px 8px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-align:center}
-		.board-column .issue-work-card{gap:16px;padding:16px;border:1px solid var(--line);background:var(--panel);box-shadow:none}.issue-work-card .issue-card-head{grid-template-columns:minmax(0,1fr);gap:8px}.issue-work-card h3{font-size:23px;line-height:1.15}.issue-work-card .issue-meta{justify-content:flex-start;gap:8px}.issue-work-card .issue-location{margin:0;font-size:12px;overflow-wrap:anywhere}.issue-work-card .issue-card-foot{display:flex;justify-content:flex-end;padding-top:0;border:0}.issue-work-card .issue-triage-link{min-height:40px;width:100%;color:var(--nav)}.issue-work-card .issue-next-step{padding:8px;font-size:12px}.issue-work-people{display:flex;align-items:center;gap:8px;min-width:0}.issue-work-people>span:last-child{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.issue-work-people strong{font-size:11px;font-weight:600}.issue-work-people small{color:var(--muted);font-size:11px}.issue-assignee-avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--paper);font-size:11px;font-weight:700}.issue-priority{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.issue-priority i{width:8px;height:8px;border-radius:50%;background:var(--soft)}.issue-priority[data-priority=Hoch] i,.issue-priority[data-priority=Dringend] i{background:var(--gold)}.issue-priority[data-priority=Dringend] i{outline:1px solid var(--gold-ink);outline-offset:2px}
-		@media(max-width:760px){.board-columns{padding:0}.board-column{padding:16px}.board-quick a,.issue-work-card .issue-triage-link{min-height:48px}}
 
-		/* Seven status lanes cannot fit in one row at 260px on a laptop.
-		   Wrap complete lanes; only a viewport narrower than one lane scrolls. */
-		.portal-section-landing.issue-board-main{--portal-content-width:100%}
-		.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:32px}
-		.issue-board-main .portal-section-context{--context-bar-h:40px;min-height:var(--context-bar-h);height:var(--context-bar-h);padding-block:0;display:flex;align-items:center}
-		.issue-board-main .portal-section-context a{min-height:40px}
-		.issue-board-main .portal-section-header-action .button{background:transparent;color:var(--ink);border-color:var(--line);min-height:40px}
-		.board-panel{width:100%}
-		.board-filter-actions{grid-column:1/-1;flex-wrap:wrap}
-		.board-column .issue-list{min-height:72px}
-		.board-column.is-drop-target{outline:2px solid var(--gold);outline-offset:-2px;background:var(--panel-soft)}
-		.board-feedback:not(:empty){position:sticky;top:8px;z-index:10;padding:12px 16px;border:1px solid var(--leaf);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:14px}
-		.board-feedback:empty{display:none}
-		.board-feedback[data-error=true]{border-color:var(--gold);color:var(--gold-ink)}
-		[data-issue-board].is-enhanced .issue-work-card{cursor:grab}
-		[data-issue-board].is-enhanced .issue-work-card.is-dragging{cursor:grabbing;box-shadow:var(--shadow-panel);transform:translateY(-3px);opacity:.65}
-		.issue-work-card[aria-busy=true]{opacity:.65;cursor:progress}
-		.board-drag-handle{display:none;min-height:40px;min-width:40px;align-items:center;justify-content:center;gap:8px;justify-self:end;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-		.is-enhanced .board-drag-handle{display:flex}
-		.board-drag-handle:active{cursor:grabbing}
-		.board-drag-handle svg{width:20px;height:20px}
-		.board-move-menu{min-width:0;border-top:1px solid var(--line)}
-		.board-move-menu>summary{min-height:40px;padding-block:10px;cursor:pointer;font-size:12px;font-weight:600}
-		.board-move-menu form{display:grid;gap:8px;padding-top:8px}
-		.board-move-menu label{font-size:12px}
-		.board-move-menu :is(select,button){min-width:0;max-width:100%;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
-		.board-move-menu :is(select,button):focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-		.issue-work-card h3{overflow-wrap:anywhere}
-		.board-touch-preview{position:fixed;z-index:110;pointer-events:none;max-width:260px;padding:16px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-panel);overflow-wrap:anywhere;opacity:.9}
-		@media(max-width:760px){.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:16px}.board-feedback:not(:empty){top:82px}}
-
-	</style>
+.portal-section-landing.portal-section-wide.issue-board-main,.portal-section-landing.issue-board-main{--portal-content-width:100%}
+.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:32px}
+.issue-board-main .portal-section-context{--context-bar-h:40px;min-height:40px;height:40px;padding-block:0;display:flex;align-items:center}
+.issue-board-main .portal-section-context a{min-height:44px;display:inline-flex;align-items:center}
+.issue-board-main .portal-section-header-action{min-width:0}
+.issue-board-main .portal-section-header-action .button{background:transparent;color:var(--ink);border-color:var(--line);min-height:44px}
+.board-header-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;min-width:0}
+.board-view-switch{display:flex;gap:4px}
+.board-view-switch [aria-current=page]{border-color:var(--gold)!important}
+.board-search{display:none;min-width:0;max-width:240px}
+.issue-board-main:has(.is-enhanced) .board-search{display:block}
+.board-search input{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);font:inherit}
+.board-workspace{display:grid;gap:20px;min-width:0;width:100%}
+.board-toolbar{min-width:0;display:grid;gap:12px}
+.board-summary{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted)}
+.board-quick{display:flex;flex-wrap:wrap;gap:8px;grid-row:1}
+.board-quick a{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--line);border-radius:24px;background:var(--panel);font-size:12px;color:var(--muted)}
+.board-quick a[aria-current=true]{border-color:var(--gold);background:var(--panel-soft);color:var(--ink)}
+.board-quick a span{font-variant-numeric:tabular-nums}
+.board-tools{border-block:1px solid var(--line)}
+.board-tools>summary{min-height:44px;display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;font-size:12px}
+.board-tools>summary::-webkit-details-marker{display:none}
+.board-tools>summary>span{color:var(--muted)}
+.board-filter{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;gap:12px;padding:16px 0}
+.board-filter label{display:grid;gap:8px;min-width:0;font-size:12px}
+.board-filter :is(input,select){width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font:inherit}
+.board-filter-actions{display:flex;flex-wrap:wrap;gap:8px;grid-column:1/-1}
+.board-filter-actions :is(button,a){display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
+.board-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;min-width:0;align-items:start}
+.board-layout:has(.board-panel:not([hidden])){grid-template-columns:minmax(0,1fr) 360px}.board-layout:has(.board-panel:not([hidden])) .board-columns{grid-template-columns:repeat(5,minmax(200px,1fr))}
+.board-columns{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;min-width:0;width:100%;overflow-x:auto;overscroll-behavior-x:contain;align-items:start;padding:2px 2px 16px}
+.board-column{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px;min-height:190px}
+.board-column-head{display:flex;gap:4px;align-items:center;justify-content:space-between;min-height:56px;padding-bottom:8px}
+.board-column-head h2{font:600 12px/1.3 var(--font-sans);overflow-wrap:anywhere}
+.board-column-head .pill{padding:3px 6px;min-width:24px;flex:none}
+.board-column .issue-list{display:grid;gap:8px;min-height:108px}
+.board-column-empty{margin:0;min-height:108px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-align:center}
+.board-column-empty[hidden],.board-panel[hidden],[data-board-transition][hidden],[data-board-card][hidden]{display:none}
+.board-column.is-drop-target{outline:2px dashed var(--gold);outline-offset:-2px;background:var(--panel-soft)}
+.board-column .issue-work-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0;padding:12px 10px 10px 32px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:none;cursor:pointer}
+.issue-work-card h3{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:600 13px/1.4 var(--font-sans)}
+.board-card-meta{display:flex;gap:5px;min-width:0;align-items:center;font-size:10px;overflow:hidden}
+.board-card-meta .pill{font-size:10px;padding:2px 5px;min-height:20px;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.issue-work-card .issue-location{min-width:0;flex:1 1 40px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:10px;color:var(--muted);margin:0}
+.issue-priority{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.issue-priority i{width:6px;height:6px;flex:none;border-radius:50%;background:var(--soft)}
+.issue-priority[data-priority=Hoch] i,.issue-priority[data-priority=Dringend] i{background:var(--gold)}
+.issue-work-card .board-card-foot{display:flex;align-items:center;justify-content:space-between;gap:4px;color:var(--muted);font-size:10px}
+.issue-assignee-avatar{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--paper);font-size:10px;font-weight:700;border:1px solid var(--line)}
+.issue-assignee-avatar.is-unassigned{border-style:dashed;background:transparent}
+.board-drag-handle{display:none;position:absolute;left:-10px;top:2px;width:44px;min-width:44px;height:44px;min-height:44px;padding:14px;border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.is-enhanced .board-drag-handle{display:flex;align-items:center;justify-content:center}
+.board-drag-handle :is(svg,img){width:16px;height:16px;max-width:none}
+.is-enhanced noscript{display:none}
+.board-card-fallback{min-height:44px;display:inline-flex;align-items:center}
+.issue-work-card.is-selected{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.issue-work-card.is-pending{border-style:dashed;background:var(--panel-soft)}
+.issue-work-card.is-dragging{opacity:.55}
+.issue-work-card[aria-busy=true]{opacity:.65;cursor:progress}
+.issue-board-main :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.board-panel{position:sticky;top:16px;display:grid;gap:20px;min-width:0;width:360px;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow-panel);overflow-wrap:anywhere}
+.board-panel-head{display:flex;align-items:start;justify-content:space-between;gap:8px}
+.board-panel h2{font:500 28px/1.15 var(--font-serif);margin-top:6px}
+.board-panel .kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
+.board-panel-close{min-width:44px;min-height:44px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink)}
+.board-panel-close :is(svg,img){width:18px;height:18px}
+.board-panel-meta{display:flex;flex-wrap:wrap;gap:6px}
+.board-panel-description{white-space:pre-wrap;font-size:14px;line-height:1.6}
+.board-panel .muted{font-size:12px;line-height:1.5}
+.board-panel section{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--line)}
+.board-panel h3{font:600 12px/1.5 var(--font-sans);color:var(--gold-ink)}
+.board-panel form,.board-panel label{display:grid;gap:8px;min-width:0;font-size:12px}
+.board-panel :is(select,input:not([type=hidden]),button,.button){min-height:44px;max-width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
+.board-panel select{width:100%}
+.board-panel .board-edit{border-color:var(--gold);background:transparent;justify-content:center}
+.board-panel-actions{display:flex;gap:8px;flex-wrap:wrap}
+.board-panel-actions button{flex:1}
+.board-panel [data-board-transition]{padding:16px;border:1px dashed var(--gold);border-radius:8px;background:var(--panel-soft)}
+.board-history{display:grid;gap:16px;list-style:none;margin:0;padding:0;font-size:12px}
+.board-history li{display:grid;gap:4px}
+.board-history span{color:var(--muted)}
+.board-feedback:not(:empty),.board-panel-feedback:not(:empty){padding:12px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel-soft);font-size:13px}
+.board-feedback:empty,.board-panel-feedback:empty{display:none}
+[data-error=true]{color:var(--gold-ink)}
+.board-touch-preview{position:fixed;z-index:110;pointer-events:none;max-width:260px;padding:16px;border:1px solid var(--gold);border-radius:8px;background:var(--panel);box-shadow:var(--shadow-panel);overflow-wrap:anywhere;opacity:.9}
+@media(max-width:1100px){.board-filter{grid-template-columns:repeat(2,minmax(0,1fr))}.board-blank{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:899px){.board-columns{grid-template-columns:repeat(5,220px)}.board-blank-facts{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:759px){.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:16px}.board-layout:has(.board-panel:not([hidden])){grid-template-columns:minmax(0,1fr)}.board-panel{position:fixed;inset:0;z-index:120;width:100%;height:100dvh;max-height:none;border-radius:0;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom))}body:has(.board-panel:not([hidden])){overflow:hidden}.board-filter{grid-template-columns:minmax(0,1fr)}.board-filter-blank{grid-template-columns:minmax(0,1fr)}.board-header-tools{width:100%}.board-search{flex:1 1 150px}.board-blank-main,.board-blank-side{padding:16px}}
+</style>
 }
 
 templ IssueTriageBlock() {
 	<style>.triage-page{max-width:1120px;margin:0 auto;display:grid;gap:var(--space-5)}.issue-triage-context{display:grid;gap:var(--space-3);padding-bottom:var(--space-5);border-bottom:1px solid var(--line)}.issue-triage-back{width:max-content;min-height:44px;display:inline-flex;align-items:center;color:var(--muted);font-size:12px;font-weight:800}.issue-triage-back:hover{color:var(--ink)}.issue-triage-context h1{font-size:clamp(34px,4.4vw,50px);line-height:1.05}.issue-triage-context>p{max-width:72ch;color:var(--muted);font-size:14px;line-height:1.6}.issue-triage-facts{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-5);color:var(--muted);font-size:12px;font-weight:700}
 		.issue-triage-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(286px,330px);gap:var(--space-5);align-items:start}.issue-triage-main{min-width:0;display:grid;gap:var(--space-5)}.issue-triage-card{width:min(780px,100%);display:grid;gap:var(--space-6);padding:clamp(20px,3.4vw,36px);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:var(--shadow-panel)}
 		.issue-triage-progress{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);color:var(--gold-ink);font-size:11px;font-weight:800}.issue-triage-progress>span:last-child{display:flex;gap:6px}.issue-triage-progress i{width:26px;height:4px;border-radius:var(--radius-pill);background:var(--line)}.issue-triage-progress i.active{background:var(--gold)}
-		.issue-triage-card fieldset{min-width:0;display:grid;gap:var(--space-3);padding:0;border:0}.issue-triage-card legend{margin-bottom:var(--space-5);color:var(--ink);font-family:var(--font-serif);font-size:clamp(25px,3.2vw,34px);font-weight:600;line-height:1.15}
+		.issue-triage-card select{width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}.issue-triage-card fieldset{min-width:0;display:grid;gap:var(--space-3);padding:0;border:0}.issue-triage-card legend{margin-bottom:var(--space-5);color:var(--ink);font-family:var(--font-serif);font-size:clamp(25px,3.2vw,34px);font-weight:600;line-height:1.15}
 		.issue-triage-choice{position:relative;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);cursor:pointer}.issue-triage-choice:hover{border-color:var(--gold)}.issue-triage-choice:has(input:checked){border-color:var(--leaf);background:var(--panel-soft)}.issue-triage-choice.urgent:has(input:checked){border-color:var(--gold);background:var(--panel-soft)}.issue-triage-choice.calm:has(input:checked){border-color:var(--muted)}.issue-triage-choice>span{min-width:0;display:grid;gap:3px}.issue-triage-choice strong{font-size:15px}.issue-triage-choice small{color:var(--muted);font-size:12px;font-weight:600;line-height:1.4}.issue-triage-choice input{grid-column:2;grid-row:1;width:20px;height:20px;margin:0;accent-color:var(--leaf)}
 		.issue-triage-actions{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-top:var(--space-5);border-top:1px solid var(--line)}.issue-triage-actions>a:not(.button){color:var(--muted);font-size:12px;font-weight:800}.issue-triage-actions button{min-width:132px;min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--ink);border-radius:var(--radius-xs);background:var(--ink);color:var(--panel);font-weight:800}.issue-triage-actions button.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
 		.issue-triage-done{grid-template-columns:auto minmax(0,1fr);align-items:start}.issue-triage-done-mark{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--leaf);border-radius:var(--radius-pill);color:var(--leaf);font-size:20px;font-weight:800}.issue-triage-done .kicker{color:var(--gold-ink);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.issue-triage-done h2{margin-top:var(--space-2);font-size:clamp(23px,2.8vw,31px)}.issue-triage-done p{margin-top:var(--space-2);color:var(--muted);font-size:13px;line-height:1.5}.issue-triage-done .issue-triage-actions{grid-column:1/-1;width:100%}
@@ -148,13 +202,16 @@ templ IssueBoardContent(data IssueBoardPageData) {
 }
 
 templ IssueBoardHeaderAction(data IssueBoardPageData) {
+	<div class="board-header-tools">
+		<label class="board-search"><span class="sr-only">Anliegen durchsuchen</span><input type="search" data-board-search placeholder="Anliegen suchen …" aria-label="Anliegen durchsuchen"/></label>
+		<nav class="board-view-switch" aria-label="Ansicht"><a class="button" href="/app/anliegen/board" aria-current="page">Board</a><a class="button" href="/app/anliegen">Liste</a></nav>
+	</div>
 	if data.IsServiceProvider && data.CalendarFeedURL != "" {
 		<a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a>
 	}
 }
 
 templ IssueBoardContext() {
-	<a href="/app/anliegen">← Zurück zu Anliegen</a>
 }
 
 templ IssueBoardBody(data IssueBoardPageData) {
@@ -165,11 +222,12 @@ templ IssueBoardBody(data IssueBoardPageData) {
 			}
 		</datalist>
 	}
-	<section class="board-panel" id="issue-manage" aria-label="Anliegen in der Liegenschaft" data-issue-board>
-		<p class="board-feedback" role="status" aria-live="polite" aria-atomic="true" data-board-feedback></p>
+	<section class="board-workspace" id="issue-manage" aria-label="Anliegen in der Liegenschaft" data-issue-board>
+		<p class="board-feedback" role="status" aria-live="polite" aria-atomic="true" data-board-feedback data-error={ strconv.FormatBool(!data.MessageOK) }>{ data.Message }</p>
 		if data.TotalIssueCount > 0 {
 			@IssueBoardToolbar(data)
 		}
+		<div class="board-layout">
 		if len(data.Issues) > 0 {
 			<div class="board-columns" role="region" aria-label="Anliegen nach Status" tabindex="0">
 				for index, column := range issueBoardColumns(data.Filters.StatusOptions, data.Issues) {
@@ -179,7 +237,7 @@ templ IssueBoardBody(data IssueBoardPageData) {
 							for _, issue := range column.Issues {
 								@IssueWorkCard(issue)
 							}
-							<p class="board-column-empty" hidden?={ len(column.Issues) > 0 }>Keine Anliegen</p>
+							<p class="board-column-empty" hidden?={ len(column.Issues) > 0 }>Hierher ziehen</p>
 						</div>
 					</section>
 				}
@@ -189,6 +247,8 @@ templ IssueBoardBody(data IssueBoardPageData) {
 		} else {
 			@IssueBoardBlank(data)
 		}
+		<aside class="board-panel" data-board-panel aria-label="Anliegen" tabindex="-1" hidden></aside>
+		</div>
 	</section>
 }
 
@@ -239,62 +299,105 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 				</div>
 			</form>
 		</details>
-		<nav class="board-quick" aria-label="Schnellauswahl"><span>Ansicht</span>
-			<a href={ templ.SafeURL(data.BoardAction) } aria-current={ boardQuickCurrent(!data.Filters.HasActive) }>Alle</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?status=Neu") } aria-current={ boardQuickCurrent(data.Filters.Status == "Neu") }>Neu</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?status=In+Bearbeitung") } aria-current={ boardQuickCurrent(data.Filters.Status == "In Bearbeitung") }>In Arbeit</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?priority=Dringend") } aria-current={ boardQuickCurrent(data.Filters.Priority == "Dringend") }>Dringend</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?assignee=" + url.QueryEscape(data.ActorEmail)) } aria-current={ boardQuickCurrent(data.Filters.Assignee == data.ActorEmail) }>Mir zugewiesen</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?sort=age") } aria-current={ boardQuickCurrent(data.Filters.Sort == "age") }>Älteste zuerst</a>
+		<nav class="board-quick" aria-label="Schnellauswahl">
+			<a href={ templ.SafeURL(data.BoardAction) } aria-current={ boardQuickCurrent(!data.Filters.HasActive) }>Alle <span>{ data.TotalIssueCount }</span></a>
+			<a href={ templ.SafeURL(data.BoardAction + "?status=Neu") } aria-current={ boardQuickCurrent(data.Filters.Status == "Neu") }>Neu <span>{ data.NewIssueCount }</span></a>
+			<a href={ templ.SafeURL(data.BoardAction + "?status=In+Bearbeitung") } aria-current={ boardQuickCurrent(data.Filters.Status == "In Bearbeitung") }>In Arbeit <span>{ data.ProgressIssueCount }</span></a>
+			<a href={ templ.SafeURL(data.BoardAction + "?priority=Dringend") } aria-current={ boardQuickCurrent(data.Filters.Priority == "Dringend") }>Dringend <span>{ data.UrgentIssueCount }</span></a>
+			<a href={ templ.SafeURL(data.BoardAction + "?assignee=" + url.QueryEscape(data.ActorEmail)) } aria-current={ boardQuickCurrent(data.Filters.Assignee == data.ActorEmail) }>Mir zugewiesen <span>{ data.AssignedIssueCount }</span></a>
 		</nav>
 	</div>
 }
 
 templ IssueWorkCard(issue view.IssueView) {
-	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID } draggable="true" data-board-card data-issue-status={ issue.Status }>
-		<button class="board-drag-handle" type="button" aria-label={ "Karte ziehen: " + issue.Title } title="Karte ziehen oder über das Menü verschieben" data-board-drag>
-			@PortalAssetIcon("grip-vertical")
-			<span>Ziehen</span>
-		</button>
-		<header class="issue-card-head"><h3>{ issue.Title }</h3><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
-		<p class="issue-location">{ issue.Location }</p>
-		<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
-		<div class="issue-work-people"><span class="issue-assignee-avatar" aria-hidden="true">{ issueBoardInitials(issue) }</span><span>
-			if issue.HasAssignee {
-				<strong title={ issue.AssigneeEmail }>Zuständig: { issueAssigneeLabel(issue) }</strong>
-			} else {
-				<strong>Noch nicht zugewiesen</strong>
-			}
-			<small title={ issue.CreatedAt }>Gemeldet: { issueBoardAge(issue) } · { issue.Author }</small>
-		</span></div>
-		if issue.HasServiceAppointment {
-			<p class="issue-proposal"><strong>Termin:</strong> { issue.ServiceAppointment }</p>
-		}
-		if issue.HasServiceProposal {
-			<p class="issue-proposal"><strong>Hinweis:</strong> { issue.ServiceProposal }</p>
-		}
-		<p class="issue-next-step">{ issue.NextStep }</p>
-		<details class="board-move-menu">
-			<summary>Verschieben nach …
-				@DisclosureChevron()
-			</summary>
-			<form method="post" action="/app/anliegen/workflow" data-board-move>
-				<input type="hidden" name="id" value={ issue.ID }/>
-				<input type="hidden" name="priority" value={ issue.Priority }/>
-				<input type="hidden" name="assignee_email" value={ issue.AssigneeEmail }/>
-				<label for={ "board-target-" + issue.ID }>Zielstatus</label>
-				<select id={ "board-target-" + issue.ID } name="status" required>
-					for _, option := range view.IssueBoardFilterOptions(view.IssueBoardFilterView{}).StatusOptions {
-						if option.Value != "" {
-							<option value={ option.Value } selected?={ option.Value == issue.Status }>{ option.Label }</option>
-						}
-					}
-				</select>
-				<button class="button" type="submit">Verschieben</button>
-			</form>
-		</details>
-		<div class="issue-card-foot"><a class="button primary issue-triage-link" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID) }>Bearbeiten</a></div>
+	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID } draggable="true" data-board-card data-issue-status={ issue.Status } data-issue-id={ issue.ID } data-assignee={ issue.AssigneeEmail } data-has-appointment={ strconv.FormatBool(issue.HasServiceAppointment) } tabindex="0" role="button" aria-label={ issue.Title + " · " + issue.Status }>
+		<button class="board-drag-handle" type="button" tabindex="-1" aria-label={ "Karte ziehen: " + issue.Title } title="Karte ziehen" data-board-drag>@PortalAssetIcon("grip-vertical")</button>
+		<h3 title={ issue.Title }>{ issue.Title }</h3>
+		<div class="board-card-meta"><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issueCategoryLabel(issue.Category) }</span><span class="issue-location" title={ issue.Location }>{ issue.Location }</span></div>
+		<div class="board-card-foot"><span title={ issue.CreatedAt }>{ issueBoardAge(issue) }</span><span class={ "issue-assignee-avatar", templ.KV("is-unassigned", !issue.HasAssignee) } title={ issueBoardAssigneeLabel(issue) } aria-label={ issueBoardAssigneeLabel(issue) }>{ issueBoardInitials(issue) }</span></div>
+		<noscript><a class="board-card-fallback" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID + "/panel") }>Anliegen öffnen</a></noscript>
 	</article>
+}
+
+type IssueBoardHistoryView struct { Action string; Actor string; Age string }
+type IssueBoardPanelData struct { Issue view.IssueView; ActorEmail string; Assignees []view.SelectOption; History []IssueBoardHistoryView }
+
+templ IssueBoardPanel(data IssueBoardPanelData) {
+	<header class="board-panel-head"><div><span class="kicker">Anliegen</span><h2>{ data.Issue.Title }</h2></div><a class="board-panel-close" href="/app/anliegen/board" data-board-close aria-label="Anliegen schließen">@PortalAssetIcon("x")</a></header>
+	<p class="board-panel-feedback" role="status" data-board-panel-feedback></p>
+	<div class="board-panel-meta"><span class={ "pill", data.Issue.StatusClass } data-board-panel-status>{ data.Issue.StatusLabel }</span><span class="pill">{ data.Issue.Priority }</span><span class="pill">{ data.Issue.Category }</span></div>
+	<p class="muted">{ data.Issue.Location }</p>
+	<p class="board-panel-description">{ data.Issue.Body }</p>
+	<p class="muted">Gemeldet von { data.Issue.Author } · { issueBoardAge(data.Issue) }</p>
+	<section data-board-transition hidden role="group" aria-label="Angaben zum Verschieben"></section>
+	<section><h3>Zuständig</h3><form method="post" action="/app/anliegen/workflow" data-board-assign>
+		@IssueBoardWorkflowFields(data.Issue)
+		<input type="hidden" name="status" value={ data.Issue.Status }/>
+		<label>Zuständige Person<select name="assignee_email" required>
+			if !data.Issue.HasAssignee {
+				<option value="" selected>Noch nicht zugewiesen</option>
+			}
+			for _, option := range data.Assignees {
+				<option value={ option.Value } selected?={ data.Issue.HasAssignee && option.Selected }>{ option.Label }</option>
+			}
+		</select></label><button type="submit">Zuständigkeit speichern</button>
+	</form></section>
+	<section><h3>Aktionen</h3><p class="muted">{ data.Issue.NextStep }</p>
+		if data.Issue.HasServiceAppointment {
+			<p class="muted">Termin: { data.Issue.ServiceAppointment }</p>
+		}
+		if data.Issue.HasServiceProposal {
+			<p class="muted">{ data.Issue.ServiceProposal }</p>
+		}
+		<form method="post" action="/app/anliegen/workflow" data-board-move>
+			@IssueBoardWorkflowFields(data.Issue)
+			<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
+			<label for={ "board-target-" + data.Issue.ID }>Verschieben nach …</label><select id={ "board-target-" + data.Issue.ID } name="status" required>
+				for _, option := range view.IssueBoardFilterOptions(view.IssueBoardFilterView{}).StatusOptions {
+					if option.Value != "" {
+						<option value={ option.Value } selected?={ option.Value == data.Issue.Status }>{ option.Label }</option>
+					}
+				}
+			</select><button type="submit">Verschieben</button>
+		</form>
+		<a class="button ghost board-edit" href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Bearbeiten</a>
+	</section>
+	<section><h3>Verlauf</h3><ol class="board-history">
+		for _, entry := range data.History {
+			<li><strong>{ entry.Action }</strong><span>{ entry.Actor } · { entry.Age }</span></li>
+		}
+		<li><strong>Anliegen gemeldet</strong><span>{ data.Issue.Author } · { issueBoardAge(data.Issue) }</span></li>
+	</ol></section>
+	<noscript>
+		<section><h3>Termin vereinbaren</h3><form method="post" action="/app/anliegen/workflow">
+			@IssueBoardWorkflowFields(data.Issue)
+			<input type="hidden" name="status" value="Termin vereinbart"/>
+			<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
+			<input type="hidden" name="service_proposal" value={ data.Issue.ServiceProposal }/>
+			<label>Start<input type="datetime-local" name="service_start" value={ data.Issue.ServiceStartInput } required/></label>
+			<label>Ende (optional)<input type="datetime-local" name="service_end" value={ data.Issue.ServiceEndInput }/></label>
+			<button type="submit">Termin speichern und verschieben</button>
+		</form></section>
+	</noscript>
+
+	<template data-board-assignee-options>
+		<select name="assignee_email" required aria-label="Wer übernimmt?">
+			for _, option := range data.Assignees {
+				<option value={ option.Value } selected?={ option.Value == data.ActorEmail }>{ option.Label }</option>
+			}
+		</select>
+	</template>
+	<template data-board-appointment-fields>
+		<label>Start<input type="datetime-local" name="service_start" value={ data.Issue.ServiceStartInput } required/></label>
+		<label>Ende (optional)<input type="datetime-local" name="service_end" value={ data.Issue.ServiceEndInput }/></label>
+		<input type="hidden" name="service_proposal" value={ data.Issue.ServiceProposal }/>
+	</template>
+}
+
+templ IssueBoardWorkflowFields(issue view.IssueView) {
+	<input type="hidden" name="id" value={ issue.ID }/>
+	<input type="hidden" name="priority" value={ issue.Priority }/>
+	<input type="hidden" name="redirect" value="/app/anliegen/board"/>
 }
 
 templ IssueBoardFilterBlank(data IssueBoardPageData) {
@@ -309,7 +412,7 @@ templ IssueBoardBlank(data IssueBoardPageData) {
 		<div class="board-blank-main">
 			<div class="board-blank-lead">
 				<h2 id="board-blank-title">{ data.IssuesEmpty.Title }</h2>
-				<p>Sobald jemand in der Liegenschaft etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p>
+				<p>Sobald jemand in der Liegenschaft etwas meldet, erscheint hier eine Karte mit Titel, Priorität, Kategorie, Ort und Zuständigkeit. Öffnen Sie die Karte für alle Details und den nächsten Schritt.</p>
 			</div>
 			if data.CanCreateIssue || data.CanManageAnnouncements {
 				<div class="board-blank-actions">
@@ -336,7 +439,7 @@ templ IssueBoardBlank(data IssueBoardPageData) {
 		<ul class="board-blank-facts">
 			<li><strong>Reihenfolge</strong><span>Standard ist „zuletzt aktualisiert“. Ab dem ersten Anliegen stehen zusätzlich Älteste zuerst, Priorität, Status, Kategorie und Zuständigkeit als Sortierung bereit.</span></li>
 			<li><strong>Priorität</strong><span>Dringend, Hoch, Mittel und Niedrig. Der erste Triage-Schritt setzt sie; die Zählung über der Liste zeigt offene und dringende Anliegen.</span></li>
-			<li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen zu oder lässt es offen. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li>
+			<li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen, einem Mitarbeiter oder Dienstleister zu. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li>
 		</ul>
 	</section>
 }
@@ -399,11 +502,11 @@ templ IssueTriageAssigneeStep(data IssueTriagePageData) {
 		<div class="issue-triage-progress"><span>Schritt 2 von 2</span><span aria-hidden="true"><i class="active"></i><i class="active"></i></span></div>
 		<fieldset>
 			<legend>Wer kümmert sich als Nächstes?</legend>
-			<label class="issue-triage-choice"><input type="radio" name="assignee_email" value={ data.ActorEmail } checked?={ data.Issue.AssigneeEmail == data.ActorEmail } required/><span><strong>Ich übernehme</strong><small>Das Anliegen wird Ihnen zugeordnet</small></span></label>
-			<label class="issue-triage-choice calm"><input type="radio" name="assignee_email" value="" checked?={ !data.Issue.HasAssignee } required/><span><strong>Noch offen lassen</strong><small>Die Zuständigkeit wird später festgelegt</small></span></label>
-			if data.Issue.HasAssignee && data.Issue.AssigneeEmail != data.ActorEmail {
-				<label class="issue-triage-choice"><input type="radio" name="assignee_email" value={ data.Issue.AssigneeEmail } checked required/><span><strong>Bestehende Zuordnung behalten</strong><small>{ data.Issue.AssigneeEmail }</small></span></label>
-			}
+			<label>Zuständige Person<select name="assignee_email" required>
+				for _, option := range data.Assignees {
+					<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+				}
+			</select></label>
 		</fieldset>
 		<div class="issue-triage-actions"><a href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Zurück</a><button type="submit">Bearbeitung starten</button></div>
 	</form>
@@ -569,20 +672,45 @@ func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []i
 	columns := make([]issueBoardColumn, 0, len(options))
 	indices := map[string]int{}
 	for _, option := range options {
-		if option.Value == "" { continue }
+		if option.Value == "" || option.Value == "Abgelehnt" || option.Value == "Duplikat" { continue }
 		if _, exists := indices[option.Value]; exists { continue }
 		indices[option.Value] = len(columns)
-		columns = append(columns, issueBoardColumn{Status: option.Value, StatusLabel: view.IssueStatusLabel(option.Value)})
+		columns = append(columns, issueBoardColumn{Status: option.Value, StatusLabel: option.Value})
 	}
 	for _, issue := range issues {
-		index, exists := indices[issue.Status]
+		status := issue.Status
+		if status == "Abgelehnt" || status == "Duplikat" { status = "Erledigt" }
+		index, exists := indices[status]
 		if !exists { index = len(columns); indices[issue.Status] = index; columns = append(columns, issueBoardColumn{Status: issue.Status, StatusLabel: view.IssueStatusLabel(issue.Status)}) }
 		columns[index].Issues = append(columns[index].Issues, issue)
 	}
 	return columns
 }
+// issueCategoryLabel turns seed/legacy category keys such as "betriebskosten"
+// into readable German labels; known labels pass through unchanged.
+func issueCategoryLabel(category string) string {
+	category = strings.TrimSpace(category)
+	if category == "" {
+		return "Sonstiges"
+	}
+	for _, known := range view.IssueCategories() {
+		if strings.EqualFold(known, category) {
+			return known
+		}
+	}
+	words := strings.Fields(strings.NewReplacer("_", " ", "-", " ").Replace(category))
+	for i, word := range words {
+		runes := []rune(word)
+		runes[0] = unicode.ToUpper(runes[0])
+		words[i] = string(runes)
+	}
+	return strings.Join(words, " ")
+}
+
 func issueBoardInitials(issue view.IssueView) string {
-	if !issue.HasAssignee { return "–" }
+	if !issue.HasAssignee { return "" }
 	return contactInitials(issueAssigneeLabel(issue))
 }
 func issueBoardAge(issue view.IssueView) string { if issue.Age != "" { return issue.Age }; return issue.CreatedAt }
+
+func issueBoardAssigneeLabel(issue view.IssueView) string { if !issue.HasAssignee { return "Noch nicht zugewiesen" }; return "Zuständig: " + issueAssigneeLabel(issue) }

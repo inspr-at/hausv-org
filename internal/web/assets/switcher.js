@@ -91,9 +91,12 @@
       const address = document.createElement('small'); address.textContent = entry.address;
       const role = document.createElement('small'); role.textContent = `${entry.group} · ${entry.role}`;
       copy.append(name, address, role);
-      const state = document.createElement('span'); state.className = 'switcher-row-status nav-icon'; state.textContent = `${entry.open} offen${entry.current ? ' · aktuell' : ''}`;
-      if (!entry.current) state.append(picker.querySelector('[data-switcher-forward-icon]').content.cloneNode(true));
-      element.append(copy, state); element.addEventListener('click', () => choose(entry));
+      const badge = document.createElement('span'); badge.className = 'switcher-row-badge'; badge.textContent = `${entry.open} offen`;
+      const mark = document.createElement('span'); mark.className = 'switcher-row-mark nav-icon' + (entry.current ? ' is-current' : '');
+      if (entry.current) { mark.title = 'aktuell'; mark.setAttribute('aria-label', 'aktuell'); } else mark.setAttribute('aria-hidden', 'true');
+      const icon = picker.querySelector(entry.current ? '[data-switcher-check-icon]' : '[data-switcher-forward-icon]');
+      if (icon) mark.append(icon.content.cloneNode(true));
+      element.append(copy, badge, mark); element.addEventListener('click', () => choose(entry));
       return element;
     };
     async function loadRecent() {

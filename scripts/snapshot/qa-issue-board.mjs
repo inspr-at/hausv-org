@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-// HAUSV-706. Run on disposable snapshot data, never against production:
-// HV_CAPTURE=qa-issue-board.mjs scripts/snapshot/run.sh WORKTREE /private/tmp/hausv-706-board 8106
-// Seven 260px lanes wrap into rows at laptop widths. The width sum therefore
-// includes the gaps of a complete row; all seven lanes remain present/visible.
+// HAUSV-714/716/717. Disposable local fixtures; five lanes and an async detail panel.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,7 +30,7 @@ async function assertStatus(id, status, reload = false) {
   await page.waitForFunction(({ id, status }) => {
     const card = document.getElementById(id);
     return card?.dataset.issueStatus === status && card.closest('[data-board-status]')?.dataset.boardStatus === status &&
-      !card.hasAttribute('aria-busy');
+      !card.hasAttribute('aria-busy') && !card.classList.contains('is-pending');
   }, { id, status });
   await assertCounts();
 }
@@ -51,26 +48,44 @@ async function assertCounts() {
   }
 }
 
-async function keyboardMove(id, storedStatus) {
+const panel = () => page.locator('[data-board-panel]');
+async function openPanel(id, keyboard = false) {
   const card = cardByID(id);
-  const summary = card.locator('.board-move-menu > summary');
-  await summary.focus();
-  await page.keyboard.press('Enter');
-  await page.keyboard.press('Tab');
-  const select = card.locator('select[name="status"]');
-  assert(await select.evaluate(el => el === document.activeElement), 'Tab must reach the destination select');
-  const options = await select.locator('option').evaluateAll(items => items.map(item => item.value));
-  const index = options.indexOf(storedStatus);
-  assert(index >= 0, `Missing destination ${storedStatus}`);
-  // Headless Chromium does not commit ArrowDown on a closed <select>; choose the
-  // option the way assistive tech does (change event) and continue by keyboard.
+  if (keyboard) { await card.focus(); await page.keyboard.press('Enter'); }
+  else await card.locator('h3').click();
+  await panel().locator('[data-board-move]').waitFor();
+  assert.equal(await card.getAttribute('aria-current'), 'true');
+}
+async function keyboardMove(id, storedStatus) {
+  await openPanel(id, true);
+  const select = panel().locator('[data-board-move] select[name="status"]');
+  await select.focus();
   await select.selectOption(storedStatus);
   await page.keyboard.press('Tab');
-  assert(await card.locator('button[type="submit"]').evaluate(el => el === document.activeElement), 'Tab must reach Verschieben');
+  assert(await panel().locator('[data-board-move] button[type="submit"]').evaluate(el => el === document.activeElement), 'Tab reaches Verschieben');
   await page.keyboard.press('Enter');
   await assertStatus(id, storedStatus);
-  assert(await cardByID(id).locator('.board-move-menu > summary').evaluate(el => el === document.activeElement),
-    'Focus must return to the moved card menu');
+  await panel().locator('[data-board-move]').waitFor();
+  await page.keyboard.press('Escape');
+  assert(await cardByID(id).evaluate(el => el === document.activeElement), 'Esc returns focus to the card');
+}
+async function dragTo(id, status) {
+  await page.evaluate(([cardID, status]) => {
+    const card = document.getElementById(cardID);
+    const target = document.querySelector(`[data-board-status="${status}"] .board-column-head`);
+    const dt = new DataTransfer();
+    const fire = (node, type) => node.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+    fire(card, 'dragstart'); fire(target, 'dragenter'); fire(target, 'dragover'); fire(target, 'drop'); fire(card, 'dragend');
+  }, [id, status]);
+}
+async function transitionDialog(id, status, heading) {
+  const dialog = panel().locator('[data-board-transition]');
+  await dialog.locator('h3').waitFor();
+  assert.equal(await dialog.locator('h3').textContent(), heading);
+  assert.equal(await cardByID(id).evaluate(el => el.closest('[data-board-status]').dataset.boardStatus), status);
+  assert(await cardByID(id).evaluate(el => el.classList.contains('is-pending')), 'card waits visibly in target lane');
+  await assertCounts();
+  return dialog;
 }
 
 try {
@@ -90,13 +105,18 @@ try {
 
   const created = await context.request.post(`${tenantURL}/app/anliegen`, {
     headers: { Origin: origin }, maxRedirects: 0,
-    multipart: { title: 'QA HAUSV-706 Tür prüfen', body: 'Die Tür beim Keller schließt nicht richtig.', category: 'Reparatur', location_type: 'common', location_detail: 'Keller' },
+    multipart: { title: 'QA HAUSV-714 Tür prüfen', body: 'Die Tür beim Keller schließt nicht richtig.', category: 'Reparatur', location_type: 'common', location_detail: 'Keller' },
   });
   assert.equal(created.status(), 303, 'Create the oracle issue');
   const location = new URL(created.headers().location, baseURL);
   assert.equal(location.searchParams.get('created'), '1', 'Fixture creation must succeed');
   const issueID = decodeURIComponent(location.pathname.split('/').at(-1));
   const id = `issue-${issueID}`;
+  const second = await context.request.post(`${tenantURL}/app/anliegen`, {
+    headers: { Origin: origin }, maxRedirects: 0,
+    multipart: { title: 'QA Board Tastaturnavigation', body: 'Zweites Anliegen für J/K in Leserichtung.', category: 'Frage', location_type: 'common', location_detail: 'Stiegenhaus' },
+  });
+  assert.equal(new URL(second.headers().location, baseURL).searchParams.get('created'), '1', 'Second keyboard fixture must exist');
   await page.goto(boardURL, { waitUntil: 'networkidle' });
   await assertStatus(id, 'Neu');
   // Expanded filters are part of the width/tap-target contract, too.
@@ -117,9 +137,9 @@ try {
       const gap = parseFloat(getComputedStyle(grid).columnGap);
       const headerButtons = [...main.querySelectorAll('.portal-section-header-action .button')];
       const targets = [...main.querySelectorAll('a,button,select,input:not([type="hidden"]),summary')].filter(visible);
-      const tiny = targets.filter(el => { const b = el.getBoundingClientRect(); return b.width < 39.5 || b.height < 39.5; }).map(el => el.outerHTML.slice(0, 160));
+      const tiny = targets.filter(el => { const b = el.getBoundingClientRect(); return b.width < 43.5 || b.height < 43.5; }).map(el => el.outerHTML.slice(0, 160));
       const offscreen = [...main.querySelectorAll('*')].filter(visible).filter(el => {
-        if (el.classList.contains('sr-only')) return false;
+        if (el.classList.contains('sr-only') || el.closest('.board-columns')) return false; // Lanes intentionally scroll inside their region below 900px.
         const b = el.getBoundingClientRect();
         return b.left < -1 || b.right > innerWidth + 1;
       }).map(el => el.tagName + '.' + el.className);
@@ -135,12 +155,14 @@ try {
       };
     });
     measurements.push(m);
-    assert.equal(m.columns.length, 7, `${width}px: all seven lanes remain present`);
-    assert(m.documentWidth <= width + 1 && m.gridScroll <= m.gridClient + 1, `${width}px: no horizontal overflow`);
+    assert.equal(m.columns.length, 5, `${width}px: five main lanes remain present`);
+    assert(m.documentWidth <= width + 1, `${width}px: no page overflow`);
+    if (width >= 900) assert(m.gridScroll <= m.gridClient + 1, `${width}px: desktop lanes fit`);
+    else assert(m.gridScroll > m.gridClient, `${width}px: lanes scroll inside their region`);
     const widths = m.columns.map(c => c.width);
     assert(Math.max(...widths) - Math.min(...widths) <= 2, `${width}px: equal column widths`);
-    assert(Math.min(...widths) >= 259.5, `${width}px: columns at least 260px`);
-    assert(Math.abs(m.firstRowSum - m.grid.width) <= 2, `${width}px: complete row plus gaps fills content`);
+    if (width < 900) assert(Math.min(...widths) >= 219.5, `${width}px: scrollable lanes at least 220px`);
+    if (width >= 900) assert(Math.abs(m.firstRowSum - (m.grid.width - 4)) <= 2, `${width}px: five lanes plus gaps fill content`);
     assert(Math.abs(m.grid.width - (m.content.width - 2 * m.contentPadding)) <= 2, `${width}px: grid uses full content`);
     assert(Math.abs(m.toolbar.width - m.grid.width) <= 2, `${width}px: filter toolbar uses full width`);
     assert(Math.abs(m.header.width - m.main.width) <= 2 && Math.abs(m.content.width - m.main.width) <= 2,
@@ -150,7 +172,7 @@ try {
     if (m.mobileHeight !== null) assert(Math.abs(m.mobileHeight - 74) <= 1, `${width}px: mobile header 74px`);
     assert(Math.abs(m.contextHeight - 40) <= 1, `${width}px: context bar 40px`);
     assert.equal(m.filledHeaderActions, 0, `${width}px: ghost header actions`);
-    assert.deepEqual(m.tiny, [], `${width}px: targets >= 40px`);
+    assert.deepEqual(m.tiny, [], `${width}px: targets >= 44px`);
     assert.deepEqual(m.offscreen, [], `${width}px: no offscreen content`);
     if (out && [1280, 1440, 1920, 390].includes(width)) await page.screenshot({ path: join(out, `board-${width}.png`), fullPage: true });
   }
@@ -158,58 +180,107 @@ try {
   await page.locator('.board-tools').evaluate(el => { el.open = false; });
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.evaluate(() => window.scrollTo(0, 0));
-  // Delay the real POST so the assertion proves optimistic movement, followed
-  // by the real server response and a reload proving persistence.
+  // Click, Esc, J/K and arrows choose cards in DOM/reading order.
+  await openPanel(id);
+  assert.match(await panel().locator('h2').textContent(), /QA HAUSV-714/);
+  await page.keyboard.press('Escape');
+  assert(await panel().isHidden());
+  assert(await cardByID(id).evaluate(el => el === document.activeElement));
+  const ordered = await page.locator('[data-board-card]').evaluateAll(items => items.filter(el => !el.hidden).map(el => el.id));
+  assert(ordered.length >= 2, 'J/K requires at least two cards');
+  {
+    await openPanel(ordered[0], true);
+    await page.keyboard.press('j');
+    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-current') === 'true', ordered[1]);
+    await panel().locator('[data-board-move]').waitFor();
+    await page.keyboard.press('k');
+    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-current') === 'true', ordered[0]);
+    await panel().locator('[data-board-move]').waitFor();
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-current') === 'true', ordered[1]);
+    await panel().locator('[data-board-move]').waitFor();
+    await page.keyboard.press('ArrowUp');
+    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-current') === 'true', ordered[0]);
+    await panel().locator('[data-board-move]').waitFor();
+  }
+  await page.keyboard.press('Escape');
+  const originalOrder = await lane('Neu').locator('[data-board-card]').evaluateAll(items => items.map(el => el.id));
+  await dragTo(id, 'Angenommen');
+  let dialog = await transitionDialog(id, 'Angenommen', 'Wer übernimmt?');
+  assert.equal(await dialog.locator('select[name="assignee_email"]').inputValue(), 'admin@example.com', 'Ich übernehme is preselected');
+  await dialog.locator('[data-board-cancel]').click();
+  assert.deepEqual(await lane('Neu').locator('[data-board-card]').evaluateAll(items => items.map(el => el.id)), originalOrder, 'Cancel restores exact order');
+  await assertStatus(id, 'Neu');
+  await dragTo(id, 'Angenommen');
+  dialog = await transitionDialog(id, 'Angenommen', 'Wer übernimmt?');
+  // Delay the real POST to prove the pending state and atomic assignment/status.
   let release;
   const gate = new Promise(resolve => { release = resolve; });
   const delayedPost = async route => { await gate; await route.continue(); };
   await page.route('**/app/anliegen/workflow', delayedPost);
   try {
-    // Playwright's dragTo does not drive the native HTML5 drag session in
-    // headless Chromium; dispatch the same DragEvents the browser would fire.
-    await page.evaluate(([cardID, status]) => {
-      const card = document.getElementById(cardID);
-      const target = document.querySelector(`[data-board-status="${status}"] .board-column-head`) || document.querySelector(`[data-board-status="${status}"]`);
-      const dt = new DataTransfer();
-      const fire = (node, type) => node.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
-      fire(card, 'dragstart'); fire(target, 'dragenter'); fire(target, 'dragover'); fire(target, 'drop'); fire(card, 'dragend');
-    }, [id, 'Angenommen']);
-    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-busy') === 'true' &&
-      document.getElementById(id)?.closest('[data-board-status]')?.dataset.boardStatus === 'Angenommen', id);
+    await dialog.locator('button[type="submit"]').click();
+    await page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-busy') === 'true', id);
   } finally { release(); }
   await assertStatus(id, 'Angenommen');
-  assert.equal(await page.locator('[data-board-feedback]').textContent(), 'Verschoben nach Angenommen');
   await page.unroute('**/app/anliegen/workflow', delayedPost);
+  await page.waitForFunction(() => document.querySelector('[data-board-feedback]').textContent.includes('Verschoben nach Angenommen · Zuständig:'));
+  assert.match(await cardByID(id).locator('.issue-assignee-avatar').textContent(), /[A-ZÄÖÜ]/);
+  assert.equal(await cardByID(id).getAttribute('data-assignee'), 'admin@example.com');
+  assert.equal(await panel().locator('[data-board-panel-status]').textContent(), 'Angenommen');
+  assert.match(await panel().locator('.board-history').textContent(), /Neu → Angenommen/);
   await assertStatus(id, 'Angenommen', true);
 
-  // The keyboard path is exercised on the way back to Neu (the lifecycle refuses
-  // skipping „Termin vereinbart“ from Angenommen; that refusal is asserted below).
-  await keyboardMove(id, 'Neu');
+  await dragTo(id, 'Termin vereinbart');
+  dialog = await transitionDialog(id, 'Termin vereinbart', 'Wann?');
+  await dialog.locator('[name="service_start"]').fill('2026-09-10T10:00');
+  await dialog.locator('[name="service_end"]').fill('2026-09-10T09:00');
+  await dialog.locator('button[type="submit"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-board-feedback][data-error="true"]')?.textContent.includes('Ende'));
+  await assertStatus(id, 'Angenommen');
+  assert.match(await panel().locator('[data-board-panel-feedback]').textContent(), /Ende/);
+  await dragTo(id, 'Termin vereinbart');
+  dialog = await transitionDialog(id, 'Termin vereinbart', 'Wann?');
+  await dialog.locator('[name="service_start"]').fill('2026-09-10T10:00');
+  await dialog.locator('[name="service_end"]').fill('2026-09-10T11:00');
+  await dialog.locator('button[type="submit"]').click();
+  await assertStatus(id, 'Termin vereinbart');
+  await assertStatus(id, 'Termin vereinbart', true);
+  await dragTo(id, 'Neu');
+  await assertStatus(id, 'Neu');
+  assert(await panel().locator('[data-board-transition]').isHidden(), 'Backwards move to Neu needs no dialog');
   await assertStatus(id, 'Neu', true);
-  const dragTo = async status => page.evaluate(([cardID, target]) => {
-    const card = document.getElementById(cardID);
-    const lane = document.querySelector(`[data-board-status="${target}"] .board-column-head`) || document.querySelector(`[data-board-status="${target}"]`);
-    const dt = new DataTransfer();
-    const fire = (node, type) => node.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
-    fire(card, 'dragstart'); fire(lane, 'dragenter'); fire(lane, 'dragover'); fire(lane, 'drop'); fire(card, 'dragend');
-  }, [id, status]);
-  await dragTo('Angenommen');
-  await assertStatus(id, 'Angenommen');
-  await assertStatus(id, 'Angenommen', true);
-  await dragTo('Termin vereinbart');
-  await page.waitForFunction(() => document.querySelector('[data-board-feedback][data-error="true"]')?.textContent.includes('Termin'));
-  await assertStatus(id, 'Angenommen');
-  await assertStatus(id, 'Angenommen', true);
+  await keyboardMove(id, 'In Bearbeitung');
+  await assertStatus(id, 'In Bearbeitung', true);
 
-  // A failed network request must also restore lane, count, selected status and focus.
   const abortPost = route => route.abort('failed');
   await page.route('**/app/anliegen/workflow', abortPost);
-  await dragTo('Neu');
+  await dragTo(id, 'Neu');
   await page.waitForFunction(() => document.querySelector('[data-board-feedback][data-error="true"]')?.textContent.includes('zurückgesetzt'));
-  await assertStatus(id, 'Angenommen');
-  assert.equal(await cardByID(id).locator('select[name="status"]').inputValue(), 'Angenommen');
+  await assertStatus(id, 'In Bearbeitung');
+  assert.equal(await panel().locator('[data-board-move] select[name="status"]').inputValue(), 'In Bearbeitung');
+  assert.match(await panel().locator('[data-board-panel-feedback]').textContent(), /zurückgesetzt/);
   await page.unroute('**/app/anliegen/workflow', abortPost);
-  await assertStatus(id, 'Angenommen', true);
+  await assertStatus(id, 'In Bearbeitung', true);
+
+  // Panel fits desktop, and becomes a viewport sheet on mobile. Page never scrolls sideways.
+  await openPanel(id);
+  for (const width of [1280, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const m = await page.evaluate(() => {
+      const panel = document.querySelector('[data-board-panel]');
+      const b = panel.getBoundingClientRect();
+      const targets = [...panel.querySelectorAll('a,button,input:not([type="hidden"]),select')].filter(el => el.getClientRects().length);
+      return { width: innerWidth, documentWidth: document.documentElement.scrollWidth, panel: { width:b.width, height:b.height, left:b.left },
+        tiny: targets.filter(el => { const b=el.getBoundingClientRect(); return b.width<43.5 || b.height<43.5; }).map(el=>el.outerHTML.slice(0,160)) };
+    });
+    assert(m.documentWidth <= width + 1, `${width}px: open panel has no page overflow`);
+    assert(Math.abs(m.panel.width - (width < 760 ? width : 360)) < 2, `${width}px: panel width`);
+    if (width < 760) assert(Math.abs(m.panel.height - 1000) < 2, 'mobile panel fills viewport');
+    assert.deepEqual(m.tiny, [], `${width}px: panel targets >=44px`);
+  }
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1920, height: 1100 });
 
   // Actual browser touch events exercise pointer capture/cancellation and the
   // fallback without constructing synthetic DragEvents or bypassing handlers.
@@ -240,17 +311,17 @@ try {
   const plain = await noJS.newPage();
   await plain.goto(boardURL);
   const plainCard = plain.locator(`[id=${JSON.stringify(id)}]`);
-  await plainCard.locator('.board-move-menu > summary').click();
-  await plainCard.locator('select[name="status"]').selectOption('In Bearbeitung');
+  await plainCard.locator('.board-card-fallback').click();
+  await plain.locator('[data-board-move] select[name="status"]').selectOption('In Bearbeitung');
   await Promise.all([
     plain.waitForURL(url => url.searchParams.get('issue') === 'updated'),
-    plainCard.locator('button[type="submit"]').click(),
+    plain.locator('[data-board-move] button[type="submit"]').click(),
   ]);
   assert.equal(await plainCard.getAttribute('data-issue-status'), 'In Bearbeitung', 'No-JS form persists the move');
   await noJS.close();
   await assertStatus(id, 'In Bearbeitung', true);
   assert.deepEqual(errors, [], 'No uncaught browser errors');
-  console.log('PASS — board widths/chrome, optimistic dragTo + persisted status, keyboard + focus, rejection + network rollback, touch + cancellation, no-JS');
+  console.log('PASS — compact board/chrome, panel + keyboard/focus, pending dialogs + cancellation, atomic assignment/appointment, network rollback, touch, no-JS');
 } catch (error) {
   if (out && page) await page.screenshot({ path: join(out, 'failure.png'), fullPage: true }).catch(() => {});
   throw error;

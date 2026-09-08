@@ -76,7 +76,7 @@ func TestOptionalFieldsHaveDisclosureMarker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{".disclosure-chevron", "border-radius:50%", "details[open]>summary>.disclosure-chevron svg{transform:rotate(180deg)}", "transition:transform .2s ease", "prefers-reduced-motion:reduce"} {
+	for _, marker := range []string{".disclosure-chevron", "border-radius:50%", "details[open]>summary>.disclosure-chevron svg{transform:rotate(180deg)}", "transition:transform 180ms ease", "prefers-reduced-motion:reduce"} {
 		if !strings.Contains(string(css), marker) {
 			t.Errorf("shared disclosure state/animation missing %q", marker)
 		}

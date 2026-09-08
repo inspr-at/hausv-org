@@ -1175,6 +1175,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/anliegen", a.page(a.issues))
 	mux.HandleFunc("GET /app/anliegen/board", a.page(a.issueBoard))
 	mux.HandleFunc("GET /app/anliegen/board/{id}", a.page(a.issueTriage))
+	mux.HandleFunc("GET /app/anliegen/board/{id}/panel", a.page(a.issueBoardPanel))
 	mux.HandleFunc("GET /app/anliegen/{id}", a.page(a.issueResidentDetail))
 	mux.HandleFunc("POST /app/anliegen", a.action(a.createIssue))
 	mux.HandleFunc("POST /app/anliegen/comment", a.action(a.addIssueComment))

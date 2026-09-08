@@ -34,15 +34,18 @@ type LiegenschaftSwitcherData struct {
 
 // Each surface uses the same disclosure and bounded panel, including every
 // breadcrumb. Native details and the GET form also work without JavaScript.
-templ LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surface string) {
+templ LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surface, eyebrow, icon string) {
 	<details class="liegenschaft-switcher house-picker" id={ id } data-switcher data-house-picker data-house-picker-shell={ surface } data-search-url={ data.SearchURL } data-storage-key={ data.StorageKey }>
-		<summary class="house-header-card" aria-label={ switcherSummaryLabel(surface, label) }>
-			<span class="nav-icon switcher-building">@PortalIcon("building")</span>
+		<summary class="house-header-card" aria-label={ switcherSummaryLabel(surface, label) } title={ label }>
+			if !switcherIsScope(surface) {
+				<span class="house-header-eyebrow">{ eyebrow }</span>
+				<span class="nav-icon switcher-building">@PortalAssetIcon(icon)</span>
+			}
 			<span class={ "house-header-copy", templ.KV("side-address-label", !switcherIsScope(surface)) } lang="de-AT"><strong>{ label }</strong><small>{ place }</small></span>
 			@DisclosureChevron()
 		</summary>
 		<div class="switcher-panel" role="group" aria-label="Liegenschaft wechseln">
-			<template data-switcher-forward-icon>@PortalAssetIcon("chevron-right")</template>
+			<template data-switcher-forward-icon>@PortalAssetIcon("chevron-right")</template><template data-switcher-check-icon>@PortalAssetIcon("check")</template>
 			<header class="switcher-heading"><h2>Liegenschaft wechseln</h2><span>{ switcherCountLabel(data.Count) }</span></header>
 			if data.Current != nil {
 				<section aria-label="Aktueller Kontext" data-switcher-current={ data.Current.Key }>
@@ -91,13 +94,12 @@ templ LiegenschaftRow(entry LiegenschaftEntry) {
 		<input type="hidden" name="tenant" value={ entry.Tenant }/><input type="hidden" name="role" value={ entry.Role }/>
 		<button type="submit" disabled?={ entry.Current }>
 			<span class="switcher-row-copy"><strong title={ entry.Name }>{ entry.Name }</strong><small>{ entry.Address }</small><small>{ entry.Group } · { entry.Role }</small></span>
-			<span class="switcher-row-status"><small>{ fmt.Sprintf("%d offen", entry.Open) }</small>
-				if entry.Current {
-					<small>aktuell</small>
-				} else {
-					<span class="nav-icon">@PortalAssetIcon("chevron-right")</span>
-				}
-			</span>
+			<span class="switcher-row-badge">{ fmt.Sprintf("%d offen", entry.Open) }</span>
+			if entry.Current {
+				<span class="switcher-row-mark nav-icon is-current" aria-label="aktuell" title="aktuell">@PortalAssetIcon("check")</span>
+			} else {
+				<span class="switcher-row-mark nav-icon" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
+			}
 		</button>
 	</form>
 }
@@ -114,7 +116,7 @@ templ Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) 
 				if i > 0 {
 					<span class="scope-separator nav-icon" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
 				}
-				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments)))
+				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments)), "", "")
 			}
 		</div>
 		if !mobile {
