@@ -319,7 +319,7 @@ async function assertAccess(page, label, viewport) {
 }
 
 async function assertParking(page, label) {
-  if (!(await page.getByRole('heading', { name: 'Parkplatz', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
+  if (!(await page.getByRole('heading', { name: 'Parkplatz & Laden', exact: true }).count())) fail(`${label}: Überschrift fehlt`);
   if (expectedParkingState === 'empty') {
     if (!(await page.locator('.parking-empty').count()) || !(await page.getByText('Noch keine Monatswerte', { exact: true }).count())) {
       fail(`${label}: deterministischer Leerzustand fehlt`);

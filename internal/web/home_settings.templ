@@ -70,21 +70,13 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 		if data.Invalid {
 			@SettingsFlash("Bitte einen Namen und eine gültige Zuhause-Art auswählen.", false)
 		}
-		<section class="panel home-map" aria-label="Namensbereiche">
-			<div class="home-scope"><span>Liegenschaft</span><strong>{ data.Portal.HouseName }</strong><small>{ homeScopeAddress(data) }</small></div>
-			<div class="home-scope current" data-home-identity="editor-summary" aria-label={ data.HomeIdentity.AriaLabel }><span>Mein Zuhause</span><strong data-home-display-name>{ data.HouseholdName }</strong>
-				if data.HasHomeUnit {
-					<small class="home-scope-unit" data-home-unit-label>{ data.HomeUnitLabel }</small>
-				}
-			<small class="home-scope-meta">{ homeScopeMeta(data) }</small></div>
-			<div class="home-scope"><span>{ data.OfficialUnitTitle }</span><strong>{ data.OfficialUnitSummary }</strong><small>{ homeScopeUnitHint(data.HasHomeUnit) }</small></div>
-		</section>
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Anzeigename festlegen</h2><p>{ homeFormLede(data) }</p></div></header>
+
+		<section class="panel workspace"><header class="workspace-head"><div><span class="home-form-kicker">Ihr Zuhause</span><h2>Zuhause bearbeiten</h2><p>{ homeFormLede(data) }</p></div></header>
 			<form method="post" action="/app/settings/home">
 				<input type="hidden" name="from" value={ data.From }/>
 				<div class="form-grid">
-					<fieldset><legend>Anzeigename</legend><label>Anzeigename für „Mein Zuhause“<input type="text" name="household_name" value={ data.HouseholdName } placeholder="z. B. Dachwohnung" required maxlength="100"/></label></fieldset>
-					<fieldset><legend>Art &amp; Zuordnung</legend>
+					<fieldset class="home-name-field"><legend>Anzeigename</legend><label>Anzeigename für „Mein Zuhause“<input type="text" name="household_name" value={ data.HouseholdName } placeholder="z. B. Dachwohnung" required maxlength="100"/></label></fieldset>
+					<fieldset class="home-assignment-fields"><legend>Art &amp; Zuordnung</legend>
 						if data.HomeTypeLocked {
 							<label>Art des Zuhauses<input type="hidden" name="home_type" value={ data.HomeType }/><span class="readonly home-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></span></label>
 						} else {
@@ -107,10 +99,19 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 						}
 					</fieldset>
 				</div>
-				<div class="home-type-explanation" id="home-settings-type-explanation" data-home-type-explanation role="status" aria-live="polite"><span class="home-type-explanation-icon" aria-hidden="true">⌂</span><div><strong data-home-type-label>{ data.HomeTypeLabel }</strong><p data-home-type-copy>{ data.HomeTypeDescription }</p><small>{ homeTypeScopeNote(data.HomeTypeLocked) } „Nur beobachten“ bleibt unverändert.</small></div></div>
+				<div class="home-type-explanation" id="home-settings-type-explanation" data-home-type-explanation role="status" aria-live="polite"><span class="home-type-explanation-icon" aria-hidden="true">@PortalIcon("home")</span><div><strong data-home-type-label>{ data.HomeTypeLabel }</strong><p data-home-type-copy>{ data.HomeTypeDescription }</p><small>{ homeTypeScopeNote(data.HomeTypeLocked) } „Nur beobachten“ bleibt unverändert.</small></div></div>
 				<div class="home-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg><div><strong>Was bleibt gleich?</strong><p>{ homeUnchangedNote(data) }</p></div></div>
 				<footer class="form-actions"><a class="button ghost" href={ templ.SafeURL(data.BackURL) }>Abbrechen</a><button class="button primary" type="submit">Änderungen speichern</button></footer>
 			</form>
+		</section>
+		<section class="panel home-map" aria-label="Namensbereiche">
+			<div class="home-scope"><span>Liegenschaft</span><strong>{ data.Portal.HouseName }</strong><small>{ homeScopeAddress(data) }</small></div>
+			<div class="home-scope current" data-home-identity="editor-summary" aria-label={ data.HomeIdentity.AriaLabel }><span>Mein Zuhause</span><strong data-home-display-name>{ data.HouseholdName }</strong>
+				if data.HasHomeUnit {
+					<small class="home-scope-unit" data-home-unit-label>{ data.HomeUnitLabel }</small>
+				}
+			<small class="home-scope-meta">{ homeScopeMeta(data) }</small></div>
+			<div class="home-scope"><span>{ data.OfficialUnitTitle }</span><strong>{ data.OfficialUnitSummary }</strong><small>{ homeScopeUnitHint(data.HasHomeUnit) }</small></div>
 		</section>
 	</div>
 }

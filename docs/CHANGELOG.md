@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.7] - 2026-09-08
+
+### Neu
+
+- Energie: Einrichtung mit Titel- und Statuskopf, nummerierten Schritten und klaren Aktionen.
+- Zuhause: Anzeigename, Art und offizielle Wohnung übersichtlich nebeneinander, mit Erklärung zur Zuordnung.
+- Parkplatz & Laden: großer Einstieg mit Illustration und nummerierten Schritten, Lade- und Monatskarten großzügiger.
+
 ## [1.9.6] - 2026-09-08
 
 ### Neu

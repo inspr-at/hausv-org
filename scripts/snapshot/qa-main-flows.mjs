@@ -1945,7 +1945,7 @@ async function assertHomeOnboarding() {
   if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
   const box = await page.locator('.energy-mode-strip').boundingBox();
   const mobileNav = await mobileNavBox(page);
-  const stripInOnboarding = await page.locator('.onboarding-main > .energy-mode-strip').count();
+  const stripInOnboarding = await page.locator('.onboarding-main .energy-mode-strip').count();
   if (!box || !mobileNav || stripInOnboarding !== 1 ||
       Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
     fail(`Onboarding Mobil: Beobachtungsmodus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
