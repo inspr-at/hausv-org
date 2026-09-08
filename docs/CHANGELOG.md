@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.2] - 2026-09-08
+
+### Stabilität verbessert
+
+- Verwaltung: Ist das Postfach des E-Mail-Eingangs nicht erreichbar, zeigen die Einstellungen eine verständliche Meldung mit dem letzten erfolgreichen Abruf; technische Details stehen in einem Aufklapper.
+
 ## [1.9.1] - 2026-09-07
 
 ### Verbessert

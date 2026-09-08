@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.2",
+			Date:     "8. September 2026",
+			Kind:     "Stabilität",
+			Headline: "Der E-Mail-Eingang meldet ein unerreichbares Postfach verständlich.",
+			Intro:    "Statt eines technischen Fehlertexts nennen die Verwaltungs-Einstellungen die Situation und den letzten erfolgreichen Abruf; die technischen Details bleiben in einem Aufklapper.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.1",
 			Date:     "7. September 2026",
 			Kind:     "Stabilität",

@@ -44,9 +44,12 @@ type mailIntakeStatus struct {
 	Mailbox    string
 	Interval   time.Duration
 	LastRun    time.Time
-	LastError  string
-	LastCount  int
-	Total      int
+	// LastSuccess is the start of the last poll that ended without error; the
+	// settings page names it when the mailbox is currently unreachable.
+	LastSuccess time.Time
+	LastError   string
+	LastCount   int
+	Total       int
 }
 
 type mailIntakeState struct {
@@ -136,6 +139,8 @@ func (a *app) pollMailIntake(ctx context.Context, orgKey string, config mailinta
 		s.LastError = ""
 		if err != nil {
 			s.LastError = err.Error()
+		} else {
+			s.LastSuccess = started
 		}
 	})
 	if err != nil {

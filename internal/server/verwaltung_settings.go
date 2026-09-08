@@ -234,9 +234,12 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 	config := effectiveAIConfig(os.Getenv, settings)
 	organisation, _ := a.organisationRecordFor(r.Context(), &ac)
 	mailStatus, _ := a.mailIntake.get(organisation.Key)
-	mailLastRun := ""
+	mailLastRun, mailLastSuccess := "", ""
 	if !mailStatus.LastRun.IsZero() {
 		mailLastRun = mailStatus.LastRun.Local().Format("02.01.2006 15:04")
+	}
+	if !mailStatus.LastSuccess.IsZero() {
+		mailLastSuccess = mailStatus.LastSuccess.Local().Format("02.01.2006 15:04")
 	}
 	members, membersErr := a.organisationMembers(r.Context(), organisation.Key)
 	if membersErr != nil {
@@ -246,7 +249,7 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
 		MembersAvailable: a.organisationMemberRepo != nil,
 		MailConfigured:   mailStatus.Configured, MailMailbox: mailStatus.Mailbox, MailInterval: mailStatus.Interval.String(),
-		MailLastRun: mailLastRun, MailLastError: mailStatus.LastError, MailTotal: mailStatus.Total,
+		MailLastRun: mailLastRun, MailLastSuccess: mailLastSuccess, MailLastError: mailStatus.LastError, MailTotal: mailStatus.Total,
 		ContactName: organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
 		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
