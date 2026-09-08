@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.15",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Allgemeine Hilfe, gefüllte Dokumentenablage, breiter Hausüberblick.",
+			Intro:    "Die Hilfe erklärt das Portal jetzt je Rolle, die Energie-Hilfe hat eine eigene Unterseite. Der Hausüberblick nutzt die volle Breite, Ort und Einheit brechen nicht mehr um, und die Sidebar beginnt ohne Leerraum. In der Demo liegen freigegebene Unterlagen je Liegenschaft bereit.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.14",
 			Date:     "8. September 2026",
 			Kind:     "Verbessert",
