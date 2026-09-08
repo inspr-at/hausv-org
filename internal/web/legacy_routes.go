@@ -183,3 +183,20 @@ func legacyRouteChoice(condition bool, yes, no string) string {
 	}
 	return no
 }
+
+// legacyPaidLabel and legacyPaymentLabel render the settled state as single
+// text nodes, exactly like the retired template did ("Bezahlt am 03.09.2026",
+// "Überweisung · QA-ZAHLUNG"), so screen readers and oracles see one phrase.
+func legacyPaidLabel(paidAt string) string {
+	if paidAt == "" {
+		return "Bezahlt"
+	}
+	return "Bezahlt am " + paidAt
+}
+
+func legacyPaymentLabel(method, reference string) string {
+	if reference == "" {
+		return method
+	}
+	return method + " · " + reference
+}

@@ -314,20 +314,10 @@ templ ParkingMonthContent(data ParkingMonthPageData) {
 									@PortalAssetIcon("circle-check")
 								</span>
 								<div class="pay-settled-meta">
-									<strong>
-										{ "Bezahlt" }
-										if data.Detail.Summary.PaidAtLabel != "" {
-											{ " am " + data.Detail.Summary.PaidAtLabel }
-										}
-									</strong>
+									<strong>{ legacyPaidLabel(data.Detail.Summary.PaidAtLabel) }</strong>
 									if data.CanManageParkingPayments {
 										if data.Detail.Summary.PaymentMethod != "" {
-											<span>
-												{ data.Detail.Summary.PaymentMethod }
-												if data.Detail.Summary.PaymentReference != "" {
-													{ " · " + data.Detail.Summary.PaymentReference }
-												}
-											</span>
+											<span>{ legacyPaymentLabel(data.Detail.Summary.PaymentMethod, data.Detail.Summary.PaymentReference) }</span>
 										}
 									} else {
 										<span>{ "Zahlung ist markiert." }</span>
