@@ -51,7 +51,7 @@ const portalChromeRoutes = [
   { path: '/app/verwaltung/einstellungen', hero: false, overview: true },
   { path: '/app', hero: true, action: 'Anliegen melden' },
   { path: '/app/energie', hero: false, action: 'Zuhause bearbeiten', energy: true },
-  { path: '/app/announcements', hero: true, action: 'Aushang erstellen' },
+  { path: '/app/announcements', hero: false, action: 'Aushang erstellen' },
   { path: '/app/events', hero: true, action: 'Termin erstellen' },
   { path: '/app/kontakte', hero: false, action: 'Kontakt hinzufügen' },
   { path: '/app/dokumente', hero: false, action: 'Hochladen' },
@@ -935,6 +935,21 @@ async function ensureResponsiveAnnouncement() {
     await form.getByRole('button', { name: 'Aushang veröffentlichen' }).click();
     await page.waitForURL(/\/app\/announcements/);
   }
+  const entry = page.locator('.announcement-card').filter({ hasText: title });
+  const details = entry.locator('.announcement-body');
+  if (!(await details.evaluate((node) => node.open))) await details.locator('summary').click();
+  await entry.getByRole('button', { name: 'Einklappen', exact: true }).click();
+  if (await details.evaluate((node) => node.open) ||
+      !(await details.locator('summary').evaluate((node) => node === document.activeElement))) {
+    fail('Aushang: Einklappen schließt den Eintrag nicht mit Fokus zurück auf der Zeile');
+  }
+  await page.keyboard.press('Enter');
+  await entry.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  const edit = page.getByRole('dialog', { name: 'Aushang bearbeiten' });
+  if (await edit.getByLabel('Titel', { exact: true }).inputValue() !== title) {
+    fail('Aushang: Bearbeiten öffnet nicht den gewählten Beitrag');
+  }
+  await page.keyboard.press('Escape');
   await closeContext(context);
 }
 
@@ -944,7 +959,7 @@ async function assertResponsiveAdminWidths() {
   const page = await localLogin(context, 'admin@example.com');
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
 
-  for (const width of [320, 390, 430, 768, 1024, 1440]) {
+  for (const width of [320, 390, 430, 760, 768, 899, 900, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const result = await page.evaluate(async (phone) => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -982,6 +997,12 @@ async function assertResponsiveAdminWidths() {
         .map((element) => (element.textContent || element.getAttribute('aria-label') || element.tagName).trim().slice(0, 50));
       const headDisplays = [...feed.querySelectorAll('.announcement-card .announcement-card-header')]
         .map((head) => getComputedStyle(head).display);
+      const tools = [...feed.querySelectorAll('.archive-tools > form, .archive-tools > nav, .announcement-sort')]
+        .map((node) => node.getBoundingClientRect());
+      const toolsInOneRow = tools.length === 3 && tools.every((box) => Math.abs(box.top - tools[0].top) <= 2);
+      const shortTargets = [...feed.querySelectorAll('button, summary, .filter-tab, select')]
+        .filter((node) => node.getClientRects().length && node.getBoundingClientRect().height < 43.5)
+        .map((node) => (node.textContent || node.getAttribute('aria-label') || node.tagName).trim().slice(0, 50));
       return {
         missing: false,
         documentWidth: document.documentElement.scrollWidth,
@@ -990,6 +1011,9 @@ async function assertResponsiveAdminWidths() {
         clipped,
         badHeads,
         offscreenControls,
+        toolsInOneRow,
+        shortTargets,
+        listPanels: feed.querySelectorAll('.announcement-list').length,
         phone,
         headsStructured: headDisplays.length > 0 && headDisplays.every((display) => ['flex', 'grid'].includes(display)),
       };
@@ -1000,6 +1024,8 @@ async function assertResponsiveAdminWidths() {
     }, width <= 760);
     if (result.missing || result.documentWidth > result.viewportWidth + 1 ||
         result.clipped.length || result.badHeads || result.offscreenControls.length ||
+        result.shortTargets.length || result.listPanels !== 1 ||
+        (width >= 900 && !result.toolsInOneRow) ||
         (result.phone && (result.feedColumns !== 1 || !result.headsStructured))) {
       fail(`Aushang ${width}px: Inhalt oder Aktionen werden abgeschnitten (${JSON.stringify(result)})`);
     }
@@ -1587,7 +1613,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
 
       if (route.name === 'aushang' && size.width === 768) {
         const search = await page.locator('.feed .filter-form').evaluate((form) => {
-          const input = form.querySelector('input')?.getBoundingClientRect();
+          const input = form.querySelector('input[type="search"]')?.getBoundingClientRect();
           const button = form.querySelector('button')?.getBoundingClientRect();
           return {
             sideBySide: Boolean(input && button && button.left >= input.right - 1),
@@ -1647,9 +1673,22 @@ async function assertResidentContentClickFlows() {
   const page = await localLogin(context, 'resident@example.com');
 
   await page.goto(`${baseURL}/app/announcements`, { waitUntil: 'networkidle' });
+  await page.locator('#announcement-search').fill('QA');
+  await Promise.all([
+    page.waitForURL((url) => url.searchParams.get('sort') === 'oldest' && url.searchParams.get('q') === 'QA'),
+    page.getByLabel('Sortierung', { exact: true }).selectOption('oldest'),
+  ]);
+  await Promise.all([
+    page.waitForURL((url) => url.searchParams.get('category') === 'Info'),
+    page.getByRole('navigation', { name: 'Aushang-Kategorien' }).getByRole('link', { name: 'Info', exact: true }).click(),
+  ]);
+  if (await page.locator('#announcement-search').inputValue() !== 'QA' ||
+      await page.getByLabel('Sortierung', { exact: true }).inputValue() !== 'oldest') {
+    fail('Aushang: Sortierung, Suche und Kategorie bleiben beim Filtern nicht erhalten');
+  }
   await page.locator('#announcement-search').fill('nicht vorhandener QA Aushang');
   await Promise.all([
-    page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && url.searchParams.has('q')),
+    page.waitForURL((url) => url.pathname.endsWith('/app/announcements') && url.searchParams.get('q') === 'nicht vorhandener QA Aushang'),
     page.getByRole('button', { name: 'Suchen' }).click(),
   ]);
   if (!(await page.locator('.empty-filter').isVisible())) fail('Aushang-Suche: verständlicher Kein-Treffer-Zustand fehlt');

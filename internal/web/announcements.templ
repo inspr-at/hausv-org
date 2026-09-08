@@ -1,6 +1,8 @@
 package web
 
 import (
+	"strings"
+
 	"github.com/inspr-at/hausv-org/internal/textutil"
 	"github.com/inspr-at/hausv-org/internal/view"
 )
@@ -18,6 +20,7 @@ type AnnouncementsPageData struct {
 	NowInput               string
 	SearchQuery            string
 	SelectedCategory       string
+	SelectedSort           string
 	CategoryFilters        []view.AnnouncementFilterView
 	AnnouncementsEmpty     view.EmptyStateView
 	AnnouncementsBlank     view.EmptyStateView
@@ -31,48 +34,172 @@ templ AnnouncementsPage(data AnnouncementsPageData) {
 }
 
 templ AnnouncementsStyles() {
-			<style>[data-templ-portal] .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}[data-templ-portal] .button.primary{background:var(--gold);color:var(--panel)}[data-templ-portal] .button.ghost{border-color:var(--line);color:var(--muted)}[data-templ-portal] .button.small{min-height:36px;padding-inline:var(--space-3);font-size:11px}[data-templ-portal] .flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px}[data-templ-portal] .feed,[data-templ-portal] .blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}[data-templ-portal] .feed{padding:var(--space-5)}[data-templ-portal] .section-head{display:flex;align-items:baseline;gap:var(--space-3)}[data-templ-portal] .section-head h2{font-size:26px}[data-templ-portal] .counts{display:flex;gap:var(--space-2);margin-left:auto}[data-templ-portal] .pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:10px;font-weight:750}[data-templ-portal] .pill.unread{border-color:var(--leaf);color:var(--leaf)}[data-templ-portal] .pill.info{background:#c8993f;border-color:#c8993f;color:var(--panel)}[data-templ-portal] .pill.termin{background:#8a7b3f;border-color:#8a7b3f;color:var(--panel)}[data-templ-portal] .pill.wartung{background:#2f6b4a;border-color:#2f6b4a;color:var(--panel)}[data-templ-portal] .pill.dringend{background:#172019;border-color:#172019;color:var(--panel)}[data-templ-portal] .archive-tools{display:grid;gap:var(--space-3);margin-top:var(--space-5);padding:var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}[data-templ-portal] .filter-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end}[data-templ-portal] .filter-form .button{min-height:42px}[data-templ-portal] .filter-form label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}[data-templ-portal] .filter-form input{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}[data-templ-portal] .filter-tabs{display:flex;flex-wrap:wrap;gap:var(--space-2)}[data-templ-portal] .filter-tab{min-height:34px;display:inline-flex;align-items:center;padding:5px var(--space-3);border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:11px;background:transparent;transition:all .15s}[data-templ-portal] .filter-tab.active{background:var(--gold);border-color:var(--gold);color:var(--panel);font-weight:700}[data-templ-portal] .group{display:grid;gap:var(--space-3);margin-top:var(--space-5)}[data-templ-portal] .group-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:var(--space-2);border-bottom:1px solid var(--line)}[data-templ-portal] .group-head h3{font-family:var(--font-sans);color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}[data-templ-portal] .group-head span{color:var(--soft);font-size:11px}[data-templ-portal] .entries{display:grid;gap:var(--space-4)}[data-templ-portal] .announcement-card-title{font-family:var(--font-serif);font-size:20px;font-weight:600;line-height:1.3;color:var(--ink);margin:0}[data-templ-portal] .entry-body{font-size:13px;line-height:1.6;white-space:normal}[data-templ-portal] .empty-filter{display:grid;gap:var(--space-3);margin-top:var(--space-5);justify-items:start}[data-templ-portal] .empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px}[data-templ-portal] .empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px}[data-templ-portal] .blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center}[data-templ-portal] .blank .empty-state{justify-items:center}[data-templ-portal] .blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2)}[data-templ-portal] .guide>summary{cursor:pointer;list-style:none}[data-templ-portal] .guide>summary::-webkit-details-marker{display:none}[data-templ-portal] .legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none}[data-templ-portal] .legend li{display:grid;gap:var(--space-1);justify-items:start}[data-templ-portal] .legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.45}[data-templ-portal] .dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}[data-templ-portal] .dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}[data-templ-portal] .dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line)}[data-templ-portal] .dialog-head h2{font-size:24px}[data-templ-portal] .dialog-close{width:40px;height:40px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px}[data-templ-portal] .dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5)}[data-templ-portal] .dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700}[data-templ-portal] .dialog-grid input,[data-templ-portal] .dialog-grid textarea,[data-templ-portal] .dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}[data-templ-portal] .dialog-grid textarea{min-height:130px;resize:vertical}[data-templ-portal] .dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}[data-templ-portal] .dialog-grid .full{grid-column:1/-1}[data-templ-portal] .dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}[data-templ-portal] .dialog-optional>summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer}[data-templ-portal] .dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4)}[data-templ-portal] .check-row{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start}[data-templ-portal] .check-row input{width:auto;min-height:auto}[data-templ-portal] .file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs)}[data-templ-portal] .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer}[data-templ-portal] .attachment-picker{margin-top:var(--space-2)}[data-templ-portal] .attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px}[data-templ-portal] .attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2)}[data-templ-portal] .attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 32px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}[data-templ-portal] .attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px}[data-templ-portal] .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover}[data-templ-portal] .attachment-picker-copy span{display:block}[data-templ-portal] .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}[data-templ-portal] .attachment-picker-meta{color:var(--muted);font-size:10px}[data-templ-portal] .attachment-picker-remove{border:0;background:transparent;color:var(--muted);font-size:20px}[data-templ-portal] .attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2)}[data-templ-portal] .attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs)}[data-templ-portal] .attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left}[data-templ-portal] .attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs)}[data-templ-portal] .attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}[data-templ-portal] .attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800}[data-templ-portal] .attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1)}[data-templ-portal] .attachment-delete button{width:28px;height:28px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted)}[data-templ-portal] .attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel)}[data-templ-portal] .attachment-lightbox.open{display:grid}[data-templ-portal] .attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0}[data-templ-portal] .attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm)}[data-templ-portal] .attachment-lightbox figcaption{text-align:center}[data-templ-portal] .lightbox-close,[data-templ-portal] .lightbox-prev,[data-templ-portal] .lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel)}[data-templ-portal] .lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:42px;height:42px;font-size:24px}[data-templ-portal] .lightbox-prev,[data-templ-portal] .lightbox-next{width:46px;height:70px;font-size:28px}[data-templ-portal] .lightbox-prev{grid-column:1;grid-row:2}[data-templ-portal] .lightbox-next{grid-column:3;grid-row:2}@media(max-width:760px){[data-templ-portal] .feed{padding:var(--space-4)}[data-templ-portal] .section-head{align-items:flex-start;flex-wrap:wrap}[data-templ-portal] .counts{width:100%;margin-left:0}[data-templ-portal] .filter-form{grid-template-columns:1fr}[data-templ-portal] .dialog-grid,[data-templ-portal] .dialog-optional-grid{grid-template-columns:1fr}[data-templ-portal] .dialog-grid .full,[data-templ-portal] .dialog-optional-grid .full{grid-column:1}[data-templ-portal] .blank-actions{width:100%}[data-templ-portal] .blank-actions .button{width:100%}}
-
-		[data-templ-portal] .layout{display:block;min-width:0}
-		[data-templ-portal] .announcement-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:16px}
-		[data-templ-portal] .announcement-bulk{display:flex;flex-wrap:wrap;gap:8px}[data-templ-portal] .announcement-bulk[hidden]{display:none}
-		[data-templ-portal] .announcement-toolbar .button{min-height:40px}
-		[data-templ-portal] .announcement-legend{position:relative;margin-left:auto}
-		[data-templ-portal] .announcement-legend>summary{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 32px 8px 8px;color:var(--gold-ink);font-size:12px;font-weight:750}
-		[data-templ-portal] .announcement-legend-popover{position:absolute;z-index:10;top:calc(100% + 8px);right:0;width:min(320px,calc(100vw - 80px));padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog)}
-		[data-templ-portal] .announcement-legend-popover h2{font-size:22px}
-		[data-templ-portal] .announcement-card{min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}
-		[data-templ-portal] .announcement-card.is-expired{opacity:.75}
-		[data-templ-portal] .announcement-body{min-width:0}
-		[data-templ-portal] .announcement-body>summary{position:relative;display:grid;gap:8px;min-width:0;padding:16px 48px 16px 16px;cursor:pointer;list-style:none}
-		[data-templ-portal] .announcement-body>summary::-webkit-details-marker{display:none}
-		[data-templ-portal] .announcement-card-header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;min-width:0}
-		[data-templ-portal] .announcement-card-title-group{min-width:0}
-		[data-templ-portal] .announcement-card-title{overflow-wrap:anywhere}
-		[data-templ-portal] .announcement-toggle{flex:none;font-size:11px;color:var(--gold-ink)}
-		[data-templ-portal] .announcement-card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:11px;color:var(--muted)}
-		[data-templ-portal] .announcement-category{display:inline-flex;align-items:center;gap:8px}
-		[data-templ-portal] .announcement-category-dot{width:8px;height:8px;flex:none;border-radius:50%}
-		[data-templ-portal] .announcement-category-dot.info{background:#c8993f}[data-templ-portal] .announcement-category-dot.termin{background:#8a7b3f}[data-templ-portal] .announcement-category-dot.wartung{background:#2f6b4a}[data-templ-portal] .announcement-category-dot.dringend{background:#172019}
-		[data-templ-portal] .announcement-fixiert-label{color:var(--gold-ink);font-weight:750}
-		[data-templ-portal] .announcement-card-preview{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);font-size:12px;line-height:1.5}
-		[data-templ-portal] .announcement-body .when-open,[data-templ-portal] .announcement-body[open] .when-closed,[data-templ-portal] .announcement-body[open] .announcement-card-preview{display:none}
-		[data-templ-portal] .announcement-body[open] .when-open{display:inline}
-		[data-templ-portal] .announcement-body[open]>summary{padding-block:24px;background:var(--panel-soft);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
-		[data-templ-portal] .announcement-body-content{display:grid;gap:16px;padding:24px 16px;border-top:1px solid var(--line);overflow-wrap:anywhere}
-		[data-templ-portal] .announcement-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-		[data-templ-portal] .announcement-card-actions .button{min-height:40px}
-		@media(max-width:480px){[data-templ-portal] .announcement-toggle{display:none}[data-templ-portal] .announcement-body>summary{padding-right:40px}}
-			</style>
+	<style>
+		[data-templ-portal] .eyebrow{color:var(--gold-ink);font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;}
+		[data-templ-portal] .button.primary{background:var(--gold);color:var(--panel);}
+		[data-templ-portal] .button.ghost{border-color:var(--line);color:var(--muted);}
+		[data-templ-portal] .button.small{min-height:44px;padding-inline:var(--space-3);font-size:13px;}
+		[data-templ-portal] .flash{margin-bottom:var(--space-5);padding:var(--space-3) var(--space-4);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px;}
+		[data-templ-portal] .layout{display:block;min-width:0;}
+		[data-templ-portal] .feed{min-width:0;container:announcements / inline-size;}
+		[data-templ-portal] .announcement-sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+		[data-templ-portal] .archive-tools{display:flex;align-items:center;gap:12px;margin-bottom:20px;min-width:0;}
+		[data-templ-portal] .filter-form{display:flex;flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);}
+		[data-templ-portal] .filter-form input:not([type="hidden"]){width:100%;min-width:0;min-height:44px;padding:8px 12px;border:0;border-radius:inherit;background:transparent;color:var(--ink);font:inherit;font-size:13px;}
+		[data-templ-portal] .filter-form button{display:grid;place-items:center;flex:none;width:44px;min-height:44px;border:0;border-radius:inherit;background:transparent;color:var(--muted);cursor:pointer;}
+		[data-templ-portal] .filter-form button svg{width:20px;height:20px;}
+		[data-templ-portal] .filter-tabs{display:flex;flex-wrap:nowrap;gap:4px;min-width:0;}
+		[data-templ-portal] .filter-tab{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);color:var(--muted);font-size:12px;background:transparent;}
+		[data-templ-portal] .filter-tab.active{background:var(--leaf);border-color:var(--leaf);color:var(--panel);font-weight:650;}
+		[data-templ-portal] .announcement-sort{position:relative;flex:none;margin-left:auto;}
+		[data-templ-portal] .announcement-sort select{appearance:none;min-height:44px;max-width:100%;padding:8px 52px 8px 4px;border:0;border-radius:var(--radius-xs);background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;}
+		[data-templ-portal] .announcement-list,[data-templ-portal] .blank{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);}
+		[data-templ-portal] .announcement-list{padding:0 16px;}
+		[data-templ-portal] .group{min-width:0;}
+		[data-templ-portal] .group + .group{border-top:1px solid var(--line);}
+		[data-templ-portal] .group-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:8px 0;border-bottom:1px solid var(--line);}
+		[data-templ-portal] .group-head h3{margin:0;font-family:var(--font-sans);color:var(--muted);font-size:10px;font-weight:650;letter-spacing:0.08em;text-transform:uppercase;}
+		[data-templ-portal] .group-head span{color:var(--muted);font-size:11px;}
+		[data-templ-portal] .entries{display:grid;min-width:0;}
+		[data-templ-portal] .announcement-card{min-width:0;}
+		[data-templ-portal] .announcement-card ~ .announcement-card{border-top:1px solid var(--line);}
+		[data-templ-portal] .announcement-card.is-expired{opacity:0.7;}
+		[data-templ-portal] .announcement-body{min-width:0;}
+		[data-templ-portal] .announcement-body > summary{display:grid;grid-template-columns:6px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0;min-height:76px;padding:16px 52px 16px 8px;cursor:pointer;list-style:none;}
+		[data-templ-portal] .announcement-body > summary::-webkit-details-marker{display:none;}
+		[data-templ-portal] .announcement-card-header{display:grid;gap:4px;min-width:0;}
+		[data-templ-portal] .announcement-card-title-group{display:flex;align-items:baseline;gap:8px;min-width:0;}
+		[data-templ-portal] .announcement-card-title{min-width:0;margin:0;font-family:var(--font-sans);font-size:15px;font-weight:600;line-height:1.4;color:var(--ink);overflow-wrap:anywhere;}
+		[data-templ-portal] .announcement-new{display:inline-flex;align-items:center;flex:none;align-self:center;}
+		[data-templ-portal] .announcement-new::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);}
+		[data-templ-portal] .announcement-card-preview{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);font-size:13px;line-height:1.5;}
+		[data-templ-portal] .announcement-body[open] .announcement-card-preview{display:none;}
+		[data-templ-portal] .announcement-card-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 20px;max-width:240px;color:var(--muted);font-size:13px;}
+		[data-templ-portal] .announcement-date{white-space:nowrap;}
+		[data-templ-portal] .announcement-category{display:inline-flex;align-items:center;justify-content:center;min-width:70px;padding:3px 10px;border:1px solid currentColor;border-radius:var(--radius-pill);font-size:12px;font-weight:500;line-height:1.5;background:transparent;}
+		[data-templ-portal] .announcement-category.info{color:#a16f18;}
+		[data-templ-portal] .announcement-category.termin{color:#8a7b3f;}
+		[data-templ-portal] .announcement-category.wartung{color:#2f6b4a;}
+		[data-templ-portal] .announcement-category.dringend{color:#172019;}
+		[data-templ-portal] .announcement-category-dot{width:6px;height:6px;flex:none;border-radius:50%;align-self:start;margin-top:8px;}
+		[data-templ-portal] .announcement-category-dot.info{background:#c8993f;}
+		[data-templ-portal] .announcement-category-dot.termin{background:#8a7b3f;}
+		[data-templ-portal] .announcement-category-dot.wartung{background:#2f6b4a;}
+		[data-templ-portal] .announcement-category-dot.dringend{background:#172019;}
+		[data-templ-portal] .announcement-fixiert-label{font-size:11px;color:var(--gold-ink);}
+		[data-templ-portal] .announcement-body-content{display:grid;gap:12px;min-width:0;padding:0 52px 12px 26px;overflow-wrap:anywhere;}
+		[data-templ-portal] .entry-body{font-size:14px;line-height:1.6;white-space:normal;}
+		[data-templ-portal] .entry-body >:first-child{margin-top:0;}
+		[data-templ-portal] .entry-body >:last-child{margin-bottom:0;}
+		[data-templ-portal] .announcement-card-actions{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;color:var(--muted);}
+		[data-templ-portal] .announcement-text-action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:4px 0;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;}
+		[data-templ-portal] .announcement-text-action[hidden]{display:none;}
+		[data-templ-portal] .announcement-text-action.edit{color:var(--gold-ink);}
+		[data-templ-portal] .announcement-text-action:hover{text-decoration:underline;text-underline-offset:3px;}
+		[data-templ-portal] .announcement-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 16px;border-top:1px solid var(--line);padding:6px 4px;color:var(--muted);font-size:13px;}
+		[data-templ-portal] .announcement-total{margin:0;line-height:1.5;}
+		[data-templ-portal] .announcement-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;}
+		[data-templ-portal] .announcement-bulk[hidden]{display:none;}
+		[data-templ-portal] .announcement-bulk .announcement-text-action{font-size:12px;}
+		[data-templ-portal] .announcement-legend{position:relative;margin-left:auto;}
+		[data-templ-portal] .announcement-legend > summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 0;color:var(--muted);font-size:13px;cursor:pointer;list-style:none;}
+		[data-templ-portal] .announcement-legend > summary::-webkit-details-marker{display:none;}
+		[data-templ-portal] .announcement-legend > summary svg{width:16px;height:16px;color:var(--gold-ink);}
+		[data-templ-portal] .announcement-legend-popover{position:absolute;z-index:10;bottom:calc(100% + 8px);right:0;width:min(320px,calc(100vw - 80px));padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog);}
+		[data-templ-portal] .announcement-legend-popover h2{margin:0;font-family:var(--font-sans);font-size:16px;}
+		[data-templ-portal] .legend{display:grid;gap:var(--space-3);margin:var(--space-4) 0 0;padding:0;list-style:none;}
+		[data-templ-portal] .legend li{display:grid;gap:var(--space-1);justify-items:start;}
+		[data-templ-portal] .legend li > span:last-child{color:var(--muted);font-size:12px;line-height:1.45;}
+		[data-templ-portal] .pill{display:inline-flex;align-items:center;min-height:24px;padding:3px var(--space-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:11px;font-weight:600;}
+		[data-templ-portal] .pill.info{background:#c8993f;border-color:#c8993f;color:var(--panel);}
+		[data-templ-portal] .pill.termin{background:#8a7b3f;border-color:#8a7b3f;color:var(--panel);}
+		[data-templ-portal] .pill.wartung{background:#2f6b4a;border-color:#2f6b4a;color:var(--panel);}
+		[data-templ-portal] .pill.dringend{background:#172019;border-color:#172019;color:var(--panel);}
+		[data-templ-portal] .empty-filter{display:grid;gap:var(--space-3);padding:24px 8px;justify-items:start;}
+		[data-templ-portal] .empty-state{display:grid;gap:var(--space-2);color:var(--muted);font-size:13px;}
+		[data-templ-portal] .empty-state strong{color:var(--ink);font-family:var(--font-serif);font-size:20px;}
+		[data-templ-portal] .blank{min-height:330px;display:grid;place-content:center;justify-items:center;gap:var(--space-4);padding:var(--space-6);text-align:center;}
+		[data-templ-portal] .blank .empty-state{justify-items:center;}
+		[data-templ-portal] .blank-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--space-2);}
+		[data-templ-portal] .feed:is(button,a,select,input):focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px;}
+		[data-templ-portal] .portal-section-header-action .button,[data-templ-portal] .blank .button,[data-templ-portal] .empty-filter .button,[data-templ-portal] .dialog .button,[data-templ-portal] .dialog summary{min-height:44px;}
+		[data-templ-portal] .dialog{width:min(680px,calc(100vw - 32px));max-height:90vh;padding:0;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog);}
+		[data-templ-portal] .dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter);}
+		[data-templ-portal] .dialog-head{position:sticky;z-index:2;top:0;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--panel);border-bottom:1px solid var(--line);}
+		[data-templ-portal] .dialog-head h2{font-size:24px;}
+		[data-templ-portal] .dialog-close{width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:24px;}
+		[data-templ-portal] .dialog-body{display:grid;gap:var(--space-5);padding:var(--space-5);}
+		[data-templ-portal] .dialog-grid label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:700;}
+		[data-templ-portal] .dialog-grid input,[data-templ-portal] .dialog-grid textarea,[data-templ-portal] .dialog-grid select{width:100%;min-height:42px;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);}
+		[data-templ-portal] .dialog-grid textarea{min-height:130px;resize:vertical;}
+		[data-templ-portal] .dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);}
+		[data-templ-portal] .dialog-grid .full{grid-column:1/-1;}
+		[data-templ-portal] .dialog-optional{grid-column:1/-1;padding:var(--space-3);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-sm);}
+		[data-templ-portal] .dialog-optional > summary{color:var(--gold-ink);font-size:12px;font-weight:750;cursor:pointer;}
+		[data-templ-portal] .dialog-optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-4);}
+		[data-templ-portal] .check-row{display:flex !important;grid-template-columns:auto 1fr !important;align-items:center;justify-content:start;}
+		[data-templ-portal] .check-row input{width:auto;min-height:auto;}
+		[data-templ-portal] .file-control{display:block;position:relative;min-height:42px;padding:var(--space-3);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-xs);}
+		[data-templ-portal] .file-control input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+		[data-templ-portal] .attachment-picker{margin-top:var(--space-2);}
+		[data-templ-portal] .attachment-picker-head{display:flex;justify-content:space-between;gap:var(--space-2);color:var(--muted);font-size:10px;}
+		[data-templ-portal] .attachment-picker-list{display:grid;gap:var(--space-2);margin-top:var(--space-2);}
+		[data-templ-portal] .attachment-picker-item{display:grid;grid-template-columns:42px minmax(0,1fr) 44px;align-items:center;gap:var(--space-2);padding:var(--space-2);background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs);}
+		[data-templ-portal] .attachment-picker-thumb{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;background:var(--line);border-radius:var(--radius-xs);font-size:9px;}
+		[data-templ-portal] .attachment-picker-thumb img{width:100%;height:100%;object-fit:cover;}
+		[data-templ-portal] .attachment-picker-copy span{display:block;}
+		[data-templ-portal] .attachment-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+		[data-templ-portal] .attachment-picker-meta{color:var(--muted);font-size:10px;}
+		[data-templ-portal] .attachment-picker-remove{min-width:44px;min-height:44px;border:0;background:transparent;color:var(--muted);font-size:20px;}
+		[data-templ-portal] .attachment-strip{display:flex;flex-wrap:wrap;gap:var(--space-2);}
+		[data-templ-portal] .attachment-item{position:relative;width:112px;overflow:hidden;background:var(--panel-soft);border:1px solid var(--line);border-radius:var(--radius-xs);}
+		[data-templ-portal] .attachment-open{width:100%;display:grid;gap:var(--space-1);padding:var(--space-2);border:0;background:transparent;color:var(--ink);text-align:left;}
+		[data-templ-portal] .attachment-open img{width:100%;height:70px;object-fit:cover;border-radius:var(--radius-xs);}
+		[data-templ-portal] .attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
+		[data-templ-portal] .attachment-file-icon{display:grid;place-content:center;height:70px;color:var(--gold-ink);font-weight:800;}
+		[data-templ-portal] .attachment-delete{position:absolute;top:var(--space-1);right:var(--space-1);}
+		[data-templ-portal] .attachment-delete button{width:44px;height:44px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel);color:var(--muted);}
+		[data-templ-portal] .attachment-lightbox{position:fixed;inset:0;z-index:300;display:none;grid-template-columns:56px minmax(0,1fr) 56px;grid-template-rows:56px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--nav);color:var(--panel);}
+		[data-templ-portal] .attachment-lightbox.open{display:grid;}
+		[data-templ-portal] .attachment-lightbox figure{grid-column:2;grid-row:2;display:grid;place-items:center;gap:var(--space-2);min-width:0;min-height:0;margin:0;}
+		[data-templ-portal] .attachment-lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:var(--radius-sm);}
+		[data-templ-portal] .attachment-lightbox figcaption{text-align:center;}
+		[data-templ-portal] .lightbox-close,[data-templ-portal] .lightbox-prev,[data-templ-portal] .lightbox-next{border:1px solid var(--muted);border-radius:var(--radius-xs);background:var(--nav-2);color:var(--panel);}
+		[data-templ-portal] .lightbox-close{grid-column:3;grid-row:1;justify-self:end;width:44px;height:44px;font-size:24px;}
+		[data-templ-portal] .lightbox-prev,[data-templ-portal] .lightbox-next{width:46px;height:70px;font-size:28px;}
+		[data-templ-portal] .lightbox-prev{grid-column:1;grid-row:2;}
+		[data-templ-portal] .lightbox-next{grid-column:3;grid-row:2;}
+		@media (max-width:899px){[data-templ-portal] .archive-tools{flex-wrap:wrap;gap:8px;}
+		[data-templ-portal] .filter-tabs{flex-wrap:wrap;}
+		[data-templ-portal] .filter-form{flex-basis:100%;}
+		[data-templ-portal] .announcement-card-meta{max-width:100%;justify-content:flex-start;gap:8px 12px;}
+		[data-templ-portal] .announcement-body > summary{grid-template-columns:6px minmax(0,1fr);}
+		[data-templ-portal] .announcement-card-meta{grid-column:2;}
+		}
+		@container announcements (max-width:500px){[data-templ-portal] .archive-tools{flex-wrap:wrap;gap:8px;}
+		[data-templ-portal] .filter-tabs{flex-wrap:wrap;}
+		[data-templ-portal] .filter-form{flex-basis:100%;}
+		[data-templ-portal] .announcement-body > summary{grid-template-columns:6px minmax(0,1fr);}
+		[data-templ-portal] .announcement-card-meta{grid-column:2;max-width:100%;justify-content:flex-start;gap:8px 12px;}
+		}
+		@media (max-width:760px){[data-templ-portal] .announcement-list{padding-inline:12px;}
+		[data-templ-portal] .announcement-body > summary{padding-left:0;column-gap:10px;}
+		[data-templ-portal] .announcement-body-content{padding-left:16px;padding-right:12px;}
+		[data-templ-portal] .dialog-grid,[data-templ-portal] .dialog-optional-grid{grid-template-columns:1fr;}
+		[data-templ-portal] .dialog-grid .full,[data-templ-portal] .dialog-optional-grid .full{grid-column:1;}
+		[data-templ-portal] .blank-actions{width:100%;}
+		[data-templ-portal] .blank-actions .button{width:100%;}
+		}
+	</style>
 }
 
 templ AnnouncementsContent(data AnnouncementsPageData) {
 	@PortalSectionLanding(
 		PortalSectionLandingData{
-			Portal: data.Portal,
+			Portal:    data.Portal,
 			PageLabel: "Aushang",
-			Hero: true,
-			Identity: PortalSectionIdentityData{Label: "Hausgemeinschaft", Icon: "announcement"},
+			Hero:      false,
+			Identity:  PortalSectionIdentityData{Label: "Hausgemeinschaft", Icon: "announcement"},
 		},
 		PortalSectionTitle("Aushang"),
 		PortalSectionLede("Offizielle Informationen, Termine und Hinweise der Hausgemeinschaft."),
@@ -107,75 +234,90 @@ templ AnnouncementsBody(data AnnouncementsPageData) {
 	}
 }
 
-
 templ AnnouncementsFeed(data AnnouncementsPageData) {
 	<section class="feed" aria-labelledby="announce-feed-title">
-		<header class="section-head"><div><p class="eyebrow">Archiv</p><h2 id="announce-feed-title">Alle Aushänge</h2></div><div class="counts">
-			if data.NewAnnouncements > 0 {
-				<span class="pill unread">{ data.NewAnnouncements } neu</span>
-			}
-			<span class="pill">{ len(data.Announcements) } Treffer</span>
-		</div></header>
-		<div class="archive-tools"><form class="filter-form" method="get" action="/app/announcements">
-			if data.SelectedCategory != "" {
-				<input type="hidden" name="category" value={ data.SelectedCategory }/>
-			}
-			<label for="announcement-search">Suche<input id="announcement-search" name="q" value={ data.SearchQuery } placeholder="Titel, Text oder Kategorie"/></label><button class="button" type="submit">Suchen</button>
-		</form><nav class="filter-tabs" aria-label="Aushang-Kategorien">
-			for _, filter := range data.CategoryFilters {
-				<a class={ "filter-tab", templ.KV("active", filter.Active) } href={ templ.SafeURL(filter.URL) } aria-current={ portalAriaCurrent(filter.Active) }>{ filter.Label }</a>
-			}
-		</nav></div>
-		<div class="announcement-toolbar"><div class="announcement-bulk" data-announcement-bulk hidden><button class="button small ghost" type="button" data-announcements-expand="true">Alle ausklappen</button><button class="button small ghost" type="button" data-announcements-expand="false">Alle einklappen</button></div>@AnnouncementsLegend()</div>
-		if len(data.Announcements) > 0 {
-			if len(data.PinnedAnnouncements) > 0 {
-				@AnnouncementGroup("announce-pinned-title", "Oben fixiert", data.PinnedAnnouncements)
-			}
-			if len(data.LatestAnnouncements) > 0 {
-				if len(data.PinnedAnnouncements) > 0 {
-					@AnnouncementGroup("announce-latest-title", "Weitere Beiträge", data.LatestAnnouncements)
-				} else {
-					@AnnouncementGroup("announce-latest-title", "Neueste zuerst", data.LatestAnnouncements)
+		<h2 class="announcement-sr-only" id="announce-feed-title">Alle Aushänge</h2>
+		<div class="archive-tools">
+			<form id="announcement-filter" class="filter-form" method="get" action="/app/announcements" role="search">
+				if data.SelectedCategory != "" {
+					<input type="hidden" name="category" value={ data.SelectedCategory }/>
 				}
+				<label class="announcement-sr-only" for="announcement-search">Suche</label><input id="announcement-search" type="search" name="q" value={ data.SearchQuery } placeholder="Aushänge durchsuchen"/><button type="submit" aria-label="Suchen" title="Suchen">@PortalAssetIcon("search")
+</button>
+			</form>
+			<nav class="filter-tabs" aria-label="Aushang-Kategorien">
+				for _, filter := range data.CategoryFilters {
+					<a class={ "filter-tab", templ.KV("active", filter.Active) } href={ templ.SafeURL(filter.URL) } aria-current={ portalAriaCurrent(filter.Active) }>{ filter.Label }</a>
+				}
+			</nav>
+			<div class="announcement-sort"><label class="announcement-sr-only" for="announcement-sort">Sortierung</label><select id="announcement-sort" name="sort" form="announcement-filter" data-announcement-sort><option value="newest" selected?={ data.SelectedSort != "oldest" }>Neueste zuerst</option><option value="oldest" selected?={ data.SelectedSort == "oldest" }>Älteste zuerst</option></select>@DisclosureChevron()
+</div>
+		</div>
+		<div class="announcement-list">
+			if len(data.Announcements) > 0 {
+				if len(data.PinnedAnnouncements) > 0 {
+					@AnnouncementGroup("announce-pinned-title", "Oben fixiert", data.PinnedAnnouncements)
+				}
+				if len(data.LatestAnnouncements) > 0 {
+					if len(data.PinnedAnnouncements) > 0 {
+						@AnnouncementGroup("announce-latest-title", "Weitere Beiträge", data.LatestAnnouncements)
+					} else {
+						@AnnouncementGroup("announce-latest-title", announcementSortLabel(data.SelectedSort), data.LatestAnnouncements)
+					}
+				}
+			} else {
+				<div class="empty-filter">@AnnouncementEmptyState(data.AnnouncementsEmpty)
+<a class="button" href="/app/announcements">Filter zurücksetzen</a></div>
 			}
-		} else {
-			<div class="empty-filter">@AnnouncementEmptyState(data.AnnouncementsEmpty)<a class="button" href="/app/announcements">Filter zurücksetzen</a></div>
-		}
+			<footer class="announcement-toolbar"><p class="announcement-total">{ len(data.Announcements) } Aushänge · { data.NewAnnouncements } neu</p><div class="announcement-bulk" data-announcement-bulk hidden><button class="announcement-text-action" type="button" data-announcements-expand="true">Alle ausklappen</button><span aria-hidden="true">·</span><button class="announcement-text-action" type="button" data-announcements-expand="false">Alle einklappen</button></div>@AnnouncementsLegend()
+</footer>
+		</div>
 	</section>
 }
 
 templ AnnouncementGroup(id, title string, items []view.AnnouncementView) {
-	<section class="group" aria-labelledby={ id }><header class="group-head"><h3 id={ id }>{ title }</h3><span>{ len(items) }</span></header><div class="entries">
-		for _, item := range items {
-			@AnnouncementEntry(item)
-		}
-	</div></section>
+	<section class="group" aria-labelledby={ id }>
+		<header class="group-head"><h3 id={ id }>{ title }</h3><span>{ len(items) }</span></header>
+		<div class="entries">
+			for _, item := range items {
+				@AnnouncementEntry(item)
+			}
+		</div>
+	</section>
 }
 
 templ AnnouncementEntry(item view.AnnouncementView) {
 	<article class={ "announcement-card", templ.KV("is-expired", item.Expired) } id={ "announcement-" + item.ID }>
 		<details class="announcement-body" open?={ item.Unread }>
 			<summary class="announcement-card-content">
-				<div class="announcement-card-header"><div class="announcement-card-title-group"><h3 class="announcement-card-title">{ item.Title }</h3></div><span class="announcement-toggle"><span class="when-closed">Lesen</span><span class="when-open">Einklappen</span></span></div>
-				<div class="announcement-card-meta"><span class="announcement-category"><span class={ "announcement-category-dot", item.CategoryClass } aria-hidden="true"></span>{ item.Category }</span><span>{ item.PublishedAt }</span>
+				<span class={ "announcement-category-dot", item.CategoryClass } aria-hidden="true"></span>
+				<div class="announcement-card-header">
+					<div class="announcement-card-title-group">
+						<span class="announcement-card-title">{ item.Title }</span>
+						if item.Unread {
+							<span class="announcement-new" title="Neu"><span class="announcement-sr-only">Neu</span></span>
+						}
+					</div>
+					if item.Body != "" {
+						<div class="announcement-card-preview">{ truncateText(item.Body, 160) }</div>
+					}
+				</div>
+				<div class="announcement-card-meta">
+					<span class={ "announcement-category", item.CategoryClass }>{ item.Category }</span><span class="announcement-date" title={ item.PublishedAt }>{ announcementDate(item.PublishedAt) }</span>
 					if item.Pinned {
 						<span class="announcement-fixiert-label">Fixiert</span>
-					}
-					if item.Unread {
-						<span class="pill unread">Neu</span>
 					}
 					if item.Expired {
 						<span>Abgelaufen</span>
 					}
 				</div>
-				if item.Body != "" {
-					<div class="announcement-card-preview">{ truncateText(item.Body, 160) }</div>
-				}
 				@DisclosureChevron()
 			</summary>
-			<div class="announcement-body-content"><div class="entry-body">@templ.Raw(string(item.BodyHTML))</div>@AnnouncementAttachments(item)
+			<div class="announcement-body-content">
+				<div class="entry-body">@templ.Raw(string(item.BodyHTML))
+</div>@AnnouncementAttachments(item)
 				if item.CanManage {
-					<div class="announcement-card-actions"><button class="button small" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button><form method="post" action="/app/announcements/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="button small ghost" type="submit">Löschen</button></form></div>
+					<div class="announcement-card-actions"><button class="announcement-text-action edit" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button><span aria-hidden="true">·</span><form method="post" action="/app/announcements/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="announcement-text-action" type="submit">Löschen</button></form><span aria-hidden="true" data-announcement-collapse hidden>·</span><button class="announcement-text-action" type="button" data-announcement-collapse hidden>Einklappen</button></div>
 				}
 			</div>
 		</details>
@@ -196,11 +338,13 @@ templ AnnouncementAttachments(item view.AnnouncementView) {
 						<a class="attachment-open" href={ templ.SafeURL(attachment.URL) } target="_blank" rel="noopener"><span class="attachment-file-icon">{ attachmentKind(attachment) }</span><span class="attachment-name">{ attachment.Filename }</span></a>
 					}
 					if attachment.CanDelete {
-						<form class="attachment-delete" method="post" action={ templ.SafeURL(attachment.DeleteURL) } data-confirm="Diesen Anhang entfernen?"><input type="hidden" name="id" value={ attachment.ID }/>
+						<form class="attachment-delete" method="post" action={ templ.SafeURL(attachment.DeleteURL) } data-confirm="Diesen Anhang entfernen?">
+							<input type="hidden" name="id" value={ attachment.ID }/>
 							if attachment.DeleteRedirect != "" {
 								<input type="hidden" name="redirect" value={ attachment.DeleteRedirect }/>
 							}
-							<button type="submit" aria-label="Anhang entfernen">×</button></form>
+							<button type="submit" aria-label="Anhang entfernen">×</button>
+						</form>
 					}
 				</div>
 			}
@@ -209,43 +353,74 @@ templ AnnouncementAttachments(item view.AnnouncementView) {
 }
 
 templ AnnouncementsBlank(data AnnouncementsPageData) {
-	<section class="blank" aria-label="Aushang der Liegenschaft">@AnnouncementEmptyState(data.AnnouncementsBlank)<div class="blank-actions">
-		if data.CanManageAnnouncements {
-			<button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">Ersten Aushang erstellen</button>
-		} else {
-			<a class="button primary" href="/app/events">Termine ansehen</a><a class="button ghost" href={ templ.SafeURL(announcementIssuesURL(data.CanManageIssues)) }>Anliegen melden</a>
-		}
-	</div></section>
+	<section class="blank" aria-label="Aushang der Liegenschaft">
+		@AnnouncementEmptyState(data.AnnouncementsBlank)
+		<div class="blank-actions">
+			if data.CanManageAnnouncements {
+				<button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">Ersten Aushang erstellen</button>
+			} else {
+				<a class="button primary" href="/app/events">Termine ansehen</a><a class="button ghost" href={ templ.SafeURL(announcementIssuesURL(data.CanManageIssues)) }>Anliegen melden</a>
+			}
+		</div>
+	</section>
 }
 
-templ AnnouncementEmptyState(data view.EmptyStateView) { <div class="empty-state"><strong>{ data.Title }</strong><p>{ data.Message }</p></div> }
+templ AnnouncementEmptyState(data view.EmptyStateView) {
+	<div class="empty-state"><strong>{ data.Title }</strong><p>{ data.Message }</p></div>
+}
 
 templ AnnouncementsLegend() {
-	<details class="announcement-legend guide"><summary><span aria-hidden="true">ⓘ</span> Farblegende
-		@DisclosureChevron()
-	</summary><div class="announcement-legend-popover"><h2>Was die Farben bedeuten</h2><ul class="legend"><li><span class="pill dringend">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li><li><span class="pill wartung">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li><li><span class="pill termin">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li><li><span class="pill info">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li></ul></div></details>
+	<details class="announcement-legend guide">
+		<summary>
+			@PortalAssetIcon("info")
+			Farblegende
+		</summary>
+		<div class="announcement-legend-popover"><h2>Was die Farben bedeuten</h2><ul class="legend"><li><span class="pill dringend">Dringend</span><span>Betrifft Sicherheit oder Versorgung und duldet keinen Aufschub.</span></li><li><span class="pill wartung">Wartung</span><span>Arbeiten am Haus mit möglicher Einschränkung, etwa Lift oder Wasser.</span></li><li><span class="pill termin">Termin</span><span>Zeitpunkt, den Sie sich vormerken sollten.</span></li><li><span class="pill info">Info</span><span>Allgemeine Mitteilung ohne nötige Reaktion.</span></li></ul></div>
+	</details>
 }
 
 templ AnnouncementCreateDialog(nowInput string) {
-	<dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title"><form method="post" action="/app/announcements" enctype="multipart/form-data"><div class="dialog-head"><h2 id="announcement-create-title">Aushang erstellen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><div class="dialog-grid"><label class="full" for="announcement-title">Titel<input id="announcement-title" name="title" required maxlength="140"/></label><label class="full" for="announcement-body">Text<textarea id="announcement-body" name="body" required placeholder="Was soll die Hausgemeinschaft wissen?"></textarea></label>@AnnouncementCategorySelect("announcement-category", "Info")<details class="dialog-optional"><summary>Planung, Fixierung oder Anhang
-		@DisclosureChevron()
-	</summary><div class="dialog-optional-grid"><label for="announcement-published">Veröffentlichen<input id="announcement-published" type="datetime-local" name="published_at" value={ nowInput }/></label><label for="announcement-expires">Ablauf optional<input id="announcement-expires" type="datetime-local" name="expires_at"/></label><label class="check-row full"><input type="checkbox" name="pinned" value="true"/> oben fixieren</label><label class="full" for="announcement-attachments">Anhänge<span class="file-control"><input id="announcement-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Fotos oder PDF auswählen</span></span></label></div></details></div><button class="button primary" type="submit">Aushang veröffentlichen</button></div></form></dialog>
+	<dialog id="announcement-create" class="dialog" aria-labelledby="announcement-create-title">
+		<form method="post" action="/app/announcements" enctype="multipart/form-data">
+			<div class="dialog-head"><h2 id="announcement-create-title">Aushang erstellen</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div>
+			<div class="dialog-body">
+				<div class="dialog-grid">
+					<label class="full" for="announcement-title">Titel<input id="announcement-title" name="title" required maxlength="140"/></label><label class="full" for="announcement-body">Text<textarea id="announcement-body" name="body" required placeholder="Was soll die Hausgemeinschaft wissen?"></textarea></label>@AnnouncementCategorySelect("announcement-category", "Info")
+					<details class="dialog-optional">
+						<summary>
+							Planung, Fixierung oder Anhang
+							@DisclosureChevron()
+						</summary>
+						<div class="dialog-optional-grid"><label for="announcement-published">Veröffentlichen<input id="announcement-published" type="datetime-local" name="published_at" value={ nowInput }/></label><label for="announcement-expires">Ablauf optional<input id="announcement-expires" type="datetime-local" name="expires_at"/></label><label class="check-row full"><input type="checkbox" name="pinned" value="true"/> oben fixieren</label><label class="full" for="announcement-attachments">Anhänge<span class="file-control"><input id="announcement-attachments" type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Fotos oder PDF auswählen</span></span></label></div>
+					</details>
+				</div><button class="button primary" type="submit">Aushang veröffentlichen</button>
+			</div>
+		</form>
+	</dialog>
 }
 
 templ AnnouncementEditDialog(item view.AnnouncementView) {
-	<dialog id={ item.EditDialogID } class="dialog" aria-labelledby={ item.EditDialogID + "-title" }><form method="post" action="/app/announcements/edit" enctype="multipart/form-data"><input type="hidden" name="id" value={ item.ID }/><div class="dialog-head"><h2 id={ item.EditDialogID + "-title" }>Aushang bearbeiten</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><div class="dialog-grid"><label class="full" for={ "title-" + item.ID }>Titel<input id={ "title-" + item.ID } name="title" value={ item.Title } required maxlength="140"/></label><label class="full" for={ "body-" + item.ID }>Text<textarea id={ "body-" + item.ID } name="body" required>{ item.Body }</textarea></label>@AnnouncementCategorySelect("category-" + item.ID, item.Category)<label for={ "published-" + item.ID }>Veröffentlichen<input id={ "published-" + item.ID } type="datetime-local" name="published_at" value={ item.PublishedAtInput }/></label><label for={ "expires-" + item.ID }>Ablauf optional<input id={ "expires-" + item.ID } type="datetime-local" name="expires_at" value={ item.ExpiresAtInput }/></label><label class="check-row"><input type="checkbox" name="pinned" value="true" checked?={ item.PinnedChecked }/> oben fixieren</label><label class="full" for={ "attachments-" + item.ID }>Anhänge ergänzen<span class="file-control"><input id={ "attachments-" + item.ID } type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Fotos oder PDF auswählen</span></span></label></div><button class="button primary" type="submit">Änderungen speichern</button></div></form></dialog>
+	<dialog id={ item.EditDialogID } class="dialog" aria-labelledby={ item.EditDialogID + "-title" }><form method="post" action="/app/announcements/edit" enctype="multipart/form-data"><input type="hidden" name="id" value={ item.ID }/><div class="dialog-head"><h2 id={ item.EditDialogID + "-title" }>Aushang bearbeiten</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><div class="dialog-grid"><label class="full" for={ "title-" + item.ID }>Titel<input id={ "title-" + item.ID } name="title" value={ item.Title } required maxlength="140"/></label><label class="full" for={ "body-" + item.ID }>Text<textarea id={ "body-" + item.ID } name="body" required>{ item.Body }</textarea></label>@AnnouncementCategorySelect("category-"+item.ID, item.Category)
+<label for={ "published-" + item.ID }>Veröffentlichen<input id={ "published-" + item.ID } type="datetime-local" name="published_at" value={ item.PublishedAtInput }/></label><label for={ "expires-" + item.ID }>Ablauf optional<input id={ "expires-" + item.ID } type="datetime-local" name="expires_at" value={ item.ExpiresAtInput }/></label><label class="check-row"><input type="checkbox" name="pinned" value="true" checked?={ item.PinnedChecked }/> oben fixieren</label><label class="full" for={ "attachments-" + item.ID }>Anhänge ergänzen<span class="file-control"><input id={ "attachments-" + item.ID } type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Fotos oder PDF auswählen</span></span></label></div><button class="button primary" type="submit">Änderungen speichern</button></div></form></dialog>
 }
 
-templ AnnouncementCategorySelect(id, selected string) { <label for={ id }>Kategorie<select id={ id } name="category"><option value="Info" selected?={ selected == "Info" }>Info</option><option value="Termin" selected?={ selected == "Termin" }>Termin</option><option value="Wartung" selected?={ selected == "Wartung" }>Wartung</option><option value="Dringend" selected?={ selected == "Dringend" }>Dringend</option></select></label> }
+templ AnnouncementCategorySelect(id, selected string) {
+	<label for={ id }>Kategorie<select id={ id } name="category"><option value="Info" selected?={ selected == "Info" }>Info</option><option value="Termin" selected?={ selected == "Termin" }>Termin</option><option value="Wartung" selected?={ selected == "Wartung" }>Wartung</option><option value="Dringend" selected?={ selected == "Dringend" }>Dringend</option></select></label>
+}
 
 templ AnnouncementCategoryIcon(category string) {
 	<svg viewBox="0 0 24 24" aria-hidden="true">
 		switch category {
-			case "Info": <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M12 11v5"></path><path d="M12 8h.01"></path>
-			case "Termin": <path d="M7 3v4M17 3v4"></path><path d="M4.5 6h15v14h-15z"></path><path d="M4.5 10h15"></path>
-			case "Wartung": <path d="M14.5 3l-1.2 1.2m-5.5.9L6.5 3.9m12 5.7l1.2-1.2m-15.5.9L3 7.9"></path><path d="M9 14a3 3 0 1 0 6 0 3 3 0 0 0-6 0"></path><path d="M9 14v7"></path><path d="M15 14v7"></path>
-			case "Dringend": <path d="M10.3 3.3l-8 14c-.6 1-.1 2.2.9 2.7h17.6c1-.5 1.5-1.7.9-2.7l-8-14c-.6-1-2-1-2.4 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>
-			default: <path d="M4 5h16v13H7l-3 3z"></path><path d="M8 9h8M8 13h6"></path>
+			case "Info":
+				<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M12 11v5"></path><path d="M12 8h.01"></path>
+			case "Termin":
+				<path d="M7 3v4M17 3v4"></path><path d="M4.5 6h15v14h-15z"></path><path d="M4.5 10h15"></path>
+			case "Wartung":
+				<path d="M14.5 3l-1.2 1.2m-5.5.9L6.5 3.9m12 5.7l1.2-1.2m-15.5.9L3 7.9"></path><path d="M9 14a3 3 0 1 0 6 0 3 3 0 0 0-6 0"></path><path d="M9 14v7"></path><path d="M15 14v7"></path>
+			case "Dringend":
+				<path d="M10.3 3.3l-8 14c-.6 1-.1 2.2.9 2.7h17.6c1-.5 1.5-1.7.9-2.7l-8-14c-.6-1-2-1-2.4 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>
+			default:
+				<path d="M4 5h16v13H7l-3 3z"></path><path d="M8 9h8M8 13h6"></path>
 		}
 	</svg>
 }
@@ -254,6 +429,33 @@ func truncateText(text string, maxLength int) string {
 	return textutil.Truncate(text, maxLength) + "…"
 }
 
-func announcementReadLabel(unread bool) string { if unread { return "Neuen Aushang lesen" }; return "Aushang lesen" }
-func announcementIssuesURL(canManage bool) string { if canManage { return "/app/anliegen/board" }; return "/app/anliegen" }
-func attachmentKind(item view.AttachmentView) string { if item.IsPDF { return "PDF" }; return "Datei" }
+func announcementDate(publishedAt string) string {
+	date, _, _ := strings.Cut(publishedAt, " ")
+	return date
+}
+
+func announcementSortLabel(sort string) string {
+	if sort == "oldest" {
+		return "Älteste zuerst"
+	}
+	return "Neueste zuerst"
+}
+
+func announcementReadLabel(unread bool) string {
+	if unread {
+		return "Neuen Aushang lesen"
+	}
+	return "Aushang lesen"
+}
+func announcementIssuesURL(canManage bool) string {
+	if canManage {
+		return "/app/anliegen/board"
+	}
+	return "/app/anliegen"
+}
+func attachmentKind(item view.AttachmentView) string {
+	if item.IsPDF {
+		return "PDF"
+	}
+	return "Datei"
+}

@@ -127,6 +127,17 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 					loaded = append(loaded, m[1])
 				}
 			}
+			// The shared asset installs the scroll observer before body parsing.
+			// Its existing controls still bind at DCL, after app.js.
+			scrollScripts := regexp.MustCompile(`<script src="/assets/switcher\.js\?v=[^"]+"[^>]*>`).FindAllString(html, -1)
+			if len(scrollScripts) != 1 {
+				t.Fatal("exactly one switcher script is required")
+			}
+			scrollScript := scrollScripts[0]
+			position := strings.Index(html, scrollScript)
+			if strings.Contains(scrollScript, "defer") || strings.Contains(scrollScript, "async") || position <= asset || position >= strings.Index(html, "</head>") {
+				t.Fatal("scroll observer must load synchronously after the stylesheet and before body parsing")
+			}
 			want := append([]string(nil), page.extraScripts...)
 			sort.Strings(want)
 			sort.Strings(loaded)
@@ -207,7 +218,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	landings := []landing{
 		{"/app", "Hausüberblick", "Anliegen melden", true, PortalPage(portal)},
 		{"/app/energie", "Mein Zuhause", "Zuhause bearbeiten", false, EnergyPage(EnergyPageData{Portal: portal, HouseholdName: "Dachwohnung", HomeTypeLabel: "Wohnung", CanManageHomeIdentity: true})},
-		{"/app/announcements", "Aushang", "Aushang erstellen", true, AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: "test", CanManageAnnouncements: true})},
+		{"/app/announcements", "Aushang", "Aushang erstellen", false, AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: "test", CanManageAnnouncements: true})},
 		{"/app/events", "Termine", "Termin erstellen", true, EventsPage(EventsPageData{Portal: portal, AssetVersion: "test", CanManageEvents: true})},
 		{"/app/kontakte", "Kontakte", "Kontakt hinzufügen", false, ContactsPage(ContactsPageData{Portal: portal, AssetVersion: "test", CanManageContacts: true})},
 		{"/app/dokumente", "Dokumente", "Hochladen", false, DocumentsPage(DocumentsPageData{Portal: portal, AssetVersion: "test", CanManageDocuments: true, HasAnyDocuments: true})},

@@ -117,9 +117,6 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			<link rel="preload" href={ portalSourceSerifURL(assetVersion) } as="font" type="font/woff2" crossorigin="anonymous"/>
 			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 			<script src={ "/assets/app.js?v=" + assetVersion } defer></script>
-			// The house picker belongs to the shell, so it ships with every portal page
-			// rather than being repeated inline (the app forbids inline scripts).
-			<script src={ "/assets/switcher.js?v=" + assetVersion } defer></script>
 			for _, script := range extraScripts {
 				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
 			}
@@ -131,6 +128,9 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			@styles
 			@PortalShellCriticalStyles()
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
+			// Load after the blocking sheet, before the body can paint. The script
+			// restores each complete sidebar during parsing; controls bind at DCL.
+			<script src={ "/assets/switcher.js?v=" + assetVersion }></script>
 		</head>
 		<body data-authenticated-app { bodyAttributes... }>
 			{ children... }
@@ -375,7 +375,7 @@ templ PortalOrganisationIdentity(shell PortalShellData) {
 
 templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) {
 	{{ shell := portalShellData(data) }}
-	<nav class="nav" aria-label="Bereiche" data-two-level={ portalBool(shell.IsOrganisationMember) } { portalNavAttrs(icons)... }>
+	<nav class="nav" aria-label="Bereiche" data-two-level={ portalBool(shell.IsOrganisationMember) } data-tenant-slug={ data.TenantSlug } { portalNavAttrs(icons)... }>
 		if shell.IsOrganisationMember {
 			<span class="nav-group nav-level-label">Organisation</span>
 			<span class="nav-organisation" data-navigation-block="organisation">
