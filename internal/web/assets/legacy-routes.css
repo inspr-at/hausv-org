@@ -800,3 +800,5 @@
 .legacy-route { overflow-x: clip; }
 .legacy-route :where(table, pre) { display: block; max-width: 100%; overflow-x: auto; }
 .legacy-route :where(img, svg, video) { max-width: 100%; }
+/* HAUSV-705: the flow suite measures 44px touch targets on the energy data controls. */
+.legacy-route .button, .legacy-route button, .legacy-route button.small, .legacy-route .button.small, .legacy-route .issue-actions button, .legacy-route details > summary, .legacy-route .energy-delete-action > summary, .legacy-route .energy-delete-button { min-height: 44px; }
