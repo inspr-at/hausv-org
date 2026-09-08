@@ -30,20 +30,17 @@ func TestHausv615PortfolioShellKeepsTableContentInsideCard(t *testing.T) {
 	body := renderComponent(t, PortfolioPage(VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}, PortfolioData{
 		Houses: []PortfolioHouse{{Name: "Münzgrabenstraße 12", Address: "Münzgrabenstraße 12, 8010 Graz", Assignee: "Vera Verwalter"}},
 	}))
-	// The table stays inside the card by column priority, not by an inner
-	// scroller: overflow-x:auto without a visible bar cut the Zuständig column
-	// at 1280 (HAUSV-637). Below 1260 the column leaves; below 1120 so does
-	// Nächster Termin. Those drops belong to the two-column band and stop at
-	// 1024: below that the card stacks above the side column and is as wide as
-	// the page again, so six columns return from 761 and all seven from 860
-	// (HAUSV-640).
+	// Preserve the no-clipping/column-priority contract with the larger Batch 3
+	// type and 32px page gutters. Desktops show seven, six or five columns;
+	// stacked tablets recover the sixth at 860px and the seventh at 980px.
 	for _, want := range []string{
 		"Münzgrabenstraße 12", "Vera Verwalter",
-		".verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{min-width:0;grid-template-columns:",
-		"@media(max-width:1260px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
-		"@media(max-width:1120px) and (min-width:1024px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(90px,1.3fr) 36px 58px 56px}",
-		"@media(max-width:859px) and (min-width:761px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.3fr) 36px 58px 56px minmax(80px,.9fr)}.verwaltung-page .portfolio-table-head>span:last-child,.verwaltung-page .portfolio-house-row>span:last-child{display:none}}",
-		"@media(max-width:1023px) and (min-width:860px){.verwaltung-page .portfolio-table-head,.verwaltung-page .portfolio-house-row{grid-template-columns:12px minmax(150px,1.35fr) 36px 58px 56px minmax(88px,.9fr) minmax(76px,.72fr)}}",
+		".portfolio-table-head,.portfolio-house-row{min-width:0;display:grid;grid-template-columns:",
+		"@media(min-width:1024px) and (max-width:1365px){.portfolio-table-head,.portfolio-house-row{grid-template-columns:12px minmax(120px,1.5fr) 32px 56px 56px minmax(96px,1fr)}.portfolio-table-head>span:last-child,.portfolio-house-row>span:last-child{display:none}}",
+		"@media(min-width:1024px) and (max-width:1199px){.portfolio-layout{grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr)}.portfolio-table-head,.portfolio-house-row{grid-template-columns:12px minmax(90px,1fr) 32px 56px 48px}.portfolio-table-head>span:nth-child(6),.portfolio-house-row>span:nth-child(6){display:none}}",
+		"@media(max-width:1023px){.portfolio-layout{grid-template-columns:minmax(0,1fr)}",
+		"@media(min-width:860px) and (max-width:979px){.portfolio-table-head,.portfolio-house-row{grid-template-columns:12px minmax(136px,1fr) 32px 56px 48px minmax(88px,1fr)}.portfolio-table-head>span:last-child,.portfolio-house-row>span:last-child{display:none}}",
+		"@media(min-width:761px) and (max-width:859px){.portfolio-table-head,.portfolio-house-row{grid-template-columns:12px minmax(112px,1fr) 32px 56px 48px}.portfolio-table-head>span:nth-child(n+6),.portfolio-house-row>span:nth-child(n+6){display:none}}",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portfolio render missing %q", want)

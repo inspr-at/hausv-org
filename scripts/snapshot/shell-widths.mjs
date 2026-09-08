@@ -205,9 +205,8 @@ await tp.goto(`${tenantURL}/app/verwaltung/posteingang`, { waitUntil: 'load' });
   await form.locator('[name="from_name"]').fill('Tablet Probe');
   await form.locator('[name="subject"]').fill('Tablet-Probe: Anruf wegen Kellerlicht');
   await form.locator('[name="body"]').fill('Bewohnerin meldet flackerndes Licht im Keller.');
-  // The panel hangs below the queue's scroll area at 900px height, so its
-  // button sits under the content column for a pointer; submit the form itself.
-  await form.evaluate((f) => f.requestSubmit());
+  // The header panel scrolls independently, so the real submit stays reachable.
+  await form.locator('button[type="submit"]').click();
   await tp.waitForURL(/\/app\/verwaltung\/posteingang/, { timeout: 10_000 });
   await tp.waitForSelector('a.queue-row', { timeout: 10_000 });
 }

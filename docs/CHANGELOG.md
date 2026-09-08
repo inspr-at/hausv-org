@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.5] - 2026-09-08
+
+### Neu
+
+- Verwaltung: Portfolio mit Kennzahlen, Häusertabelle nach Handlungsbedarf und Tagesübersicht; Posteingang zweispaltig mit Warteschlange und geöffnetem Fall; Rechte als Rollenübersicht.
+- Portal: Überschriften in einer eigenen Serifenschrift (Source Serif 4, mitgeliefert), einheitlich in allen Bereichen.
+
 ## [1.9.4] - 2026-09-08
 
 ### Verbessert

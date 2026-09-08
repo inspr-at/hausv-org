@@ -30,13 +30,58 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Haus, Frist — bitte prüfen", "htmx.min.js", "nonce=\"test-nonce\""} {
+	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Haus, Frist — bitte prüfen", "htmx.min.js", "/assets/inbox.js?v="} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("render missing %q", want)
 		}
 	}
 	if strings.Contains(body, "class=\"assign\"") {
 		t.Fatal("queue must not contain inline assignment controls")
+	}
+}
+
+func TestInboxScriptsStayInDocumentHead(t *testing.T) {
+	for _, page := range []string{"queue", "case"} {
+		t.Run(page, func(t *testing.T) {
+			component := InboxPage(VerwaltungShell{}, InboxData{})
+			if page == "case" {
+				component = InboxCasePage(VerwaltungShell{}, InboxData{FullPage: true, Selected: &InboxCase{ID: "in-1"}})
+			}
+			body := renderComponent(t, component)
+			head, _, ok := strings.Cut(body, "</head>")
+			if !ok {
+				t.Fatal("document head missing")
+			}
+			for _, asset := range []string{"htmx/2.0.10/htmx.min.js", "inbox.js"} {
+				if strings.Count(body, "/assets/"+asset+"?v=") != 1 || !strings.Contains(head, "/assets/"+asset+"?v=") {
+					t.Fatalf("%s must load once through PortalDocument", asset)
+				}
+				if _, err := Assets.ReadFile("assets/" + asset); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, script := range regexp.MustCompile(`<script([^>]*)>(.*?)</script>`).FindAllStringSubmatch(body, -1) {
+				if !strings.Contains(script[1], `src="/assets/`) || strings.TrimSpace(script[2]) != "" {
+					t.Fatal("inbox must use same-origin assets without inline scripts")
+				}
+			}
+		})
+	}
+}
+
+func TestInboxQuickFilterReflectsPreservedQueue(t *testing.T) {
+	for _, test := range []struct{ query, active string }{
+		{"?house=haus-a&sort=age", "all"},
+		{"?house=haus-a&status=open&sort=age", "open"},
+		{"?assignee=vera&status=proposed", "proposed"},
+		{"?source=email&unassigned=1", "unassigned"},
+		{"?status=approved", ""},
+	} {
+		for _, filter := range []string{"all", "open", "proposed", "unassigned"} {
+			if got := inboxFilterActive(test.query, filter); got != (filter == test.active) {
+				t.Errorf("query %q filter %q active=%v", test.query, filter, got)
+			}
+		}
 	}
 }
 

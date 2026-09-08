@@ -3,6 +3,7 @@ package web
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPortfolioTemplateRendersEmptyActionState(t *testing.T) {
@@ -33,5 +34,28 @@ func TestPortfolioTemplateRendersCollapsedQuietHouses(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("portfolio quiet group missing %q: %s", want, body)
 		}
+	}
+}
+
+func TestPortfolioAgendaGroupsActualDatesAndShowsTimes(t *testing.T) {
+	today := time.Date(2026, 9, 8, 9, 0, 0, 0, time.Local)
+	first := PortfolioAppointment{Title: "Versammlung", House: "Haus A", Day: "08", Month: "Sep", Time: "09:00", At: today}
+	second := PortfolioAppointment{Title: "Wartung", House: "Haus B", Day: "09", Month: "Sep", Time: "13:00", At: today.AddDate(0, 0, 1).Add(4 * time.Hour)}
+	data := PortfolioData{Today: "Dienstag, 8. September 2026", Appointments: []PortfolioAppointment{first, first, second}}
+	body := renderComponent(t, PortfolioPage(VerwaltungShell{}, data))
+	for _, heading := range []string{"Heute · 08. Sep", "Morgen · 09. Sep"} {
+		if strings.Count(body, heading) != 1 {
+			t.Fatalf("agenda must group %q once", heading)
+		}
+	}
+	for _, label := range []string{"09:00 Uhr", "13:00 Uhr", "Versammlung", "Wartung", "Haus A", "Haus B"} {
+		if !strings.Contains(body, label) {
+			t.Fatalf("agenda missing %q", label)
+		}
+	}
+	data.Appointments = []PortfolioAppointment{second}
+	body = renderComponent(t, PortfolioPage(VerwaltungShell{}, data))
+	if !strings.Contains(body, "Morgen · 09. Sep") || strings.Contains(body, "Heute · 09. Sep") {
+		t.Fatal("a tomorrow-only agenda must not call its first group today")
 	}
 }
