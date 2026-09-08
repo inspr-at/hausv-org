@@ -55,7 +55,7 @@ func TestSettingsWithoutDemoLoadsNoDemoScript(t *testing.T) {
 	}
 	// The other verwaltung pages keep the plain shell: no page script at all.
 	if got := strings.Count(html, "<script"); got != 2 {
-		t.Errorf("expected only app.js and house-picker.js, got %d script tags", got)
+		t.Errorf("expected only app.js and switcher.js, got %d script tags", got)
 	}
 }
 

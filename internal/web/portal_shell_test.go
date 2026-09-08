@@ -68,6 +68,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"NotificationSettingsPage", NotificationSettingsPage(NotificationSettingsPageData{Portal: portal}), "data-templ-settings", nil},
 		{"BuildingSettingsPage", BuildingSettingsPage(BuildingSettingsPageData{Portal: portal, AssetVersion: assetVersion, BuildingSection: "units", Units: []view.BuildingUnitView{{ID: "1", Label: "Top 1"}}}), "data-templ-settings", []string{"attachments.js", "building-settings.js"}},
 		{"UserSettingsPage", UserSettingsPage(UserSettingsPageData{Portal: portal, AssetVersion: assetVersion, IsAdmin: true}), "data-templ-settings", []string{"users.js"}},
+		{"LiegenschaftenPage", LiegenschaftenPage(portal, nil, "", "", "", 0, 1), "data-templ-liegenschaften", nil},
 	}
 
 	assertPageTableCoversTemplPages(t, pages)
@@ -92,9 +93,9 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			// listeners to markup that was never written for it.
 			var loaded []string
 			for _, m := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(html, -1) {
-				// app.js and house-picker.js belong to the shell itself and ship with
+				// app.js and switcher.js belong to the shell itself and ship with
 				// every portal page; the per-page set is what must match exactly.
-				if m[1] != "app.js" && m[1] != "house-picker.js" {
+				if m[1] != "app.js" && m[1] != "switcher.js" {
 					loaded = append(loaded, m[1])
 				}
 			}
@@ -113,7 +114,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 				t.Errorf("styles rendered before app.js")
 			}
 
-			if strings.Count(html, `action="/app/context"`) < 2 || !strings.Contains(html, "mobile-context-switch") {
+			if strings.Count(html, `action="/app/context"`) < 2 || !strings.Contains(html, "context-bar mobile-head") {
 				t.Errorf("desktop and mobile context switches must both be rendered")
 			}
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
@@ -199,7 +200,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			for _, marker := range []string{
 				`data-portal-shell`, `data-portal-section-landing`,
 				`data-portal-section-header`, `class="sidebar"`,
-				`class="map side-map"`, `class="house-header-copy side-address-label"`, `class="account"`,
+				`class="map side-map"`, `class="house-header-copy side-address-label"`, `class="sidebar-release"`,
 			} {
 				if !strings.Contains(html, marker) {
 					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)
@@ -223,15 +224,10 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 				t.Errorf("primary header actions = %d, want 0", got)
 			}
 
-			mobile := portalTestElement(html, `class="mobile-head"`, "</header>")
-			for _, role := range []string{"Verwaltung</small>", "Bewohner</small>"} {
-				if strings.Contains(mobile, role) {
-					t.Errorf("mobile chrome exposes role %q", role)
-				}
+			if !strings.Contains(html, `class="context-role">Verwaltung</span>`) || !strings.Contains(html, `data-context-account`) {
+				t.Error("the signed-in role must remain visible in the shared context bar")
 			}
-			if !strings.Contains(html, `<footer class="account"`) || !strings.Contains(html, `<small>Verwaltung</small>`) {
-				t.Error("the signed-in role must remain in the account footer")
-			}
+
 		})
 	}
 
@@ -408,15 +404,15 @@ func TestContactsFlashDistinguishesSuccessAndFailure(t *testing.T) {
 	}
 }
 
-func TestMobileContextSwitchIsHiddenForOneContext(t *testing.T) {
+func TestMobileContextSwitcherRemainsAvailableForOneContext(t *testing.T) {
 	html := renderComponent(t, PortalPage(PortalPageData{
 		Title: "Ein Portal",
 		Contexts: []PortalContext{{
 			TenantSlug: "park", HouseName: "Haus am Park", Role: "Bewohner", Current: true,
 		}},
 	}))
-	if strings.Contains(html, `class="context-switch mobile-context-switch"`) || strings.Contains(html, `action="/app/context"`) {
-		t.Fatal("context switch must stay hidden when there is only one context")
+	if !strings.Contains(html, `data-switcher`) || !strings.Contains(html, `class="switcher-row current"`) || !strings.Contains(html, `disabled`) {
+		t.Fatal("one context still has a switcher with the active context disabled")
 	}
 }
 

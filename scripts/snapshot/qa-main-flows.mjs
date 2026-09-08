@@ -87,10 +87,14 @@ function fail(message) {
   throw new Error(message);
 }
 
-// The surviving shell uses a native <details> disclosure that works with
-// JavaScript disabled. The mode strip must sit directly beneath that header.
-async function mobileNavBox(page) {
-  return page.locator('.mobile-head').boundingBox();
+// HAUSV-697/701: the context bar reserves space above shell content at every
+// width. On phones it also IS the navigation header; never add both heights.
+async function contextBarBox(page) {
+  const box = await page.locator('[data-context-bar]:visible').boundingBox();
+  if (!box || box.height <= 0 || Math.abs(box.y) > 1) {
+    fail(`Kontextleiste fehlt oder klebt nicht am Viewportrand (${JSON.stringify(box)})`);
+  }
+  return box;
 }
 
 async function toggleMobileMenu(page) {
@@ -295,8 +299,8 @@ async function assertPortalChromeKit() {
       const heroRect = hero?.getBoundingClientRect();
       const headerButtons = [...(header?.querySelectorAll('.button') || [])];
       const sidebar = shell?.querySelector('aside.sidebar');
-      const mobileIdentity = document.querySelector('.mobile-head .mobile-identity small')?.textContent?.trim() || '';
-      const switchRows = [...document.querySelectorAll('.context-switch .context-current small, .context-switch .context-menu button small')]
+      const mobileIdentity = document.querySelector('.mobile-head .context-scope .house-header-copy strong')?.textContent?.trim() || '';
+      const switchRows = [...document.querySelectorAll('.switcher-row-copy small:last-child')]
         .map((node) => node.textContent?.trim() || '');
       const strip = landing?.querySelector(':scope > .energy-mode-strip');
       const stripStyle = strip ? getComputedStyle(strip) : null;
@@ -323,7 +327,7 @@ async function assertPortalChromeKit() {
         wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
         sidebarMap: Boolean(sidebar?.querySelector('.side-map')),
         sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
-        sidebarAccountRole: sidebar?.querySelector('footer.account small')?.textContent?.trim() || '',
+        sidebarAccountRole: document.querySelector('.desktop-context-bar .context-role')?.textContent?.trim() || '',
         mobileIdentity,
         switchRows,
         boardContext: Boolean(landing?.querySelector('.portal-section-context a[href$="/app/anliegen"]')),
@@ -353,9 +357,9 @@ async function assertPortalChromeKit() {
     if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
       fail(`Portal-Chrome ${route.path}: Sidebar-Invarianten verletzt (${JSON.stringify(result)})`);
     }
-    if (/\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(result.mobileIdentity) ||
-        result.switchRows.some((row) => /\b(Bewohner|Eigentümer|Verwalter|Admin|Verwaltung)\b/.test(row))) {
-      fail(`Portal-Chrome ${route.path}: Rolle außerhalb des Account-Footers (${JSON.stringify(result)})`);
+    if (!result.mobileIdentity || !result.switchRows.length ||
+        result.switchRows.some((row) => !/ · (Bewohner|Mieter|Eigentümer|Verwalter|Admin|Verwaltung)/.test(row))) {
+      fail(`Portal-Chrome ${route.path}: Scope oder Rolle im gemeinsamen Wechsler fehlt (${JSON.stringify(result)})`);
     }
     if (route.boardContext && !result.boardContext) {
       fail(`Portal-Chrome ${route.path}: Board-Zurücklink fehlt im Kontext-Slot`);
@@ -411,7 +415,7 @@ async function assertSidebarNavReachable() {
 // so those selectors matched nothing — and because CI runs only the energy subset of
 // these flows, this had been failing silently since the switch went live. What is worth
 // keeping is the BEHAVIOUR: switching portals updates URL, house name and the
-// account-footer role atomically, while switch rows themselves stay role-free.
+// context-bar role atomically; switch rows explicitly name the target role.
 // The switcher also remains usable at phone width.
 async function assertPortalSwitcherAtomic() {
   const context = await trackedContext({ viewport: { width: 1440, height: 900 }, locale: 'de-AT' });
@@ -426,10 +430,11 @@ async function assertPortalSwitcherAtomic() {
     fail('Hauswechsler zeigt den aktiven Hausnamen nicht eindeutig');
   }
   await picker.locator(':scope > summary').click();
-  await picker.locator('form').filter({ hasText: 'Haus B' }).getByRole('button').click();
+  await picker.locator('form').filter({ has: page.locator('input[name="tenant"][value="haus-b"]') })
+    .filter({ has: page.locator('input[name="role"][value="Admin"]') }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
   const after = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"] > summary .house-header-copy strong');
-  const accountRole = page.locator('aside.sidebar > footer.account small').first();
+  const accountRole = page.locator('.desktop-context-bar .context-role').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
       (await after.textContent())?.trim() !== 'Haus B' ||
       !(await accountRole.textContent())?.includes('Admin')) {
@@ -496,21 +501,41 @@ async function assertSharedAppShellNavigation() {
     const summary = menu.locator(':scope > summary');
     const panel = menu.locator(':scope > .menu-panel');
     const navigation = panel.locator('nav[aria-label="Bereiche"]');
-    const logout = panel.locator('form.logout-form button[type="submit"]');
-    const identity = page.locator('.mobile-head > a.mobile-identity');
-    const avatar = page.locator('.mobile-head > a.avatar');
+    // HAUSV-697/701 puts the house identity in the scope switcher and account
+    // actions in their own native disclosure. Keep testing both header actions
+    // and the closed navigation; the old direct identity/avatar links are gone.
+    const identity = page.locator('.mobile-head > .context-scope > [data-switcher]').last().locator(':scope > summary');
+    const account = page.locator('.mobile-head > [data-context-account]');
+    const accountSummary = account.locator(':scope > summary');
+    const accountPanel = account.locator(':scope > .context-account-menu');
+    const avatar = accountSummary.locator('.avatar');
+    const logout = accountPanel.getByRole('button', { name: 'Abmelden', exact: true });
     if ((await menu.count()) !== 1 || !(await summary.isVisible()) ||
         await menu.getAttribute('open') !== null || await panel.isVisible() ||
         await summary.getAttribute('aria-label') !== 'Navigation öffnen' ||
-        !(await identity.isVisible()) || !(await avatar.isVisible())) {
+        !(await identity.isVisible()) || !(await avatar.isVisible()) ||
+        await account.getAttribute('open') !== null || await accountPanel.isVisible()) {
       fail(`App-Shell ${width}px: natives mobiles Menü startet nicht geschlossen oder Kopfaktionen fehlen`);
+    }
+
+    await accountSummary.focus();
+    await page.keyboard.press('Enter');
+    if (await account.getAttribute('open') === null || !(await logout.isVisible()) ||
+        !(await accountPanel.getByRole('link', { name: 'Profil', exact: true }).isVisible()) ||
+        !(await accountPanel.getByRole('link', { name: 'Einstellungen', exact: true }).isVisible())) {
+      fail(`App-Shell ${width}px: Enter öffnet die Kontoaktionen nicht`);
+    }
+    await page.keyboard.press('Escape');
+    if (await account.getAttribute('open') !== null || await accountPanel.isVisible() ||
+        !(await accountSummary.evaluate((element) => element === document.activeElement))) {
+      fail(`App-Shell ${width}px: Escape schließt/fokussiert das Kontomenü nicht sauber`);
     }
 
     await summary.focus();
     await page.keyboard.press('Enter');
     if (await menu.getAttribute('open') === null || !(await panel.isVisible()) ||
-        !(await navigation.isVisible()) || !(await logout.isVisible())) {
-      fail(`App-Shell ${width}px: Enter öffnet Navigation und Kontoaktionen nicht`);
+        !(await navigation.isVisible())) {
+      fail(`App-Shell ${width}px: Enter öffnet die Navigation nicht`);
     }
 
     const openGeometry = await page.evaluate(() => {
@@ -653,7 +678,7 @@ async function assertSharedAppShellNavigation() {
     const desktopState = await page.evaluate(() => ({
       mobileHeaderVisible: Boolean(document.querySelector('.mobile-head')?.getClientRects().length),
       navigationVisible: Boolean(document.querySelector('aside.sidebar > nav[aria-label="Bereiche"]')?.getClientRects().length),
-      accountVisible: Boolean(document.querySelector('aside.sidebar > footer.account')?.getClientRects().length),
+      accountVisible: Boolean(document.querySelector('.desktop-context-bar [data-context-account]')?.getClientRects().length),
     }));
     if (desktopState.mobileHeaderVisible || !desktopState.navigationVisible || !desktopState.accountVisible) {
       fail(`App-Shell ${width}px: Desktop-Navigation ist nicht vollständig sichtbar (${JSON.stringify(desktopState)})`);
@@ -1948,7 +1973,7 @@ async function assertHomeOnboarding() {
   );
   if (smallTargets.length) fail(`Onboarding Mobil: Touch-Ziele unter 44px: ${smallTargets.join(', ')}`);
   const box = await page.locator('.energy-mode-strip').boundingBox();
-  const mobileNav = await mobileNavBox(page);
+  const mobileNav = await contextBarBox(page);
   const stripInOnboarding = await page.locator('.onboarding-main .energy-mode-strip').count();
   if (!box || !mobileNav || stripInOnboarding !== 1 ||
       Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
@@ -2153,9 +2178,9 @@ async function assertSidebarAccountFits() {
     if (!response || response.status() !== 200) {
       fail(`Seitenleiste ${size.name}: /app nicht erreichbar`);
     }
-    const account = await page.locator('aside.sidebar footer.account').boundingBox();
+    const account = await page.locator('aside.sidebar footer.sidebar-release').boundingBox();
     if (!account || account.bottom > size.height + 1) {
-      fail(`Seitenleiste ${size.name}: footer.account ragt aus dem Viewport (${JSON.stringify(account)})`);
+      fail(`Seitenleiste ${size.name}: footer.sidebar-release ragt aus dem Viewport (${JSON.stringify(account)})`);
     }
     await closeContext(context);
     process.stdout.write(`  ✓ Seitenleiste · ${size.name} · Konto bleibt im Viewport\n`);
@@ -2196,7 +2221,7 @@ async function assertPage(page, persona, route, viewportName) {
     // The sidebar map is again a raster tile (HAUSV-560): GET /map-tiles/…, pin overlay,
     // height tiers. The SVG street sketch is only the unconfigured fallback, not a design
     // decision. Asserted here: the OSM link, the tile URL in the painted card, and that
-    // footer.account stays inside the viewport on the hire-walk notebooks.
+    // footer.sidebar-release stays inside the viewport on the hire-walk notebooks.
     if (viewportName === 'Desktop') {
       const map = page.locator('aside.sidebar a.map');
       if ((await map.count()) !== 1) fail(`${persona.name} Desktop: Kartenlink in der Seitenleiste fehlt`);
@@ -2216,9 +2241,9 @@ async function assertPage(page, persona, route, viewportName) {
       if (!tileCount || !/map-tiles\//.test(tileSrc || '')) {
         fail(`${persona.name} Desktop: Kartenkachel /map-tiles/ fehlt (${tileCount} / ${tileSrc})`);
       }
-      const account = await page.locator('aside.sidebar footer.account').boundingBox();
+      const account = await page.locator('aside.sidebar footer.sidebar-release').boundingBox();
       if (!account || account.bottom > 900 + 1) {
-        fail(`${persona.name} Desktop: footer.account ragt aus dem Viewport (${JSON.stringify(account)})`);
+        fail(`${persona.name} Desktop: footer.sidebar-release ragt aus dem Viewport (${JSON.stringify(account)})`);
       }
     }
   }
@@ -2827,7 +2852,7 @@ async function assertEnergySafetyAndFlow(viewport) {
   if (viewport.name === 'Mobil') {
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
     const box = await strip.boundingBox();
-    const mobileNav = await mobileNavBox(page);
+    const mobileNav = await contextBarBox(page);
     if (!box || !mobileNav || Math.abs(box.y - (mobileNav.y + mobileNav.height)) > 1) {
       fail(`Energie Mobil: Modus nicht sauber unter der Navigation (${JSON.stringify({ box, mobileNav })})`);
     }
@@ -2927,25 +2952,23 @@ async function assertEnergyGeometryMatrix() {
       fail(`Energie-Geometrie ${size.name}: Cockpit nicht erreichbar`);
     }
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    // On a phone the templ shell has NO .sidebar (display:none under 760px); the sticky
-    // .mobile-head is what the mode strip must meet without a gap. The legacy shell kept a
-    // sidebar on phones, and this probe measured strip-vs-sidebar there — on templ that read
-    // sidebarBottom=0 and reported a 74px "gap" that was really the mobile head's height.
-    // Desktop keeps the original contract: sidebar spans the viewport, strip at the top.
+    // The context bar occupies the viewport's top edge. The mode strip meets its
+    // bottom at every width; the desktop/tablet sidebar fills the remaining height.
     const phone = size.width <= 760;
-    const sidebarAtPageEnd = await page.evaluate((mobile) => {
+    const contextBar = await contextBarBox(page);
+    const sidebarAtPageEnd = await page.evaluate(({ mobile, barHeight }) => {
       const strip = document.querySelector('.energy-mode-strip')?.getBoundingClientRect();
-      const anchor = document.querySelector(mobile ? '.mobile-head' : '.sidebar')?.getBoundingClientRect();
+      const anchor = mobile ? null : document.querySelector('.sidebar')?.getBoundingClientRect();
       return {
+        barHeight,
         stripTop: strip?.top ?? -1,
         anchorTop: anchor?.top ?? -1,
         anchorBottom: anchor?.bottom ?? -1,
         viewportHeight: window.innerHeight,
-        delta: mobile && strip && anchor ? Math.abs(strip.top - anchor.bottom) : 0,
       };
-    }, phone);
-    if ((phone && sidebarAtPageEnd.delta > 1) ||
-        (!phone && (sidebarAtPageEnd.stripTop > 1 || Math.abs(sidebarAtPageEnd.anchorTop) > 1 ||
+    }, { mobile: phone, barHeight: contextBar.height });
+    if (Math.abs(sidebarAtPageEnd.stripTop - sidebarAtPageEnd.barHeight) > 1 ||
+        (!phone && (Math.abs(sidebarAtPageEnd.anchorTop - sidebarAtPageEnd.barHeight) > 1 ||
           Math.abs(sidebarAtPageEnd.anchorBottom - sidebarAtPageEnd.viewportHeight) > 1))) {
       fail(`Energie-Geometrie ${size.name}: Seitenleiste schließt am Seitenende nicht mit dem Viewport ab (${JSON.stringify(sidebarAtPageEnd)})`);
     }
@@ -3026,13 +3049,6 @@ async function assertEnergyGeometryMatrix() {
         tariffMetricsOneColumn: tariffMetricRects.length !== 2 || Math.abs(tariffMetricRects[0].left - tariffMetricRects[1].left) <= 1,
         stripRect,
         sidebarRect,
-        // Same retarget as the sidebar-at-page-end check: on phones the templ shell has no
-        // .sidebar, so measure the strip against the sticky .mobile-head it must sit under.
-        mobileStackDelta: (() => {
-          if (width > 760 || !stripRect) return 0;
-          const head = document.querySelector('.mobile-head')?.getBoundingClientRect();
-          return head ? Math.abs(stripRect.top - head.bottom) : 999;
-        })(),
         actionHeight: action?.getBoundingClientRect().height || 0,
         actionLabel: action?.innerText.trim() || '',
         safetyTitle: strip?.querySelector('.energy-mode-copy strong')?.textContent?.trim() || '',
@@ -3075,9 +3091,7 @@ async function assertEnergyGeometryMatrix() {
         result.focusToken !== '#ad862c') {
       fail(`Energie-Geometrie ${size.name}: scoped AA-Tokens fehlen (${JSON.stringify(result)})`);
     }
-    const stripMisaligned = size.width <= 760
-      ? result.mobileStackDelta > 1
-      : !result.stripRect || result.stripRect.top > 1;
+    const stripMisaligned = !result.stripRect || Math.abs(result.stripRect.top - contextBar.height) > 1;
     const stripWrapPreserved = size.width <= 900
       ? result.stripDisplay === 'grid'
       : result.stripFlexWrap === 'wrap';
@@ -3109,7 +3123,8 @@ async function assertEnergyGeometryMatrix() {
           label: strip?.querySelector('.energy-mode-action')?.innerText.trim() || '',
         };
       });
-      if (!active.active || active.top > 1) {
+      const activeContextBar = await contextBarBox(page);
+      if (!active.active || Math.abs(active.top - activeContextBar.height) > 1) {
         fail(`Energie-Geometrie ${size.name} active: Sicherheitsleiste verliert ihre Position (${JSON.stringify(active)})`);
       }
       await Promise.all([
@@ -3157,19 +3172,11 @@ async function assertEnergyGeometryMatrix() {
     }
 
     await page.evaluate(() => window.scrollTo(0, Math.min(1200, document.documentElement.scrollHeight - window.innerHeight)));
-    // After scrolling, the sticky strip must still sit flush under the sticky .mobile-head on
-    // phones (the templ shell has no .sidebar there), and at the very top on desktop.
-    const stickyPhone = size.width <= 760;
-    const sticky = await page.evaluate((mobile) => {
-      const strip = document.querySelector('.energy-mode-strip')?.getBoundingClientRect();
-      const anchor = document.querySelector(mobile ? '.mobile-head' : '.sidebar')?.getBoundingClientRect();
-      return {
-        stripTop: strip?.top ?? -1,
-        anchorBottom: anchor?.bottom ?? -1,
-        delta: mobile && strip && anchor ? Math.abs(strip.top - anchor.bottom) : 0,
-      };
-    }, stickyPhone);
-    if ((stickyPhone && sticky.delta > 1) || (!stickyPhone && sticky.stripTop > 1)) {
+    // Scrolling must preserve the same single context-bar offset at every width.
+    const stickyContextBar = await contextBarBox(page);
+    const stickyStrip = await page.locator('.energy-mode-strip').boundingBox();
+    if (!stickyStrip || Math.abs(stickyStrip.y - stickyContextBar.height) > 1) {
+      const sticky = { stripTop: stickyStrip?.y ?? -1, barHeight: stickyContextBar.height };
       fail(`Energie-Geometrie ${size.name}: Sicherheitsleiste ist beim Scrollen nicht sauber gestapelt (${JSON.stringify(sticky)})`);
     }
     await closeContext(context);

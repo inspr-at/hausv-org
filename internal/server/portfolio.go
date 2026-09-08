@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +67,7 @@ func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		firstName = profile.DisplayName()
 	}
 	data := buildPortfolio(time.Now(), shell.OrganisationName, firstName, r.URL.Query().Get("sort"), houses)
+	data = pagePortfolio(data, r.URL.Query())
 	var rendered bytes.Buffer
 	if err := web.PortfolioPage(shell, data).Render(r.Context(), &rendered); err != nil {
 		logError("templ portfolio render failed", err)
@@ -109,7 +112,7 @@ func buildPortfolio(now time.Time, organisationName, firstName, sortMode string,
 		house string
 		actor string
 	}
-	pendingAudits := make([]pendingAudit, 0, len(houses)*6)
+	pendingAudits := make([]pendingAudit, 0, 6)
 
 	for _, house := range houses {
 		row := web.PortfolioHouse{
@@ -199,7 +202,16 @@ func buildPortfolio(now time.Time, organisationName, firstName, sortMode string,
 			if actor == "" {
 				actor = "System"
 			}
-			pendingAudits = append(pendingAudits, pendingAudit{event: event, house: house.Name, actor: actor})
+			// Keep only the six latest events as we scan; a large portfolio
+			// must not retain six audit records per property just to show six.
+			at := sort.Search(len(pendingAudits), func(i int) bool { return event.At.After(pendingAudits[i].event.At) })
+			if at < 6 {
+				if len(pendingAudits) < 6 {
+					pendingAudits = append(pendingAudits, pendingAudit{})
+				}
+				copy(pendingAudits[at+1:], pendingAudits[at:])
+				pendingAudits[at] = pendingAudit{event: event, house: house.Name, actor: actor}
+			}
 		}
 	}
 
@@ -369,4 +381,59 @@ func portfolioUnitCount(count int) string {
 		return "1 Einheit"
 	}
 	return fmt.Sprintf("%d Einheiten", count)
+}
+
+// KPIs keep their organisation-wide meaning; only the matching 50 rows are
+// handed to templ. The same page slice feeds desktop and mobile representations.
+func pagePortfolio(data web.PortfolioData, query url.Values) web.PortfolioData {
+	data.Query = strings.TrimSpace(query.Get("q"))
+	data.Filter = query.Get("filter")
+	if data.Filter != "need" && data.Filter != "quiet" {
+		data.Filter = "all"
+	}
+	rows := make([]web.PortfolioHouse, 0, len(data.Houses)+len(data.QuietHouses))
+	for _, group := range [][]web.PortfolioHouse{data.Houses, data.QuietHouses} {
+		for _, row := range group {
+			if data.Filter == "need" && row.Open == 0 || data.Filter == "quiet" && row.Open > 0 {
+				continue
+			}
+			if switcherMatches(web.LiegenschaftEntry{Name: row.Name, Address: row.Address, Tenant: row.Slug}, data.Query) {
+				rows = append(rows, row)
+			}
+		}
+	}
+	if data.Sort == "name" {
+		sort.SliceStable(rows, func(i, j int) bool {
+			left, right := strings.ToLower(rows[i].Name), strings.ToLower(rows[j].Name)
+			if left == right {
+				return rows[i].Slug < rows[j].Slug
+			}
+			return left < right
+		})
+	}
+	data.ResultCount = len(rows)
+	data.Pages = max(1, (len(rows)+49)/50)
+	data.Page = boundedPage(query.Get("page"), len(rows), 50)
+	start := (data.Page - 1) * 50
+	rows = rows[start:min(start+50, len(rows))]
+	data.Houses = nil
+	data.QuietHouses = nil
+	for _, row := range rows {
+		if row.Open > 0 {
+			data.Houses = append(data.Houses, row)
+		} else {
+			data.QuietHouses = append(data.QuietHouses, row)
+		}
+	}
+	link := func(page int) string {
+		return "/app/verwaltung?" + url.Values{"q": {data.Query}, "filter": {data.Filter}, "sort": {data.Sort}, "page": {strconv.Itoa(page)}}.Encode()
+	}
+	if data.Page > 1 {
+		data.PreviousURL = link(data.Page - 1)
+	}
+	if data.Page < data.Pages {
+		data.NextURL = link(data.Page + 1)
+	}
+	data.Appointments = data.Appointments[:min(8, len(data.Appointments))]
+	return data
 }

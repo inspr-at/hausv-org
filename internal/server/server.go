@@ -1080,6 +1080,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /calendar/{token}", a.calendarFeed)
 	mux.HandleFunc("GET /app", a.page(a.portal))
 	mux.HandleFunc("POST /app/context", a.action(a.switchPortalContext))
+	mux.HandleFunc("GET /app/liegenschaften/suche", a.page(a.liegenschaftenSearch))
+	mux.HandleFunc("GET /app/liegenschaften", a.page(a.liegenschaftenSearch))
 	mux.HandleFunc("GET /app/verwaltung", a.page(a.requireVerwaltung(a.portfolioPage)))
 	mux.HandleFunc("GET /app/verwaltung/posteingang", a.page(a.requireVerwaltung(a.inboxPage)))
 	mux.HandleFunc("GET /app/verwaltung/posteingang/{id}", a.page(a.requireVerwaltung(a.inboxCasePage)))

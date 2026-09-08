@@ -21,7 +21,7 @@ type portalContextView struct {
 
 // portalShellData is the single assembly point for the shared house shell. It
 // keeps cross-house issue reads tenant-bound and separates managed houses from
-// the personal portal contexts shown by "Portal wechseln".
+// the personal portal contexts used by the shared switcher.
 func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 	shell := web.PortalShellData{Ready: true}
 	if a == nil || ac == nil {
@@ -54,12 +54,12 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 
 	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
 	// The picker offers every house the person can switch to: the ones they
-	// administer plus the ones they own or rent. Only Home-style portals stay
-	// in the separate portal switcher.
+	// administer plus the ones they own or rent. ScopeContext also preserves
+	// every personal role and private Home portal in the shared panel.
 	seen := make(map[string]bool)
 	for _, tenant := range managed {
 		seen[tenant.Config.Slug] = true
-		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, portalContextView{
+		shell.ManagedHouses = append(shell.ManagedHouses, portalHouseMetadata(portalContextView{
 			TenantSlug: tenant.Config.Slug, HouseName: houseDisplayName(tenant.Config), Address: tenant.Config.Address,
 			Role: tenant.Role, Current: tenant.Config.Slug == ac.tenant.Slug,
 		}))
@@ -69,7 +69,7 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 			continue
 		}
 		seen[context.TenantSlug] = true
-		shell.ManagedHouses = append(shell.ManagedHouses, a.portalHouseForContext(ac, context))
+		shell.ManagedHouses = append(shell.ManagedHouses, portalHouseMetadata(context))
 	}
 	for index := range shell.ManagedHouses {
 		if shell.ManagedHouses[index].Current {
@@ -87,7 +87,12 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 			Role: context.Role, Current: context.Current,
 		})
 	}
+	shell.Context = a.scopeContext(ac, shell.OrganisationName, false)
 	return shell
+}
+
+func portalHouseMetadata(context portalContextView) web.PortalHouse {
+	return web.PortalHouse{Slug: context.TenantSlug, Name: context.HouseName, Address: context.Address, Role: context.Role, Current: context.Current}
 }
 
 func (a *app) portalHouseForContext(ac *authCtx, context portalContextView) web.PortalHouse {
@@ -105,8 +110,8 @@ func (a *app) portalHouseForContext(ac *authCtx, context portalContextView) web.
 }
 
 // isCommunityPortal identifies a Hausportal/Liegenschaft. Private Home
-// portals deliberately stay in "Portal wechseln" rather than joining the
-// house picker.
+// portals remain personal contexts in the shared panel, outside the
+// Liegenschaften count.
 func (a *app) isCommunityPortal(slug string) bool {
 	tenant, ok := a.tenantBySlug(slug)
 	if !ok {

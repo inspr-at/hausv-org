@@ -29,7 +29,7 @@ func TestRolePreviewAdminLifecycleIsReadOnlyHAUSV605(t *testing.T) {
 		t.Fatalf("preview page status = %d: %s", page.Code, page.Body.String())
 	}
 	body := page.Body.String()
-	for _, want := range []string{"role-preview-band", "Ansicht als Eigentümer", "schreibgeschützt", "calm-main"} {
+	for _, want := range []string{"context-preview", "Ansicht als Eigentümer", "schreibgeschützt", "calm-main"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("preview page missing %q", want)
 		}
@@ -49,7 +49,7 @@ func TestRolePreviewAdminLifecycleIsReadOnlyHAUSV605(t *testing.T) {
 	}
 	restoredCookie := rolePreviewResponseCookie(t, end)
 	restored := rolePreviewTestRequest(t, a, http.MethodGet, "/demo/app", nil, restoredCookie)
-	if restored.Code != http.StatusOK || strings.Contains(restored.Body.String(), "role-preview-band") || !strings.Contains(restored.Body.String(), `href="/demo/app/settings/users"`) {
+	if restored.Code != http.StatusOK || strings.Contains(restored.Body.String(), "context-preview") || !strings.Contains(restored.Body.String(), `href="/demo/app/settings/users"`) {
 		t.Fatalf("restored admin page is not normal: status=%d", restored.Code)
 	}
 
@@ -178,9 +178,9 @@ func TestNavigationEntriesByRoleFamilyHAUSV606(t *testing.T) {
 		role string
 		want []string
 	}{
-		{name: "Hausverwaltung", role: roleAdmin, want: []string{"/demo/app/verwaltung", "/demo/app/verwaltung/posteingang", "/demo/app/verwaltung/textbausteine", "/demo/app/verwaltung/rechte", "/demo/app/verwaltung/einstellungen", "/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen/board", "/demo/app/abstimmungen", "/demo/app/parking", "/demo/app/uebergaben", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
-		{name: "Eigentümer", role: roleOwner, want: []string{"/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
-		{name: "Bewohner", role: roleResident, want: []string{"/demo/app", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
+		{name: "Hausverwaltung", role: roleAdmin, want: []string{"/demo/app/verwaltung", "/demo/app/verwaltung/posteingang", "/demo/app/verwaltung/textbausteine", "/demo/app/verwaltung/rechte", "/demo/app/verwaltung/einstellungen", "/demo/app/verwaltung", "/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen/board", "/demo/app/abstimmungen", "/demo/app/parking", "/demo/app/uebergaben", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
+		{name: "Eigentümer", role: roleOwner, want: []string{"/demo/app/liegenschaften", "/demo/app", "/demo/app/energie", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
+		{name: "Bewohner", role: roleResident, want: []string{"/demo/app/liegenschaften", "/demo/app", "/demo/app/announcements", "/demo/app/events", "/demo/app/kontakte", "/demo/app/dokumente", "/demo/app/anliegen", "/demo/app/abstimmungen", "/demo/app/audit", "/demo/app/settings", "/demo/app/hilfe"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

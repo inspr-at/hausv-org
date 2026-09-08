@@ -55,16 +55,16 @@ func TestOrganisationPortalShowsTwoLevelHouseShellHAUSV621(t *testing.T) {
 	body := page.Body.String()
 	for _, want := range []string{
 		"Hausverwaltung Musterstadt GmbH", "Organisation", "Liegenschaft · 1 von 12",
-		"Liegenschaft wechseln", "12 Häuser", "Liegenschaft suchen", "1 offen",
-		"Zur Portfolioübersicht", "Textbausteine", "Rechte", "Posteingang",
+		"Liegenschaft wechseln", "12 Liegenschaften", "Liegenschaft suchen", "1 offen",
+		"Alle Liegenschaften (12)", "Textbausteine", "Rechte", "Posteingang",
 		"Hausüberblick · Janusbergweg 123", "<h1>Janusbergweg 123</h1>",
-		`class="nav-item active"`, `data-house-more`,
+		`class="nav-item active"`, `role="combobox"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("organisation portal missing %q", want)
 		}
 	}
-	if got := strings.Count(body, `<details class="house-picker" data-house-picker`); got != 2 {
+	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
 		t.Errorf("desktop and mobile house picker count = %d, want 2", got)
 	}
 	if got := strings.Count(body, "Hausüberblick"); got < 2 {
@@ -86,13 +86,13 @@ func TestOwnerPortalKeepsGreetingAndFlatHouseNavigationHAUSV620(t *testing.T) {
 	if !strings.Contains(body, "<h1>Hallo Sophie.</h1>") || !strings.Contains(body, "Hausüberblick · Musterweg 1") {
 		t.Fatalf("resident heading lost house context or greeting")
 	}
-	for _, forbidden := range []string{`<header class="portal-organisation-identity"`, `data-two-level="true"`, `<details class="house-picker" data-house-picker`} {
+	for _, forbidden := range []string{`<header class="portal-organisation-identity"`, `data-two-level="true"`} {
 		if strings.Contains(body, forbidden) {
 			t.Errorf("resident shell unexpectedly contains %q", forbidden)
 		}
 	}
-	if got := strings.Count(body, `<div class="house-header-card house-header-static"`); got != 2 {
-		t.Errorf("desktop/mobile static house header count = %d, want 2", got)
+	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
+		t.Errorf("desktop/mobile shared house switcher count = %d, want 2", got)
 	}
 }
 
@@ -109,7 +109,7 @@ func TestMultiHousePortalUsesPickerWithoutOrganisationHAUSV621(t *testing.T) {
 	}
 	body := page.Body.String()
 	for _, want := range []string{
-		"Meine Häuser", "Musterweg 1", "Haus B", "Liegenschaft wechseln",
+		"Meine Liegenschaften", "Musterweg 1", "Haus B", "Liegenschaft wechseln",
 		`name="tenant" value="demo"`, `name="tenant" value="haus-b"`,
 		`name="role" value="Eigentümer"`, `name="role" value="Mieter"`,
 	} {
@@ -124,7 +124,7 @@ func TestMultiHousePortalUsesPickerWithoutOrganisationHAUSV621(t *testing.T) {
 			t.Errorf("unaffiliated multi-house shell unexpectedly contains %q", forbidden)
 		}
 	}
-	if got := strings.Count(body, `<details class="house-picker" data-house-picker`); got != 2 {
+	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
 		t.Errorf("desktop and mobile house picker count = %d, want 2", got)
 	}
 }
