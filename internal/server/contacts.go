@@ -37,7 +37,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	if !canManageContacts {
 		managedEmptyTitle = "Noch keine Kontakte hinterlegt"
-		managedEmptyMessage = "Die Hausverwaltung hat für dieses Haus noch keine allgemeinen Kontakte hinterlegt. Verwaltung, Notdienst und Hausmeister trägt die Verwaltung ein."
+		managedEmptyMessage = "Die Hausverwaltung hat für diese Liegenschaft noch keine allgemeinen Kontakte hinterlegt. Verwaltung, Notdienst und Hausmeister trägt die Verwaltung ein."
 	}
 	managedEmpty := emptyState(managedEmptyTitle, managedEmptyMessage)
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))

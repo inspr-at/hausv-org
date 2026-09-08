@@ -240,7 +240,7 @@ func errorPageOnwardLinks(role string, canSeeParking bool) []errorPageLink {
 	links := []errorPageLink{}
 	if roleCanUseResidentAreas(role) {
 		links = append(links,
-			errorPageLink{URL: "/app/announcements", Label: "Aushang", Hint: "Mitteilungen des Hauses"},
+			errorPageLink{URL: "/app/announcements", Label: "Aushang", Hint: "Mitteilungen der Liegenschaft"},
 			errorPageLink{URL: "/app/events", Label: "Termine", Hint: "Was als Nächstes ansteht"},
 			errorPageLink{URL: "/app/dokumente", Label: "Dokumente", Hint: "Freigegebene Unterlagen"},
 		)

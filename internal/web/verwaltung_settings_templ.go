@@ -209,7 +209,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " Wer welche davon betreut, entscheidet weiterhin die Rolle je Haus.</p></section><section class=\"settings-card\"><h2>Automatisierung</h2><table class=\"trust-table\"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " Wer welche davon betreut, entscheidet weiterhin die Rolle je Liegenschaft.</p></section><section class=\"settings-card\"><h2>Automatisierung</h2><table class=\"trust-table\"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -527,7 +527,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<table class=\"trust-table\"><thead><tr><th>Person</th><th>Rolle</th><th>Häuser</th><th>Seit</th><th></th></tr></thead><tbody>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<table class=\"trust-table\"><thead><tr><th>Person</th><th>Rolle</th><th>Liegenschaften</th><th>Seit</th><th></th></tr></thead><tbody>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -630,7 +630,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<form class=\"member-add\" method=\"post\" action=\"/app/verwaltung/einstellungen/mitarbeiter\"><div class=\"ai-fields\"><label>E-Mail<input type=\"email\" name=\"member_email\" required placeholder=\"person@example.com\"></label><label>Rolle<select name=\"member_role\"><option value=\"sachbearbeiter\">Sachbearbeiter</option><option value=\"admin\">Verwaltungs-Admin</option></select></label></div><p class=\"settings-note\">Die Person muss bereits in einem Haus angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Haus, ein Sachbearbeiter die Verwalterrolle.</p><div class=\"settings-actions\"><button class=\"settings-secondary\" type=\"submit\">Mitarbeiter aufnehmen</button></div></form></section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<form class=\"member-add\" method=\"post\" action=\"/app/verwaltung/einstellungen/mitarbeiter\"><div class=\"ai-fields\"><label>E-Mail<input type=\"email\" name=\"member_email\" required placeholder=\"person@example.com\"></label><label>Rolle<select name=\"member_role\"><option value=\"sachbearbeiter\">Sachbearbeiter</option><option value=\"admin\">Verwaltungs-Admin</option></select></label></div><p class=\"settings-note\">Die Person muss bereits in einer Liegenschaft angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Liegenschaft, ein Sachbearbeiter die Verwalterrolle.</p><div class=\"settings-actions\"><button class=\"settings-secondary\" type=\"submit\">Mitarbeiter aufnehmen</button></div></form></section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -756,7 +756,7 @@ func VerwaltungSettingsContent(data VerwaltungSettingsData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <p class=\"settings-note\">Ungelesene Mails werden abgeholt, Haus und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <p class=\"settings-note\">Ungelesene Mails werden abgeholt, Liegenschaft und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

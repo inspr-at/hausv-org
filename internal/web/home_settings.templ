@@ -78,7 +78,7 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 					<fieldset class="home-name-field"><legend>Anzeigename</legend><label>Anzeigename für „Mein Zuhause“<input type="text" name="household_name" value={ data.HouseholdName } placeholder="z. B. Dachwohnung" required maxlength="100"/></label></fieldset>
 					<fieldset class="home-assignment-fields"><legend>Art &amp; Zuordnung</legend>
 						if data.HomeTypeLocked {
-							<label>Art des Zuhauses<input type="hidden" name="home_type" value={ data.HomeType }/><span class="readonly home-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></span></label>
+							<label>Art des Zuhauses<input type="hidden" name="home_type" value={ data.HomeType }/><span class="readonly home-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Einheit festgelegt</small></span></label>
 						} else {
 							<label>Art des Zuhauses<select name="home_type" data-home-type-select aria-describedby="home-settings-type-explanation">
 								@HomeTypeOption("apartment", "Wohnung", "Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf die Wohnung und ihre eigenen Geräte.", data.HomeType)
@@ -87,13 +87,13 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 							</select></label>
 						}
 						if data.HasHomeUnit {
-							<div><label>Zugeordnete offizielle Wohnung<input type="hidden" name="unit_id" value={ data.HomeUnitID }/><span class="readonly home-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class="home-field-help">Die Sichtbarkeit folgt dieser Wohnung; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>
+							<div><label>Zugeordnete offizielle Einheit<input type="hidden" name="unit_id" value={ data.HomeUnitID }/><span class="readonly home-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class="home-field-help">Die Sichtbarkeit folgt dieser Einheit; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>
 						} else if data.HasUnitOptions {
-							<div data-home-unit-field><label>Zugeordnete offizielle Wohnung<select name="unit_id" required aria-describedby="home-settings-unit-help">
+							<div data-home-unit-field><label>Zugeordnete offizielle Einheit<select name="unit_id" required aria-describedby="home-settings-unit-help">
 								for _, option := range data.UnitOptions {
 									<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 								}
-							</select></label><small class="home-field-help" id="home-settings-unit-help">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>
+							</select></label><small class="home-field-help" id="home-settings-unit-help">Die Auswahl legt fest, welche Einheit den Überblick sieht. Technische Freigaben bleiben separat.</small></div>
 						} else {
 							<input type="hidden" name="unit_id" value=""/>
 						}
@@ -150,7 +150,7 @@ func homeFormLede(data HomeSettingsPageData) string {
 
 func homeTypeScopeNote(locked bool) string {
 	if locked {
-		return "Die Art ist mit der Wohnung verbunden."
+		return "Die Art ist mit der Einheit verbunden."
 	}
 	return "Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern."
 }

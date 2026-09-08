@@ -150,6 +150,8 @@ var issueFilterOptions = view.IssueFilterOptions
 var issueLocationLabel = view.IssueLocationLabel
 var issueSelectOptions = view.IssueSelectOptions
 var issueStatusClass = view.IssueStatusClass
+var issueStatusLabel = view.IssueStatusLabel
+var issueStatusSelectOptions = view.IssueStatusSelectOptions
 var managedContactViewFrom = view.ManagedContactViewFrom
 var notificationEventOptions = view.NotificationEventOptions
 var paidLabel = view.PaidLabel
@@ -2330,7 +2332,7 @@ func writeCalendarIssueProposal(b *strings.Builder, tenant tenantConfig, item re
 	}
 	description += "Anliegen: " + item.Title
 	if status := strings.TrimSpace(item.Status); status != "" {
-		description += "\nStatus: " + status
+		description += "\nStatus: " + issueStatusLabel(status)
 	}
 
 	// A structured appointment becomes a real dated VEVENT; a legacy free-text
@@ -2860,7 +2862,7 @@ func portalAreaViews(modules portalModuleFlags, canResidentAreas bool, canSeePar
 		areas = append(areas, portalAreaView{Icon: "users", Label: "Benutzer & Rechte", Detail: "Zugänge verwalten.", URL: "/app/settings/users", Management: true})
 	}
 	if canResidentAreas {
-		areas = append(areas, portalAreaView{Icon: "settings", Label: "Einstellungen", Detail: "Profil, Haus und Benachrichtigungen.", URL: "/app/settings"})
+		areas = append(areas, portalAreaView{Icon: "settings", Label: "Einstellungen", Detail: "Profil, Liegenschaft und Benachrichtigungen.", URL: "/app/settings"})
 	}
 	return areas
 }
@@ -3121,7 +3123,7 @@ func emergencyContactViews(tenant tenantConfig) []contactCardView {
 		contacts = append(contacts, contactCardView{
 			Name:        firstNonEmpty(tenant.CaretakerName, "Hausmeister"),
 			Role:        "Hausmeister",
-			Description: "Operativer Kontakt im Haus",
+			Description: "Operativer Kontakt in der Liegenschaft",
 			Email:       tenant.CaretakerEmail,
 			Phone:       tenant.CaretakerPhone,
 			HasEmail:    tenant.CaretakerEmail != "",
@@ -3317,7 +3319,7 @@ func (a *app) notifyIssueUpdated(tenant tenantConfig, issue residentIssue, actor
 			"Ein Anliegen für " + tenant.Address + " wurde aktualisiert.",
 			"",
 			issue.Title,
-			"Status: " + normalizeIssueStatus(issue.Status),
+			"Status: " + issueStatusLabel(issue.Status),
 			"Priorität: " + normalizeIssuePriority(issue.Priority),
 		},
 	})
@@ -4309,7 +4311,7 @@ func (a *app) updateBuildingContacts(w http.ResponseWriter, r *http.Request, ac 
 			return
 		}
 	}
-	a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role, Action: auditActionBuildingUpdate, TargetType: "building", TargetID: tenant.Slug, Summary: "Hauskontakte geändert", Details: map[string]string{"changed_fields": "Verwaltung, Notdienst, Hausmeister"}})
+	a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actorEmail, ActorRole: role, Action: auditActionBuildingUpdate, TargetType: "building", TargetID: tenant.Slug, Summary: "Kontakte der Liegenschaft geändert", Details: map[string]string{"changed_fields": "Verwaltung, Notdienst, Hausmeister"}})
 	http.Redirect(w, r, "/app/settings/building?section=contacts&building=saved", http.StatusSeeOther)
 }
 

@@ -415,7 +415,7 @@ func SettingsHubBody(data SettingsHubPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageHomeIdentity {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<section class=\"settings-group panel span-all\"><header><div><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div><span class=\"scope personal\">Nur Sie</span></header><nav class=\"settings-links\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<section class=\"settings-group panel span-all\"><header><div><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Einheit.</p></div><span class=\"scope personal\">Nur Sie</span></header><nav class=\"settings-links\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -631,7 +631,7 @@ func SettingsHubBody(data SettingsHubPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span><span><strong>Kalender-Abo</strong><small>Haustermine im eigenen Kalender</small></span><b>›</b></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span><span><strong>Kalender-Abo</strong><small>Termine der Liegenschaft im eigenen Kalender</small></span><b>›</b></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -641,12 +641,12 @@ func SettingsHubBody(data SettingsHubPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if settingsHasManagement(data) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<section class=\"settings-group panel span-all\"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p></div><span class=\"scope management\">Verwaltungsrechte</span></header><nav class=\"settings-links management-links\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<section class=\"settings-group panel span-all\"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für die ganze Liegenschaft.</p></div><span class=\"scope management\">Verwaltungsrechte</span></header><nav class=\"settings-links management-links\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if data.CanManageBuilding {
-				templ_7745c5c3_Err = SettingsLink("home", "Gebäude & Einheiten", "Hausdaten und Einheiten pflegen", "/app/settings/building").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = SettingsLink("home", "Gebäude & Einheiten", "Liegenschaftsdaten und Einheiten pflegen", "/app/settings/building").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1423,7 +1423,7 @@ func NotificationSettingsBody(data NotificationSettingsPageData) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = NotificationGroup("Haus & Kommunikation", data.NotificationEvents, "announcement", "issue").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = NotificationGroup("Liegenschaft & Kommunikation", data.NotificationEvents, "announcement", "issue").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1448,7 +1448,7 @@ func NotificationSettingsBody(data NotificationSettingsPageData) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class=\"text-link\" href=\"/app/settings/profile\">Profil ansehen</a></div></details><details class=\"note panel\"><summary>Grundregeln</summary><div><ul class=\"facts\"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was dieses Haus betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class=\"text-link\" href=\"/app/settings/profile\">Profil ansehen</a></div></details><details class=\"note panel\"><summary>Grundregeln</summary><div><ul class=\"facts\"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was diese Liegenschaft betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1624,7 +1624,7 @@ func BuildingSettingsContent(data BuildingSettingsPageData) templ.Component {
 				Identity:  PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "home", URL: "/app/settings"},
 			},
 			PortalSectionTitle("Gebäude & Einheiten"),
-			PortalSectionLede("Hausdaten, Kontakte und Einheiten an einem Ort."),
+			PortalSectionLede("Liegenschaftsdaten, Kontakte und Einheiten an einem Ort."),
 			BuildingSettingsHeaderAction(),
 			nil,
 			nil,
@@ -1976,7 +1976,7 @@ func BuildingContacts(data BuildingSettingsPageData) templ.Component {
 			templ_7745c5c3_Var79 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class=\"scope personal\">Im Portal sichtbar</span></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Kontakte der Liegenschaft</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class=\"scope personal\">Im Portal sichtbar</span></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

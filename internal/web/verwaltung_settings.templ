@@ -83,7 +83,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			<section class="settings-card"><h2>Hausverwaltung</h2><p>Name und Kontakt dieser Verwaltung. Sie erscheinen in der Seitenleiste und in Antworten an Bewohner.</p>
 				<div class="ai-fields"><label>Name<input type="text" name="organisation_name" value={ data.OrganisationName } required/></label><label>Ansprechperson<input type="text" name="contact_name" value={ data.ContactName } placeholder="optional"/></label></div>
 				<div class="ai-fields"><label>E-Mail<input type="email" name="contact_email" value={ data.ContactEmail } placeholder="optional"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.ContactPhone } placeholder="optional"/></label></div>
-				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Haus.</p>
+				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Liegenschaft.</p>
 			</section>
 			<section class="settings-card"><h2>Automatisierung</h2><table class="trust-table"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>
 				for _, category := range data.Categories {
@@ -110,7 +110,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				if len(data.Members) == 0 {
 					<p class="settings-note">Noch niemand aufgenommen.</p>
 				} else {
-					<table class="trust-table"><thead><tr><th>Person</th><th>Rolle</th><th>Häuser</th><th>Seit</th><th></th></tr></thead><tbody>
+					<table class="trust-table"><thead><tr><th>Person</th><th>Rolle</th><th>Liegenschaften</th><th>Seit</th><th></th></tr></thead><tbody>
 						for _, member := range data.Members {
 							<tr>
 								<td>
@@ -129,7 +129,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				}
 				<form class="member-add" method="post" action="/app/verwaltung/einstellungen/mitarbeiter">
 					<div class="ai-fields"><label>E-Mail<input type="email" name="member_email" required placeholder="person@example.com"/></label><label>Rolle<select name="member_role"><option value="sachbearbeiter">Sachbearbeiter</option><option value="admin">Verwaltungs-Admin</option></select></label></div>
-					<p class="settings-note">Die Person muss bereits in einem Haus angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Haus, ein Sachbearbeiter die Verwalterrolle.</p>
+					<p class="settings-note">Die Person muss bereits in einer Liegenschaft angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Liegenschaft, ein Sachbearbeiter die Verwalterrolle.</p>
 					<div class="settings-actions"><button class="settings-secondary" type="submit">Mitarbeiter aufnehmen</button></div>
 				</form>
 			</section>
@@ -149,7 +149,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				} else if data.MailLastRun != "" {
 					<p class="settings-result" role="status" data-ok="true"><span class="status-dot"></span>{ fmt.Sprintf("Zuletzt abgerufen %s · %d Mails seit Start übernommen", data.MailLastRun, data.MailTotal) }</p>
 				}
-				<p class="settings-note">Ungelesene Mails werden abgeholt, Haus und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>
+				<p class="settings-note">Ungelesene Mails werden abgeholt, Liegenschaft und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>
 			} else {
 				<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein Postfach konfiguriert</strong></p>
 				<p class="settings-note">Ein Postfach je Verwaltung wird über die Serverkonfiguration angebunden (INTAKE_MAIL_JSON, Zugangsdaten als Datei- oder Umgebungsreferenz). Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>

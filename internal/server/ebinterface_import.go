@@ -254,7 +254,7 @@ func ebInterfaceErrorLabel(recordErr integrations.RecordError) string {
 	case "issue_date":
 		return "Das Rechnungsdatum fehlt oder ist ungültig."
 	case "tenant_slug":
-		return "Die Rechnung konnte keinem Haus zugeordnet werden."
+		return "Die Rechnung konnte keiner Liegenschaft zugeordnet werden."
 	default:
 		return "Die Rechnung erfüllt das unterstützte ebInterface-Profil nicht."
 	}

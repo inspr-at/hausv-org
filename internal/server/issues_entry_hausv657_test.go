@@ -115,7 +115,7 @@ func TestIssuesEntryWithOnlyClosedHouseIssuesHAUSV657(t *testing.T) {
 	if strings.Contains(body, "Erstes Anliegen melden") || strings.Contains(body, `class="issue-summary-row"`) {
 		t.Fatal("closed issue must suppress first title without appearing in open summary")
 	}
-	if !strings.Contains(body, "Keine offenen Anliegen im Haus.") {
+	if !strings.Contains(body, "Keine offenen Anliegen in der Liegenschaft.") {
 		t.Fatal("missing empty open summary")
 	}
 }

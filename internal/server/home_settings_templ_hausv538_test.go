@@ -61,7 +61,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 	for _, want := range []string{
 		"data-templ-settings",
 		"data-templ-home-settings",
-		`<aside class="sidebar" aria-label="Hausnavigation">`,
+		`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
 		`<nav class="nav" aria-label="Bereiche"`,
 		// The editor identity hooks other views mirror.
 		`data-home-identity="editor-heading"`,
@@ -81,7 +81,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 		"Abbrechen",
 		"Änderungen speichern",
 		`„Dachwohnung“ ist der freundliche Name. „Einheit 12“ bleibt die offizielle Einheit`,
-		"Durch die zugeordnete Wohneinheit festgelegt",
+		"Durch die zugeordnete Einheit festgelegt",
 		"Diesem Hausprofil zugeordnet",
 		// The explanation stays addressable by app.js and by the select.
 		`id="home-settings-type-explanation"`,

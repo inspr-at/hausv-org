@@ -133,7 +133,7 @@ templ IssueBoardBody(data IssueBoardPageData) {
 			}
 		</datalist>
 	}
-	<section class="board-panel" id="issue-manage" aria-label="Anliegen im Haus">
+	<section class="board-panel" id="issue-manage" aria-label="Anliegen in der Liegenschaft">
 		if data.TotalIssueCount > 0 {
 			@IssueBoardToolbar(data)
 		}
@@ -141,7 +141,7 @@ templ IssueBoardBody(data IssueBoardPageData) {
 			<div class="board-columns" role="region" aria-label="Anliegen nach Status" tabindex="0">
 				for index, column := range issueBoardColumns(data.Filters.StatusOptions, data.Issues) {
 					<section class="board-column" aria-labelledby={ "board-column-" + strconv.Itoa(index) }>
-						<header class="board-column-head"><h2 id={ "board-column-" + strconv.Itoa(index) }>{ column.Status }</h2><span class="pill">{ len(column.Issues) }</span></header>
+						<header class="board-column-head"><h2 id={ "board-column-" + strconv.Itoa(index) }>{ column.StatusLabel }</h2><span class="pill">{ len(column.Issues) }</span></header>
 						<div class="issue-list">
 							for _, issue := range column.Issues {
 								@IssueWorkCard(issue)
@@ -209,7 +209,7 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 		<nav class="board-quick" aria-label="Schnellauswahl"><span>Ansicht</span>
 			<a href={ templ.SafeURL(data.BoardAction) } aria-current={ boardQuickCurrent(!data.Filters.HasActive) }>Alle</a>
 			<a href={ templ.SafeURL(data.BoardAction + "?status=Neu") } aria-current={ boardQuickCurrent(data.Filters.Status == "Neu") }>Neu</a>
-			<a href={ templ.SafeURL(data.BoardAction + "?status=In+Bearbeitung") } aria-current={ boardQuickCurrent(data.Filters.Status == "In Bearbeitung") }>In Bearbeitung</a>
+			<a href={ templ.SafeURL(data.BoardAction + "?status=In+Bearbeitung") } aria-current={ boardQuickCurrent(data.Filters.Status == "In Bearbeitung") }>In Arbeit</a>
 			<a href={ templ.SafeURL(data.BoardAction + "?priority=Dringend") } aria-current={ boardQuickCurrent(data.Filters.Priority == "Dringend") }>Dringend</a>
 			<a href={ templ.SafeURL(data.BoardAction + "?assignee=" + url.QueryEscape(data.ActorEmail)) } aria-current={ boardQuickCurrent(data.Filters.Assignee == data.ActorEmail) }>Mir zugewiesen</a>
 			<a href={ templ.SafeURL(data.BoardAction + "?sort=age") } aria-current={ boardQuickCurrent(data.Filters.Sort == "age") }>Älteste zuerst</a>
@@ -219,7 +219,7 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 
 templ IssueWorkCard(issue view.IssueView) {
 	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID }>
-		<header class="issue-card-head"><h3>{ issue.Title }</h3><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
+		<header class="issue-card-head"><h3>{ issue.Title }</h3><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
 		<p class="issue-location">{ issue.Location }</p>
 		<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
 		<div class="issue-work-people"><span class="issue-assignee-avatar" aria-hidden="true">{ issueBoardInitials(issue) }</span><span>
@@ -243,7 +243,7 @@ templ IssueWorkCard(issue view.IssueView) {
 
 templ IssueBoardFilterBlank(data IssueBoardPageData) {
 	<div class="board-filter-blank">
-		<div><h2>Kein Anliegen passt zu dieser Auswahl</h2><p>Im Haus sind { strconv.Itoa(data.TotalIssueCount) } Anliegen erfasst, davon { strconv.Itoa(data.OpenIssueCount) } offen. Setzen Sie die Auswahl zurück oder wählen Sie einen anderen Filter.</p></div>
+		<div><h2>Kein Anliegen passt zu dieser Auswahl</h2><p>In der Liegenschaft sind { strconv.Itoa(data.TotalIssueCount) } Anliegen erfasst, davon { strconv.Itoa(data.OpenIssueCount) } offen. Setzen Sie die Auswahl zurück oder wählen Sie einen anderen Filter.</p></div>
 		<a class="button primary" href={ templ.SafeURL(data.BoardAction) }>Auswahl zurücksetzen</a>
 	</div>
 }
@@ -253,7 +253,7 @@ templ IssueBoardBlank(data IssueBoardPageData) {
 		<div class="board-blank-main">
 			<div class="board-blank-lead">
 				<h2 id="board-blank-title">{ data.IssuesEmpty.Title }</h2>
-				<p>Sobald jemand im Haus etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p>
+				<p>Sobald jemand in der Liegenschaft etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p>
 			</div>
 			if data.CanCreateIssue || data.CanManageAnnouncements {
 				<div class="board-blank-actions">
@@ -272,7 +272,7 @@ templ IssueBoardBlank(data IssueBoardPageData) {
 				<li><strong>Neu</strong><span>Die Meldung ist eingegangen. Erster Schritt: Dringlichkeit festlegen.</span></li>
 				<li><strong>Angenommen</strong><span>Die Zuständigkeit ist vergeben, die Bearbeitung übernommen.</span></li>
 				<li><strong>Termin vereinbart</strong><span>Ein Termin mit Bewohnerschaft oder Dienstleister steht fest.</span></li>
-				<li><strong>In Bearbeitung</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li>
+				<li><strong>In Arbeit</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li>
 				<li><strong>Erledigt</strong><span>Die Lösung geht zur Prüfung; bestätigt wird von der meldenden Person.</span></li>
 			</ol>
 			<p class="board-blank-note">Meldungen, die nicht bearbeitet werden, schließen Sie als „Abgelehnt“ oder „Duplikat“.</p>
@@ -423,7 +423,7 @@ templ IssueTriageAside(data IssueTriagePageData) {
 		<section class="issue-triage-state">
 			<h2>Stand des Anliegens</h2>
 			<dl>
-				<div><dt>Status</dt><dd><span class={ "pill", data.Issue.StatusClass }>{ data.Issue.Status }</span></dd></div>
+				<div><dt>Status</dt><dd><span class={ "pill", data.Issue.StatusClass }>{ data.Issue.StatusLabel }</span></dd></div>
 				<div><dt>Priorität</dt><dd>{ data.Issue.Priority }</dd></div>
 				<div><dt>Zuständig</dt><dd>
 					if data.Issue.HasAssignee {
@@ -502,7 +502,9 @@ func issueTriageMoreSummary(issue view.IssueView) string {
 }
 
 // Use the handler's status order and retain every filtered issue in its lane.
-type issueBoardColumn struct { Status string; Issues []view.IssueView }
+// Status stays the stored value (it is the bucket key); StatusLabel is the
+// short German word shown in the column heading.
+type issueBoardColumn struct { Status string; StatusLabel string; Issues []view.IssueView }
 func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []issueBoardColumn {
 	columns := make([]issueBoardColumn, 0, len(options))
 	indices := map[string]int{}
@@ -510,11 +512,11 @@ func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []i
 		if option.Value == "" { continue }
 		if _, exists := indices[option.Value]; exists { continue }
 		indices[option.Value] = len(columns)
-		columns = append(columns, issueBoardColumn{Status: option.Value})
+		columns = append(columns, issueBoardColumn{Status: option.Value, StatusLabel: view.IssueStatusLabel(option.Value)})
 	}
 	for _, issue := range issues {
 		index, exists := indices[issue.Status]
-		if !exists { index = len(columns); indices[issue.Status] = index; columns = append(columns, issueBoardColumn{Status: issue.Status}) }
+		if !exists { index = len(columns); indices[issue.Status] = index; columns = append(columns, issueBoardColumn{Status: issue.Status, StatusLabel: view.IssueStatusLabel(issue.Status)}) }
 		columns[index].Issues = append(columns[index].Issues, issue)
 	}
 	return columns

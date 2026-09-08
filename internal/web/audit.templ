@@ -153,7 +153,7 @@ templ AuditHelp(data AuditPageData) {
 		<section class="note"><h2>Lesehilfe</h2><ul class="legend"><li><i class="add"></i><span><strong>Angelegt</strong><small>Ein Eintrag, eine Freigabe oder ein Zugang ist neu entstanden.</small></span></li><li><i></i><span><strong>Geändert oder angesehen</strong><small>Bestehendes wurde bearbeitet, geöffnet oder heruntergeladen.</small></span></li><li><i class="danger"></i><span><strong>Entfernt</strong><small>Etwas wurde gelöscht oder ein Zugriff wurde entzogen.</small></span></li></ul><p>Zeitangaben in Ortszeit. Zeilen mit Pfeil lassen sich für technische Details aufklappen.</p></section>
 		<section class="note"><h2>Umfang</h2><ul class="facts">
 			if data.AuditIsFull {
-				<li><strong>Ganzes Haus</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li><li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>
+				<li><strong>Ganze Liegenschaft</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li><li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>
 			} else {
 				<li><strong>Ihr Ausschnitt</strong><span>Eigene Vorgänge und alles, worauf Sie aktuell Zugriff haben.</span></li><li><strong>Folgt der Berechtigung</strong><span>Endet ein Zugriff, verschwindet der zugehörige Verlauf hier ebenfalls.</span></li>
 			}
@@ -174,7 +174,7 @@ templ AuditBlank(data AuditPageData) {
 	<section class="blank" aria-labelledby="audit-blank-title">
 		<div class="blank-main"><span class="blank-icon">@PortalIcon("audit")</span><h2 id="audit-blank-title">{ data.EventsEmpty.Title }</h2>
 			if data.AuditIsFull {
-				<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur des Hauses und lässt sich nicht nachträglich ändern.</p>
+				<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur der Liegenschaft und lässt sich nicht nachträglich ändern.</p>
 			} else {
 				<p>Sobald Sie sich anmelden, eine Unterlage öffnen oder ein Anliegen bearbeiten, steht der Vorgang hier mit Zeitpunkt und Objekt. Sie sehen ausschließlich Ihren eigenen Ausschnitt.</p>
 			}
@@ -189,7 +189,7 @@ templ AuditBlank(data AuditPageData) {
 		</div>
 		<aside class="blank-side"><h2>Was festgehalten wird</h2><ul class="facts">
 			if data.AuditIsFull {
-				<li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li><li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li><li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li><li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li><li><strong>Hausdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>
+				<li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li><li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li><li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li><li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li><li><strong>Liegenschaftsdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>
 			} else {
 				<li><strong>Ihre Anmeldungen</strong><span>Zeitpunkt und Verfahren jeder Anmeldung mit Ihrem Zugang.</span></li><li><strong>Ihre Vorgänge</strong><span>Anliegen, Nachrichten und Unterlagen, die Sie betreffen.</span></li><li><strong>Freigaben</strong><span>Was für Sie freigegeben oder wieder entzogen wurde.</span></li>
 			}

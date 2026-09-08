@@ -2150,7 +2150,7 @@ async function assertPilotHome({
     await invitation.locator('input[name="last_name"]').fill('Hilfe');
     await invitation.locator('input[name="email"]').fill('house_b-helper@example.com');
     await invitation.locator('input[value="configure"]').check();
-    await invitation.getByRole('button', { name: 'Hausbezogen einladen' }).click();
+    await invitation.getByRole('button', { name: 'Zur Liegenschaft einladen' }).click();
     await page.waitForLoadState('networkidle');
     const helperContext = await newContext({ width: 390, height: 844 });
     const helper = await localLogin(helperContext, 'house_b-helper@example.com', origin);
@@ -2785,7 +2785,7 @@ async function assertEnergySafetyAndFlow(viewport) {
     await invitation.locator('input[name="last_name"]').fill('Hilfe');
     await invitation.locator('input[name="email"]').fill('qa-helper@example.com');
     await invitation.locator('input[value="configure"]').check();
-    await invitation.getByRole('button', { name: 'Hausbezogen einladen' }).click();
+    await invitation.getByRole('button', { name: 'Zur Liegenschaft einladen' }).click();
     await page.waitForLoadState('networkidle');
     if (!(await page.getByText(/Einladung verschickt|Zugang gespeichert/).count())) {
       fail('Energie Desktop: hausbezogene Betreuungseinladung ohne Rückmeldung');

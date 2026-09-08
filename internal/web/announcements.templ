@@ -208,7 +208,7 @@ templ AnnouncementAttachments(item view.AnnouncementView) {
 }
 
 templ AnnouncementsBlank(data AnnouncementsPageData) {
-	<section class="blank" aria-label="Aushang des Hauses">@AnnouncementEmptyState(data.AnnouncementsBlank)<div class="blank-actions">
+	<section class="blank" aria-label="Aushang der Liegenschaft">@AnnouncementEmptyState(data.AnnouncementsBlank)<div class="blank-actions">
 		if data.CanManageAnnouncements {
 			<button class="button primary" type="button" data-dialog="announcement-create" aria-haspopup="dialog" aria-controls="announcement-create">Ersten Aushang erstellen</button>
 		} else {

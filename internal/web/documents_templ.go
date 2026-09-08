@@ -151,10 +151,10 @@ func DocumentsContent(data DocumentsPageData) templ.Component {
 				Portal:    data.Portal,
 				PageLabel: "Dokumente",
 				Class:     "documents-main documents-screen",
-				Identity:  PortalSectionIdentityData{Label: "Hausablage", Icon: "document"},
+				Identity:  PortalSectionIdentityData{Label: "Ablage der Liegenschaft", Icon: "document"},
 			},
 			PortalSectionTitle("Dokumente"),
-			PortalSectionLede("Die freigegebenen Unterlagen des Hauses – schnell finden, ansehen und herunterladen."),
+			PortalSectionLede("Die freigegebenen Unterlagen der Liegenschaft – schnell finden, ansehen und herunterladen."),
 			DocumentsHeaderAction(data),
 			nil,
 			nil,
@@ -321,7 +321,7 @@ func DocumentLibrary(data DocumentsPageData) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<section class=\"panel document-library\"><header class=\"library-head\"><div><p class=\"kicker\">Hausablage</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<section class=\"panel document-library\"><header class=\"library-head\"><div><p class=\"kicker\">Ablage der Liegenschaft</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

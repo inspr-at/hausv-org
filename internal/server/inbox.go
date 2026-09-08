@@ -602,7 +602,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 				return
 			}
 			if !a.actorManagesTenant(&ac, firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)) {
-				http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
+				http.Error(w, "Diese Liegenschaft ist nicht verfügbar.", http.StatusForbidden)
 				return
 			}
 			if err := repo.UpdateSuggestion(r.Context(), id, *item.Suggestion, store.IntakeStatusProposed); err != nil {
@@ -615,7 +615,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			next = a.nextOpenIntakeID(r.Context(), orgKey, &ac, id, queueQuery)
 		}
 		if !a.actorManagesTenant(&ac, firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)) {
-			http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
+			http.Error(w, "Diese Liegenschaft ist nicht verfügbar.", http.StatusForbidden)
 			return
 		}
 		status := store.IntakeStatusApproved
@@ -649,7 +649,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		if !a.actorManagesTenant(&ac, firstNonEmpty(item.Suggestion.TenantSlug, item.TenantSlug)) {
-			http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
+			http.Error(w, "Diese Liegenschaft ist nicht verfügbar.", http.StatusForbidden)
 			return
 		}
 		if err := a.handleIntake(r.Context(), orgKey, item, intakeHandleOptions{status: store.IntakeStatusRejected, action: "rejected", actorEmail: ac.email, actorName: actorName, auditAction: store.AuditActionIssueAIReject, counter: "rejected"}); err != nil {
@@ -660,7 +660,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 	case "assign":
 		house := normalizeSlug(r.FormValue("house"))
 		if !a.actorManagesTenant(&ac, house) {
-			http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
+			http.Error(w, "Diese Liegenschaft ist nicht verfügbar.", http.StatusForbidden)
 			return
 		}
 		if err := repo.Assign(r.Context(), id, house, strings.TrimSpace(r.FormValue("unit"))); err != nil {
@@ -678,8 +678,8 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 			a.inboxError(w, err)
 			return
 		}
-		a.recordIntakeAudit(house, ac.email, store.AuditActionIntakeAssign, item, store.IntakeSuggestion{}, "Haus zugeordnet")
-		a.inboxRedirectWithQuery(w, r, id, queueQuery, "Haus zugeordnet")
+		a.recordIntakeAudit(house, ac.email, store.AuditActionIntakeAssign, item, store.IntakeSuggestion{}, "Liegenschaft zugeordnet")
+		a.inboxRedirectWithQuery(w, r, id, queueQuery, "Liegenschaft zugeordnet")
 	case "restore":
 		if item.Status != store.IntakeStatusAuto || item.Suggestion == nil {
 			http.Error(w, "Anliegen kann nicht wiederhergestellt werden.", http.StatusConflict)
@@ -749,7 +749,7 @@ func (a *app) inboxCaseAction(w http.ResponseWriter, r *http.Request, ac authCtx
 
 func intakeUnfilledLabels(keys []string) []string {
 	labels := map[string]string{
-		"Name": "Name", "Haus": "Haus", "Einheit": "Einheit", "Nummer": "Nummer",
+		"Name": "Name", "Haus": "Liegenschaft", "Einheit": "Einheit", "Nummer": "Nummer",
 		"Zuständig": "Zuständig", "Handwerker": "Handwerker", "Frist": "Frist",
 	}
 	items := make([]string, 0, len(keys))
@@ -787,7 +787,7 @@ func (a *app) phoneNoteAction(w http.ResponseWriter, r *http.Request, ac authCtx
 	}
 	house := normalizeSlug(r.FormValue("house"))
 	if !a.actorManagesTenant(&ac, house) {
-		http.Error(w, "Dieses Haus ist nicht verfügbar.", http.StatusForbidden)
+		http.Error(w, "Diese Liegenschaft ist nicht verfügbar.", http.StatusForbidden)
 		return
 	}
 	subject := strings.TrimSpace(r.FormValue("subject"))

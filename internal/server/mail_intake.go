@@ -239,13 +239,13 @@ func (a *app) matchMail(ctx context.Context, orgKey string, message mailintake.M
 			}
 			sort.Strings(candidates)
 			if len(candidates) == 1 {
-				return mailMatch{TenantSlug: candidates[0], Unit: a.unitLabelForEmail(candidates[0], sender), Confidence: 0.9, Reason: "Absender ist im Haus bekannt"}
+				return mailMatch{TenantSlug: candidates[0], Unit: a.unitLabelForEmail(candidates[0], sender), Confidence: 0.9, Reason: "Absender ist in der Liegenschaft bekannt"}
 			}
 			if len(candidates) > 1 {
 				if slug := a.houseMentionedIn(message.Subject+"\n"+message.Text, candidates); slug != "" {
-					return mailMatch{TenantSlug: slug, Unit: a.unitLabelForEmail(slug, sender), Confidence: 0.85, Reason: "Absender in mehreren Häusern, Haus im Text genannt"}
+					return mailMatch{TenantSlug: slug, Unit: a.unitLabelForEmail(slug, sender), Confidence: 0.85, Reason: "Absender in mehreren Liegenschaften, Liegenschaft im Text genannt"}
 				}
-				return mailMatch{Confidence: 0.4, Reason: "Absender in mehreren Häusern, keines im Text genannt"}
+				return mailMatch{Confidence: 0.4, Reason: "Absender in mehreren Liegenschaften, keine im Text genannt"}
 			}
 		}
 	}

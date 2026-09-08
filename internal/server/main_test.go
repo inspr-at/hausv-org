@@ -1927,7 +1927,7 @@ func TestNotificationSettingsPersistAndRender(t *testing.T) {
 	if !strings.Contains(body, `href="/demo/app/settings"`) || !strings.Contains(body, `value="announcement" checked`) || strings.Contains(body, `value="issue" checked`) {
 		t.Fatalf("notification settings page did not reflect saved prefs:\n%s", body)
 	}
-	for _, want := range []string{`data-notification-form`, "Haus &amp; Kommunikation", "Entscheidungen &amp; Unterlagen", "Zahlung &amp; Nutzung", "2 von 6 aktiv"} {
+	for _, want := range []string{`data-notification-form`, "Liegenschaft &amp; Kommunikation", "Entscheidungen &amp; Unterlagen", "Zahlung &amp; Nutzung", "2 von 6 aktiv"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("notification settings page should contain %q", want)
 		}
@@ -2963,7 +2963,7 @@ func TestEmptyLibrariesHideToolsThatHaveNothingToSearch(t *testing.T) {
 	}
 
 	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
-	if !strings.Contains(board, "Keine Anliegen im Haus") || strings.Contains(board, `class="board-tools"`) {
+	if !strings.Contains(board, "Keine Anliegen in der Liegenschaft") || strings.Contains(board, `class="board-tools"`) {
 		t.Fatalf("empty issue board should explain itself without filters:\n%s", board)
 	}
 }
@@ -4925,7 +4925,7 @@ func TestPublicPrivacyNoticeMatchesActualDependencies(t *testing.T) {
 		"Dienstleister-Zugang: geschlossen",
 		"Hausverwaltung Beispiel GmbH",
 		"Verwaltergasse 10, 1010 Wien",
-		"Betroffenes Haus",
+		"Betroffene Liegenschaft",
 		"haus@example.com",
 		"Betreiber laut Host-Konfiguration",
 		"Anschrift laut Host-Konfiguration",

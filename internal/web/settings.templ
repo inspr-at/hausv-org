@@ -176,7 +176,7 @@ templ SettingsHubBody(data SettingsHubPageData) {
 		@SettingsProfilePictureDialog()
 		<div class="settings-grid">
 			if data.CanManageHomeIdentity {
-				<section class="settings-group panel span-all"><header><div><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Wohnung.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links">
+				<section class="settings-group panel span-all"><header><div><h2>Mein Zuhause</h2><p>Anzeigename, Art und zugeordnete Einheit.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links">
 					if data.HomeIdentity.HasDisplayName {
 						<a href={ templ.SafeURL(data.SettingsHomeURL) } data-home-identity="settings" aria-label={ data.HomeIdentity.AriaLabel + " bearbeiten" }><span class="link-icon">@PortalIcon("home")</span><span><strong data-home-display-name>{ data.HomeIdentity.DisplayName }</strong>
 							if data.HomeIdentity.HasUnit {
@@ -198,13 +198,13 @@ templ SettingsHubBody(data SettingsHubPageData) {
 			</nav></section>
 			<section class="settings-group panel"><header><div><h2>Kommunikation</h2><p>Was automatisch in Ihrem Postfach ankommt.</p></div><span class="scope personal">Nur Sie</span></header><nav class="settings-links"><a href="/app/settings/notifications"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>Benachrichtigungen</strong><small>{ data.SettingsNotificationSummary }</small></span><b>›</b></a>
 				if data.HasCalendarFeedURL {
-					<a href={ templ.SafeURL(data.CalendarFeedURL) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>Kalender-Abo</strong><small>Haustermine im eigenen Kalender</small></span><b>›</b></a>
+					<a href={ templ.SafeURL(data.CalendarFeedURL) }><span class="link-icon">@PortalIcon("calendar")</span><span><strong>Kalender-Abo</strong><small>Termine der Liegenschaft im eigenen Kalender</small></span><b>›</b></a>
 				}
 			</nav></section>
 			if settingsHasManagement(data) {
-				<section class="settings-group panel span-all"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für das ganze Haus.</p></div><span class="scope management">Verwaltungsrechte</span></header><nav class="settings-links management-links">
+				<section class="settings-group panel span-all"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für die ganze Liegenschaft.</p></div><span class="scope management">Verwaltungsrechte</span></header><nav class="settings-links management-links">
 					if data.CanManageBuilding {
-						@SettingsLink("home", "Gebäude & Einheiten", "Hausdaten und Einheiten pflegen", "/app/settings/building")
+						@SettingsLink("home", "Gebäude & Einheiten", "Liegenschaftsdaten und Einheiten pflegen", "/app/settings/building")
 						@SettingsLink("document", "Jahresabrechnung", "Grunddaten, Kostenarten, Einheiten und Abrechnungsperiode", "/app/settings/annual-statement")
 						@SettingsLink("settings", "Portalbereiche", "Menüpunkte und Funktionen ein- oder ausblenden", "/app/settings/modules")
 					}
@@ -388,12 +388,12 @@ templ NotificationSettingsBody(data NotificationSettingsPageData) {
 				<label class="master-switch"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>E-Mails erhalten</strong><small data-notification-status>{ notificationStatus(data) }</small></span><span class="switch"><input type="checkbox" name="email_enabled" value="on" checked?={ data.EmailNotificationsEnabled } data-notification-master/><i></i></span></label>
 				<header class="subhead"><div><h2>Wofür?</h2><p>Ihre Auswahl für einzelne Themen.</p></div><span data-notification-count>{ data.NotificationEnabledCount } von { data.NotificationEventCount } aktiv</span></header>
 				<p class="paused-note">Die Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie E-Mails aktivieren.</p>
-				@NotificationGroup("Haus & Kommunikation", data.NotificationEvents, "announcement", "issue")
+				@NotificationGroup("Liegenschaft & Kommunikation", data.NotificationEvents, "announcement", "issue")
 				@NotificationGroup("Entscheidungen & Unterlagen", data.NotificationEvents, "vote", "document")
 				@NotificationGroup("Zahlung & Nutzung", data.NotificationEvents, "payment", "charging")
 				<footer class="form-actions"><a class="button ghost" href="/app/settings">Abbrechen</a><button class="button primary" type="submit">Benachrichtigungen speichern</button></footer>
 			</form>
-		</section><aside class="aside-stack"><details class="note panel" open><summary>Empfängeradresse</summary><div><span class="readonly">{ data.Email }</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class="text-link" href="/app/settings/profile">Profil ansehen</a></div></details><details class="note panel"><summary>Grundregeln</summary><div><ul class="facts"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was dieses Haus betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div>
+		</section><aside class="aside-stack"><details class="note panel" open><summary>Empfängeradresse</summary><div><span class="readonly">{ data.Email }</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class="text-link" href="/app/settings/profile">Profil ansehen</a></div></details><details class="note panel"><summary>Grundregeln</summary><div><ul class="facts"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was diese Liegenschaft betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div>
 	</div>
 }
 
@@ -425,7 +425,7 @@ templ BuildingSettingsContent(data BuildingSettingsPageData) {
 			Identity: PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "home", URL: "/app/settings"},
 		},
 		PortalSectionTitle("Gebäude & Einheiten"),
-		PortalSectionLede("Hausdaten, Kontakte und Einheiten an einem Ort."),
+		PortalSectionLede("Liegenschaftsdaten, Kontakte und Einheiten an einem Ort."),
 		BuildingSettingsHeaderAction(),
 		nil,
 		nil,
@@ -477,7 +477,7 @@ func mapCoordinatesValue(data BuildingSettingsPageData) string { if data.MapConf
 func mapCoordinates(data BuildingSettingsPageData) string { if value := mapCoordinatesValue(data); value != "" { return value }; return "Die Karte wird nach der Auswahl aktualisiert." }
 
 templ BuildingContacts(data BuildingSettingsPageData) {
-	<section class="panel workspace"><header class="workspace-head"><div><h2>Hauskontakte</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class="scope personal">Im Portal sichtbar</span></header>
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Kontakte der Liegenschaft</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class="scope personal">Im Portal sichtbar</span></header>
 		@SettingsFlash(data.BuildingMsg, data.BuildingOK)
 		<form method="post" action="/app/settings/building/contacts"><div class="contact-grid">
 			<fieldset><legend>Hausverwaltung</legend><label>Name oder Firma<input name="contact_name" value={ data.Tenant.ContactName } maxlength="160"/></label><label>Anschrift<textarea name="contact_address" maxlength="500">{ data.Tenant.ContactAddress }</textarea></label><label>E-Mail<input type="email" name="contact_email" value={ data.Tenant.ContactEmail } maxlength="160" autocomplete="email"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.Tenant.ContactPhone } maxlength="80" autocomplete="tel"/></label></fieldset>

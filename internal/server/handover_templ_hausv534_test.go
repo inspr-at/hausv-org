@@ -21,7 +21,7 @@ func TestHandoversTemplUsesSharedPermissionGatedPortalShell(t *testing.T) {
 	for _, want := range []string{
 		"data-templ-handovers",
 		`href="/demo/app/uebergaben" class="nav-item active" aria-current="page"`,
-		`aria-label="Hausnavigation"`,
+		`aria-label="Navigation der Liegenschaft"`,
 		`aria-label="Navigation öffnen"`,
 		`id="handover-create"`,
 		`name="rooms_text"`,

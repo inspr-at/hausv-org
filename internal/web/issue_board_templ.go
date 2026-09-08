@@ -443,7 +443,7 @@ func IssueBoardBody(data IssueBoardPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<section class=\"board-panel\" id=\"issue-manage\" aria-label=\"Anliegen im Haus\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<section class=\"board-panel\" id=\"issue-manage\" aria-label=\"Anliegen in der Liegenschaft\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -490,9 +490,9 @@ func IssueBoardBody(data IssueBoardPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var18 string
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(column.Status)
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(column.StatusLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 144, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 144, Col: 109}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -505,7 +505,7 @@ func IssueBoardBody(data IssueBoardPageData) templ.Component {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(len(column.Issues))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 144, Col: 150}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 144, Col: 155}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -987,7 +987,7 @@ func IssueBoardToolbar(data IssueBoardPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\">In Bearbeitung</a> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\">In Arbeit</a> <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1165,9 +1165,9 @@ func IssueWorkCard(issue view.IssueView) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
-		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Status)
+		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(issue.StatusLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 138}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 143}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
@@ -1180,7 +1180,7 @@ func IssueWorkCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var57 string
 		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.ResolveAttributeValue(issue.Priority)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 206}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 211}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
 		if templ_7745c5c3_Err != nil {
@@ -1193,7 +1193,7 @@ func IssueWorkCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var58 string
 		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Priority)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 251}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 256}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
@@ -1206,7 +1206,7 @@ func IssueWorkCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Category)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 295}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 222, Col: 300}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1428,14 +1428,14 @@ func IssueBoardFilterBlank(data IssueBoardPageData) templ.Component {
 			templ_7745c5c3_Var72 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<div class=\"board-filter-blank\"><div><h2>Kein Anliegen passt zu dieser Auswahl</h2><p>Im Haus sind ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "<div class=\"board-filter-blank\"><div><h2>Kein Anliegen passt zu dieser Auswahl</h2><p>In der Liegenschaft sind ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.TotalIssueCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 246, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 246, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 		if templ_7745c5c3_Err != nil {
@@ -1448,7 +1448,7 @@ func IssueBoardFilterBlank(data IssueBoardPageData) templ.Component {
 		var templ_7745c5c3_Var74 string
 		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.OpenIssueCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 246, Col: 167}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 246, Col: 179}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 		if templ_7745c5c3_Err != nil {
@@ -1509,7 +1509,7 @@ func IssueBoardBlank(data IssueBoardPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</h2><p>Sobald jemand im Haus etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</h2><p>Sobald jemand in der Liegenschaft etwas meldet, steht es hier: Titel, meldende Person, Ort, Status, Priorität und der nächste Schritt. Zuletzt aktualisierte Anliegen stehen oben; die Bearbeitung öffnen Sie direkt aus der Zeile.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1535,7 +1535,7 @@ func IssueBoardBlank(data IssueBoardPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</div><aside class=\"board-blank-side\"><h2>Der Weg eines Anliegens</h2><ol class=\"board-blank-steps\"><li><strong>Neu</strong><span>Die Meldung ist eingegangen. Erster Schritt: Dringlichkeit festlegen.</span></li><li><strong>Angenommen</strong><span>Die Zuständigkeit ist vergeben, die Bearbeitung übernommen.</span></li><li><strong>Termin vereinbart</strong><span>Ein Termin mit Bewohnerschaft oder Dienstleister steht fest.</span></li><li><strong>In Bearbeitung</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li><li><strong>Erledigt</strong><span>Die Lösung geht zur Prüfung; bestätigt wird von der meldenden Person.</span></li></ol><p class=\"board-blank-note\">Meldungen, die nicht bearbeitet werden, schließen Sie als „Abgelehnt“ oder „Duplikat“.</p></aside><ul class=\"board-blank-facts\"><li><strong>Reihenfolge</strong><span>Standard ist „zuletzt aktualisiert“. Ab dem ersten Anliegen stehen zusätzlich Älteste zuerst, Priorität, Status, Kategorie und Zuständigkeit als Sortierung bereit.</span></li><li><strong>Priorität</strong><span>Dringend, Hoch, Mittel und Niedrig. Der erste Triage-Schritt setzt sie; die Zählung über der Liste zeigt offene und dringende Anliegen.</span></li><li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen zu oder lässt es offen. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li></ul></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</div><aside class=\"board-blank-side\"><h2>Der Weg eines Anliegens</h2><ol class=\"board-blank-steps\"><li><strong>Neu</strong><span>Die Meldung ist eingegangen. Erster Schritt: Dringlichkeit festlegen.</span></li><li><strong>Angenommen</strong><span>Die Zuständigkeit ist vergeben, die Bearbeitung übernommen.</span></li><li><strong>Termin vereinbart</strong><span>Ein Termin mit Bewohnerschaft oder Dienstleister steht fest.</span></li><li><strong>In Arbeit</strong><span>Die Arbeit läuft. Informationen und Rückfragen gehen von hier an die meldende Person.</span></li><li><strong>Erledigt</strong><span>Die Lösung geht zur Prüfung; bestätigt wird von der meldenden Person.</span></li></ol><p class=\"board-blank-note\">Meldungen, die nicht bearbeitet werden, schließen Sie als „Abgelehnt“ oder „Duplikat“.</p></aside><ul class=\"board-blank-facts\"><li><strong>Reihenfolge</strong><span>Standard ist „zuletzt aktualisiert“. Ab dem ersten Anliegen stehen zusätzlich Älteste zuerst, Priorität, Status, Kategorie und Zuständigkeit als Sortierung bereit.</span></li><li><strong>Priorität</strong><span>Dringend, Hoch, Mittel und Niedrig. Der erste Triage-Schritt setzt sie; die Zählung über der Liste zeigt offene und dringende Anliegen.</span></li><li><strong>Zuständigkeit</strong><span>Der zweite Schritt ordnet das Anliegen Ihnen zu oder lässt es offen. Danach lässt sich die Liste auf Ihre eigenen Fälle einschränken.</span></li></ul></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2315,9 +2315,9 @@ func IssueTriageAside(data IssueTriagePageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var117 string
-		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(data.Issue.Status)
+		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(data.Issue.StatusLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 426, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issue_board.templ`, Line: 426, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 		if templ_7745c5c3_Err != nil {
@@ -2623,9 +2623,12 @@ func issueTriageMoreSummary(issue view.IssueView) string {
 }
 
 // Use the handler's status order and retain every filtered issue in its lane.
+// Status stays the stored value (it is the bucket key); StatusLabel is the
+// short German word shown in the column heading.
 type issueBoardColumn struct {
-	Status string
-	Issues []view.IssueView
+	Status      string
+	StatusLabel string
+	Issues      []view.IssueView
 }
 
 func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []issueBoardColumn {
@@ -2639,14 +2642,14 @@ func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []i
 			continue
 		}
 		indices[option.Value] = len(columns)
-		columns = append(columns, issueBoardColumn{Status: option.Value})
+		columns = append(columns, issueBoardColumn{Status: option.Value, StatusLabel: view.IssueStatusLabel(option.Value)})
 	}
 	for _, issue := range issues {
 		index, exists := indices[issue.Status]
 		if !exists {
 			index = len(columns)
 			indices[issue.Status] = index
-			columns = append(columns, issueBoardColumn{Status: issue.Status})
+			columns = append(columns, issueBoardColumn{Status: issue.Status, StatusLabel: view.IssueStatusLabel(issue.Status)})
 		}
 		columns[index].Issues = append(columns[index].Issues, issue)
 	}

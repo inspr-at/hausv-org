@@ -7,7 +7,7 @@ import (
 )
 
 type IssueSummaryView struct {
-	Title, Status, StatusClass, Assignee, AssigneeEmail, Age, URL string
+	Title, Status, StatusLabel, StatusClass, Assignee, AssigneeEmail, Age, URL string
 }
 
 type IssuesPageData struct {
@@ -102,20 +102,20 @@ templ IssuesBody(data IssuesPageData) {
 
 templ IssuesOpenSummary(data IssuesPageData) {
 	<section class="panel issues-panel" id="issue-open" aria-labelledby="issue-open-title">
-		<header class="section-head"><div><p class="eyebrow">Verwaltung</p><h2 id="issue-open-title">Offene Anliegen</h2><p>Die acht neuesten offenen Anliegen im Haus.</p></div></header>
+		<header class="section-head"><div><p class="eyebrow">Verwaltung</p><h2 id="issue-open-title">Offene Anliegen</h2><p>Die acht neuesten offenen Anliegen in der Liegenschaft.</p></div></header>
 		if len(data.OpenIssues) > 0 {
 			<ul class="issue-summary-list">
 				for _, issue := range data.OpenIssues {
 					<li class="issue-summary-row">
 						<a href={ templ.SafeURL(issue.URL) }>{ issue.Title }</a>
-						<span class={ "pill", issue.StatusClass }>{ issue.Status }</span>
+						<span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span>
 						<span class="issue-summary-assignee" title={ issue.AssigneeEmail }><strong>Zuständig:</strong> { issue.Assignee }</span>
 						<span class="issue-summary-age"><strong>Gemeldet:</strong> { issue.Age }</span>
 					</li>
 				}
 			</ul>
 		} else {
-			<p class="muted">Keine offenen Anliegen im Haus.</p>
+			<p class="muted">Keine offenen Anliegen in der Liegenschaft.</p>
 		}
 		<a class="issue-detail-link" href="/app/anliegen/board"><strong>Alle im Triage-Board</strong><span aria-hidden="true">›</span></a>
 	</section>
@@ -138,7 +138,7 @@ templ IssueCard(issue view.IssueView) {
 			if issue.HasAssignee {
 				<span title={ issue.AssigneeEmail }> · Zuständig: { issueAssigneeLabel(issue) }</span>
 			}
-		</p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="pill">{ issue.Category }</span><span class="pill">{ issue.Priority }</span><span>{ issue.CreatedAt }</span></div></header>
+		</p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="pill">{ issue.Category }</span><span class="pill">{ issue.Priority }</span><span>{ issue.CreatedAt }</span></div></header>
 		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>
 		<p class="issue-next-step">{ issue.NextStep }</p>
 		if issue.HasServiceAppointment {
@@ -278,7 +278,7 @@ templ IssueCreatePanel(data IssuesPageData) {
 
 templ IssueCreateForm(hasIssues bool) {
 	<form class="issue-form" id="issue-create-form" method="post" action="/app/anliegen" enctype="multipart/form-data" data-issue-wizard>
-		<fieldset class="issue-wizard-step" data-issue-step="describe"><div class="issue-wizard-heading">@IssueWizardProgress(false)<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class="issue-safety-note">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href="/app/kontakte">Hauskontakte</a> öffnen. Erst danach hier melden.</p><label for="issue-body">Kurze Beschreibung<textarea id="issue-body" name="body" maxlength="4000" required aria-describedby="issue-body-error" placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea><span class="issue-field-error" id="issue-body-error" role="alert" hidden></span></label>
+		<fieldset class="issue-wizard-step" data-issue-step="describe"><div class="issue-wizard-heading">@IssueWizardProgress(false)<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class="issue-safety-note">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href="/app/kontakte">Kontakte der Liegenschaft</a> öffnen. Erst danach hier melden.</p><label for="issue-body">Kurze Beschreibung<textarea id="issue-body" name="body" maxlength="4000" required aria-describedby="issue-body-error" placeholder="Zum Beispiel: Das Licht im Keller funktioniert nicht mehr."></textarea><span class="issue-field-error" id="issue-body-error" role="alert" hidden></span></label>
 			<div class="issue-category"><span id="issue-category-label">Art des Anliegens</span><div class="issue-category-options" role="radiogroup" aria-labelledby="issue-category-label" aria-describedby="issue-category-error"><label class="issue-category-choice"><input type="radio" name="category" value="Reparatur" required checked/>@PortalAssetIcon("wrench")<span>Reparatur</span></label><label class="issue-category-choice"><input type="radio" name="category" value="Frage" required/>@PortalAssetIcon("message-square")<span>Frage</span></label><label class="issue-category-choice"><input type="radio" name="category" value="Vorschlag" required/>@PortalAssetIcon("lightbulb")<span>Vorschlag</span></label><label class="issue-category-choice"><input type="radio" name="category" value="Sonstiges" required/>@PortalAssetIcon("ellipsis")<span>Sonstiges</span></label></div><p class="issue-field-error" id="issue-category-error" role="alert" hidden></p></div>
 			<div class="issue-location-options" role="radiogroup" aria-label="Bereich" aria-describedby="issue-location-error"><label class="issue-location-choice"><input type="radio" name="location_type" value="common" required checked/>@PortalAssetIcon("house")<strong>Gemeinschaftsbereich</strong><span>Stiegenhaus, Keller oder Garage</span></label><label class="issue-location-choice"><input type="radio" name="location_type" value="own-unit" required/>@PortalAssetIcon("door-open")<strong>Eigene Einheit</strong><span>Wohnung oder eigener Nebenraum</span></label></div><p class="issue-field-error" id="issue-location-error" role="alert" hidden></p><label for="issue-location-detail">Wo genau? <span class="hint">Optional</span><input id="issue-location-detail" type="text" name="location_detail" maxlength="160" placeholder="Zum Beispiel: Vorraum oder neben dem Fahrradraum"/></label><div class="issue-file-row"><label><span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>Foto oder Datei hinzufügen</span></span></label><span class="hint">Optional · bis zu 10 Dateien, jeweils 10 MB</span></div><p class="hint">Keine Gesundheitsdaten, Ausweiskopien oder unnötig abgebildete Personen.</p><div class="issue-wizard-actions">
 				if hasIssues {
@@ -299,7 +299,7 @@ func issueCreateTitle(data IssuesPageData) string {
 
 func issuesListTitle(data IssuesPageData) string {
 	if data.CanManageIssues { return "Meine eigenen Anliegen" }
-	if data.Portal.Role == "Beirat" { return "Anliegen im Haus" }
+	if data.Portal.Role == "Beirat" { return "Anliegen in der Liegenschaft" }
 	return "Meine letzten Anliegen"
 }
 

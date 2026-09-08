@@ -785,12 +785,12 @@ func (a *app) updateHomeOnboarding(w http.ResponseWriter, r *http.Request, ac au
 			return
 		}
 		if a.homeIdentityTypeLocked(ac.tenantRef, profile) && homeType != profile.HomeType {
-			http.Error(w, "Die Zuhause-Art ist an die offizielle Wohnung gebunden.", http.StatusForbidden)
+			http.Error(w, "Die Zuhause-Art ist an die offizielle Einheit gebunden.", http.StatusForbidden)
 			return
 		}
 		unitID, validUnit := a.resolveHomeIdentityUnitID(ac, profile, homeType, r.FormValue("unit_id"))
 		if !validUnit {
-			http.Error(w, "Bitte eine eigene offizielle Wohnung auswählen.", http.StatusBadRequest)
+			http.Error(w, "Bitte eine eigene offizielle Einheit auswählen.", http.StatusBadRequest)
 			return
 		}
 		profile.HouseholdName = name
@@ -865,7 +865,7 @@ func (a *app) homeIdentitySettings(w http.ResponseWriter, r *http.Request, ac au
 		return
 	}
 	if !a.canManageHomeIdentityProfile(ac, profile, exists) {
-		http.Error(w, "Dieser Bereich ist Eigentümern der zugeordneten Wohnung und der Hausverwaltung vorbehalten.", http.StatusForbidden)
+		http.Error(w, "Dieser Bereich ist Eigentümern der zugeordneten Einheit und der Hausverwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
 	if !exists || !profile.OnboardingComplete {
@@ -916,7 +916,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if !a.canManageHomeIdentityProfile(ac, profile, exists) {
-		http.Error(w, "Dieser Bereich ist Eigentümern der zugeordneten Wohnung und der Hausverwaltung vorbehalten.", http.StatusForbidden)
+		http.Error(w, "Dieser Bereich ist Eigentümern der zugeordneten Einheit und der Hausverwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}
 	if !exists || !profile.OnboardingComplete {
@@ -931,7 +931,7 @@ func (a *app) updateHomeIdentity(w http.ResponseWriter, r *http.Request, ac auth
 		return
 	}
 	if a.homeIdentityTypeLocked(ac.tenantRef, profile) && homeType != profile.HomeType {
-		http.Error(w, "Die Zuhause-Art ist an die offizielle Wohnung gebunden.", http.StatusForbidden)
+		http.Error(w, "Die Zuhause-Art ist an die offizielle Einheit gebunden.", http.StatusForbidden)
 		return
 	}
 	unitID, validUnit := a.resolveHomeIdentityUnitID(ac, profile, homeType, r.FormValue("unit_id"))
@@ -1007,7 +1007,7 @@ func energyHomeTypeDescription(value string) string {
 	case energy.HomeCommunity:
 		return "Mehrere Parteien und gemeinsam genutzte Anlagen. Der Überblick richtet sich an Eigentümergemeinschaft oder Hausverwaltung."
 	default:
-		return "Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf die zugeordnete Wohnung und ihre eigenen Geräte."
+		return "Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf die zugeordnete Einheit und ihre eigenen Geräte."
 	}
 }
 
@@ -1056,7 +1056,7 @@ func (a *app) homeIdentityUnitContext(ac authCtx, profile energy.HomeProfile) (s
 	if len(a.homeIdentityUnitOptions(ac, profile)) > 0 {
 		return "Offizielle Einheit", "Noch nicht zugeordnet"
 	}
-	return "Offizielle Einheit", "Noch keine Wohnung angelegt"
+	return "Offizielle Einheit", "Noch keine Einheit angelegt"
 }
 
 func buildEnergyObservationProgressView(intervals []energy.Interval) energyObservationProgressView {
@@ -2117,7 +2117,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 	}
 	assetID := strings.TrimSpace(r.FormValue("asset_id"))
 	if !energyAssetBelongsToTenant(a.energyStore, ac.tenant.Slug, assetID) {
-		http.Error(w, "Anlage gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		http.Error(w, "Anlage gehört nicht zu dieser Liegenschaft.", http.StatusBadRequest)
 		return
 	}
 	months, err := strconv.Atoi(strings.TrimSpace(r.FormValue("interval_months")))
@@ -2134,7 +2134,7 @@ func (a *app) upsertEnergyMaintenance(w http.ResponseWriter, r *http.Request, ac
 	documentID := strings.TrimSpace(r.FormValue("document_id"))
 	issueID := strings.TrimSpace(r.FormValue("issue_id"))
 	if !a.validEnergyReferences(ac.tenantRef, ac.repositories.contacts, contactID, documentID, issueID) {
-		http.Error(w, "Verknüpfung gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		http.Error(w, "Verknüpfung gehört nicht zu dieser Liegenschaft.", http.StatusBadRequest)
 		return
 	}
 	plan := energy.MaintenancePlan{
@@ -2198,7 +2198,7 @@ func (a *app) completeEnergyMaintenance(w http.ResponseWriter, r *http.Request, 
 	plan.EvidenceNote = cleanEnergyText(r.FormValue("evidence_note"), 500)
 	if issueID := strings.TrimSpace(r.FormValue("issue_id")); issueID != "" {
 		if _, found := ac.repositories.issues.Get(issueID); !found {
-			http.Error(w, "Nachweis-Aufgabe gehört nicht zu diesem Haus.", http.StatusBadRequest)
+			http.Error(w, "Nachweis-Aufgabe gehört nicht zu dieser Liegenschaft.", http.StatusBadRequest)
 			return
 		}
 		plan.IssueID = issueID
@@ -2294,7 +2294,7 @@ func (a *app) updateEnergyMeasure(w http.ResponseWriter, r *http.Request, ac aut
 	item.ContactID = strings.TrimSpace(r.FormValue("contact_id"))
 	contact, contactOK := a.energyContact(ac.repositories.contacts, item.ContactID)
 	if item.ContactID != "" && !contactOK {
-		http.Error(w, "Fachkontakt gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		http.Error(w, "Fachkontakt gehört nicht zu dieser Liegenschaft.", http.StatusBadRequest)
 		return
 	}
 	item.OfferNote = cleanEnergyText(r.FormValue("offer_note"), 1000)
@@ -2426,7 +2426,7 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 	email := normalizeEmail(r.FormValue("email"))
 	existing, ok := a.inviteStore.Get(email)
 	if !ok || !existing.HasTenant(ac.tenant.Slug) || isServiceProviderRole(existing.ForTenant(ac.tenant.Slug).Role) {
-		http.Error(w, "Person gehört nicht zu diesem Haus.", http.StatusBadRequest)
+		http.Error(w, "Person gehört nicht zu dieser Liegenschaft.", http.StatusBadRequest)
 		return
 	}
 	grant := map[string]bool{}
@@ -2462,7 +2462,7 @@ func (a *app) updateEnergyCaretaker(w http.ResponseWriter, r *http.Request, ac a
 		Action:     "energy.caretaker.scope",
 		TargetType: "user",
 		TargetID:   email,
-		Summary:    "Technischer Hauszugriff geändert",
+		Summary:    "Technischer Zugriff auf die Liegenschaft geändert",
 		Details: map[string]string{
 			"view":      strconv.FormatBool(grant["view"] || grant["configure"] || grant["control"]),
 			"configure": strconv.FormatBool(grant["configure"]),

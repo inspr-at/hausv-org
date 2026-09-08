@@ -372,7 +372,7 @@ func HomeSettingsBody(data HomeSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></span></label> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</strong><small>Durch die zugeordnete Einheit festgelegt</small></span></label> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -399,7 +399,7 @@ func HomeSettingsBody(data HomeSettingsPageData) templ.Component {
 			}
 		}
 		if data.HasHomeUnit {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div><label>Zugeordnete offizielle Wohnung<input type=\"hidden\" name=\"unit_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div><label>Zugeordnete offizielle Einheit<input type=\"hidden\" name=\"unit_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -425,12 +425,12 @@ func HomeSettingsBody(data HomeSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class=\"home-field-help\">Die Sichtbarkeit folgt dieser Wohnung; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class=\"home-field-help\">Die Sichtbarkeit folgt dieser Einheit; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if data.HasUnitOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div data-home-unit-field><label>Zugeordnete offizielle Wohnung<select name=\"unit_id\" required aria-describedby=\"home-settings-unit-help\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div data-home-unit-field><label>Zugeordnete offizielle Einheit<select name=\"unit_id\" required aria-describedby=\"home-settings-unit-help\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -476,7 +476,7 @@ func HomeSettingsBody(data HomeSettingsPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</select></label><small class=\"home-field-help\" id=\"home-settings-unit-help\">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</select></label><small class=\"home-field-help\" id=\"home-settings-unit-help\">Die Auswahl legt fest, welche Einheit den Überblick sieht. Technische Freigaben bleiben separat.</small></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -815,7 +815,7 @@ func homeFormLede(data HomeSettingsPageData) string {
 
 func homeTypeScopeNote(locked bool) string {
 	if locked {
-		return "Die Art ist mit der Wohnung verbunden."
+		return "Die Art ist mit der Einheit verbunden."
 	}
 	return "Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern."
 }

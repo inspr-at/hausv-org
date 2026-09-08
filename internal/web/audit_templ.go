@@ -796,7 +796,7 @@ func AuditHelp(data AuditPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.AuditIsFull {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<li><strong>Ganzes Haus</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li><li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<li><strong>Ganze Liegenschaft</strong><span>Änderungen und Zugriffe aller Zugänge dieser Liegenschaft.</span></li><li><strong>Bis zu 500 Einträge</strong><span>Angezeigt werden die jüngsten Vorgänge, neueste zuerst.</span></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -881,7 +881,7 @@ func AuditBlank(data AuditPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.AuditIsFull {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur des Hauses und lässt sich nicht nachträglich ändern.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<p>Sobald jemand sich anmeldet, eine Unterlage öffnet, eine Rolle ändert oder ein Anliegen bearbeitet, steht der Vorgang hier mit Zeitpunkt, Person und Objekt. Der Verlauf ist die Nachweisspur der Liegenschaft und lässt sich nicht nachträglich ändern.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -912,7 +912,7 @@ func AuditBlank(data AuditPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.AuditIsFull {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li><li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li><li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li><li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li><li><strong>Hausdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<li><strong>Anmeldungen</strong><span>Wer sich wann und mit welchem Verfahren angemeldet hat.</span></li><li><strong>Zugänge &amp; Rollen</strong><span>Einladungen, Rollenwechsel und entzogene Berechtigungen.</span></li><li><strong>Unterlagen</strong><span>Hochladen, Ersetzen, Ansehen und Herunterladen von Dokumenten.</span></li><li><strong>Entscheidungen</strong><span>Abstimmungen, Anliegen, Termine und Übergaben.</span></li><li><strong>Liegenschaftsdaten</strong><span>Änderungen an Gebäude, Einheiten und Zahlungsstatus.</span></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -68,7 +68,7 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 	}
 
 	residentBody := authedRequest(t, a, "resident@example.com", "/demo/app/kontakte").Body.String()
-	for _, forbidden := range []string{`id="contact-add"`, "Alter Kontakt", "Inaktive Kontakte", "Hauskontakte pflegen"} {
+	for _, forbidden := range []string{`id="contact-add"`, "Alter Kontakt", "Inaktive Kontakte", "Kontakte der Liegenschaft pflegen"} {
 		if strings.Contains(residentBody, forbidden) {
 			t.Fatalf("resident contacts leaked management UI %q", forbidden)
 		}
@@ -86,7 +86,7 @@ func TestContactsUXUsesOneHelpfulEmptyState(t *testing.T) {
 	if got := strings.Count(body, `class="blank"`); got != 1 {
 		t.Fatalf("blank-state count = %d, want 1", got)
 	}
-	if !strings.Contains(body, "Noch keine Kontakte hinterlegt") || !strings.Contains(body, "Die Hausverwaltung hat für dieses Haus") {
+	if !strings.Contains(body, "Noch keine Kontakte hinterlegt") || !strings.Contains(body, "Die Hausverwaltung hat für diese Liegenschaft") {
 		t.Fatalf("helpful combined empty state missing:\n%s", body)
 	}
 }
