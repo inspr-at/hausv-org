@@ -73,6 +73,11 @@ templ IssueBoardBlock() {
 		.board-blank-facts{display:grid;grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin:0;padding:0;list-style:none}.board-blank-facts li{display:grid;gap:var(--space-1);padding-top:var(--space-3);border-top:2px solid var(--ink)}.board-blank-facts strong{font-size:13px}.board-blank-facts span{color:var(--muted);font-size:12px;line-height:1.5}
 		@media(max-width:1050px){.board-blank{grid-template-columns:minmax(0,1fr)}.board-filter label,.board-filter label.assignee,.board-filter label.sort,.board-filter-actions{grid-column:1/-1}.board-blank-facts{grid-template-columns:minmax(0,1fr)}}
 		@media(max-width:760px){.board-filter{grid-template-columns:minmax(0,1fr);padding:var(--space-3)}.board-summary,.board-quick,.board-tools>summary{padding-inline:var(--space-3)}.issue-card-foot{grid-template-columns:minmax(0,1fr)}.issue-triage-link{width:100%}.board-filter-blank{grid-template-columns:minmax(0,1fr);justify-items:start;padding:var(--space-4)}.board-filter-blank .button{width:100%}.board-blank-main,.board-blank-side{padding:var(--space-4)}.board-blank-actions{display:grid}.board-blank-actions .button{width:100%}}
+		.board-panel{max-width:none;min-width:0;gap:24px}.board-toolbar{box-shadow:none}.board-summary,.board-quick,.board-tools>summary{padding:16px}.board-quick{background:var(--panel)}.board-quick a{min-height:40px;padding:8px 16px;font-weight:600}.board-filter{gap:16px;padding:16px}.board-filter :is(input,select){min-height:48px}.board-filter-actions button{min-height:48px;background:var(--gold);color:var(--nav);border-color:var(--gold)}
+		.board-columns{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(288px,1fr);gap:16px;min-width:0;max-width:100%;overflow-x:auto;padding:0 0 16px;align-items:start;overscroll-behavior-x:contain}.board-column{min-width:0;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper)}.board-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:16px}.board-column-head h2{font-size:22px;line-height:1.1}.board-column .issue-list{gap:16px}.board-column-empty{padding:24px 8px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-align:center}
+		.board-column .issue-work-card{gap:16px;padding:16px;border:1px solid var(--line);background:var(--panel);box-shadow:none}.issue-work-card .issue-card-head{grid-template-columns:minmax(0,1fr);gap:8px}.issue-work-card h3{font-size:23px;line-height:1.15}.issue-work-card .issue-meta{justify-content:flex-start;gap:8px}.issue-work-card .issue-location{margin:0;font-size:12px;overflow-wrap:anywhere}.issue-work-card .issue-card-foot{display:flex;justify-content:flex-end;padding-top:0;border:0}.issue-work-card .issue-triage-link{min-height:40px;width:100%;color:var(--nav)}.issue-work-card .issue-next-step{padding:8px;font-size:12px}.issue-work-people{display:flex;align-items:center;gap:8px;min-width:0}.issue-work-people>span:last-child{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.issue-work-people strong{font-size:11px;font-weight:600}.issue-work-people small{color:var(--muted);font-size:11px}.issue-assignee-avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--paper);font-size:11px;font-weight:700}.issue-priority{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.issue-priority i{width:8px;height:8px;border-radius:50%;background:var(--soft)}.issue-priority[data-priority=Hoch] i,.issue-priority[data-priority=Dringend] i{background:var(--gold)}.issue-priority[data-priority=Dringend] i{outline:1px solid var(--gold-ink);outline-offset:2px}
+		@media(max-width:760px){.board-columns{grid-auto-flow:row;grid-template-columns:minmax(0,1fr);overflow:visible;padding:0}.board-column{padding:16px}.board-quick a,.issue-work-card .issue-triage-link{min-height:48px}}
+
 	</style>
 }
 
@@ -133,9 +138,19 @@ templ IssueBoardBody(data IssueBoardPageData) {
 			@IssueBoardToolbar(data)
 		}
 		if len(data.Issues) > 0 {
-			<div class="issue-list">
-				for _, issue := range data.Issues {
-					@IssueWorkCard(issue)
+			<div class="board-columns" role="region" aria-label="Anliegen nach Status" tabindex="0">
+				for index, column := range issueBoardColumns(data.Filters.StatusOptions, data.Issues) {
+					<section class="board-column" aria-labelledby={ "board-column-" + strconv.Itoa(index) }>
+						<header class="board-column-head"><h2 id={ "board-column-" + strconv.Itoa(index) }>{ column.Status }</h2><span class="pill">{ len(column.Issues) }</span></header>
+						<div class="issue-list">
+							for _, issue := range column.Issues {
+								@IssueWorkCard(issue)
+							}
+							if len(column.Issues) == 0 {
+								<p class="board-column-empty">Keine Anliegen</p>
+							}
+						</div>
+					</section>
 				}
 			</div>
 		} else if data.TotalIssueCount > 0 {
@@ -204,23 +219,25 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 
 templ IssueWorkCard(issue view.IssueView) {
 	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID }>
-		<header class="issue-card-head"><div><h3>{ issue.Title }</h3><p class="issue-location">{ issue.Author } · { issue.Location }
+		<header class="issue-card-head"><h3>{ issue.Title }</h3><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
+		<p class="issue-location">{ issue.Location }</p>
+		<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
+		<div class="issue-work-people"><span class="issue-assignee-avatar" aria-hidden="true">{ issueBoardInitials(issue) }</span><span>
 			if issue.HasAssignee {
-				<span title={ issue.AssigneeEmail }> · Zuständig: { issueAssigneeLabel(issue) }</span>
+				<strong title={ issue.AssigneeEmail }>Zuständig: { issueAssigneeLabel(issue) }</strong>
+			} else {
+				<strong>Noch nicht zugewiesen</strong>
 			}
-			<span> · { issue.CreatedAt }</span></p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.Status }</span><span class="pill">{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
-		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>
-		<p class="issue-next-step">{ issue.NextStep }</p>
+			<small title={ issue.CreatedAt }>Gemeldet: { issueBoardAge(issue) } · { issue.Author }</small>
+		</span></div>
 		if issue.HasServiceAppointment {
 			<p class="issue-proposal"><strong>Termin:</strong> { issue.ServiceAppointment }</p>
 		}
 		if issue.HasServiceProposal {
 			<p class="issue-proposal"><strong>Hinweis:</strong> { issue.ServiceProposal }</p>
 		}
-		<div class="issue-card-foot">
-			<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
-			<a class="button primary issue-triage-link" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID) }>Bearbeiten</a>
-		</div>
+		<p class="issue-next-step">{ issue.NextStep }</p>
+		<div class="issue-card-foot"><a class="button primary issue-triage-link" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID) }>Bearbeiten</a></div>
 	</article>
 }
 
@@ -483,3 +500,27 @@ func issueTriageMoreSummary(issue view.IssueView) string {
 	}
 	return label
 }
+
+// Use the handler's status order and retain every filtered issue in its lane.
+type issueBoardColumn struct { Status string; Issues []view.IssueView }
+func issueBoardColumns(options []view.SelectOption, issues []view.IssueView) []issueBoardColumn {
+	columns := make([]issueBoardColumn, 0, len(options))
+	indices := map[string]int{}
+	for _, option := range options {
+		if option.Value == "" { continue }
+		if _, exists := indices[option.Value]; exists { continue }
+		indices[option.Value] = len(columns)
+		columns = append(columns, issueBoardColumn{Status: option.Value})
+	}
+	for _, issue := range issues {
+		index, exists := indices[issue.Status]
+		if !exists { index = len(columns); indices[issue.Status] = index; columns = append(columns, issueBoardColumn{Status: issue.Status}) }
+		columns[index].Issues = append(columns[index].Issues, issue)
+	}
+	return columns
+}
+func issueBoardInitials(issue view.IssueView) string {
+	if !issue.HasAssignee { return "–" }
+	return contactInitials(issueAssigneeLabel(issue))
+}
+func issueBoardAge(issue view.IssueView) string { if issue.Age != "" { return issue.Age }; return issue.CreatedAt }

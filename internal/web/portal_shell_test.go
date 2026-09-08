@@ -50,7 +50,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"AnnouncementsPage", AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: assetVersion, CanManageAnnouncements: true}), "data-templ-portal", []string{"announcements.js", "attachments.js"}},
 		{"AuditPage", AuditPage(AuditPageData{Portal: portal}), "data-templ-audit", nil},
 		{"BallotsPage", BallotsPage(BallotsPageData{Portal: portal, AssetVersion: assetVersion, CanManageVotes: true}), "data-templ-ballots", []string{"announcements.js", "attachments.js"}},
-		{"ContactsPage", ContactsPage(ContactsPageData{Portal: portal, AssetVersion: assetVersion, CanManageContacts: true}), "data-templ-contacts", nil},
+		{"ContactsPage", ContactsPage(ContactsPageData{Portal: portal, AssetVersion: assetVersion, CanManageContacts: true}), "data-templ-contacts", []string{"contacts.js"}},
 		{"DocumentsPage", DocumentsPage(DocumentsPageData{Portal: portal, AssetVersion: assetVersion, CanManageDocuments: true}), "data-templ-documents", []string{"announcements.js", "attachments.js"}},
 		{"EnergyPage", EnergyPage(EnergyPageData{Portal: portal, CanManageEnergy: true, HasMetrics: true}), "data-templ-energy", []string{"energy-flow.js"}},
 		{"EventsPage", EventsPage(EventsPageData{Portal: portal, AssetVersion: assetVersion, CanManageEvents: true}), "data-templ-events", []string{"announcements.js", "attachments.js"}},
@@ -87,7 +87,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if appScript < 0 || strings.Count(html, `/assets/app.js?v=`) != 1 {
 				t.Fatalf("app.js must be loaded exactly once")
 			}
-			// The script set must match the legacy route EXACTLY. A superset check
+			// The script set must match each route contract EXACTLY. A superset check
 			// passes a page that gained a script, and a stray issues.js binds
 			// listeners to markup that was never written for it.
 			var loaded []string
@@ -216,8 +216,11 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			if page.action != "" && !strings.Contains(header, page.action) {
 				t.Errorf("header action %q is missing", page.action)
 			}
-			if strings.Contains(header, `class="button primary"`) {
-				t.Errorf("header action is filled; header actions must use outline .button")
+			// Header actions stay ghost buttons on every landing (portal chrome
+			// rule, enforced by qa-main-flows as well); primary weight belongs to
+			// the dialog or form the action opens.
+			if got := strings.Count(header, `class="button primary"`); got != 0 {
+				t.Errorf("primary header actions = %d, want 0", got)
 			}
 
 			mobile := portalTestElement(html, `class="mobile-head"`, "</header>")
@@ -655,5 +658,43 @@ func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	html = renderComponent(t, PortalPage(portal))
 	if !strings.Contains(html, `class="side-map-hero side-map-hero-empty"`) || !strings.Contains(html, "Standort nicht hinterlegt") {
 		t.Errorf("without coordinates the hero collapses to the placeholder band")
+	}
+}
+
+// Grouping must retain the handler's order inside each status and never drop
+// issues, including a newly introduced status not yet in the filter options.
+func TestIssueBoardColumnsPreserveIssuesAndStatusOrder(t *testing.T) {
+	options := []view.SelectOption{{Value: "", Label: "Alle Status"}, {Value: "Neu"}, {Value: "In Bearbeitung"}, {Value: "Erledigt"}}
+	issues := []view.IssueView{
+		{ID: "first", Title: "Erste Meldung", Status: "Neu", Age: "vor 2 T."},
+		{ID: "working", Title: "Arbeit läuft", Status: "In Bearbeitung"},
+		{ID: "second", Title: "Zweite Meldung", Status: "Neu"},
+		{ID: "future", Title: "Weiterer Status", Status: "Wartet"},
+	}
+	columns := issueBoardColumns(options, issues)
+	var statuses []string
+	var ids [][]string
+	for _, column := range columns {
+		statuses = append(statuses, column.Status)
+		var lane []string
+		for _, issue := range column.Issues {
+			lane = append(lane, issue.ID)
+		}
+		ids = append(ids, lane)
+	}
+	if !reflect.DeepEqual(statuses, []string{"Neu", "In Bearbeitung", "Erledigt", "Wartet"}) ||
+		!reflect.DeepEqual(ids, [][]string{{"first", "second"}, {"working"}, nil, {"future"}}) {
+		t.Fatalf("board lost status order or issues: statuses=%v ids=%v", statuses, ids)
+	}
+	body := renderComponent(t, IssueBoardBody(IssueBoardPageData{
+		Issues: issues, TotalIssueCount: len(issues), Filters: view.IssueBoardFilterView{StatusOptions: options},
+	}))
+	for _, issue := range issues {
+		if strings.Count(body, `id="issue-`+issue.ID+`"`) != 1 || !strings.Contains(body, `href="/app/anliegen/board/`+issue.ID+`"`) {
+			t.Errorf("issue %s must appear exactly once and keep its edit action", issue.ID)
+		}
+	}
+	if !strings.Contains(body, `Gemeldet: vor 2 T.`) || !strings.Contains(body, `Keine Anliegen`) {
+		t.Error("board must show actual age and distinguish an empty status")
 	}
 }

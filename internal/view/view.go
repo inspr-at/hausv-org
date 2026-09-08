@@ -279,6 +279,7 @@ type IssueView struct {
 	LocationType            string
 	LocationDetail          string
 	CreatedAt               string
+	Age                     string
 	CanComment              bool
 	CanClose                bool
 	CanReopen               bool

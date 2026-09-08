@@ -48,7 +48,7 @@ func TestContactsUXPrioritizesOfficialActionsAndProgressiveManagement(t *testing
 
 	body := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()
 	quick := strings.Index(body, "Schnell erreichen")
-	managed := strings.Index(body, "Weitere wichtige Kontakte")
+	managed := strings.Index(body, "Weitere Kontakte")
 	directory := strings.Index(body, "Freiwilliges Verzeichnis")
 	if quick < 0 || managed <= quick || directory <= managed {
 		t.Fatalf("contact section order quick=%d managed=%d directory=%d", quick, managed, directory)

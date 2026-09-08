@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.6",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Kontakte, Dokumente, Anliegen und Übergaben neu gestaltet.",
+			Intro:    "Kontakte und Dokumente sind klarer gegliedert, der Assistent zum Melden eines Anliegens und das Triage-Board folgen dem neuen Aufbau, und Übergaben werden in einem aufgeräumten Dialog angelegt.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.5",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

@@ -4897,8 +4897,8 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 		t.Fatalf("closed issue board should not expose service assignment controls or internal gate language:\n%s", board)
 	}
 	contactPage := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()
-	if !strings.Contains(contactPage, "Dienstleister-Zugänge sind derzeit nicht verfügbar") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
-		t.Fatalf("closed contact UI still offers service-provider creation:\n%s", contactPage)
+	if strings.Contains(contactPage, "Dienstleister-Zugänge sind derzeit nicht verfügbar") || strings.Contains(contactPage, "<option value=\"Dienstleister\"") {
+		t.Fatalf("closed contact UI exposes service-provider creation or internal gate copy:\n%s", contactPage)
 	}
 	usersPage := authedRequest(t, a, "manager@example.com", "/demo/app/settings/users").Body.String()
 	if !strings.Contains(usersPage, "Dienstleister-Zugänge können noch nicht") || strings.Contains(usersPage, "<option value=\"Dienstleister\"") {

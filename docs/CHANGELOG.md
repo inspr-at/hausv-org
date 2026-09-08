@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.6] - 2026-09-08
+
+### Neu
+
+- Kontakte, Dokumente, Anliegen-Assistent, Triage-Board und Übergaben nach den abgenommenen Entwürfen neu gestaltet; „Kontakt hinzufügen“ ohne Fülltexte.
+
 ## [1.9.5] - 2026-09-08
 
 ### Neu

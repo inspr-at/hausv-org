@@ -705,7 +705,7 @@ async function ensureDialogContact() {
     await form.locator('select[name="kind"]').selectOption({ index: 1 });
     await form.locator('input[name="name"]').fill('QA Dialogkontakt');
     await form.locator('input[name="phone"]').fill('+43 316 111111');
-    await form.getByRole('button', { name: 'Kontakt anlegen' }).click();
+    await form.getByRole('button', { name: 'Kontakt hinzufügen', exact: true }).click();
     await page.waitForURL(/\/app\/kontakte/);
   }
   await closeContext(context);
@@ -751,6 +751,9 @@ async function assertBoundedAdminDialogs() {
     // (contacts.templ:228); .contact-edit-dialog was the legacy renderer's class.
     const contactDialog = page.locator('dialog.dialog[open]');
     await contactDialog.waitFor({ state: 'visible' });
+    // Exercise the full editor, including the now-collapsed note/profile fields,
+    // so every viewport still verifies a scrolling body and a stationary footer.
+    await contactDialog.locator('details.contact-add-optional').evaluate((element) => { element.open = true; });
     const contactGeometry = await contactDialog.evaluate(async (dialog, mobile) => {
       const head = dialog.querySelector(':scope > .dialog-head');
       const body = dialog.querySelector(':scope > .dialog-body');
