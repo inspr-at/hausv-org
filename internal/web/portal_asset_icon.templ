@@ -1,0 +1,18 @@
+package web
+
+import "strings"
+
+// Render the checked-in Lucide artwork byte-for-byte. The wrapper hides these
+// decorative icons from assistive technology without editing the asset itself.
+templ PortalAssetIcon(name string) {
+	<span aria-hidden="true" style="display:contents">@templ.Raw(portalAssetIconSVG(name))</span>
+}
+
+func portalAssetIconSVG(name string) string {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if !IsLucideIcon(name) {
+		return ""
+	}
+	contents, _ := Assets.ReadFile("assets/icons/lucide/" + name + ".svg")
+	return string(contents)
+}

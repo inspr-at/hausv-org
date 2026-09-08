@@ -204,7 +204,7 @@ templ BallotCard(ballot view.BallotView) {
 			</div></div>
 		}
 		if ballot.HasProtocol {
-			<a class="button small vote-protocol" href={ templ.SafeURL(ballot.ProtocolURL) }><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"></path></svg><span>Protokoll herunterladen</span></a>
+			<a class="button small vote-protocol" href={ templ.SafeURL(ballot.ProtocolURL) }>@PortalAssetIcon("download")<span>Protokoll herunterladen</span></a>
 		}
 		</footer>
 	</article>

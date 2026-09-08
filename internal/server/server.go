@@ -1047,7 +1047,7 @@ func tenantBrandMarkSVG(icon string) string {
 // directly — a test that fakes r.SetPathValue cannot catch a wrong pattern.
 func (a *app) routes() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("GET /assets/", http.FileServerFS(web.Assets))
+	mux.Handle("GET /assets/", staticAssetHandler())
 	mux.HandleFunc("GET /favicon.svg", favicon)
 	mux.HandleFunc("GET /favicon.ico", favicon)
 	mux.HandleFunc("GET /tenant-hero/{tenant}", a.tenantHeroImage)

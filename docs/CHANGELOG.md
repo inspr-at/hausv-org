@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.10] - 2026-09-08
+
+### Verbessert
+
+- Portal: Schrift und Grafiken werden im Browser zwischengespeichert und die Überschriftenschrift vorgeladen; Logo und Überschriften springen beim Seitenwechsel nicht mehr.
+- Parkplatz & Laden: klare Grafik aus dem Bestand statt der beschädigten Illustration; Symbole im Anliegen-Assistenten, bei Rechten und Benutzern vereinheitlicht.
+
 ## [1.9.9] - 2026-09-08
 
 ### Verbessert
