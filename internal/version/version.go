@@ -95,7 +95,7 @@ func Notes() []Note {
 			Date:     "8. September 2026",
 			Kind:     "Verbessert",
 			Headline: "Ruhigere Navigation: kein Aufblitzen, klare Aufklapper.",
-			Intro:    "Beim Wechsel zwischen Seiten bleibt die Navigation durchgehend ruhig, Menüeinträge reagieren weich auf die Maus, Auf- und Zuklappen zeigt ein rundes, drehendes Symbol, und das Panel zum Wechseln der Liegenschaft öffnet vollständig sichtbar.",
+			Intro:    "Beim Wechsel zwischen Seiten bleibt die Navigation durchgehend ruhig, Menüeinträge reagieren weich auf die Maus, Auf- und Zuklappen zeigt ein rundes, drehendes Symbol, und das Panel zum Wechseln der Liegenschaft öffnet vollständig sichtbar. Die Mitarbeiter-Karte in den Verwaltungs-Einstellungen hat einheitliche Felder und klare Abstände.",
 			Items:    nil,
 		},
 		{
