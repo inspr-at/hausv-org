@@ -8,7 +8,12 @@ package web
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
+import "github.com/inspr-at/hausv-org/internal/view"
+
 type HelpPageData struct {
+	EnergyHelp              bool
+	ShowVotes               bool
+	ManagerContacts         []view.ContactCardView
 	Portal                  PortalPageData
 	ConnectorAvailable      bool
 	ConnectorState          string
@@ -60,9 +65,16 @@ func HelpPage(data HelpPageData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = PortalShell(data.Portal, "Hilfe", HelpContent(data)).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if data.EnergyHelp {
+				templ_7745c5c3_Err = PortalShell(data.Portal, "Hilfe", HelpContent(data)).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = PortalShell(data.Portal, "Hilfe", GeneralHelpContent(data)).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
 			return nil
 		})
@@ -137,7 +149,7 @@ func HelpContext() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<span class=\"help-mode\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<a href=\"/app/hilfe\">Allgemeine Hilfe</a> <span class=\"help-mode\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -211,7 +223,7 @@ func HelpBody(data HelpPageData) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorState)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 53, Col: 123}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 63, Col: 123}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -224,7 +236,7 @@ func HelpBody(data HelpPageData) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorDetail)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 53, Col: 159}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 63, Col: 159}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -247,7 +259,7 @@ func HelpBody(data HelpPageData) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorLastSeen)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 57, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 67, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -266,7 +278,7 @@ func HelpBody(data HelpPageData) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.HomeAssistantVersion)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 60, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 70, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -284,7 +296,7 @@ func HelpBody(data HelpPageData) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.ConnectorEntityCount)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 62, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 72, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -307,7 +319,7 @@ func HelpBody(data HelpPageData) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(helpConnectorAction(data.ConnectorConnected))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 67, Col: 183}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 77, Col: 183}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -340,7 +352,7 @@ func HelpBody(data HelpPageData) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingExpires)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 77, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 87, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -353,7 +365,7 @@ func HelpBody(data HelpPageData) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 78, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 88, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -366,7 +378,7 @@ func HelpBody(data HelpPageData) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(data.PairingCode)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 80, Col: 152}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help.templ`, Line: 90, Col: 152}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {

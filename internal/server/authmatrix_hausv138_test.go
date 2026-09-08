@@ -25,7 +25,7 @@ func TestEveryAppRouteRefusesUnauthenticated(t *testing.T) {
 	type route struct{ method, path string }
 	routes := []route{
 		{"GET", "/demo/app"},
-		{"GET", "/demo/app/hilfe"}, {"POST", "/demo/app/hilfe/connector/pairing"}, {"POST", "/demo/app/hilfe/connector/revoke"},
+		{"GET", "/demo/app/hilfe"}, {"GET", "/demo/app/hilfe/energie"}, {"POST", "/demo/app/hilfe/energie"}, {"POST", "/demo/app/hilfe/connector/pairing"}, {"POST", "/demo/app/hilfe/connector/revoke"},
 		{"GET", "/demo/app/announcements"}, {"POST", "/demo/app/announcements"},
 		{"POST", "/demo/app/announcements/edit"}, {"POST", "/demo/app/announcements/delete"},
 		{"GET", "/demo/app/events"}, {"POST", "/demo/app/events"},

@@ -193,6 +193,7 @@ func generate(out string) error {
 		"textbausteine.json": templates, "events.json": buildEvents(houses),
 		"announcements.json": buildAnnouncements(houses), "org.json": buildOrg(),
 		"annual-statement.json": buildAnnualStatement(houses[0]),
+		"documents.json":        buildDocuments(houses),
 	}
 	for name, value := range files {
 		if err := writeJSON(filepath.Join(out, name), value); err != nil {

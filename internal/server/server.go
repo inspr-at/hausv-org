@@ -1106,6 +1106,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
 	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
+	mux.HandleFunc("GET /app/hilfe/energie", a.page(a.energyHelpPage))
+	mux.HandleFunc("POST /app/hilfe/energie", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/pairing", a.action(a.startAppHomeConnectorPairing))
 	mux.HandleFunc("POST /app/hilfe/connector/revoke", a.action(a.revokeAppHomeConnector))
 	mux.HandleFunc("GET /app/zuhause/onboarding", a.page(a.withEnergyLifecycleOperation(a.homeOnboarding)))

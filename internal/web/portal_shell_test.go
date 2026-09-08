@@ -220,6 +220,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 		{"/app/audit", "Verlauf", "Einstellungen", false, AuditPage(AuditPageData{Portal: portal, AuditPageTitle: "Verlauf", AuditLede: "Änderungen nachvollziehen."})},
 		{"/app/settings", "Einstellungen", "", false, SettingsHubPage(SettingsHubPageData{Portal: portal})},
 		{"/app/hilfe", "Hilfe", "", false, HelpPage(HelpPageData{Portal: portal})},
+		{"/app/hilfe/energie", "Hilfe", "", false, HelpPage(HelpPageData{Portal: portal, EnergyHelp: true})},
 	}
 
 	for _, page := range landings {
@@ -355,7 +356,7 @@ func TestDenseIssueLocationsShareSpaceAndStayBounded(t *testing.T) {
 		".issues-card table{table-layout:fixed}",
 		".issues-card th:nth-child(3),.issues-card td:nth-child(3){width:auto}",
 		".issues-card th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-		".place-text{display:-webkit-box;overflow:hidden;overflow-wrap:normal;word-break:normal;hyphens:auto;-webkit-box-orient:vertical;-webkit-line-clamp:2}",
+		".place-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
 	} {
 		if !strings.Contains(html, rule) {
 			t.Errorf("dense issue table is missing bounded location rule %q", rule)
@@ -721,5 +722,54 @@ func TestIssueBoardColumnsPreserveIssuesAndStatusOrder(t *testing.T) {
 	}
 	if !strings.Contains(body, `Gemeldet: vor 2 T.`) || !strings.Contains(body, `Keine Anliegen`) {
 		t.Error("board must show actual age and distinguish an empty status")
+	}
+}
+
+func TestResidentOverviewUsesFullWidthAndOptionalOrganisationBlock(t *testing.T) {
+	portal := PortalPageData{Title: "Portal", HouseName: "Park", Role: "Eigentümer", CanUseResidentAreas: true,
+		Modules: PortalModules{Issues: true, Events: true, Announcements: true},
+		Issues:  []view.IssueView{{Title: "Testanliegen", Location: "Eigene Einheit · Top 1"}},
+		Shell:   PortalShellData{Ready: true},
+	}
+	body := renderComponent(t, PortalPage(portal))
+	if !strings.Contains(body, `<span class="issue-location">Eigene Einheit · Top 1</span>`) {
+		t.Fatal("unit label must remain a single item")
+	}
+	calm := renderComponent(t, PortalCalm(portal))
+	issues, updates, events, announcements := strings.Index(calm, `class="module"`), strings.Index(calm, `class="calm-updates"`), strings.Index(calm, `class="module events"`), strings.Index(calm, `class="module announcements"`)
+	if issues < 0 || updates <= issues || events <= updates || announcements <= events {
+		t.Fatal("expected issues left, then events and announcements in shared right column")
+	}
+	for _, organisation := range []bool{false, true} {
+		portal.Shell.IsOrganisationMember = organisation
+		html := renderComponent(t, PortalSidebar(portal))
+		names := []string{}
+		for _, match := range regexp.MustCompile(`data-navigation-block="([^"]+)"`).FindAllStringSubmatch(html, -1) {
+			names = append(names, match[1])
+		}
+		want := []string{"house-card", "map", "house-navigation", "release"}
+		if organisation {
+			want = append([]string{"organisation-identity", "organisation"}, want...)
+		}
+		if !reflect.DeepEqual(names, want) {
+			t.Fatalf("organisation=%v blocks=%v want=%v", organisation, names, want)
+		}
+		if !organisation && strings.Contains(html, `class="portal-organisation-identity"`) {
+			t.Fatal("empty organisation header rendered")
+		}
+	}
+	css, err := os.ReadFile("assets/portal-shell.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`.portal-home-landing.calm-main .portal-section-content{width:min(var(--portal-content-width),100%)`,
+		`@media(min-width:1100px){.calm-column .disclosures{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}`,
+		`.calm-column .issue-location{white-space:nowrap}`,
+		`.nav[data-two-level="false"]>.nav-house-label{margin-top:0;padding-top:0;border-top:0}`,
+	} {
+		if !strings.Contains(string(css), want) {
+			t.Errorf("missing resident layout contract %s", want)
+		}
 	}
 }

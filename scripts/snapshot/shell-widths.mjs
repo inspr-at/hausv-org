@@ -30,7 +30,7 @@ const ROUTES = [
   ['portal', '/app'], ['announcements', '/app/announcements'], ['events', '/app/events'],
   ['issues', '/app/anliegen'], ['issue-board', '/app/anliegen/board'],
   ['documents', '/app/dokumente'], ['ballots', '/app/abstimmungen'],
-  ['handovers', '/app/uebergaben'], ['contacts', '/app/kontakte'], ['help', '/app/hilfe'], ['parking', '/app/parking'],
+  ['handovers', '/app/uebergaben'], ['contacts', '/app/kontakte'], ['help', '/app/hilfe'], ['energy-help', '/app/hilfe/energie'], ['parking', '/app/parking'],
   ['onboarding', '/app/zuhause/onboarding'],
   ['settings', '/app/settings'], ['settings-profile', '/app/settings/profile'],
   ['settings-notifications', '/app/settings/notifications'],

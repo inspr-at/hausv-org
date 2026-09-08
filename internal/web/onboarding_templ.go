@@ -710,7 +710,7 @@ func OnboardingStepMappings(data OnboardingPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</p></header><form class=\"onboarding-body onboarding-form\" method=\"post\" action=\"/app/zuhause/onboarding\"><section class=\"energy-mapping-guide\" aria-labelledby=\"energy-mapping-guide-title\"><header><div><span class=\"onboarding-legend\">Messwert-Setup</span><h2 id=\"energy-mapping-guide-title\">Was bedeutet welcher Wert?</h2></div><small>Alles bleibt nur gelesen.</small></header><div class=\"energy-mapping-slots\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, " <a href=\"/app/hilfe/energie\">Hilfe zur Energieverbindung</a></p></header><form class=\"onboarding-body onboarding-form\" method=\"post\" action=\"/app/zuhause/onboarding\"><section class=\"energy-mapping-guide\" aria-labelledby=\"energy-mapping-guide-title\"><header><div><span class=\"onboarding-legend\">Messwert-Setup</span><h2 id=\"energy-mapping-guide-title\">Was bedeutet welcher Wert?</h2></div><small>Alles bleibt nur gelesen.</small></header><div class=\"energy-mapping-slots\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

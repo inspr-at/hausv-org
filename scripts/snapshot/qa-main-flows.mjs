@@ -64,6 +64,7 @@ const portalChromeRoutes = [
   { path: '/app/audit', hero: false, action: 'Einstellungen' },
   { path: '/app/settings', hero: false },
   { path: '/app/hilfe', hero: false },
+  { path: '/app/hilfe/energie', hero: false },
 ];
 
 const executableCandidates = [

@@ -162,6 +162,10 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		}
 	}
 
+	documents, err := loadDocumentFixture(dir, options.DocumentDir, houses)
+	if err != nil {
+		return SeedResult{}, err
+	}
 	statement, err := loadStatementFixture(dir, houses, options.DocumentDir)
 	if err != nil {
 		return SeedResult{}, err
@@ -225,6 +229,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	}
 
 	if err := upsertHouseFixtures(ctx, database, houses, identities, intake, events, announcements, org); err != nil {
+		return SeedResult{}, err
+	}
+	if err := seedDocuments(ctx, database, documents, identities, options.DocumentDir); err != nil {
 		return SeedResult{}, err
 	}
 	if statement != nil {

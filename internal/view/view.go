@@ -1933,7 +1933,7 @@ func DocumentUnitAuditLabel(unitID string) string {
 
 func DocumentVisibilityOptions(selected string) []SelectOption {
 	selected = store.NormalizeDocumentVisibility(selected)
-	values := []string{store.DocumentVisibilityAllResidents, store.DocumentVisibilityOwnersOnly, store.DocumentVisibilityManagerOnly}
+	values := []string{store.DocumentVisibilityAllResidents, store.DocumentVisibilityOwnersOnly, store.DocumentVisibilityBoardOnly, store.DocumentVisibilityManagerOnly}
 	options := make([]SelectOption, 0, len(values))
 	for _, value := range values {
 		options = append(options, SelectOption{Value: value, Label: DocumentVisibilityLabel(value), Selected: selected == value})
@@ -1947,6 +1947,8 @@ func DocumentVisibilityLabel(visibility string) string {
 		return "Alle Bewohner"
 	case store.DocumentVisibilityOwnersOnly:
 		return "Nur Eigentümer"
+	case store.DocumentVisibilityBoardOnly:
+		return "Nur Beirat und Verwaltung"
 	case store.DocumentVisibilityManagerOnly:
 		return "Nur Verwaltung"
 	default:
@@ -1958,7 +1960,7 @@ func DocumentVisibilityClass(visibility string) string {
 	switch store.NormalizeDocumentVisibility(visibility) {
 	case store.DocumentVisibilityAllResidents:
 		return "ok"
-	case store.DocumentVisibilityOwnersOnly:
+	case store.DocumentVisibilityOwnersOnly, store.DocumentVisibilityBoardOnly:
 		return "unread"
 	case store.DocumentVisibilityManagerOnly:
 		return "role-admin"

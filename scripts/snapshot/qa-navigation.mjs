@@ -14,11 +14,11 @@ const browser = await chromium.launch({ headless: true, ...(executablePath ? { e
 const measurements = [], failures = [];
 const expectedBlocks = ['organisation-identity', 'organisation', 'house-card', 'map', 'house-navigation', 'release'];
 
-async function login(context) {
+async function login(context, email) {
   const page = await context.newPage();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
   await page.locator('details:has(form[action$="/auth/request"])').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
-  await page.locator('input[name="email"]').fill('admin@example.com');
+  await page.locator('input[name="email"]').fill(email);
   await page.locator('form[action$="/auth/request"] button[type="submit"]').click();
   const link = page.locator('a.dev-link'); await link.waitFor({ state: 'visible' });
   const target = new URL(await link.getAttribute('href'), baseURL), origin = new URL(baseURL);
@@ -47,6 +47,9 @@ async function measure(page, width, sidebarWidth, label) {
     const left = [...document.querySelectorAll('body *')].filter(el => visible(el) && !el.closest('.sr-only,.skip-link,.side-map-tiles') && el.getBoundingClientRect().left < -1).map(el => `${el.tagName}.${el.className}`);
     return {
       box: { x: rect.x, width: rect.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight },
+      organisation: nav.dataset.twoLevel === 'true',
+      navTopGap: nav.getBoundingClientRect().top - rect.top - parseFloat(style.paddingTop),
+      houseLabelGap: parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).marginTop) + parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).paddingTop),
       blocks: blocks.map(el => ({ name: el.dataset.navigationBlock, visible: visible(el), className: el.dataset.navigationBlock === "map" ? "side-map-hero" : el.className })),
       links: links.map(el => ({ href: el.getAttribute('href'), label: el.querySelector('.nav-label')?.textContent.trim() })),
       active: links.filter(el => el.getAttribute('aria-current') === 'page').length,
@@ -57,16 +60,31 @@ async function measure(page, width, sidebarWidth, label) {
       h1Count: document.querySelectorAll('main h1').length, headerVisible: visible(header),
       identity: !!header?.querySelector('.portal-section-identity'),
       badActions: ghost.filter(el => { const s = getComputedStyle(el); return s.backgroundColor !== 'rgba(0, 0, 0, 0)' || parseFloat(s.borderTopWidth) < 1 || el.getBoundingClientRect().height < 40; }).map(el => el.textContent.trim()),
+      calm: (() => {
+        const calm = document.querySelector('.calm-column');
+        if (!visible(calm)) return null;
+        const content = calm.closest('.portal-section-content'), s = getComputedStyle(content);
+        return { width: calm.getBoundingClientRect().width, available: content.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight), columns: getComputedStyle(calm.querySelector('.disclosures')).gridTemplateColumns.split(' ').length, locationsNoWrap: [...calm.querySelectorAll('.issue-location')].every(el => getComputedStyle(el).whiteSpace === 'nowrap') };
+      })(),
       overview: surface.querySelector('.house-header-copy strong')?.textContent.trim(),
       portfolioMap: !!surface.querySelector('.side-map-portfolio'),
       left, overflow: document.documentElement.scrollWidth > innerWidth + 1,
     };
   });
   measurements.push({ label, viewport: width, sidebarWidth, ...result });
+  if (width > 760 && result.calm) {
+    assert(Math.abs(result.calm.width - result.calm.available) < 1, `${label}: summary fills available content width`);
+    assert.equal(result.calm.columns, width >= 1100 && result.calm.width > 700 ? 2 : 1, `${label}: responsive summary columns`);
+    assert(result.calm.locationsNoWrap, `${label}: unit label stays on one line`);
+  }
   assert.equal(result.navigationCount, 1, `${label}: exactly one navigation`);
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
   assert.equal(Math.round(result.barHeight), width <= 760 ? 74 : 40, `${label}: context height`);
-  assert.deepEqual(result.blocks.map(b => b.name), expectedBlocks, `${label}: block order`);
+  assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : expectedBlocks.slice(2), `${label}: block order`);
+  if (!result.organisation) {
+    assert(Math.abs(result.navTopGap) < 1, `${label}: no empty organisation header gap`);
+    assert.equal(result.houseLabelGap, 0, `${label}: house label starts at usual surface padding`);
+  }
   assert(result.blocks.every(b => b.visible), `${label}: all blocks visible`);
   // Mein Zuhause (Energie-Einrichtung, HAUSV-691) carries its own approved page head
   // instead of the shared PortalSectionHeader; every other route has exactly one.
@@ -89,10 +107,14 @@ async function measure(page, width, sidebarWidth, label) {
   return result;
 }
 try {
-  for (const [width, sidebarWidth] of [[1440, 280], [1024, 280], [390, 280], [1440, 240], [1440, 420]]) {
+  const scenarios = [[1440, 280], [1024, 280], [390, 280], [1440, 240], [1440, 420]].map(([width, sidebarWidth]) => ({ width, sidebarWidth, email: 'admin@example.com' }));
+  for (const email of ['owner@example.com', 'resident@example.com']) {
+    for (const width of [1440, 1024, 390]) scenarios.push({ width, sidebarWidth: 280, email });
+  }
+  for (const { width, sidebarWidth, email } of scenarios) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'de-AT', timezoneId: 'Europe/Vienna' });
     try {
-      const page = await login(context);
+      const page = await login(context, email);
       // Set the width through the accessible keyboard control, so persistence is exercised.
       if (width > 760) {
         const handle = page.locator('[data-sidebar-resize]');
@@ -101,7 +123,9 @@ try {
         for (let i = 0; i < Math.abs(sidebarWidth - 280) / 10; i++) await handle.press(key);
       }
       const baseline = await measure(page, width, sidebarWidth, 'Hausüberblick');
-      assert(baseline.links.length >= 15, 'admin fixture must expose the full navigation');
+      assert.equal(baseline.organisation, email === 'admin@example.com', `${email}: correct organisation membership`);
+      if (email === 'admin@example.com') assert(baseline.links.length >= 15, 'admin fixture must expose the full navigation');
+      else assert(baseline.links.some(link => link.label === 'Hausüberblick') && baseline.links.some(link => link.label === 'Hilfe'), `${email}: resident navigation is present`);
       for (const [index, item] of baseline.links.entries()) {
         const surface = await navigation(page, width);
         const link = surface.locator('.nav-organisation > a, .nav-house-items > a').nth(index);
@@ -112,7 +136,7 @@ try {
         assert.deepEqual(result.blocks, baseline.blocks, `${item.label}: block visibility/classes changed`);
         assert.deepEqual(result.links, baseline.links, `${item.label}: navigation links changed`);
       }
-    } catch (error) { failures.push(`${width}/${sidebarWidth}: ${error.stack}`); }
+    } catch (error) { failures.push(`${email}/${width}/${sidebarWidth}: ${error.stack}`); }
     finally { await context.close(); }
   }
 } finally {

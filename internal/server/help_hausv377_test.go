@@ -17,7 +17,7 @@ func TestConnectorHelpGuidesNewUsersAndKeepsSetupReachable(t *testing.T) {
 		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
 
-	page := authedRequest(t, a, "admin@example.com", "/demo/app/hilfe")
+	page := authedRequest(t, a, "admin@example.com", "/demo/app/hilfe/energie")
 	if page.Code != http.StatusOK {
 		t.Fatalf("help status = %d, want 200", page.Code)
 	}
@@ -32,7 +32,11 @@ func TestConnectorHelpGuidesNewUsersAndKeepsSetupReachable(t *testing.T) {
 		}
 	}
 
-	pairing := authedFormRequest(t, a, "admin@example.com", "/demo/app/hilfe/connector/pairing", nil)
+	redirect := authedFormRequest(t, a, "admin@example.com", "/demo/app/hilfe/connector/pairing", nil)
+	if redirect.Code != http.StatusTemporaryRedirect || redirect.Header().Get("Location") != "/demo/app/hilfe/energie" {
+		t.Fatalf("pairing redirect: status=%d location=%s", redirect.Code, redirect.Header().Get("Location"))
+	}
+	pairing := authedFormRequest(t, a, "admin@example.com", redirect.Header().Get("Location"), nil)
 	if pairing.Code != http.StatusOK {
 		t.Fatalf("pairing status = %d, want 200", pairing.Code)
 	}
@@ -57,7 +61,7 @@ func TestConnectorHelpGuidesNewUsersAndKeepsSetupReachable(t *testing.T) {
 	if err != nil || !exchanged {
 		t.Fatalf("exchange pairing: exchanged=%v err=%v", exchanged, err)
 	}
-	connected := authedRequest(t, a, "admin@example.com", "/demo/app/hilfe")
+	connected := authedRequest(t, a, "admin@example.com", "/demo/app/hilfe/energie")
 	for _, want := range []string{"Verbunden und aktuell", "Home Assistant 2026.8.1", "12 erkannte Messwerte", "Widerrufen"} {
 		if !strings.Contains(connected.Body.String(), want) {
 			t.Errorf("connected help page missing %q", want)
@@ -70,7 +74,7 @@ func TestConnectorHelpIsReadableButSetupNeedsEnergyPermission(t *testing.T) {
 		Email: "resident@example.com", Role: roleResident,
 		Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 	})
-	page := authedRequest(t, a, "resident@example.com", "/demo/app/hilfe")
+	page := authedRequest(t, a, "resident@example.com", "/demo/app/hilfe/energie")
 	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Hilfe zur Energieverbindung") {
 		t.Fatalf("help must stay readable: status=%d", page.Code)
 	}
@@ -84,7 +88,7 @@ func TestConnectorHelpIsReadableButSetupNeedsEnergyPermission(t *testing.T) {
 }
 
 func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
-	roles := []string{roleAdmin, roleManager, roleOwner, roleResident}
+	roles := []string{roleAdmin, roleManager, roleOwner, roleResident, roleRenter, roleBeirat}
 	for _, role := range roles {
 		t.Run(role, func(t *testing.T) {
 			email := strings.ToLower(role) + "@example.com"
@@ -93,7 +97,7 @@ func TestConnectorHelpTemplUsesSharedPortalForEveryResidentRole(t *testing.T) {
 				Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods(),
 			})
 
-			page := authedRequest(t, a, email, "/demo/app/hilfe")
+			page := authedRequest(t, a, email, "/demo/app/hilfe/energie")
 			if page.Code != http.StatusOK {
 				t.Fatalf("templ help status = %d, want 200", page.Code)
 			}

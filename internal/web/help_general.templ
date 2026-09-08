@@ -1,0 +1,119 @@
+package web
+
+templ GeneralHelpContent(data HelpPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal, PageLabel: "Hilfe", Class: "help-main",
+			Identity: PortalSectionIdentityData{Label: "Im Portal zurechtfinden", Icon: "help"},
+		},
+		PortalSectionTitle("Hilfe"),
+		PortalSectionLede("Die wichtigsten Wege und Antworten für Ihre Liegenschaft."),
+		nil, nil, nil, GeneralHelpBody(data),
+	)
+}
+
+templ GeneralHelpBody(data HelpPageData) {
+	<section class="help-page" data-general-help>
+		<section class="panel help-card" aria-labelledby="help-navigation-title">
+			<h2 id="help-navigation-title">Was finde ich wo</h2>
+			<ul class="help-list">
+				<li><span><a href="/app">Hausüberblick</a>: Ihre offenen Anliegen, nächsten Termine und Neuigkeiten auf einen Blick.</span></li>
+				if data.Portal.Modules.Announcements {
+					<li><span><a href="/app/announcements">Aushang</a>: Mitteilungen und Informationen aus dem Haus lesen.</span></li>
+				}
+				if data.Portal.Modules.Events {
+					<li><span><a href="/app/events">Termine</a>: Versammlungen, Wartungen und gemeinsame Termine ansehen.</span></li>
+				}
+				if data.Portal.Modules.Contacts {
+					<li><span><a href="/app/kontakte">Kontakte</a>: Verwaltung, Notdienste und freigegebene Ansprechpartner finden.</span></li>
+				}
+				if data.Portal.Modules.Documents {
+					<li><span><a href="/app/dokumente">Dokumente</a>: Hausordnung, Protokolle und weitere für Sie freigegebene Unterlagen herunterladen.</span></li>
+				}
+				if data.Portal.Modules.Issues {
+					<li><span><a href="/app/anliegen">Anliegen melden &amp; verfolgen</a>:
+						if data.Portal.CanCreateResidentIssue {
+							Schaden oder Frage mit Ort und Beschreibung melden. Den Bearbeitungsstand und Antworten finden Sie beim Anliegen.
+						} else {
+							Die für Ihre Rolle freigegebenen Anliegen und deren Bearbeitungsstand ansehen.
+						}
+					</span></li>
+				}
+				if data.ShowVotes && data.Portal.Modules.Votes {
+					<li><span><a href="/app/abstimmungen">Abstimmungen</a>:
+						if data.Portal.Role == "Beirat" {
+							Als Beirat erhalten Sie eine lesende Übersicht. Die Stimmabgabe richtet sich nach der Eigentümerberechtigung.
+						} else {
+							Offene Abstimmungen und Fristen prüfen und für Ihre berechtigte Einheit abstimmen.
+						}
+					</span></li>
+				}
+				<li><span><a href="/app/settings">Einstellungen &amp; Benachrichtigungen</a>: Profil, Sichtbarkeit und persönliche Benachrichtigungen verwalten.</span></li>
+				<li><span><strong>Liegenschaft wechseln</strong>: Oben den Namen der Liegenschaft öffnen und ein anderes freigegebenes Haus wählen. Die angezeigten Inhalte und Rechte folgen der Auswahl.</span></li>
+				<li><span><strong>Abmelden</strong>: Oben Ihr Profilmenü öffnen und „Abmelden“ wählen, besonders auf gemeinsam genutzten Geräten.</span></li>
+			</ul>
+		</section>
+		if data.Portal.Shell.IsOrganisationMember || data.Portal.CanManageIssues {
+			<section class="panel help-card" aria-labelledby="help-management-title">
+				<h2 id="help-management-title">Für die Verwaltung</h2>
+				<ul class="help-list">
+					if data.Portal.Shell.IsOrganisationMember {
+						<li><span><a href="/app/verwaltung">Portfolio</a>: Liegenschaften und offene Aufgaben übergreifend im Blick behalten.</span></li>
+						if data.Portal.Shell.ShowInboxNav {
+							<li><span><a href="/app/verwaltung/posteingang">Posteingang</a>: Eingänge sichten, zuordnen und bearbeiten.</span></li>
+						}
+						if data.Portal.Shell.CanManageOrganisationSettings {
+							<li><span><a href="/app/verwaltung/textbausteine">Textbausteine</a>: Wiederkehrende Antworten vorbereiten.</span></li>
+							<li><span><a href="/app/verwaltung/rechte">Rechte</a>: Zugriffe der Mitarbeitenden verwalten.</span></li>
+						} else {
+							<li><span><strong>Textbausteine und Rechte</strong>: Die Organisationsadministration pflegt Antwortvorlagen und Zugriffsrechte.</span></li>
+						}
+					}
+					if data.Portal.CanManageIssues && data.Portal.Modules.Issues {
+						<li><span><a href="/app/anliegen/board">Triage-Board</a>: Anliegen priorisieren, zuständige Personen zuweisen und den Status aktualisieren.</span></li>
+					}
+				</ul>
+			</section>
+		}
+		<section class="panel help-faq" aria-labelledby="help-faq-title">
+			<h2 id="help-faq-title">Häufige Fragen</h2>
+			<details><summary>Wie funktioniert die Anmeldung per E-Mail-Code?
+				@DisclosureChevron()
+			</summary><p>Geben Sie Ihre freigeschaltete E-Mail-Adresse auf der Anmeldeseite ein. Den zugesandten Einmal-Code tragen Sie dort ein. Falls keine Nachricht ankommt, prüfen Sie den Spam-Ordner und die Schreibweise Ihrer Adresse. Bei einem abgelaufenen Code fordern Sie einen neuen an.</p></details>
+			<details><summary>Wie ändere ich Benachrichtigungen?
+				@DisclosureChevron()
+			</summary><p>Unter <a href="/app/settings/notifications">Benachrichtigungen</a> wählen Sie die für Sie verfügbaren Themen und Zustelloptionen. Ihre Auswahl können Sie später wieder ändern.</p></details>
+			<details><summary>Wie ändere ich Profil und Sichtbarkeit?
+				@DisclosureChevron()
+			</summary><p>Unter <a href="/app/settings/profile">Profil</a> pflegen Sie Ihre persönlichen Angaben. Dort legen Sie auch fest, welche Kontaktdaten im Bewohnerverzeichnis erscheinen.</p></details>
+			<details><summary>Wer sieht was?
+				@DisclosureChevron()
+			</summary><p>Der Zugriff richtet sich nach Liegenschaft, Rolle und Freigabe. Dokumente können für alle Bewohner, Eigentümer, Beirat oder nur die Verwaltung bestimmt sein. Die Verwaltung kann alle Dokumente ihres Hauses einsehen. Bei Anliegen bestimmen Rolle und Zuordnung, welche Einträge Sie sehen. Ein Wechsel der Liegenschaft erweitert Ihre Rechte nicht.</p></details>
+		</section>
+		<section class="panel help-card" aria-labelledby="help-contact-title">
+			<h2 id="help-contact-title">Kontakt zur Verwaltung</h2>
+			if len(data.ManagerContacts) > 0 {
+				<ul class="help-list">
+					for _, contact := range data.ManagerContacts {
+						<li><span><strong>{ contact.Name }</strong>
+							if contact.HasEmail {
+								<br/><a href={ templ.SafeURL("mailto:" + contact.Email) }>{ contact.Email }</a>
+							}
+							if contact.HasPhone {
+								<br/><a href={ templ.SafeURL("tel:" + contact.Phone) }>{ contact.Phone }</a>
+							}
+						</span></li>
+					}
+				</ul>
+			} else {
+				<p>Für diese Liegenschaft sind noch keine Kontaktdaten der Verwaltung hinterlegt.</p>
+			}
+			if data.Portal.CanCreateResidentIssue && data.Portal.Modules.Issues {
+				<p><a href="/app/anliegen?new=1#issue-new">Ein Anliegen an die Verwaltung melden</a></p>
+			}
+		</section>
+		if data.Portal.Modules.Energy {
+			<section class="panel help-card"><h2>Hilfe zur Energieverbindung</h2><p>Die Einrichtung von Home Assistant, Connector und Messwerten ist in der <a href="/app/hilfe/energie">Energie-Hilfe</a> beschrieben.</p></section>
+		}
+	</section>
+}
