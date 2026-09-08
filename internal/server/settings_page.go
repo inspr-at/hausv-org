@@ -14,9 +14,7 @@ import (
 )
 
 func (a *app) settingsPortalContext(ac authCtx, title, activePage string) web.PortalPageData {
-	data := a.auditPortalContext(ac, title)
-	data.ActivePage = activePage
-	return data
+	return a.portalBaseData(ac, activePage, title)
 }
 
 func (a *app) renderSettingsComponent(w http.ResponseWriter, r *http.Request, tenantSlug string, component templ.Component) {

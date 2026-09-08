@@ -47,6 +47,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		extraScripts []string
 	}{
 		{"PortalPage", PortalPage(portal), "data-templ-portal", nil},
+		{"PortalOrganisationPage", PortalOrganisationPage(portal, "Portfolio", nil, nil, nil, VerwaltungPlaceholder()), "data-templ-verwaltung", nil},
 		{"AnnouncementsPage", AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: assetVersion, CanManageAnnouncements: true}), "data-templ-portal", []string{"announcements.js", "attachments.js"}},
 		{"AuditPage", AuditPage(AuditPageData{Portal: portal}), "data-templ-audit", nil},
 		{"BallotsPage", BallotsPage(BallotsPageData{Portal: portal, AssetVersion: assetVersion, CanManageVotes: true}), "data-templ-ballots", []string{"announcements.js", "attachments.js", "ballots.js"}},
@@ -56,7 +57,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"EventsPage", EventsPage(EventsPageData{Portal: portal, AssetVersion: assetVersion, CanManageEvents: true}), "data-templ-events", []string{"announcements.js", "attachments.js"}},
 		{"HandoversPage", HandoversPage(HandoversPageData{Portal: portal, AssetVersion: assetVersion}), "data-templ-handovers", []string{"attachments.js"}},
 		{"HelpPage", HelpPage(HelpPageData{Portal: portal, ConnectorAvailable: true, ConnectorConnected: true, CanManageEnergy: true}), "data-templ-help", nil},
-		{"IssueBoardPage", IssueBoardPage(IssueBoardPageData{Portal: portal, AssetVersion: assetVersion, BoardAction: "/app/anliegen/board", CanCreateIssue: true, CanManageAnnouncements: true, TotalIssueCount: 1, OpenIssueCount: 1, UrgentIssueCount: 1, Issues: []view.IssueView{{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}}), "data-templ-issue-board", []string{"attachments.js", "issues.js"}},
+		{"IssueBoardPage", IssueBoardPage(IssueBoardPageData{Portal: portal, AssetVersion: assetVersion, BoardAction: "/app/anliegen/board", CanCreateIssue: true, CanManageAnnouncements: true, TotalIssueCount: 1, OpenIssueCount: 1, UrgentIssueCount: 1, Issues: []view.IssueView{{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}}), "data-templ-issue-board", []string{"attachments.js", "issues.js", "issue-board.js"}},
 		{"IssueTriagePage", IssueTriagePage(IssueTriagePageData{Portal: portal, AssetVersion: assetVersion, TriageStep: "1", Issue: view.IssueView{ID: "1", Title: "Kellerlicht defekt", StatusClass: "status-open"}}), "data-templ-issue-triage", []string{"attachments.js"}},
 		{"HomeSettingsPage", HomeSettingsPage(HomeSettingsPageData{Portal: portal, HouseholdName: "Dachwohnung", HomeTypeLabel: "Wohnung", HasUnitOptions: true, UnitOptions: []view.SelectOption{{Value: "1", Label: "Top 1", Selected: true}}}), "data-templ-settings", nil},
 		{"IssuesPage", IssuesPage(IssuesPageData{Portal: portal, AssetVersion: assetVersion, CanCreateIssue: true, OpenIssueCreate: true}), "data-templ-issues", []string{"attachments.js", "issues.js"}},
@@ -69,6 +70,15 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"BuildingSettingsPage", BuildingSettingsPage(BuildingSettingsPageData{Portal: portal, AssetVersion: assetVersion, BuildingSection: "units", Units: []view.BuildingUnitView{{ID: "1", Label: "Top 1"}}}), "data-templ-settings", []string{"attachments.js", "building-settings.js"}},
 		{"UserSettingsPage", UserSettingsPage(UserSettingsPageData{Portal: portal, AssetVersion: assetVersion, IsAdmin: true}), "data-templ-settings", []string{"users.js"}},
 		{"LiegenschaftenPage", LiegenschaftenPage(portal, nil, "", "", "", 0, 1), "data-templ-liegenschaften", nil},
+		{"IssueResidentDetailPage", IssueResidentDetailPage(IssueResidentDetailPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
+		{"ParkingSettingsPage", ParkingSettingsPage(ParkingSettingsPageData{Portal: portal}), "data-templ-legacy", nil},
+		{"ParkingMonthPage", ParkingMonthPage(ParkingMonthPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
+		{"ParkingAccessSettingsPage", ParkingAccessSettingsPage(ParkingAccessSettingsPageData{Portal: portal}), "data-templ-legacy", nil},
+		{"PortalModuleSettingsPage", PortalModuleSettingsPage(PortalModuleSettingsPageData{Portal: portal}), "data-templ-legacy", nil},
+		{"StructuredExportPage", StructuredExportPage(StructuredExportPageData{Portal: portal}), "data-templ-legacy", nil},
+		{"EnergyDataPage", EnergyDataPage(EnergyDataPageData{Portal: portal}), "data-templ-legacy", nil},
+		{"EbInterfaceImportPage", EbInterfaceImportPage(EbInterfaceImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
+		{"PaymentImportPage", PaymentImportPage(PaymentImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
 	}
 
 	assertPageTableCoversTemplPages(t, pages)
@@ -424,7 +434,7 @@ func TestBaseStylesAreEmittedBeforePageStyles(t *testing.T) {
 	// never reaches, because they live behind a breakpoint or a closed <details>.
 	html := renderComponent(t, SettingsHubPage(SettingsHubPageData{Portal: PortalPageData{Title: "Einstellungen"}}))
 
-	base := strings.Index(html, ".side-brand{")    // only PortalBaseStyles defines this
+	base := strings.Index(html, ".side-map{")      // only PortalBaseStyles defines this
 	page := strings.Index(html, ".settings-main{") // only the settings page block does
 	shellLink := strings.Index(html, `<link rel="stylesheet" href="/assets/portal-shell.css?v=`)
 
@@ -622,7 +632,7 @@ func between(s, start, end string) string {
 }
 
 // HAUSV-680: the location map follows the house label and card, before navigation,
-// only in the desktop sidebar, and the compact card carries no thumbnail.
+// in both navigation surfaces (HAUSV-704); the compact card carries no thumbnail.
 func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	portal := PortalPageData{
 		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
@@ -639,13 +649,13 @@ func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	if label < 0 || card <= label || hero <= card || navigation <= hero {
 		t.Fatalf("sidebar must show label, house card, map, navigation (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
 	}
-	if strings.Count(html, `class="side-map-hero`) != 1 {
-		t.Errorf("the hero belongs to the desktop sidebar only, found %d", strings.Count(html, `class="side-map-hero`))
+	if strings.Count(html, `class="side-map-hero`) != 2 {
+		t.Errorf("desktop sidebar and mobile drawer must each carry the hero, found %d", strings.Count(html, `class="side-map-hero`))
 	}
 	if strings.Contains(html, "house-map-thumb") {
 		t.Errorf("the compact house card must not carry the old thumbnail")
 	}
-	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:8px calc(var(--sidebar-pad-x,16px)*-1) 8px`} {
+	for _, marker := range []string{`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`, `class="side-map-pin"`, `.side-map-hero{position:relative;min-width:0;height:208px;margin:8px calc(var(--sidebar-pad-x,18px)*-1) 8px`} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("hero marker %q missing", marker)
 		}

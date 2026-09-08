@@ -14,6 +14,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 const (
@@ -35,22 +36,7 @@ type ebInterfaceImportPreview struct {
 	Fingerprint   string
 }
 
-type ebInterfaceImportPreviewView struct {
-	Token         string
-	Filename      string
-	SourceVersion string
-	CreatedAt     string
-	InvoiceNumber string
-	IssuerName    string
-	RecipientName string
-	Amount        string
-	IssueDate     string
-	DueDate       string
-	ServicePeriod string
-	ErrorLabels   []string
-	CanStore      bool
-	AlreadyStored bool
-}
+type ebInterfaceImportPreviewView = web.EbInterfaceImportPreviewView
 
 func (a *app) ebInterfaceImportPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	if denyServiceProviderArea(w, ac.role) {
@@ -67,13 +53,12 @@ func (a *app) ebInterfaceImportPage(w http.ResponseWriter, r *http.Request, ac a
 			resultOK = false
 		}
 	}
-	a.render(w, "ebInterfaceImport", a.withBase(ac, map[string]any{
-		"Title":                    "E-Rechnung einlesen",
-		"ActivePage":               "documents",
-		"EBInterfacePreview":       previewView,
-		"EBInterfaceImportMsg":     resultMessage,
-		"EBInterfaceImportOK":      resultOK,
-		"MaxEBInterfaceImportSize": formatBytes(maxEBInterfaceImportBytes),
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.EbInterfaceImportPage(web.EbInterfaceImportPageData{
+		Portal:                   a.settingsPortalContext(ac, "E-Rechnung einlesen", "documents"),
+		EBInterfacePreview:       previewView,
+		EBInterfaceImportMsg:     resultMessage,
+		EBInterfaceImportOK:      resultOK,
+		MaxEBInterfaceImportSize: formatBytes(maxEBInterfaceImportBytes),
 	}))
 }
 

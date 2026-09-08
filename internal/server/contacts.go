@@ -72,10 +72,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) contactsPortalContext(ac authCtx) web.PortalPageData {
-	data := a.eventsPortalContext(ac)
-	data.Title = "Kontakte · " + houseDisplayName(ac.tenant) + " · " + ac.role
-	data.ActivePage = "contacts"
-	return data
+	return a.portalBaseData(ac, "contacts", "Kontakte")
 }
 
 func (a *app) renderContactsTempl(w http.ResponseWriter, r *http.Request, data web.ContactsPageData) {

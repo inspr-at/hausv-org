@@ -2638,54 +2638,22 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	// empty cards, which reads worse than the calm one and loses the reassurance
 	// the old page carried. Calm for everyone when nothing is waiting.
 	portalDense := portalIsDense(role, len(portalIssues), len(portalEvents), signals.unreadAnnouncements)
-	shell := a.portalShellData(&ac)
 
-	a.renderPortalTempl(w, r, web.PortalPageData{
-		Title:                  "Hausüberblick · " + houseDisplayName(tenant) + " · " + role,
-		TenantSlug:             tenant.Slug,
-		HouseName:              houseDisplayName(tenant),
-		Address:                tenant.Address,
-		MapURL:                 tenantMapURL(tenant.Address),
-		HeroImageURL:           tenant.HeroImageURL,
-		BrandIcon:              tenant.BrandIcon,
-		BrandMarkSVG:           tenantBrandMarkSVG(tenant.BrandIcon),
-		Map:                    portalMapForTenant(tenant),
-		GreetingName:           rolePreviewGreetingName(&ac, firstNonEmpty(profile.FirstName, profile.DisplayName())),
-		Today:                  germanDateLong(now.In(time.Local)),
-		DisplayName:            profile.DisplayName(),
-		Initials:               profile.Initials(),
-		Role:                   role,
-		DisplayVersion:         version.DisplayVersion(version.Version),
-		Dense:                  portalDense,
-		Modules:                web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-		CanUseResidentAreas:    canResidentAreas,
-		CanViewEnergy:          modules.Energy && a.canViewEnergy(ac),
-		CanManageIssues:        canManageIssueBoard,
-		CanCreateResidentIssue: canCreateResidentIssue(ac.actor(), ac.resource()),
-		CanSeeParking:          canSeeParking,
-		CanManageHandovers:     canManagePortalHandovers,
-		CanManageUsers:         canManagePortalUsers,
-		CanViewAudit:           modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-		ShowVerwaltungNav:      shell.IsOrganisationMember,
-		ShowInboxNav:           shell.ShowInboxNav,
-		InboxOpenCount:         shell.InboxOpenCount,
-		RolePreview:            rolePreviewPortalData(&ac),
-		RolePreviewChoices:     a.rolePreviewChoices(&ac),
-		Flash:                  rolePreviewFlash(r),
-		HomeIdentity:           a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
-		HasPrimary:             hasPrimary,
-		Primary:                primary,
-		Issues:                 portalIssues,
-		Events:                 portalEvents,
-		Announcements:          portalAnnouncements,
-		UnreadAnnouncements:    signals.unreadAnnouncements,
-		Energy:                 energy,
-		HasEnergy:              hasEnergyCard,
-		Areas:                  portalAreas,
-		Contexts:               shell.PortalContexts,
-		Shell:                  shell,
-		ReleaseNotes:           version.Notes(),
-	})
+	portal := a.portalBaseData(ac, "home", "Hausüberblick")
+	portal.GreetingName = rolePreviewGreetingName(&ac, firstNonEmpty(profile.FirstName, profile.DisplayName()))
+	portal.Today = germanDateLong(now.In(time.Local))
+	portal.Dense = portalDense
+	portal.Flash = rolePreviewFlash(r)
+	portal.HasPrimary = hasPrimary
+	portal.Primary = primary
+	portal.Issues = portalIssues
+	portal.Events = portalEvents
+	portal.Announcements = portalAnnouncements
+	portal.UnreadAnnouncements = signals.unreadAnnouncements
+	portal.Energy = energy
+	portal.HasEnergy = hasEnergyCard
+	portal.Areas = portalAreas
+	a.renderPortalTempl(w, r, portal)
 }
 
 func rolePreviewFlash(r *http.Request) string {
@@ -5667,9 +5635,8 @@ func (a *app) deleteInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.redirectInvite(w, r, status)
 }
 
-// render prepares page data and writes the template. The data preparation
-// reaches into stores (unread announcements, open issues), so this stays in the
-// HTTP layer — see executeTemplate for the part that does not.
+// render serves the remaining public HTML pages (login, landing, legal and
+// Home start). Authenticated routes use PortalDocument through templ.
 func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if data == nil {
 		data = map[string]any{}
@@ -5677,28 +5644,12 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if _, ok := data["AppVersion"]; !ok {
 		data["AppVersion"] = version.BuildLabel()
 	}
-	if _, ok := data["DisplayVersion"]; !ok {
-		data["DisplayVersion"] = version.DisplayVersion(version.Version)
-	}
 	if _, ok := data["AssetVersion"]; !ok {
 		data["AssetVersion"] = version.AssetVersion()
-	}
-	if _, ok := data["ServiceProviderAccessEnabled"]; !ok {
-		data["ServiceProviderAccessEnabled"] = a.serviceAccessEnabled
 	}
 	if tenant, ok := data["Tenant"].(tenantConfig); ok {
 		data["TenantBrandLucideSVG"] = tenantBrandLucideSVG(tenant.BrandIcon)
 	}
-	if _, ok := data["ReleaseNotes"]; !ok {
-		notes := version.Notes()
-		data["ReleaseNotes"] = notes
-		data["HasReleaseNotes"] = len(notes) > 0
-	}
-	enrichCapabilityData(data)
-	// These two read from the announcement and issue stores. They are the reason
-	// render() cannot itself live in a pure rendering package.
-	a.enrichUnreadAnnouncementData(data, nil, nil)
-	a.enrichIssueData(data)
 	a.executeTemplate(w, name, data)
 }
 

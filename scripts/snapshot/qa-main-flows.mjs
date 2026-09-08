@@ -42,6 +42,13 @@ const routes = [
 ];
 
 const portalChromeRoutes = [
+  // HAUSV-704: organisation landings now use the same kit. Only the map's
+  // portfolio presentation changes; geometry and action checks stay identical.
+  { path: '/app/verwaltung', hero: false, overview: true },
+  { path: '/app/verwaltung/posteingang', hero: false, overview: true, action: 'Telefonnotiz' },
+  { path: '/app/verwaltung/textbausteine', hero: false, overview: true, action: 'Neuer Textbaustein' },
+  { path: '/app/verwaltung/rechte', hero: false, overview: true },
+  { path: '/app/verwaltung/einstellungen', hero: false, overview: true },
   { path: '/app', hero: true, action: 'Anliegen melden' },
   { path: '/app/energie', hero: false, action: 'Zuhause bearbeiten', energy: true },
   { path: '/app/announcements', hero: true, action: 'Aushang erstellen' },
@@ -325,7 +332,7 @@ async function assertPortalChromeKit() {
         filledActions: filledActions.map((button) => button.textContent?.trim() || ''),
         borderlessActions: borderlessActions.map((button) => button.textContent?.trim() || ''),
         wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
-        sidebarMap: Boolean(sidebar?.querySelector('.side-map')),
+        sidebarMap: Boolean(sidebar?.querySelector(expected.overview ? '.side-map-portfolio' : '.side-map')),
         sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
         sidebarAccountRole: document.querySelector('.desktop-context-bar .context-role')?.textContent?.trim() || '',
         mobileIdentity,

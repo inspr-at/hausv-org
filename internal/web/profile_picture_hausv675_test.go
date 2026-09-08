@@ -76,13 +76,7 @@ func TestPortalAccountTileShowsThePictureOrTheInitials(t *testing.T) {
 // HAUSV-675: the Verwaltung shell has its own sidebar and its own mobile header.
 // They were the two places most likely to be forgotten.
 func TestVerwaltungAccountTileShowsThePictureOrTheInitials(t *testing.T) {
-	shell := VerwaltungShell{
-		OrganisationName: "Hausverwaltung Muster",
-		RoleLabel:        "Verwalter",
-		DisplayName:      "Vera Verwalter",
-		Initials:         "VV",
-		Active:           "portfolio",
-	}
+	shell := organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Hausverwaltung Muster", RoleLabel: "Verwalter", Active: "portfolio"}, DisplayName: "Vera Verwalter", Initials: "VV"})
 
 	withoutPicture := renderComponent(t, PortalVerwaltungPage(shell, "Portfolio", PortalSectionTitle("Portfolio")))
 	tiles := avatarTiles(t, withoutPicture)
@@ -95,7 +89,8 @@ func TestVerwaltungAccountTileShowsThePictureOrTheInitials(t *testing.T) {
 		}
 	}
 
-	shell.AvatarURL = testAvatarURL
+	shell.Shell.AvatarURL = testAvatarURL
+	shell.Shell.Context.AvatarURL = testAvatarURL
 	withPicture := renderComponent(t, PortalVerwaltungPage(shell, "Portfolio", PortalSectionTitle("Portfolio")))
 	for _, tile := range avatarTiles(t, withPicture) {
 		if !strings.Contains(tile, `src="`+testAvatarURL+`"`) {

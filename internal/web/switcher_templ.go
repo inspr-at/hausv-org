@@ -652,7 +652,7 @@ func Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) t
 			return templ_7745c5c3_Err
 		}
 		if mobile {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<details class=\"menu\"><summary aria-label=\"Navigation öffnen\"><span class=\"hamburger\" aria-hidden=\"true\"></span></summary><div class=\"menu-panel\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<details class=\"menu\"><summary aria-label=\"Navigation öffnen\"><span class=\"hamburger\" aria-hidden=\"true\"></span></summary><div class=\"menu-panel\" data-navigation-surface=\"mobile\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1059,7 +1059,7 @@ func LiegenschaftenPage(portal PortalPageData, entries []LiegenschaftEntry, quer
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = PortalDocument("Meine Liegenschaften", portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"class": "portal-page", "data-templ-liegenschaften": true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var55), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PortalDocument("Meine Liegenschaften", portalAssetVersion(), nil, PortalStyles(), templ.Attributes{"data-templ-liegenschaften": true}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var55), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

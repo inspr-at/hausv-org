@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.13",
+			Date:     "8. September 2026",
+			Kind:     "Neu",
+			Headline: "Eine Navigation für alle Sichten, Triage-Board mit Drag-and-drop.",
+			Intro:    "Die Sidebar ist in jeder Sicht gleich aufgebaut und gleich breit, und auch Portfolio und Posteingang behalten Liegenschafts-Karte und -Navigation. Die letzten Seiten der alten Oberfläche sind in die gemeinsame Oberfläche übernommen. Das Triage-Board nutzt die volle Breite, und Anliegen lassen sich per Ziehen oder über ein Menü zwischen den Spalten verschieben.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.12",
 			Date:     "8. September 2026",
 			Kind:     "Verbessert",

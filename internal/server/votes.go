@@ -319,48 +319,7 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 }
 
 func (a *app) ballotsPortalContext(ac authCtx) web.PortalPageData {
-	tenant, email, role := ac.tenant, ac.email, ac.role
-	profile := a.profileForTenant(email, tenant.Slug)
-	modules := a.portalModulesFor(tenant.Slug)
-	unreadAnnouncements := 0
-	if ac.repositories.announcements != nil && ac.repositories.announcementReads != nil && strings.TrimSpace(email) != "" {
-		now := time.Now()
-		unreadAnnouncements = unreadAnnouncementCount(ac.repositories.announcements.Visible(now), ac.repositories.announcementReads.LastSeen(email), now)
-	}
-	openIssues := 0
-	if a.issueStore != nil {
-		openIssues = issueOpenCount(a.visibleIssuesForActor(ac.tenantRef, email, role))
-	}
-	canUseResidentAreas := roleCanUseResidentAreas(role)
-	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
-	return web.PortalPageData{
-		Title:               "Abstimmungen · " + houseDisplayName(tenant) + " · " + role,
-		TenantSlug:          tenant.Slug,
-		HouseName:           houseDisplayName(tenant),
-		Address:             tenant.Address,
-		MapURL:              tenantMapURL(tenant.Address),
-		HeroImageURL:        tenant.HeroImageURL,
-		BrandIcon:           tenant.BrandIcon,
-		BrandMarkSVG:        tenantBrandMarkSVG(tenant.BrandIcon),
-		Map:                 portalMapForTenant(tenant),
-		DisplayName:         profile.DisplayName(),
-		Initials:            profile.Initials(),
-		Role:                role,
-		DisplayVersion:      version.DisplayVersion(version.Version),
-		ActivePage:          "votes",
-		Modules:             web.PortalModules{Energy: modules.Energy, Announcements: modules.Announcements, Events: modules.Events, Contacts: modules.Contacts, Documents: modules.Documents, Issues: modules.Issues, Votes: modules.Votes, Parking: modules.Parking, Handovers: modules.Handovers, Users: modules.Users, Audit: modules.Audit, Help: modules.Help},
-		CanUseResidentAreas: canUseResidentAreas,
-		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
-		CanManageIssues:     ac.can(capabilityManageIssues),
-		CanSeeParking:       canSeeParking,
-		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
-		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
-		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),
-		Issues:              make([]issueView, openIssues),
-		UnreadAnnouncements: unreadAnnouncements,
-		Shell:               a.portalShellData(&ac),
-		ReleaseNotes:        version.Notes(),
-	}
+	return a.portalBaseData(ac, "votes", "Abstimmungen")
 }
 
 func (a *app) renderBallotsTempl(w http.ResponseWriter, r *http.Request, data web.BallotsPageData) {

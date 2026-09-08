@@ -4208,8 +4208,11 @@ func TestManagerCanUpdateIssueWorkflow(t *testing.T) {
 			t.Fatalf("manager issue board should contain %q", want)
 		}
 	}
-	if strings.Contains(boardBody, `name="assignee_email"`) || strings.Contains(boardBody, "Bearbeitung aktualisieren") {
-		t.Fatalf("manager issue board should link to the focused triage instead of rendering the workflow form")
+	// HAUSV-706 adds a status-only move menu. Assignment and priority remain
+	// hidden snapshots; the full editor still lives in the focused triage.
+	assertIssueBoardStatusMenus(t, boardBody)
+	if strings.Contains(boardBody, "Bearbeitung aktualisieren") {
+		t.Fatal("manager issue board must keep the full editor in focused triage")
 	}
 	if !strings.Contains(boardBody, `<details class="board-tools">`) ||
 		strings.Contains(boardBody, `<details class="board-tools" open>`) {
@@ -4893,7 +4896,10 @@ func TestServiceProviderAccessDefaultsClosedAndRejectsWritesAtomically(t *testin
 	}
 
 	board := authedRequest(t, a, "manager@example.com", "/demo/app/anliegen/board").Body.String()
-	if strings.Contains(board, "Betreiberfreigabe offen") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") || strings.Contains(board, `name="assignee_email"`) {
+	// The board may preserve an existing assignment in a hidden move field,
+	// but must not expose an editable assignment control (HAUSV-706).
+	assertIssueBoardStatusMenus(t, board)
+	if strings.Contains(board, "Betreiberfreigabe offen") || strings.Contains(board, "datalist id=\"service-provider-contacts\"") {
 		t.Fatalf("closed issue board should not expose service assignment controls or internal gate language:\n%s", board)
 	}
 	contactPage := authedRequest(t, a, "manager@example.com", "/demo/app/kontakte").Body.String()

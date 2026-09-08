@@ -40,7 +40,7 @@ type IssueTriagePageData struct {
 }
 
 templ IssueBoardPage(data IssueBoardPageData) {
-	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js"}, IssueBoardStyles(), templ.Attributes{"data-templ-issue-board": true}) {
+	@PortalDocument(data.Portal.Title, data.AssetVersion, []string{"attachments.js", "issues.js", "issue-board.js"}, IssueBoardStyles(), templ.Attributes{"data-templ-issue-board": true}) {
 		@PortalShell(data.Portal, "Anliegen", IssueBoardContent(data))
 	}
 }
@@ -74,9 +74,40 @@ templ IssueBoardBlock() {
 		@media(max-width:1050px){.board-blank{grid-template-columns:minmax(0,1fr)}.board-filter label,.board-filter label.assignee,.board-filter label.sort,.board-filter-actions{grid-column:1/-1}.board-blank-facts{grid-template-columns:minmax(0,1fr)}}
 		@media(max-width:760px){.board-filter{grid-template-columns:minmax(0,1fr);padding:var(--space-3)}.board-summary,.board-quick,.board-tools>summary{padding-inline:var(--space-3)}.issue-card-foot{grid-template-columns:minmax(0,1fr)}.issue-triage-link{width:100%}.board-filter-blank{grid-template-columns:minmax(0,1fr);justify-items:start;padding:var(--space-4)}.board-filter-blank .button{width:100%}.board-blank-main,.board-blank-side{padding:var(--space-4)}.board-blank-actions{display:grid}.board-blank-actions .button{width:100%}}
 		.board-panel{max-width:none;min-width:0;gap:24px}.board-toolbar{box-shadow:none}.board-summary,.board-quick,.board-tools>summary{padding:16px}.board-quick{background:var(--panel)}.board-quick a{min-height:40px;padding:8px 16px;font-weight:600}.board-filter{gap:16px;padding:16px}.board-filter :is(input,select){min-height:48px}.board-filter-actions button{min-height:48px;background:var(--gold);color:var(--nav);border-color:var(--gold)}
-		.board-columns{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(288px,1fr);gap:16px;min-width:0;max-width:100%;overflow-x:auto;padding:0 0 16px;align-items:start;overscroll-behavior-x:contain}.board-column{min-width:0;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper)}.board-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:16px}.board-column-head h2{font-size:22px;line-height:1.1}.board-column .issue-list{gap:16px}.board-column-empty{padding:24px 8px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-align:center}
+		.board-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;min-width:0;max-width:100%;overflow-x:auto;padding:0 0 16px;align-items:start;overscroll-behavior-x:contain}.board-column{min-width:0;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper)}.board-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:16px}.board-column-head h2{font-size:22px;line-height:1.1}.board-column .issue-list{gap:16px}.board-column-empty{padding:24px 8px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-align:center}
 		.board-column .issue-work-card{gap:16px;padding:16px;border:1px solid var(--line);background:var(--panel);box-shadow:none}.issue-work-card .issue-card-head{grid-template-columns:minmax(0,1fr);gap:8px}.issue-work-card h3{font-size:23px;line-height:1.15}.issue-work-card .issue-meta{justify-content:flex-start;gap:8px}.issue-work-card .issue-location{margin:0;font-size:12px;overflow-wrap:anywhere}.issue-work-card .issue-card-foot{display:flex;justify-content:flex-end;padding-top:0;border:0}.issue-work-card .issue-triage-link{min-height:40px;width:100%;color:var(--nav)}.issue-work-card .issue-next-step{padding:8px;font-size:12px}.issue-work-people{display:flex;align-items:center;gap:8px;min-width:0}.issue-work-people>span:last-child{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.issue-work-people strong{font-size:11px;font-weight:600}.issue-work-people small{color:var(--muted);font-size:11px}.issue-assignee-avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--paper);font-size:11px;font-weight:700}.issue-priority{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.issue-priority i{width:8px;height:8px;border-radius:50%;background:var(--soft)}.issue-priority[data-priority=Hoch] i,.issue-priority[data-priority=Dringend] i{background:var(--gold)}.issue-priority[data-priority=Dringend] i{outline:1px solid var(--gold-ink);outline-offset:2px}
-		@media(max-width:760px){.board-columns{grid-auto-flow:row;grid-template-columns:minmax(0,1fr);overflow:visible;padding:0}.board-column{padding:16px}.board-quick a,.issue-work-card .issue-triage-link{min-height:48px}}
+		@media(max-width:760px){.board-columns{padding:0}.board-column{padding:16px}.board-quick a,.issue-work-card .issue-triage-link{min-height:48px}}
+
+		/* Seven status lanes cannot fit in one row at 260px on a laptop.
+		   Wrap complete lanes; only a viewport narrower than one lane scrolls. */
+		.portal-section-landing.issue-board-main{--portal-content-width:100%}
+		.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:32px}
+		.issue-board-main .portal-section-context{--context-bar-h:40px;min-height:var(--context-bar-h);height:var(--context-bar-h);padding-block:0;display:flex;align-items:center}
+		.issue-board-main .portal-section-context a{min-height:40px}
+		.issue-board-main .portal-section-header-action .button{background:transparent;color:var(--ink);border-color:var(--line);min-height:40px}
+		.board-panel{width:100%}
+		.board-filter-actions{grid-column:1/-1;flex-wrap:wrap}
+		.board-column .issue-list{min-height:72px}
+		.board-column.is-drop-target{outline:2px solid var(--gold);outline-offset:-2px;background:var(--panel-soft)}
+		.board-feedback:not(:empty){position:sticky;top:8px;z-index:10;padding:12px 16px;border:1px solid var(--leaf);border-radius:var(--radius-sm);background:var(--panel-soft);font-size:14px}
+		.board-feedback:empty{display:none}
+		.board-feedback[data-error=true]{border-color:var(--gold);color:var(--gold-ink)}
+		[data-issue-board].is-enhanced .issue-work-card{cursor:grab}
+		[data-issue-board].is-enhanced .issue-work-card.is-dragging{cursor:grabbing;box-shadow:var(--shadow-panel);transform:translateY(-3px);opacity:.65}
+		.issue-work-card[aria-busy=true]{opacity:.65;cursor:progress}
+		.board-drag-handle{display:none;min-height:40px;min-width:40px;align-items:center;justify-content:center;gap:8px;justify-self:end;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs);background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+		.is-enhanced .board-drag-handle{display:flex}
+		.board-drag-handle:active{cursor:grabbing}
+		.board-drag-handle svg{width:20px;height:20px}
+		.board-move-menu{min-width:0;border-top:1px solid var(--line)}
+		.board-move-menu>summary{min-height:40px;padding-block:10px;cursor:pointer;font-size:12px;font-weight:600}
+		.board-move-menu form{display:grid;gap:8px;padding-top:8px}
+		.board-move-menu label{font-size:12px}
+		.board-move-menu :is(select,button){min-width:0;max-width:100%;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
+		.board-move-menu :is(select,button):focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+		.issue-work-card h3{overflow-wrap:anywhere}
+		.board-touch-preview{position:fixed;z-index:110;pointer-events:none;max-width:260px;padding:16px;border:1px solid var(--gold);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-panel);overflow-wrap:anywhere;opacity:.9}
+		@media(max-width:760px){.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:16px}.board-feedback:not(:empty){top:82px}}
 
 	</style>
 }
@@ -101,6 +132,7 @@ templ IssueTriageBlock() {
 templ IssueBoardContent(data IssueBoardPageData) {
 	@PortalSectionLanding(
 		PortalSectionLandingData{
+			Wide: true,
 			Portal: data.Portal,
 			PageLabel: "Anliegen",
 			Class: "issues-main issue-board-main",
@@ -133,22 +165,21 @@ templ IssueBoardBody(data IssueBoardPageData) {
 			}
 		</datalist>
 	}
-	<section class="board-panel" id="issue-manage" aria-label="Anliegen in der Liegenschaft">
+	<section class="board-panel" id="issue-manage" aria-label="Anliegen in der Liegenschaft" data-issue-board>
+		<p class="board-feedback" role="status" aria-live="polite" aria-atomic="true" data-board-feedback></p>
 		if data.TotalIssueCount > 0 {
 			@IssueBoardToolbar(data)
 		}
 		if len(data.Issues) > 0 {
 			<div class="board-columns" role="region" aria-label="Anliegen nach Status" tabindex="0">
 				for index, column := range issueBoardColumns(data.Filters.StatusOptions, data.Issues) {
-					<section class="board-column" aria-labelledby={ "board-column-" + strconv.Itoa(index) }>
-						<header class="board-column-head"><h2 id={ "board-column-" + strconv.Itoa(index) }>{ column.StatusLabel }</h2><span class="pill">{ len(column.Issues) }</span></header>
+					<section class="board-column" data-board-status={ column.Status } aria-labelledby={ "board-column-" + strconv.Itoa(index) }>
+						<header class="board-column-head"><h2 id={ "board-column-" + strconv.Itoa(index) }>{ column.StatusLabel }</h2><span class="pill" data-board-count>{ len(column.Issues) }</span></header>
 						<div class="issue-list">
 							for _, issue := range column.Issues {
 								@IssueWorkCard(issue)
 							}
-							if len(column.Issues) == 0 {
-								<p class="board-column-empty">Keine Anliegen</p>
-							}
+							<p class="board-column-empty" hidden?={ len(column.Issues) > 0 }>Keine Anliegen</p>
 						</div>
 					</section>
 				}
@@ -218,7 +249,11 @@ templ IssueBoardToolbar(data IssueBoardPageData) {
 }
 
 templ IssueWorkCard(issue view.IssueView) {
-	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID }>
+	<article class={ "issue-card", "issue-work-card", issue.StatusClass } id={ "issue-" + issue.ID } draggable="true" data-board-card data-issue-status={ issue.Status }>
+		<button class="board-drag-handle" type="button" aria-label={ "Karte ziehen: " + issue.Title } title="Karte ziehen oder über das Menü verschieben" data-board-drag>
+			@PortalAssetIcon("grip-vertical")
+			<span>Ziehen</span>
+		</button>
 		<header class="issue-card-head"><h3>{ issue.Title }</h3><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="issue-priority" data-priority={ issue.Priority }><i aria-hidden="true"></i>{ issue.Priority }</span><span class="pill">{ issue.Category }</span></div></header>
 		<p class="issue-location">{ issue.Location }</p>
 		<div class="issue-description issue-description-preview"><p>{ issue.Body }</p></div>
@@ -237,6 +272,23 @@ templ IssueWorkCard(issue view.IssueView) {
 			<p class="issue-proposal"><strong>Hinweis:</strong> { issue.ServiceProposal }</p>
 		}
 		<p class="issue-next-step">{ issue.NextStep }</p>
+		<details class="board-move-menu">
+			<summary>Verschieben nach …</summary>
+			<form method="post" action="/app/anliegen/workflow" data-board-move>
+				<input type="hidden" name="id" value={ issue.ID }/>
+				<input type="hidden" name="priority" value={ issue.Priority }/>
+				<input type="hidden" name="assignee_email" value={ issue.AssigneeEmail }/>
+				<label for={ "board-target-" + issue.ID }>Zielstatus</label>
+				<select id={ "board-target-" + issue.ID } name="status" required>
+					for _, option := range view.IssueBoardFilterOptions(view.IssueBoardFilterView{}).StatusOptions {
+						if option.Value != "" {
+							<option value={ option.Value } selected?={ option.Value == issue.Status }>{ option.Label }</option>
+						}
+					}
+				</select>
+				<button class="button" type="submit">Verschieben</button>
+			</form>
+		</details>
 		<div class="issue-card-foot"><a class="button primary issue-triage-link" href={ templ.SafeURL("/app/anliegen/board/" + issue.ID) }>Bearbeiten</a></div>
 	</article>
 }

@@ -6,11 +6,8 @@ import (
 )
 
 func TestHausv615VerwaltungNavigationOrderCountAndActiveState(t *testing.T) {
-	body := renderComponent(t, VerwaltungNavigation(VerwaltungShell{
-		Active: "inbox", ShowInboxNav: true, InboxOpenCount: 17, CanManageSettings: true,
-		Houses: []VerwaltungHouse{{Slug: "muenze", Name: "Münzgrabenstraße 12", Role: "Verwalter"}, {Slug: "haupt", Name: "Hauptplatz 3", Role: "Verwalter"}},
-	}, true))
-	labels := []string{"Portfolio", "Posteingang", "Liegenschaften", "Textbausteine", "Rechte", "Einstellungen"}
+	body := renderComponent(t, PortalNavigation(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{Active: "inbox", ShowInboxNav: true, InboxOpenCount: 17, CanManageSettings: true, Houses: []VerwaltungHouse{{Slug: "muenze", Name: "Münzgrabenstraße 12", Role: "Verwalter"}, {Slug: "haupt", Name: "Hauptplatz 3", Role: "Verwalter"}}}}), true, true))
+	labels := []string{"Portfolio", "Posteingang", "Textbausteine", "Rechte", "Einstellungen", "Alle Liegenschaften · 2"}
 	last := -1
 	for _, label := range labels {
 		index := strings.Index(body, label)
@@ -19,7 +16,7 @@ func TestHausv615VerwaltungNavigationOrderCountAndActiveState(t *testing.T) {
 		}
 		last = index
 	}
-	for _, want := range []string{`<small>2 Liegenschaften</small>`, `class="nav-icon switcher-building"`, `href="/app/verwaltung/posteingang" class="nav-item active"`} {
+	for _, want := range []string{`Alle Liegenschaften · 2`, `class="nav-icon switcher-building"`, `href="/app/verwaltung/posteingang" class="nav-item active"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("navigation missing %q: %s", want, body)
 		}
@@ -27,7 +24,7 @@ func TestHausv615VerwaltungNavigationOrderCountAndActiveState(t *testing.T) {
 }
 
 func TestHausv615PortfolioShellKeepsTableContentInsideCard(t *testing.T) {
-	body := renderComponent(t, PortfolioPage(VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}, PortfolioData{
+	body := renderComponent(t, PortfolioPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}}), PortfolioData{
 		Houses: []PortfolioHouse{{Name: "Münzgrabenstraße 12", Address: "Münzgrabenstraße 12, 8010 Graz", Assignee: "Vera Verwalter"}},
 	}))
 	// Preserve the no-clipping/column-priority contract with the larger Batch 3
@@ -54,7 +51,7 @@ func TestHausv615PortfolioShellKeepsTableContentInsideCard(t *testing.T) {
 }
 
 func TestHausv615TextbausteineStackOnPhoneWithCountsAndActions(t *testing.T) {
-	body := renderComponent(t, TextbausteinListPage(VerwaltungShell{OrganisationName: "Musterstadt"}, TextbausteinListData{
+	body := renderComponent(t, TextbausteinListPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), TextbausteinListData{
 		Count: 2,
 		Groups: []TextbausteinGroup{{Label: "Betriebskosten", Items: []TextbausteinRow{
 			{Key: "betriebskosten-pruefung", Title: "Betriebskosten prüfen", Status: "Aktiv", Active: true, Updated: "03.09.2026", EditURL: "/eins"},
@@ -72,7 +69,7 @@ func TestHausv615TextbausteineStackOnPhoneWithCountsAndActions(t *testing.T) {
 }
 
 func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
-	settings := renderComponent(t, VerwaltungSettingsPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungSettingsData{
+	settings := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment",
 	}))
 	for _, want := range []string{"settings-input-group", "Bilanz seit Start", "Kein KI-Anbieter konfiguriert", `value="environment" checked`, "KI-Anbieter", "KI-Verbindung"} {
@@ -84,7 +81,7 @@ func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
 		t.Fatal("Bilanz must follow Automatisierung before the AI cards")
 	}
 
-	result := renderComponent(t, VerwaltungDemoResetPage(VerwaltungShell{OrganisationName: "Musterstadt"}, VerwaltungDemoResetData{Done: true}))
+	result := renderComponent(t, VerwaltungDemoResetPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungDemoResetData{Done: true}))
 	for _, want := range []string{"Zum Posteingang", "Zurück zu den Einstellungen"} {
 		if !strings.Contains(result, want) {
 			t.Fatalf("demo result missing %q", want)

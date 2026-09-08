@@ -26,7 +26,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		ScriptNonce:      "test-nonce",
 	}
 	var out bytes.Buffer
-	if err := InboxPage(VerwaltungShell{OrganisationName: "Musterstadt", Active: "inbox"}, data).Render(t.Context(), &out); err != nil {
+	if err := InboxPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt", Active: "inbox"}}), data).Render(t.Context(), &out); err != nil {
 		t.Fatal(err)
 	}
 	body := out.String()
@@ -43,9 +43,9 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 func TestInboxScriptsStayInDocumentHead(t *testing.T) {
 	for _, page := range []string{"queue", "case"} {
 		t.Run(page, func(t *testing.T) {
-			component := InboxPage(VerwaltungShell{}, InboxData{})
+			component := InboxPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), InboxData{})
 			if page == "case" {
-				component = InboxCasePage(VerwaltungShell{}, InboxData{FullPage: true, Selected: &InboxCase{ID: "in-1"}})
+				component = InboxCasePage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), InboxData{FullPage: true, Selected: &InboxCase{ID: "in-1"}})
 			}
 			body := renderComponent(t, component)
 			head, _, ok := strings.Cut(body, "</head>")
@@ -123,7 +123,7 @@ func TestHausv618SuggestionPollingUsesAbsolutePartialURL(t *testing.T) {
 		SuggestionState: "running",
 		QueueQuery:      "?status=open",
 	}}
-	body := renderComponent(t, InboxPage(VerwaltungShell{}, data))
+	body := renderComponent(t, InboxPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), data))
 	if !strings.Contains(body, `id="vorschlag" hx-get="/app/verwaltung/posteingang/in-0350/vorschlag?status=open" hx-select="#vorschlag"`) {
 		t.Fatalf("running suggestion polling attributes missing: %s", body)
 	}
@@ -175,7 +175,7 @@ func TestInboxPass2ResponsiveHistoryAndLiveRegionMarkup(t *testing.T) {
 }
 
 func TestHausv615TextbausteinePhoneStatusAndActionShareOneRow(t *testing.T) {
-	body := renderComponent(t, TextbausteinListPage(VerwaltungShell{OrganisationName: "Musterstadt"}, TextbausteinListData{
+	body := renderComponent(t, TextbausteinListPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), TextbausteinListData{
 		Count: 1,
 		Groups: []TextbausteinGroup{{Label: "Betriebskosten", Items: []TextbausteinRow{{
 			Key: "betriebskosten-pruefung", Title: "Betriebskosten prüfen", Status: "Aktiv", Active: true, Updated: "03.09.2026", EditURL: "/eins",
@@ -196,7 +196,7 @@ func TestHausv615TextbausteinePhoneStatusAndActionShareOneRow(t *testing.T) {
 func TestVerwaltungSettingsPageRendersTrustLevels(t *testing.T) {
 	data := VerwaltungSettingsData{Categories: []VerwaltungSettingsCategory{{Key: "reparatur", Label: "Reparatur/Mangel", Level: "auto"}}, Threshold: 90, AutoEnabled: true, ProviderLabel: "nicht konfiguriert"}
 	var out bytes.Buffer
-	if err := VerwaltungSettingsPage(VerwaltungShell{OrganisationName: "Musterstadt"}, data).Render(t.Context(), &out); err != nil {
+	if err := VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), data).Render(t.Context(), &out); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"Reparatur/Mangel", "Manuell", "Vorschlag", "Automatisch", "Schwellwert für Automatisch", "nicht konfiguriert"} {

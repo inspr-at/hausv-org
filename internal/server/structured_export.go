@@ -19,6 +19,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 const (
@@ -57,22 +58,9 @@ type structuredExportPreview struct {
 	Package         []byte
 }
 
-type structuredExportSourceView struct {
-	Value       string
-	Title       string
-	Description string
-	Count       int
-}
+type structuredExportSourceView = web.StructuredExportSourceView
 
-type structuredExportPreviewView struct {
-	Token       string
-	CreatedAt   string
-	Sources     []structuredExportSourceView
-	Accepted    int
-	Rejected    int
-	CSVChecksum string
-	Filename    string
-}
+type structuredExportPreviewView = web.StructuredExportPreviewView
 
 func (a *app) structuredExportPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	sources := a.structuredExportSourceViews(ac.repositories, ac)
@@ -95,13 +83,12 @@ func (a *app) structuredExportPage(w http.ResponseWriter, r *http.Request, ac au
 			resultOK = false
 		}
 	}
-	a.render(w, "structuredExport", a.withBase(ac, map[string]any{
-		"Title":                   "Strukturierte Datenübergabe",
-		"ActivePage":              "settings",
-		"StructuredExportSources": sources,
-		"StructuredExportPreview": previewView,
-		"StructuredExportMsg":     resultMessage,
-		"StructuredExportOK":      resultOK,
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.StructuredExportPage(web.StructuredExportPageData{
+		Portal:                  a.settingsPortalContext(ac, "Strukturierte Datenübergabe", "settings"),
+		StructuredExportSources: sources,
+		StructuredExportPreview: previewView,
+		StructuredExportMsg:     resultMessage,
+		StructuredExportOK:      resultOK,
 	}))
 }
 

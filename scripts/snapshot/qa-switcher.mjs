@@ -54,6 +54,12 @@ async function checkRoute(page,width,path,label) {
   await page.goto(`${baseURL}${path}`,{waitUntil:'networkidle'});
   assert.equal((await page.locator('main').count())>0,true,`${label}: route body`);
   await geometry(page,width,label);
+  if (path.includes('/app/verwaltung')) {
+    const sidebar = page.locator('aside.sidebar');
+    assert.match(await sidebar.locator('.nav-house-card .house-header-copy strong').textContent(), /^Alle Liegenschaften · \d+$/, `${label}: overview card keeps property count`);
+    assert.equal(await sidebar.locator('.nav-house-items').count(), 1, `${label}: house navigation persists in organisation scope`);
+    assert.equal(await sidebar.locator('.side-map-portfolio').count(), 1, `${label}: neutral portfolio map`);
+  }
   await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await geometry(page,width,`${label} scrolled`);
   await page.evaluate(()=>window.scrollTo(0,0));
   const segment=visibleBar(page).locator('.context-scope [data-switcher]').last();

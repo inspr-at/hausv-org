@@ -1,0 +1,834 @@
+package web
+
+import "fmt"
+
+templ IssueResidentDetailPage(data IssueResidentDetailPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"attachments.js"}, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "issueResidentDetail"}) {
+		@PortalShell(data.Portal, "Anliegen", IssueResidentDetailContent(data))
+	}
+}
+
+templ IssueResidentDetailContent(data IssueResidentDetailPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Anliegen", Icon: "issue"}, PortalSectionTitle(data.Issue.Title), PortalSectionLede(data.Issue.Location+" · "+data.Issue.CreatedAt), LegacyRouteBack("/app/anliegen", "Zurück zu Anliegen"))
+		<span class={ "pill", data.Issue.StatusClass }>{ data.Issue.Status }</span>
+		<section class="page issue-resident-page" id={ "issue-" + data.Issue.ID }>
+			if data.IssueCreated {
+				<div class="issue-created-note" role="status"><span aria-hidden="true">{ "✓" }</span><strong>{ "Anliegen gemeldet" }</strong><small>{ "Die Verwaltung wurde informiert." }</small></div>
+			}
+			if (data.Issue.ResidentState == "question") {
+				<section class="issue-resident-task question">
+					<span class="kicker">{ "Rückfrage der Verwaltung" }</span>
+					<h2>{ data.Issue.OpenQuestion.Body }</h2>
+					<form class="issue-answer-form" method="post" action="/app/anliegen/comment" enctype="multipart/form-data">
+						<input type="hidden" name="id" value={ data.Issue.ID }/><input type="hidden" name="redirect" value={ "/app/anliegen/" + data.Issue.ID }/>
+						<label>
+							{ "Ihre Antwort " }
+							<textarea name="body" maxlength="3000" required placeholder="Kurz antworten, damit es weitergehen kann" aria-label="Ihre Antwort"></textarea>
+						</label><label class="comment-upload"><span class="file-control"><input type="file" name="attachments" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" multiple/><span>{ "Foto optional hinzufügen" }</span></span></label><button type="submit">{ "Antwort senden" }</button>
+					</form>
+				</section>
+			} else if (data.Issue.ResidentState == "resolution") {
+				<section class="issue-resident-task resolution"><span class="kicker">{ "Lösung prüfen" }</span><h2>{ "Ist das Anliegen für Sie erledigt?" }</h2><p>{ "Die Verwaltung hat die Bearbeitung abgeschlossen." }</p><div class="issue-resolution-actions"><form method="post" action="/app/anliegen/resolution"><input type="hidden" name="id" value={ data.Issue.ID }/><input type="hidden" name="resolved" value="yes"/><button type="submit">{ "Ja, erledigt" }</button></form><form method="post" action="/app/anliegen/resolution"><input type="hidden" name="id" value={ data.Issue.ID }/><input type="hidden" name="resolved" value="no"/><button class="ghost" type="submit">{ "Nein, noch offen" }</button></form></div></section>
+			} else if (data.Issue.ResidentState == "done") {
+				<section class="issue-resident-task done"><div class="issue-triage-done-mark" aria-hidden="true">{ "✓" }</div><div><span class="kicker">{ "Erledigt" }</span><h2>{ "Sie haben die Lösung bestätigt." }</h2><p>{ "Für Sie ist nichts mehr zu tun." }</p></div></section>
+			} else {
+				<section class="issue-resident-task waiting"><span class="kicker">{ "Aktueller Stand" }</span><h2>{ data.Issue.NextStep }</h2><p>{ "Sie müssen im Moment nichts tun. Sobald eine Antwort gebraucht wird, erscheint sie hier eindeutig." }</p></section>
+			}
+			<section class="issue-resident-report" aria-labelledby="issue-resident-report-title">
+				<div class="issue-resident-report-head">
+					<h2 id="issue-resident-report-title">{ "Ihre Meldung" }</h2>
+					<div class="issue-resident-report-meta">
+						<span class="pill">{ data.Issue.Category }</span><span class="pill">{ data.Issue.Location }</span>
+						if data.Issue.HasPhotos {
+							<span class="pill">{ fmt.Sprint(data.Issue.PhotoCount) + " Foto" + legacyRouteChoice((data.Issue.PhotoCount != 1), "s", "") }</span>
+						} else if data.Issue.HasAttachments {
+							<span class="pill">{ "Anhänge" }</span>
+						}
+					</div>
+				</div>
+				<div class="issue-description"><p>{ data.Issue.Body }</p></div>
+				@IssueAttachments(data.Issue.Attachments)
+			</section>
+			if (data.Issue.HasComments || data.Issue.HasServiceAppointment || data.Issue.HasServiceProposal || data.Issue.HasEstimate || data.Issue.HasEstimateAttachments) {
+				<details class="issue-resident-history">
+					<summary>
+						{ "Neuigkeiten zum Anliegen" }
+						if data.Issue.HasComments {
+							{ " · " + fmt.Sprint(len(data.Issue.Comments)) + " " + legacyRouteChoice((len(data.Issue.Comments) == 1), "Beitrag", "Beiträge") }
+						}
+					</summary>
+					<div class="issue-resident-history-body">
+						if data.Issue.HasServiceAppointment {
+							<p class="issue-proposal">
+								<strong>{ "Termin:" }</strong>
+								{ data.Issue.ServiceAppointment }
+							</p>
+						}
+						if data.Issue.HasServiceProposal {
+							<p class="issue-proposal">
+								<strong>{ "Hinweis:" }</strong>
+								{ data.Issue.ServiceProposal }
+							</p>
+						}
+						if data.Issue.HasComments {
+							<div class="comment-thread">
+								for _, item1 := range data.Issue.Comments {
+									@IssueComment(item1)
+								}
+							</div>
+						}
+						@IssueEstimate(data.Issue)
+					</div>
+				</details>
+			}
+		</section>
+	</main>
+}
+
+templ ParkingSettingsPage(data ParkingSettingsPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "parkingSettings"}) {
+		@PortalShell(data.Portal, "Einstellungen", ParkingSettingsContent(data))
+	}
+}
+
+templ ParkingSettingsContent(data ParkingSettingsPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", Icon: "parking"}, PortalSectionTitle("Parkplatz verwalten"), PortalSectionLede("Zugriff, Abrechnung und Laden – jeweils dort, wo es hingehört."), LegacyRouteBack("/app/parking", "Parkplatz öffnen"))
+		<section class="page pk-set">
+			@LegacyParkingAdminNav(data.CanManageUsers, data.CanManageParkingConfig, data.ParkingSection)
+			if data.SectionAccounting {
+				<section class="panel settings-card" id="abrechnung">
+					<div class="pk-head"><div><h2>{ "Tarif & Gültigkeit" }</h2><p class="muted">{ "Ein neuer Tarif gilt erst ab dem gewählten Datum. Bereits abgerechnete Monate bleiben unverändert." }</p></div><span class="pill ok">{ "Aktiv ab " + data.Accounting.EffectiveFromLabel }</span></div>
+					if data.SettingsMsg != "" {
+						<p class={ "flash " + legacyRouteChoice(data.SettingsOK, "ok", "") }>{ data.SettingsMsg }</p>
+					}
+					<form class="pk-form" method="post" action="/app/parking/settings">
+						<div class="pk-fields">
+							<label for="effective_from">
+								{ "Gültig ab " }
+								<input id="effective_from" type="date" name="effective_from" value={ data.Accounting.EffectiveFrom } autocomplete="off"/>
+							</label>
+							<label for="grid_fee_eur_per_kwh">
+								{ "Netzgebühr " }
+								<span class="pk-unit"><input id="grid_fee_eur_per_kwh" type="text" inputmode="decimal" name="grid_fee_eur_per_kwh" value={ data.Accounting.GridFeeValue } autocomplete="off"/><span class="unit">{ "€/kWh" }</span></span>
+							</label>
+							<label for="base_fee_eur">
+								{ "Basisgebühr " }
+								<span class="pk-unit"><input id="base_fee_eur" type="text" inputmode="decimal" name="base_fee_eur" value={ data.Accounting.BaseFeeValue } autocomplete="off"/><span class="unit">{ "€/Monat" }</span></span>
+							</label>
+							<label for="surplus_rate_eur_per_kwh">
+								{ "Überschusstarif " }
+								<span class="pk-unit"><input id="surplus_rate_eur_per_kwh" type="text" inputmode="decimal" name="surplus_rate_eur_per_kwh" value={ data.Charging.SurplusRateValue } autocomplete="off"/><span class="unit">{ "€/kWh" }</span></span>
+							</label>
+						</div>
+						<div class="pk-actions">
+							if data.Accounting.LastSampleLabel != "" {
+								<span class="mini">{ "Letzter Zählerwert: " + data.Accounting.LastSampleLabel }</span>
+							}
+							<button class="button primary" type="submit">{ "Tarif speichern" }</button>
+						</div>
+					</form>
+					if data.Accounting.HasTariffs {
+						<details class="pk-disclosure">
+							<summary><span>{ "Frühere Tarife" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Accounting.Tariffs)) + " Einträge" }</span></summary>
+							<div class="pk-disclosure-body">
+								<div class="legend" aria-label="Tarifhistorie">
+									for _, item2 := range data.Accounting.Tariffs {
+										<div><strong>{ item2.EffectiveFrom }</strong><span>{ item2.GridFee + " · Basis " + item2.BaseFee }</span></div>
+									}
+								</div>
+							</div>
+						</details>
+					}
+				</section>
+				<section class="panel settings-card" aria-labelledby="payment-flow-title"><div class="pk-head"><div><h2 id="payment-flow-title">{ "Monate & Zahlungen" }</h2><p class="muted">{ "Vom Monatsbetrag bis zur Erinnerung in einer nachvollziehbaren Reihenfolge." }</p></div></div><div class="pk-flow"><div class="pk-flow-row"><span class="pk-flow-step">{ "1" }</span><span class="pk-flow-copy"><strong>{ "Tarif und Zeitraum" }</strong><span>{ "Oben festlegen, ab wann neue Preise gelten." }</span></span></div><a class="pk-flow-row" href="/app/parking?view=months#monate"><span class="pk-flow-step">{ "2" }</span><span class="pk-flow-copy"><strong>{ "Zahlungsstände prüfen" }</strong><span>{ "Monate öffnen, Zahlungseingang bestätigen oder Beleg ansehen." }</span></span><span class="pk-flow-arrow">{ "›" }</span></a></div><details class="pk-disclosure"><summary><span>{ "Offene Zahlungen erinnern" }</span><span class="pk-disclosure-note">{ "nur überfällige Monate" }</span></summary><div class="pk-disclosure-body"><p class="muted">{ "Es erhält nur eine Person eine Nachricht, wenn ein überfälliger Betrag offen ist und noch keine Erinnerung für diesen Monat versandt wurde." }</p><form method="post" action="/app/parking/reminders"><button class="button ghost" type="submit">{ "Erinnerungen jetzt senden" }</button></form></div></details></section>
+			}
+			if data.SectionCharging {
+				<section class="panel settings-card" id="laderegelung">
+					<div class="pk-head">
+						<div><h2>{ "Laderegeln" }</h2><p class="muted">{ "Die Automatik nutzt Sonnenstrom und schützt Relais, Hausakku und Ladeelektronik." }</p></div>
+						if data.Charging.Enabled {
+							<span class="pill ok">{ "Automatik aktiv" }</span>
+						} else {
+							<span class="pill">{ "Automatik aus" }</span>
+						}
+					</div>
+					if data.ChargingMsg != "" {
+						<p class={ "flash " + legacyRouteChoice(data.ChargingOK, "ok", "") }>{ data.ChargingMsg }</p>
+					}
+					<form class="pk-form" method="post" action="/app/parking/charging/settings">
+						<div class="pk-toggles"><label class="pk-toggle" for="controller_enabled"><input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" checked?={ data.Charging.Enabled }/><strong>{ "Regler aktiv" }</strong><small>{ "Überwacht Akku und Einspeisung und startet Ladevorgänge." }</small></label><label class="pk-toggle" for="shadow_mode"><input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" checked?={ (data.Charging.ShadowMode || !(data.Charging.Enabled)) }/><strong>{ "Testbetrieb" }</strong><small>{ "Nur beobachten und protokollieren — die Steckdose bleibt unberührt." }</small></label></div>
+						<div class="pk-rule-summary" aria-label="Zusammenfassung der Laderegeln"><div class="pk-rule"><strong>{ "Start" }</strong><span>{ "Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " W Einspeisung." }</span></div><div class="pk-rule pk-safety"><strong>{ "Stopp & Schutz" }</strong><span>{ "Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " W; Schaltpausen bleiben aktiv." }</span></div></div>
+						<details class="pk-disclosure">
+							<summary><span>{ "Erweiterte Grenzwerte" }</span><span class="pk-disclosure-note">{ "7 Werte" }</span></summary>
+							<div class="pk-disclosure-body">
+								<div class="pk-group">
+									<div class="pk-group-head"><h3>{ "Starten" }</h3><span>{ "beide Bedingungen müssen erfüllt sein" }</span></div>
+									<div class="pk-fields">
+										<label for="start_soc_percent">
+											{ "Akkustand mindestens " }
+											<span class="pk-unit"><input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value={ data.Charging.StartSocValue } autocomplete="off"/><span class="unit">{ "%" }</span></span>
+										</label>
+										<label for="start_feed_in_w">
+											{ "Einspeisung mindestens " }
+											<span class="pk-unit"><input id="start_feed_in_w" type="text" inputmode="numeric" name="start_feed_in_w" value={ data.Charging.StartFeedInValue } autocomplete="off"/><span class="unit">{ "W" }</span></span>
+										</label>
+									</div>
+								</div>
+								<div class="pk-group">
+									<div class="pk-group-head"><h3>{ "Stoppen" }</h3><span>{ "sobald eine Bedingung zutrifft" }</span></div>
+									<div class="pk-fields cols-3">
+										<label for="stop_soc_percent">
+											{ "Akkustand unter " }
+											<span class="pk-unit"><input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value={ data.Charging.StopSocValue } autocomplete="off"/><span class="unit">{ "%" }</span></span>
+										</label>
+										<label for="stop_feed_in_w">
+											{ "Einspeisung unter " }
+											<span class="pk-unit"><input id="stop_feed_in_w" type="text" inputmode="numeric" name="stop_feed_in_w" value={ data.Charging.StopFeedInValue } autocomplete="off"/><span class="unit">{ "W" }</span></span>
+										</label>
+										<label for="stop_delay_minutes">
+											{ "… und zwar durchgehend für " }
+											<span class="pk-unit"><input id="stop_delay_minutes" type="text" inputmode="numeric" name="stop_delay_minutes" value={ data.Charging.StopDelayValue } autocomplete="off"/><span class="unit">{ "Min." }</span></span>
+										</label>
+									</div>
+								</div>
+								<div class="pk-group pk-safety">
+									<div class="pk-group-head"><h3>{ "Schaltschutz" }</h3><span>{ "schont Relais und Ladeelektronik" }</span></div>
+									<div class="pk-fields">
+										<label for="min_on_minutes">
+											{ "Mindest-Einschaltdauer " }
+											<span class="pk-unit"><input id="min_on_minutes" type="text" inputmode="numeric" name="min_on_minutes" value={ data.Charging.MinOnValue } autocomplete="off"/><span class="unit">{ "Min." }</span></span>
+										</label>
+										<label for="min_off_minutes">
+											{ "Mindest-Pausendauer " }
+											<span class="pk-unit"><input id="min_off_minutes" type="text" inputmode="numeric" name="min_off_minutes" value={ data.Charging.MinOffValue } autocomplete="off"/><span class="unit">{ "Min." }</span></span>
+										</label>
+									</div>
+								</div>
+							</div>
+						</details>
+						<div class="pk-actions"><button class="button primary" type="submit">{ "Laderegeln speichern" }</button></div>
+					</form>
+				</section>
+				<details class="panel pk-disclosure pk-status" id="regler-status">
+					<summary><span>{ "Regler-Status & Ereignisse" }</span><span class="pk-disclosure-note">{ data.Charging.State.PhaseLabel }</span></summary>
+					<div class="pk-disclosure-body">
+						<div class="pk-strip">
+							if data.Charging.State.SinceLabel != "" {
+								<span class="mini">{ "seit " + data.Charging.State.SinceLabel }</span>
+							}
+							if data.Charging.State.PollLabel != "" {
+								<span class="mini">{ "HA-Poll " + data.Charging.State.PollLabel }</span>
+							}
+							if data.Charging.State.ShadowPill {
+								<span class="pill">{ "Testbetrieb" }</span>
+							}
+							if data.Charging.State.ErrorDetail != "" {
+								<span class="pill dringend">{ data.Charging.State.ErrorDetail }</span>
+							}
+						</div>
+						if data.Charging.HasEvents {
+							<div class="pk-events" aria-label="Ereignisprotokoll">
+								for _, item3 := range data.Charging.Events {
+									<div class="pk-event"><time>{ item3.AtLabel }</time><span class={ "pill " + item3.KindClass }>{ item3.KindLabel }</span><span>{ item3.Detail }</span></div>
+								}
+							</div>
+						} else {
+							<p class="empty">{ "Noch keine Ereignisse seit dem letzten Neustart. Die nächste Entscheidung erscheint automatisch hier." }</p>
+						}
+					</div>
+				</details>
+			}
+			if data.SectionTelegram {
+				<section class="panel settings-card" id="telegram">
+					<div class="pk-head"><div><h2>{ "Telegram verbinden" }</h2><p class="muted">{ "Eine Person auswählen, Einmal-Code erzeugen und direkt an den HAUSV-Bot senden." }</p></div></div>
+					if data.Charging.Telegram.Configured {
+						<div class="pk-telegram-state"><span class="pill ok">{ "Bot bereit" }</span><span class="pk-telegram-state-copy"><strong>{ "Telegram ist eingerichtet" }</strong><span>{ "Neue Verknüpfungen können sofort erstellt werden." }</span></span></div>
+					} else {
+						<div class="pk-telegram-state warn"><span class="pill dringend">{ "Nicht bereit" }</span><span class="pk-telegram-state-copy"><strong>{ "Bot-Zugang fehlt am Server" }</strong><span>{ "Bestehende Verknüpfungen bleiben gespeichert; neue Codes funktionieren erst nach der Einrichtung." }</span></span></div>
+					}
+					if data.ChargingMsg != "" {
+						<p class={ "flash " + legacyRouteChoice(data.ChargingOK, "ok", "") } role="status">{ data.ChargingMsg }</p>
+					}
+					if data.Charging.Telegram.PendingCode != "" {
+						<div class="pk-code"><span class="mini">{ "Code für " + data.Charging.Telegram.CodeEmail + " — 24 h gültig, einmal verwendbar:" }</span><code>{ "/start " + data.Charging.Telegram.PendingCode }</code><span class="mini">{ "Diese Zeile per Telegram an den Bot senden." }</span></div>
+					}
+					<form class="pk-inline" method="post" action="/app/parking/charging/telegram/link">
+						<label for="tg_email">
+							{ "Verknüpfungscode für " }
+							<select id="tg_email" name="email">
+								for _, item4 := range data.Charging.Telegram.LinkOptions {
+									<option value={ item4.Email }>{ item4.Label + " (" + item4.Email + ")" }</option>
+								}
+							</select>
+						</label><button class="button primary" type="submit">{ "Code erzeugen" }</button>
+					</form>
+					if data.Charging.Telegram.HasChats {
+						<details class="pk-disclosure">
+							<summary><span>{ "Verknüpfte Chats" }</span><span class="pk-disclosure-note">{ fmt.Sprint(len(data.Charging.Telegram.Chats)) + " aktiv" }</span></summary>
+							<div class="pk-disclosure-body">
+								<div class="pk-chats" aria-label="Verknüpfte Chats">
+									for _, item5 := range data.Charging.Telegram.Chats {
+										<div class="pk-chat"><span class="pk-avatar">{ fmt.Sprint(fmt.Sprintf("%.1s", item5.DisplayName)) }</span><span class="pk-chat-meta"><strong>{ item5.DisplayName }</strong><span>{ item5.Email + " · seit " + item5.LinkedAt }</span></span><form method="post" action="/app/parking/charging/telegram/unlink"><input type="hidden" name="chat_id" value={ fmt.Sprint(item5.ChatID) }/><button class="button" type="submit">{ "Trennen" }</button></form></div>
+									}
+								</div>
+							</div>
+						</details>
+					} else {
+						<p class="empty">{ "Noch niemand verbunden. Der erste Schritt ist ein Einmal-Code." }</p>
+					}
+				</section>
+			}
+		</section>
+	</main>
+}
+
+templ ParkingMonthPage(data ParkingMonthPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"attachments.js"}, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "parkingMonth"}) {
+		@PortalShell(data.Portal, "Monatsabrechnung", ParkingMonthContent(data))
+	}
+}
+
+templ ParkingMonthContent(data ParkingMonthPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Monatsabrechnung", Icon: "parking"}, PortalSectionTitle(data.Detail.MonthLabel), PortalSectionLede("Verbrauch, Kosten und Zahlungsstatus."), LegacyParkingMonthActions(data))
+		<section class="page wide parking-month-page">
+			if data.ParkingMsg != "" {
+				<p class={ "flash " + legacyRouteChoice(data.ParkingOK, "ok", "") }>{ data.ParkingMsg }</p>
+			}
+			if data.Detail.Summary.Partial {
+				<div class="notice warn">
+					<strong>{ "Messdaten unvollständig · Teilmonat:" }</strong>
+					{ " Werte beginnen nicht am Monatsanfang; bitte vor dem Teilen prüfen." }
+				</div>
+			}
+			if data.Detail.Summary.Month != "" {
+				<section class="panel parking-month-summary">
+					<div class="parking-month-total"><div><span class="metric-label">{ "Gesamt" }</span><strong>{ data.Detail.Summary.TotalCost }</strong></div><span class={ "pill " + legacyRouteChoice(data.Detail.Summary.Paid, "ok", legacyRouteChoice(data.Detail.Summary.Overdue, "dringend", "")) }>{ data.Detail.Summary.PaidLabel }</span></div>
+					<dl class="parking-month-essential"><div><dt>{ "Verbrauch" }</dt><dd>{ data.Detail.Summary.KWh }</dd></div><div><dt>{ "Netzgebühr" }</dt><dd>{ data.Detail.Summary.GridCost }</dd></div><div><dt>{ "Stromkosten" }</dt><dd>{ data.Detail.Summary.EnergyCost }</dd></div></dl>
+					<div class="parking-month-payment">
+						if data.Detail.Summary.Paid {
+							<div class="pay-settled">
+								<span class="pay-check" aria-hidden="true">
+									@PortalAssetIcon("circle-check")
+								</span>
+								<div class="pay-settled-meta">
+									<strong>
+										{ "Bezahlt" }
+										if data.Detail.Summary.PaidAtLabel != "" {
+											{ " am " + data.Detail.Summary.PaidAtLabel }
+										}
+									</strong>
+									if data.CanManageParkingPayments {
+										if data.Detail.Summary.PaymentMethod != "" {
+											<span>
+												{ data.Detail.Summary.PaymentMethod }
+												if data.Detail.Summary.PaymentReference != "" {
+													{ " · " + data.Detail.Summary.PaymentReference }
+												}
+											</span>
+										}
+									} else {
+										<span>{ "Zahlung ist markiert." }</span>
+									}
+								</div>
+								if data.CanManageParkingPayments {
+									<form class="pay-unmark" method="post" action="/app/parking/month"><input type="hidden" name="month" value={ data.Detail.Summary.Month }/><input type="hidden" name="paid" value="false"/><button class="button pay-ghost" type="submit">{ "Als offen markieren" }</button></form>
+								}
+							</div>
+						} else if data.CanMarkParkingPayment {
+							<form class="pay-form" method="post" action="/app/parking/month">
+								<input type="hidden" name="month" value={ data.Detail.Summary.Month }/><input type="hidden" name="paid" value="true"/>
+								<div class="pay-row"><p class="muted">{ legacyRouteChoice(data.CanManageParkingPayments, "Zahlungseingang für diesen Monat bestätigen.", "Nach der Zahlung können Sie den Monat hier abschließen.") }</p><button class="button primary" type="submit">{ legacyRouteChoice(data.CanManageParkingPayments, "Bezahlung erhalten", "Als bezahlt markieren") }</button></div>
+								<details class="pay-details">
+									<summary>{ "Details (optional)" }</summary>
+									<div class="pay-fields">
+										<label>
+											{ "Datum" }
+											<input type="date" name="paid_at" value={ data.Detail.Summary.PaidAtInput } autocomplete="off"/>
+										</label>
+										<label>
+											{ "Zahlungsart" }
+											<input type="text" name="payment_method" value={ data.Detail.Summary.PaymentMethod } placeholder="Überweisung" autocomplete="off"/>
+										</label>
+										<label class="pay-ref">
+											{ "Referenz" }
+											<input type="text" name="payment_reference" value={ data.Detail.Summary.PaymentReference } placeholder="z. B. Abrechnung Juli" autocomplete="off"/>
+										</label>
+									</div>
+								</details>
+							</form>
+						}
+					</div>
+					<details class="parking-month-disclosure">
+						<summary>{ "Kosten aufschlüsseln" }</summary>
+						<dl class="parking-cost-list">
+							if data.Detail.Summary.HasSurplus {
+								<div><dt>{ "PV-Überschuss · " + data.Detail.Summary.SurplusKWh }</dt><dd>{ data.Detail.Summary.SurplusCost }</dd></div>
+							}
+							<div><dt>{ "Normalladen · " + data.Detail.Summary.NormalKWh }</dt><dd>{ data.Detail.Summary.EnergyCost }</dd></div>
+							<div><dt>{ "Netzgebühr · " + data.Detail.GridFeeLabel }</dt><dd>{ data.Detail.Summary.GridCost }</dd></div>
+							<div><dt>{ "Basis" }</dt><dd>{ data.Detail.Summary.BaseFee }</dd></div>
+							<div><dt>{ "Ø aWATTar" }</dt><dd>{ data.Detail.Summary.AverageAwattar }</dd></div>
+							<div><dt>{ "Ø effektiv" }</dt><dd>{ data.Detail.Summary.EffectivePrice }</dd></div>
+						</dl>
+					</details>
+					<details class="parking-month-disclosure">
+						<summary>{ "Stundenwerte · " + fmt.Sprint(data.Detail.Summary.HourCount) + " Stunden" }</summary>
+						if data.Detail.HasHours {
+							<div class="parking-hour-list">
+								for _, item6 := range data.Detail.Hours {
+									<details class="parking-hour-row">
+										<summary><span>{ item6.AtLabel }</span><span>{ item6.KWh }</span><strong>{ item6.TotalCost }</strong></summary>
+										<dl class="parking-hour-details">
+											<div>
+												<dt>{ "Überschuss" }</dt>
+												<dd>
+													if item6.HasSurplus {
+														{ item6.SurplusKWh }
+													} else {
+														{ "–" }
+													}
+												</dd>
+											</div>
+											<div><dt>{ "aWATTar" }</dt><dd>{ item6.AverageAwattar }</dd></div>
+											<div><dt>{ "Strom" }</dt><dd>{ item6.EnergyCost }</dd></div>
+											<div><dt>{ "Netzgebühr" }</dt><dd>{ item6.GridCost }</dd></div>
+										</dl>
+									</details>
+								}
+							</div>
+						} else {
+							<p class="empty">{ "Noch keine Stundenwerte gespeichert." }</p>
+						}
+					</details>
+					if data.Detail.HasSessions {
+						<details class="parking-month-disclosure">
+							<summary>{ "Ladevorgänge" }</summary>
+							@ParkingSessionList(data.Detail.Sessions)
+						</details>
+					}
+					if (data.CanManageParkingPayments && data.Detail.Summary.HasAttachments) {
+						@IssueAttachments(data.Detail.Summary.Attachments)
+					}
+					<p class="mini">
+						{ "Messwerte aus Zählerdifferenz und aWATTar-Preis. " }
+						if data.Detail.LastSampleLabel != "" {
+							{ "Letzter Zählerwert: " + data.Detail.LastSampleLabel + "." }
+						}
+					</p>
+				</section>
+			}
+		</section>
+	</main>
+}
+
+templ ParkingAccessSettingsPage(data ParkingAccessSettingsPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "parkingAccessSettings"}) {
+		@PortalShell(data.Portal, "Einstellungen", ParkingAccessSettingsContent(data))
+	}
+}
+
+templ ParkingAccessSettingsContent(data ParkingAccessSettingsPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", Icon: "parking"}, PortalSectionTitle("Parkplatz verwalten"), PortalSectionLede("Zugriff, Abrechnung und Laden – jeweils dort, wo es hingehört."), LegacyRouteBack("/app/parking", "Parkplatz öffnen"))
+		<section class="page parking-access">
+			@LegacyParkingAdminNav(data.CanManageUsers, data.CanManageParkingConfig, data.ParkingSection)
+			if data.AccessMsg != "" {
+				<p class={ "access-flash" + legacyRouteChoice(data.AccessOK, " ok", " warn") } role="status">{ data.AccessMsg }</p>
+			}
+			<section class="panel" aria-labelledby="access-title">
+				<div class="access-head"><h2 id="access-title">{ "Wer darf den Parkplatz nutzen?" }</h2><span>{ fmt.Sprint(len(data.AccessRows)) + " Personen" }</span></div>
+				if data.HasAccessRows {
+					<div class="access-list">
+						for _, item7 := range data.AccessRows {
+							<article class="access-row">
+								<span class="access-person"><span class="access-avatar">{ item7.Initials }</span><span class="access-person-copy"><strong>{ item7.DisplayName }</strong><span>{ item7.Email }</span></span></span><span class={ "role-pill " + item7.RoleClass }>{ item7.Role }</span>
+								if (item7.Editable && (data.ServiceProviderAccessEnabled || (item7.Role != "Dienstleister")) && (data.IsAdmin || (item7.Role != "Admin"))) {
+									if item7.ParkingChecked {
+										<span class="pill ok">{ "Freigegeben" }</span>
+									} else {
+										<span class="pill">{ "Kein Zugriff" }</span>
+									}
+									<form class="access-action" method="post" action="/app/settings/parking-access"><input type="hidden" name="email" value={ item7.Email }/><input type="hidden" name="parking" value={ legacyRouteChoice(item7.ParkingChecked, "0", "1") }/><button class={ "button small" + legacyRouteChoice(!(item7.ParkingChecked), " primary", "") } type="submit">{ legacyRouteChoice(item7.ParkingChecked, "Entziehen", "Freigeben") }</button></form>
+								} else {
+									<span class={ "pill" + legacyRouteChoice(item7.ParkingChecked, " ok", "") + " access-fixed" } tabindex="0" role="note" aria-label={ legacyRouteChoice(item7.ParkingChecked, "Freigegeben", "Kein Zugriff") + ". Fest vergeben und hier nicht änderbar." } data-help="Fest vergeben · hier nicht änderbar">
+										@PortalAssetIcon("lock-keyhole")
+										{ legacyRouteChoice(item7.ParkingChecked, "Freigegeben", "Kein Zugriff") }
+										<span class="sr-only">{ ". Aus Konfiguration. Schreibgeschützt." }</span>
+									</span>
+								}
+							</article>
+						}
+					</div>
+				} else {
+					@SettingsEmpty(data.AccessRowsEmpty)
+				}
+			</section>
+		</section>
+	</main>
+}
+
+templ PortalModuleSettingsPage(data PortalModuleSettingsPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "portalModuleSettings"}) {
+		@PortalShell(data.Portal, "Liegenschaft · Navigation", PortalModuleSettingsContent(data))
+	}
+}
+
+templ PortalModuleSettingsContent(data PortalModuleSettingsPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Liegenschaft · Navigation", Icon: "settings"}, PortalSectionTitle("Portalbereiche"), PortalSectionLede("Zeigen Sie nur Funktionen, die in "+data.HouseName+" tatsächlich gebraucht werden."), nil)
+		<section class="page module-settings-page">
+			if data.PortalModulesSaved {
+				<div class="message success">{ "Die sichtbaren Portalbereiche wurden gespeichert." }</div>
+			}
+			if data.PortalModulesError {
+				<div class="message error">{ "Die Portalbereiche konnten nicht gespeichert werden." }</div>
+			}
+			<section class="module-core" aria-label="Immer sichtbare Bereiche">
+				<article class="panel module-core-card">
+					<span class="module-core-icon">
+						@PortalAssetIcon("home")
+					</span><span class="module-core-copy"><strong>{ "Hausüberblick" }</strong><span>{ "Der zentrale Einstieg bleibt immer sichtbar." }</span></span><span class="module-fixed">{ "Immer aktiv" }</span>
+				</article>
+				<article class="panel module-core-card">
+					<span class="module-core-icon">
+						@PortalAssetIcon("settings")
+					</span><span class="module-core-copy"><strong>{ "Einstellungen" }</strong><span>{ "Die Verwaltung bleibt jederzeit erreichbar." }</span></span><span class="module-fixed">{ "Immer aktiv" }</span>
+				</article>
+			</section>
+			<form class="module-form" method="post" action="/app/settings/modules">
+				<div class="module-form-head"><div><h2>{ "Sichtbare Bereiche" }</h2><p>{ "Ausgeschaltete Bereiche verschwinden aus Navigation, Hausüberblick und Einstellungen. Direkte Links sind anschließend ebenfalls gesperrt." }</p></div></div>
+				<div class="module-grid">
+					for _, item8 := range data.PortalModuleOptions {
+						<label class="module-option">
+							<span class="module-option-icon" aria-hidden="true">
+								@PortalAssetIcon("layout-grid")
+							</span><span class="module-option-copy"><strong>{ item8.Label }</strong><span>{ item8.Description }</span></span><input type="checkbox" name="modules" value={ item8.ID } checked?={ item8.Enabled }/><span class="module-switch" aria-hidden="true"></span>
+						</label>
+					}
+				</div>
+				<div class="module-actions"><span>{ "Die Änderung gilt für alle Personen in dieser Liegenschaft." }</span><button class="button primary" type="submit">{ "Portalbereiche speichern" }</button></div>
+			</form>
+		</section>
+	</main>
+}
+
+templ StructuredExportPage(data StructuredExportPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "structuredExport"}) {
+		@PortalShell(data.Portal, "Einstellungen · Datenübergabe", StructuredExportContent(data))
+	}
+}
+
+templ StructuredExportContent(data StructuredExportPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen · Datenübergabe", Icon: "settings"}, PortalSectionTitle("Daten sicher weitergeben"), PortalSectionLede("Sie wählen bewusst aus. hausv.org bündelt nur diese Rohdaten mit Prüfdatei — ohne Buchungen zu erzeugen."), nil)
+		<section class="page raw-export">
+			<div class="raw-export-steps" aria-label="Ablauf"><div class="raw-export-step"><b>{ "1" }</b><span>{ "Datenbereiche wählen" }</span></div><div class="raw-export-step"><b>{ "2" }</b><span>{ "Umfang prüfen" }</span></div><div class="raw-export-step"><b>{ "3" }</b><span>{ "Paket herunterladen" }</span></div></div>
+			if data.StructuredExportMsg != "" {
+				<p class={ "flash " + legacyRouteChoice(data.StructuredExportOK, "ok", "") }>{ data.StructuredExportMsg }</p>
+			}
+			<div class="raw-export-grid">
+				<section class="panel raw-export-card">
+					<div class="raw-export-card-head"><div><h2>{ "Was soll ins Paket?" }</h2><p>{ "Nichts ist vorausgewählt." }</p></div><span class="raw-export-kicker">{ "raw-v0" }</span></div>
+					<form method="post" action="/app/settings/data-export/preview">
+						<div class="raw-export-options">
+							for _, item9 := range data.StructuredExportSources {
+								<label class="raw-export-option"><input type="checkbox" name="source" value={ item9.Value }/><span><strong>{ item9.Title }</strong><small>{ item9.Description }</small></span><span class="raw-export-count">{ fmt.Sprint(item9.Count) }</span></label>
+							}
+						</div>
+						<div class="raw-export-actions"><button class="button primary" type="submit">{ "Auswahl prüfen" }</button></div>
+					</form>
+				</section>
+				<aside class="panel raw-export-card raw-export-guard">
+					<div class="raw-export-card-head"><div><h2>{ "Was Sie bekommen" }</h2><p>{ "Ein prüfbares ZIP-Paket." }</p></div></div>
+					<div class="raw-export-guard-row">
+						@PortalAssetIcon("file-text")
+						<div><strong>{ "Lesbare CSV-Datei" }</strong><span>{ "UTF-8, Semikolon, stabile Spalten." }</span></div>
+					</div>
+					<div class="raw-export-guard-row">
+						@PortalAssetIcon("check")
+						<div><strong>{ "Manifest mit Prüfsumme" }</strong><span>{ "Version, Zeitpunkt, Anzahl und SHA-256." }</span></div>
+					</div>
+					<div class="raw-export-guard-row">
+						@PortalAssetIcon("shield-minus")
+						<div><strong>{ "Keine Zielsystem-Zusage" }</strong><span>{ "Kein BMD-/RZL-Format, keine Steuer- oder Buchungslogik." }</span></div>
+					</div>
+				</aside>
+				if preview10 := data.StructuredExportPreview; preview10 != nil {
+					<section class="panel raw-export-preview">
+						<div class="raw-export-preview-top"><div><span class="raw-export-kicker">{ "Bereit" }</span><h2>{ "Auswahl geprüft" }</h2><p>{ "Erstellt " + preview10.CreatedAt + " · nur für diesen Zugang · 15 Minuten verfügbar" }</p></div></div>
+						<div class="raw-export-summary"><div class="raw-export-metric"><strong>{ fmt.Sprint(preview10.Accepted) }</strong><span>{ "Datensätze im CSV" }</span></div><div class="raw-export-metric"><strong>{ fmt.Sprint(len(preview10.Sources)) }</strong><span>{ "gewählte Bereiche" }</span></div><div class="raw-export-metric"><strong>{ fmt.Sprint(preview10.Rejected) }</strong><span>{ "nicht übernommen" }</span></div></div>
+						<div class="raw-export-selection">
+							for _, item11 := range preview10.Sources {
+								<div class="raw-export-selection-row"><strong>{ item11.Title }</strong><span>{ fmt.Sprint(item11.Count) + legacyRouteChoice((item11.Count == 1), "Datensatz", "Datensätze") }</span></div>
+							}
+						</div>
+						<p class="raw-export-checksum">{ "CSV SHA-256: " + preview10.CSVChecksum }</p>
+						<div class="raw-export-download"><div><strong>{ preview10.Filename }</strong><p>{ "Der Download wird im Aktivitätsverlauf protokolliert und ist einmalig." }</p></div><form method="post" action="/app/settings/data-export/download"><input type="hidden" name="preview_token" value={ preview10.Token }/><button class="button primary" type="submit">{ "ZIP herunterladen" }</button></form></div>
+					</section>
+				}
+			</div>
+		</section>
+	</main>
+}
+
+templ EnergyDataPage(data EnergyDataPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), nil, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "energyData"}) {
+		@PortalShell(data.Portal, "Mein Zuhause · Datenkontrolle", EnergyDataContent(data))
+	}
+}
+
+templ EnergyDataContent(data EnergyDataPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Mein Zuhause · Datenkontrolle", Icon: "energy"}, PortalSectionTitle("Energiedaten & Datenschutz"), PortalSectionLede("Hier sehen Sie verständlich, was gespeichert ist. Sie können Ihre Energiedaten vollständig mitnehmen oder bewusst löschen."), nil)
+		<div class="energy-data-trust" aria-label="Datenschutz-Grundsätze"><span>Home Assistant nur gelesen</span><span>Keine Werbung oder Analyse</span><span>Keine automatische Entscheidung</span></div>
+		@EnergyModeStrip(EnergyPageData{IsActiveMode: data.IsActiveMode, IsShadowMode: data.IsShadowMode, CanControlEnergy: data.CanControlEnergy})
+		<div class="page energy-data-page">
+			if data.HistoryDeleted {
+				<div class="message success">
+					<strong>{ "Der Messverlauf wurde gelöscht." }</strong>
+					{ " Smart-Meter-Originale, Viertelstundenwerte, Tarifstände und Messvergleiche sind entfernt. Anlagen und Zuordnungen bleiben erhalten." }
+				</div>
+			}
+			if data.ExportUnavailable {
+				<div class="message error">
+					<strong>{ "Der direkte Export ist derzeit zu groß." }</strong>
+					{ " Bitte wenden Sie sich an den technischen Kontakt; die Daten werden dann sicher bereitgestellt." }
+				</div>
+			}
+			<section class="energy-lifecycle" aria-label="Aufbewahrungsfristen"><div class="energy-lifecycle-step"><strong>{ "30 Tage" }</strong><span>{ "Smart-Meter-Originale; Löschung beim nächsten 6-Stunden-Lauf" }</span></div><div class="energy-lifecycle-step"><strong>{ "13 Monate" }</strong><span>{ "Viertelstundenwerte; Löschung beim nächsten 6-Stunden-Lauf" }</span></div><div class="energy-lifecycle-step"><strong>{ "3 Jahre" }</strong><span>{ "Tarifbewertungen und Energie-Audit; Löschung beim nächsten 6-Stunden-Lauf" }</span></div></section>
+			<section class="energy-data-section energy-data-export"><header class="energy-data-section-head"><div><h2>{ "Alles mitnehmen" }</h2><p>{ "Ein ZIP-Paket mit Profil, Anlagen, bestätigten Messwert-Zuordnungen, Viertelstundenwerten, noch vorhandenen Originaldateien, Auswertungen und Energieprotokoll. Home-Assistant-Adresse und Zugangstoken sind ausdrücklich nicht enthalten." }</p></div><form method="post" action="/app/settings/energy-data/export" data-download-form><button class="button primary" type="submit" data-busy-label="Export wird erstellt...">{ "Energiedaten exportieren" }</button></form></header><div class="energy-data-inventory" aria-label="Gespeicherte Energiedaten"><div><strong>{ fmt.Sprint(data.AssetCount) }</strong><span>{ "Anlagen und Verbraucher" }</span></div><div><strong>{ fmt.Sprint(data.MappingCount) }</strong><span>{ "bestätigte Zuordnungen" }</span></div><div><strong>{ fmt.Sprint(data.IntervalCount) }</strong><span>{ "Viertelstundenwerte" }</span></div><div><strong>{ fmt.Sprint(data.AssessmentCount) }</strong><span>{ "Tarifbewertungen" }</span></div></div></section>
+			<section class="energy-data-section">
+				<header class="energy-data-section-head"><div><h2>{ "Smart-Meter-Originale" }</h2><p>{ "Diese Dateien werden nach 30 Tagen, die daraus berechneten Viertelstundenwerte nach 13 Monaten zur Löschung fällig. Der automatische Lauf entfernt sie spätestens sechs Stunden später. Ist ein Import falsch, löschen Sie den Messverlauf und importieren anschließend die korrigierte Datei erneut." }</p></div><span class="pill">{ fmt.Sprint(data.ImportCount) + " vorhanden" }</span></header>
+				if data.HasImports {
+					<div class="energy-data-imports">
+						for _, item12 := range data.Imports {
+							<article class="energy-data-import"><div><strong>{ item12.Filename }</strong><span>{ item12.Format + " · importiert am " + item12.Date }</span></div><small>{ item12.Size }</small></article>
+						}
+					</div>
+				} else {
+					<p class="energy-data-empty">{ "Keine Smart-Meter-Originaldatei gespeichert." }</p>
+				}
+			</section>
+			<section class="energy-data-section energy-data-danger">
+				<header><h2>{ "Daten löschen" }</h2><p>{ "Die zwei Stufen trennen Messhistorie von der vollständigen Energie-Einrichtung. Beide Aktionen sind sofort wirksam. Vorgang, ausführende Person, Zeitpunkt und nur betroffene Anzahlen werden protokolliert; gelöschte Inhalte nicht." }</p></header>
+				<details class="energy-delete-action">
+					<summary><span><strong>{ "Nur Messverlauf löschen" }</strong><small>{ "Originaldateien, Viertelstundenwerte, Tarifstände und Vorher-/Nachher-Messvergleiche. Anlagen und Zuordnungen bleiben." }</small></span></summary>
+					<form class="energy-delete-form" method="post" action="/app/settings/energy-data/history/delete">
+						<label>
+							{ "Zur Bestätigung " }
+							<strong>{ "MESSVERLAUF LÖSCHEN" }</strong>
+							{ " eingeben " }
+							<input name="confirmation" autocomplete="off" spellcheck="false" required/>
+						</label><button class="energy-delete-button" type="submit">{ "Messverlauf löschen" }</button>
+					</form>
+				</details>
+				<details class="energy-delete-action">
+					<summary><span><strong>{ "Ganzes Energieprofil löschen" }</strong><small>{ "Zusätzlich Haus-Anzeigename, Wohnform, verknüpfte Einheit, Anlagen, Zuordnungen, Wartungspläne und Maßnahmen-Metadaten. Beginn und Ende des kostenlosen Anspruchs bleiben erhalten, damit eine Neueinrichtung den Zeitraum nicht neu startet." }</small></span></summary>
+					<form class="energy-delete-form" method="post" action="/app/settings/energy-data/profile/delete">
+						<label>
+							{ "Zur Bestätigung " }
+							<strong>{ "ENERGIEPROFIL LÖSCHEN" }</strong>
+							{ " eingeben " }
+							<input name="confirmation" autocomplete="off" spellcheck="false" required/>
+						</label><button class="energy-delete-button" type="submit">{ "Energieprofil löschen" }</button>
+					</form>
+				</details>
+			</section>
+			<p class="energy-data-note">
+				{ "Unabhängige Anliegen, Dokumente und Sicherheitsnachweise haben eigene Aufbewahrungsregeln und werden durch diese Energie-Löschung nicht entfernt. Der einmalige Beginn des kostenlosen Anspruchs ist Vertragsmetadatum des Zuhauses und bleibt bis zum Ende dieses Anspruchsverhältnisses erhalten; er enthält keine Messwerte. Verschlüsselte Sicherungskopien bleiben gesperrt und laufen nach dem betrieblichen Backup-Zyklus aus. Details, Empfänger und Ihre Rechte stehen in der " }
+				<a href="/datenschutz">{ "Datenschutzinformation" }</a>
+				{ "." }
+			</p>
+		</div>
+	</main>
+}
+
+templ EbInterfaceImportPage(data EbInterfaceImportPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"attachments.js"}, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "ebInterfaceImport"}) {
+		@PortalShell(data.Portal, "Dokumente", EbInterfaceImportContent(data))
+	}
+}
+
+templ EbInterfaceImportContent(data EbInterfaceImportPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route invoice-import">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Dokumente", Icon: "document"}, PortalSectionTitle("E-Rechnung ablegen"), PortalSectionLede("XML prüfen und geschützt für die Verwaltung speichern."), LegacyRouteBack("/app/dokumente", "Dokumente"))
+		<section class="page">
+			<div class="flow-strip" aria-label="Ablauf">
+				<div
+					class={ "flow-step " + legacyRouteChoice(data.EBInterfacePreview != nil, "done", "active") }
+					if !(data.EBInterfacePreview != nil) {
+						aria-current="step"
+					}
+				><span>{ "1" }</span><div><strong>{ "Prüfen" }</strong><small>{ "XML & Rechnungsdaten" }</small></div></div>
+				<div
+					class={ "flow-step " + legacyRouteChoice(data.EBInterfacePreview != nil, "active", "") }
+					if data.EBInterfacePreview != nil {
+						aria-current="step"
+					}
+				><span>{ "2" }</span><div><strong>{ "Ablegen" }</strong><small>{ "Original geschützt speichern" }</small></div></div>
+			</div>
+			if data.EBInterfaceImportMsg != "" {
+				<p class={ "flash " + legacyRouteChoice(data.EBInterfaceImportOK, "ok", "") }>{ data.EBInterfaceImportMsg }</p>
+			}
+			if !(data.EBInterfacePreview != nil) {
+				<section class="panel import-panel"><div class="import-panel-head"><div><div class="kicker">{ "Neue Rechnung" }</div><h2>{ "XML auswählen" }</h2><p class="muted">{ "Für ebInterface 5.0 und 6.0." }</p></div></div><form class="upload-form" method="post" action="/app/dokumente/rechnungen/import/preview" enctype="multipart/form-data"><div class="upload-copy"><label for="invoice-file">{ "ebInterface-Datei" }</label><span class="file-control invoice-file-control"><input id="invoice-file" type="file" name="invoice_file" accept=".xml,application/xml,text/xml" data-simple-file data-default-file-label="XML auswählen" required/><span>{ "XML auswählen" }</span></span><span class="mini">{ "XML bis " + data.MaxEBInterfaceImportSize }</span></div><button class="button primary" type="submit">{ "Vorschau erstellen" }</button></form><p class="privacy-note">{ "Lokal geprüft · nicht extern gesendet · nach 15 Minuten gelöscht." }</p></section>
+			}
+			if preview13 := data.EBInterfacePreview; preview13 != nil {
+				<section class="panel import-panel" id="preview">
+					<div class="import-panel-head"><div><div class="kicker">{ "Vorschau" }</div><h2>{ preview13.Filename }</h2><p class="muted">{ "Geprüft " + preview13.CreatedAt + " · noch nicht abgelegt" }</p></div><div class="preview-actions"><span class="profile-chip">{ "ebInterface " + preview13.SourceVersion }</span><a class="button small ghost" href="/app/dokumente/rechnungen/import">{ "Andere Datei" }</a></div></div>
+					if preview13.AlreadyStored {
+						<p class="flash ok">{ "Diese Datei wurde bereits abgelegt. Ein zweites Dokument ist gesperrt." }</p>
+					}
+					if len(preview13.ErrorLabels) > 0 {
+						<ul class="error-list">
+							for _, item14 := range preview13.ErrorLabels {
+								<li>{ item14 }</li>
+							}
+						</ul>
+					} else {
+						<div class="invoice-hero"><div><div class="kicker">{ "Rechnung" }</div><p class="invoice-number">{ preview13.InvoiceNumber }</p></div><strong class="invoice-amount">{ preview13.Amount }</strong></div>
+						<div class="invoice-parties"><div class="party-card"><span>{ "Von" }</span><strong>{ preview13.IssuerName }</strong></div><div class="party-card"><span>{ "An" }</span><strong>{ preview13.RecipientName }</strong></div></div>
+						<div class="invoice-dates"><div class="date-card"><span>{ "Rechnungsdatum" }</span><strong>{ preview13.IssueDate }</strong></div><div class="date-card"><span>{ "Fällig" }</span><strong>{ preview13.DueDate }</strong></div><div class="date-card"><span>{ "Leistungszeitraum" }</span><strong>{ preview13.ServicePeriod }</strong></div></div>
+					}
+					<form class="store-bar" method="post" action="/app/dokumente/rechnungen/import/store">
+						<input type="hidden" name="preview_token" value={ preview13.Token }/><span class="mini">{ "Nur Verwaltung · keine Buchung oder Zahlung." }</span>
+						if preview13.CanStore {
+							<button class="button primary" type="submit">{ "Geschützt ablegen" }</button>
+						} else {
+							<button class="button" type="button" disabled>{ "Ablage nicht möglich" }</button>
+						}
+					</form>
+				</section>
+			}
+		</section>
+	</main>
+}
+
+templ PaymentImportPage(data PaymentImportPageData) {
+	@PortalDocument(data.Portal.Title, portalAssetVersion(), []string{"attachments.js"}, LegacyRouteStyles(), templ.Attributes{"data-templ-legacy": "paymentImport"}) {
+		@PortalShell(data.Portal, "Zahlungsstatus", PaymentImportContent(data))
+	}
+}
+
+templ PaymentImportContent(data PaymentImportPageData) {
+	<main id="main-content" tabindex="-1" data-skip-target class="legacy-route payment-import">
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Zahlungsstatus", Icon: "settings"}, PortalSectionTitle("Zahlungen aus Bankdatei"), PortalSectionLede("Erst prüfen, dann übernehmen. Nur eindeutige Zahlungsreferenzen ändern einen Status."), LegacyRouteBack("/app/settings/building?section=units", "Zu den Einheiten"))
+		<section class="page wide">
+			<div class="import-steps" aria-label="Ablauf"><div class="import-step"><span>{ "1" }</span><div><strong>{ "Monat wählen" }</strong><small>{ "Referenzen gelten für diesen Zeitraum." }</small></div></div><div class="import-step"><span>{ "2" }</span><div><strong>{ "Datei prüfen" }</strong><small>{ "Treffer erscheinen zuerst als Vorschau." }</small></div></div><div class="import-step"><span>{ "3" }</span><div><strong>{ "Sicher übernehmen" }</strong><small>{ "Nur eindeutige Treffer werden gespeichert." }</small></div></div></div>
+			if data.PaymentImportMsg != "" {
+				<p class={ "flash " + legacyRouteChoice(data.PaymentImportOK, "ok", "") }>{ data.PaymentImportMsg }</p>
+			}
+			<section class="panel import-panel">
+				<div class="import-panel-head">
+					<div><h2>{ "1. Zeitraum und Referenzen" }</h2><p class="muted">{ "Der Monat bestimmt, welche Referenz zu welcher Einheit gehört." }</p></div>
+					<form class="period-form" method="get" action="/app/settings/payments/import">
+						<label>
+							{ "Monat" }
+							<input type="month" name="period" value={ data.PaymentImportPeriod } min="2000-01" max="2100-12" required/>
+						</label><button class="button" type="submit">{ "Anzeigen" }</button>
+					</form>
+				</div>
+				if data.HasPaymentImportUnits {
+					<details class="reference-disclosure">
+						<summary><strong>{ fmt.Sprint(len(data.PaymentImportReferences)) + " Zahlungsreferenzen" }</strong><span>{ "Bei Bedarf anzeigen" }</span></summary>
+						<div class="reference-list">
+							for _, item15 := range data.PaymentImportReferences {
+								<div class="reference-row"><strong>{ item15.Label }</strong><code>{ item15.Reference }</code></div>
+							}
+						</div>
+					</details>
+				} else {
+					<p class="muted">{ "Für dieses Haus sind noch keine Einheiten angelegt." }</p>
+				}
+				<form class="upload-form" method="post" action="/app/settings/payments/import/preview" enctype="multipart/form-data"><input type="hidden" name="period" value={ data.PaymentImportPeriod }/><div class="upload-copy"><label for="camt-file">{ "2. camt.053-Datei auswählen" }</label><span class="file-control"><span>{ "Datei auswählen" }</span><input id="camt-file" type="file" name="camt_file" accept=".xml,application/xml,text/xml" required/></span><span class="mini">{ "XML bis " + data.MaxCAMTImportSize + " · unterstützt: camt.053.001.02 und .001.08" }</span></div><button class="button primary" type="submit" disabled?={ !(data.HasPaymentImportUnits) }>{ "Vorschau erstellen" }</button></form>
+				<p class="privacy-note">{ "Die Datei wird nicht gespeichert. 15 Minuten lang bleiben nur Referenz, Betrag und Prüfdaten im Arbeitsspeicher – nie IBAN oder Namen." }</p>
+			</section>
+			if preview16 := data.PaymentImportPreview; preview16 != nil {
+				<section class="panel import-panel" id="preview">
+					<div class="preview-head"><div><div class="kicker">{ "Vorschau" }</div><h2>{ preview16.Filename }</h2><p class="muted">{ "Geprüft " + preview16.CreatedAt + " · noch nichts übernommen" }</p></div><span class="profile-chip">{ preview16.SourceVersion }</span></div>
+					<div class="preview-metrics" aria-label="Prüfergebnis"><div class="preview-metric"><strong>{ fmt.Sprint(preview16.Assigned) }</strong><span>{ "eindeutig" }</span></div><div class="preview-metric"><strong>{ fmt.Sprint(preview16.Unclear) }</strong><span>{ "zu prüfen" }</span></div><div class="preview-metric"><strong>{ fmt.Sprint(preview16.Rejected) }</strong><span>{ "abgelehnt" }</span></div></div>
+					if preview16.AlreadyApplied {
+						<p class="flash ok">{ "Diese Datei wurde bereits übernommen. Eine zweite Übernahme ist gesperrt." }</p>
+					}
+					if preview16.Changed {
+						<p class="flash">{ "Einheiten oder Referenzen haben sich seit der Vorschau geändert. Bitte eine neue Vorschau erstellen." }</p>
+					}
+					<div class="import-rows">
+						for _, item17 := range preview16.Rows {
+							<article class="import-row">
+								<span class={ "decision " + item17.DecisionClass }>{ item17.Decision }</span><code class="row-reference">{ item17.Reference }</code>
+								<span class="row-unit">
+									<strong>{ item17.UnitLabel }</strong>
+									if item17.Status != "" {
+										<span>{ "→ " + item17.Status }</span>
+									}
+								</span><strong class="row-amount">{ item17.Amount }</strong><span class="row-reason">{ item17.Reason }</span>
+							</article>
+						}
+					</div>
+					<form class="apply-bar" method="post" action="/app/settings/payments/import/apply">
+						<input type="hidden" name="preview_token" value={ preview16.Token }/><span class="mini">{ "Unklare Zeilen bleiben unverändert. Die Übernahme wird protokolliert und lässt sich nicht doppelt ausführen." }</span>
+						if preview16.CanApply {
+							<button class="button primary" type="submit">{ "Eindeutige Treffer übernehmen" }</button>
+						} else {
+							<button class="button" type="button" disabled>{ "Keine Übernahme möglich" }</button>
+						}
+					</form>
+				</section>
+			}
+		</section>
+	</main>
+}
+
+templ LegacyParkingAdminNav(canManageUsers, canManageParkingConfig bool, section string) {
+	<nav class={ "pk-nav" + legacyRouteChoice(!(canManageParkingConfig), " pk-nav-one", legacyRouteChoice(!(canManageUsers), " pk-nav-three", "")) } aria-label="Parkplatz-Verwaltung">
+		if canManageUsers {
+			<a class={ "pk-nav-item", templ.KV("active", section == "access") } href="/app/settings/parking-access">
+				<span class="pk-nav-icon">
+					@PortalAssetIcon("users")
+				</span><strong>{ "Zugriff" }</strong><span>{ "Personen" }</span>
+			</a>
+		}
+		if canManageParkingConfig {
+			<a class={ "pk-nav-item", templ.KV("active", section == "accounting") } href="/app/parking/settings?section=accounting">
+				<span class="pk-nav-icon">
+					@PortalAssetIcon("receipt")
+				</span><strong>{ "Abrechnung" }</strong><span>{ "Tarif & Zahlung" }</span>
+			</a>
+			<a class={ "pk-nav-item", templ.KV("active", section == "charging") } href="/app/parking/settings?section=charging">
+				<span class="pk-nav-icon">
+					@PortalAssetIcon("zap")
+				</span><strong>{ "Laderegeln" }</strong><span>{ "Automatik" }</span>
+			</a>
+			<a class={ "pk-nav-item", templ.KV("active", section == "telegram") } href="/app/parking/settings?section=telegram">
+				<span class="pk-nav-icon">
+					@PortalAssetIcon("send")
+				</span><strong>{ "Telegram" }</strong><span>{ "Verknüpfung" }</span>
+			</a>
+		}
+	</nav>
+}
+
+templ LegacyRouteStyles() {
+	<link rel="stylesheet" href={ "/assets/legacy-routes.css?v=" + portalAssetVersion() }/>
+}
+
+templ LegacyRouteBack(href, label string) {
+	<a class="button ghost" href={ templ.SafeURL(href) }>{ label }</a>
+}
+
+templ LegacyParkingMonthActions(data ParkingMonthPageData) {
+	@LegacyRouteBack(data.Detail.BackPath+"#parking-months", "Zurück zu Monaten")
+	if data.Detail.Summary.Month != "" {
+		<details class="parking-more">
+			<summary class="button ghost">Exportieren</summary>
+			<div class="parking-more-menu">
+				<a class="button ghost" href={ templ.SafeURL("/app/parking/month/" + data.Detail.Month + "/export") }>CSV herunterladen</a>
+				<button class="button ghost" type="button" data-print>Drucken / PDF</button>
+			</div>
+		</details>
+	}
+}

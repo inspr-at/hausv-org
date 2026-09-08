@@ -7,6 +7,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/view"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 type portalModuleID string
@@ -219,13 +220,7 @@ func portalModuleForPath(path string) (portalModuleID, bool) {
 	}
 }
 
-type portalModuleOptionView struct {
-	ID          string
-	Label       string
-	Description string
-	Icon        string
-	Enabled     bool
-}
+type portalModuleOptionView = web.PortalModuleOptionView
 
 func (a *app) portalModuleSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	flags := a.portalModulesFor(ac.tenant.Slug)
@@ -236,10 +231,12 @@ func (a *app) portalModuleSettings(w http.ResponseWriter, r *http.Request, ac au
 			Icon: item.Icon, Enabled: flags.Enabled(item.ID),
 		})
 	}
-	a.render(w, "portalModuleSettings", a.withBase(ac, map[string]any{
-		"Title": "Portalbereiche", "ActivePage": "settings", "PortalModuleOptions": options,
-		"PortalModulesSaved": r.URL.Query().Get("saved") == "1",
-		"PortalModulesError": r.URL.Query().Get("error") == "1",
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.PortalModuleSettingsPage(web.PortalModuleSettingsPageData{
+		Portal:              a.settingsPortalContext(ac, "Portalbereiche", "settings"),
+		HouseName:           houseDisplayName(ac.tenant),
+		PortalModuleOptions: options,
+		PortalModulesSaved:  r.URL.Query().Get("saved") == "1",
+		PortalModulesError:  r.URL.Query().Get("error") == "1",
 	}))
 }
 

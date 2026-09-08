@@ -61,7 +61,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 	for _, want := range []string{
 		"data-templ-settings",
 		"data-templ-home-settings",
-		`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
+		`<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 		`<nav class="nav" aria-label="Bereiche"`,
 		// The editor identity hooks other views mirror.
 		`data-home-identity="editor-heading"`,

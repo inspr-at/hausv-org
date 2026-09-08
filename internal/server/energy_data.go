@@ -19,6 +19,7 @@ import (
 
 	"github.com/inspr-at/hausv-org/internal/energy"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 const (
@@ -27,12 +28,7 @@ const (
 	maxEnergyExportBytes     = 64 << 20
 )
 
-type energyDataImportView struct {
-	Filename string
-	Date     string
-	Format   string
-	Size     string
-}
+type energyDataImportView = web.EnergyDataImportView
 
 type energyExportFile struct {
 	Path   string `json:"path"`
@@ -130,23 +126,20 @@ func (a *app) energyDataPage(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.Error(w, "Energiedaten konnten nicht geladen werden.", http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "energyData", a.withBase(ac, map[string]any{
-		"Title":             "Energiedaten & Datenschutz",
-		"ActivePage":        "settings",
-		"Profile":           profile,
-		"Imports":           importViews,
-		"HasImports":        len(importViews) > 0,
-		"ImportCount":       len(importViews),
-		"IntervalCount":     len(intervals),
-		"AssessmentCount":   len(assessments),
-		"AssetCount":        len(assets),
-		"MappingCount":      len(mappings),
-		"CanControlEnergy":  a.canControlEnergy(ac),
-		"IsObserveMode":     profile.OperatingMode == energy.ModeObserve,
-		"IsActiveMode":      profile.OperatingMode == energy.ModeActive,
-		"IsShadowMode":      profile.AutomationStage == energy.StageShadow,
-		"HistoryDeleted":    r.URL.Query().Get("result") == "history-deleted",
-		"ExportUnavailable": r.URL.Query().Get("result") == "export-too-large",
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.EnergyDataPage(web.EnergyDataPageData{
+		Portal:            a.settingsPortalContext(ac, "Energiedaten & Datenschutz", "settings"),
+		Imports:           importViews,
+		HasImports:        len(importViews) > 0,
+		ImportCount:       len(importViews),
+		IntervalCount:     len(intervals),
+		AssessmentCount:   len(assessments),
+		AssetCount:        len(assets),
+		MappingCount:      len(mappings),
+		CanControlEnergy:  a.canControlEnergy(ac),
+		IsActiveMode:      profile.OperatingMode == energy.ModeActive,
+		IsShadowMode:      profile.AutomationStage == energy.StageShadow,
+		HistoryDeleted:    r.URL.Query().Get("result") == "history-deleted",
+		ExportUnavailable: r.URL.Query().Get("result") == "export-too-large",
 	}))
 }
 

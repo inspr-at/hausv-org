@@ -136,7 +136,7 @@ func TestPortfolio15000PaginationAndBoundedRender(t *testing.T) {
 			t.Fatal("page boundary incorrect")
 		}
 		var body bytes.Buffer
-		if err := web.PortfolioPage(web.VerwaltungShell{}, paged).Render(context.Background(), &body); err != nil {
+		if err := web.PortfolioPage(web.PortalPageData{}, paged).Render(context.Background(), &body); err != nil {
 			t.Fatal(err)
 		}
 		if n := strings.Count(body.String(), `class="portfolio-row-form"`); n != 50 {

@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.13] - 2026-09-08
+
+### Neu
+
+- Navigation: Eine Sidebar für alle Sichten mit denselben Blöcken in derselben Reihenfolge und einer Breite; auch Portfolio und Posteingang behalten Liegenschafts-Karte und -Navigation („Alle Liegenschaften“). Alle Seiten nutzen denselben Seitenkopf.
+- Anliegen-Detail, Parkplatz-Einstellungen und -Monat, Parkzugang, Module, Datenexport, Energiedaten und Importe laufen jetzt in derselben Oberfläche mit Kontextleiste und Liegenschafts-Wechsler.
+- Triage-Board: nutzt die volle Breite; Anliegen lassen sich per Ziehen oder über „Verschieben nach …“ zwischen den Spalten bewegen.
+
 ## [1.9.12] - 2026-09-08
 
 ### Verbessert

@@ -7,7 +7,7 @@ import (
 )
 
 func TestPortfolioTemplateRendersEmptyActionState(t *testing.T) {
-	body := renderComponent(t, PortfolioPage(VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}, PortfolioData{
+	body := renderComponent(t, PortfolioPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}}), PortfolioData{
 		Eyebrow:   "HAUSVERWALTUNG MUSTERSTADT · PORTFOLIO",
 		Greeting:  "Guten Morgen, Vera.",
 		TodayLine: "Mittwoch, 9. September 2026 · 0 Liegenschaften · 0 Einheiten",
@@ -19,7 +19,7 @@ func TestPortfolioTemplateRendersEmptyActionState(t *testing.T) {
 }
 
 func TestPortfolioTemplateRendersCollapsedQuietHouses(t *testing.T) {
-	body := renderComponent(t, PortfolioPage(VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}, PortfolioData{
+	body := renderComponent(t, PortfolioPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Hausverwaltung Musterstadt"}}), PortfolioData{
 		Eyebrow:         "HAUSVERWALTUNG MUSTERSTADT · PORTFOLIO",
 		Greeting:        "Guten Morgen, Vera.",
 		TodayLine:       "Mittwoch, 9. September 2026 · 2 Liegenschaften · 12 Einheiten",
@@ -42,7 +42,7 @@ func TestPortfolioAgendaGroupsActualDatesAndShowsTimes(t *testing.T) {
 	first := PortfolioAppointment{Title: "Versammlung", House: "Haus A", Day: "08", Month: "Sep", Time: "09:00", At: today}
 	second := PortfolioAppointment{Title: "Wartung", House: "Haus B", Day: "09", Month: "Sep", Time: "13:00", At: today.AddDate(0, 0, 1).Add(4 * time.Hour)}
 	data := PortfolioData{Today: "Dienstag, 8. September 2026", Appointments: []PortfolioAppointment{first, first, second}}
-	body := renderComponent(t, PortfolioPage(VerwaltungShell{}, data))
+	body := renderComponent(t, PortfolioPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), data))
 	for _, heading := range []string{"Heute · 08. Sep", "Morgen · 09. Sep"} {
 		if strings.Count(body, heading) != 1 {
 			t.Fatalf("agenda must group %q once", heading)
@@ -54,7 +54,7 @@ func TestPortfolioAgendaGroupsActualDatesAndShowsTimes(t *testing.T) {
 		}
 	}
 	data.Appointments = []PortfolioAppointment{second}
-	body = renderComponent(t, PortfolioPage(VerwaltungShell{}, data))
+	body = renderComponent(t, PortfolioPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{}}), data))
 	if !strings.Contains(body, "Morgen · 09. Sep") || strings.Contains(body, "Heute · 09. Sep") {
 		t.Fatal("a tomorrow-only agenda must not call its first group today")
 	}

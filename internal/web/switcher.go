@@ -28,22 +28,6 @@ func portalScopeContext(data PortalPageData) ScopeContext {
 	return scope
 }
 
-func verwaltungScopeContext(shell VerwaltungShell) ScopeContext {
-	if shell.Context.Ready {
-		return shell.Context
-	}
-	contexts := append([]PortalContext(nil), shell.Contexts...)
-	if len(contexts) == 0 {
-		for _, h := range shell.Houses {
-			contexts = append(contexts, PortalContext{TenantSlug: h.Slug, HouseName: h.Name, Address: h.Address, Role: h.Role})
-		}
-	}
-	data := ScopeContext{Ready: true, CanUseSettings: true, DisplayName: shell.DisplayName, Initials: shell.Initials, AvatarURL: shell.AvatarURL, Role: shell.RoleLabel, Segments: []string{shell.OrganisationName, "Alle Liegenschaften"}, Switcher: fallbackSwitcher(contexts)}
-	data.Switcher.Current = nil
-	data.Switcher.PortfolioURL = "/app/verwaltung"
-	return data
-}
-
 func fallbackSwitcher(contexts []PortalContext) LiegenschaftSwitcherData {
 	data := LiegenschaftSwitcherData{SearchURL: "/app/liegenschaften/suche", PortfolioURL: "/app/liegenschaften"}
 	seen := map[string]bool{}
@@ -67,12 +51,6 @@ func fallbackSwitcher(contexts []PortalContext) LiegenschaftSwitcherData {
 	return data
 }
 
-func verwaltungSwitcherID(sidebar bool) string {
-	if sidebar {
-		return "verwaltung-switcher"
-	}
-	return "verwaltung-switcher-mobile"
-}
 func switcherCountLabel(count int) string {
 	if count == 1 {
 		return "1 Liegenschaft"
