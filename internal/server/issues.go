@@ -156,7 +156,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 			TotalIssueCount:         totalIssueCount,
 			OpenIssueCount:          openIssueCount,
 			UrgentIssueCount:        urgentIssueCount,
-			IssuesEmpty:             emptyState("Keine Anliegen im Haus", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
+			IssuesEmpty:             emptyState("Keine Anliegen in der Liegenschaft", "Sobald ein Anliegen gemeldet wird, erscheint es hier für die Bearbeitung."),
 		})
 		return
 	}
@@ -202,7 +202,7 @@ func newestOpenIssueSummaries(items []residentIssue, now time.Time) []web.IssueS
 			assignee = "Noch nicht zugewiesen"
 		}
 		result = append(result, web.IssueSummaryView{
-			Title: item.Title, Status: status, StatusClass: issueStatusClass(status),
+			Title: item.Title, Status: status, StatusLabel: issueStatusLabel(status), StatusClass: issueStatusClass(status),
 			Assignee: assignee, AssigneeEmail: strings.TrimSpace(item.AssigneeEmail), Age: relativeAge(now, item.CreatedAt),
 			URL: "/app/anliegen/board/" + url.PathEscape(item.ID),
 		})
@@ -1324,6 +1324,7 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			Category:              item.Category,
 			Status:                status,
 			StatusClass:           issueStatusClass(status),
+			StatusLabel:           issueStatusLabel(status),
 			NextStep:              nextStep,
 			DetailURL:             detailURL,
 			DetailAction:          detailAction,
@@ -1358,8 +1359,8 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			HasPhotos:             photoCount > 0,
 			Comments:              comments,
 			HasComments:           len(comments) > 0,
-			StatusOptions:         issueSelectOptions(issueStatuses(), status),
-			ServiceStatusOptions:  issueSelectOptions(serviceProviderIssueStatuses(), status),
+			StatusOptions:         issueStatusSelectOptions(issueStatuses(), status),
+			ServiceStatusOptions:  issueStatusSelectOptions(serviceProviderIssueStatuses(), status),
 			PriorityOptions:       issueSelectOptions(issuePriorities(), priority),
 		})
 	}

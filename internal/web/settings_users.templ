@@ -130,7 +130,7 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 						</ul></details>
 					}
 				</div></details>
-				<p class="access-help">Zuordnungen gelten für dieses Haus. Weitere Zugriffe ergeben sich aus Rolle und Sonderrechten.</p>
+				<p class="access-help">Zuordnungen gelten für diese Liegenschaft. Weitere Zugriffe ergeben sich aus Rolle und Sonderrechten.</p>
 			} else {
 				<p class="access-help">Keine Einheiten zugeordnet. Der Zugang richtet sich nach Rolle und Sonderrechten.</p>
 			}
@@ -172,7 +172,7 @@ templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
 		if user.IsConfig {
 			<span> (aus Konfiguration)</span>
 		}
-	</p><form method="post" action="/app/settings/users/edit"><input type="hidden" name="orig_email" value={ user.Email }/><label>Rolle in diesem Haus<select class="f-role" name="role" autofocus>@RoleOptions(data, user.Role)</select></label>
+	</p><form method="post" action="/app/settings/users/edit"><input type="hidden" name="orig_email" value={ user.Email }/><label>Rolle in dieser Liegenschaft<select class="f-role" name="role" autofocus>@RoleOptions(data, user.Role)</select></label>
 		<details class="inline-details"><summary>Personendaten <small>
 			if data.IsAdmin {
 				bearbeiten
@@ -192,13 +192,13 @@ templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
 		<details class="inline-details"><summary>Anmeldung &amp; Sonderrechte</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
 		<label class="check-card"><input type="checkbox" name="deactivated" value="1" checked?={ user.Deactivated }/><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class="button primary" type="submit">Änderungen speichern</button></form>
 		if !user.IsConfig {
-			<details class="danger"><summary>Zugang dauerhaft entfernen</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
+			<details class="danger"><summary>Zugang dauerhaft entfernen</summary><form method="post" action="/app/settings/users/delete" data-confirm="Diesen Zugang wirklich dauerhaft entfernen?"><input type="hidden" name="email" value={ user.Email }/><p>Entfernt die Zuordnung zur Liegenschaft dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type="submit">Dauerhaft entfernen</button></form></details>
 		}
 	</dialog>
 }
 
 templ AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) {
-	<div class="access-options"><fieldset><legend>Sonderrechte</legend><span class="scope personal" data-preset-label>Gespeicherte Rechte</span><label class="check-card"><input type="checkbox" name="permissions" value="parking" data-permission="parking" checked?={ parking }/><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class="check-card"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker" checked?={ energyCaretaker }/><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class="check-card"><input type="checkbox" name="auth_methods" value="email" checked?={ emailAuth }/><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class="check-card"><input type="checkbox" name="auth_methods" value="oidc" checked?={ oidcAuth }/><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>
+	<div class="access-options"><fieldset><legend>Sonderrechte</legend><span class="scope personal" data-preset-label>Gespeicherte Rechte</span><label class="check-card"><input type="checkbox" name="permissions" value="parking" data-permission="parking" checked?={ parking }/><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class="check-card"><input type="checkbox" name="permissions" value="energy-caretaker" data-permission="energy-caretaker" checked?={ energyCaretaker }/><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class="check-card"><input type="checkbox" name="auth_methods" value="email" checked?={ emailAuth }/><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class="check-card"><input type="checkbox" name="auth_methods" value="oidc" checked?={ oidcAuth }/><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Zugang zur Liegenschaft.</small></span></label></fieldset></div>
 }
 
 

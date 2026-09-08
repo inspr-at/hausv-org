@@ -29,7 +29,7 @@ func TestContactsTemplUsesSharedPermissionGatedShellForEveryPortalRole(t *testin
 			body := response.Body.String()
 			for _, want := range []string{
 				"data-templ-contacts",
-				`<aside class="sidebar" aria-label="Hausnavigation">`,
+				`<aside class="sidebar" aria-label="Navigation der Liegenschaft">`,
 				`href="/demo/app/kontakte" class="nav-item active" aria-current="page"`,
 				`<nav class="nav" aria-label="Bereiche"`,
 				"Versionsverlauf",

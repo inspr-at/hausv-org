@@ -60,7 +60,7 @@ func notificationOptionsForModules(options []view.NotificationEventOption, modul
 
 var portalModuleCatalog = []portalModuleDefinition{
 	{portalModuleEnergy, "Energie", "Energiefluss, Messwerte und Verbraucher", "energy"},
-	{portalModuleAnnouncements, "Aushang", "Mitteilungen für das Haus", "announcement"},
+	{portalModuleAnnouncements, "Aushang", "Mitteilungen für die Liegenschaft", "announcement"},
 	{portalModuleEvents, "Termine", "Kalender, Wartungen und Versammlungen", "calendar"},
 	{portalModuleContacts, "Kontakte", "Verwaltung, Beirat und Dienstleister", "contact"},
 	{portalModuleDocuments, "Dokumente", "Unterlagen, Vorschau und Download", "document"},

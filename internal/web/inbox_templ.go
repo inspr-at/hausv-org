@@ -320,7 +320,7 @@ func InboxContent(data InboxData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</select></label><label>Haus<select name=\"house\"><option value=\"\">Alle</option>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</select></label><label>Liegenschaft<select name=\"house\"><option value=\"\">Alle</option>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -354,7 +354,7 @@ func InboxContent(data InboxData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Älteste zuerst</option></select></label></div><button class=\"inbox-action\" type=\"submit\">Anwenden</button></form></details> <details><summary class=\"inbox-action\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 3.5l3 4-2 2c1.7 3.4 3.6 5.3 7 7l2-2 4 3c.4.3.5.8.3 1.2-.7 1.3-2 2.1-3.5 2.1C10.1 20.8 3.2 13.9 3.2 6.5c0-1.5.8-2.8 2.1-3.5.4-.2.9-.1 1.2.5z\"></path></svg>Telefonnotiz</summary><form class=\"phone-panel\" method=\"post\" action=\"/app/verwaltung/telefonnotiz\"><div class=\"phone-grid\"><label>Haus <select name=\"house\" required><option value=\"\">Bitte wählen</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Älteste zuerst</option></select></label></div><button class=\"inbox-action\" type=\"submit\">Anwenden</button></form></details> <details><summary class=\"inbox-action\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 3.5l3 4-2 2c1.7 3.4 3.6 5.3 7 7l2-2 4 3c.4.3.5.8.3 1.2-.7 1.3-2 2.1-3.5 2.1C10.1 20.8 3.2 13.9 3.2 6.5c0-1.5.8-2.8 2.1-3.5.4-.2.9-.1 1.2.5z\"></path></svg>Telefonnotiz</summary><form class=\"phone-panel\" method=\"post\" action=\"/app/verwaltung/telefonnotiz\"><div class=\"phone-grid\"><label>Liegenschaft <select name=\"house\" required><option value=\"\">Bitte wählen</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1204,7 +1204,7 @@ func InboxAssignment(item InboxCase) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"><div class=\"assign-copy\"><strong>Nicht zugeordnet</strong><span>Haus auswählen, dann Vorschlag erstellen</span></div><label>Haus<select name=\"house\" required><option value=\"\">Bitte wählen</option>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"><div class=\"assign-copy\"><strong>Nicht zugeordnet</strong><span>Liegenschaft auswählen, dann Vorschlag erstellen</span></div><label>Liegenschaft<select name=\"house\" required><option value=\"\">Bitte wählen</option>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1225,7 +1225,7 @@ func InboxAssignment(item InboxCase) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"></label><button type=\"submit\">Haus zuordnen</button></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"></label><button type=\"submit\">Liegenschaft zuordnen</button></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1883,7 +1883,7 @@ func InboxCaseWorkflowContent(item InboxCase) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</select></label><label>Haus<select name=\"house\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</select></label><label>Liegenschaft<select name=\"house\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1982,7 +1982,7 @@ func InboxCaseWorkflowContent(item InboxCase) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\"></span></span></strong></div></div><div class=\"classification-row\"><div class=\"fact\"><small>Haus · Einheit</small> <strong>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\"></span></span></strong></div></div><div class=\"classification-row\"><div class=\"fact\"><small>Liegenschaft · Einheit</small> <strong>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

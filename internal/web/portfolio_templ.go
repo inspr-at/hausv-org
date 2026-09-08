@@ -336,12 +336,12 @@ func portfolioBody(data PortfolioData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, ">Name</option></select></label> <button type=\"submit\">Anwenden</button></form><div class=\"portfolio-desktop-table\" role=\"table\" aria-label=\"Verwaltete Häuser\"><div class=\"portfolio-table-head\" role=\"row\"><span role=\"columnheader\"><span class=\"sr-only\">Status</span></span><span role=\"columnheader\">Haus</span><span role=\"columnheader\">Offen</span><span role=\"columnheader\">Überfällig</span><span role=\"columnheader\">Ältestes</span><span role=\"columnheader\">Nächster Termin</span><span role=\"columnheader\">Zuständig</span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, ">Name</option></select></label> <button type=\"submit\">Anwenden</button></form><div class=\"portfolio-desktop-table\" role=\"table\" aria-label=\"Verwaltete Liegenschaften\"><div class=\"portfolio-table-head\" role=\"row\"><span role=\"columnheader\"><span class=\"sr-only\">Status</span></span><span role=\"columnheader\">Liegenschaft</span><span role=\"columnheader\">Offen</span><span role=\"columnheader\">Überfällig</span><span role=\"columnheader\">Ältestes</span><span role=\"columnheader\">Nächster Termin</span><span role=\"columnheader\">Zuständig</span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(data.Houses) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"empty\">Keine Häuser mit Handlungsbedarf</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"empty\">Keine Liegenschaften mit Handlungsbedarf</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -382,12 +382,12 @@ func portfolioBody(data PortfolioData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><div class=\"mobile-section portfolio-mobile-only\" aria-label=\"Verwaltete Häuser\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><div class=\"mobile-section portfolio-mobile-only\" aria-label=\"Verwaltete Liegenschaften\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(data.Houses) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<p class=\"empty\">Keine Häuser mit Handlungsbedarf</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<p class=\"empty\">Keine Liegenschaften mit Handlungsbedarf</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1069,9 +1069,9 @@ func portfolioHouseSummary(action, quiet int) string {
 
 func portfolioQuietSummary(count int) string {
 	if count == 1 {
-		return "1 weiteres Haus ohne Handlungsbedarf anzeigen"
+		return "1 weitere Liegenschaft ohne Handlungsbedarf anzeigen"
 	}
-	return fmt.Sprintf("%d weitere Häuser ohne Handlungsbedarf anzeigen", count)
+	return fmt.Sprintf("%d weitere Liegenschaften ohne Handlungsbedarf anzeigen", count)
 }
 
 func portfolioMobileHouseSummary(house PortfolioHouse) string {

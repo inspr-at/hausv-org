@@ -371,9 +371,9 @@ func portfolioDayCount(days int) string {
 
 func portfolioHouseCount(count int) string {
 	if count == 1 {
-		return "1 Haus"
+		return "1 Liegenschaft"
 	}
-	return fmt.Sprintf("%d Häuser", count)
+	return fmt.Sprintf("%d Liegenschaften", count)
 }
 
 func portfolioUnitCount(count int) string {

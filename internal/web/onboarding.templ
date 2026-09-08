@@ -181,7 +181,7 @@ templ OnboardingStepIdentity(data OnboardingPageData) {
 	<form class="onboarding-body onboarding-form onboarding-identity-form" method="post" action="/app/zuhause/onboarding">
 		<label><span>Anzeigename für „Mein Zuhause“</span><input type="text" name="household_name" value={ data.HouseholdName } placeholder="z. B. Dachwohnung oder Mein Zuhause" required maxlength="100"/></label>
 		if data.HomeTypeLocked {
-			<div class="home-identity-field"><span>Art</span><input type="hidden" name="home_type" value={ data.HomeType }/><div class="home-identity-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>
+			<div class="home-identity-field"><span>Art</span><input type="hidden" name="home_type" value={ data.HomeType }/><div class="home-identity-readonly"><strong>{ data.HomeTypeLabel }</strong><small>Durch die zugeordnete Einheit festgelegt</small></div></div>
 		} else {
 			<label><span>Art</span><select name="home_type" data-home-type-select aria-describedby="home-type-explanation">
 				<option value="apartment" data-label="Wohnung" data-description="Ein einzelner Haushalt in einem Mehrparteienhaus. Der Überblick konzentriert sich auf Ihre Wohnung und Ihre eigenen Geräte." selected?={ data.HomeType == "apartment" }>Wohnung</option>
@@ -190,13 +190,13 @@ templ OnboardingStepIdentity(data OnboardingPageData) {
 			</select></label>
 		}
 		if data.HasHomeUnit {
-			<div class="home-identity-field"><span>Zugeordnete offizielle Wohnung</span><input type="hidden" name="unit_id" value={ data.HomeUnitID }/><div class="home-identity-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Wohnung; technische Freigaben bleiben separat.</small></div>
+			<div class="home-identity-field"><span>Zugeordnete offizielle Einheit</span><input type="hidden" name="unit_id" value={ data.HomeUnitID }/><div class="home-identity-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Einheit; technische Freigaben bleiben separat.</small></div>
 		} else if data.HasUnitOptions {
-			<div class="home-identity-field" data-home-unit-field><label><span>Zugeordnete offizielle Wohnung</span><select name="unit_id" required aria-describedby="home-onboarding-unit-help">
+			<div class="home-identity-field" data-home-unit-field><label><span>Zugeordnete offizielle Einheit</span><select name="unit_id" required aria-describedby="home-onboarding-unit-help">
 				for _, option := range data.UnitOptions {
 					<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 				}
-			</select></label><small class="home-identity-field-help" id="home-onboarding-unit-help">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>
+			</select></label><small class="home-identity-field-help" id="home-onboarding-unit-help">Die Auswahl legt fest, welche Einheit den Überblick sieht. Technische Freigaben bleiben separat.</small></div>
 		} else {
 			<input type="hidden" name="unit_id" value=""/>
 		}
@@ -325,7 +325,7 @@ func onboardingHomeTypeLabel(homeType string) string {
 
 func onboardingHomeTypeHint(locked bool) string {
 	if locked {
-		return "Die Art ist mit der Wohnung verbunden."
+		return "Die Art ist mit der Einheit verbunden."
 	}
 	return "Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern."
 }

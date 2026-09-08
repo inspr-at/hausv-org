@@ -307,6 +307,10 @@ type IssueView struct {
 	StatusOptions           []SelectOption
 	ServiceStatusOptions    []SelectOption
 	PriorityOptions         []SelectOption
+	// StatusLabel is the short German word shown to people (e.g. "In Arbeit").
+	// Status stays the stored value ("In Bearbeitung") used in URLs, forms and
+	// filter comparisons — never rename that one.
+	StatusLabel string
 }
 
 type IssueBoardFilterView struct {
@@ -1118,6 +1122,21 @@ func IssueStatusClass(status string) string {
 	}
 }
 
+// IssueStatusLabel renders the short German word shown to people. It is the
+// display counterpart to store.IssueStatus*: the stored values keep their
+// verbatim text (URLs, form values, DB rows), this only shortens what a
+// person reads. store.IssueStatusProgress ("In Bearbeitung") shows as "In
+// Arbeit" — one line in a fixed-width status column; every other status
+// already reads as a short, conventional German word and passes through
+// unchanged.
+func IssueStatusLabel(status string) string {
+	normalized := store.NormalizeIssueStatus(status)
+	if normalized == store.IssueStatusProgress {
+		return "In Arbeit"
+	}
+	return normalized
+}
+
 func FormatIssueEstimateAmount(cents int64) string {
 	if cents <= 0 {
 		return ""
@@ -1133,7 +1152,7 @@ func FormatIssueEstimateInput(cents int64) string {
 }
 
 func IssueBoardFilterOptions(filters IssueBoardFilterView) IssueBoardFilterView {
-	filters.StatusOptions = IssueFilterOptions(IssueStatuses(), filters.Status, "Alle Status")
+	filters.StatusOptions = IssueStatusFilterOptions(filters.Status, "Alle Status")
 	filters.PriorityOptions = IssueFilterOptions(IssuePriorities(), filters.Priority, "Alle Prioritäten")
 	filters.CategoryOptions = IssueFilterOptions(IssueCategories(), filters.Category, "Alle Kategorien")
 	filters.SortOptions = []SelectOption{
@@ -1151,6 +1170,28 @@ func IssueFilterOptions(values []string, selected string, allLabel string) []Sel
 	options := []SelectOption{{Value: "", Label: allLabel, Selected: selected == ""}}
 	for _, value := range values {
 		options = append(options, SelectOption{Value: value, Label: value, Selected: value == selected})
+	}
+	return options
+}
+
+// IssueStatusFilterOptions is IssueFilterOptions for issue statuses: the
+// option Value stays the stored value (it becomes the "status" query param),
+// but the Label people read is the short display word from IssueStatusLabel.
+func IssueStatusFilterOptions(selected string, allLabel string) []SelectOption {
+	options := []SelectOption{{Value: "", Label: allLabel, Selected: selected == ""}}
+	for _, value := range IssueStatuses() {
+		options = append(options, SelectOption{Value: value, Label: IssueStatusLabel(value), Selected: value == selected})
+	}
+	return options
+}
+
+// IssueStatusSelectOptions is IssueSelectOptions for issue statuses: same
+// Value/Selected contract, but the Label is the short display word rather
+// than the stored value itself.
+func IssueStatusSelectOptions(values []string, selected string) []SelectOption {
+	options := make([]SelectOption, 0, len(values))
+	for _, value := range values {
+		options = append(options, SelectOption{Value: value, Label: IssueStatusLabel(value), Selected: value == selected})
 	}
 	return options
 }
@@ -1862,7 +1903,7 @@ func DocumentCategoryOptions(selected string) []SelectOption {
 
 func DocumentUnitOptions(units []store.Unit, selected string) []SelectOption {
 	selected = store.NormalizeUnitID(selected)
-	options := []SelectOption{{Value: "", Label: "Gesamtes Haus", Selected: selected == ""}}
+	options := []SelectOption{{Value: "", Label: "Gesamte Liegenschaft", Selected: selected == ""}}
 	for _, item := range units {
 		id := store.NormalizeUnitID(item.ID)
 		label := strings.TrimSpace(item.Label)
@@ -2308,7 +2349,7 @@ func IssueCategories() []string {
 // labels shown in the UI. The keys belong to the store; the words belong here.
 func NotificationEventCatalog() []NotificationEventOption {
 	labels := map[string][2]string{
-		store.NotificationEventAnnouncement: {"Aushänge & Bekanntmachungen", "Neue und wichtige Informationen zum Haus"},
+		store.NotificationEventAnnouncement: {"Aushänge & Bekanntmachungen", "Neue und wichtige Informationen zur Liegenschaft"},
 		store.NotificationEventIssue:        {"Anliegen & Status", "Kommentare und Änderungen bei Anliegen"},
 		store.NotificationEventVote:         {"Abstimmungen", "Neue Abstimmungen und Erinnerungen"},
 		store.NotificationEventDocument:     {"Dokumente", "Neu bereitgestellte Unterlagen"},

@@ -286,14 +286,14 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			}
 		}
 		if !contactsHaveAny(data) && !data.CanManageContacts {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<section class=\"blank\" aria-label=\"Kontakte des Hauses\"><h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<section class=\"blank\" aria-label=\"Kontakte der Liegenschaft\"><h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.ManagedEmpty.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -306,7 +306,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.ManagedEmpty.Message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 125}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -319,7 +319,7 @@ func ContactsBody(data ContactsPageData) templ.Component {
 			var templ_7745c5c3_Var12 templ.SafeURL
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(contactsIssuesURL(data.CanManageIssues)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 245}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/contacts.templ`, Line: 124, Col: 251}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -458,12 +458,12 @@ func QuickContacts(data ContactsPageData) templ.Component {
 			templ_7745c5c3_Var18 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel contact-section\" aria-labelledby=\"quick-contacts-title\"><header class=\"section-head\"><div><p class=\"kicker\">Schnell erreichen</p><h2 id=\"quick-contacts-title\">Hilfe &amp; Haus-Ansprechpersonen</h2></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel contact-section\" aria-labelledby=\"quick-contacts-title\"><header class=\"section-head\"><div><p class=\"kicker\">Schnell erreichen</p><h2 id=\"quick-contacts-title\">Hilfe &amp; Ansprechpersonen der Liegenschaft</h2></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageContacts {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a class=\"button small ghost\" href=\"/app/settings/building?section=contacts\">Hauskontakte pflegen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a class=\"button small ghost\" href=\"/app/settings/building?section=contacts\">Kontakte der Liegenschaft pflegen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -660,7 +660,7 @@ func ManagedContacts(data ContactsPageData) templ.Component {
 			templ_7745c5c3_Var26 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<section class=\"panel contact-section\" id=\"contact-book\" aria-labelledby=\"managed-contacts-title\"><header class=\"section-head\"><div><p class=\"kicker\">Adressbuch</p><h2 id=\"managed-contacts-title\">Weitere Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<section class=\"panel contact-section\" id=\"contact-book\" aria-labelledby=\"managed-contacts-title\"><header class=\"section-head\"><div><p class=\"kicker\">Adressbuch</p><h2 id=\"managed-contacts-title\">Weitere Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für die Liegenschaft.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1736,7 +1736,7 @@ func ResidentDirectory(data ContactsPageData) templ.Component {
 			templ_7745c5c3_Var81 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<section class=\"panel contact-section\" aria-labelledby=\"resident-directory-title\"><header class=\"section-head\"><div><p class=\"kicker\">Freiwilliges Verzeichnis</p><h2 id=\"resident-directory-title\">Hausgemeinschaft</h2><p>Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für dieses Haus freigegeben haben.</p></div><span class=\"directory-note\">Freiwillig freigegeben</span></header><div class=\"contact-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<section class=\"panel contact-section\" aria-labelledby=\"resident-directory-title\"><header class=\"section-head\"><div><p class=\"kicker\">Freiwilliges Verzeichnis</p><h2 id=\"resident-directory-title\">Hausgemeinschaft</h2><p>Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für diese Liegenschaft freigegeben haben.</p></div><span class=\"directory-note\">Freiwillig freigegeben</span></header><div class=\"contact-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2038,7 +2038,7 @@ func ContactsAside(data ContactsPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.CanManageContacts {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<a class=\"portal-link\" href=\"/app/settings/building?section=contacts\"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister bearbeiten.</small></span></a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<a class=\"portal-link\" href=\"/app/settings/building?section=contacts\"><span><strong>Kontakte der Liegenschaft pflegen</strong><small>Verwaltung, Notdienst und Hausmeister bearbeiten.</small></span></a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

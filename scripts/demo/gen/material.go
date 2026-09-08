@@ -66,7 +66,7 @@ var requestMaterials = []requestMaterial{
 	{"schluessel", "Neuer Zylinder angekündigt", "Im Aushang steht, dass der Haustorzylinder getauscht wird. Bekommen wir die neuen Schlüssel automatisch und ab wann sperren die alten nicht mehr?"},
 
 	{"beleg", "Rechnung Hausbetreuung August", "Anbei unsere Rechnung Nr. HB-2481 über {{Betrag}} Euro für die laufende Hausbetreuung in {{Haus}}. Leistungszeitraum war August 2026."},
-	{"beleg", "Gartenpflege September", "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Objekt steht bei uns nur als {{Adresse}}, Auftragsnummer habe ich keine bekommen."},
+	{"beleg", "Gartenpflege September", "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Die Liegenschaft steht bei uns nur als {{Adresse}}, Auftragsnummer habe ich keine bekommen."},
 	{"beleg", "Liftwartung dritte Teilrechnung", "Sehr geehrte Damen und Herren, wir übermitteln die dritte Teilrechnung zur Wartungsvereinbarung. Bitte bei Zahlung die Rechnungsnummer LW-90317 anführen."},
 	{"beleg", "Strom Allgemeinfläche", "Die Netzabrechnung für den Allgemeinstrom von {{Haus}} ist eingelangt. Betrag {{Betrag}} EUR, fällig am 18.09.2026."},
 	{"beleg", "AW: Korrektur Rechnung 771", "Bitte verwenden Sie nur die heute übermittelte Rechnung; in der alten Version war die UID falsch. Leistungsumfang und Endbetrag bleiben unverändert."},
@@ -99,7 +99,7 @@ var requestMaterials = []requestMaterial{
 	{"versicherung", "Baum auf Zaun gefallen", "Ein Ast vom Hofbaum hat den Zaun zum Nachbargrundstück verbogen. Es ist niemand verletzt, der Bereich wurde provisorisch abgesperrt."},
 
 	{"uebergabe", "Wohnungsübergabe Auszug", "Mein Mietverhältnis endet am 30. September. Bitte um einen Termin für Übergabe und Information, welche Unterlagen und Schlüssel mitzubringen sind."},
-	{"uebergabe", "Einzug in {{Einheit}}", "Wir übernehmen die Wohnung am {{Datum}} und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?"},
+	{"uebergabe", "Einzug in {{Einheit}}", "Wir übernehmen die Einheit am {{Datum}} und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?"},
 	{"uebergabe", "Mangel im Übergabeprotokoll fehlt", "Im Protokoll wurde der Sprung im Badezimmerwaschbecken nicht aufgenommen, obwohl ich ihn gezeigt habe. Bitte ergänzen, Foto ist vorhanden."},
 	{"uebergabe", "Schlüsselanzahl bei Rückgabe", "Wir haben zwei Haustor-, drei Wohnungs- und einen Kellerschlüssel. Stimmen diese Zahlen mit Ihren Unterlagen überein?"},
 	{"uebergabe", "Zählerstand nachmelden", "Beim Einzug wurde der Wasserzähler vergessen. Stand heute 00481, Foto mit sichtbarer Nummer schicke ich mit."},
@@ -118,7 +118,7 @@ var requestMaterials = []requestMaterial{
 	{"stammdaten", "Zweite Kontaktperson", "Bitte hinterlegen Sie zusätzlich meinen Partner als Kontakt für Handwerkertermine. Er darf aber keine Vertragsänderungen beauftragen."},
 	{"stammdaten", "Firmenname geändert", "Unser Firmenwortlaut hat sich geändert, UID und Bankverbindung bleiben gleich. Bitte passen Sie die Kreditorenstammdaten an."},
 	{"stammdaten", "Keine Papierpost mehr", "Wenn möglich möchte ich Abrechnungen und Aushänge nur noch elektronisch bekommen. Wo kann ich das im Portal einstellen?"},
-	{"stammdaten", "Falsche Top-Zuordnung", "Im Portal sehe ich Top 6, tatsächlich bewohne ich {{Einheit}}. Bitte korrigieren, ich kann sonst die Dokumente meiner Wohnung nicht öffnen."},
+	{"stammdaten", "Falsche Top-Zuordnung", "Im Portal sehe ich Top 6, tatsächlich bewohne ich {{Einheit}}. Bitte korrigieren, ich kann sonst die Dokumente meiner Einheit nicht öffnen."},
 
 	{"winterdienst_garten", "Gehsteig nicht gestreut", "Heute um 06:45 war der Gehsteig vor {{Haus}} spiegelglatt und nicht gestreut. Eine Nachbarin ist beinahe gestürzt, bitte den Winterdienst erinnern."},
 	{"winterdienst_garten", "Hecke ragt auf Gehweg", "Die Ligusterhecke beim Ausgang ist so breit, dass man Kinderwägen kaum vorbeibekommt. Bitte beim nächsten Gartentermin zurückschneiden lassen."},

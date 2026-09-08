@@ -121,7 +121,7 @@ templ ContactsBody(data ContactsPageData) {
 			@ResidentDirectory(data)
 		}
 		if !contactsHaveAny(data) && !data.CanManageContacts {
-			<section class="blank" aria-label="Kontakte des Hauses"><h2>{ data.ManagedEmpty.Title }</h2><p>{ data.ManagedEmpty.Message }</p><div class="blank-actions"><a class="button primary" href={ templ.SafeURL(contactsIssuesURL(data.CanManageIssues)) }>Anliegen melden</a><a class="button ghost" href="/app/announcements">Aushang ansehen</a></div></section>
+			<section class="blank" aria-label="Kontakte der Liegenschaft"><h2>{ data.ManagedEmpty.Title }</h2><p>{ data.ManagedEmpty.Message }</p><div class="blank-actions"><a class="button primary" href={ templ.SafeURL(contactsIssuesURL(data.CanManageIssues)) }>Anliegen melden</a><a class="button ghost" href="/app/announcements">Aushang ansehen</a></div></section>
 		}
 	</div>@ContactsAside(data)</div>
 }
@@ -135,9 +135,9 @@ templ UnitOccupancies(items []UnitOccupancy) {
 }
 
 templ QuickContacts(data ContactsPageData) {
-	<section class="panel contact-section" aria-labelledby="quick-contacts-title"><header class="section-head"><div><p class="kicker">Schnell erreichen</p><h2 id="quick-contacts-title">Hilfe &amp; Haus-Ansprechpersonen</h2></div>
+	<section class="panel contact-section" aria-labelledby="quick-contacts-title"><header class="section-head"><div><p class="kicker">Schnell erreichen</p><h2 id="quick-contacts-title">Hilfe &amp; Ansprechpersonen der Liegenschaft</h2></div>
 		if data.CanManageContacts {
-			<a class="button small ghost" href="/app/settings/building?section=contacts">Hauskontakte pflegen</a>
+			<a class="button small ghost" href="/app/settings/building?section=contacts">Kontakte der Liegenschaft pflegen</a>
 		}
 	</header><div class="quick-list">
 		for _, item := range data.EmergencyContacts {
@@ -176,7 +176,7 @@ templ QuickContact(item view.ContactCardView, urgent bool) {
 }
 
 templ ManagedContacts(data ContactsPageData) {
-	<section class="panel contact-section" id="contact-book" aria-labelledby="managed-contacts-title"><header class="section-head"><div><p class="kicker">Adressbuch</p><h2 id="managed-contacts-title">Weitere Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für das Haus.</p></div>
+	<section class="panel contact-section" id="contact-book" aria-labelledby="managed-contacts-title"><header class="section-head"><div><p class="kicker">Adressbuch</p><h2 id="managed-contacts-title">Weitere Kontakte</h2><p>Firmen, Dienste und wiederkehrende Ansprechpartner für die Liegenschaft.</p></div>
 		if len(data.ManagedContacts) > 0 {
 			<span class="count">{ len(data.ManagedContacts) } im Adressbuch</span>
 		}
@@ -284,7 +284,7 @@ templ ContactReactivate(item view.ManagedContactView) {
 }
 
 templ ResidentDirectory(data ContactsPageData) {
-	<section class="panel contact-section" aria-labelledby="resident-directory-title"><header class="section-head"><div><p class="kicker">Freiwilliges Verzeichnis</p><h2 id="resident-directory-title">Hausgemeinschaft</h2><p>Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für dieses Haus freigegeben haben.</p></div><span class="directory-note">Freiwillig freigegeben</span></header><div class="contact-list">
+	<section class="panel contact-section" aria-labelledby="resident-directory-title"><header class="section-head"><div><p class="kicker">Freiwilliges Verzeichnis</p><h2 id="resident-directory-title">Hausgemeinschaft</h2><p>Nur Bewohner, die ihren Kontakt im Profil ausdrücklich für diese Liegenschaft freigegeben haben.</p></div><span class="directory-note">Freiwillig freigegeben</span></header><div class="contact-list">
 		for _, item := range data.ResidentContacts {
 			@DirectoryContact(item)
 		}
@@ -325,7 +325,7 @@ templ ContactRoutes(phone, email string, hasPhone, hasEmail bool) {
 templ ContactsAside(data ContactsPageData) {
 	<aside class="contacts-aside" aria-label="Hilfe zu Kontakten"><details class="panel aside-panel"><summary><p class="kicker">Wegweiser</p><h2>Wer ist wofür zuständig?</h2></summary><ul class="guide-list"><li><strong>Notdienst</strong><span>Gefahr im Verzug, Wasserschaden, Stromausfall oder Personen im Lift.</span></li><li><strong>Hausverwaltung</strong><span>Verträge, Abrechnung, Beschlüsse und alles Kaufmännische.</span></li><li><strong>Hausmeister</strong><span>Schlüssel, Reinigung, Grünflächen und kleine Reparaturen.</span></li><li><strong>Beirat</strong><span>Vertritt die Eigentümergemeinschaft gegenüber der Verwaltung.</span></li><li><strong>Dienstleister</strong><span>Firmen für Lift, Heizung, Elektrik oder Energiethemen im Haus.</span></li></ul></details><section class="panel aside-panel" aria-labelledby="contacts-next-title"><div><p class="kicker">Auch hilfreich</p><h2 id="contacts-next-title">Weiter im Portal</h2></div><nav class="portal-links"><a class="portal-link" href={ templ.SafeURL(contactsIssuesURL(data.CanManageIssues)) }><span><strong>Anliegen melden</strong><small>Bleibt dokumentiert und geht nicht verloren.</small></span></a>
 		if data.CanManageContacts {
-			<a class="portal-link" href="/app/settings/building?section=contacts"><span><strong>Hauskontakte pflegen</strong><small>Verwaltung, Notdienst und Hausmeister bearbeiten.</small></span></a>
+			<a class="portal-link" href="/app/settings/building?section=contacts"><span><strong>Kontakte der Liegenschaft pflegen</strong><small>Verwaltung, Notdienst und Hausmeister bearbeiten.</small></span></a>
 		}
 		if data.CanJoinDirectory {
 			<a class="portal-link" href="/app/settings/profile"><span><strong>Eigener Verzeichniseintrag</strong><small>{ directoryStatus(data.DirectoryOptIn) }</small></span></a>

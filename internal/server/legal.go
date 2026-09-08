@@ -22,7 +22,7 @@ func professionalServicesNotice() string {
 }
 
 func identityStorageNotice() string {
-	return env("HAUSV_IDENTITY_STORAGE_NOTICE", "Fachdaten und Identitätsdienste werden in der vom Betreiber dokumentierten Infrastruktur verarbeitet und je Haus und Rolle getrennt.")
+	return env("HAUSV_IDENTITY_STORAGE_NOTICE", "Fachdaten und Identitätsdienste werden in der vom Betreiber dokumentierten Infrastruktur verarbeitet und je Liegenschaft und Rolle getrennt.")
 }
 
 func backupStorageNotice() string {

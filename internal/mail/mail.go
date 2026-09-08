@@ -150,7 +150,7 @@ func (m SmtpMailer) SendMagicLinkContext(ctx context.Context, to string, link st
 
 	address = strings.TrimSpace(address)
 	if address == "" {
-		address = "Ihrem Haus"
+		address = "Ihre Liegenschaft"
 	}
 	msg := magicLinkMessage(m.from, to, link, address)
 
@@ -212,7 +212,7 @@ func absoluteRootPrivacyURL(raw string) string {
 func magicLinkMessage(from string, to string, link string, address string) string {
 	address = strings.TrimSpace(address)
 	if address == "" {
-		address = "Ihrem Haus"
+		address = "Ihre Liegenschaft"
 	}
 	return strings.Join([]string{
 		"From: " + from,

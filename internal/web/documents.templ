@@ -62,10 +62,10 @@ templ DocumentsContent(data DocumentsPageData) {
 			Portal: data.Portal,
 			PageLabel: "Dokumente",
 			Class: "documents-main documents-screen",
-			Identity: PortalSectionIdentityData{Label: "Hausablage", Icon: "document"},
+			Identity: PortalSectionIdentityData{Label: "Ablage der Liegenschaft", Icon: "document"},
 		},
 		PortalSectionTitle("Dokumente"),
-		PortalSectionLede("Die freigegebenen Unterlagen des Hauses – schnell finden, ansehen und herunterladen."),
+		PortalSectionLede("Die freigegebenen Unterlagen der Liegenschaft – schnell finden, ansehen und herunterladen."),
 		DocumentsHeaderAction(data),
 		nil,
 		nil,
@@ -97,7 +97,7 @@ templ DocumentUploadButton() {
 
 templ DocumentLibrary(data DocumentsPageData) {
 	<section class="panel document-library">
-		<header class="library-head"><div><p class="kicker">Hausablage</p>
+		<header class="library-head"><div><p class="kicker">Ablage der Liegenschaft</p>
 			if data.HasSearchQuery {
 				<p class="mini">Ergebnis für „{ data.SearchQuery }“</p>
 			}

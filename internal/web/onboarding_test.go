@@ -78,7 +78,7 @@ func TestOnboardingLockedIdentityStaysReadOnlyButStillPosts(t *testing.T) {
 	for _, want := range []string{
 		`<input type="hidden" name="home_type" value="apartment">`,
 		`<input type="hidden" name="unit_id" value="u1">`,
-		"Die Art ist mit der Wohnung verbunden.",
+		"Die Art ist mit der Einheit verbunden.",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("locked identity is missing %q", want)

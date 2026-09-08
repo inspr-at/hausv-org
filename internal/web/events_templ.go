@@ -153,7 +153,7 @@ func EventsContent(data EventsPageData) templ.Component {
 				Identity:  PortalSectionIdentityData{Label: "Termine", Icon: "calendar"},
 			},
 			PortalSectionTitle("Termine"),
-			PortalSectionLede("Was als Nächstes im Haus ansteht – mit Zeitpunkt, Ort und allen nötigen Details."),
+			PortalSectionLede("Was als Nächstes in der Liegenschaft ansteht – mit Zeitpunkt, Ort und allen nötigen Details."),
 			EventHeaderAction(data),
 			nil,
 			nil,
@@ -380,7 +380,7 @@ func EventsBody(data EventsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel blank\" aria-label=\"Termine des Hauses\"><span class=\"blank-icon\" aria-hidden=\"true\">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class=\"blank-actions\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<section class=\"panel blank\" aria-label=\"Termine der Liegenschaft\"><span class=\"blank-icon\" aria-hidden=\"true\">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class=\"blank-actions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -418,14 +418,14 @@ func EventsBody(data EventsPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.CalendarFeedURL != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<section class=\"panel aside-panel\" aria-labelledby=\"events-feed-title\"><div><span class=\"kicker\">Eigener Kalender</span><h2 id=\"events-feed-title\">Einmal abonnieren</h2></div><p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class=\"button primary\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<section class=\"panel aside-panel\" aria-labelledby=\"events-feed-title\"><div><span class=\"kicker\">Eigener Kalender</span><h2 id=\"events-feed-title\">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class=\"button primary\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var16 templ.SafeURL
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.CalendarFeedURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 234, Col: 360}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/events.templ`, Line: 234, Col: 373}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -436,7 +436,7 @@ func EventsBody(data EventsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<details class=\"panel aside-panel guide\" aria-labelledby=\"events-legend-title\"><summary><span class=\"kicker\">Was hier erscheint</span><h2 id=\"events-legend-title\">Termine im Haus</h2></summary><ul class=\"legend\"><li><span class=\"tag\">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class=\"tag\">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class=\"tag\">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li><li><span class=\"tag\">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class=\"tag\">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details></aside></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<details class=\"panel aside-panel guide\" aria-labelledby=\"events-legend-title\"><summary><span class=\"kicker\">Was hier erscheint</span><h2 id=\"events-legend-title\">Termine in der Liegenschaft</h2></summary><ul class=\"legend\"><li><span class=\"tag\">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class=\"tag\">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class=\"tag\">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Einheit nötig.</span></li><li><span class=\"tag\">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class=\"tag\">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details></aside></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

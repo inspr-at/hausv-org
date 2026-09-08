@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.12",
+			Date:     "8. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Einheitliche Begriffe, ruhigere Anliegen-Übersicht.",
+			Intro:    "In allen Sichten und Menüs heißt die verwaltete Einheit jetzt Liegenschaft und die Nutzungseinheit Einheit, etwa Top 3 oder Stellplatz 5. Das Wort Haus bleibt dort, wo wirklich das Gebäude gemeint ist. In der Anliegen-Übersicht steht der Status in einer Zeile, der Betreff passt sich an, und die ganze Zeile öffnet das Anliegen.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.11",
 			Date:     "8. September 2026",
 			Kind:     "Neu",

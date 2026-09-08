@@ -14,7 +14,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		Houses:           []InboxHouse{{Slug: "haus-a", Name: "Haus A"}},
 		Items:            []InboxItem{{ID: "in-1", Source: "E-MAIL", Subject: "Wasser im Keller", House: "Haus A", Unit: "Top 1", Status: "Vorschlag liegt vor", StatusTone: "ok", Proposal: "Vorschlag: Reparatur · Hoch", Priority: "Hoch", Selected: true}},
 		AutoItems:        []InboxItem{{ID: "auto-1", Subject: "Termin", Time: "09:15"}},
-		Selected:         &InboxCase{ID: "in-1", Subject: "Wasser im Keller", Body: "Nachricht", Status: "Vorschlag liegt vor", StatusTone: "ok", HasSuggestion: true, ProviderLabel: "Cloud (OpenRouter)", CategoryLabel: "Reparatur/Mangel", Priority: "Hoch", Confidence: 95, HouseLabel: "Haus A", Unit: "Top 1", AssigneeLabel: "Vera", Due: "morgen", Reply: "Wir kümmern uns.", UnfilledLabels: []string{"Haus", "Frist"}, Created: "Eingegangen", Actions: []string{"Hausbetreuung informieren"}, Position: 2, Total: 37},
+		Selected:         &InboxCase{ID: "in-1", Subject: "Wasser im Keller", Body: "Nachricht", Status: "Vorschlag liegt vor", StatusTone: "ok", HasSuggestion: true, ProviderLabel: "Cloud (OpenRouter)", CategoryLabel: "Reparatur/Mangel", Priority: "Hoch", Confidence: 95, HouseLabel: "Haus A", Unit: "Top 1", AssigneeLabel: "Vera", Due: "morgen", Reply: "Wir kümmern uns.", UnfilledLabels: []string{"Liegenschaft", "Frist"}, Created: "Eingegangen", Actions: []string{"Hausbetreuung informieren"}, Position: 2, Total: 37},
 		ProviderFootline: "KI: Cloud (OpenRouter) · Zielbetrieb lokal im Büro",
 		OpenCount:        37,
 		UnassignedCount:  5,
@@ -30,7 +30,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Haus, Frist — bitte prüfen", "htmx.min.js", "/assets/inbox.js?v="} {
+	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Liegenschaft, Frist — bitte prüfen", "htmx.min.js", "/assets/inbox.js?v="} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("render missing %q", want)
 		}
@@ -112,7 +112,7 @@ func TestInboxSuggestionStatesAndUnassignedCase(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	if !strings.Contains(body, "Haus zuordnen") || strings.Contains(body, "Vorschlag anfordern") || strings.Contains(body, "Einordnung") {
+	if !strings.Contains(body, "Liegenschaft zuordnen") || strings.Contains(body, "Vorschlag anfordern") || strings.Contains(body, "Einordnung") {
 		t.Fatalf("unexpected unassigned case controls: %s", body)
 	}
 }

@@ -188,7 +188,7 @@ func (a *app) rolePreviewChoices(ac *authCtx) []web.RolePreviewChoice {
 		return nil
 	}
 	return []web.RolePreviewChoice{
-		{Role: roleAdmin, Label: "Hausverwaltung", Description: "Ihre Rolle · Portfolio, Posteingang, alle Häuser", Current: true},
+		{Role: roleAdmin, Label: "Hausverwaltung", Description: "Ihre Rolle · Portfolio, Posteingang, alle Liegenschaften", Current: true},
 		{Role: roleOwner, Label: roleOwner, Description: "Ruhiger Hausüberblick, Dokumente, Abstimmungen", StartPath: "/app/ansicht/start"},
 		{Role: roleResident, Label: roleResident, Description: "Hausüberblick, Aushang, eigene Anliegen", StartPath: "/app/ansicht/start"},
 	}

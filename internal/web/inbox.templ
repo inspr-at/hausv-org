@@ -185,7 +185,7 @@ templ InboxContent(data InboxData) {
 					<form class="filter-panel" method="get">
 						<div class="filter-grid">
 							<label>Quelle<select name="source"><option value="">Alle</option>@InboxOptions(data.SourceFilter)
-</select></label><label>Haus<select name="house"><option value="">Alle</option>@InboxOptions(data.HouseFilter)
+</select></label><label>Liegenschaft<select name="house"><option value="">Alle</option>@InboxOptions(data.HouseFilter)
 </select></label><label>Zuständig<select name="assignee"><option value="">Alle</option>@InboxOptions(data.AssigneeFilter)
 </select></label><label>Status<select name="status"><option value="">Offen</option>@InboxOptions(data.StatusFilter)
 </select></label><label>Sortierung<select name="sort"><option value="received">Neueste zuerst</option><option value="age" selected?={ data.Sort == "age" }>Älteste zuerst</option></select></label>
@@ -197,7 +197,7 @@ templ InboxContent(data InboxData) {
 					<form class="phone-panel" method="post" action="/app/verwaltung/telefonnotiz">
 						<div class="phone-grid">
 							<label>
-								Haus
+								Liegenschaft
 								<select name="house" required>
 									<option value="">Bitte wählen</option>
 									for _, house := range data.Houses {
@@ -282,8 +282,8 @@ templ InboxCaseDetail(item InboxCase) {
 }
 
 templ InboxAssignment(item InboxCase) {
-	<form class="assign-case" method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="assign"/><input type="hidden" name="queue_query" value={ item.QueueQuery }/><div class="assign-copy"><strong>Nicht zugeordnet</strong><span>Haus auswählen, dann Vorschlag erstellen</span></div><label>Haus<select name="house" required><option value="">Bitte wählen</option>@InboxOptions(item.Houses)
-</select></label><label>Einheit<input name="unit" value={ item.Unit }/></label><button type="submit">Haus zuordnen</button></form>
+	<form class="assign-case" method="post" action={ "/app/verwaltung/posteingang/" + item.ID }><input type="hidden" name="action" value="assign"/><input type="hidden" name="queue_query" value={ item.QueueQuery }/><div class="assign-copy"><strong>Nicht zugeordnet</strong><span>Liegenschaft auswählen, dann Vorschlag erstellen</span></div><label>Liegenschaft<select name="house" required><option value="">Bitte wählen</option>@InboxOptions(item.Houses)
+</select></label><label>Einheit<input name="unit" value={ item.Unit }/></label><button type="submit">Liegenschaft zuordnen</button></form>
 }
 
 templ InboxOriginal(item InboxCase) {
@@ -367,14 +367,14 @@ templ InboxCaseWorkflowContent(item InboxCase) {
 				if item.Editing {
 					<div class="edit-grid"><label>Kategorie<select name="category">@InboxOptions(item.Categories)
 </select></label><label>Dringlichkeit<select name="priority">@InboxOptions(item.Priorities)
-</select></label><label>Haus<select name="house">@InboxOptions(item.Houses)
+</select></label><label>Liegenschaft<select name="house">@InboxOptions(item.Houses)
 </select></label><label>Einheit<input name="unit" value={ item.Unit }/></label><label>Zuständig<select name="assignee"><option value="">Noch niemand</option>@InboxOptions(item.Assignees)
 </select></label><label>Fällig<input type="date" name="due" value={ item.DueValue }/></label></div>
 				} else {
 					<div class="classification-row"><div class="fact"><small>Kategorie</small><strong>{ item.CategoryLabel }</strong></div><div class="fact"><small>Dringlichkeit</small><strong>{ item.Priority }</strong></div><div class="fact"><small>Sicherheit</small><strong class="conf">{ fmt.Sprintf("%d %%", item.Confidence) }<span class="bar"><span style={ fmt.Sprintf("width:%d%%", item.Confidence) }></span></span></strong></div></div>
 					<div class="classification-row">
 						<div class="fact">
-							<small>Haus · Einheit</small>
+							<small>Liegenschaft · Einheit</small>
 							<strong>
 								{ item.HouseLabel }
 								if item.Unit != "" {

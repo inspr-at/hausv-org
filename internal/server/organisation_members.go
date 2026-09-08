@@ -85,7 +85,7 @@ func (a *app) addOrganisationMember(ctx context.Context, ac *authCtx, orgKey str
 		return fmt.Errorf("Bitte eine E-Mail-Adresse angeben.")
 	}
 	if _, ok := a.directoryProfile(email); !ok {
-		return fmt.Errorf("Diese Person ist noch nicht angelegt. Bitte zuerst in einem Haus einladen.")
+		return fmt.Errorf("Diese Person ist noch nicht angelegt. Bitte zuerst in einer Liegenschaft einladen.")
 	}
 	role = store.NormalizeOrganisationRole(role)
 	houseRole := houseRoleForOrganisationRole(role)

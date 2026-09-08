@@ -1030,7 +1030,7 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 	<details class="energy-card energy-card-quiet energy-collapsible" id="betreuung">
 		<summary class="energy-card-head"><div><h2>Technische Betreuung</h2><p>
 			if data.HasCaretakers {
-				Hausbezogene Hilfe ist eingerichtet.
+				Hilfe für die Liegenschaft ist eingerichtet.
 			} else {
 				Optional eine Vertrauensperson einladen.
 			}
@@ -1038,7 +1038,7 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 		<div class="energy-collapsible-body">
 			<nav class="energy-related-links"><a href="/app/settings/users">Personen verwalten</a></nav>
 			if data.CaretakerChanged {
-				<div class="message success">Der technische Zugriff für dieses Haus wurde geändert und protokolliert.</div>
+				<div class="message success">Der technische Zugriff für diese Liegenschaft wurde geändert und protokolliert.</div>
 			}
 			switch data.CaretakerInviteStatus {
 				case "invited":
@@ -1046,11 +1046,11 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 				case "saved_no_mail":
 					<div class="message">Zugang gespeichert; die Einladung konnte nicht zugestellt werden.</div>
 				case "exists":
-					<div class="message">Diese Person gehört bereits zum Haus. Rechte können unten geändert werden.</div>
+					<div class="message">Diese Person gehört bereits zur Liegenschaft. Rechte können unten geändert werden.</div>
 				case "invalid":
 					<div class="message error">Bitte eine gültige E-Mail-Adresse angeben.</div>
 				case "error":
-					<div class="message error">Der hausbezogene Zugang konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>
+					<div class="message error">Der Zugang zur Liegenschaft konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>
 			}
 			if data.HasCaretakers {
 				<div class="energy-caretaker-list">
@@ -1069,14 +1069,14 @@ templ EnergyCaretakerSection(data EnergyPageData) {
 					}
 				</div>
 			} else {
-				<p class="muted">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>
+				<p class="muted">Noch keine weitere Person ist dieser Liegenschaft zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>
 			}
 			if data.CanInviteEnergyAccess {
 				<details class="energy-compact-create"><summary>Technische Vertrauensperson einladen</summary><form class="energy-inline-form" method="post" action="/app/energie/caretaker/invite">
 					<label>Vorname<input name="first_name" maxlength="80"/></label><label>Nachname<input name="last_name" maxlength="80"/></label>
 					<label class="wide">E-Mail<input type="email" name="email" required/></label>
 					<label><input type="checkbox" name="scope" value="configure"/> darf Messwerte und Geräte einrichten</label>
-					<div class="actions"><button class="button primary" type="submit">Hausbezogen einladen</button></div>
+					<div class="actions"><button class="button primary" type="submit">Zur Liegenschaft einladen</button></div>
 				</form></details>
 			}
 			<div class="energy-business-note"><span aria-hidden="true">i</span><p>Technische Vertrauenspersonen dürfen ansehen und einrichten. Den dauerhaft sichtbaren Haus-Schalter dürfen ausschließlich Eigentümer oder Hausadministration bewusst umlegen.</p></div>

@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.12] - 2026-09-08
+
+### Verbessert
+
+- Begriffe: Die verwaltete Einheit heißt in allen Sichten und Menüs „Liegenschaft“, die Nutzungseinheit „Einheit“ (Top, Stellplatz); „Haus“ bleibt dem Gebäude vorbehalten.
+- Anliegen-Übersicht: Status „In Arbeit“ in einer Zeile, Betreff passt sich dem Inhalt an, die ganze Zeile öffnet das Anliegen und hebt sich beim Überfahren dezent ab.
+
 ## [1.9.11] - 2026-09-08
 
 ### Neu

@@ -674,7 +674,7 @@
     "from_email": "simon.schober@example.example",
     "from_phone": "",
     "subject": "Gartenpflege September",
-    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Objekt steht bei uns nur als Schörgelgasse 25, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
+    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Die Liegenschaft steht bei uns nur als Schörgelgasse 25, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",
@@ -795,7 +795,7 @@
     "from_email": "tobias.thaler@example.example",
     "from_phone": "+43 676 310 20 32",
     "subject": "Einzug in Top 3",
-    "body": "Wir übernehmen die Wohnung am 16.09.2026 und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?",
+    "body": "Wir übernehmen die Einheit am 16.09.2026 und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?",
     "truth": {
       "category": "uebergabe",
       "priority": "Mittel",
@@ -4415,7 +4415,7 @@
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
     "subject": "Falsche Top-Zuordnung",
-    "body": "Im Portal sehe ich Top 6, tatsächlich bewohne ich Top 3. Bitte korrigieren, ich kann sonst die Dokumente meiner Wohnung nicht öffnen.",
+    "body": "Im Portal sehe ich Top 6, tatsächlich bewohne ich Top 3. Bitte korrigieren, ich kann sonst die Dokumente meiner Einheit nicht öffnen.",
     "truth": {
       "category": "stammdaten",
       "priority": "Niedrig",
@@ -5075,7 +5075,7 @@
     "from_email": "simon.schober@example.example",
     "from_phone": "",
     "subject": "Gartenpflege September",
-    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Objekt steht bei uns nur als Schörgelgasse 25, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
+    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Die Liegenschaft steht bei uns nur als Schörgelgasse 25, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",
@@ -5195,7 +5195,7 @@
     "from_email": "tobias.thaler@example.example",
     "from_phone": "+43 676 310 20 32",
     "subject": "Einzug in Top 3",
-    "body": "Wir übernehmen die Wohnung am 16.09.2026 und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?",
+    "body": "Wir übernehmen die Einheit am 16.09.2026 und würden gern Stromzähler sowie Schlüssel gemeinsam protokollieren. Ist vormittags ein Termin möglich?",
     "truth": {
       "category": "uebergabe",
       "priority": "Mittel",
@@ -8255,7 +8255,7 @@
     "from_email": "matthias.mieter@musterstadt.example",
     "from_phone": "",
     "subject": "Gartenpflege September",
-    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Objekt steht bei uns nur als Janusbergweg 123, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
+    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Die Liegenschaft steht bei uns nur als Janusbergweg 123, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",
@@ -10235,7 +10235,7 @@
     "from_email": "theresa.fink@example.example",
     "from_phone": "+43 664 310 20 04",
     "subject": "Gartenpflege September",
-    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Objekt steht bei uns nur als Grazbachgasse 14, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
+    "body": "Servus, Rechnung für Heckenschnitt und Abtransport wie vereinbart im Anhang. Die Liegenschaft steht bei uns nur als Grazbachgasse 14, 8010 Graz, Auftragsnummer habe ich keine bekommen.",
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",

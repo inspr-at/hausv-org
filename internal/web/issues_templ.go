@@ -15,7 +15,7 @@ import (
 )
 
 type IssueSummaryView struct {
-	Title, Status, StatusClass, Assignee, AssigneeEmail, Age, URL string
+	Title, Status, StatusLabel, StatusClass, Assignee, AssigneeEmail, Age, URL string
 }
 
 type IssuesPageData struct {
@@ -348,7 +348,7 @@ func IssuesOpenSummary(data IssuesPageData) templ.Component {
 			templ_7745c5c3_Var13 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<section class=\"panel issues-panel\" id=\"issue-open\" aria-labelledby=\"issue-open-title\"><header class=\"section-head\"><div><p class=\"eyebrow\">Verwaltung</p><h2 id=\"issue-open-title\">Offene Anliegen</h2><p>Die acht neuesten offenen Anliegen im Haus.</p></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<section class=\"panel issues-panel\" id=\"issue-open\" aria-labelledby=\"issue-open-title\"><header class=\"section-head\"><div><p class=\"eyebrow\">Verwaltung</p><h2 id=\"issue-open-title\">Offene Anliegen</h2><p>Die acht neuesten offenen Anliegen in der Liegenschaft.</p></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -411,9 +411,9 @@ func IssuesOpenSummary(data IssuesPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var18 string
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Status)
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(issue.StatusLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 111, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 111, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -468,7 +468,7 @@ func IssuesOpenSummary(data IssuesPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<p class=\"muted\">Keine offenen Anliegen im Haus.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<p class=\"muted\">Keine offenen Anliegen in der Liegenschaft.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -682,9 +682,9 @@ func IssueCard(issue view.IssueView) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var34 string
-		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Status)
+		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(issue.StatusLabel)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -697,7 +697,7 @@ func IssueCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Category)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 136}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 141}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -710,7 +710,7 @@ func IssueCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Priority)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 180}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 185}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -723,7 +723,7 @@ func IssueCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(issue.CreatedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 212}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 217}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
@@ -1876,7 +1876,7 @@ func IssueCreateForm(hasIssues bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class=\"issue-safety-note\">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href=\"/app/kontakte\">Hauskontakte</a> öffnen. Erst danach hier melden.</p><label for=\"issue-body\">Kurze Beschreibung<textarea id=\"issue-body\" name=\"body\" maxlength=\"4000\" required aria-describedby=\"issue-body-error\" placeholder=\"Zum Beispiel: Das Licht im Keller funktioniert nicht mehr.\"></textarea><span class=\"issue-field-error\" id=\"issue-body-error\" role=\"alert\" hidden></span></label><div class=\"issue-category\"><span id=\"issue-category-label\">Art des Anliegens</span><div class=\"issue-category-options\" role=\"radiogroup\" aria-labelledby=\"issue-category-label\" aria-describedby=\"issue-category-error\"><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Reparatur\" required checked>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<h3>Was ist passiert?</h3><p>Kurz beschreiben, einordnen und bei Bedarf ein Foto ergänzen.</p></div><p class=\"issue-safety-note\">Akute Gefahr? 112 anrufen. Bei Wasseraustritt zuerst die <a href=\"/app/kontakte\">Kontakte der Liegenschaft</a> öffnen. Erst danach hier melden.</p><label for=\"issue-body\">Kurze Beschreibung<textarea id=\"issue-body\" name=\"body\" maxlength=\"4000\" required aria-describedby=\"issue-body-error\" placeholder=\"Zum Beispiel: Das Licht im Keller funktioniert nicht mehr.\"></textarea><span class=\"issue-field-error\" id=\"issue-body-error\" role=\"alert\" hidden></span></label><div class=\"issue-category\"><span id=\"issue-category-label\">Art des Anliegens</span><div class=\"issue-category-options\" role=\"radiogroup\" aria-labelledby=\"issue-category-label\" aria-describedby=\"issue-category-error\"><label class=\"issue-category-choice\"><input type=\"radio\" name=\"category\" value=\"Reparatur\" required checked>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1967,7 +1967,7 @@ func issuesListTitle(data IssuesPageData) string {
 		return "Meine eigenen Anliegen"
 	}
 	if data.Portal.Role == "Beirat" {
-		return "Anliegen im Haus"
+		return "Anliegen in der Liegenschaft"
 	}
 	return "Meine letzten Anliegen"
 }

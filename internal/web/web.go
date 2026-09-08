@@ -1062,29 +1062,29 @@ const PageTemplates = `
     <h2>Wer entscheidet worüber?</h2>
     {{if .PortalClassified}}
       {{if .IsPrivateHome}}
-      <p>Bei einem privaten Zuhause entscheidet die Eigentümerin oder der Eigentümer über die eigenen Hausinhalte, Energie-Zuordnungen und ausdrücklich freigegebene Vertrauenspersonen. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten, Zugriffsschutz und die im Produkt angeforderten Auswertungen. Eine technische Vertrauensperson erhält nur den widerrufbaren, hausbezogenen Zugriff, der im Portal sichtbar freigegeben wurde.</p>
+      <p>Bei einem privaten Zuhause entscheidet die Eigentümerin oder der Eigentümer über die eigenen Inhalte der Liegenschaft, Energie-Zuordnungen und ausdrücklich freigegebene Vertrauenspersonen. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten, Zugriffsschutz und die im Produkt angeforderten Auswertungen. Eine technische Vertrauensperson erhält nur den widerrufbaren, Zugriff auf die Liegenschaft, der im Portal sichtbar freigegeben wurde.</p>
       {{else}}
-      <p>Bei einer Hausgemeinschaft entscheidet die Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung über gemeinschaftliche Inhalte und Zwecke. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten und Zugriffsschutz und verarbeitet Hausinhalte weisungsgebunden, soweit dies für den konkreten Zweck vereinbart ist. Die datenschutzrechtliche Rolle wird deshalb je Zweck bestimmt und nicht pauschal aus einer Produktbezeichnung abgeleitet.</p>
+      <p>Bei einer Hausgemeinschaft entscheidet die Eigentümergemeinschaft beziehungsweise die beauftragte Hausverwaltung über gemeinschaftliche Inhalte und Zwecke. hausv.org verantwortet den sicheren technischen Portalbetrieb, Konten und Zugriffsschutz und verarbeitet Inhalte der Liegenschaft weisungsgebunden, soweit dies für den konkreten Zweck vereinbart ist. Die datenschutzrechtliche Rolle wird deshalb je Zweck bestimmt und nicht pauschal aus einer Produktbezeichnung abgeleitet.</p>
       {{end}}
     {{else}}
-    <p>Solange noch keine Wohnform gewählt wurde oder das Energieprofil zurückgesetzt ist, weist hausv.org hier keine Eigentümer- oder Hausgemeinschaftsrolle pauschal zu. Über konkrete Hausinhalte entscheidet die tatsächlich zuständige Eigentümerin, Eigentümergemeinschaft oder beauftragte Verwaltung; hausv.org verantwortet Konten, Zugriffsschutz und den technischen Portalbetrieb jeweils für den konkreten Zweck.</p>
+    <p>Solange noch keine Wohnform gewählt wurde oder das Energieprofil zurückgesetzt ist, weist hausv.org hier keine Eigentümer- oder Hausgemeinschaftsrolle pauschal zu. Über konkrete Inhalte der Liegenschaft entscheidet die tatsächlich zuständige Eigentümerin, Eigentümergemeinschaft oder beauftragte Verwaltung; hausv.org verantwortet Konten, Zugriffsschutz und den technischen Portalbetrieb jeweils für den konkreten Zweck.</p>
     {{end}}
     <dl>
-      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Hauskontakt{{else}}Verantwortlicher Hausbetrieb{{end}}{{else}}Hauskontakt{{end}}</dt><dd>{{.HouseContactName}}{{if .HouseContactAddress}}, {{.HouseContactAddress}}{{end}}</dd>
-      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Betroffenes Zuhause{{else}}Betroffenes Haus{{end}}{{else}}Betroffene Adresse{{end}}</dt><dd>{{.Tenant.Address}}</dd>
+      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Kontakt der Liegenschaft{{else}}Verantwortlicher Hausbetrieb{{end}}{{else}}Kontakt der Liegenschaft{{end}}</dt><dd>{{.HouseContactName}}{{if .HouseContactAddress}}, {{.HouseContactAddress}}{{end}}</dd>
+      <dt>{{if .PortalClassified}}{{if .IsPrivateHome}}Betroffenes Zuhause{{else}}Betroffene Liegenschaft{{end}}{{else}}Betroffene Adresse{{end}}</dt><dd>{{.Tenant.Address}}</dd>
       <dt>Kontakt</dt><dd><a href="mailto:{{.HouseContactEmail}}">{{.HouseContactEmail}}</a>{{if .HouseContactPhone}} · {{.HouseContactPhone}}{{end}}</dd>
       <dt>Technischer Betrieb</dt><dd>{{.TechnicalOperatorName}}, {{.TechnicalOperatorAddress}} · <a href="mailto:{{.TechnicalContactEmail}}">{{.TechnicalContactEmail}}</a></dd>
     </dl>
 
     <h2>Welche Daten und wofür?</h2>
     <ul>
-      <li>Identität, Hauszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
+      <li>Identität, Liegenschaftszugehörigkeit, Rollen und Rechte für Anmeldung und Zugriffsschutz.</li>
       <li>Für eine HAUSV-Home-Reservierung werden der gewünschte Pfad, der Name des Zuhauses, die Eigentümer-E-Mail und die ausdrückliche Berechtigungsbestätigung gespeichert. In diesem Schritt werden keine Home-Assistant-Adresse und kein Zugangstoken angenommen.</li>
-      <li>Bei der Aktivierung werden der Portalpfad, der Name des Zuhauses, der Aktivierungszeitpunkt und die hausbezogene Eigentümer-Mitgliedschaft dauerhaft gespeichert. Portal und Mitgliedschaft entstehen gemeinsam, damit kein Bereich ohne berechtigten Eigentümerzugang veröffentlicht wird.</li>
+      <li>Bei der Aktivierung werden der Portalpfad, der Name des Zuhauses, der Aktivierungszeitpunkt und die Eigentümer-Mitgliedschaft der Liegenschaft dauerhaft gespeichert. Portal und Mitgliedschaft entstehen gemeinsam, damit kein Bereich ohne berechtigten Eigentümerzugang veröffentlicht wird.</li>
       <li>Bei der lokalen Connector-Kopplung speichert HAUSV abgeleitete Hashes des Einmal-Codes und Connector-Zugangs sowie Connector-Version, lokale Home-Assistant-Version, Anzahl der Entitäten und Zeitpunkt der letzten Meldung. Für spätere Änderungen der Auswahl bleibt ein auf höchstens 64 Leistung-, Energie- und Ladestandssensoren begrenzter Katalog gespeichert; nur die bestätigten Sensoren werden laufend aktualisiert. Home-Assistant-Adresse, Home-Assistant-Token und alle übrigen Gerätezustände bleiben lokal.</li>
-      <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung des Hauses.</li>
+      <li>Aushänge, Termine, Dokumente, Anliegen, Kommentare, Anhänge und Abstimmungen für Kommunikation und Verwaltung der Liegenschaft.</li>
       <li>Anmelde- und Auditdaten für Sicherheit, Fehlerklärung und nachvollziehbare Änderungen.</li>
-      <li>Parkplatz- und Ladedaten nur für berechtigte Personen des jeweiligen Hauses.</li>
+      <li>Parkplatz- und Ladedaten nur für berechtigte Personen der jeweiligen Liegenschaft.</li>
       <li>Beginn und fixes Ende des kostenlosen Nutzungszeitraums bleiben als Vertrags- und Anspruchsmerkmale des Zuhauses erhalten, damit eine Neueinrichtung oder ein Eigentümerwechsel den Zeitraum nicht neu startet. Neue HAUSV-Home-Portale erhalten zwölf Monate; bestehende Pilot-Enddaten werden nicht verkürzt. Diese Angaben enthalten keine Messwerte.</li>
       {{if .EnergyProfileExists}}<li>Energieprofil mit Wohnform, Anzeigename, verknüpfter Einheit, Anlagen, Wartungsplänen und bestätigten Messwert-Zuordnungen.</li>
       <li>Bei einer direkt betriebenen Home-Assistant-Verbindung werden verfügbare Entitäten zur Auswahl gelesen; dauerhaft gespeichert werden nur bestätigte Zuordnungen. Beim lokalen Self-Service-Connector wird zusätzlich der jeweils letzte ausgewählte Messwert gespeichert und im Energieexport ausgewiesen. Vollständige Home-Assistant-Verläufe werden nicht als eigene Kopie gespeichert.</li>
@@ -1099,7 +1099,7 @@ const PageTemplates = `
       <li>Daten stammen von eingeladenen Personen, der Hausadministration, ausdrücklich verbundenen Home-Assistant-Instanzen und bewusst hochgeladenen Smart-Meter-Dateien.</li>
       <li>Angaben zur HAUSV-Home-Reservierung stammen ausschließlich von der Person, die den Pfad anfordert und ihre E-Mail über den Einmal-Link bestätigt.</li>
       <li>Der lokale Connector übermittelt beim ersten Verbinden einen auf höchstens 64 sichere Energiesensoren begrenzten Katalog. Nach der Bestätigung übermittelt er ausschließlich die ausgewählten Entity-IDs, Werte, Einheiten und Aktualisierungszeiten. Home-Assistant-Adresse, Zugangstoken und andere Gerätezustände werden nicht übertragen.</li>
-      <li>Innerhalb eines Hauses sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
+      <li>Innerhalb einer Liegenschaft sehen nur die jeweils berechtigten Rollen die für ihre Aufgabe notwendigen Bereiche. Technische Vertrauenspersonen sehen oder konfigurieren Energie nur im sichtbar erteilten Umfang und dürfen den Haus-Schalter nicht umlegen. Der Zugriff ist widerrufbar.</li>
       <li>{{.IdentityStorageNotice}}</li>
       <li>{{.WebAccessNotice}}</li>
       <li>{{.BackupStorageNotice}}</li>
@@ -1115,7 +1115,7 @@ const PageTemplates = `
       <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen. Aktivierter Portalpfad, Zuhause-Name und Eigentümer-Mitgliedschaft: bis zur Beendigung beziehungsweise Löschung des privaten Portals.</li>
       <li>Connector-Einmal-Codes: zehn Minuten gültig und nach erfolgreicher Nutzung verworfen. Der abgeleitete Connector-Zugang, seine Statusdaten, der begrenzte Sensorkatalog und die letzten ausgewählten Energiewerte bleiben bis zum Widerruf, zur Löschung des Energieprofils oder zur Löschung des Zuhause-Bereichs gespeichert. Ein Widerruf beendet den Zugang sofort und entfernt Status und Messwertkopie.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
-      <li>Hauszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
+      <li>Liegenschaftszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>
       <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>
       {{if .EnergyProfileExists}}<li>Smart-Meter-Originaldateien werden nach 30 Tagen, normalisierte Viertelstundenwerte nach 13 Monaten und festgehaltene Tarifbewertungen nach drei Jahren zur Löschung fällig. Die technische Löschung erfolgt beim Start und danach alle sechs Stunden, also spätestens innerhalb weiterer sechs Stunden.</li>
@@ -1127,7 +1127,7 @@ const PageTemplates = `
 
     <h2>Ihre Kontrolle und Rechte</h2>
     <p>Betroffene Personen können Information, Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch verlangen. Eigentümer und Hausadministration können unter <a href="/app/settings/energy-data">Energiedaten &amp; Datenschutz</a> ein maschinenlesbares ZIP-Paket anfordern, den gesamten Messverlauf löschen oder das Energieprofil zurücksetzen. Unabhängige Anliegen, Dokumente und Sicherheitsnachweise folgen ihren eigenen Fristen und werden dort klar getrennt ausgewiesen.</p>
-    <p>Anfragen gehen an den oben genannten Hauskontakt; technisch notwendige Unterstützung leistet hausv.org. Eine erteilte Vertrauenspersonen-Freigabe kann in der Personenverwaltung jederzeit entzogen werden. Beschwerden können an die <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichische Datenschutzbehörde</a> gerichtet werden.</p>
+    <p>Anfragen gehen an den oben genannten Kontakt der Liegenschaft; technisch notwendige Unterstützung leistet hausv.org. Eine erteilte Vertrauenspersonen-Freigabe kann in der Personenverwaltung jederzeit entzogen werden. Beschwerden können an die <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichische Datenschutzbehörde</a> gerichtet werden.</p>
 
     <h2>Stand und Überprüfung</h2>
     <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj" rel="noopener noreferrer">DSGVO</a>, Leitlinien des <a href="https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en" rel="noopener noreferrer">Europäischen Datenschutzausschusses zu Verantwortlichen und Auftragsverarbeitern</a>, Informationen der <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung anhand verfügbarer Primärquellen – ausdrücklich keine externe Zertifizierung oder Rechtsberatung. Solange kein externer Auditor verfügbar ist, bleibt diese dokumentierte Selbstprüfung der Freigabeweg. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
@@ -4855,7 +4855,7 @@ const PageTemplates = `
               </div>
             </details>
           {{else}}
-            <p class="muted">Für dieses Haus sind noch keine Einheiten angelegt.</p>
+            <p class="muted">Für diese Liegenschaft sind noch keine Einheiten angelegt.</p>
           {{end}}
           <form class="upload-form" method="post" action="/app/settings/payments/import/preview" enctype="multipart/form-data">
             <input type="hidden" name="period" value="{{.PaymentImportPeriod}}">

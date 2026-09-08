@@ -175,7 +175,7 @@ templ EventsContent(data EventsPageData) {
 			Identity: PortalSectionIdentityData{Label: "Termine", Icon: "calendar"},
 		},
 		PortalSectionTitle("Termine"),
-		PortalSectionLede("Was als Nächstes im Haus ansteht – mit Zeitpunkt, Ort und allen nötigen Details."),
+		PortalSectionLede("Was als Nächstes in der Liegenschaft ansteht – mit Zeitpunkt, Ort und allen nötigen Details."),
 		EventHeaderAction(data),
 		nil,
 		nil,
@@ -219,7 +219,7 @@ templ EventsBody(data EventsPageData) {
 					} else if data.SearchQuery != "" || data.SelectedStatus == "past" {
 						<section class="panel blank"><h2>Keine passenden Termine</h2><p>Für diese Suche und diesen Zeitraum sind keine Termine vorhanden.</p><a class="button" href="/app/events?status=all">Alle Termine ansehen</a></section>
 					} else {
-						<section class="panel blank" aria-label="Termine des Hauses"><span class="blank-icon" aria-hidden="true">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class="blank-actions">
+						<section class="panel blank" aria-label="Termine der Liegenschaft"><span class="blank-icon" aria-hidden="true">◇</span><h2>Noch keine kommenden Termine</h2><p>Geplante Versammlungen, Wartungen und Fristen erscheinen hier.</p><div class="blank-actions">
 							if data.CanManageEvents {
 								@EventCreateButton("Ersten Termin erstellen")
 							} else {
@@ -231,9 +231,9 @@ templ EventsBody(data EventsPageData) {
 		</div>
 		<aside class="events-aside" aria-label="Hinweise zu Terminen">
 					if data.CalendarFeedURL != "" {
-						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Haustermine erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button primary" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
+						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button primary" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
 					}
-					<details class="panel aside-panel guide" aria-labelledby="events-legend-title"><summary><span class="kicker">Was hier erscheint</span><h2 id="events-legend-title">Termine im Haus</h2></summary><ul class="legend"><li><span class="tag">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class="tag">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class="tag">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Wohnung nötig.</span></li><li><span class="tag">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class="tag">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details>
+					<details class="panel aside-panel guide" aria-labelledby="events-legend-title"><summary><span class="kicker">Was hier erscheint</span><h2 id="events-legend-title">Termine in der Liegenschaft</h2></summary><ul class="legend"><li><span class="tag">Eigentümerversammlung</span><span>Beschlüsse der Gemeinschaft. Teilnahme oder Vollmacht einplanen.</span></li><li><span class="tag">Wartung</span><span>Lift, Heizung oder Technik. Zugang kann kurz eingeschränkt sein.</span></li><li><span class="tag">Ablesung</span><span>Zählerstände. Meist ist Zutritt zur Einheit nötig.</span></li><li><span class="tag">Frist</span><span>Letzter Tag für eine Rückmeldung oder Zahlung.</span></li><li><span class="tag">Reinigung</span><span>Wiederkehrende Arbeiten in Haus, Hof und Grünflächen.</span></li></ul></details>
 		</aside>
 	</div>
 }

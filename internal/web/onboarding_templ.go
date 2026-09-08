@@ -418,7 +418,7 @@ func OnboardingStepIdentity(data OnboardingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>Durch die zugeordnete Wohneinheit festgelegt</small></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</strong><small>Durch die zugeordnete Einheit festgelegt</small></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -459,7 +459,7 @@ func OnboardingStepIdentity(data OnboardingPageData) templ.Component {
 			}
 		}
 		if data.HasHomeUnit {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"home-identity-field\"><span>Zugeordnete offizielle Wohnung</span><input type=\"hidden\" name=\"unit_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"home-identity-field\"><span>Zugeordnete offizielle Einheit</span><input type=\"hidden\" name=\"unit_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -485,12 +485,12 @@ func OnboardingStepIdentity(data OnboardingPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</strong><small>Diesem Hausprofil zugeordnet</small></div><small class=\"home-identity-field-help\">Die Sichtbarkeit folgt dieser Wohnung; technische Freigaben bleiben separat.</small></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</strong><small>Diesem Hausprofil zugeordnet</small></div><small class=\"home-identity-field-help\">Die Sichtbarkeit folgt dieser Einheit; technische Freigaben bleiben separat.</small></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if data.HasUnitOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"home-identity-field\" data-home-unit-field><label><span>Zugeordnete offizielle Wohnung</span><select name=\"unit_id\" required aria-describedby=\"home-onboarding-unit-help\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"home-identity-field\" data-home-unit-field><label><span>Zugeordnete offizielle Einheit</span><select name=\"unit_id\" required aria-describedby=\"home-onboarding-unit-help\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -536,7 +536,7 @@ func OnboardingStepIdentity(data OnboardingPageData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</select></label><small class=\"home-identity-field-help\" id=\"home-onboarding-unit-help\">Die Auswahl legt fest, welche Wohnung den Überblick sieht. Technische Freigaben bleiben separat.</small></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</select></label><small class=\"home-identity-field-help\" id=\"home-onboarding-unit-help\">Die Auswahl legt fest, welche Einheit den Überblick sieht. Technische Freigaben bleiben separat.</small></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1207,7 +1207,7 @@ func onboardingHomeTypeLabel(homeType string) string {
 
 func onboardingHomeTypeHint(locked bool) string {
 	if locked {
-		return "Die Art ist mit der Wohnung verbunden."
+		return "Die Art ist mit der Einheit verbunden."
 	}
 	return "Die Auswahl kann Geltungsbereich und Sichtbarkeit ändern."
 }

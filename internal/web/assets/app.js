@@ -554,3 +554,19 @@
     if (!menu.contains(event.target)) close(false);
   });
 })();
+
+// Hausüberblick "Anliegen" card: hovering a row shows it is clickable, and a
+// click anywhere on the row opens the issue detail (same URL as the Betreff
+// link) — a CSP-safe stand-in for a native row link. Clicks on an inner link
+// or button, and any active text selection, are left alone so both keep
+// working normally.
+(function () {
+  document.addEventListener("click", function (event) {
+    var row = event.target.closest(".issues-card tbody tr[data-href]");
+    if (!row) return;
+    if (event.target.closest("a, button")) return;
+    var selection = window.getSelection ? window.getSelection() : null;
+    if (selection && String(selection).length) return;
+    window.location.assign(row.getAttribute("data-href"));
+  });
+})();

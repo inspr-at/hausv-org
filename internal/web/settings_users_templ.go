@@ -1145,7 +1145,7 @@ func UserAccessDetail(data UserSettingsPageData, user view.UserRow) templ.Compon
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div></details><p class=\"access-help\">Zuordnungen gelten für dieses Haus. Weitere Zugriffe ergeben sich aus Rolle und Sonderrechten.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div></details><p class=\"access-help\">Zuordnungen gelten für diese Liegenschaft. Weitere Zugriffe ergeben sich aus Rolle und Sonderrechten.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1449,7 +1449,7 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\"><label>Rolle in diesem Haus<select class=\"f-role\" name=\"role\" autofocus>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\"><label>Rolle in dieser Liegenschaft<select class=\"f-role\" name=\"role\" autofocus>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1678,7 +1678,7 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\"><p>Entfernt die Hauszuordnung dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type=\"submit\">Dauerhaft entfernen</button></form></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\"><p>Entfernt die Zuordnung zur Liegenschaft dauerhaft. Sperren ist weiterhin rückgängig zu machen.</p><button type=\"submit\">Dauerhaft entfernen</button></form></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1752,7 +1752,7 @@ func AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) templ.Com
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Hauszugang.</small></span></label></fieldset></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Zugang zur Liegenschaft.</small></span></label></fieldset></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

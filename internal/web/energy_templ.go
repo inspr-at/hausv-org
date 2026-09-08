@@ -5344,7 +5344,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.HasCaretakers {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 475, "Hausbezogene Hilfe ist eingerichtet.")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 475, "Hilfe für die Liegenschaft ist eingerichtet.")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5359,7 +5359,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.CaretakerChanged {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 478, "<div class=\"message success\">Der technische Zugriff für dieses Haus wurde geändert und protokolliert.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 478, "<div class=\"message success\">Der technische Zugriff für diese Liegenschaft wurde geändert und protokolliert.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5376,7 +5376,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		case "exists":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 481, "<div class=\"message\">Diese Person gehört bereits zum Haus. Rechte können unten geändert werden.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 481, "<div class=\"message\">Diese Person gehört bereits zur Liegenschaft. Rechte können unten geändert werden.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5386,7 +5386,7 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		case "error":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 483, "<div class=\"message error\">Der hausbezogene Zugang konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 483, "<div class=\"message error\">Der Zugang zur Liegenschaft konnte nicht angelegt werden. Bitte in der Personenverwaltung prüfen.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -5493,13 +5493,13 @@ func EnergyCaretakerSection(data EnergyPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 499, "<p class=\"muted\">Noch keine weitere Person ist diesem Haus zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 499, "<p class=\"muted\">Noch keine weitere Person ist dieser Liegenschaft zugeordnet. Laden Sie zuerst ein eigenes Benutzerkonto ein.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if data.CanInviteEnergyAccess {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 500, "<details class=\"energy-compact-create\"><summary>Technische Vertrauensperson einladen</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/caretaker/invite\"><label>Vorname<input name=\"first_name\" maxlength=\"80\"></label><label>Nachname<input name=\"last_name\" maxlength=\"80\"></label> <label class=\"wide\">E-Mail<input type=\"email\" name=\"email\" required></label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"> darf Messwerte und Geräte einrichten</label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Hausbezogen einladen</button></div></form></details>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 500, "<details class=\"energy-compact-create\"><summary>Technische Vertrauensperson einladen</summary><form class=\"energy-inline-form\" method=\"post\" action=\"/app/energie/caretaker/invite\"><label>Vorname<input name=\"first_name\" maxlength=\"80\"></label><label>Nachname<input name=\"last_name\" maxlength=\"80\"></label> <label class=\"wide\">E-Mail<input type=\"email\" name=\"email\" required></label> <label><input type=\"checkbox\" name=\"scope\" value=\"configure\"> darf Messwerte und Geräte einrichten</label><div class=\"actions\"><button class=\"button primary\" type=\"submit\">Zur Liegenschaft einladen</button></div></form></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
