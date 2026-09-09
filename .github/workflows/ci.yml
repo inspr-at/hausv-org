@@ -224,6 +224,17 @@ jobs:
           HV_CAPTURE: shell-widths.mjs
         run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/widths.json" 8299
 
+      # HAUSV-722: on laptop viewports (1512×982, 1440×900, 1280×720) every
+      # primary action, panel action bar and dialog footer must be reachable and
+      # clickable; a panel that ended below the fold once hid the Posteingang
+      # actions (HAUSV-721). Known offenders live in the probe's KNOWN map with
+      # their ticket and drop out as they are fixed.
+      - name: Laptop viewport actions probe
+        env:
+          CI: "true"
+          HV_CAPTURE: qa-viewport-actions.mjs
+        run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/viewport-actions.json" 8499
+
       # The dual-renderer parity oracle was retired with the deleted renderer.
       # Keep a non-vacuous replacement: every route in the maintained
       # authenticated coverage list must return successfully, land on the
