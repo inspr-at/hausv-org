@@ -385,6 +385,15 @@ func upsertHouseFixtures(ctx context.Context, database *sql.DB, houses []seedHou
 			status = store.IssueStatusDone
 		} else if raw.StatusHint == "approved" || raw.StatusHint == "edited" {
 			status = store.IssueStatusProgress
+		} else if raw.StatusHint == "manual" && assigneeEmail[assignee] != "" {
+			// HAUSV-669: manual work is a mix of new, accepted and in-progress items;
+			// only assigned items may leave "Neu" (HAUSV-716 rule).
+			switch (index / 3) % 3 {
+			case 1:
+				status = store.IssueStatusAccepted
+			case 2:
+				status = store.IssueStatusProgress
+			}
 		}
 		email := raw.FromEmail
 		if email == "" {
