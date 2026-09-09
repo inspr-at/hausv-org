@@ -1,5 +1,17 @@
 (function () {
+  // HAUSV-721: size the queue and case columns to the space below the page
+  // head so the sticky action bar always ends inside the viewport. CSS cannot
+  // know the grid's document offset; the fallback in the stylesheet is 380px.
+  function fitInboxColumns() {
+    const grid = document.querySelector('.inbox-grid');
+    if (!grid) return;
+    const top = Math.round(grid.getBoundingClientRect().top + window.scrollY);
+    document.documentElement.style.setProperty('--inbox-top', `${Math.max(0, top)}px`);
+  }
   function ready() {
+    fitInboxColumns();
+    window.addEventListener('resize', fitInboxColumns);
+    document.addEventListener('htmx:afterSwap', fitInboxColumns);
     const page = document.querySelector('[data-inbox-shortcuts]');
     if (!page) return;
 
