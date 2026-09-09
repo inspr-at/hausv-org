@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.19] - 2026-09-09
+
+### Verbessert
+
+- Triage-Board: Das Detail-Panel bleibt immer vollständig im Bild, auch auf kleineren Laptop-Bildschirmen; „Verschieben nach …“ und „Bearbeiten“ stehen fest am unteren Rand des Panels, der Inhalt darüber scrollt im Panel.
+
 ## [1.9.18] - 2026-09-09
 
 ### Verbessert

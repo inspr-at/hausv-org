@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.19",
+			Date:     "9. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Triage-Board: Panel-Aktionen immer im Blick.",
+			Intro:    "Das Detail-Panel des Triage-Boards bleibt auch auf kleineren Laptop-Bildschirmen vollständig sichtbar; „Verschieben nach …“ und „Bearbeiten“ stehen fest am unteren Rand, der Inhalt scrollt im Panel.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.18",
 			Date:     "9. September 2026",
 			Kind:     "Verbessert",

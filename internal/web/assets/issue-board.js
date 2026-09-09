@@ -5,6 +5,17 @@
   if (!board || !window.fetch) return;
   board.classList.add('is-enhanced');
   const panel = board.querySelector('[data-board-panel]');
+  // HAUSV-723: the panel sits at its natural position at rest and rises with the
+  // page until 16px from the top; its height is always the space below that
+  // point, so its sticky action footer never leaves the viewport.
+  const layout = board.querySelector('.board-layout');
+  function fitPanel() {
+    if (!layout || panel.hidden) return;
+    const top = Math.max(16, Math.round(layout.getBoundingClientRect().top));
+    panel.style.setProperty('--board-panel-top', `${top}px`);
+  }
+  window.addEventListener('scroll', fitPanel, { passive: true });
+  window.addEventListener('resize', fitPanel);
   const feedback = board.querySelector('[data-board-feedback]');
   const boardURL = document.querySelector('.board-view-switch [aria-current="page"]').href;
   const columns = () => [...board.querySelectorAll('[data-board-status]')];
@@ -59,7 +70,7 @@
     const request = new AbortController();
     panelRequest = request;
     selectCard(card);
-    panel.hidden = false;
+    panel.hidden = false; fitPanel();
     panel.setAttribute('aria-busy', 'true');
     // Prevent actions on the previously selected issue while loading.
     panel.replaceChildren();
