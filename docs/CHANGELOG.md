@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.20] - 2026-09-09
+
+### Verbessert
+
+- Demo: Die Anliegen einer Liegenschaft zeigen einen echten Mix aus „Neu“, „Angenommen“ und „In Bearbeitung“, aus Vera, Paul und noch nicht zugewiesen, und keine doppelten Betreffs unter den neuesten Einträgen.
+
 ## [1.9.19] - 2026-09-09
 
 ### Verbessert

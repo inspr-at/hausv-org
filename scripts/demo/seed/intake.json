@@ -7179,7 +7179,7 @@
     "truth": {
       "category": "freigabe",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "freigabe-unterlagen"
     },
     "precomputed": null,
@@ -7279,7 +7279,7 @@
     "truth": {
       "category": "termin",
       "priority": "Niedrig",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "termin-bestaetigt"
     },
     "precomputed": {
@@ -7379,7 +7379,7 @@
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "betriebskosten-pruefung"
     },
     "precomputed": {
@@ -7599,7 +7599,7 @@
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "hausordnung-rueckmeldung"
     },
     "precomputed": {
@@ -7719,7 +7719,7 @@
     "truth": {
       "category": "schluessel",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "schluessel-bestellung"
     },
     "precomputed": null,
@@ -7819,7 +7819,7 @@
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -8039,7 +8039,7 @@
     "truth": {
       "category": "termin",
       "priority": "Niedrig",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "termin-bestaetigt"
     },
     "precomputed": {
@@ -8139,7 +8139,7 @@
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung"
     },
     "precomputed": {
@@ -8259,7 +8259,7 @@
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "beleg-erfasst"
     },
     "precomputed": null,
@@ -8579,7 +8579,7 @@
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -8899,7 +8899,7 @@
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "betriebskosten-pruefung"
     },
     "precomputed": {
@@ -9539,7 +9539,7 @@
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -9714,8 +9714,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Heizung in Top 7 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 7 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -9754,8 +9754,8 @@
     "from_name": "Hedwig Eder",
     "from_email": "hedwig.beirat@musterstadt.example",
     "from_phone": "",
-    "subject": "Taubenfütterung im Hof",
-    "body": "Eine Bewohnerin streut täglich Brot in den Innenhof. Dadurch sind sehr viele Tauben da und die Fensterbretter stark verschmutzt, bitte sprechen Sie das an.",
+    "subject": "Nächtlicher Lärm aus der Wohnung darüber",
+    "body": "Seit zwei Wochen wird fast jeden Abend nach 23 Uhr laut Musik gespielt und Möbel werden verschoben. Ich möchte keinen Streit anfangen, bitte erinnern Sie allgemein an die Ruhezeiten.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -9794,8 +9794,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Abrechnung falscher Zeitraum",
-    "body": "Die zugeschickte Abrechnung beginnt im März, obwohl ich erst seit Juni Mieterin bin. Muss ich den gesamten Saldo zahlen oder wird das mit dem Eigentümer geteilt?",
+    "subject": "Frage zur Betriebskostenabrechnung",
+    "body": "Sehr geehrte Damen und Herren, der Posten Hausreinigung ist heuer deutlich höher als im Vorjahr. Bitte senden Sie mir die zugrunde liegenden Belege oder erklären Sie die Steigerung.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -9834,8 +9834,8 @@
     "from_name": "Lorenz Leitner",
     "from_email": "lorenz.leitner@example.example",
     "from_phone": "",
-    "subject": "AW: Einreichplan Dachflächenfenster",
-    "body": "Anbei nochmals der Plan, diesmal mit den Außenmaßen. Der Statiker meint, der bestehende Sparren wird nicht verändert; reicht das für Ihre Vorprüfung?",
+    "subject": "Genehmigung für Markise",
+    "body": "Wir möchten am Balkon eine sandfarbene Markise montieren lassen. Modell, Maße und Befestigungsskizze sind vorhanden; welche Zustimmung benötigen wir vor der Bestellung?",
     "truth": {
       "category": "freigabe",
       "priority": "Mittel",
@@ -9879,7 +9879,7 @@
     "truth": {
       "category": "beleg",
       "priority": "Niedrig",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "beleg-erfasst"
     },
     "precomputed": null,
@@ -9934,8 +9934,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Nächtlicher Lärm aus der Wohnung darüber",
-    "body": "Seit zwei Wochen wird fast jeden Abend nach 23 Uhr laut Musik gespielt und Möbel werden verschoben. Ich möchte keinen Streit anfangen, bitte erinnern Sie allgemein an die Ruhezeiten.",
+    "subject": "Müll neben den Tonnen",
+    "body": "Im Müllraum liegen wieder Kartons und zwei alte Sessel neben den Behältern. Die Abholung nimmt das so nicht mit; bitte um einen Aushang.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -9974,8 +9974,8 @@
     "from_name": "Petra Ortner",
     "from_email": "petra.ortner@example.example",
     "from_phone": "",
-    "subject": "Frage zur Betriebskostenabrechnung",
-    "body": "Sehr geehrte Damen und Herren, der Posten Hausreinigung ist heuer deutlich höher als im Vorjahr. Bitte senden Sie mir die zugrunde liegenden Belege oder erklären Sie die Steigerung.",
+    "subject": "Liftkosten trotz Erdgeschoss",
+    "body": "Warum muss ich in Top 3 im EG für den Lift zahlen, obwohl ich ihn nie verwende? Ich ersuche um eine nachvollziehbare Erläuterung der Aufteilung.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -10014,8 +10014,8 @@
     "from_name": "Nora Illek",
     "from_email": "nora.illek@example.example",
     "from_phone": "",
-    "subject": "Genehmigung für Markise",
-    "body": "Wir möchten am Balkon eine sandfarbene Markise montieren lassen. Modell, Maße und Befestigungsskizze sind vorhanden; welche Zustimmung benötigen wir vor der Bestellung?",
+    "subject": "Klimagerät an der Hoffassade",
+    "body": "Wegen der Hitze plane ich ein Split-Klimagerät mit Außenteil zum Innenhof. Bitte teilen Sie mir mit, welche Unterlagen für die Freigabe erforderlich sind.",
     "truth": {
       "category": "freigabe",
       "priority": "Mittel",
@@ -10199,7 +10199,7 @@
     "truth": {
       "category": "freigabe",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "freigabe-unterlagen"
     },
     "precomputed": {
@@ -10254,8 +10254,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "+43 660 310 20 18",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -10294,8 +10294,8 @@
     "from_name": "Ramin Pichler",
     "from_email": "ramin.pichler@example.example",
     "from_phone": "+43 660 310 20 12",
-    "subject": "Hund ohne Leine im Innenhof",
-    "body": "Der große schwarze Hund aus dem Erdgeschoss läuft regelmäßig frei herum und springt Kinder an. Er wirkt nicht böse, trotzdem ist das für uns unangenehm.",
+    "subject": "Rauchen im Stiegenhaus",
+    "body": "Bitte kümmern Sie sich um den Zigarettenrauch im Stiegenhaus von Münzgrabenstraße 9. Der Geruch zieht bis in unsere Wohnung und die Stummel landen am Fensterbrett.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -10334,8 +10334,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "+43 676 310 20 38",
-    "subject": "Akonto ab Oktober",
-    "body": "In der neuen Vorschreibung steigt das monatliche Akonto um fast 18 Prozent. Ist das wegen Fernwärme oder wurde die Nutzfläche geändert?",
+    "subject": "Vorschreibung doppelt abgebucht",
+    "body": "Am 3. und am 5. September wurden jeweils 329,50 Euro eingezogen. Bitte kontrollieren und die zweite Abbuchung rücküberweisen.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -10694,8 +10694,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Leonhardstraße 3 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -10734,8 +10734,8 @@
     "from_name": "Ramin Pichler",
     "from_email": "ramin.pichler@example.example",
     "from_phone": "",
-    "subject": "AW: Bitte um Ruhe",
-    "body": "Es ist leider trotz Ihres Schreibens nicht besser geworden. Heute um 01:20 wurde wieder gebohrt oder gehämmert, ich habe die Uhrzeit notiert.",
+    "subject": "Sperrmüll beim Keller",
+    "body": "Kurze Info: Vor Kellerabteil 12 steht seit dem Wochenende eine Matratze. Niemand fühlt sich zuständig und der Gang ist bischen verstellt.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -10774,8 +10774,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Neue Nutzwerte?",
-    "body": "Der Anteil für Top 2 ist anders als letztes Jahr. Gab es eine Änderung beim Nutzwertgutachten oder handelt es sich um einen Übertragungsfehler?",
+    "subject": "Mahnung trotz Zahlung",
+    "body": "Ich habe die Vorschreibung am 28. August überwiesen und heute trotzdem eine Mahnung erhalten. Den Zahlungsbeleg schicke ich im Anhang, bitte ausbuchen.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -10839,7 +10839,7 @@
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "hausordnung-rueckmeldung"
     },
     "precomputed": {
@@ -11014,8 +11014,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "+43 660 310 20 09",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Annenstraße 71 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11054,8 +11054,8 @@
     "from_name": "Hedwig Eder",
     "from_email": "hedwig.beirat@musterstadt.example",
     "from_phone": "+43 664 310 20 37",
-    "subject": "Taubenfütterung im Hof",
-    "body": "Eine Bewohnerin streut täglich Brot in den Innenhof. Dadurch sind sehr viele Tauben da und die Fensterbretter stark verschmutzt, bitte sprechen Sie das an.",
+    "subject": "Müll neben den Tonnen",
+    "body": "Im Müllraum liegen wieder Kartons und zwei alte Sessel neben den Behältern. Die Abholung nimmt das so nicht mit; bitte um einen Aushang.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11094,8 +11094,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
-    "subject": "Abrechnung falscher Zeitraum",
-    "body": "Die zugeschickte Abrechnung beginnt im März, obwohl ich erst seit Juni Mieterin bin. Muss ich den gesamten Saldo zahlen oder wird das mit dem Eigentümer geteilt?",
+    "subject": "Liftkosten trotz Erdgeschoss",
+    "body": "Warum muss ich in Top 3 im EG für den Lift zahlen, obwohl ich ihn nie verwende? Ich ersuche um eine nachvollziehbare Erläuterung der Aufteilung.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11159,7 +11159,7 @@
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "hausordnung-rueckmeldung"
     },
     "precomputed": {
@@ -11234,8 +11234,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Annenstraße 71 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 1 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11274,8 +11274,8 @@
     "from_name": "Matthias Dorn",
     "from_email": "matthias.mieter@musterstadt.example",
     "from_phone": "",
-    "subject": "Müll neben den Tonnen",
-    "body": "Im Müllraum liegen wieder Kartons und zwei alte Sessel neben den Behältern. Die Abholung nimmt das so nicht mit; bitte um einen Aushang.",
+    "subject": "Hund ohne Leine im Innenhof",
+    "body": "Der große schwarze Hund aus dem Erdgeschoss läuft regelmäßig frei herum und springt Kinder an. Er wirkt nicht böse, trotzdem ist das für uns unangenehm.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11314,8 +11314,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Liftkosten trotz Erdgeschoss",
-    "body": "Warum muss ich in Top 3 im EG für den Lift zahlen, obwohl ich ihn nie verwende? Ich ersuche um eine nachvollziehbare Erläuterung der Aufteilung.",
+    "subject": "Akonto ab Oktober",
+    "body": "In der neuen Vorschreibung steigt das monatliche Akonto um fast 18 Prozent. Ist das wegen Fernwärme oder wurde die Nutzfläche geändert?",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11334,8 +11334,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 7 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11374,8 +11374,8 @@
     "from_name": "Daniel Novak",
     "from_email": "daniel.novak@example.example",
     "from_phone": "",
-    "subject": "Hund ohne Leine im Innenhof",
-    "body": "Der große schwarze Hund aus dem Erdgeschoss läuft regelmäßig frei herum und springt Kinder an. Er wirkt nicht böse, trotzdem ist das für uns unangenehm.",
+    "subject": "Grillen am Balkon",
+    "body": "Gestern wurde am Balkon unter uns mit Holzkohle gegrillt, der ganze Rauch war in unserem Schlafzimmer. Ist das laut Hausordnung überhaupt erlaubt?",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11414,8 +11414,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Akonto ab Oktober",
-    "body": "In der neuen Vorschreibung steigt das monatliche Akonto um fast 18 Prozent. Ist das wegen Fernwärme oder wurde die Nutzfläche geändert?",
+    "subject": "Unklare Position Sonstiges",
+    "body": "Auf Seite drei stehen 612 Euro unter Sonstiges, ohne weitere Bezeichnung. Was wurde hier verrechnet und nach welchem Schlüssel verteilt?",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11454,8 +11454,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11494,12 +11494,12 @@
     "from_name": "Hedwig Eder",
     "from_email": "hedwig.beirat@musterstadt.example",
     "from_phone": "",
-    "subject": "Rauchen im Stiegenhaus",
-    "body": "Bitte kümmern Sie sich um den Zigarettenrauch im Stiegenhaus von Janusbergweg 123. Der Geruch zieht bis in unsere Wohnung und die Stummel landen am Fensterbrett.",
+    "subject": "Fahrräder blockieren Fluchtweg",
+    "body": "Zwischen Eingang und Kellertür stehen mittlerweile sechs Fahrräder. Mit Kinderwagen kommt man kaum vorbei, bei einem Notfall wäre der Durchgang zu eng.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "hausordnung-rueckmeldung"
     },
     "precomputed": null,
@@ -11514,8 +11514,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Vorschreibung doppelt abgebucht",
-    "body": "Am 3. und am 5. September wurden jeweils 184,20 Euro eingezogen. Bitte kontrollieren und die zweite Abbuchung rücküberweisen.",
+    "subject": "Belegeinsicht 2025",
+    "body": "Ich möchte von meinem Recht auf Belegeinsicht Gebrauch machen. Bitte um zwei Terminvorschläge und vorab um die Aufstellung der größeren Reparaturen.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11554,8 +11554,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11594,8 +11594,8 @@
     "from_name": "Ramin Pichler",
     "from_email": "ramin.pichler@example.example",
     "from_phone": "",
-    "subject": "Fahrräder blockieren Fluchtweg",
-    "body": "Zwischen Eingang und Kellertür stehen mittlerweile sechs Fahrräder. Mit Kinderwagen kommt man kaum vorbei, bei einem Notfall wäre der Durchgang zu eng.",
+    "subject": "Taubenfütterung im Hof",
+    "body": "Eine Bewohnerin streut täglich Brot in den Innenhof. Dadurch sind sehr viele Tauben da und die Fensterbretter stark verschmutzt, bitte sprechen Sie das an.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11634,8 +11634,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Belegeinsicht 2025",
-    "body": "Ich möchte von meinem Recht auf Belegeinsicht Gebrauch machen. Bitte um zwei Terminvorschläge und vorab um die Aufstellung der größeren Reparaturen.",
+    "subject": "Abrechnung falscher Zeitraum",
+    "body": "Die zugeschickte Abrechnung beginnt im März, obwohl ich erst seit Juni Mieterin bin. Muss ich den gesamten Saldo zahlen oder wird das mit dem Eigentümer geteilt?",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11674,8 +11674,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "+43 664 310 20 07",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei  läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Annenstraße 71 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11694,8 +11694,8 @@
     "from_name": "Matthias Dorn",
     "from_email": "matthias.mieter@musterstadt.example",
     "from_phone": "+43 676 310 20 02",
-    "subject": "Grillen am Balkon",
-    "body": "Gestern wurde am Balkon unter uns mit Holzkohle gegrillt, der ganze Rauch war in unserem Schlafzimmer. Ist das laut Hausordnung überhaupt erlaubt?",
+    "subject": "AW: Bitte um Ruhe",
+    "body": "Es ist leider trotz Ihres Schreibens nicht besser geworden. Heute um 01:20 wurde wieder gebohrt oder gehämmert, ich habe die Uhrzeit notiert.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11734,8 +11734,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
-    "subject": "Unklare Position Sonstiges",
-    "body": "Auf Seite drei stehen 612 Euro unter Sonstiges, ohne weitere Bezeichnung. Was wurde hier verrechnet und nach welchem Schlüssel verteilt?",
+    "subject": "Neue Nutzwerte?",
+    "body": "Der Anteil für Top 3 ist anders als letztes Jahr. Gab es eine Änderung beim Nutzwertgutachten oder handelt es sich um einen Übertragungsfehler?",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11774,8 +11774,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "+43 660 310 20 18",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Leonhardstraße 3 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Leonhardstraße 3 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11814,8 +11814,8 @@
     "from_name": "Daniel Novak",
     "from_email": "daniel.novak@example.example",
     "from_phone": "+43 664 310 20 10",
-    "subject": "AW: Bitte um Ruhe",
-    "body": "Es ist leider trotz Ihres Schreibens nicht besser geworden. Heute um 01:20 wurde wieder gebohrt oder gehämmert, ich habe die Uhrzeit notiert.",
+    "subject": "Müll neben den Tonnen",
+    "body": "Im Müllraum liegen wieder Kartons und zwei alte Sessel neben den Behältern. Die Abholung nimmt das so nicht mit; bitte um einen Aushang.",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11854,8 +11854,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Neue Nutzwerte?",
-    "body": "Der Anteil für Top 3 ist anders als letztes Jahr. Gab es eine Änderung beim Nutzwertgutachten oder handelt es sich um einen Übertragungsfehler?",
+    "subject": "Liftkosten trotz Erdgeschoss",
+    "body": "Warum muss ich in Top 3 im EG für den Lift zahlen, obwohl ich ihn nie verwende? Ich ersuche um eine nachvollziehbare Erläuterung der Aufteilung.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11874,8 +11874,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Schimmel hinter dem Kasten",
+    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -11914,8 +11914,8 @@
     "from_name": "Hedwig Eder",
     "from_email": "hedwig.beirat@musterstadt.example",
     "from_phone": "",
-    "subject": "Sperrmüll beim Keller",
-    "body": "Kurze Info: Vor Kellerabteil 12 steht seit dem Wochenende eine Matratze. Niemand fühlt sich zuständig und der Gang ist bischen verstellt.",
+    "subject": "Kinderwagen vor Top",
+    "body": "Ich will wirklich nicht kleinlich sein, aber der Kinderwagen vor Top 2 versperrt ständig die Hälfte des Ganges. Können Sie eine sachliche Lösung vorschlagen?",
     "truth": {
       "category": "hausordnung",
       "priority": "Mittel",
@@ -11954,8 +11954,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Mahnung trotz Zahlung",
-    "body": "Ich habe die Vorschreibung am 28. August überwiesen und heute trotzdem eine Mahnung erhalten. Den Zahlungsbeleg schicke ich im Anhang, bitte ausbuchen.",
+    "subject": "Rücklage in der Abrechnung",
+    "body": "Können Sie mir kurz erklären, warum die Reparaturrücklage nicht wie eine normale Betriebskostenposition abgerechnet wird? Die Darstellung ist für mich missverständlich.",
     "truth": {
       "category": "betriebskosten",
       "priority": "Mittel",
@@ -11994,8 +11994,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12054,8 +12054,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Heizung in Top 2 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 2 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Grazbachgasse 14 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12094,8 +12094,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Annenstraße 71 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Heizung in Top 1 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 1 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12139,7 +12139,7 @@
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -12214,8 +12214,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12234,8 +12234,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 1 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Janusbergweg 123 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12314,8 +12314,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Annenstraße 71 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12354,8 +12354,8 @@
     "from_name": "Oskar Lind",
     "from_email": "oskar.lind@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12414,8 +12414,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "+43 660 310 20 18",
-    "subject": "Heizung in Top 7 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 7 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12454,12 +12454,12 @@
     "from_name": "Sophie Berger",
     "from_email": "sophie.bewohner@musterstadt.example",
     "from_phone": "+43 660 310 20 03",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Janusbergweg 123 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -12534,8 +12534,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "+43 664 310 20 07",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 1 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12634,8 +12634,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Leonhardstraße 3 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 7 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12674,8 +12674,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Schimmel hinter dem Kasten",
+    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12714,8 +12714,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12754,8 +12754,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Schimmel hinter dem Kasten",
+    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12779,7 +12779,7 @@
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -12814,8 +12814,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Schörgelgasse 25 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 3 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12854,8 +12854,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Leonhardstraße 3 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12894,8 +12894,8 @@
     "from_name": "Sophie Berger",
     "from_email": "sophie.bewohner@musterstadt.example",
     "from_phone": "",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12934,8 +12934,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 2 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -12954,8 +12954,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 1 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13034,8 +13034,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Schimmel hinter dem Kasten",
+    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13074,8 +13074,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13114,8 +13114,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "+43 664 310 20 01",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Heizung in  bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in  weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13134,8 +13134,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "+43 676 310 20 05",
-    "subject": "Heizung in Top 3 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 3 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13174,8 +13174,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "+43 660 310 20 09",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Annenstraße 71 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Heizung in Top 7 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 7 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13214,8 +13214,8 @@
     "from_name": "Oskar Lind",
     "from_email": "oskar.lind@example.example",
     "from_phone": "+43 664 310 20 40",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 2 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13254,8 +13254,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13294,8 +13294,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13314,8 +13314,8 @@
     "from_name": "Sophie Berger",
     "from_email": "sophie.bewohner@musterstadt.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 7 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Heizung in Top 7 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 7 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13354,8 +13354,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Grazbachgasse 14 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13394,8 +13394,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Annenstraße 71 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13434,12 +13434,12 @@
     "from_name": "Petra Ortner",
     "from_email": "petra.ortner@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Münzgrabenstraße 9 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -13474,8 +13474,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Heizung in Top 3 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 3 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13494,8 +13494,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Heizung in Top 7 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 7 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13534,8 +13534,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Janusbergweg 123 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Heizung in Top 1 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 1 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13574,8 +13574,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 3 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Grazbachgasse 14 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13614,8 +13614,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13654,8 +13654,8 @@
     "from_name": "Oskar Lind",
     "from_email": "oskar.lind@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 2 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13674,8 +13674,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 3 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Schörgelgasse 25 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13714,8 +13714,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Leonhardstraße 3 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 7 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13754,12 +13754,12 @@
     "from_name": "Sophie Berger",
     "from_email": "sophie.bewohner@musterstadt.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Janusbergweg 123 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -13794,8 +13794,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13834,8 +13834,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "+43 664 310 20 07",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Heizung in  bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in  weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13854,8 +13854,8 @@
     "from_name": "Petra Ortner",
     "from_email": "petra.ortner@example.example",
     "from_phone": "+43 676 310 20 11",
-    "subject": "Heizung in Top 3 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 3 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13894,8 +13894,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Schörgelgasse 25 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Heizung in Top 3 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 3 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13934,8 +13934,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "+43 660 310 20 18",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 7 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Leonhardstraße 3 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -13974,8 +13974,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "+43 664 310 20 01",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 1 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14014,8 +14014,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14034,8 +14034,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 7 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14074,12 +14074,12 @@
     "from_name": "Oskar Lind",
     "from_email": "oskar.lind@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Münzgrabenstraße 9 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 2 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
-      "assignee": "paul.sommer",
+      "assignee": "vera.verwalter",
       "template_key": "reparatur-beauftragt"
     },
     "precomputed": {
@@ -14114,8 +14114,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Schörgelgasse 25 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14154,8 +14154,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14194,8 +14194,8 @@
     "from_name": "Sophie Berger",
     "from_email": "sophie.bewohner@musterstadt.example",
     "from_phone": "",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Schimmel hinter dem Kasten",
+    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14214,8 +14214,8 @@
     "from_name": "Ivan Gruber",
     "from_email": "ivan.gruber@example.example",
     "from_phone": "",
-    "subject": "Heizung in Top 2 bleibt kalt",
-    "body": "Guten Morgen, seit gestern werden in Top 2 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14254,8 +14254,8 @@
     "from_name": "Jasmin Kern",
     "from_email": "jasmin.kern@example.example",
     "from_phone": "",
-    "subject": "Kein Warmwasser seit Sonntag",
-    "body": "Sehr geehrte Hausverwaltung, im Haus Annenstraße 71 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
+    "subject": "Heizung in Top 1 bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in Top 1 weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14294,8 +14294,8 @@
     "from_name": "Petra Ortner",
     "from_email": "petra.ortner@example.example",
     "from_phone": "",
-    "subject": "Wasserfleck an der Badezimmerdecke",
-    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 3 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
+    "subject": "Kein Warmwasser seit Sonntag",
+    "body": "Sehr geehrte Hausverwaltung, im Haus Münzgrabenstraße 9 kommt seit gestan nur kaltes Wasser. Bei den Nachbarn dürfte es auch so sein; könnten Sie das bitte dringend prüfen lassen?",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14334,8 +14334,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "",
-    "subject": "Lift steckt wieder",
-    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
+    "subject": "Wasserfleck an der Badezimmerdecke",
+    "body": "Heute Früh war plötzlich ein gelblicher Fleck über der Dusche, inzwischen tropft es leicht. Ich bin in Top 3 erreichbar und kann einem Installateur ab 14 Uhr aufsperren.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14374,8 +14374,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Licht im Stiegenhaus ausgefallen",
-    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
+    "subject": "Lift steckt wieder",
+    "body": "Der Lift bleibt zwischen EG und 1. Stock stehen und ruckelt stark. Es ist gerade niemand drinnen, aber so sollte ihn bitte keiner benützen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14394,8 +14394,8 @@
     "from_name": "Alina Auer",
     "from_email": "alina.eigentuemer@musterstadt.example",
     "from_phone": "",
-    "subject": "Gegensprechanlage ohne Ton",
-    "body": "Hallo, bei Top 1 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
+    "subject": "Licht im Stiegenhaus ausgefallen",
+    "body": "Im zweiten Stock ist es seit drei Tagen finster, auch der Bewegungsmelder reagiert nicht. Bitte nicht nur die Birne tauschen, beim letzten Mal lag es am Taster.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14434,8 +14434,8 @@
     "from_name": "Gregor Haas",
     "from_email": "gregor.haas@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Grazbachgasse 14 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Gegensprechanlage ohne Ton",
+    "body": "Hallo, bei Top 3 läutet die Sprechanlage, man hört aber draußen überhaupt nichts. Der Türöffner geht manchmal erst beim dritten Drücken.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14474,8 +14474,8 @@
     "from_name": "Mira Moser",
     "from_email": "mira.moser@example.example",
     "from_phone": "",
-    "subject": "Balkontür lässt sich nicht schließen",
-    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
+    "subject": "Garagentor schließt nicht",
+    "body": "Das Garagentor in Annenstraße 71 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14514,8 +14514,8 @@
     "from_name": "Oskar Lind",
     "from_email": "oskar.lind@example.example",
     "from_phone": "",
-    "subject": "Schimmel hinter dem Kasten",
-    "body": "Beim Umstellen des Kastens haben wir eine dunkle, ungefähr einen Meter breite Stelle entdeckt. Wir lüften regelmäßig; bitte besichtigen und die Ursache klären, bevor nur darübergestrichen wird.",
+    "subject": "Balkontür lässt sich nicht schließen",
+    "body": "Die Balkontür ist oben aus dem Beschlag gesprungen und bleibt einen Spalt offen. Wegen des Regens brauche ich bitte zeitnah Hilfe, Fotos kann ich nachreichen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -14554,8 +14554,8 @@
     "from_name": "Simon Schober",
     "from_email": "simon.schober@example.example",
     "from_phone": "+43 676 310 20 14",
-    "subject": "Waschmaschine im Gemeinschaftsraum",
-    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
+    "subject": "Heizung in  bleibt kalt",
+    "body": "Guten Morgen, seit gestern werden in  weder Wohnzimmer noch Kinderzimmer warm. Entlüftet habe ich schon, bitte schicken Sie jemanden bevor es nachts wieder so kalt wird.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",

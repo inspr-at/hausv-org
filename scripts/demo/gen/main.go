@@ -320,6 +320,8 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 		materialByCategory[item.Category] = append(materialByCategory[item.Category], item)
 	}
 	items := make([]intakeItem, 0, 400)
+	// HAUSV-669: open items of one house must not repeat a subject in its short list.
+	usedSubjects := map[string]map[string]bool{}
 	autoDone, todayOther, approved, olderOther := 0, 0, 0, 0
 	index := 0
 	for round := 0; ; round++ {
@@ -372,14 +374,39 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 				}
 			}
 			received := time.Date(2026, 9, 9-dayOffset, 7+(index*3)%11, (index*17)%60, 0, 0, time.FixedZone("CEST", 2*60*60))
-			material := materialByCategory[spec.key][round%len(materialByCategory[spec.key])]
+			materials := materialByCategory[spec.key]
+			material := materials[round%len(materials)]
 			body := expand(material.Body, h, unitLabel, resident.Name, index)
 			subject := expand(material.Subject, h, unitLabel, resident.Name, index)
+			if status == "new" || status == "manual" {
+				if usedSubjects[h.Slug] == nil {
+					usedSubjects[h.Slug] = map[string]bool{}
+				}
+				for tries := 1; usedSubjects[h.Slug][subject] && tries < len(materials); tries++ {
+					material = materials[(round+tries)%len(materials)]
+					body = expand(material.Body, h, unitLabel, resident.Name, index)
+					subject = expand(material.Subject, h, unitLabel, resident.Name, index)
+				}
+				usedSubjects[h.Slug][subject] = true
+			}
 			assignee := "vera.verwalter"
 			if index%3 == 0 {
 				assignee = "paul.sommer"
 			}
-			tr := truth{Category: spec.key, Priority: spec.priority, Assignee: assignee, TemplateKey: spec.template}
+			// HAUSV-669: open work spreads over Vera, Paul and "noch niemand" instead of
+			// landing on Paul only (manual items used to coincide with index%3 == 0).
+			truthAssignee := assignee
+			if status == "manual" {
+				switch index % 4 {
+				case 0:
+					truthAssignee = "paul.sommer"
+				case 1:
+					truthAssignee = ""
+				default:
+					truthAssignee = "vera.verwalter"
+				}
+			}
+			tr := truth{Category: spec.key, Priority: spec.priority, Assignee: truthAssignee, TemplateKey: spec.template}
 			item := intakeItem{
 				ID: fmt.Sprintf("in-%04d", index), Source: sourceFor(index), ReceivedAt: received.Format(time.RFC3339), House: itemHouse,
 				Unit: unitLabel, FromName: resident.Name, FromEmail: resident.Email, Subject: subject, Body: body, Truth: tr, StatusHint: status,
