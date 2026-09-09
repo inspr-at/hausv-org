@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.18] - 2026-09-09
+
+### Verbessert
+
+- Posteingang: Die Aktionen „Übernehmen & weiter“, „Bearbeiten“ und „Manuell“ bleiben immer sichtbar am unteren Rand des Falls, auch auf kleineren Laptop-Bildschirmen; Eingang und Fall scrollen jeweils in ihrem Bereich.
+
 ## [1.9.17] - 2026-09-09
 
 ### Verbessert

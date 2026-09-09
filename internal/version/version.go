@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.18",
+			Date:     "9. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Posteingang: Aktionen immer im Blick.",
+			Intro:    "„Übernehmen & weiter“, „Bearbeiten“ und „Manuell“ bleiben am unteren Rand des Falls sichtbar, auch auf einem 14-Zoll-Laptop; Eingang und Fall scrollen jeweils in ihrem Bereich.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.17",
 			Date:     "9. September 2026",
 			Kind:     "Verbessert",

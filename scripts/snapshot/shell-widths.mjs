@@ -273,6 +273,40 @@ for (const [name, route, selectors] of FIT_ROUTES) {
   }
 }
 
+// HAUSV-721: the case column's sticky action bar must end inside the viewport on
+// common laptop heights (14" MacBook Pro = 1512×982). The columns size themselves
+// to the space below the page head, so the bar is never cut off.
+const ACTION_HEIGHTS = [700, 800, 900, 982];
+const ACTION_WIDTHS = [1101, 1280, 1440, 1512];
+const actionBars = [];
+await tp.goto(`${tenantURL}/app/verwaltung/posteingang`, { waitUntil: 'load' });
+// The action bar exists only on a case that carries a suggestion; the fixture seeds several.
+const suggestedHref = await tp.evaluate(() => [...document.querySelectorAll('a.queue-row')].find((a) => /Vorschlag liegt vor/.test(a.textContent))?.getAttribute('href') || null);
+await tp.goto(`${tenantURL}${suggestedHref || caseHref}`, { waitUntil: 'load' });
+for (const w of ACTION_WIDTHS) {
+  for (const h of ACTION_HEIGHTS) {
+    await tp.setViewportSize({ width: w, height: h });
+    await tp.waitForTimeout(60);
+    const state = await tp.evaluate(() => {
+      // The CI fixture has no mailbox, so its only case is a phone note without a
+      // suggestion and therefore without the action bar. The panes must still end
+      // inside the viewport (that is what cut the bar off), and when the bar or
+      // any primary action is present it must be visible and clickable.
+      const queue = document.querySelector('.inbox-grid>.queue');
+      const pane = document.querySelector('.inbox-grid>.case');
+      if (!queue || !pane) return { missing: true };
+      const bar = pane.querySelector('.action-bar');
+      const primary = pane.querySelector('.action-bar .case-button.primary, .case-button.primary');
+      const q = queue.getBoundingClientRect(), c = pane.getBoundingClientRect();
+      const out = { queueBottom: Math.round(q.bottom), caseBottom: Math.round(c.bottom), caseHeight: Math.round(c.height), innerHeight: window.innerHeight, hasBar: !!bar };
+      if (bar) { const b = bar.getBoundingClientRect(); out.barTop = Math.round(b.top); out.barBottom = Math.round(b.bottom); }
+      if (primary) { const p = primary.getBoundingClientRect(); const hit = document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2); out.primaryBottom = Math.round(p.bottom); out.primaryHit = !!hit && primary.contains(hit); }
+      return out;
+    });
+    actionBars.push({ width: w, height: h, ...state });
+  }
+}
+
 await browser.close();
 
 let failures = 0;
@@ -361,6 +395,24 @@ for (const w of TABLET_WIDTHS) {
   const bad = sweep.flatMap((r) => fitProblems(r).map((problem) => `${r.width}px ${r.route}: ${problem}`));
   failures += bad.length;
   console.log(`\nsweep ${SWEEP_WIDTHS[0]}–${SWEEP_WIDTHS[SWEEP_WIDTHS.length - 1]}px in steps of 40 (${SWEEP_WIDTHS.length} widths × ${FIT_ROUTES.length} routes): ${bad.length ? bad.length + ' problem(s)' : 'fits'}`);
+  for (const line of bad) console.log(`         ${line}`);
+}
+
+{
+  const bad = actionBars.flatMap((r) => {
+    const problems = [];
+    if (r.missing) problems.push('queue or case pane missing');
+    else {
+      if (r.caseBottom > r.innerHeight) problems.push(`case pane ends at ${r.caseBottom}px, viewport is ${r.innerHeight}px`);
+      if (r.queueBottom > r.innerHeight) problems.push(`queue ends at ${r.queueBottom}px, viewport is ${r.innerHeight}px`);
+      if (r.hasBar && r.barBottom > r.innerHeight) problems.push(`action bar ends at ${r.barBottom}px, viewport is ${r.innerHeight}px`);
+      if (r.hasBar && r.barTop < 0) problems.push(`action bar starts above the viewport (${r.barTop}px)`);
+      if (r.primaryHit === false) problems.push(`primary button is covered or ends at ${r.primaryBottom}px`);
+    }
+    return problems.map((problem) => `${r.width}×${r.height}: ${problem}`);
+  });
+  failures += bad.length;
+  console.log(`\ninbox action bar at ${ACTION_WIDTHS.length} widths × ${ACTION_HEIGHTS.length} heights: ${bad.length ? bad.length + ' problem(s)' : 'always inside the viewport'}`);
   for (const line of bad) console.log(`         ${line}`);
 }
 
