@@ -135,7 +135,7 @@ templ IssueBoardBlock() {
 .issue-work-card.is-dragging{opacity:.55}
 .issue-work-card[aria-busy=true]{opacity:.65;cursor:progress}
 .issue-board-main :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.board-panel{position:sticky;top:16px;display:grid;gap:20px;min-width:0;width:360px;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow-panel);overflow-wrap:anywhere}
+.board-panel{position:sticky;top:var(--board-panel-top,16px);display:grid;gap:20px;min-width:0;width:360px;max-height:calc(100dvh - var(--board-panel-top,16px) - 16px);overflow-y:auto;overscroll-behavior:contain;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow-panel);overflow-wrap:anywhere}
 .board-panel-head{display:flex;align-items:start;justify-content:space-between;gap:8px}
 .board-panel h2{font:500 28px/1.15 var(--font-serif);margin-top:6px}
 .board-panel .kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
@@ -150,7 +150,7 @@ templ IssueBoardBlock() {
 .board-panel :is(select,input:not([type=hidden]),button,.button){min-height:44px;max-width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
 .board-panel select{width:100%}
 .board-panel .board-edit{border-color:var(--gold);background:transparent;justify-content:center}
-.board-panel-actions{display:flex;gap:8px;flex-wrap:wrap}
+.board-panel-actions{position:sticky;bottom:-24px;z-index:2;display:grid;gap:8px;margin:0 -24px -24px;padding:10px 24px 16px;border-top:1px solid var(--line);background:var(--panel)}.board-panel-actions form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 8px;align-items:center}.board-panel-actions form label{grid-column:1/-1;font-size:12px;color:var(--muted)}.board-panel-actions form select{min-height:44px}.board-panel-actions form button{min-height:44px;padding-inline:16px}.board-panel-actions .board-edit{min-height:44px}
 .board-panel-actions button{flex:1}
 .board-panel [data-board-transition]{padding:16px;border:1px dashed var(--gold);border-radius:8px;background:var(--panel-soft)}
 .board-history{display:grid;gap:16px;list-style:none;margin:0;padding:0;font-size:12px}
@@ -326,7 +326,7 @@ type IssueBoardPanelData struct { Issue view.IssueView; ActorEmail string; Assig
 templ IssueBoardPanel(data IssueBoardPanelData) {
 	<header class="board-panel-head"><div><span class="kicker">Anliegen</span><h2>{ data.Issue.Title }</h2></div><a class="board-panel-close" href="/app/anliegen/board" data-board-close aria-label="Anliegen schließen">@PortalAssetIcon("x")</a></header>
 	<p class="board-panel-feedback" role="status" data-board-panel-feedback></p>
-	<div class="board-panel-meta"><span class={ "pill", data.Issue.StatusClass } data-board-panel-status>{ data.Issue.StatusLabel }</span><span class="pill">{ data.Issue.Priority }</span><span class="pill">{ data.Issue.Category }</span></div>
+	<div class="board-panel-meta"><span class={ "pill", data.Issue.StatusClass } data-board-panel-status>{ data.Issue.StatusLabel }</span><span class="pill">{ data.Issue.Priority }</span><span class="pill">{ issueCategoryLabel(data.Issue.Category) }</span></div>
 	<p class="muted">{ data.Issue.Location }</p>
 	<p class="board-panel-description">{ data.Issue.Body }</p>
 	<p class="muted">Gemeldet von { data.Issue.Author } · { issueBoardAge(data.Issue) }</p>
@@ -350,18 +350,6 @@ templ IssueBoardPanel(data IssueBoardPanelData) {
 		if data.Issue.HasServiceProposal {
 			<p class="muted">{ data.Issue.ServiceProposal }</p>
 		}
-		<form method="post" action="/app/anliegen/workflow" data-board-move>
-			@IssueBoardWorkflowFields(data.Issue)
-			<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
-			<label for={ "board-target-" + data.Issue.ID }>Verschieben nach …</label><select id={ "board-target-" + data.Issue.ID } name="status" required>
-				for _, option := range view.IssueBoardFilterOptions(view.IssueBoardFilterView{}).StatusOptions {
-					if option.Value != "" {
-						<option value={ option.Value } selected?={ option.Value == data.Issue.Status }>{ option.Label }</option>
-					}
-				}
-			</select><button type="submit">Verschieben</button>
-		</form>
-		<a class="button ghost board-edit" href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Bearbeiten</a>
 	</section>
 	<section><h3>Verlauf</h3><ol class="board-history">
 		for _, entry := range data.History {
@@ -393,6 +381,20 @@ templ IssueBoardPanel(data IssueBoardPanelData) {
 		<label>Ende (optional)<input type="datetime-local" name="service_end" value={ data.Issue.ServiceEndInput }/></label>
 		<input type="hidden" name="service_proposal" value={ data.Issue.ServiceProposal }/>
 	</template>
+	<footer class="board-panel-actions" data-board-panel-actions>
+		<form method="post" action="/app/anliegen/workflow" data-board-move>
+			@IssueBoardWorkflowFields(data.Issue)
+			<input type="hidden" name="assignee_email" value={ data.Issue.AssigneeEmail }/>
+			<label for={ "board-target-" + data.Issue.ID }>Verschieben nach …</label><select id={ "board-target-" + data.Issue.ID } name="status" required>
+				for _, option := range view.IssueBoardFilterOptions(view.IssueBoardFilterView{}).StatusOptions {
+					if option.Value != "" {
+						<option value={ option.Value } selected?={ option.Value == data.Issue.Status }>{ option.Label }</option>
+					}
+				}
+			</select><button type="submit">Verschieben</button>
+		</form>
+		<a class="button ghost board-edit" href={ templ.SafeURL("/app/anliegen/board/" + data.Issue.ID) }>Bearbeiten</a>
+	</footer>
 }
 
 templ IssueBoardWorkflowFields(issue view.IssueView) {

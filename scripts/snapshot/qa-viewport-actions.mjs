@@ -24,9 +24,7 @@ const VIEWPORTS = [[1512, 982], [1440, 900], [1280, 720]];
 const ACTION_SELECTOR = '.button.primary, .case-button.primary, button.primary, .portal-section-header-action .button, .action-bar .case-button, .demo-reset-primary, .energy-consumer-primary, [data-board-panel] .button, [data-board-panel] form button';
 // Known offenders carry their ticket; the list shrinks as they are fixed.
 const KNOWN = new Map([
-  // HAUSV-723: the board detail panel outgrows 900px/720px-high viewports; its
-  // actions need a page scroll until the panel scrolls internally.
-  ...['Zuständigkeit speichern', 'Verschieben', 'Bearbeiten'].flatMap((label) => ['1440x900', '1280x720'].map((vp) => [`/app/anliegen/board|${vp}|panel-below-viewport|${label}`, 'HAUSV-723'])),
+  // ['/app/example|1280x720|clipped|Speichern', 'HAUSV-7xx'],
 ]);
 
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
