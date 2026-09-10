@@ -207,10 +207,14 @@ async function checkRoute(page,width,path,label) {
   }
   checks.push(label);
 }
+// HAUSV-726: the magic-link limit is five requests per account and quarter hour.
+// One admin context serves every width and role; only the viewport changes.
+let previewContext=null,previewPage=null;
 async function checkPreview(width,role='Bewohner') {
-  const context=await browser.newContext({viewport:{width,height:900},locale:'de-AT'});
+  if(!previewContext){previewContext=await browser.newContext({viewport:{width,height:900},locale:'de-AT'});previewPage=await login(previewContext,'admin@example.com');}
+  const page=previewPage;
   try {
-    const page=await login(context,'admin@example.com');
+    await page.setViewportSize({width,height:900});
     await page.goto(`${baseURL}/app`,{waitUntil:'networkidle'});
     const bar=visibleBar(page);
     const background=await bar.evaluate(element=>getComputedStyle(element).backgroundColor);
@@ -239,7 +243,7 @@ async function checkPreview(width,role='Bewohner') {
     assert.equal(await bar.evaluate(element=>getComputedStyle(element).backgroundColor),background,'ending preview restores the background');
     assert.match(await bar.locator('.context-role').textContent(),/Admin/,'ending preview restores Admin');
     checks.push(`${role} preview choice/panel/start/end ${width}px`);
-  } finally {await context.close();}
+  } catch (error) { await previewContext.close().catch(()=>{}); previewContext=null; previewPage=null; throw error; }
 }
 try {
   for(const persona of [{email:'resident@example.com',paths:['/app','/app/announcements','/app/settings']},{email:'owner@example.com',paths:['/app','/app/dokumente']},{email:'verwalter@example.com',paths:['/app','/app/verwaltung','/app/verwaltung/posteingang']},{email:'admin@example.com',paths:['/app','/app/verwaltung','/app/verwaltung/rechte','/app/verwaltung/einstellungen']}]){

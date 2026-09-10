@@ -91,6 +91,7 @@ func TestDemoMailboxServesSeedMailsAndPicksUpNewFiles(t *testing.T) {
 	if len(messages) != 2 || messages[0].Subject != "Beleg" || messages[1].Subject != "Heizung" {
 		t.Fatalf("seed mails = %+v", messages)
 	}
+	firstUID, secondUID := messages[0].UID, messages[1].UID
 
 	// A file dropped in later is a new unread mail within a rescan.
 	writeEML(t, dir, "03-neu.eml", "three@demo", "Neu")
@@ -105,6 +106,9 @@ func TestDemoMailboxServesSeedMailsAndPicksUpNewFiles(t *testing.T) {
 	if err != nil || len(messages) != 3 || messages[2].Subject != "Neu" {
 		t.Fatalf("dropped file not picked up: err=%v messages=%+v", err, messages)
 	}
+	if messages[0].UID != firstUID || messages[1].UID != secondUID || messages[2].UID <= secondUID {
+		t.Fatalf("rescan changed existing UIDs: got %d, %d, %d; original %d, %d", messages[0].UID, messages[1].UID, messages[2].UID, firstUID, secondUID)
+	}
 
 	// Marking read on the server sticks, and the file is not appended twice.
 	if err := fetcher.MarkSeen(ctx, []uint32{messages[0].UID}); err != nil {
@@ -114,6 +118,9 @@ func TestDemoMailboxServesSeedMailsAndPicksUpNewFiles(t *testing.T) {
 	rest, err := fetcher.Unread(ctx, 10)
 	if err != nil || len(rest) != 2 {
 		t.Fatalf("after MarkSeen: err=%v unread=%d (want 2)", err, len(rest))
+	}
+	if rest[0].UID != secondUID || rest[1].UID != messages[2].UID {
+		t.Fatal("unchanged files received new UIDs during subsequent rescans")
 	}
 
 	if _, err := (mailintake.Fetcher{Config: config, Password: "falsch", Limits: fetcher.Limits, DialTimeout: 3 * time.Second}).Unread(ctx, 10); err == nil {
@@ -146,6 +153,10 @@ func TestDemoComposeStartsTheMailboxSubcommand(t *testing.T) {
 	section := compose[start:]
 	if end := strings.Index(section, "\nvolumes:"); end > 0 {
 		section = section[:end]
+	}
+	const seedMount = "- ../../scripts/demo/seed:/seed:ro"
+	if !strings.Contains(compose[:start], seedMount) || !strings.Contains(section, seedMount) {
+		t.Fatal("app/reset and mailbox must see the same seed directory, including /seed/mail")
 	}
 	line := ""
 	for _, candidate := range strings.Split(section, "\n") {

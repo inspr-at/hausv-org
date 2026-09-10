@@ -16,9 +16,9 @@ fi
 # HAUSV_DEMO_SEED_ANCHOR: today | none | YYYY-MM-DD (default: the seed's own demo day).
 anchor_args=()
 if [ -n "${HAUSV_DEMO_SEED_ANCHOR:-}" ]; then anchor_args=(-anchor "$HAUSV_DEMO_SEED_ANCHOR"); fi
-# The mailbox pauses during the reset so no poll files a mail while the
-# reset is deleting; afterwards it starts fresh with its seed mails unread,
-# and the cleared ledger lets them flow into the Posteingang again.
+# Pause new mailbox fetches during the reset. Afterwards it starts fresh
+# with its seed mails unread; the persistent ledger skips fixtures already
+# covered by the reset.
 compose stop hausv-demo-mailbox >/dev/null 2>&1 || true
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -reset "${anchor_args[@]}"
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -stats
