@@ -50,6 +50,10 @@ func (a *app) homeStartPage(w http.ResponseWriter, r *http.Request) {
 		"Title":   "HAUSV Home einrichten",
 		"Sent":    r.URL.Query().Get("sent") == "1",
 		"Expired": r.URL.Query().Get("link") == "expired",
+		// The page a visitor reaches after submitting the landing form is the
+		// Google Ads "lead form" conversion (demo host only; empty = off).
+		"GoogleAdsTagID":      a.googleAdsTagID,
+		"GoogleAdsConversion": a.googleAdsLeadConversion,
 	})
 }
 
@@ -208,6 +212,7 @@ func (a *app) renderHomeConnectorStart(w http.ResponseWriter, reservation store.
 	if pairingCreated {
 		data["PairingExpires"] = formatLocalTime(now.Add(homeConnectorPairingTTL))
 	}
+	data["GoogleAdsTagID"] = a.googleAdsTagID
 	a.render(w, "homeConnectorStart", data)
 }
 

@@ -9,7 +9,7 @@ func (a *app) securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", a.contentSecurityPolicy())
 		next.ServeHTTP(&securityResponseWriter{
 			ResponseWriter: w,
 			app:            a,
@@ -75,4 +75,21 @@ func (w *securityResponseWriter) shouldPreventCaching(status int) bool {
 		return true
 	}
 	return false
+}
+
+// contentSecurityPolicy is the default policy for every page. With a Google
+// Ads tag configured (demo host), Google's tag and conversion hosts are
+// allowed in addition; the gtag bootstrap itself is a self-hosted script,
+// so script-src never needs 'unsafe-inline'.
+func (a *app) contentSecurityPolicy() string {
+	if a == nil || a.googleAdsTagID == "" {
+		return "default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'"
+	}
+	return "default-src 'self'; " +
+		"script-src 'self' https://www.googletagmanager.com https://googleads.g.doubleclick.net; " +
+		"img-src 'self' blob: https://www.google.com https://www.google.at https://googleads.g.doubleclick.net https://www.googletagmanager.com; " +
+		"style-src 'self' 'unsafe-inline'; font-src 'self'; " +
+		"connect-src 'self' https://www.google.com https://www.google.at https://www.googletagmanager.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.google-analytics.com; " +
+		"frame-src https://td.doubleclick.net https://www.googletagmanager.com; " +
+		"form-action 'self'; base-uri 'self'; frame-ancestors 'none'"
 }
