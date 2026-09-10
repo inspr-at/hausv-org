@@ -55,6 +55,28 @@ type mailIntakeStatus struct {
 type mailIntakeState struct {
 	mu     sync.Mutex
 	status map[string]mailIntakeStatus
+	polls  map[string]chan struct{}
+}
+
+// lockPoll covers fetch, ledger check, filing and marking read. A second
+// startup hook or manual poll must not pass Seen before the first records it.
+func (s *mailIntakeState) lockPoll(ctx context.Context, orgKey string) (func(), error) {
+	s.mu.Lock()
+	if s.polls == nil {
+		s.polls = make(map[string]chan struct{})
+	}
+	gate := s.polls[orgKey]
+	if gate == nil {
+		gate = make(chan struct{}, 1)
+		s.polls[orgKey] = gate
+	}
+	s.mu.Unlock()
+	select {
+	case gate <- struct{}{}:
+		return func() { <-gate }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 func (s *mailIntakeState) set(orgKey string, update func(*mailIntakeStatus)) {
@@ -152,6 +174,12 @@ func (a *app) pollMailIntakeOnce(ctx context.Context, orgKey string, config mail
 	if a.intakeMailSeen == nil || a.intake == nil {
 		return 0, errors.New("mail intake stores unavailable")
 	}
+	orgKey = normalizeSlug(orgKey)
+	unlock, err := a.mailIntake.lockPoll(ctx, orgKey)
+	if err != nil {
+		return 0, err
+	}
+	defer unlock()
 	password, err := config.Password(os.Getenv)
 	if err != nil {
 		return 0, err
@@ -165,12 +193,7 @@ func (a *app) pollMailIntakeOnce(ctx context.Context, orgKey string, config mail
 	var done []uint32
 	filed := 0
 	for _, message := range messages {
-		messageID := message.MessageID
-		if messageID == "" {
-			// Without a Message-ID the ledger cannot recognise the mail again;
-			// the UID is stable within the mailbox and serves as the key.
-			messageID = fmt.Sprintf("uid-%d@%s", message.UID, config.Host)
-		}
+		messageID := message.DedupeKey()
 		seen, err := seenRepo.Seen(ctx, messageID)
 		if err != nil {
 			return filed, err
@@ -325,7 +348,7 @@ func (a *app) ingestMail(ctx context.Context, orgKey string, message mailintake.
 	}
 	item := store.IntakeItem{
 		ID: id, Organisation: orgKey, TenantSlug: match.TenantSlug, Unit: match.Unit,
-		Source: store.IntakeSourceEmail, ExternalRef: message.MessageID,
+		Source: store.IntakeSourceEmail, ExternalRef: message.DedupeKey(),
 		FromName: strings.TrimSpace(message.FromName), FromEmail: normalizeEmail(message.FromEmail),
 		Subject: strings.TrimSpace(message.Subject), Body: message.Text,
 		ReceivedAt: received, Status: store.IntakeStatusOpen, CreatedAt: now, UpdatedAt: now,

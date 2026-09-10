@@ -55,7 +55,8 @@ function observeFirstPaint() {
     check: document.fonts.check('600 16px "Source Serif 4"'),
     // fonts.check alone returns true when the face has not been declared yet.
     loadedFace: [...document.fonts].some((face) => face.family.replaceAll('"', '') === 'Source Serif 4' && face.weight === '600' && face.status === 'loaded'),
-    logo: measure(visible('.sidebar .brand, .sidebar .organisation-identity strong, .mobile-head .mobile-identity strong')),
+    // HAUSV-726: the organisation head is .portal-organisation-identity since the one-shell navigation (1.9.13).
+    logo: measure(visible('.sidebar .portal-organisation-identity strong, .sidebar .organisation-identity strong, aside.sidebar .house-header-copy strong, .portal-section-header h1, .inbox-head h1')),
     heading: measure(visible('.case-title-row h2')),
   });
   function frame() {
@@ -169,8 +170,10 @@ try {
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const state = window.__fontStability;
         const firstPaint = state.paints.find((paint) => paint.name === 'first-contentful-paint');
-        const atPaint = state.frames.filter((frame) => frame.at <= firstPaint.startTime).at(-1);
-        return { firstPaint, atPaint, firstFrame: state.frames[0], settled: state.sample(),
+        // HAUSV-726: since the skeleton first paint (1.9.17) FCP can precede the first
+        // rAF sample; the earliest observed frame is then the closest pre-settle evidence.
+        const atPaint = state.frames.filter((frame) => frame.at <= firstPaint.startTime).at(-1) || state.frames[0];
+        return { firstPaint, atPaint, firstFrame: state.frames[0], settled: state.sample(), debug: { frames: state.frames.length, paints: state.paints.map((paint) => paint.name), sample: state.sample() },
           violations: state.violations,
           preload: document.querySelector('link[rel="preload"][as="font"]')?.href,
           fonts: performance.getEntriesByType('resource').filter((entry) => new URL(entry.name).pathname.endsWith('/source-serif-4-semibold.woff2')).map((entry) => entry.toJSON()),
@@ -180,7 +183,7 @@ try {
       const run = { step: index, key, before, ...measurement, network };
       runs.push(run);
       assert.ok(measurement.settled.check && measurement.settled.loadedFace, 'Source Serif 4 must load');
-      assert.ok(measurement.firstFrame && measurement.atPaint, 'pre-paint logo and case observations are required');
+      assert.ok(measurement.firstFrame && measurement.atPaint, `pre-paint logo and case observations are required at ${width}px step ${index}: ${JSON.stringify(measurement.debug)}`);
       assert.ok(measurement.settled.logo.family.includes('Source Serif 4') && measurement.settled.heading.family.includes('Source Serif 4'), 'both measured elements must use Source Serif 4');
       assert.equal(measurement.violations.length, 0, `CSP violation: ${JSON.stringify(measurement.violations)}`);
       assert.ok(measurement.viewport.scrollWidth <= width + 1, 'shared shell must not overflow horizontally');

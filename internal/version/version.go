@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.22",
+			Date:     "10. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Posteingang: keine doppelten E-Mail-Eingänge mehr.",
+			Intro:    "E-Mails werden nach einem Neustart des Postfachs oder einem Zurücksetzen der Demodaten nicht mehr ein zweites Mal übernommen; jede Nachricht zählt über ihre Kennung nur einmal.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.21",
 			Date:     "10. September 2026",
 			Kind:     "Verbessert",

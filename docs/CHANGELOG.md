@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.22] - 2026-09-10
+
+### Verbessert
+
+- Posteingang: E-Mails werden nach einem Neustart des Postfachs oder einem Zurücksetzen der Demodaten nicht mehr ein zweites Mal als Eingang und Anliegen angelegt; jede Nachricht wird über ihre Kennung nur einmal übernommen.
+
 ## [1.9.21] - 2026-09-10
 
 ### Verbessert

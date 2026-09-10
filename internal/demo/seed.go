@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/mailintake"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
@@ -183,7 +184,11 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		shiftHouseDates(options.Anchor, houses)
 	}
 	if options.Reset {
-		if err := reset(ctx, database, org.Key, houses, intake, events, announcements, options.DocumentDir, options.DiscardAnnualStatements); err != nil {
+		mail, err := loadMailboxFixture(dir)
+		if err != nil {
+			return SeedResult{}, err
+		}
+		if err := reset(ctx, database, org.Key, houses, intake, events, announcements, mail, options.DocumentDir, options.DiscardAnnualStatements); err != nil {
 			return SeedResult{}, err
 		}
 	}
@@ -495,7 +500,7 @@ func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.Tena
 	return err
 }
 
-func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement, documentDir string, discardAnnualStatements bool) error {
+func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHouse, intake []seedIntake, events []seedEvent, announcements []seedAnnouncement, mail []mailintake.Message, documentDir string, discardAnnualStatements bool) error {
 	tx, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -509,6 +514,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 		if _, err := tx.ExecContext(ctx, `SELECT set_config('app.org_key',$1,true)`, orgKey); err != nil {
 			return err
 		}
+	}
+	if err := resetMailboxFixture(ctx, tx, orgKey, houses, mail); err != nil {
+		return err
 	}
 	for _, raw := range intake {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM issues WHERE id=$1`, "issue-"+raw.ID); err != nil {
@@ -533,9 +541,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 			return err
 		}
 	}
-	// intake_mail_seen goes too: a reset must let a re-seeded mailbox flow in
-	// again instead of the ledger remembering mails whose items are gone.
-	for _, table := range []string{"intake_items", "intake_mail_seen", "org_settings", "textbausteine"} {
+	// The mail ledger outlives a demo day: unread copies in a restarted
+	// mailbox must not recreate work that the reset just cleared.
+	for _, table := range []string{"intake_items", "org_settings", "textbausteine"} {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE org_key=$1`, orgKey); err != nil {
 			return err
 		}

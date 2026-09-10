@@ -2,6 +2,7 @@ package mailintake
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -31,6 +32,29 @@ type Message struct {
 	// Dropped counts attachments left behind because of the limits, so the
 	// case can say "2 Anhänge nicht übernommen" instead of hiding it.
 	Dropped int
+	// bodyDigest covers the complete MIME body before display/upload limits.
+	// Otherwise two receipts with different attachments or truncated tails
+	// could accidentally become the same message without a Message-ID.
+	bodyDigest string
+}
+
+// DedupeKey is stable across IMAP UIDs, mailbox restarts and repeated fetches.
+// The persistent ledger scopes it to an organisation. Keep Message-IDs in the
+// existing format so previously processed mail remains recognisable.
+func (m Message) DedupeKey() string {
+	if id := strings.Trim(strings.TrimSpace(m.MessageID), "<> \t\r\n"); id != "" {
+		return id
+	}
+	body := m.bodyDigest
+	if body == "" {
+		body = strings.ReplaceAll(m.Text, "\r\n", "\n")
+	}
+	hash := sha256.New()
+	for _, field := range []string{strings.ToLower(strings.TrimSpace(m.FromEmail)), strings.TrimSpace(m.Subject), m.Date.UTC().Format(time.RFC3339Nano), body} {
+		// Length-prefix fields so their boundaries cannot cause collisions.
+		fmt.Fprintf(hash, "%d:%s", len(field), field)
+	}
+	return fmt.Sprintf("sha256:%x", hash.Sum(nil))
 }
 
 type Attachment struct {
@@ -67,6 +91,14 @@ func Parse(raw []byte, limits Limits) (Message, error) {
 	}
 	if date, err := parsed.Header.Date(); err == nil {
 		message.Date = date.UTC()
+	}
+	if strings.Trim(message.MessageID, "<> \t\r\n") == "" {
+		body, err := io.ReadAll(parsed.Body)
+		if err != nil {
+			return Message{}, fmt.Errorf("mail intake: unreadable body: %w", err)
+		}
+		message.bodyDigest = fmt.Sprintf("%x", sha256.Sum256(bytes.ReplaceAll(body, []byte("\r\n"), []byte("\n"))))
+		parsed.Body = bytes.NewReader(body)
 	}
 	var plain, html strings.Builder
 	if err := walkPart(parsed.Header.Get("Content-Type"), parsed.Header.Get("Content-Transfer-Encoding"),
