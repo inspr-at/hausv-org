@@ -322,6 +322,14 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 	items := make([]intakeItem, 0, 400)
 	// HAUSV-669: open items of one house must not repeat a subject in its short list.
 	usedSubjects := map[string]map[string]bool{}
+	// HAUSV-729: the same holds for the issues a house shows as open work. The
+	// loader (internal/demo/seed.go) opens every manual item and every fourth
+	// approved item (array position % 4 == 0); those must not share a subject
+	// within a house either, independent of the inbox list above.
+	usedIssueSubjects := map[string]map[string]bool{}
+	becomesOpenIssue := func(status string, index int) bool {
+		return status == "manual" || (status == "approved" && (index-1)%4 == 0)
+	}
 	autoDone, todayOther, approved, olderOther := 0, 0, 0, 0
 	index := 0
 	for round := 0; ; round++ {
@@ -388,6 +396,17 @@ func buildIntake(houses []house, persons []person, templates []textTemplate) ([]
 					subject = expand(material.Subject, h, unitLabel, resident.Name, index)
 				}
 				usedSubjects[h.Slug][subject] = true
+			}
+			if becomesOpenIssue(status, index) {
+				if usedIssueSubjects[h.Slug] == nil {
+					usedIssueSubjects[h.Slug] = map[string]bool{}
+				}
+				for tries := 1; usedIssueSubjects[h.Slug][subject] && tries < len(materials); tries++ {
+					material = materials[(round+tries)%len(materials)]
+					body = expand(material.Body, h, unitLabel, resident.Name, index)
+					subject = expand(material.Subject, h, unitLabel, resident.Name, index)
+				}
+				usedIssueSubjects[h.Slug][subject] = true
 			}
 			assignee := "vera.verwalter"
 			if index%3 == 0 {

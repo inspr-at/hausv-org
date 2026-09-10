@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.26] - 2026-09-10
+
+### Verbessert
+
+- Demo: Die offenen Anliegen einer Liegenschaft tragen jetzt durchgängig unterschiedliche Betreffs; die Kurzliste im Hausüberblick zeigt keine doppelten Einträge mehr.
+
 ## [1.9.25] - 2026-09-10
 
 ### Verbessert

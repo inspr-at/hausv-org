@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.26",
+			Date:     "10. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Demo-Anliegen mit eindeutigen Betreffs.",
+			Intro:    "Die offenen Anliegen einer Liegenschaft tragen durchgängig unterschiedliche Betreffs; die Kurzliste im Hausüberblick zeigt keine doppelten Einträge mehr.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.25",
 			Date:     "10. September 2026",
 			Kind:     "Verbessert",
