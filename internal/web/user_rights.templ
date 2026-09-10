@@ -91,7 +91,7 @@ templ EffectiveRightsList(rights []EffectiveRight) {
 
 templ MyPermissions(rights []EffectiveRight, tenant string) {
 	@UserRightsStyles()
-	<details class="note panel" open>
+	<details class="note panel">
 		<summary>
 			Meine Berechtigungen
 			@DisclosureChevron()

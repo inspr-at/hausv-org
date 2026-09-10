@@ -131,7 +131,7 @@ func MyPermissions(rights []EffectiveRight, tenant string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<details class=\"note panel\" open><summary>Meine Berechtigungen")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<details class=\"note panel\"><summary>Meine Berechtigungen")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

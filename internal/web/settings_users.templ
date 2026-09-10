@@ -158,9 +158,6 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 		<details class="access-permissions"><summary>Berechtigungen im Detail
 			@DisclosureChevron()
 		</summary>
-			if data.Rights.Enabled {
-				@UserOwnRights(data.Rights, user.Email)
-			} else {
 			<details class="permission-family" open><summary>{ userRoleFamily(user.Role) } · { user.Role }
 				@DisclosureChevron()
 			</summary>
@@ -174,6 +171,8 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 					</ul></details>
 				}
 			</details>
+			if data.Rights.Enabled {
+				@UserOwnRights(data.Rights, user.Email)
 			}
 			<details class="permission-family"><summary>Sonderrechte
 				@DisclosureChevron()
