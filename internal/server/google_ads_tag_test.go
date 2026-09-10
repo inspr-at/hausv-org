@@ -101,7 +101,7 @@ func TestGoogleAdsTagIsOptionalAndScopedToPublicPages(t *testing.T) {
 		}
 
 		asset := get(t, a, "/assets/google-ads.js")
-		if asset.Code != http.StatusOK || !strings.Contains(asset.Body.String(), "gtag(\"config\", script.dataset.tagId)") {
+		if asset.Code != http.StatusOK || !strings.Contains(asset.Body.String(), "gtag(\"config\", script.dataset.tagId, { linker: { accept_incoming: true } })") {
 			t.Fatalf("self-hosted bootstrap not served: %d", asset.Code)
 		}
 	})
