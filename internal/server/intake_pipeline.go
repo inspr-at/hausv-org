@@ -292,6 +292,15 @@ func (a *app) handleIntake(ctx context.Context, orgKey string, item store.Intake
 	if actorName == "" {
 		actorName = actorEmail
 	}
+	issueStatus := store.IssueStatusNew
+	statusChangedBy := "" // Manual creation retains the repository's author default.
+	workflowActorEmail := actorEmail
+	if options.status == store.IntakeStatusAuto {
+		issueStatus = store.IssueStatusDone
+		actorName = "System (KI)"
+		statusChangedBy = actorName
+		workflowActorEmail = "" // The system actor has a name, not a user's address.
+	}
 	authorEmail := normalizeEmail(item.FromEmail)
 	if authorEmail == "" {
 		authorEmail = actorEmail
@@ -307,7 +316,7 @@ func (a *app) handleIntake(ctx context.Context, orgKey string, item store.Intake
 	body := "Kategorie: " + intakeCategoryLabel(item.Suggestion.Category) + "\n\n" + strings.TrimSpace(item.Body)
 	issue, found := a.findIntakeIssue(repositories.issues, item)
 	if !found {
-		created, err := repositories.issues.Create(store.ResidentIssue{TenantSlug: tenantSlug, Source: string(item.Source), DueAt: dueAt, IntakeID: item.ID, AuthorEmail: authorEmail, AuthorName: authorName, Category: category, Title: item.Subject, Body: body, LocationType: store.IssueLocationUnit, LocationDetail: firstNonEmpty(item.Suggestion.Unit, item.Unit), Status: store.IssueStatusNew, Priority: priority, AssigneeEmail: assignee})
+		created, err := repositories.issues.Create(store.ResidentIssue{TenantSlug: tenantSlug, Source: string(item.Source), DueAt: dueAt, IntakeID: item.ID, AuthorEmail: authorEmail, AuthorName: authorName, Category: category, Title: item.Subject, Body: body, LocationType: store.IssueLocationUnit, LocationDetail: firstNonEmpty(item.Suggestion.Unit, item.Unit), Status: issueStatus, StatusChangedBy: statusChangedBy, Priority: priority, AssigneeEmail: assignee})
 		if err != nil {
 			return err
 		}
@@ -316,7 +325,7 @@ func (a *app) handleIntake(ctx context.Context, orgKey string, item store.Intake
 		// Files that came with the mail belong to the Anliegen from here on.
 		a.handMailAttachmentsToIssue(repositories, item, issue.ID, actorEmail)
 	} else {
-		updated, exists, err := repositories.issues.UpdateWorkflow(issue.ID, store.IssueWorkflowUpdate{Status: store.IssueStatusNew, Priority: priority, AssigneeEmail: assignee, Body: body, LocationType: store.IssueLocationUnit, LocationDetail: firstNonEmpty(item.Suggestion.Unit, item.Unit), UpdateDetails: true, ActorEmail: actorEmail, ActorName: actorName, ChangedAt: time.Now()})
+		updated, exists, err := repositories.issues.UpdateWorkflow(issue.ID, store.IssueWorkflowUpdate{Status: issueStatus, Priority: priority, AssigneeEmail: assignee, Body: body, LocationType: store.IssueLocationUnit, LocationDetail: firstNonEmpty(item.Suggestion.Unit, item.Unit), UpdateDetails: true, ActorEmail: workflowActorEmail, ActorName: actorName, ChangedAt: time.Now()})
 		if err != nil {
 			return err
 		}

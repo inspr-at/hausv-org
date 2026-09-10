@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
@@ -13,7 +14,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
-func TestDemoResetRemembersMailboxAndRemovesOrphanedMailIssues(t *testing.T) {
+func TestDemoResetClearsMailboxLedgerAndRemovesOrphanedMailIssues(t *testing.T) {
 	database, config := dbtest.OpenWithConfig(t)
 	scoped, err := db.NewScoped(config, database)
 	if err != nil {
@@ -46,6 +47,19 @@ func TestDemoResetRemembersMailboxAndRemovesOrphanedMailIssues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A linked mail issue is still reset after a manager changes its title.
+	intake := store.BindIntakeRepository(database, "musterstadt")
+	if err := intake.Create(t.Context(), store.IntakeItem{ID: "linked-mail", Source: store.IntakeSourceEmail, Status: store.IntakeStatusApproved, ReceivedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	linked, err := issues.Create(store.ResidentIssue{TenantSlug: "janusbergweg-123", Source: "email", IntakeID: "linked-mail", AuthorEmail: "alina.eigentuemer@musterstadt.example", Title: "Überarbeiteter Betreff", Body: "Beleg", Category: "Frage", LocationType: store.IssueLocationCommon})
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherLedger := store.BindIntakeMailSeenRepository(database, "other")
+	if err := otherLedger.Record(t.Context(), "previously-imported@example.com", "other-intake"); err != nil {
+		t.Fatal(err)
+	}
 	ledger := store.BindIntakeMailSeenRepository(database, "musterstadt")
 	if err := ledger.Record(t.Context(), "previously-imported@example.com", "gone"); err != nil {
 		t.Fatal(err)
@@ -62,8 +76,17 @@ func TestDemoResetRemembersMailboxAndRemovesOrphanedMailIssues(t *testing.T) {
 		if _, found := issues.Get(unrelated.ID); !found {
 			t.Error("reset deleted unrelated portal content")
 		}
-		if seen, err := ledger.Seen(t.Context(), "previously-imported@example.com"); err != nil || !seen {
-			t.Errorf("reset forgot a processed message: seen=%v err=%v", seen, err)
+		if _, found := issues.Get(linked.ID); found {
+			t.Error("reset kept a mail issue with an edited title")
+		}
+		if _, err := intake.Get(t.Context(), "linked-mail"); err != store.ErrIntakeNotFound {
+			t.Errorf("reset kept the linked intake: %v", err)
+		}
+		if count, err := ledger.Count(t.Context()); err != nil || count != 0 {
+			t.Errorf("reset must empty its organisation's ledger: count=%d err=%v", count, err)
+		}
+		if seen, err := otherLedger.Seen(t.Context(), "previously-imported@example.com"); err != nil || !seen {
+			t.Errorf("reset changed another organisation's ledger: seen=%v err=%v", seen, err)
 		}
 		files, err := filepath.Glob(filepath.Join(seedDir, "mail", "*.eml"))
 		if err != nil || len(files) != 5 {
@@ -78,8 +101,12 @@ func TestDemoResetRemembersMailboxAndRemovesOrphanedMailIssues(t *testing.T) {
 			if err != nil || message.MessageID == "" {
 				t.Fatalf("mail fixture lacks stable Message-ID: %s err=%v", file, err)
 			}
-			if seen, err := ledger.Seen(t.Context(), message.MessageID); err != nil || !seen {
-				t.Errorf("reset must skip fixture %s: seen=%v err=%v", file, seen, err)
+			if seen, err := ledger.Seen(t.Context(), message.DedupeKey()); err != nil || seen {
+				t.Errorf("reset must allow fixture %s: seen=%v err=%v", file, seen, err)
+			}
+			// Simulate a successful import between the two resets.
+			if err := ledger.Record(t.Context(), message.DedupeKey(), "imported"); err != nil {
+				t.Fatal(err)
 			}
 			if seen, err := store.BindIntakeMailSeenRepository(database, "other").Seen(t.Context(), message.MessageID); err != nil || seen {
 				t.Errorf("fixture leaked into another organisation: seen=%v err=%v", seen, err)

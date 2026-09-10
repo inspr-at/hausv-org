@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/inspr-at/hausv-org/internal/mailintake"
 	"github.com/inspr-at/hausv-org/internal/store"
@@ -41,18 +40,29 @@ func loadMailboxFixture(dir string) ([]mailintake.Message, error) {
 	return messages, nil
 }
 
-// resetMailboxFixture runs inside the reset transaction. The seed owns the
-// clean demo day; the mailbox's static files must not reopen it afterwards.
-// Old resets removed intake items but left their randomly named issues behind.
+// resetMailboxFixture removes mail-created issues inside the reset transaction,
+// before their intake items are cleared. The mailbox can then import the fixture
+// once again; only a successful import records it in the fresh mail ledger.
 func resetMailboxFixture(ctx context.Context, tx *sql.Tx, orgKey string, houses []seedHouse, messages []mailintake.Message) error {
-	if len(messages) == 0 {
-		return nil
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM intake_items WHERE org_key=$1 AND source=$2`, orgKey, store.IntakeSourceEmail)
+	if err != nil {
+		return err
 	}
-	for _, message := range messages {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO intake_mail_seen(org_key,message_id,intake_id,seen_at) VALUES($1,$2,'',$3)
-			ON CONFLICT(org_key,message_id) DO NOTHING`, orgKey, message.DedupeKey(), time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+	mailIntakes := make(map[string]bool)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
 			return err
 		}
+		mailIntakes[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
 	}
 	for _, house := range houses {
 		slug := textutil.Slug(house.Slug)
@@ -74,6 +84,10 @@ func resetMailboxFixture(ctx context.Context, tx *sql.Tx, orgKey string, houses 
 				return err
 			}
 			if issue.Source != string(store.IntakeSourceEmail) || issue.IntakeID == "" {
+				continue
+			}
+			if mailIntakes[issue.IntakeID] {
+				obsolete = append(obsolete, id)
 				continue
 			}
 			// Earlier resets erased the Message-ID linkage. Restrict legacy

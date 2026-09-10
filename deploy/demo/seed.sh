@@ -17,8 +17,8 @@ fi
 anchor_args=()
 if [ -n "${HAUSV_DEMO_SEED_ANCHOR:-}" ]; then anchor_args=(-anchor "$HAUSV_DEMO_SEED_ANCHOR"); fi
 # Pause new mailbox fetches during the reset. Afterwards it starts fresh
-# with its seed mails unread; the persistent ledger skips fixtures already
-# covered by the reset.
+# with its seed mails unread and the reset clears the mail ledger, so each
+# fixture arrives once again. The ledger skips further copies until the next reset.
 compose stop hausv-demo-mailbox >/dev/null 2>&1 || true
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -reset "${anchor_args[@]}"
 compose exec -T hausv-demo /hausv-org demo-seed -dir /seed -stats

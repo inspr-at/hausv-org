@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.23] - 2026-09-10
+
+### Verbessert
+
+- Posteingang: Automatisch bearbeitete Eingänge, etwa Belege, legen ihr Anliegen gleich als „Erledigt“ an und erscheinen nicht mehr unter den offenen Anliegen; der Bearbeiter wird als „System (KI)“ vermerkt.
+- Demo: Nach dem Zurücksetzen der Demodaten treffen die Beispiel-E-Mails wieder genau einmal im Posteingang ein.
+
 ## [1.9.22] - 2026-09-10
 
 ### Verbessert
