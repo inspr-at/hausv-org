@@ -534,3 +534,30 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   that `/32` into `demo.env`. The Caddy vhost must send `X-Real-IP`, otherwise
   every visitor shares one login rate-limit bucket. The container port binds to
   `127.0.0.1` only; Docker-published ports bypass the host firewall.
+
+## Restore drill from the off-site backup (HAUSV-728, 2026-09-10)
+
+Production data on csb1 is written to the Hetzner storage box by the
+`restic-cron-hetzner` container at 01:30 nightly. The snapshot does **not**
+contain the live `hausv-org` data directory (open files); it contains the two
+quiesced copies the host timers publish just before: `hausv-org-backup-snapshot`
+(blobs + JSON stores, 01:20) and `hausv-postgres-backup-snapshot/hausv.dump`
+(custom-format `pg_dump` by the `hausv_backup` role, 01:10). A restore therefore
+always uses those two directories, never `hausv-org`.
+
+Drill on 2026-09-10 (operator `mba`, snapshot `2dc993b5` of 01:30 that night, all
+on csb1, nothing touched production):
+
+| Step | Command (inside the restic container it owns the credentials) | Time |
+| --- | --- | --- |
+| Restore | `docker exec csb1-restic-cron-hetzner-1 sh -c 'restic $RESTIC_BACKUP_OPTIONS restore <id> --target /restore-drill --include /backup/var/lib/csb1-docker/hausv-postgres-backup-snapshot --include /backup/var/lib/csb1-docker/hausv-org-backup-snapshot'` then `docker cp` out | 10 s |
+| Database | throwaway `postgres:17-alpine` on an isolated network; `create role hausv_app login nosuperuser nobypassrls; create role hausv_backup login nosuperuser bypassrls;` then `pg_restore -U postgres -d hausv --exit-on-error /tmp/hausv.dump` (52 `TABLE DATA` entries) | 4 s |
+| Grants | `grant usage, create on schema public to hausv_app; grant usage on schema public to hausv_backup;` — the dump restores tables owned by `hausv_app` with their ACLs but **not** the `public` schema ACL; without it the app fails with `permission denied for schema public` | – |
+| Compare | policies 41, indexes 122, RLS-forced tables 41, migration `0022_person_avatars.sql` identical to live; row counts identical except `energy_intervals` and `annual_statement_consumption_evidence`, which live keeps ingesting | – |
+| Blobs | every `stored_filename` (plus attachment preview/thumb) referenced by the restored `documents` and `attachments` rows exists in the restored blob copy with matching size (7/7) | – |
+| App | `ghcr.io/inspr-at/hausv-org:latest` on the drill network, loopback port only, `DB_BACKEND=postgres`, `DATABASE_URL` to the drill database, blob copy mounted read-only at `/data`: tenant landing `/jhw22/` 200 with login form, `/jhw22/app` 303 to login, no error logs; `/healthz` reports 503 only because `/data` was mounted read-only (the health probe writes a marker) | 45 s |
+
+Total wall-clock for restore, database, comparison and app boot: under three
+minutes; evidence (dump, blob copy, row inventories, scripts) stays in
+`/home/mba/drills/hausv-restore-20260910/` on csb1. Repeat the drill after every
+schema series and at least quarterly; record it on the HAUSV-520 line of work.
