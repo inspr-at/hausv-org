@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.25] - 2026-09-10
+
+### Verbessert
+
+- Demo: Das Zurücksetzen der Demodaten stellt auch die Rechte-Matrix, eigene Rechte und Berechtigungsprofile wieder auf den Standard.
+
 ## [1.9.24] - 2026-09-10
 
 ### Neu

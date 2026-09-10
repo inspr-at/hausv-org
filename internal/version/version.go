@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.25",
+			Date:     "10. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Demo-Reset stellt auch die Rechte zurück.",
+			Intro:    "Das Zurücksetzen der Demodaten bringt die Rechte-Matrix, eigene Rechte und Berechtigungsprofile wieder auf den Standard.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.24",
 			Date:     "10. September 2026",
 			Kind:     "Neu",
