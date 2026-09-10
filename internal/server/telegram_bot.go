@@ -139,7 +139,7 @@ func (a *app) handleTelegramCommand(ctx context.Context, chatID int64, senderNam
 		return "Kein Gebäude konfiguriert."
 	}
 	role := profile.ForTenant(tenant.Slug).Role
-	if !can(actorFor(link.Email, tenant.Slug, role), capabilityPlatformAdmin, resourceFor(tenant.Slug)) && !profile.HasPermission(permissionParking) {
+	if !can(a.actorFor(link.Email, tenant.Slug, role), capabilityPlatformAdmin, resourceFor(tenant.Slug)) && !profile.HasPermission(permissionParking) {
 		return "Dir fehlt die Berechtigung für die Ladesteuerung."
 	}
 

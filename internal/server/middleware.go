@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/auth"
+	"github.com/inspr-at/hausv-org/internal/authz"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -82,6 +83,7 @@ func requestLogRoute(r *http.Request) string {
 // tenantSlug != tenant.Slug line was forgotten: with the check hoisted into the
 // wrapper, a handler can no longer be written without it.
 type authCtx struct {
+	policy       *authz.Policy
 	email        string
 	role         string
 	realRole     string
@@ -92,7 +94,7 @@ type authCtx struct {
 }
 
 func (ac authCtx) actor() authorizationActor {
-	return authorizationActor{Person: ac.email, Tenant: ac.tenant.Slug, Role: ac.role}
+	return authorizationActor{Person: ac.email, Tenant: ac.tenant.Slug, Role: ac.role, Organisation: rightsOrganisation(ac.tenant), Policy: ac.policy}
 }
 
 func (ac authCtx) resource() authorizationResource {
@@ -141,7 +143,7 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 			return authCtx{}, false
 		}
 		return authCtx{
-			email: session.Email, role: session.PreviewRole, realRole: session.Role,
+			policy: a.capabilityPolicy(r.Context(), tenant, true), email: session.Email, role: session.PreviewRole, realRole: session.Role,
 			preview: &rolePreviewContext{Role: session.PreviewRole, StartedAt: time.Unix(session.PreviewStartedAt, 0), ExpiresAt: time.Unix(session.PreviewExpiresAt, 0)},
 			tenant:  tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories,
 		}, true
@@ -151,7 +153,7 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, realRole: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+	return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, realRole: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
 }
 
 func (a *app) rolePreviewSessionForRequest(r *http.Request) (auth.Session, bool) {

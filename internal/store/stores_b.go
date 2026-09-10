@@ -2177,7 +2177,7 @@ func NormalizeAuditEvent(event AuditEvent) AuditEvent {
 func NormalizeAuditAction(raw string) string {
 	raw = strings.ToLower(strings.TrimSpace(raw))
 	switch raw {
-	case AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
+	case AuditActionCapabilityOverride, AuditActionCapabilityReset, AuditActionUserCapability, AuditActionCapabilityProfile, AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
 		AuditActionBuildingUpdate, AuditActionPortalModulesUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
 		AuditActionUnitPayment, AuditActionProfilePicture,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,

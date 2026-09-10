@@ -551,6 +551,13 @@ func seedFull(t *testing.T) *source {
 		Key: "reparatur-beauftragt", Organisation: orgKey, Category: "reparatur", Title: "Reparatur – Handwerker beauftragt",
 		Body: "Sehr geehrte{{Anrede}} {{Name}}, wir haben {{Handwerker}} beauftragt.", Placeholders: []string{"Anrede", "Name", "Handwerker"}, Active: true,
 	}))
+	// organisation_capability_overrides, user_capability_grants,
+	// capability_profiles (HAUSV-699): one row each, the grant scoped to a house
+	// so the nullable tenant_slug crosses as a value, the profile as JSON.
+	rights := store.BindCapabilityRepository(src.db, orgKey)
+	must(t, "capability override", rights.SetOverride(ctx, store.CapabilityOverride{RoleFamily: "bewohner", Capability: "manage-documents", Allowed: true, UpdatedBy: "admin@example.com"}))
+	must(t, "capability grant", rights.SetGrant(ctx, store.UserCapabilityGrant{Email: "resident@example.com", Capability: "manage-announcements", Effect: "deny", TenantSlug: "demo", UpdatedBy: "admin@example.com"}))
+	must(t, "capability profile", rights.SaveProfile(ctx, store.CapabilityProfile{Name: "Dokumente", Capabilities: []store.UserCapabilityGrant{{Capability: "manage-documents", Effect: "grant"}}}))
 
 	return src
 }

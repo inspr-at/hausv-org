@@ -57,8 +57,10 @@ func (a *app) renderSettingsHubTempl(w http.ResponseWriter, r *http.Request, ac 
 func (a *app) renderProfileSettingsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data map[string]any) {
 	profile := data["Profile"].(userProfile)
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ProfileSettingsPage(web.ProfileSettingsPageData{
-		Portal: a.settingsPortalContext(ac, "Profil", "settings"),
-		Email:  ac.email,
+		EffectiveRights: effectiveRights(ac.actor()),
+		RightsTenant:    ac.tenant.Name,
+		Portal:          a.settingsPortalContext(ac, "Profil", "settings"),
+		Email:           ac.email,
 		Profile: web.SettingsProfile{
 			Title:          profile.Title,
 			FirstName:      profile.FirstName,
@@ -136,6 +138,8 @@ func (a *app) renderBuildingSettingsTempl(w http.ResponseWriter, r *http.Request
 
 func (a *app) renderUserSettingsTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data map[string]any) {
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.UserSettingsPage(web.UserSettingsPageData{
+		Rights:                       a.userRightsData(ac, data["Users"].([]userRow)),
+		RightsSaved:                  r.URL.Query().Get("rights") == "saved",
 		Portal:                       a.settingsPortalContext(ac, "Benutzer & Rechte", "users"),
 		AssetVersion:                 version.AssetVersion(),
 		Users:                        data["Users"].([]userRow),

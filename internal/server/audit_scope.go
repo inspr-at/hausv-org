@@ -1,6 +1,9 @@
 package server
 
-import "strings"
+import (
+	"github.com/inspr-at/hausv-org/internal/store"
+	"strings"
+)
 
 // scopedAuditEvents applies the current authorization state before presenting
 // history to non-management roles. This deliberately favors current access:
@@ -22,6 +25,8 @@ func (a *app) canViewScopedAuditEvent(ac authCtx, event auditEvent) bool {
 		return true
 	}
 	switch strings.TrimSpace(event.TargetType) {
+	case "user":
+		return event.Action == store.AuditActionUserCapability && normalizeEmail(event.TargetID) == normalizeEmail(ac.email)
 	case "issue":
 		return a.canViewAuditIssue(ac, event.TargetID)
 	case "unit", "store.Unit":

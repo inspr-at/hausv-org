@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.24] - 2026-09-10
+
+### Neu
+
+- Rechte: Die Rechte-Matrix lässt sich in der Verwaltung bearbeiten: je Rollenfamilie und Bereich Aktionen an- oder abwählen, mit Hinweis auf Abweichungen vom Standard, Zurücksetzen auf Standard und Eintrag im Verlauf. Organisationsadministration bleibt fest bei der Verwaltung.
+- Benutzer & Rechte: Einzelnen Benutzern lassen sich zusätzlich zur Rolle eigene Rechte gewähren oder entziehen, auf Wunsch nur für eine Liegenschaft; Berechtigungsprofile dienen als wiederverwendbare Vorlagen. Jede Änderung wird protokolliert.
+- Profil: Der Abschnitt „Meine Berechtigungen“ zeigt jeder Person ihre wirksamen Rechte.
+
 ## [1.9.23] - 2026-09-10
 
 ### Verbessert

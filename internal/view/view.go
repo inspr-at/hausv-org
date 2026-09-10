@@ -1339,6 +1339,14 @@ func AuditActionOptions(selected string) []SelectOption {
 
 func AuditActionLabel(action string) string {
 	switch store.NormalizeAuditAction(action) {
+	case store.AuditActionCapabilityOverride:
+		return "Rollenrecht geändert"
+	case store.AuditActionCapabilityReset:
+		return "Rollenrechte zurückgesetzt"
+	case store.AuditActionUserCapability:
+		return "Eigenes Benutzerrecht geändert"
+	case store.AuditActionCapabilityProfile:
+		return "Berechtigungsprofil gespeichert"
 	case store.AuditActionLogin:
 		return "Anmeldung"
 	case store.AuditActionContextSwitch:
@@ -1583,6 +1591,16 @@ func AuditTargetTypeLabel(targetType string) string {
 
 func AuditDetailLabel(key string) string {
 	switch key {
+	case "family":
+		return "Rollenfamilie"
+	case "area":
+		return "Bereich"
+	case "capability":
+		return "Berechtigung"
+	case "before":
+		return "Vorher"
+	case "after":
+		return "Nachher"
 	case "auth_method":
 		return "Anmeldung"
 	case "role_from":

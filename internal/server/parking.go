@@ -25,7 +25,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		return
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityManageParking) && !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -47,7 +47,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		}
 	}
 	live := a.chargingLiveView(r.Context(), tenant, isAdmin, true)
-	canManageParkingPayments := ac.can(capabilityManageUsers) || ac.can(capabilityManageParking)
+	canManageParkingPayments := ac.parkingManagementAllowed()
 	a.renderParkingTempl(w, r, web.ParkingPageData{
 		Portal:                   a.parkingPortalContext(ac),
 		AssetVersion:             version.AssetVersion(),
@@ -145,7 +145,7 @@ func parkingAdminSection(requested string, chargingStatus string) string {
 func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email, role := ac.tenant, ac.email, ac.role
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityManageParking) && !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -168,8 +168,8 @@ func (a *app) parkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Detail:                   view,
 		ParkingMsg:               parkingMsg,
 		ParkingOK:                parkingOK,
-		CanManageParkingPayments: ac.can(capabilityManageUsers) || ac.can(capabilityManageParking),
-		CanMarkParkingPayment:    ac.can(capabilityPlatformAdmin) || ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || profile.HasPermission(permissionParking),
+		CanManageParkingPayments: ac.parkingManagementAllowed(),
+		CanMarkParkingPayment:    ac.parkingManagementAllowed() || profile.HasPermission(permissionParking),
 	}))
 }
 
@@ -222,7 +222,7 @@ func (a *app) parkingStatement(w http.ResponseWriter, r *http.Request, ac authCt
 func (a *app) parkingMonthExport(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, email := ac.tenant, ac.email
 	profile := a.profileForTenant(email, tenant.Slug)
-	if !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
+	if !ac.can(capabilityManageParking) && !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
 		http.NotFound(w, r)
 		return
 	}
@@ -258,7 +258,7 @@ func (a *app) parkingStatementTarget(tenantSlug string, actorEmail string, actor
 	if tenantSlug == "" || targetEmail == "" {
 		return userProfile{}, false
 	}
-	authorizationActor := actorFor(actorEmail, tenantSlug, actorRole)
+	authorizationActor := a.actorFor(actorEmail, tenantSlug, actorRole)
 	resource := resourceFor(tenantSlug)
 	isManager := can(authorizationActor, capabilityManageUsers, resource) || can(authorizationActor, capabilityPlatformAdmin, resource)
 	if targetEmail != normalizeEmail(actorEmail) && !isManager {
@@ -399,7 +399,7 @@ func parkingTariffFromForm(values url.Values) (parkingTariff, error) {
 func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
 	actor := a.profileForTenant(actorEmail, tenant.Slug)
-	canManagePayment := ac.can(capabilityManageUsers) || ac.can(capabilityManageParking) || ac.can(capabilityPlatformAdmin)
+	canManagePayment := ac.parkingManagementAllowed()
 	canMarkPayment := canManagePayment || actor.HasPermission(permissionParking)
 	if !canMarkPayment {
 		http.Error(w, "Dieser Bereich ist Admins vorbehalten.", http.StatusForbidden)
@@ -483,7 +483,7 @@ func (a *app) updateParkingMonth(w http.ResponseWriter, r *http.Request, ac auth
 
 func (a *app) sendParkingReminders(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role := ac.tenant, ac.email, ac.role
-	if !ac.can(capabilityManageUsers) && !ac.can(capabilityManageParking) {
+	if !ac.parkingManagementAllowed() {
 		http.Error(w, "Dieser Bereich ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
 	}

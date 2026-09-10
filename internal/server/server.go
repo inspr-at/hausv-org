@@ -840,6 +840,8 @@ type app struct {
 	// Organisation-level stores and the AI triage provider (HAUSV-593 slice).
 	intake                 func(orgKey string) store.IntakeRepository
 	orgSettings            func(orgKey string) store.OrgSettingsRepository
+	capabilityRepo         func(string) store.CapabilityRepository
+	rightsMu               sync.Mutex
 	organisationRepo       func(orgKey string) store.OrganisationRepository
 	organisationMemberRepo func(orgKey string) store.OrganisationMemberRepository
 	// Mail intake: one mailbox per organisation, polled in the background.
@@ -1093,6 +1095,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("GET /app/verwaltung/einstellungen", a.page(a.requireVerwaltung(a.verwaltungSettingsPage)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen", a.action(a.requireVerwaltung(a.verwaltungSettingsAction)))
 	mux.HandleFunc("GET /app/verwaltung/rechte", a.page(a.requireVerwaltung(a.rechtePage)))
+	mux.HandleFunc("POST /app/verwaltung/rechte", a.action(a.updateRechte))
+	mux.HandleFunc("POST /app/settings/users/rights", a.authedAction(capabilityManageUsers, a.updateUserRights))
 	mux.HandleFunc("GET /app/verwaltung/einstellungen/demo", a.page(a.requireVerwaltung(a.verwaltungDemoResetPage)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen/demo", a.action(a.requireVerwaltung(a.verwaltungDemoResetAction)))
 	mux.HandleFunc("POST /app/verwaltung/einstellungen/ki-test", a.action(a.requireVerwaltung(a.verwaltungAITestAction)))
@@ -2061,6 +2065,9 @@ func newApp() (*app, error) {
 		telegramStore:       telegramBackend,
 		telegramPollTimeout: telegramPollTimeout,
 	}
+	a.capabilityRepo = func(orgKey string) store.CapabilityRepository {
+		return store.BindCapabilityRepository(database, orgKey)
+	}
 	a.intake = func(orgKey string) store.IntakeRepository { return store.BindIntakeRepository(database, orgKey) }
 	a.orgSettings = func(orgKey string) store.OrgSettingsRepository {
 		return store.BindOrgSettingsRepository(database, orgKey)
@@ -2528,7 +2535,7 @@ func (a *app) portal(w http.ResponseWriter, r *http.Request, ac authCtx) {
 			followUps = append(followUps, item)
 		}
 	}
-	canSeeParking := modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
+	canSeeParking := modules.Parking && (ac.can(capabilityManageParking) || ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking))
 	canManagePortalHandovers := modules.Handovers && canManageHandovers(ac.actor(), ac.resource())
 	canManagePortalUsers := modules.Users && ac.can(capabilityManageUsers)
 	hasHomeUtilities := canSeeParking || canManagePortalHandovers || canManagePortalUsers
@@ -2899,7 +2906,7 @@ func portalEnergyStatValue(label string, value *float64, fallback string) portal
 
 func (a *app) dashboardDigestItems(repositories requestRepositories, tenant store.TenantRef, email string, role string, now time.Time, lastSeen time.Time, signals portalSignals, modules portalModuleFlags) []dashboardDigestItem {
 	tenantSlug := tenant.Slug
-	actor := actorFor(email, tenantSlug, role)
+	actor := a.actorFor(email, tenantSlug, role)
 	resource := resourceFor(tenantSlug)
 	var paymentItem *dashboardDigestItem
 	var announcementItem *dashboardDigestItem
@@ -5679,7 +5686,7 @@ func (a *app) baseContext(ac authCtx) map[string]any {
 		"DisplayName":            profile.DisplayName(),
 		"Initials":               profile.Initials(),
 		"PortalModules":          modules,
-		"CanSeeParking":          modules.Parking && (isAdmin || profile.HasPermission(permissionParking)),
+		"CanSeeParking":          modules.Parking && (ac.can(capabilityManageParking) || isAdmin || profile.HasPermission(permissionParking)),
 		"CanViewEnergy":          canViewEnergy,
 		"CanManageEnergy":        modules.Energy && a.canManageEnergy(ac),
 		"CanManageHomeIdentity":  modules.Energy && a.canManageHomeIdentity(ac),

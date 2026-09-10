@@ -56,7 +56,7 @@ func (a *app) portalBaseData(ac authCtx, activePage, title string) web.PortalPag
 		CanViewEnergy:       modules.Energy && a.canViewEnergy(ac),
 		HomeIdentity:        a.homeIdentityForActor(ac, modules.Energy && a.canViewEnergy(ac)),
 		CanManageIssues:     ac.can(capabilityManageIssues),
-		CanSeeParking:       modules.Parking && (ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
+		CanSeeParking:       modules.Parking && (ac.can(capabilityManageParking) || ac.can(capabilityPlatformAdmin) || profile.HasPermission(permissionParking)),
 		CanManageHandovers:  modules.Handovers && canManageHandovers(ac.actor(), ac.resource()),
 		CanManageUsers:      modules.Users && ac.can(capabilityManageUsers),
 		CanViewAudit:        modules.Audit && canViewAudit(ac.actor(), ac.resource()),

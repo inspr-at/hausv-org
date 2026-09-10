@@ -414,7 +414,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 		http.Redirect(w, r, "/app/anliegen?issue=missing", http.StatusSeeOther)
 		return
 	}
-	actor := actorFor(email, tenant.Slug, role)
+	actor := a.actorFor(email, tenant.Slug, role)
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
 	readOnly := can(actor, capabilityOversight, resource) && !canManage
@@ -644,7 +644,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 		return
 	}
 
-	actor := actorFor(email, tenant.Slug, role)
+	actor := a.actorFor(email, tenant.Slug, role)
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
 	readOnly := can(actor, capabilityOversight, resource) && !canManage
@@ -860,7 +860,7 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 	for email, profile := range a.profiles {
 		if profile.HasTenant(tenantSlug) {
 			membership := profile.ForTenant(tenantSlug)
-			if can(actorFor(email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
+			if can(a.actorFor(email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
 				recipients = append(recipients, email)
 			}
 		}
@@ -872,7 +872,7 @@ func (a *app) issueManagerEmails(tenantSlug string) []string {
 		for _, profile := range a.inviteStore.List() {
 			if profile.HasTenant(tenantSlug) {
 				membership := profile.ForTenant(tenantSlug)
-				if can(actorFor(profile.Email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
+				if can(a.actorFor(profile.Email, tenantSlug, membership.Role), capabilityManageIssues, resourceFor(tenantSlug)) {
 					recipients = append(recipients, profile.Email)
 				}
 			}
@@ -1191,7 +1191,7 @@ func (a *app) canViewIssueForActor(tenant store.TenantRef, item residentIssue, e
 	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
 		return false
 	}
-	actor := actorFor(email, tenantSlug, role)
+	actor := a.actorFor(email, tenantSlug, role)
 	resource := resourceFor(item.TenantSlug)
 	if can(actor, capabilityManageIssues, resource) || can(actor, capabilityOversight, resource) {
 		return true
@@ -1215,7 +1215,7 @@ func (a *app) canDeleteIssueComment(tenant store.TenantRef, issue residentIssue,
 	if email == "" || !a.canViewIssueForActor(tenant, issue, email, role) {
 		return false
 	}
-	actor := actorFor(email, tenantSlug, role)
+	actor := a.actorFor(email, tenantSlug, role)
 	resource := resourceFor(issue.TenantSlug)
 	if can(actor, capabilityManageIssues, resource) || can(actor, capabilityPlatformAdmin, resource) {
 		return true
@@ -1246,7 +1246,7 @@ func (a *app) issueCommentTarget(tenant store.TenantRef, commentID string) (resi
 }
 
 func (a *app) issueViewsForActor(tenant store.TenantRef, items []residentIssue, role string, actorEmail string) []issueView {
-	views := issueViewsForActor(tenant.Slug, items, role, actorEmail)
+	views := issueViewsForActor(tenant.Slug, items, role, actorEmail, a.actorFor(actorEmail, tenant.Slug, role))
 	if a == nil {
 		return views
 	}
@@ -1314,12 +1314,15 @@ func issueViews(items []residentIssue) []issueView {
 	return issueViewsForActor("", items, "", "")
 }
 
-func issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string) []issueView {
+func issueViewsForActor(tenantSlug string, items []residentIssue, role string, actorEmail string, actors ...authorizationActor) []issueView {
 	views := make([]issueView, 0, len(items))
 	now := time.Now()
 	actorEmail = normalizeEmail(actorEmail)
 	for _, item := range items {
 		actor := actorFor(actorEmail, tenantSlug, role)
+		if len(actors) > 0 {
+			actor = actors[0]
+		}
 		resource := resourceFor(item.TenantSlug)
 		canManage := can(actor, capabilityManageIssues, resource)
 		readOnly := can(actor, capabilityOversight, resource) && !canManage
