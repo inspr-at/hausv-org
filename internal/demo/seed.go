@@ -541,9 +541,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 			return err
 		}
 	}
-	// The mail ledger outlives a demo day: unread copies in a restarted
-	// mailbox must not recreate work that the reset just cleared.
-	for _, table := range []string{"intake_items", "org_settings", "textbausteine"} {
+	// A fresh demo day imports each mailbox fixture once again. The ledger
+	// prevents duplicate imports until the next reset.
+	for _, table := range []string{"intake_items", "intake_mail_seen", "org_settings", "textbausteine"} {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE org_key=$1`, orgKey); err != nil {
 			return err
 		}

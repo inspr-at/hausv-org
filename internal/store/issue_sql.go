@@ -353,6 +353,9 @@ func (s *SQLIssueStore) updateWorkflow(tenant TenantRef, id string, update Issue
 	if oldStatus != status {
 		updated.StatusChangedAt = changedAt
 		updated.StatusChangedBy = actorEmail
+		if updated.StatusChangedBy == "" {
+			updated.StatusChangedBy = actorName
+		}
 		updated.StatusHistory = append(updated.StatusHistory, IssueStatusChange{
 			From:       oldStatus,
 			To:         status,

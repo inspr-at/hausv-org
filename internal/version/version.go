@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.23",
+			Date:     "10. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Automatisch erledigte Eingänge bleiben erledigt.",
+			Intro:    "Automatisch bearbeitete Eingänge wie Belege legen ihr Anliegen als „Erledigt“ an und tauchen nicht mehr unter den offenen Anliegen auf; in der Demo treffen die Beispiel-E-Mails nach dem Zurücksetzen wieder genau einmal ein.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.22",
 			Date:     "10. September 2026",
 			Kind:     "Verbessert",

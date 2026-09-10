@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -47,8 +48,12 @@ func TestMailIntakeDeduplicatesUnreadCopiesWithoutMessageID(t *testing.T) {
 type receiptSuggester724 struct{}
 
 func (receiptSuggester724) Label() string { return "test receipt" }
-func (receiptSuggester724) Suggest(context.Context, ai.TriageInput) (ai.TriageSuggestion, error) {
-	return ai.TriageSuggestion{Category: "beleg", Priority: store.IssuePriorityLow, HouseSlug: "janusbergweg-123", Confidence: map[string]float64{"overall": .99}}, nil
+func (receiptSuggester724) Suggest(_ context.Context, input ai.TriageInput) (ai.TriageSuggestion, error) {
+	category := store.IntakeCategoryRepair
+	if input.Subject == "Beleg Fensterreinigung Stiegenhaus" {
+		category = "beleg"
+	}
+	return ai.TriageSuggestion{Category: category, Priority: store.IssuePriorityLow, HouseSlug: "janusbergweg-123", Confidence: map[string]float64{"overall": .99}}, nil
 }
 
 func TestDemoMailboxIntakeAcrossRepeatedResets(t *testing.T) {
@@ -93,61 +98,120 @@ func TestDemoMailboxIntakeAcrossRepeatedResets(t *testing.T) {
 			if automatic {
 				a.triage = receiptSuggester724{}
 			}
-			raw, err := os.ReadFile(seedDir + "/mail/01-alina-beleg-fensterreinigung.eml")
-			if err != nil {
-				t.Fatal(err)
+			files, err := filepath.Glob(filepath.Join(seedDir, "mail", "*.eml"))
+			if err != nil || len(files) != 5 {
+				t.Fatalf("mail fixtures: count=%d err=%v", len(files), err)
 			}
-			mailbox := startTestMailbox(t, string(raw))
-			if filed, err := a.pollMailIntakeOnce(t.Context(), "musterstadt", mailbox); err != nil || filed != 1 {
-				t.Fatalf("initial intake: filed=%d err=%v", filed, err)
-			}
-			items, err := a.intake("musterstadt").List(t.Context(), store.IntakeFilter{IncludeUnassigned: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			found := false
-			for _, item := range items {
-				if item.ExternalRef != "demo-mail-0001@musterstadt.example" {
-					continue
+			var rawMessages []string
+			messages := make(map[string]mailintake.Message)
+			for _, file := range files {
+				raw, err := os.ReadFile(file)
+				if err != nil {
+					t.Fatal(err)
 				}
-				found = true
-				want := store.IntakeStatusOpen
-				if automatic {
-					want = store.IntakeStatusAuto
+				message, err := mailintake.Parse(raw, mailintake.Limits{})
+				if err != nil || message.MessageID == "" {
+					t.Fatalf("parse fixture %s: %v", file, err)
 				}
-				if item.Status != want {
-					t.Fatalf("receipt classification: got %s want %s", item.Status, want)
-				}
-			}
-			if !found {
-				t.Fatal("receipt never arrived")
+				rawMessages = append(rawMessages, string(raw))
+				messages[message.DedupeKey()] = message
 			}
 			issues := a.repositoriesForTenant(identities[house.Slug].Ref()).issues
-			countReceiptIssues := func() int {
-				count := 0
-				for _, issue := range issues.List() {
-					if issue.Title == "Beleg Fensterreinigung Stiegenhaus" {
-						count++
+			seedItems, err := a.intake("musterstadt").List(t.Context(), store.IntakeFilter{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			const receiptKey = "demo-mail-0001@musterstadt.example"
+			assertCounts := func(want int) {
+				t.Helper()
+				items, err := a.intake("musterstadt").List(t.Context(), store.IntakeFilter{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(items) != len(seedItems)+want*len(messages) {
+					t.Errorf("inbox count=%d, want %d", len(items), len(seedItems)+want*len(messages))
+				}
+				for key, message := range messages {
+					intakeCount, issueCount := 0, 0
+					for _, item := range items {
+						if item.ExternalRef == key {
+							intakeCount++
+						}
+					}
+					for _, issue := range issues.List() {
+						if issue.Source == "email" && issue.AuthorEmail == message.FromEmail && issue.Title == message.Subject {
+							issueCount++
+							if automatic && key == receiptKey {
+								assertClosedIntakeIssue724(t, issue)
+								if issue.StatusChangedBy != "System (KI)" {
+									t.Errorf("automatic receipt actor=%q", issue.StatusChangedBy)
+								}
+							}
+						}
+					}
+					if intakeCount != want || issueCount != want {
+						t.Errorf("fixture %s: intakes=%d issues=%d, want %d each", key, intakeCount, issueCount, want)
 					}
 				}
-				return count
 			}
-			if got := countReceiptIssues(); (automatic && got != 1) || (!automatic && got != 0) {
-				t.Fatalf("initial receipt issues: %d (automatic=%v)", got, automatic)
-			}
-			options.Reset = true
-			for range 2 {
-				load()
-				mailbox = startTestMailbox(t, string(raw)) // restart: unread again
+			// Initial import, then two resets with a real mailbox import between
+			// them. Manually approve the other messages to exercise issue cleanup too.
+			for cycle := range 3 {
+				if cycle > 0 {
+					options.Reset = true
+					load()
+					assertCounts(0)
+				}
+				mailbox := startTestMailbox(t, rawMessages...)
+				if filed, err := a.pollMailIntakeOnce(t.Context(), "musterstadt", mailbox); err != nil || filed != 5 {
+					t.Fatalf("cycle %d intake: filed=%d err=%v, want 5", cycle, filed, err)
+				}
+				items, err := a.intake("musterstadt").List(t.Context(), store.IntakeFilter{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, item := range items {
+					if _, fixture := messages[item.ExternalRef]; !fixture {
+						continue
+					}
+					want := store.IntakeStatusOpen
+					if automatic {
+						want = store.IntakeStatusProposed
+						if item.ExternalRef == receiptKey {
+							want = store.IntakeStatusAuto
+						}
+					}
+					if item.Status != want {
+						t.Fatalf("cycle %d fixture %s: status=%s want=%s", cycle, item.ExternalRef, item.Status, want)
+					}
+					if _, found := a.findIntakeIssue(issues, item); found != (item.Status == store.IntakeStatusAuto) {
+						t.Fatalf("fixture %s: issue exists before manual approval=%v, status=%s", item.ExternalRef, found, item.Status)
+					}
+					if item.Status != store.IntakeStatusAuto {
+						if item.Suggestion == nil {
+							item.Suggestion = &store.IntakeSuggestion{TenantSlug: house.Slug, Category: store.IntakeCategoryOther, Priority: store.IssuePriorityNorm}
+						}
+						if err := a.handleIntake(t.Context(), "musterstadt", item, intakeHandleOptions{status: store.IntakeStatusApproved, action: "approve", actorEmail: "verwaltung@example.com", actorName: "Vera"}); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+				assertCounts(1)
+				// A fresh mailbox makes all fixtures unread again. Restart the
+				// poller's memory too, so only the persistent ledger can dedupe.
+				a.mailIntake = mailIntakeState{}
+				mailbox = startTestMailbox(t, rawMessages...)
 				if filed, err := a.pollMailIntakeOnce(t.Context(), "musterstadt", mailbox); err != nil || filed != 0 {
-					t.Errorf("reset reimported a fixture: filed=%d err=%v", filed, err)
+					t.Fatalf("cycle %d duplicate fetch: filed=%d err=%v", cycle, filed, err)
 				}
-				if got := countReceiptIssues(); got != 0 {
-					t.Errorf("reset/mailbox cycle left %d receipt issues in the short list", got)
+				assertCounts(1)
+				fetcher := mailintake.Fetcher{Config: mailbox, Password: "geheim", Limits: mailIntakeLimits()}
+				if unread, err := fetcher.Unread(t.Context(), 10); err != nil || len(unread) != 0 {
+					t.Fatalf("duplicates must be marked seen: unread=%d err=%v", len(unread), err)
 				}
 			}
-			fresh := strings.ReplaceAll(string(raw), "demo-mail-0001@musterstadt.example", "fresh-after-reset@musterstadt.example")
-			mailbox = startTestMailbox(t, fresh)
+			fresh := strings.ReplaceAll(rawMessages[0], receiptKey, "fresh-after-reset@musterstadt.example")
+			mailbox := startTestMailbox(t, fresh)
 			if filed, err := a.pollMailIntakeOnce(t.Context(), "musterstadt", mailbox); err != nil || filed != 1 {
 				t.Fatalf("new mail after reset: filed=%d err=%v", filed, err)
 			}
