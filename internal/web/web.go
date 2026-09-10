@@ -134,6 +134,11 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
+{{if .GoogleAdsTagID}}
+  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
+  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}
   <style>
     :root {
       color-scheme: light;
@@ -338,6 +343,11 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
+{{if .GoogleAdsTagID}}
+  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
+  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}
   <!-- Rotating 3D brand mark. ESM (module scripts defer by default); it mounts
        only when WebGL is present, so the inline SVG below stays the fallback. -->
   <script type="module" src="/assets/hausv-mark-3d.js?v={{.AssetVersion}}"></script>
@@ -864,6 +874,11 @@ const PageTemplates = `
   <meta name="description" content="HAUSV Home sicher und in wenigen Schritten vorbereiten.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
+{{if .GoogleAdsTagID}}
+  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
+  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}
 </head>
 <body>
   <div class="home-start-shell">
@@ -908,6 +923,11 @@ const PageTemplates = `
   <title>{{.Title}} · hausv.org</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
+{{if .GoogleAdsTagID}}
+  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
+  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}
 </head>
 <body>
   <div class="home-start-shell">
@@ -1012,6 +1032,11 @@ const PageTemplates = `
   </main>
   <footer>hausv.org · <a href="/datenschutz">Datenschutz</a> · <a href="/">Startseite</a></footer>
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
+{{if .GoogleAdsTagID}}
+  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
+  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}
 </body>
 </html>
 {{end}}

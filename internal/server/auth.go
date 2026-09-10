@@ -51,6 +51,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 		"OIDCConfigured":      a.oidc.Configured(),
 		"EmailLoginAvailable": a.emailLoginAvailable(),
 		"DemoLoginEnabled":    a.demoLogin,
+		"GoogleAdsTagID":      a.googleAdsTagID,
 		"MapURL":              tenantMapURL(tenant.Address),
 		"LocationMap":         publicMapForTenant(tenant),
 		"HomeCopy":            copy,
@@ -60,6 +61,7 @@ func (a *app) home(w http.ResponseWriter, r *http.Request) {
 func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", map[string]any{
 		"Title":          "hausv.org - Free, Home und Professional",
+		"GoogleAdsTagID": a.googleAdsTagID,
 		"ContactLocal":   "hello",
 		"ContactDomain":  "hausv.org",
 		"ContactDisplay": "hello [at] hausv [dot] org",
@@ -73,6 +75,7 @@ func (a *app) marketingLanding(w http.ResponseWriter, r *http.Request) {
 func (a *app) imprintPage(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "imprint", map[string]any{
 		"Title":                      "Impressum & Infos · hausv.org",
+		"GoogleAdsTagID":             a.googleAdsTagID,
 		"ContactLocal":               "hello",
 		"ContactDomain":              "hausv.org",
 		"ContactDisplay":             "hello [at] hausv [dot] org",
@@ -173,15 +176,18 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	if devLink {
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
-			"Title":               tenant.Address + " · Hausportal",
-			"Tenant":              tenant,
-			"HouseName":           houseDisplayName(tenant),
-			"Email":               email,
-			"Sent":                true,
-			"Expired":             false,
-			"MailConfigured":      false,
-			"DevLoginLink":        link,
-			"DemoLoginEnabled":    a.demoLogin,
+			"Title":            tenant.Address + " · Hausportal",
+			"Tenant":           tenant,
+			"HouseName":        houseDisplayName(tenant),
+			"Email":            email,
+			"Sent":             true,
+			"Expired":          false,
+			"MailConfigured":   false,
+			"DevLoginLink":     link,
+			"DemoLoginEnabled": a.demoLogin,
+			"GoogleAdsTagID":   a.googleAdsTagID,
+			// The page after a successful demo login request is the lead conversion.
+			"GoogleAdsConversion": a.googleAdsLeadConversion,
 			"DemoCodeWrong":       false,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),
@@ -223,6 +229,7 @@ func (a *app) renderDemoCodeWrong(w http.ResponseWriter, tenant tenantConfig) {
 		"MailConfigured":      false,
 		"DevLoginLink":        "",
 		"DemoLoginEnabled":    true,
+		"GoogleAdsTagID":      a.googleAdsTagID,
 		"DemoCodeWrong":       true,
 		"Denied":              false,
 		"OIDCConfigured":      a.oidc.Configured(),

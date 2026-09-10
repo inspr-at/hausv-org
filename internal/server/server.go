@@ -744,20 +744,24 @@ const (
 var errServiceProviderAccessClosed = errors.New("service provider access is disabled")
 
 type app struct {
-	baseURL                 string
-	addr                    string
-	rootDomain              string
-	defaultTenant           string
-	tenants                 map[string]tenantConfig
-	organisations           map[string]config.OrganisationConfig
-	tenantIdentities        map[string]store.TenantIdentity
-	sessionSecure           bool
-	allowed                 map[string]struct{}
-	admins                  map[string]struct{}
-	profiles                map[string]userProfile
-	localDevLogin           bool
-	demoLogin               bool
-	demoLoginCode           string
+	baseURL          string
+	addr             string
+	rootDomain       string
+	defaultTenant    string
+	tenants          map[string]tenantConfig
+	organisations    map[string]config.OrganisationConfig
+	tenantIdentities map[string]store.TenantIdentity
+	sessionSecure    bool
+	allowed          map[string]struct{}
+	admins           map[string]struct{}
+	profiles         map[string]userProfile
+	localDevLogin    bool
+	demoLogin        bool
+	demoLoginCode    string
+	// Google Ads tag for the public pages of a marketing/demo host (empty = off).
+	// The CSP only opens up for Google's hosts when a tag is configured.
+	googleAdsTagID          string
+	googleAdsLeadConversion string
 	demoReset               func(context.Context, time.Time, io.Writer) (demo.SeedResult, error)
 	serviceAccessEnabled    bool
 	templExampleEnabled     bool
@@ -1569,6 +1573,14 @@ func newApp() (*app, error) {
 	if demoLogin {
 		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
 	}
+	// Google Ads (demo host only): the tag id goes on every public page, the
+	// lead conversion fires once on the page that follows a successful demo
+	// login request. Both are plain configuration, never secrets.
+	googleAdsTagID := strings.TrimSpace(env("GOOGLE_ADS_TAG_ID", ""))
+	googleAdsLeadConversion := strings.TrimSpace(env("GOOGLE_ADS_LEAD_CONVERSION", ""))
+	if googleAdsTagID != "" {
+		logInfo("google ads tag enabled on public pages", "tag", googleAdsTagID)
+	}
 
 	smtpHost := env("SMTP_HOST", "")
 	mailOutboxDir := strings.TrimSpace(env("MAIL_OUTBOX_DIR", ""))
@@ -1986,6 +1998,8 @@ func newApp() (*app, error) {
 		localDevLogin:             localDevLogin,
 		demoLogin:                 demoLogin,
 		demoLoginCode:             demoLoginCode,
+		googleAdsTagID:            googleAdsTagID,
+		googleAdsLeadConversion:   googleAdsLeadConversion,
 		serviceAccessEnabled:      serviceProviderAccessEnabled(),
 		templExampleEnabled:       parseBool(env("TEMPL_EXAMPLE_ENABLED", "false")),
 		sessionTTL:                sessionTTL,
