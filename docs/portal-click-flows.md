@@ -84,8 +84,10 @@ allein gilt nicht als Nachweis eines Klickwegs.
 
 Go-Tests ergänzen diese Browserwege um Mieter, Beirat, Dienstleister,
 hausfremde IDs, unzulässige Direktrequests und seltene Fehlerzustände. Der
-separate `capture.mjs`-Pfad erzeugt 56 visuelle Rollen-/Routenaufnahmen; er ist
-eine visuelle Stichprobe und kein Ersatz für die oben genannten Klickwege.
+separate `capture.mjs`-Pfad plant 4 × 19 Rollen-/Routenaufnahmen plus drei
+Cockpit-Aufnahmen bei 1440 × 900; er ist eine visuelle Stichprobe und kein Ersatz
+für die oben genannten Klickwege. Messbereiche, blinde Stellen und lokale
+Aufrufe stehen unter [Orakel und CI-Gates](playwright-main-flow-qa.md#orakel-und-ci-gates).
 
 ## Rollen- und Fixture-Matrix
 
@@ -123,20 +125,18 @@ Fachflächen; sie laufen nicht pauschal für jede Route. Der vollständige Lauf:
 scripts/qa-main-flows.sh
 ```
 
-Der CI-Kern wird lokal so reproduziert:
+Das vollständige CI-Gate „Full browser flow suite“ wird lokal so reproduziert:
 
-```fish
-npm --prefix scripts/snapshot exec -- playwright install chromium
-set -lx CI true
-set -lx HV_QA_HEADLESS true
-set -lx HV_QA_CI_CORE true
-set -lx HV_QA_ARTIFACT_DIR ./tmp/browser-role-qa
-scripts/qa-main-flows.sh
+```sh
+direnv exec . npm --prefix scripts/snapshot exec -- playwright install chromium
+CI=true HV_QA_HEADLESS=true HV_QA_ARTIFACT_DIR=/tmp/hausv-oracles/full \
+  direnv exec . bash scripts/qa-main-flows.sh
 ```
 
-`CI=true` verhindert dabei bewusst den lokalen Fallback auf ein installiertes
-Chrome und verwendet das zur festgeschriebenen Playwright-Version gehörende
-Chromium. Chromium läuft automatisiert ausdrücklich headless. Screenshots
+`CI=true` verhindert dabei den automatischen lokalen Fallback auf ein
+installiertes Chrome. Ohne explizites `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`
+wird das zur festgeschriebenen Playwright-Version gehörende Chromium verwendet.
+Chromium läuft automatisiert ausdrücklich headless. Screenshots
 unterstützen die visuelle Prüfung; DOM-Reihenfolge, Geometrie, Fokus,
 Rollenverbote, Touch-Ziele, Überlauf und strukturierte Logs werden zusätzlich
 maschinell geprüft.
