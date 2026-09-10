@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.21",
+			Date:     "10. September 2026",
+			Kind:     "Verbessert",
+			Headline: "Energie-Cockpit: Fokus bleibt beim Verbraucher.",
+			Intro:    "Nach dem Schließen des Verbraucher-Dialogs bleibt der Tastaturfokus auf dem zuletzt bearbeiteten Verbraucher, auch wenn Live-Werte die Ansicht gerade neu aufbauen.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.20",
 			Date:     "9. September 2026",
 			Kind:     "Verbessert",

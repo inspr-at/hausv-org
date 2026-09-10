@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.9.21] - 2026-09-10
+
+### Verbessert
+
+- Energie-Cockpit: Nach dem Schließen des Verbraucher-Dialogs bleibt der Tastaturfokus auf dem zuletzt bearbeiteten Verbraucher, auch wenn Live-Werte die Ansicht gerade neu aufbauen.
+
 ## [1.9.20] - 2026-09-09
 
 ### Verbessert
