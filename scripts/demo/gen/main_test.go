@@ -265,3 +265,31 @@ func TestCommittedDocumentsMatchDeterministicGenerator(t *testing.T) {
 		t.Fatal("documents.json differs from deterministic generator")
 	}
 }
+
+// HAUSV-729: mirrors the loader rule in internal/demo/seed.go (every manual
+// item and every fourth approved/edited item becomes an open issue) so the
+// committed seed cannot regress to two open issues of one house with the same
+// subject. The behaviour itself is covered by the loader test in internal/demo.
+func TestCommittedSeedOpensDistinctSubjectsPerHouse(t *testing.T) {
+	var items []intakeItem
+	readJSON(t, filepath.Join("..", "seed", "intake.json"), &items)
+	seen := map[string]map[string]string{}
+	opened := 0
+	for index, item := range items {
+		open := item.StatusHint == "manual" || ((item.StatusHint == "approved" || item.StatusHint == "edited") && index%4 == 0)
+		if !open || item.House == "" {
+			continue
+		}
+		opened++
+		if seen[item.House] == nil {
+			seen[item.House] = map[string]string{}
+		}
+		if other, dup := seen[item.House][item.Subject]; dup {
+			t.Errorf("%s: %s and %s open with the same subject %q", item.House, other, item.ID, item.Subject)
+		}
+		seen[item.House][item.Subject] = item.ID
+	}
+	if opened < 40 {
+		t.Fatalf("only %d items open as issues, want at least 40", opened)
+	}
+}

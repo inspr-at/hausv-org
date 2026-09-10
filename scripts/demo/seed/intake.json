@@ -4994,8 +4994,8 @@
     "from_name": "Lorenz Leitner",
     "from_email": "lorenz.leitner@example.example",
     "from_phone": "",
-    "subject": "Klimagerät an der Hoffassade",
-    "body": "Wegen der Hitze plane ich ein Split-Klimagerät mit Außenteil zum Innenhof. Bitte teilen Sie mir mit, welche Unterlagen für die Freigabe erforderlich sind.",
+    "subject": "Balkonverglasung",
+    "body": "Ich ersuche um Prüfung einer rahmenlosen Balkonverglasung für Top 3. Die Ansicht soll einheitlich bleiben, daher richte ich mich gern nach bestehenden Vorgaben.",
     "truth": {
       "category": "freigabe",
       "priority": "Mittel",
@@ -5154,8 +5154,8 @@
     "from_name": "Matthias Dorn",
     "from_email": "matthias.mieter@musterstadt.example",
     "from_phone": "+43 676 310 20 02",
-    "subject": "Leitungswasserschaden Aktenzahl",
-    "body": "Die Versicherung verlangt Fotos, Kostenvoranschlag und eine Bestätigung der Hausverwaltung. Aktenzahl ist VS-26-18491, betroffen Top 3.",
+    "subject": "Fahrrad aus Keller gestohlen",
+    "body": "Mein Fahrrad wurde aus dem versperrten Kellerabteil entwendet. Anzeige ist gemacht; gibt es eine Gebäudeversicherung, an die ich den Schaden ebenfalls melden soll?",
     "truth": {
       "category": "versicherung",
       "priority": "Hoch",
@@ -6814,8 +6814,8 @@
     "from_name": "Hannes Zeller",
     "from_email": "hannes.zeller@example.example",
     "from_phone": "",
-    "subject": "Garagentor schließt nicht",
-    "body": "Das Garagentor in Leonhardstraße 3 fährt bis zur Hälfte und wieder hoch. Heute Nacht stand es dadurch offen; bitte rasch die Wartungsfirma verständigen.",
+    "subject": "Waschmaschine im Gemeinschaftsraum",
+    "body": "Die linke Maschine nimmt Münzen, startet aber nicht. Außerdem steht rund um den Abfluss Wasser, vielleicht hängt beides zusammen.",
     "truth": {
       "category": "reparatur",
       "priority": "Hoch",
@@ -6954,8 +6954,8 @@
     "from_name": "Petra Ortner",
     "from_email": "petra.ortner@example.example",
     "from_phone": "",
-    "subject": "Schlüssel für Hausbetreuung",
-    "body": "Unsere Reinigungskraft braucht am Dienstag einmalig Zugang zum Fahrradraum. Kann bei der Hausbetreuung ein Schlüssel hinterlegt werden?",
+    "subject": "Neuer Zylinder angekündigt",
+    "body": "Im Aushang steht, dass der Haustorzylinder getauscht wird. Bekommen wir die neuen Schlüssel automatisch und ab wann sperren die alten nicht mehr?",
     "truth": {
       "category": "schluessel",
       "priority": "Mittel",
