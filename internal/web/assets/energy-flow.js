@@ -384,6 +384,7 @@
     }
     loadConsumerMeasurements(item);
     consumerDialog._returnFocus = trigger || null;
+    consumerDialog._returnTarget = trigger && trigger.closest ? (function () { var tile = trigger.closest("[data-consumer-id]"); return { id: tile ? tile.dataset.consumerId : "", role: "main" }; })() : null;
     if (!consumerDialog.open) consumerDialog.showModal();
     window.setTimeout(function () {
       var nameField = consumerDialog.querySelector('[name="name"]');
@@ -456,14 +457,41 @@
       }).observe(wrap);
     }
 
+    // HAUSV-725: a rebuild replaces every tile, so a focused button inside the flow
+    // would be detached and focus would silently drop to <body>. Describe the focused
+    // control by consumer id and role instead of node identity and re-focus its
+    // successor after the rebuild; the dialog's return-focus uses the same descriptor.
+    function describeFlowFocus(node) {
+      if (!node || !wrap.contains(node)) return null;
+      var tile = node.closest ? node.closest("[data-consumer-id]") : null;
+      var role = node.classList && node.classList.contains("drag") ? "drag" : "main";
+      return { id: tile ? tile.dataset.consumerId : "", role: role };
+    }
+    function focusFlowTarget(target) {
+      if (!target) return false;
+      var node = null;
+      if (target.id) {
+        node = wrap.querySelector('[data-consumer-id="' + target.id + '"] button.' + (target.role === "drag" ? "drag" : "energy-flow-main"));
+      }
+      if (!node) {
+        // The tile is gone (deleted) or the focus sat on the add-ghost: keep focus in the flow.
+        node = [].filter.call(wrap.querySelectorAll("button.energy-flow-main"), function (button) {
+          return !target.id || !button.closest("[data-consumer-id]");
+        })[0] || wrap.querySelector("button.energy-flow-main");
+      }
+      if (node && typeof node.focus === "function") { node.focus(); return true; }
+      return false;
+    }
     function rebuild(focusConsumerID) {
+      var keep = describeFlowFocus(document.activeElement);
       built.forEach(function (node) { node.remove(); });
       built = [];
       build();
       if (focusConsumerID) {
         var grip = wrap.querySelector('[data-consumer-id="' + focusConsumerID + '"] button.drag');
-        if (grip) grip.focus();
+        if (grip) { grip.focus(); return; }
       }
+      if (keep) focusFlowTarget(keep);
     }
 
     // Swap data inside the fixed flow area; the page, scroll position and
@@ -488,13 +516,18 @@
       // announcements.js and building-settings.js both restore their trigger explicitly; this
       // one only looked as though it did.
       var target = consumerDialog._returnFocus;
+      var descriptor = consumerDialog._returnTarget || describeFlowFocus(target);
       consumerDialog._returnFocus = null;
+      consumerDialog._returnTarget = null;
       var restoreFocus = function () {
         var node = target;
-        // A pending change rebuilds the flow list, which detaches the original button. Falling
-        // back to the equivalent trigger keeps focus in the list instead of dropping it.
-        if (!node || !node.isConnected) node = wrap.querySelector("button.energy-flow-main");
-        if (node && typeof node.focus === "function") node.focus();
+        // A pending change rebuilds the flow list, which detaches the original button. The
+        // descriptor finds the same consumer's button again instead of dropping focus.
+        if (node && node.isConnected && typeof node.focus === "function") { node.focus(); return; }
+        if (!focusFlowTarget(descriptor)) {
+          var fallback = wrap.querySelector("button.energy-flow-main");
+          if (fallback) fallback.focus();
+        }
       };
       if (!wrap._energyFlowPending) {
         restoreFocus();
