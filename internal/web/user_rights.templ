@@ -1,0 +1,186 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/authz"
+
+templ UserRightsStyles() {
+	<style>
+		.user-rights {
+			display: grid;
+			gap: 16px;
+			min-width: 0;
+			margin: 16px 0;
+		}
+		.user-rights form {
+			display: grid;
+			gap: 12px;
+			min-width: 0;
+		}
+		.user-rights label {
+			display: grid;
+			gap: 4px;
+			min-width: 0;
+			font-size: 12px;
+		}
+		.user-rights select,
+		.user-rights input,
+		.user-rights button,
+		.user-rights summary {
+			min-height: 44px;
+			max-width: 100%;
+			min-width: 0;
+		}
+		.user-rights select,
+		.user-rights input {
+			width: 100%;
+		}
+		.user-rights p,
+		.user-rights small {
+			font-size: 12px;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+		.user-rights ul {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.user-rights li {
+			padding: 8px 0;
+			overflow-wrap: anywhere;
+			border-bottom: 1px solid var(--line);
+		}
+		.user-rights li form {
+			margin-top: 8px;
+		}
+		.rights-effective {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.rights-effective li {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 8px 0;
+			border-bottom: 1px solid var(--line);
+			font-size: 12px;
+		}
+		.rights-effective li span {
+			color: var(--muted);
+		}
+	</style>
+}
+
+templ EffectiveRightsList(rights []EffectiveRight) {
+	<ul class="rights-effective">
+		for _,right:= range rights {
+			<li>
+				<strong>{ right.Label }</strong>
+				<span>
+					if right.Allowed {
+						Erlaubt
+					} else {
+						Nicht erlaubt
+					}
+				</span>
+			</li>
+		}
+	</ul>
+}
+
+templ MyPermissions(rights []EffectiveRight, tenant string) {
+	@UserRightsStyles()
+	<details class="note panel">
+		<summary>
+			Meine Berechtigungen
+			@DisclosureChevron()
+		</summary>
+		<div>
+			<p>Wirksame Rechte für { tenant }. Eigene Ausnahmen sind berücksichtigt; ein Entzug hat Vorrang. Zuordnungen und Freigaben begrenzen den Zugriff auf einzelne Inhalte.</p>
+			@EffectiveRightsList(rights)
+		</div>
+	</details>
+}
+
+templ UserRightsScope(data UserRightsData, email string) {
+	<label>
+		Geltungsbereich
+		<select name="tenant_slug">
+			<option value="">Gesamte Organisation</option>
+			for _,scope:= range data.Scopes[email] {
+				<option value={ scope.Slug } selected?={ scope.Slug==data.CurrentTenant }>{ scope.Label }</option>
+			}
+		</select>
+	</label>
+}
+
+templ UserOwnRights(data UserRightsData, email string) {
+	<section class="user-rights" aria-label="Eigene Rechte">
+		<h3>Eigene Rechte</h3>
+		<p>Zusätzlich zur Rolle gewähren oder entziehen. Ein Entzug hat Vorrang, auch gegenüber einer Freigabe für eine einzelne Liegenschaft.</p>
+		@EffectiveRightsList(data.Effective[email])
+		<ul>
+			for _,grant:= range data.grants(email) {
+				<li>
+					<strong>{ authz.CapabilityLabel(authz.Capability(grant.Capability)) }</strong>
+					<br/>
+					<small>{ rightsEffectLabel(grant.Effect) } · { rightsScopeLabel(grant.TenantSlug) }</small>
+					if data.Editable {
+						<form method="post" action="/app/settings/users/rights">
+							<input type="hidden" name="operation" value="grant"/><input type="hidden" name="email" value={ email }/><input type="hidden" name="capability" value={ grant.Capability }/><input type="hidden" name="tenant_slug" value={ grant.TenantSlug }/>
+							<label>Ausnahme ändern<select name="effect"><option value="">Aus Rolle (Ausnahme entfernen)</option><option value="grant" selected?={ grant.Effect=="grant" }>Gewähren</option><option value="deny" selected?={ grant.Effect=="deny" }>Entziehen</option></select></label><button class="button ghost" type="submit">Ausnahme speichern</button>
+						</form>
+					}
+				</li>
+			}
+		</ul>
+		if data.Editable {
+			<form method="post" action="/app/settings/users/rights">
+				<input type="hidden" name="operation" value="grant"/><input type="hidden" name="email" value={ email }/>
+				<label>
+					Recht
+					<select name="capability" required>
+						for _,capability:= range authz.AllCapabilities {
+							if !authz.NonDelegable(capability) {
+								<option value={ string(capability) }>{ authz.CapabilityLabel(capability) }</option>
+							}
+						}
+					</select>
+				</label>
+				<label>Wirkung<select name="effect"><option value="grant">Gewähren</option><option value="deny">Entziehen</option></select></label>
+				@UserRightsScope(data, email)
+				<button class="button ghost" type="submit">Eigenes Recht speichern</button>
+			</form>
+			@UserRightsProfiles(data, email)
+		}
+		<p>Benutzerverwaltung und Organisationsadministration sind geschützt und können ausschließlich per Rolle vergeben werden.</p>
+	</section>
+}
+
+templ UserRightsProfiles(data UserRightsData, email string) {
+	<details class="user-rights">
+		<summary>Berechtigungsprofile</summary>
+		<p>Vorlagen ersetzen eigene Rechte im gewählten Geltungsbereich. „Standard“ entfernt dort alle Ausnahmen. Andere Geltungsbereiche bleiben bestehen.</p>
+		<form method="post" action="/app/settings/users/rights">
+			<input type="hidden" name="operation" value="apply-profile"/><input type="hidden" name="email" value={ email }/>
+			<label>
+				Profil
+				<select name="profile">
+					<option value="Standard">Standard</option>
+					for _,profile:= range data.Profiles {
+						<option value={ profile.Name }>{ profile.Name }</option>
+					}
+				</select>
+			</label>
+			@UserRightsScope(data, email)
+			<button class="button ghost" type="submit">Profil anwenden</button>
+		</form>
+		<form method="post" action="/app/settings/users/rights">
+			<input type="hidden" name="operation" value="save-profile"/><input type="hidden" name="email" value={ email }/>
+			<label>Eigene Rechte als Vorlage speichern<input name="profile_name" maxlength="100" placeholder="Profilname" required/></label>
+			@UserRightsScope(data, email)
+			<button class="button ghost" type="submit">Profil speichern</button>
+		</form>
+	</details>
+}

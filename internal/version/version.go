@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.9.24",
+			Date:     "10. September 2026",
+			Kind:     "Neu",
+			Headline: "Rechte im Portal bearbeiten.",
+			Intro:    "Die Rechte-Matrix ist in der Verwaltung bearbeitbar, mit Abweichungshinweis, Zurücksetzen und Verlauf; Benutzer erhalten eigene Rechte zusätzlich zur Rolle, auf Wunsch je Liegenschaft, mit Berechtigungsprofilen als Vorlagen. Jede Person sieht unter Profil ihre wirksamen Rechte.",
+			Items:    nil,
+		},
+		{
 			Version:  "1.9.23",
 			Date:     "10. September 2026",
 			Kind:     "Verbessert",

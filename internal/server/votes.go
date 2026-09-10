@@ -479,7 +479,7 @@ func (a *app) ballotViewsForActor(repositories requestRepositories, tenant store
 func (a *app) ballotViewForActor(repositories requestRepositories, tenant store.TenantRef, email string, role string, item ballot, now time.Time, includeResults bool) ballotView {
 	tenantSlug := tenant.Slug
 	item = normalizeBallot(item)
-	actor := actorFor(email, tenantSlug, role)
+	actor := a.actorFor(email, tenantSlug, role)
 	resource := resourceFor(item.TenantSlug)
 	canManage := can(actor, capabilityManageVotes, resource)
 	canVote := can(actor, capabilityVote, resource)

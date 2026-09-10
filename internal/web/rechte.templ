@@ -7,9 +7,15 @@ import (
 	"github.com/inspr-at/hausv-org/internal/authz"
 )
 
-func RechtePage(shell PortalPageData) templ.Component {
-	return rechtePage(shell)
+func RechtePage(shell PortalPageData, values ...RechteData) templ.Component {
+	data := RechteData{}
+	if len(values) > 0 {
+		data = values[0]
+	}
+	return rechtePage(shell, data)
 }
+
+func RechteContent() templ.Component { return rechteContent(RechteData{}) }
 
 func rechteMatrixCell(familyKey, areaKey string) authz.MatrixCell {
 	for _, cell := range authz.RoleMatrix {
@@ -53,20 +59,314 @@ func rechteNoteNumber(familyKey, areaKey string) int {
 	return 0
 }
 
-templ rechtePage(shell PortalPageData) {
-	@PortalVerwaltungPage(shell, "Rechte", RechteContent())
+templ rechtePage(shell PortalPageData, data RechteData) {
+	@PortalOrganisationPage(shell, "Rechte", nil, RechteHeaderAction(data), []string{"rights.js"}, rechteContent(data))
 }
 
-templ RechteContent() {
+templ rechteContent(data RechteData) {
 	<style>
-		.rechte-page{display:grid;gap:16px;min-width:0}.rechte-intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.rechte-intro h2{font-size:20px;line-height:1.4}.rechte-intro p{margin-top:8px;color:var(--muted);font-size:13px}.rechte-readonly{display:flex;align-items:center;gap:8px;white-space:nowrap;color:var(--muted);font-size:12px}.rechte-readonly svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}.rechte-panel{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-table-wrap{overflow-x:auto}.rechte-table{width:100%;min-width:960px;border-collapse:collapse}.rechte-table th,.rechte-table td{height:44px;padding:8px 16px;border:0;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}.rechte-table tr>:not(:first-child){border-left:1px solid var(--line)}.rechte-table thead th{height:56px;background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:750;letter-spacing:0.08em;text-transform:uppercase}.rechte-table thead th small{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-weight:400;letter-spacing:0;text-transform:none}.rechte-table th:first-child{width:19%}.rechte-table th:nth-child(2){width:34%}.rechte-table th:nth-child(3){width:25%}.rechte-table th:nth-child(4){width:22%}.rechte-table .rechte-area{color:var(--ink);font-size:13px;font-weight:750;letter-spacing:0;text-transform:none;background:transparent}.rechte-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.rechte-chip{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:750;white-space:nowrap}.rechte-empty{color:var(--soft);font-size:13px}.rechte-note-link{color:var(--muted);font-size:10px;text-decoration:underline;text-underline-offset:2px}.rechte-notes{columns:2;column-gap:32px;margin:0;padding:8px 24px 8px 40px;background:var(--panel-soft);color:var(--muted);font-size:12px;line-height:1.5}.rechte-notes li{break-inside:avoid;padding-left:4px}.rechte-notes li:target{background:var(--line)}.rechte-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:16px 8px 0;border-top:1px solid var(--line)}.rechte-legend p{display:grid;grid-template-columns:16px minmax(0,1fr);gap:8px;align-items:start;color:var(--muted);font-size:11px;line-height:1.5}.rechte-dot{width:12px;height:12px;margin-top:2px;border:2px solid var(--gold);border-radius:var(--radius-pill)}.rechte-dot.explicit{border-color:var(--muted)}.rechte-special{display:grid;gap:8px}.rechte-special h2{font-size:32px}.rechte-special>p{color:var(--muted);font-size:13px}.rechte-special-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.rechte-special-card{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.rechte-special-card header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}.rechte-special-card h3{font-size:23px}.rechte-special-card header span,.rechte-special-card p{color:var(--muted);font-size:12px;line-height:1.5}@media(max-width:760px){.rechte-intro{flex-direction:column}.rechte-legend,.rechte-special-grid{grid-template-columns:minmax(0,1fr)}.rechte-notes{columns:1}.rechte-table th,.rechte-table td{padding:8px}.rechte-table{min-width:880px}}
+		.rights-switch [hidden] {
+			display: none !important;
+		}
+		.rights-switch {
+			display: grid;
+			gap: 4px;
+			width: 100%;
+			font-size: 12px;
+		}
+		.rights-switch label {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			min-height: 44px;
+			cursor: pointer;
+		}
+		.rights-switch input {
+			width: 20px;
+			height: 20px;
+			flex-shrink: 0;
+		}
+		.rights-switch small {
+			color: var(--muted);
+			line-height: 1.5;
+		}
+		.rights-switch button,
+		.rights-reset button {
+			min-height: 44px;
+		}
+		.rights-switch .rights-changed {
+			color: var(--gold);
+		}
+		.rights-extra {
+			padding: 16px;
+		}
+		.rights-extra summary,
+		.rights-reset summary {
+			min-height: 44px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+		}
+		.rights-extra section {
+			margin: 16px 0;
+		}
+		.rights-reset {
+			max-width: 360px;
+		}
+		.rights-reset form {
+			display: grid;
+			gap: 12px;
+			padding: 12px 0;
+		}
+		.rights-reset label {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			min-height: 44px;
+		}
+		.rechte-page {
+			display: grid;
+			gap: 16px;
+			min-width: 0;
+		}
+		.rechte-intro {
+			display: flex;
+			align-items: start;
+			justify-content: space-between;
+			gap: 16px;
+		}
+		.rechte-intro h2 {
+			font-size: 20px;
+			line-height: 1.4;
+		}
+		.rechte-intro p {
+			margin-top: 8px;
+			color: var(--muted);
+			font-size: 13px;
+		}
+		.rechte-readonly {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			white-space: nowrap;
+			color: var(--muted);
+			font-size: 12px;
+		}
+		.rechte-readonly svg {
+			width: 16px;
+			height: 16px;
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 1.6;
+		}
+		.rechte-panel {
+			min-width: 0;
+			overflow: hidden;
+			border: 1px solid var(--line);
+			border-radius: var(--radius-sm);
+			background: var(--panel);
+		}
+		.rechte-table-wrap {
+			overflow-x: auto;
+		}
+		.rechte-table {
+			width: 100%;
+			min-width: 960px;
+			border-collapse: collapse;
+		}
+		.rechte-table th,
+		.rechte-table td {
+			height: 44px;
+			padding: 8px 16px;
+			border: 0;
+			border-bottom: 1px solid var(--line);
+			text-align: left;
+			vertical-align: middle;
+		}
+		.rechte-table tr > :not(:first-child) {
+			border-left: 1px solid var(--line);
+		}
+		.rechte-table thead th {
+			height: 56px;
+			background: var(--panel-soft);
+			color: var(--ink);
+			font-size: 11px;
+			font-weight: 750;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+		.rechte-table thead th small {
+			display: block;
+			margin-top: 4px;
+			color: var(--muted);
+			font-size: 12px;
+			font-weight: 400;
+			letter-spacing: 0;
+			text-transform: none;
+		}
+		.rechte-table th:first-child {
+			width: 19%;
+		}
+		.rechte-table th:nth-child(2) {
+			width: 34%;
+		}
+		.rechte-table th:nth-child(3) {
+			width: 25%;
+		}
+		.rechte-table th:nth-child(4) {
+			width: 22%;
+		}
+		.rechte-table .rechte-area {
+			color: var(--ink);
+			font-size: 13px;
+			font-weight: 750;
+			letter-spacing: 0;
+			text-transform: none;
+			background: transparent;
+		}
+		.rechte-actions {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 8px;
+		}
+		.rechte-chip {
+			display: inline-flex;
+			min-height: 24px;
+			align-items: center;
+			padding: 0 8px;
+			border: 1px solid var(--line);
+			border-radius: var(--radius-pill);
+			background: var(--panel-soft);
+			color: var(--ink);
+			font-size: 10px;
+			font-weight: 750;
+			white-space: nowrap;
+		}
+		.rechte-empty {
+			color: var(--soft);
+			font-size: 13px;
+		}
+		.rechte-note-link {
+			color: var(--muted);
+			font-size: 10px;
+			text-decoration: underline;
+			text-underline-offset: 2px;
+		}
+		.rechte-notes {
+			columns: 2;
+			column-gap: 32px;
+			margin: 0;
+			padding: 8px 24px 8px 40px;
+			background: var(--panel-soft);
+			color: var(--muted);
+			font-size: 12px;
+			line-height: 1.5;
+		}
+		.rechte-notes li {
+			break-inside: avoid;
+			padding-left: 4px;
+		}
+		.rechte-notes li:target {
+			background: var(--line);
+		}
+		.rechte-legend {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 24px;
+			padding: 16px 8px 0;
+			border-top: 1px solid var(--line);
+		}
+		.rechte-legend p {
+			display: grid;
+			grid-template-columns: 16px minmax(0, 1fr);
+			gap: 8px;
+			align-items: start;
+			color: var(--muted);
+			font-size: 11px;
+			line-height: 1.5;
+		}
+		.rechte-dot {
+			width: 12px;
+			height: 12px;
+			margin-top: 2px;
+			border: 2px solid var(--gold);
+			border-radius: var(--radius-pill);
+		}
+		.rechte-dot.explicit {
+			border-color: var(--muted);
+		}
+		.rechte-special {
+			display: grid;
+			gap: 8px;
+		}
+		.rechte-special h2 {
+			font-size: 32px;
+		}
+		.rechte-special > p {
+			color: var(--muted);
+			font-size: 13px;
+		}
+		.rechte-special-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+		}
+		.rechte-special-card {
+			display: grid;
+			gap: 8px;
+			padding: 16px;
+			border: 1px solid var(--line);
+			border-radius: var(--radius-sm);
+			background: var(--panel);
+		}
+		.rechte-special-card header {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 8px;
+		}
+		.rechte-special-card h3 {
+			font-size: 23px;
+		}
+		.rechte-special-card header span,
+		.rechte-special-card p {
+			color: var(--muted);
+			font-size: 12px;
+			line-height: 1.5;
+		}
+		@media (max-width: 760px) {
+			.rechte-intro {
+				flex-direction: column;
+			}
+			.rechte-legend,
+			.rechte-special-grid {
+				grid-template-columns: minmax(0, 1fr);
+			}
+			.rechte-notes {
+				columns: 1;
+			}
+			.rechte-table th,
+			.rechte-table td {
+				padding: 8px;
+			}
+			.rechte-table {
+				min-width: 880px;
+			}
+		}
 	</style>
 	<section class="rechte-page" aria-labelledby="rechte-matrix-title">
 		<div class="rechte-intro">
-			<div><h2 id="rechte-matrix-title">Wer darf was? Rollen und Berechtigungen im Überblick.</h2><p>Ein Strich bedeutet: Für diese Rollenfamilie ist die Aktion nicht freigegeben.</p></div>
-			<span class="rechte-readonly">@PortalAssetIcon("lock-keyhole")
-				Nur zur Ansicht</span>
+			<div><h2 id="rechte-matrix-title">Wer darf was? Rollen und Berechtigungen im Überblick.</h2><p>Aktionen mit derselben Berechtigung werden gemeinsam geändert. Feste Produktregeln und Zuordnungen bleiben geschützt.</p></div>
+			if !data.Editable {
+				<span class="rechte-readonly">@PortalAssetIcon("lock-keyhole")
+Nur zur Ansicht</span>
+			}
 		</div>
+		if data.Saved {
+			@SettingsFlash("Rechte gespeichert.", true)
+		}
 		<section class="rechte-panel" aria-label="Rechtematrix der Rollenfamilien">
 			<div class="rechte-table-wrap" role="region" aria-label="Rollenmatrix, horizontal verschiebbar" tabindex="0">
 				<table class="rechte-table">
@@ -74,7 +374,7 @@ templ RechteContent() {
 						<tr>
 							<th scope="col">Bereich</th>
 							for _, family := range authz.RoleFamilies {
-								<th scope="col">{ family.Label }<small>{ rechteRoleLabels(family.Roles) }</small></th>
+								<th scope="col">{ family.Label }<small>{ rechteRoleLabels(family.Roles) }</small><small>{ fmt.Sprintf("Betrifft %d Benutzer dieser Organisation", data.UserCounts[family.Key]) }</small></th>
 							}
 						</tr>
 					</thead>
@@ -83,15 +383,22 @@ templ RechteContent() {
 							<tr>
 								<th scope="row" class="rechte-area">{ area.Label }</th>
 								for _, family := range authz.RoleFamilies {
-									{{ cell := rechteMatrixCell(family.Key, area.Key) }}
+									{{ cell := data.cell(family.Key, area.Key) }}
 									<td data-family={ family.Key } data-area={ area.Key }>
 										<div class="rechte-actions">
-											if len(cell.Grants) > 0 {
+											if data.Editable {
+												for _,grant:= range rechteActionOptions(family.Key,area.Key) {
+													@RechteSwitch(data, family.Key, area.Key, grant)
+												}
+											} else if len(cell.Grants) > 0 {
 												for _, grant := range cell.Grants {
 													<span class="rechte-chip" title={ rechteGrantTitle(grant) }>{ string(grant.Action) }</span>
 												}
 											} else {
 												<span class="rechte-empty" aria-label="keine Aktion">—</span>
+											}
+											if !data.Editable && data.cellChanged(family.Key,area.Key) {
+												<small class="rights-changed">Abweichend vom Standard</small>
 											}
 											if cell.Note != "" {
 												<sup><a class="rechte-note-link" href={ templ.SafeURL(fmt.Sprintf("#rechte-note-%d", rechteNoteNumber(family.Key, area.Key))) } aria-label={ "Einschränkung: " + cell.Note }>{ fmt.Sprint(rechteNoteNumber(family.Key, area.Key)) }</a></sup>
@@ -115,6 +422,19 @@ templ RechteContent() {
 				}
 			</ol>
 		</section>
+		if data.Editable {
+			<details class="rechte-panel rights-extra">
+				<summary>Weitere Berechtigungen</summary>
+				for _,family:= range authz.RoleFamilies {
+					<section>
+						<h3>{ family.Label }</h3>
+						for _,capability:= range additionalCapabilities() {
+							@RechteSwitch(data, family.Key, "additional", authz.MatrixGrant{Capability: capability, Action: authz.MatrixAction(authz.CapabilityLabel(capability))})
+						}
+					</section>
+				}
+			</details>
+		}
 		<section class="rechte-special" aria-labelledby="rechte-special-title">
 			<h2 id="rechte-special-title">Sonderrollen</h2>
 			<p>Eng auf Auftrag oder Freigabe begrenzte Zugriffe.</p>
@@ -137,4 +457,46 @@ templ RechteContent() {
 			<p><span class="rechte-dot explicit" aria-hidden="true"></span><span><strong>Produktregel:</strong> Technische Checks sind mandantengebunden. Bestehende Mandanten-, Zuordnungs- oder Routenprüfung bleibt maßgeblich.</span></p>
 		</div>
 	</section>
+}
+
+templ RechteHeaderAction(data RechteData) {
+	if data.Editable {
+		<details class="rights-reset">
+			<summary class="button ghost">Auf Standard zurücksetzen</summary>
+			<form method="post" action="/app/verwaltung/rechte">
+				<input type="hidden" name="operation" value="reset"/>
+				<p>Alle Rollenrechte dieser Organisation werden zurückgesetzt. Eigene Benutzerrechte bleiben bestehen.</p>
+				<label><input type="checkbox" name="confirm" value="yes" required/>Zurücksetzen bestätigen</label>
+				<button type="submit" class="button ghost">Auf Standard zurücksetzen</button>
+			</form>
+		</details>
+	}
+}
+
+templ RechteSwitch(data RechteData, family, area string, grant authz.MatrixGrant) {
+	if grant.Capability=="" {
+		<div class="rights-switch">
+			<label><input type="checkbox" checked?={ grant.Note!="unavailable" } disabled/><span>{ string(grant.Action) }</span></label>
+			<small>
+				if grant.Note=="unavailable" {
+					Keine eigenständige Aktion in diesem Bereich.
+				} else {
+					Durch Zuordnung oder Produktregel festgelegt.
+				}
+			</small>
+		</div>
+	} else if authz.LockedFor(family, grant.Capability) {
+		<div class="rights-switch"><label><input type="checkbox" checked?={ data.allowed(family,grant.Capability) } disabled/><span>{ string(grant.Action) }</span></label><small>{ lockNote(family, grant.Capability) }</small></div>
+	} else {
+		<form class="rights-switch" method="post" action="/app/verwaltung/rechte" data-rights-switch data-rights-family={ family } data-rights-capability={ string(grant.Capability) }>
+			<input type="hidden" name="operation" value="set"/><input type="hidden" name="family" value={ family }/><input type="hidden" name="area" value={ area }/><input type="hidden" name="capability" value={ string(grant.Capability) }/>
+			<label><input type="checkbox" name="allowed" value="1" checked?={ data.allowed(family,grant.Capability) } aria-label={ family + " · " + area + " · " + string(grant.Action) }/><span>{ string(grant.Action) }</span></label>
+			<small>{ authz.CapabilityLabel(grant.Capability) }</small>
+			if data.changed(family,grant.Capability) {
+				<small class="rights-changed">Abweichend vom Standard</small>
+			}
+			<button type="submit" class="button ghost" data-rights-save>Speichern</button>
+			<small role="status" data-rights-status></small>
+		</form>
+	}
 }

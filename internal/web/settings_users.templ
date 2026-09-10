@@ -8,6 +8,7 @@ templ UserSettingsPage(data UserSettingsPageData) {
 
 templ UserSettingsContent(data UserSettingsPageData) {
 	@UserSettingsStyles()
+	@UserRightsStyles()
 	@PortalSectionLanding(
 		PortalSectionLandingData{
 			Portal: data.Portal,
@@ -32,6 +33,9 @@ templ UserSettingsBody(data UserSettingsPageData) {
 	<div data-templ-user-settings>
 		<div class="metrics four"><span><strong>{ data.UserCount }</strong><small>Gesamt</small></span><span><strong>{ data.ActiveUserCount }</strong><small>Aktiv</small></span><span><strong>{ data.InvitedUserCount }</strong><small>Eingeladen</small></span><span><strong>{ data.DisabledUserCount }</strong><small>Deaktiviert</small></span></div>
 		@SettingsFlash(data.InviteMsg, data.InviteOK)
+		if data.RightsSaved {
+			@SettingsFlash("Berechtigungen gespeichert.", true)
+		}
 		@UserInvite(data)
 		<div class="users-layout" id="access-list">
 			<section class="panel people-panel" aria-labelledby="people-title">
@@ -124,7 +128,13 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 	<section class="panel user-access" id={ "access-" + user.Email } data-user-access={ user.Email } aria-labelledby={ "access-title-" + user.Email } tabindex="-1">
 		<p class="eyebrow">Zugang &amp; Berechtigungen</p>
 		<header class="access-person"><span class="user-avatar" aria-hidden="true">{ user.Initials }</span><div><h2 id={ "access-title-" + user.Email }>{ user.DisplayName }</h2>@UserStatus(user)</div></header>
-		<dl class="access-facts"><dt>Rolle</dt><dd>{ user.Role }</dd><dt>Berechtigungsprofil</dt><dd>{ userAccessProfile(user) }</dd></dl>
+		<dl class="access-facts"><dt>Rolle</dt><dd>{ user.Role }</dd><dt>Berechtigungsprofil</dt><dd>
+			if len(data.Rights.grants(user.Email)) > 0 {
+				Eigene Rechte
+			} else {
+				{ userAccessProfile(user) }
+			}
+		</dd></dl>
 		<section class="access-units"><h3>Zugeordnete Einheiten</h3><p>{ len(user.UnitList) } Einheiten insgesamt</p>
 			if user.HasUnits {
 				<details class="unit-tree" open><summary>@PortalAssetIcon("building-2")<span><strong>{ portalHouseTitle(data.Portal.HouseName, data.Portal.Address) }</strong><small>{ portalHousePlace(data.Portal.Address) }</small></span>
@@ -161,6 +171,9 @@ templ UserAccessDetail(data UserSettingsPageData, user view.UserRow) {
 					</ul></details>
 				}
 			</details>
+			if data.Rights.Enabled {
+				@UserOwnRights(data.Rights, user.Email)
+			}
 			<details class="permission-family"><summary>Sonderrechte
 				@DisclosureChevron()
 			</summary><ul>
@@ -219,6 +232,9 @@ templ UserEditDialog(data UserSettingsPageData, user view.UserRow) {
 			@DisclosureChevron()
 		</summary>@AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked)</details>
 		<label class="check-card"><input type="checkbox" name="deactivated" value="1" checked?={ user.Deactivated }/><span><strong>Zugang deaktivieren</strong><small>Die Anmeldung wird gesperrt; der Eintrag bleibt reaktivierbar.</small></span></label><button class="button primary" type="submit">Änderungen speichern</button></form>
+		if data.Rights.Enabled && data.Rights.Editable {
+			@UserRightsProfiles(data.Rights, user.Email)
+		}
 		if !user.IsConfig {
 			<details class="danger"><summary>Zugang dauerhaft entfernen
 				@DisclosureChevron()

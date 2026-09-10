@@ -414,6 +414,9 @@ func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bo
 	// is the point where the identity every query filters on should be fixed —
 	// a slug that arrives later cannot re-point what this store answers for.
 	store := a.energyFor(ac).ForHome(homeKey)
+	if allowed, configured := ac.policy.Configured(ac.actor(), capabilityManageEnergy); configured {
+		return store, allowed
+	}
 	if a.isEnergyHouseAdmin(ac) {
 		return store, true
 	}
@@ -457,6 +460,9 @@ func (a *app) energyStoreForHome(ac authCtx, homeKey string) (energy.Storage, bo
 }
 
 func (a *app) canManageEnergy(ac authCtx) bool {
+	if allowed, configured := ac.policy.Configured(ac.actor(), capabilityManageEnergy); configured {
+		return allowed && roleCanUseResidentAreas(ac.role)
+	}
 	if a.isEnergyHouseAdmin(ac) {
 		return true
 	}
@@ -480,6 +486,9 @@ func (a *app) canManageHomeIdentity(ac authCtx) bool {
 }
 
 func (a *app) canControlEnergy(ac authCtx) bool {
+	if allowed, configured := ac.policy.Configured(ac.actor(), capabilityControlEnergy); configured {
+		return allowed && roleCanUseResidentAreas(ac.role)
+	}
 	// The house-wide mode is a property decision, not a technical support
 	// permission. Legacy energy-control grants intentionally do not widen it.
 	if a.isEnergyHouseAdmin(ac) {

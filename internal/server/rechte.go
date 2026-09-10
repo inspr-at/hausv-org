@@ -9,8 +9,11 @@ import (
 )
 
 func (a *app) rechtePage(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	ac = a.organisationHouseContext(r.Context(), &ac)
+	data := a.rightsData(ac)
+	data.Saved = r.URL.Query().Get("rights") == "saved"
 	var rendered bytes.Buffer
-	if err := web.RechtePage(a.verwaltungShell(r.Context(), &ac, "rechte")).Render(r.Context(), &rendered); err != nil {
+	if err := web.RechtePage(a.verwaltungShell(r.Context(), &ac, "rechte"), data).Render(r.Context(), &rendered); err != nil {
 		logError("templ rechte render failed", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

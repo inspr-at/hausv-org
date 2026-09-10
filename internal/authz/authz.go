@@ -17,9 +17,11 @@ type Capability string
 // Person is deliberately carried even though today's role policy does not use
 // it yet: callers must present the complete authorization subject.
 type Actor struct {
-	Person string
-	Tenant string
-	Role   string
+	Person       string
+	Tenant       string
+	Role         string
+	Organisation string
+	Policy       *Policy
 }
 
 // Resource identifies the tenant that owns an object being authorized.
@@ -47,7 +49,7 @@ func Can(actor Actor, action Capability, resource Resource) bool {
 	if !sameTenant(actor, resource) {
 		return false
 	}
-	return RoleHasCapability(actor.Role, action)
+	return actor.Policy.Can(actor, action)
 }
 
 func CanManageContacts(actor Actor, resource Resource) bool {

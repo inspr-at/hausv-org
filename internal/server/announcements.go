@@ -343,7 +343,7 @@ func (a *app) announcementViewsWithReadState(tenant store.TenantRef, items []ann
 	tenantSlug := tenant.Slug
 	views := announcementViewsWithReadState(items, now, includeStatus, lastSeen)
 	for i := range views {
-		views[i].CanManage = canManageAnnouncements(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
+		views[i].CanManage = canManageAnnouncements(a.actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
 	}
 	if a == nil || a.attachmentStore == nil {
 		return views

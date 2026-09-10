@@ -885,7 +885,7 @@ func (a *app) handoverViewForActor(tenant store.TenantRef, email string, role st
 		IsFiled:            status == handoverStatusFiled,
 		CanFile:            status == handoverStatusConfirmed || status == handoverStatusDraft,
 		CanChangeFiles:     handoverCanChangeFiles(item),
-		CanManageDocuments: can(actorFor(email, tenantSlug, role), capabilityManageDocuments, resourceFor(item.TenantSlug)),
+		CanManageDocuments: can(a.actorFor(email, tenantSlug, role), capabilityManageDocuments, resourceFor(item.TenantSlug)),
 		Outgoing:           handoverPartyLabel(item.OutgoingName, item.OutgoingEmail),
 		Incoming:           handoverPartyLabel(item.IncomingName, item.IncomingEmail),
 		Rooms:              item.Rooms,

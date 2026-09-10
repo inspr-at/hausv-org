@@ -158,7 +158,11 @@ func (a *app) requireVerwaltung(next authedHandler) authedHandler {
 		managed := a.managedTenants(&ac)
 		allowed := false
 		for _, tenant := range managed {
-			if can(actorFor(ac.email, tenant.Ref.Slug, tenant.Role), capabilityManageIssues, resourceFor(tenant.Ref.Slug)) {
+			// HAUSV-699: the organisation administration (non-delegable rights) keeps
+			// the Verwaltung area even when it switches off delegable rights for
+			// its own family; otherwise it could lock itself out of the rights page.
+			actor, resource := a.actorFor(ac.email, tenant.Ref.Slug, tenant.Role), resourceFor(tenant.Ref.Slug)
+			if can(actor, capabilityManageIssues, resource) || can(actor, capabilityManageUsers, resource) || can(actor, capabilityPlatformAdmin, resource) {
 				allowed = true
 				break
 			}
@@ -207,6 +211,7 @@ func (a *app) organisationHouseContext(ctx context.Context, ac *authCtx) authCtx
 			house := *ac
 			house.tenant, house.tenantRef, house.role = tenant, identity.Ref(), role
 			house.repositories = a.repositoriesFor(identity.Ref())
+			house.policy = a.capabilityPolicy(ctx, tenant, ac.preview != nil)
 			return house, true
 		}
 		return authCtx{}, false

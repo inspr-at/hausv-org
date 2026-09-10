@@ -128,7 +128,7 @@ func (a *app) sessionActor(r *http.Request) (authCtx, bool) {
 	if !ok || tenantSlug != tenant.Slug {
 		return authCtx{}, false
 	}
-	return authCtx{email: email, role: role, tenant: tenant}, true
+	return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, tenant: tenant}, true
 }
 
 // wantsHTMLErrorPage reports whether this request is a person navigating to a

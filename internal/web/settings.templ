@@ -36,6 +36,8 @@ type SettingsProfile struct {
 }
 
 type ProfileSettingsPageData struct {
+	EffectiveRights []EffectiveRight
+	RightsTenant string
 	Portal         PortalPageData
 	Email          string
 	Profile        SettingsProfile
@@ -101,6 +103,8 @@ type BuildingSettingsPageData struct {
 }
 
 type UserSettingsPageData struct {
+	Rights UserRightsData
+	RightsSaved bool
 	Portal                       PortalPageData
 	AssetVersion                 string
 	Users                        []view.UserRow
@@ -335,6 +339,7 @@ templ ProfileSettingsBody(data ProfileSettingsPageData) {
 			<details class="note panel" open><summary>Was andere sehen
 				@DisclosureChevron()
 			</summary><div><ul class="facts"><li><strong>Name</strong><span>Steht an Ihren Beiträgen, Anliegen und Stimmabgaben.</span></li><li><strong>E-Mail und Telefon</strong><span>Nur sichtbar, wenn Sie den Verzeichniseintrag freigeben.</span></li><li><strong>Verzeichniseintrag</strong><span>{ settingsDirectoryStatus(data.Profile.DirectoryOptIn) }</span></li></ul><a class="text-link" href="/app/kontakte">Kontakte ansehen</a></div></details>
+			@MyPermissions(data.EffectiveRights, data.RightsTenant)
 			<details class="note panel"><summary>Konto &amp; Berechtigungen
 				@DisclosureChevron()
 			</summary><div class="facts"><div class="chips">

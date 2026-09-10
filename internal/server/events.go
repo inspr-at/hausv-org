@@ -354,7 +354,7 @@ func (a *app) eventViews(tenant store.TenantRef, items []houseEvent, now time.Ti
 	tenantSlug := tenant.Slug
 	views := eventViews(items, now)
 	for i := range views {
-		views[i].CanManage = canManageEvents(actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
+		views[i].CanManage = canManageEvents(a.actorFor(actorEmail, tenantSlug, role), resourceFor(items[i].TenantSlug))
 		if a == nil || a.attachmentStore == nil {
 			continue
 		}
