@@ -542,8 +542,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 		}
 	}
 	// A fresh demo day imports each mailbox fixture once again. The ledger
-	// prevents duplicate imports until the next reset.
-	for _, table := range []string{"intake_items", "intake_mail_seen", "org_settings", "textbausteine"} {
+	// prevents duplicate imports until the next reset. Rights a demo visitor
+	// configured (HAUSV-699) go back to the standard matrix as well (HAUSV-730).
+	for _, table := range []string{"intake_items", "intake_mail_seen", "org_settings", "textbausteine", "organisation_capability_overrides", "user_capability_grants", "capability_profiles"} {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE org_key=$1`, orgKey); err != nil {
 			return err
 		}
