@@ -497,6 +497,8 @@ const (
 	auditActionEventCreate             = store.AuditActionEventCreate
 	auditActionEventUpdate             = store.AuditActionEventUpdate
 	auditActionEventDelete             = store.AuditActionEventDelete
+	auditActionSupportViewStart        = store.AuditActionSupportViewStart
+	auditActionSupportViewEnd          = store.AuditActionSupportViewEnd
 	auditActionLogin                   = store.AuditActionLogin
 	auditActionContextSwitch           = store.AuditActionContextSwitch
 	auditActionParkingMonth            = store.AuditActionParkingMonth
@@ -707,6 +709,7 @@ const (
 	permissionParking             = store.PermissionParking
 	permissionEnergyView          = store.PermissionEnergyView
 	permissionEnergyConfigure     = store.PermissionEnergyConfigure
+	permissionSupportView         = store.PermissionSupportView
 	permissionEnergyControl       = store.PermissionEnergyControl
 	permissionEnergyCaretaker     = store.PermissionEnergyCaretaker
 	authMethodEmail               = store.AuthMethodEmail
@@ -1111,6 +1114,9 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}", a.action(a.requireVerwaltung(a.textbausteinSaveAction)))
 	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}/deaktivieren", a.action(a.requireVerwaltung(a.textbausteinDeactivateAction)))
 	mux.HandleFunc("POST /app/verwaltung/textbausteine/{key}/aktivieren", a.action(a.requireVerwaltung(a.textbausteinActivateAction)))
+	mux.HandleFunc("GET /app/support-view", a.page(a.supportViewPage))
+	mux.HandleFunc("POST /app/support-view/start", a.action(a.startSupportView))
+	mux.HandleFunc("POST /app/support-view/end", a.endSupportView)
 	mux.HandleFunc("POST /app/ansicht/start", a.action(a.rolePreviewStart))
 	mux.HandleFunc("POST /app/ansicht/ende", a.action(a.rolePreviewEnd))
 	mux.HandleFunc("GET /app/hilfe", a.page(a.helpPage))
@@ -3872,7 +3878,7 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	calendarFeedURL := ""
 	if modules.Events {
-		if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+		if token, err := a.calendarFeedTokenForActor(ac); err == nil {
 			calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 		}
 	}
@@ -5296,7 +5302,7 @@ func (a *app) createInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		Role:        inviteRole,
 		Status:      "Eingeladen",
 		Tenants:     []string{tenant.Slug},
-		Permissions: parsePermissionForm(r.Form),
+		Permissions: supportPermissionsForActor(ac, parsePermissionForm(r.Form), false),
 		AuthMethods: parseAuthMethodForm(r.Form),
 	}
 
@@ -5476,7 +5482,7 @@ func (a *app) editInvite(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		updated.LastName = strings.TrimSpace(r.FormValue("last_name"))
 	}
 	updated.Role = newRole
-	updated.Permissions = parsePermissionForm(r.Form)
+	updated.Permissions = supportPermissionsForActor(ac, parsePermissionForm(r.Form), effectiveProfile.HasPermission(permissionSupportView))
 	updated.AuthMethods = parseAuthMethodForm(r.Form)
 	updated.Deactivated = newDeactivated
 	if len(updated.Tenants) == 0 {
@@ -6114,6 +6120,12 @@ func (a *app) currentUser(r *http.Request) (string, string, string, bool) {
 			return "", "", "", false
 		}
 		role = session.Role
+	}
+	if session.SupportTargetEmail != "" {
+		if !a.supportSessionAllowed(session) {
+			return "", "", "", false
+		}
+		return session.SupportTargetEmail, session.SupportTargetRole, session.TenantSlug, true
 	}
 	return session.Email, role, session.TenantSlug, true
 }
@@ -7208,6 +7220,7 @@ func userRowFrom(p userProfile) userRow {
 		PermissionList:         permissionLabelList(p.Permissions),
 		ParkingChecked:         p.HasPermission(permissionParking),
 		EnergyCaretakerChecked: p.HasPermission(permissionEnergyCaretaker),
+		SupportViewChecked:     p.HasPermission(permissionSupportView),
 		AuthLabel:              authMethodsLabel(p.AuthMethods),
 		AuthList:               authMethodsLabelList(p.AuthMethods),
 		EmailAuthChecked:       p.AllowsAuthMethod(authMethodEmail),
@@ -7292,6 +7305,7 @@ func parsePermissionForm(values url.Values) []string {
 		permissionEnergyConfigure: {},
 		permissionEnergyControl:   {},
 		permissionEnergyCaretaker: {},
+		permissionSupportView:     {},
 	}
 	out := []string{}
 	for _, permission := range normalizePermissions(values["permissions"]) {

@@ -699,7 +699,7 @@ func (a *app) handoverProtocol(w http.ResponseWriter, r *http.Request, ac authCt
 	filename := "uebergabe-" + item.ID + "-protokoll.pdf"
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
-	a.recordAudit(auditEvent{
+	a.recordAuthenticatedReadAudit(ac, auditEvent{
 		TenantSlug: tenant.Slug,
 		ActorEmail: email,
 		ActorRole:  role,

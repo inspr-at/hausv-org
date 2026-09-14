@@ -48,7 +48,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		past = nil
 	}
 	calendarFeedURL := ""
-	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+	if token, err := a.calendarFeedTokenForActor(ac); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	msg, msgOK := eventMessage(r.URL.Query().Get("event"))

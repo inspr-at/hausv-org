@@ -1,0 +1,45 @@
+package web
+
+import "fmt"
+
+type SupportViewData struct {
+ TargetName, TargetRole, HouseName, EndPath string
+ EndsInMinutes int
+}
+
+type SupportViewTarget struct { Email, Name, Role string }
+
+templ SupportViewBanner(state SupportViewData) {
+ <link rel="stylesheet" href={ "/assets/support-view.css?v=" + portalAssetVersion() }/>
+ <section class="support-view-banner" aria-label="Aktive Supportansicht" data-support-view-banner>
+  <div><strong>Portal anzeigen als { state.TargetName } · { state.TargetRole }</strong><span>{ state.HouseName } · schreibgeschützt · endet in { fmt.Sprint(state.EndsInMinutes) } Min</span></div>
+  <form method="post" action={ templ.SafeURL(state.EndPath) }><button type="submit">Supportansicht beenden</button></form>
+ </section>
+ <script defer src={ "/assets/support-view.js?v=" + portalAssetVersion() }></script>
+}
+
+templ SupportViewPage(portal PortalPageData, targets []SupportViewTarget) {
+ @SettingsFrame(portal, "Supportansicht", nil, supportViewContent(portal, targets))
+}
+
+templ supportViewContent(portal PortalPageData, targets []SupportViewTarget) {
+ <main id="main-content" class="portal-section-landing" tabindex="-1" data-skip-target>
+  <header class="portal-section-header"><div class="portal-section-header-copy"><p class="portal-section-identity">Support · { portal.HouseName }</p><h1>Portal anzeigen als …</h1><p class="portal-section-lede">Wählen Sie eine freigegebene Person und deren Rolle in dieser Liegenschaft. Eine andere Liegenschaft wählen Sie oben im Menü.</p></div></header>
+  <div class="portal-section-content">
+   <p>15 Minuten · schreibgeschützt · wird mit Ihrer Administratoridentität protokolliert</p>
+   if len(targets)==0 {
+ <p>In dieser Liegenschaft ist keine andere Person für die Supportansicht verfügbar.</p>
+ }
+   <div class="support-targets">
+    for _, target := range targets {
+     <form method="post" action="/app/support-view/start" data-support-view-start>
+      <input type="hidden" name="tenant" value={ portal.TenantSlug }/><input type="hidden" name="target_email" value={ target.Email }/><input type="hidden" name="target_role" value={ target.Role }/>
+      <div><strong>{ target.Name }</strong><span>{ target.Email } · { target.Role }</span></div><button class="button" type="submit" aria-label={ "Portal anzeigen als " + target.Name + " · " + target.Role }>Ansicht starten</button>
+     </form>
+    }
+   </div>
+   <p><a href="/app">Zurück zum Portal</a></p>
+  </div>
+ </main>
+ <style>.support-targets{display:grid;gap:12px;margin:24px 0}.support-targets form{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid var(--line);background:var(--panel);border-radius:var(--radius-sm)}.support-targets form>div{min-width:0}.support-targets strong,.support-targets span{display:block;overflow-wrap:anywhere}.support-targets span{color:var(--muted);font-size:12px;margin-top:4px}.support-targets button{flex-shrink:0}@media(max-width:600px){.support-targets form{align-items:stretch;flex-direction:column}}</style>
+}

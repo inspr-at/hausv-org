@@ -17,7 +17,7 @@ import (
 // switcherDirectory contains metadata only. No cross-tenant issue reads are
 // performed until a bounded set of entries is actually displayed.
 func (a *app) switcherDirectory(ac *authCtx) []web.LiegenschaftEntry {
-	if ac.preview != nil {
+	if ac.preview != nil || ac.supportView != nil {
 		return []web.LiegenschaftEntry{{Key: ac.tenant.Slug + "|" + ac.role, Tenant: ac.tenant.Slug, Name: houseDisplayName(ac.tenant), Address: ac.tenant.Address, Role: ac.role, Group: "Persönlich", Current: true}}
 	}
 	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
@@ -44,7 +44,10 @@ func (a *app) switcherCounts(ac *authCtx, entries []web.LiegenschaftEntry) {
 // in both shells. Overview pages deliberately have no active property segment.
 func (a *app) scopeContext(ac *authCtx, organisation string, overview bool) web.ScopeContext {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
-	data := web.ScopeContext{Ready: true, CanUseSettings: roleCanUseResidentAreas(ac.role), DisplayName: profile.DisplayName(), Initials: profile.Initials(), AvatarURL: a.profilePictureURL(ac.email), Role: ac.role, Preview: rolePreviewPortalData(ac), PreviewChoices: a.rolePreviewChoices(ac)}
+	data := web.ScopeContext{Ready: true, CanUseSettings: roleCanUseResidentAreas(ac.role), DisplayName: profile.DisplayName(), Initials: profile.Initials(), AvatarURL: a.profilePictureURL(ac.email), Role: ac.role, SupportView: supportViewPortalData(ac), Preview: rolePreviewPortalData(ac), PreviewChoices: a.rolePreviewChoices(ac)}
+	if a.canStartSupportView(ac) {
+		data.SupportURL = ac.tenant.PublicURL("/app/support-view")
+	}
 	if ac.preview != nil && ac.realRole != "" {
 		data.Role = ac.realRole
 	}

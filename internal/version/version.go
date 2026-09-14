@@ -90,6 +90,7 @@ func DisplayVersion(version string) string {
 
 func Notes() []Note {
 	return []Note{
+		{Version: "1.11.0", Date: "14. September 2026", Kind: "Neu", Headline: "Support aus Sicht der betroffenen Person", Intro: "Freigegebene Admins prüfen das Portal in der konkreten Rolle einer Person.", Items: []NoteItem{{Label: "Supportansicht", Text: "Schreibgeschützt, auf 15 Minuten begrenzt und jederzeit klar erkennbar. Start, Ende und Dateizugriffe werden mit der echten Administratoridentität protokolliert."}}},
 		{
 			Version:  "1.10.0",
 			Date:     "14. September 2026",

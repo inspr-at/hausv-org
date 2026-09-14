@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.11.0] - 2026-09-14
+
+### Neu
+
+- Supportansicht: Separat freigegebene Admins können das Portal als bestimmte Person und Rolle einer Liegenschaft prüfen. Die Ansicht ist schreibgeschützt, auf 15 Minuten begrenzt und deutlich gekennzeichnet; Beginn, Ende und Dateizugriffe werden unter der echten Administratoridentität protokolliert.
+
 ## [1.10.0] - 2026-09-14
 
 ### Neu

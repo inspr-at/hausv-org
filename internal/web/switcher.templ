@@ -10,6 +10,8 @@ type ScopeContext struct {
 	DisplayName, Initials, AvatarURL, Role string
 	Segments []string
 	Switcher LiegenschaftSwitcherData
+	SupportView *SupportViewData
+	SupportURL string
 	Preview *RolePreviewState
 	PreviewChoices []RolePreviewChoice
 }
@@ -150,7 +152,7 @@ templ ContextPreview(data ScopeContext, id string) {
 		</form>
 	}
 	if len(data.PreviewChoices) > 0 {
-		@RolePreviewChooser(id + "-preview", data.PreviewChoices) {
+		@RolePreviewChooser(id + "-preview", data.PreviewChoices, data.SupportURL) {
 			<span class="context-view-chip">Ansicht als …</span>
 		}
 	}

@@ -46,6 +46,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		marker       string
 		extraScripts []string
 	}{
+		{"SupportViewPage", SupportViewPage(portal, nil), "data-templ-settings", nil},
 		{"PortalPage", PortalPage(portal), "data-templ-portal", nil},
 		{"PortalOrganisationPage", PortalOrganisationPage(portal, "Portfolio", nil, nil, nil, VerwaltungPlaceholder()), "data-templ-verwaltung", nil},
 		{"AnnouncementsPage", AnnouncementsPage(AnnouncementsPageData{Portal: portal, AssetVersion: assetVersion, CanManageAnnouncements: true}), "data-templ-portal", []string{"announcements.js", "attachments.js"}},

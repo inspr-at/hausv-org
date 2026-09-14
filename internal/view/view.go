@@ -1282,6 +1282,7 @@ func AuditEventViewFrom(event store.AuditEvent) AuditEventView {
 func AuditActionOptions(selected string) []SelectOption {
 	options := []SelectOption{{Value: "", Label: "Alle Aktionen", Selected: selected == ""}}
 	for _, action := range []string{
+		store.AuditActionSupportViewStart, store.AuditActionSupportViewEnd,
 		store.AuditActionLogin,
 		store.AuditActionInviteCreate,
 		store.AuditActionInviteUpdate,
@@ -1347,6 +1348,10 @@ func AuditActionLabel(action string) string {
 		return "Eigenes Benutzerrecht geändert"
 	case store.AuditActionCapabilityProfile:
 		return "Berechtigungsprofil gespeichert"
+	case store.AuditActionSupportViewStart:
+		return "Supportansicht gestartet"
+	case store.AuditActionSupportViewEnd:
+		return "Supportansicht beendet"
 	case store.AuditActionLogin:
 		return "Anmeldung"
 	case store.AuditActionContextSwitch:
@@ -2106,6 +2111,7 @@ type UserRow struct {
 	PermissionList         []string
 	ParkingChecked         bool
 	EnergyCaretakerChecked bool
+	SupportViewChecked     bool
 	OutstandingBalance     string
 	HasOutstanding         bool
 	AuthLabel              string
@@ -2462,6 +2468,8 @@ func PermissionLabelList(permissions []string) []string {
 	labels := []string{}
 	for _, permission := range store.NormalizePermissions(permissions) {
 		switch permission {
+		case store.PermissionSupportView:
+			labels = append(labels, "Supportansicht")
 		case store.PermissionParking:
 			labels = append(labels, "Parkplatznutzung")
 		case store.PermissionEnergyCaretaker:

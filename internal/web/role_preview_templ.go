@@ -156,7 +156,7 @@ func RolePreviewBand(state RolePreviewState) templ.Component {
 	})
 }
 
-func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component {
+func RolePreviewChooser(id string, choices []RolePreviewChoice, supportURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -345,20 +345,44 @@ func RolePreviewChooser(id string, choices []RolePreviewChoice) templ.Component 
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"role-preview-row role-preview-row-disabled\" aria-disabled=\"true\"><span class=\"role-preview-dot\" aria-hidden=\"true\"></span> <span class=\"role-preview-row-copy\"><strong>Bestimmte Person (Supportansicht)</strong><small>Nur Plattform-Admin</small></span></div></div><div class=\"role-preview-footnote\">15 Minuten · schreibgeschützt · wird protokolliert</div><button class=\"role-preview-mobile-cancel\" type=\"button\" popovertarget=\"")
+		if supportURL != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<a class=\"role-preview-row\" href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var22 templ.SafeURL
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(supportURL))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 73, Col: 80}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" data-support-view-link><span class=\"role-preview-dot\" aria-hidden=\"true\"></span><span class=\"role-preview-row-copy\"><strong>Bestimmte Person (Supportansicht)</strong><small>Person und Rolle auswählen</small></span></a>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"role-preview-row role-preview-row-disabled\" aria-disabled=\"true\"><span class=\"role-preview-dot\" aria-hidden=\"true\"></span><span class=\"role-preview-row-copy\"><strong>Bestimmte Person (Supportansicht)</strong><small>Separate Freigabe erforderlich</small></span></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><div class=\"role-preview-footnote\">15 Minuten · schreibgeschützt · wird protokolliert</div><button class=\"role-preview-mobile-cancel\" type=\"button\" popovertarget=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(id)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 78, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/role_preview.templ`, Line: 79, Col: 78}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" popovertargetaction=\"hide\">Abbrechen</button></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" popovertargetaction=\"hide\">Abbrechen</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
