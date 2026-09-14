@@ -106,7 +106,7 @@ async function contextBarBox(page) {
 }
 
 async function toggleMobileMenu(page) {
-  const summary = page.locator('.mobile-head details > summary').first();
+  const summary = page.locator('[data-context-bar] details > summary').first();
   if (!(await summary.count())) fail('Mobiles Menü: kein Bedienelement gefunden');
   await summary.click();
 }
@@ -307,7 +307,7 @@ async function assertPortalChromeKit() {
       const heroRect = hero?.getBoundingClientRect();
       const headerButtons = [...(header?.querySelectorAll('.button') || [])];
       const sidebar = shell?.querySelector('aside.sidebar');
-      const mobileIdentity = document.querySelector('.mobile-head .context-scope .house-header-copy strong')?.textContent?.trim() || '';
+      const mobileIdentity = document.querySelector('[data-context-bar] .context-scope .house-header-copy strong')?.textContent?.trim() || '';
       const switchRows = [...document.querySelectorAll('.switcher-row-copy small:last-child')]
         .map((node) => node.textContent?.trim() || '');
       const strip = landing?.querySelector(':scope > .energy-mode-strip');
@@ -335,7 +335,8 @@ async function assertPortalChromeKit() {
         wrappedActions: headerButtons.filter((button) => getComputedStyle(button).whiteSpace !== 'nowrap').length,
         sidebarMap: Boolean(sidebar?.querySelector(expected.overview ? '.side-map-portfolio' : '.side-map')),
         sidebarAddressCount: sidebar?.querySelectorAll('.side-address-label small').length || 0,
-        sidebarAccountRole: document.querySelector('.desktop-context-bar .context-role')?.textContent?.trim() || '',
+        headerAddressCount: document.querySelectorAll('[data-context-bar] .house-header-copy small').length,
+        sidebarAccountRole: document.querySelector('[data-context-bar] .context-role')?.textContent?.trim() || '',
         mobileIdentity,
         switchRows,
         boardContext: Boolean(landing?.querySelector('.portal-section-context a[href$="/app/anliegen"]')),
@@ -362,7 +363,7 @@ async function assertPortalChromeKit() {
     if (result.filledActions.length || result.borderlessActions.length || result.wrappedActions) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
     }
-    if (!result.sidebarMap || result.sidebarAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
+    if (!result.sidebarMap || result.sidebarAddressCount !== 0 || result.headerAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
       fail(`Portal-Chrome ${route.path}: Sidebar-Invarianten verletzt (${JSON.stringify(result)})`);
     }
     if (!result.mobileIdentity || !result.switchRows.length ||
@@ -430,7 +431,7 @@ async function assertPortalSwitcherAtomic() {
   const page = await localLogin(context, 'multi@example.com');
   await page.goto(`${baseURL}/demo/app`, { waitUntil: 'networkidle' });
 
-  const picker = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"]');
+  const picker = page.locator('[data-context-bar] details.house-picker[data-house-picker-shell="scope"]');
   if ((await picker.count()) !== 1) {
     fail(`Hauswechsler fehlt in der Seitenleiste oder ist mehrfach vorhanden (${await picker.count()})`);
   }
@@ -441,8 +442,8 @@ async function assertPortalSwitcherAtomic() {
   await picker.locator('form').filter({ has: page.locator('input[name="tenant"][value="haus-b"]') })
     .filter({ has: page.locator('input[name="role"][value="Admin"]') }).getByRole('button').click();
   await page.waitForLoadState('networkidle');
-  const after = page.locator('aside.sidebar details.house-picker[data-house-picker-shell="sidebar"] > summary .house-header-copy strong');
-  const accountRole = page.locator('.desktop-context-bar .context-role').first();
+  const after = page.locator('[data-context-bar] details.house-picker[data-house-picker-shell="scope"] > summary .house-header-copy strong');
+  const accountRole = page.locator('[data-context-bar] .context-role').first();
   if (new URL(page.url()).pathname !== '/haus-b/app' ||
       (await after.textContent())?.trim() !== 'Haus B' ||
       !(await accountRole.textContent())?.includes('Admin')) {
@@ -451,10 +452,10 @@ async function assertPortalSwitcherAtomic() {
 
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    const menu = page.locator('.mobile-head > details.menu');
+    const menu = page.locator('[data-context-bar] > details.menu');
     if ((await menu.getAttribute('open')) === null) await menu.locator(':scope > summary').click();
     const mobileGeometry = await page.evaluate(() => {
-      const summary = document.querySelector('.mobile-head details.house-picker[data-house-picker-shell="mobile"] > summary');
+      const summary = document.querySelector('[data-context-bar] details.house-picker[data-house-picker-shell="scope"] > summary');
       const box = summary?.getBoundingClientRect();
       return {
         overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -505,15 +506,15 @@ async function assertSharedAppShellNavigation() {
     }
 
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
-    const menu = page.locator('.mobile-head > details.menu');
+    const menu = page.locator('[data-context-bar] > details.menu');
     const summary = menu.locator(':scope > summary');
     const panel = menu.locator(':scope > .menu-panel');
     const navigation = panel.locator('nav[aria-label="Bereiche"]');
     // HAUSV-697/701 puts the house identity in the scope switcher and account
     // actions in their own native disclosure. Keep testing both header actions
     // and the closed navigation; the old direct identity/avatar links are gone.
-    const identity = page.locator('.mobile-head > .context-scope > [data-switcher]').last().locator(':scope > summary');
-    const account = page.locator('.mobile-head > [data-context-account]');
+    const identity = page.locator('[data-context-bar] > .context-scope > [data-switcher]').last().locator(':scope > summary');
+    const account = page.locator('[data-context-bar] > [data-context-account]');
     const accountSummary = account.locator(':scope > summary');
     const accountPanel = account.locator(':scope > .context-account-menu');
     const avatar = accountSummary.locator('.avatar');
@@ -547,7 +548,7 @@ async function assertSharedAppShellNavigation() {
     }
 
     const openGeometry = await page.evaluate(() => {
-      const panelElement = document.querySelector('.mobile-head > details.menu > .menu-panel');
+      const panelElement = document.querySelector('[data-context-bar] > details.menu > .menu-panel');
       return {
         pageOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
         panelOverflow: panelElement ? panelElement.scrollWidth > panelElement.clientWidth + 1 : null,
@@ -617,11 +618,11 @@ async function assertSharedAppShellNavigation() {
     // Wait for the panel to actually be gone, then assert — the same fix the energy Escape
     // probe needed, for the same reason. If it never goes, the wait fails and says so.
     await page.waitForFunction(() => {
-      const d = document.querySelector('.mobile-head > details.menu');
+      const d = document.querySelector('[data-context-bar] > details.menu');
       return d && !d.open && !d.querySelector(':scope > .menu-panel')?.getClientRects().length;
     }, undefined, { timeout: 3000 }).catch(() => {});
     const escapeResult = await page.evaluate(() => {
-      const details = document.querySelector('.mobile-head > details.menu');
+      const details = document.querySelector('[data-context-bar] > details.menu');
       const summaryElement = details?.querySelector(':scope > summary');
       return {
         open: details?.open,
@@ -660,7 +661,7 @@ async function assertSharedAppShellNavigation() {
       main?.focus();
       main?.click();
       return {
-        open: document.querySelector('.mobile-head > details.menu')?.open,
+        open: document.querySelector('[data-context-bar] > details.menu')?.open,
         active: document.activeElement?.id || '',
       };
     });
@@ -684,9 +685,9 @@ async function assertSharedAppShellNavigation() {
     const page = await localLogin(context, 'admin@example.com');
     await page.goto(`${baseURL}/app`, { waitUntil: 'networkidle' });
     const desktopState = await page.evaluate(() => ({
-      mobileHeaderVisible: Boolean(document.querySelector('.mobile-head')?.getClientRects().length),
+      mobileHeaderVisible: Boolean(document.querySelector('[data-context-bar] .context-navigation')?.getClientRects().length),
       navigationVisible: Boolean(document.querySelector('aside.sidebar > nav[aria-label="Bereiche"]')?.getClientRects().length),
-      accountVisible: Boolean(document.querySelector('.desktop-context-bar [data-context-account]')?.getClientRects().length),
+      accountVisible: Boolean(document.querySelector('[data-context-bar] [data-context-account]')?.getClientRects().length),
     }));
     if (desktopState.mobileHeaderVisible || !desktopState.navigationVisible || !desktopState.accountVisible) {
       fail(`App-Shell ${width}px: Desktop-Navigation ist nicht vollständig sichtbar (${JSON.stringify(desktopState)})`);
@@ -706,16 +707,16 @@ async function assertSharedAppShellNavigation() {
     fail(`App-Shell ohne JavaScript: Status ${noScriptResponse?.status() ?? 0}`);
   }
   const noScriptState = await noScriptPage.evaluate(() => ({
-    menuOpen: document.querySelector('.mobile-head > details.menu')?.open,
-    summaryVisible: Boolean(document.querySelector('.mobile-head > details.menu > summary')?.getClientRects().length),
-    panelVisible: (() => { const d = document.querySelector('.mobile-head > details.menu'); const pnl = d?.querySelector(':scope > .menu-panel'); if (!pnl) return false;
+    menuOpen: document.querySelector('[data-context-bar] > details.menu')?.open,
+    summaryVisible: Boolean(document.querySelector('[data-context-bar] > details.menu > summary')?.getClientRects().length),
+    panelVisible: (() => { const d = document.querySelector('[data-context-bar] > details.menu'); const pnl = d?.querySelector(':scope > .menu-panel'); if (!pnl) return false;
       if (d.open) return true; const r = pnl.getBoundingClientRect(); if (!r.width || !r.height) return false;
       const hit = document.elementFromPoint(Math.min(r.left + 5, innerWidth - 1), Math.min(r.top + 5, innerHeight - 1)); return Boolean(hit && pnl.contains(hit)); })(),
   }));
   if (noScriptState.menuOpen || !noScriptState.summaryVisible || noScriptState.panelVisible) {
     fail(`App-Shell ohne JavaScript: natives Menü startet nicht bedienbar geschlossen (${JSON.stringify(noScriptState)})`);
   }
-  const noScriptMenu = noScriptPage.locator('.mobile-head > details.menu');
+  const noScriptMenu = noScriptPage.locator('[data-context-bar] > details.menu');
   await noScriptMenu.locator(':scope > summary').click();
   if (await noScriptMenu.getAttribute('open') === null ||
       !(await noScriptMenu.locator(':scope > .menu-panel nav[aria-label="Bereiche"]').isVisible())) {
@@ -1634,7 +1635,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
       }
       if (route.name === 'aushang' && size.width === 390) {
         await page.evaluate(() => window.scrollTo(0, Math.min(500, document.documentElement.scrollHeight - window.innerHeight)));
-        const sticky = await page.locator('.mobile-head').evaluate((node) => {
+        const sticky = await page.locator('[data-context-bar]').evaluate((node) => {
           const box = node.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
         });
@@ -2247,7 +2248,7 @@ async function assertPage(page, persona, route, viewportName) {
     const houseHeading = route.path === '/app'
       ? await page.evaluate(() => {
           const h1 = document.querySelector('main h1');
-          const card = document.querySelector('aside.sidebar .house-header-copy strong');
+          const card = document.querySelector('[data-context-bar] .house-header-copy strong');
           return h1 && card && h1.textContent.trim() === card.textContent.trim() ? h1.textContent.trim() : '';
         })
       : '';

@@ -9,13 +9,12 @@ type SupportViewData struct {
 
 type SupportViewTarget struct { Email, Name, Role string }
 
+// Inline status inside the common header, never an additional layout band.
 templ SupportViewBanner(state SupportViewData) {
- <link rel="stylesheet" href={ "/assets/support-view.css?v=" + portalAssetVersion() }/>
- <section class="support-view-banner" aria-label="Aktive Supportansicht" data-support-view-banner>
-  <div><strong>Portal anzeigen als { state.TargetName } · { state.TargetRole }</strong><span>{ state.HouseName } · schreibgeschützt · endet in { fmt.Sprint(state.EndsInMinutes) } Min</span></div>
-  <form method="post" action={ templ.SafeURL(state.EndPath) }><button type="submit">Supportansicht beenden</button></form>
- </section>
- <script defer src={ "/assets/support-view.js?v=" + portalAssetVersion() }></script>
+ <div class="context-view" aria-label="Aktive Supportansicht" data-support-view-banner>
+  <div class="context-view-copy"><strong title={ "Portal anzeigen als " + state.TargetName + " · " + state.TargetRole }>Portal anzeigen als { state.TargetName } · { state.TargetRole }</strong><span><span class="nav-icon" aria-hidden="true">@PortalAssetIcon("lock")</span> Schreibgeschützt · endet in { fmt.Sprint(state.EndsInMinutes) } Min</span></div>
+  <form method="post" action={ templ.SafeURL(state.EndPath) }><button class="context-action" type="submit">Ansicht verlassen</button></form>
+ </div>
 }
 
 templ SupportViewPage(portal PortalPageData, targets []SupportViewTarget) {

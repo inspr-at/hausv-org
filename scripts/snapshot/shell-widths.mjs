@@ -80,19 +80,19 @@ for (const [name, route] of ROUTES) {
           const box = el.getBoundingClientRect(), style = getComputedStyle(el);
           return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
         })(),
-        mobile: vis(document.querySelector('.mobile-head')),
+        mobile: vis(document.querySelector('[data-context-bar]')),
         // The hamburger must be operable, not merely present — and matched by
         // structure, not by class. Keying this on `.menu` reported eight false
         // failures on the very code it was written to judge, because those pages
         // spell it `.mobile-menu`. A probe that only passes the layout it was
         // built for measures nothing.
-        menu: vis(document.querySelector('.mobile-head details > summary')),
+        menu: vis(document.querySelector('[data-context-bar] details > summary')),
         links: document.querySelectorAll('.nav a').length,
         // Visible is not the same as reachable. Six routes rendered the mobile
         // header AFTER the content, and one behind an empty 100vh grid, so the
         // only navigation on the page sat below the fold — off-screen on load,
         // and this probe called it visible because it had a bounding box.
-        headTop: (() => { const h = document.querySelector('.mobile-head'); return h ? Math.round(h.getBoundingClientRect().top) : null; })(),
+        headTop: (() => { const h = document.querySelector('[data-context-bar]'); return h ? Math.round(h.getBoundingClientRect().top) : null; })(),
         // The skip link is rendered by every shell but its hiding rule lived in
         // one of them (HAUSV-647): a visible "Zum Inhalt springen" over the
         // sidebar is a defect at every width, so record where it sits.
@@ -138,7 +138,7 @@ for (const [name, route] of ROUTES) {
       await p2.setViewportSize({ width: w, height: 900 });
       const state = await p2.evaluate((visibleSrc) => {
         const vis = eval(`(${visibleSrc})`);
-        const h = document.querySelector('.mobile-head');
+        const h = document.querySelector('[data-context-bar]');
         return {
           sidebar: vis(document.querySelector('.sidebar')),
         // HAUSV-704: every desktop route uses the persisted sidebar token,
@@ -149,7 +149,7 @@ for (const [name, route] of ROUTES) {
           return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
         })(),
           mobile: vis(h),
-          menu: vis(document.querySelector('.mobile-head details > summary')),
+          menu: vis(document.querySelector('[data-context-bar] details > summary')),
           links: document.querySelectorAll('.nav a').length,
           headTop: h ? Math.round(h.getBoundingClientRect().top) : null,
           templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),

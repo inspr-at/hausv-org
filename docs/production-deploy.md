@@ -561,3 +561,39 @@ Total wall-clock for restore, database, comparison and app boot: under three
 minutes; evidence (dump, blob copy, row inventories, scripts) stays in
 `/home/mba/drills/hausv-restore-20260910/` on csb1. Repeat the drill after every
 schema series and at least quarterly; record it on the HAUSV-520 line of work.
+
+## Kalender-Versionen ab 260914170935.0.0
+
+HAUSV verwendet `inspr-calendar-v2`: `YYMMDDhhmmss.0.0`, einmal in UTC
+reserviert. `VERSION` ist die maßgebliche Koordinate. `internal/version/release.json`
+und `internal/version/release.go` tragen Kanal, fortlaufende Release-Sequenz und
+den Übergang von der unveränderten letzten Legacy-Version `1.11.0` zur ersten
+Kalender-Version (Sequenz 1). Neue Releases erhöhen die Sequenz und verwenden eine
+spätere UTC-Sekunde; `.0.0` bleibt konstant. Demo und Produktion sind getrennte
+Kanäle; ein Suffix ist kein Bestandteil der Version. Alte Releases und ihre
+exakten Images bleiben für Rollbacks erhalten. Es gibt keine SemVer-Bereichs-
+oder Major/Minor-Entscheidung über die Versionsgrenze.
+
+Normale lokale Builds laufen über `bash scripts/build.sh -o hausv-org ./cmd/hausv-org`.
+Das Skript, Docker und CI prüfen vor dem Build die komplette Offline-Dateimenge,
+Hashes und Größen des gemeinsam ausgelieferten INSPR-Renderers, einschließlich
+Interaktionsmodul, Animation und Lizenz. Im Git-Checkout müssen alle Dateien
+verfolgt sein. Git-Archive/Docker-Kontexte prüfen dieselben unabhängigen Pins ohne
+Git-Datenbank. Ein zusätzliches Start-Gate prüft auch die tatsächlich eingebetteten
+Bytes. `go build` ohne das Build-Skript ist kein freigegebener Release-Buildpfad.
+Die Quell- und Manifest-Pins stehen in `internal/versionbundle/bundle.go`;
+`internal/version/release.json` dokumentiert aktive Darstellungsflächen. Es gibt
+keinen Abruf veränderlicher Einstellungen von inspr.at zur Laufzeit.
+
+Die Produktion veröffentlicht pro neuer Koordinate genau einen GitHub-Release
+mit `release-manifest.json`: Source-Commit, Abhängigkeitshashes, OCI-Digest und
+Hashes beider Connector-Binaries sowie des Servers. Bereits veröffentlichte
+Koordinaten werden nicht neu publiziert. Ein Merge ohne neue Version lässt daher
+weiterhin das bisherige Produktionsimage aktiv. Rollback verwendet den im alten
+Manifest festgehaltenen Digest bzw. bei historischen Releases den bereits
+protokollierten exakten Image-Digest; die Release-Sequenz wird nicht zurückgedreht.
+`/healthz` ergänzt den bisherigen Status um das Objekt `release` mit explizitem
+Versionsschema, Koordinate, Kanal, Sequenz und Commit. Der HTML-Build-Marker bleibt
+für ältere Deploy-Leser erhalten. Die sichtbare Anzeige verwendet den gemeinsamen
+Pretty-Renderer, bietet SemVer als reduzierte Ansicht und kopiert die kanonische
+Koordinate. Der Versionsverlauf ist eine separate Aktion.

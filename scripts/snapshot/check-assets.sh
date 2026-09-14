@@ -23,7 +23,7 @@ mkdir -p "$HV_DATA"
 
 pkg=.
 [ -d "$repo/cmd/hausv-org" ] && pkg=./cmd/hausv-org
-go build -o "$tmp/app" "$pkg" || exit 1
+bash scripts/build.sh -o "$tmp/app" "$pkg" || exit 1
 
 "$tmp/app" >"$tmp/app.log" 2>&1 &
 pid=$!

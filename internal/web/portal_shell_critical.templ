@@ -5,8 +5,8 @@ package web
 // HAUSV-720: the root canvas must also split navigation/content before body exists.
 templ PortalShellCriticalStyles() {
 	<style data-shell-critical>
-		:root{--sidebar-w:280px;--context-bar-h:40px;--shell-background:linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))}
-		html{color-scheme:light;background:linear-gradient(var(--nav),var(--nav)) top/100% var(--context-bar-h) no-repeat,var(--shell-background);background-attachment:fixed}body{background:var(--shell-background)}
+		:root{--sidebar-w:280px;--context-bar-h:72px;--shell-background:linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))}
+		html{color-scheme:light;background:linear-gradient(var(--paper),var(--paper)) top/100% var(--context-bar-h) no-repeat,var(--shell-background);background-attachment:fixed}body{background:var(--shell-background)}
 		.shell{min-height:calc(100vh - var(--context-bar-h));display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr)}
 		.sidebar{--sidebar-pad-x:18px;position:sticky;top:var(--context-bar-h);height:calc(100dvh - var(--context-bar-h));display:flex;flex-direction:column;padding:16px var(--sidebar-pad-x);background:var(--nav);color:var(--panel);overflow:auto}
 		.sidebar>.nav,.sidebar>.portal-organisation-identity{flex:0 0 auto}

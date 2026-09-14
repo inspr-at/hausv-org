@@ -42,7 +42,7 @@ pkg=.
 [ -d "$src/cmd/hausv-org" ] && pkg=./cmd/hausv-org
 
 echo "── building $ref ($pkg)"
-if ! ( cd "$src" && go build -o "$tmp/app" "$pkg" ); then
+if ! ( cd "$src" && bash scripts/build.sh -o "$tmp/app" "$pkg" ); then
     echo "build failed" >&2
     exit 1
 fi

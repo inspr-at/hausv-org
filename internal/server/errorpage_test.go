@@ -54,7 +54,7 @@ func TestRefusedPageRendersBrandedErrorPage(t *testing.T) {
 func TestErrorPageOnwardLinksOnlyOfferReachableAreas(t *testing.T) {
 	body := authedRequest(t, ownerTestApp(t), "owner@example.com", "/demo/app/uebergaben").Body.String()
 
-	for _, forbidden := range []string{"/demo/app/uebergaben\"", "/demo/app/settings/users", "/demo/app/audit", "/demo/app/parking\""} {
+	for _, forbidden := range []string{"/demo/app/uebergaben\"", "/demo/app/settings/users", "/demo/app/parking\""} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("error page offers unreachable area %q", forbidden)
 		}

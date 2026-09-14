@@ -117,6 +117,8 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			<link rel="preload" href={ portalSourceSerifURL(assetVersion) } as="font" type="font/woff2" crossorigin="anonymous"/>
 			<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 			<script src={ "/assets/app.js?v=" + assetVersion } defer></script>
+ <script type="module" src={ "/assets/product-version.js?v=" + assetVersion }></script>
+   <script src={ "/assets/support-view.js?v=" + assetVersion } defer></script>
 			for _, script := range extraScripts {
 				<script src={ "/assets/" + script + "?v=" + assetVersion } defer></script>
 			}
@@ -125,9 +127,12 @@ templ PortalDocument(title, assetVersion string, extraScripts []string, styles t
 			<style>
 				@media(max-width:400px){.verwaltung-mobile-head .mobile-identity strong{display:-webkit-box;overflow:hidden;font-size:18px;line-height:1.05;text-overflow:clip;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}.verwaltung-mobile-head .mobile-identity small{margin-top:2px}}
 			</style>
-			@styles
+			if styles != nil {
+ @styles
+ }
 			@PortalShellCriticalStyles()
 			<link rel="stylesheet" href={ "/assets/portal-shell.css?v=" + assetVersion }/>
+   <link rel="stylesheet" href={ "/assets/context-header.css?v=" + assetVersion }/>
 			// Load after the blocking sheet, before the body can paint. The script
 			// restores each complete sidebar during parsing; controls bind at DCL.
 			<script src={ "/assets/switcher.js?v=" + assetVersion }></script>
@@ -392,9 +397,6 @@ templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) 
 		}
 		<span class="nav-group nav-level-label nav-house-label">{ portalHouseGroupLabel(shell) }</span>
 		if renderHouseHeader {
-			@PortalHouseHeader(data, shell, icons)
-		}
-		if renderHouseHeader {
 			@PortalSideMapHero(data)
 		}
 		<span class="nav-house-items" data-navigation-block="house-navigation">
@@ -456,10 +458,6 @@ templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) 
 // permission-gated navigation.
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	{{ scope := portalScopeContext(data) }}
-	if scope.SupportView != nil {
- @SupportViewBanner(*scope.SupportView)
- }
-	@Kontextleiste(scope, false, nil)
 	@Kontextleiste(scope, true, PortalMobileNavigation(data))
 }
 
@@ -1045,6 +1043,7 @@ templ PortalReleaseNotes(data PortalPageData) {
 // :target rule in PortalBaseStyles shows it. With JavaScript app.js cancels the
 // navigation and opens the same element with showModal().
 templ ReleaseNotesTrigger(displayVersion string) {
+ <span class="release-version">@VersionStamp(displayVersion, version.Identity().VersionScheme)</span>
 	<a
 		class="release-trigger"
 		href="#release-history"
@@ -1052,7 +1051,7 @@ templ ReleaseNotesTrigger(displayVersion string) {
 		aria-haspopup="dialog"
 		aria-controls="release-history"
 		aria-label={ "v" + displayVersion + " · Versionsverlauf öffnen" }
-	>v{ displayVersion } · Versionsverlauf</a>
+	>Versionsverlauf</a>
 }
 
 // ReleaseHistoryDialog is rendered once per portal page, outside the sidebar, so
@@ -1066,8 +1065,9 @@ templ ReleaseHistoryDialog(notes []version.Note) {
 				<a class="release-dialog-close release-dialog-close-nojs" href="#main-content" aria-label="Versionsverlauf schließen"><span aria-hidden="true">×</span></a>
 			</div>
 			<div class="release-dialog-body" tabindex="0">
+ @VersionDisplayChoice()
 				for _, note := range notes {
-					<article class="release-entry"><small>v{ note.Version } · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
+					<article class="release-entry"><small>@VersionStamp(note.Version, version.NoteScheme(note)) · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
 						for _, item := range note.Items {
 							<li><strong>{ item.Label }:</strong> { item.Text }</li>
 						}
@@ -1135,4 +1135,26 @@ templ PortalHouseNavItem(data PortalPageData, icon, label, url string, active bo
    </button>
   </form>
  }
+}
+
+
+type PortalErrorLink struct { URL, Label, Hint string }
+
+templ PortalErrorPage(data PortalPageData, status int, headline, message, advice, primaryURL, primaryLabel string, links []PortalErrorLink) {
+ @PortalDocument(data.Title, portalAssetVersion(), nil, nil, templ.Attributes{"data-portal-error": true}) {
+  @PortalShell(data, "", PortalErrorContent(status, headline, message, advice, primaryURL, primaryLabel, links))
+ }
+}
+
+templ PortalErrorContent(status int, headline, message, advice, primaryURL, primaryLabel string, links []PortalErrorLink) {
+ <main id="main-content" class="portal-error-main" tabindex="-1" data-skip-target>
+  <small>Fehler { fmt.Sprint(status) }</small>
+  <h1>{ headline }</h1><p>{ message }</p><p>{ advice }</p>
+  <a class="button" href={ templ.SafeURL(primaryURL) }>{ primaryLabel }</a>
+  <nav class="portal-error-links" aria-label="Weitere Bereiche">
+   for _, link := range links {
+ <a href={ templ.SafeURL(link.URL) }><strong>{ link.Label }</strong><small>{ link.Hint }</small></a>
+ }
+  </nav>
+ </main>
 }

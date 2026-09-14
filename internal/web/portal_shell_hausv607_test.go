@@ -25,8 +25,16 @@ func TestRolePreviewBandAndChooserRenderOnlyWhenConfigured(t *testing.T) {
 	}
 	with := renderComponent(t, PortalPage(base))
 	for _, want := range []string{
-		"Ansicht als Eigentümer · Haus A · schreibgeschützt · endet in 12 Min",
-		`action="/app/ansicht/ende"`, `role-preview-chooser`,
+		"Vorschau: Eigentümer-Sicht", "Schreibgeschützt · endet in 12 Min", "Ansicht verlassen",
+		`action="/app/ansicht/ende"`,
+	} {
+		if !strings.Contains(with, want) {
+			t.Fatalf("configured preview missing %q", want)
+		}
+	}
+	base.RolePreview = nil
+	with = renderComponent(t, PortalPage(base))
+	for _, want := range []string{`role-preview-chooser`,
 		`action="/app/ansicht/start"`, `name="role" value="Eigentümer"`,
 		"Hausverwaltung", "Ihre Rolle · Portfolio, Posteingang, alle Häuser",
 		"Ruhiger Hausüberblick, Dokumente, Abstimmungen", "Bewohner",

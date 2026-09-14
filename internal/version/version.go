@@ -26,6 +26,7 @@ var (
 // Note is one release-notes entry rendered in the app's release dialog.
 type Note struct {
 	Version  string
+	Scheme   string
 	Date     string
 	Kind     string
 	Headline string
@@ -90,6 +91,7 @@ func DisplayVersion(version string) string {
 
 func Notes() []Note {
 	return []Note{
+		{Version: FirstCalendarVersion, Scheme: Scheme, Date: "14. September 2026", Kind: "Verbessert", Headline: "Klarer Kontext, ruhige Navigation", Intro: "Eine gemeinsame helle Kopfzeile verbindet Konto, Liegenschaft und Ansicht.", Items: []NoteItem{{Label: "Orientierung", Text: "Der vorhandene Liegenschaftssucher ist an einer Stelle erreichbar. Support- und Rollenansichten lassen sich über Ansicht verlassen beenden."}, {Label: "Stabilität", Text: "Die Navigation bleibt beim Seitenwechsel an ihrem Platz. Versionsangaben folgen dem INSPR-Kalenderformat."}}},
 		{Version: "1.11.0", Date: "14. September 2026", Kind: "Neu", Headline: "Support aus Sicht der betroffenen Person", Intro: "Freigegebene Admins prüfen das Portal in der konkreten Rolle einer Person.", Items: []NoteItem{{Label: "Supportansicht", Text: "Schreibgeschützt, auf 15 Minuten begrenzt und jederzeit klar erkennbar. Start, Ende und Dateizugriffe werden mit der echten Administratoridentität protokolliert."}}},
 		{
 			Version:  "1.10.0",

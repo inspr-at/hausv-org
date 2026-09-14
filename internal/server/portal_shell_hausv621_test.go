@@ -64,8 +64,8 @@ func TestOrganisationPortalShowsTwoLevelHouseShellHAUSV621(t *testing.T) {
 			t.Errorf("organisation portal missing %q", want)
 		}
 	}
-	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
-		t.Errorf("desktop and mobile house picker count = %d, want 2", got)
+	if got := strings.Count(body, `data-house-picker-shell=`); got != 1 {
+		t.Errorf("desktop and mobile house picker count = %d, want 1", got)
 	}
 	if got := strings.Count(body, "Hausüberblick"); got < 2 {
 		t.Errorf("desktop/mobile navigation diverged: Hausüberblick count = %d", got)
@@ -91,8 +91,8 @@ func TestOwnerPortalKeepsGreetingAndFlatHouseNavigationHAUSV620(t *testing.T) {
 			t.Errorf("resident shell unexpectedly contains %q", forbidden)
 		}
 	}
-	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
-		t.Errorf("desktop/mobile shared house switcher count = %d, want 2", got)
+	if got := strings.Count(body, `data-house-picker-shell=`); got != 1 {
+		t.Errorf("desktop/mobile shared house switcher count = %d, want 1", got)
 	}
 }
 
@@ -124,7 +124,7 @@ func TestMultiHousePortalUsesPickerWithoutOrganisationHAUSV621(t *testing.T) {
 			t.Errorf("unaffiliated multi-house shell unexpectedly contains %q", forbidden)
 		}
 	}
-	if got := strings.Count(body, `id="portal-house-picker"`) + strings.Count(body, `id="portal-house-picker-mobile"`); got != 2 {
-		t.Errorf("desktop and mobile house picker count = %d, want 2", got)
+	if got := strings.Count(body, `data-house-picker-shell=`); got != 1 {
+		t.Errorf("desktop and mobile house picker count = %d, want 1", got)
 	}
 }

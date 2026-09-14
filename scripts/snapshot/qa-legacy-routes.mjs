@@ -72,7 +72,7 @@ async function capture(page, name, url) {
       const box = node => { const b = node?.getBoundingClientRect(); return b && { x: b.x, y: b.y, width: b.width, height: b.height }; };
       const bar = [...document.querySelectorAll('[data-context-bar]')].filter(shown);
       const sidebar = document.querySelector('aside.sidebar');
-      const mobile = document.querySelector('.mobile-head');
+      const mobile = document.querySelector('[data-context-bar]');
       const controls = [...document.querySelectorAll('a, button, input, select, textarea, summary')].filter(shown);
       // Match the existing chrome oracle: inspect visible controls and content,
       // excluding the intentionally clipped OSM tile images inside the map.
@@ -113,7 +113,7 @@ async function capture(page, name, url) {
     assert.deepEqual(state.smallTargets, [], `${name} ${width}: tap targets below 40px`);
     assert.deepEqual(state.nonghost, [], `${name}: header actions must be ghost buttons`);
     if (width === 390) {
-      const menu = page.locator('.mobile-head > details.menu');
+      const menu = page.locator('[data-context-bar] > details.menu');
       await menu.locator(':scope > summary').click();
       assert(await menu.locator('.menu-panel nav[aria-label="Bereiche"]').isVisible(), `${name}: mobile navigation opens`);
       const panelBox = await menu.locator('.menu-panel').boundingBox();

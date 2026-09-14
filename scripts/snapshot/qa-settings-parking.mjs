@@ -175,7 +175,7 @@ async function geometry(page, viewport, label) {
     const labelNode = [...document.querySelectorAll('.side-address-label')]
       .find((node) => (node.innerText || '').trim().length > 0)
       || document.querySelector('.side-address-label')
-      || document.querySelector('.mobile-head .mobile-identity');
+      || document.querySelector('[data-context-bar] .mobile-identity');
     // HAUSV-620/621: the map is the thumbnail link inside the house header card.
     const mapLink = document.querySelector('a.map');
     // HAUSV-621: the address label is the house header card (a picker summary for
@@ -184,8 +184,8 @@ async function geometry(page, viewport, label) {
     // segment is the last scope switcher, the sidebar card is the fallback.
     const scopeCards = [...document.querySelectorAll('.context-scope .house-header-card')];
     const homeLink = scopeCards.at(-1) || document.querySelector('.house-header-card');
-    const menu = document.querySelector('.mobile-head > details.menu > summary');
-    const mobileIdentity = document.querySelector('.mobile-head > .mobile-identity');
+    const menu = document.querySelector('[data-context-bar] > details.menu > summary');
+    const mobileIdentity = document.querySelector('[data-context-bar] > .mobile-identity');
     const menuRect = menu && visible(menu) ? menu.getBoundingClientRect() : null;
     const identityRect = mobileIdentity && visible(mobileIdentity) ? mobileIdentity.getBoundingClientRect() : null;
     const overlaps = (left, right) => Boolean(left && right &&

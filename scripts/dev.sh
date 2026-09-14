@@ -65,7 +65,7 @@ wait_for_app() {
 
 build_and_start() {
     echo "── building"
-    if ! ( builtin cd "$repo" && go build -o "$next_app" ./cmd/hausv-org ); then
+    if ! ( builtin cd "$repo" && bash scripts/build.sh -o "$next_app" ./cmd/hausv-org ); then
         echo "Build failed; the previous portal keeps running." >&2
         command rm -f -- "$next_app"
         return 1

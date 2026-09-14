@@ -23,7 +23,7 @@ try {
  const origin=new URL(page.url()).origin;
  const appBase=origin+'/demo';
  await page.goto(appBase+'/app');
- await page.locator('.desktop-context-bar [popovertarget]').filter({hasText:'Ansicht als'}).click();
+ await page.locator('[data-context-bar] .role-preview-trigger').filter({hasText:'Ansicht als'}).click();
  await page.locator('[data-support-view-link]:visible').click();
  assert.match(page.url(),/\/app\/support-view$/);
  const choice=page.locator('[data-support-view-start]').filter({has:page.locator('input[value="resident@example.com"]')});
@@ -40,8 +40,11 @@ try {
    await page.evaluate(()=>window.scrollTo(0,1200));
    await page.waitForTimeout(80);
    const box=await banner.boundingBox();const bar=await page.locator('[data-context-bar]:visible').boundingBox();
-   assert.ok(box && Math.abs(box.y)<=1 && box.width<=width+1,`banner ${width} ${path}`);
-   assert.ok(bar && Math.abs(bar.y-(box.y+box.height))<=1,`bar overlaps banner ${width} ${path}`);
+   assert.ok(box && box.y>=0 && box.y+box.height<=bar.height+1,`status within header ${width} ${path}`);
+   assert.ok(bar && Math.abs(bar.y)<=1,`header not stationary ${width} ${path}`);
+   assert.equal(await page.locator("[data-context-bar]").count(),1);
+   assert.equal(await page.locator("[data-house-picker]").count(),1);
+   assert.match(await page.locator("[data-context-account] summary").innerText(),/Ada Admin/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`overflow ${width} ${path}`);
    assert.ok((await banner.getByRole('button').boundingBox()).height>=44);
    if (path==='/app' && artifactDir) await page.screenshot({path:`${artifactDir}/support-${width}.png`});

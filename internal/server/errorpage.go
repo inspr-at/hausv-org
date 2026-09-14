@@ -2,9 +2,9 @@ package server
 
 import (
 	"bytes"
-	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/web"
 )
@@ -132,9 +132,17 @@ func (a *app) sessionActor(r *http.Request) (authCtx, bool) {
 		return authCtx{}, false
 	}
 	ac := authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, realEmail: email, realRole: role, tenant: tenant}
+	if resolved, ok := resolvedTenantFromContext(r.Context()); ok {
+		ac.tenantRef, ac.repositories = resolved.tenantRef, resolved.repositories
+	}
 	if session, valid := a.sessionForRequest(r); valid && session.SupportTargetEmail != "" {
 		ac.realEmail, ac.realRole = session.Email, session.Role
 		ac.supportView = a.supportContextForSession(session)
+	}
+	if session, valid := a.rolePreviewSessionForRequest(r); valid && session.PreviewRole != "" && a.rolePreviewSessionEndReason(session) == "" {
+		ac.realEmail, ac.realRole = session.Email, session.Role
+		ac.preview = &rolePreviewContext{Role: session.PreviewRole, StartedAt: time.Unix(session.PreviewStartedAt, 0), ExpiresAt: time.Unix(session.PreviewExpiresAt, 0)}
+		ac.policy = a.capabilityPolicy(r.Context(), tenant, true)
 	}
 	return ac, true
 }
@@ -333,17 +341,17 @@ func (a *app) writeErrorPage(w http.ResponseWriter, r *http.Request, ac authCtx,
 		data["ErrorPrimaryLabel"] = "Zur Anmeldung"
 	}
 
-	if state := supportViewPortalData(&ac); authenticated && state != nil {
-		var banner bytes.Buffer
-		if err := web.SupportViewBanner(*state).Render(r.Context(), &banner); err != nil {
-			http.Error(w, "Supportansicht konnte nicht dargestellt werden.", http.StatusInternalServerError)
-			return
-		}
-		// Only templ-rendered, escaped component HTML crosses the legacy template seam.
-		data["SupportViewBanner"] = template.HTML(banner.String())
-	}
 	buffered := &bufferedPage{}
-	a.executeTemplate(buffered, "errorPage", data)
+	if authenticated {
+		links := []web.PortalErrorLink{}
+		for _, link := range data["ErrorLinks"].([]errorPageLink) {
+			links = append(links, web.PortalErrorLink{URL: link.URL, Label: link.Label, Hint: link.Hint})
+		}
+		a.renderSettingsComponent(buffered, r, tenant.Slug, web.PortalErrorPage(a.portalBaseData(ac, "", headline), status, headline, message, advice, data["ErrorPrimaryURL"].(string), data["ErrorPrimaryLabel"].(string), links))
+	} else {
+		a.executeTemplate(buffered, "errorPage", data)
+	}
+
 	if buffered.body.Len() == 0 {
 		// The template is the fallback's fallback; never leave the request without
 		// a body just because rendering failed.

@@ -46,7 +46,7 @@ dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(-
    The mobile context bar IS the header and stays at top:0. Local scroll-region
    and dialog headers keep their own top:0. Content disclosures (210) stay below
    the bar (220); fallback dialogs (300/400) and native top-layer dialogs cover it. */
-:root{--sidebar-w:280px;--context-bar-h:40px;--muted-light:rgba(255,255,255,.6)}
+:root{--sidebar-w:280px;--context-bar-h:72px;--muted-light:rgba(255,255,255,.6)}
 .context-bar{position:sticky;top:0;z-index:220;min-width:0;height:var(--context-bar-h);display:flex;align-items:center;gap:10px;padding:0 18px;background:var(--nav);color:var(--panel);border-bottom:1px solid var(--nav-2);font-size:12px}
 .context-bar.context-preview{background:#41432c;border-bottom-color:var(--gold)}
 .context-account{flex:0 1 auto;min-width:0;position:relative}.context-account>summary{position:relative;display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;list-style:none;white-space:nowrap}.context-account>summary::-webkit-details-marker{display:none}

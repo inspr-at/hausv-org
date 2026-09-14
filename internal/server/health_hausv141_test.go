@@ -2,6 +2,8 @@ package server
 
 import (
 	"database/sql"
+	"encoding/json"
+	"github.com/inspr-at/hausv-org/internal/version"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -21,7 +23,12 @@ func TestHealthChecksDatabaseAndWritableDataDir(t *testing.T) {
 	a := &app{pool: database, dataDir: dir}
 	rr := httptest.NewRecorder()
 	a.health(rr, httptest.NewRequest(http.MethodGet, "/healthz", nil))
-	if rr.Code != http.StatusOK || rr.Body.String() != `{"service":"hausv-org","status":"ok"}` {
+	var payload struct {
+		Service, Status string
+		Release         version.ReleaseIdentity
+	}
+	err = json.Unmarshal(rr.Body.Bytes(), &payload)
+	if err != nil || rr.Code != http.StatusOK || payload.Service != "hausv-org" || payload.Status != "ok" || payload.Release.Version != version.Version || payload.Release.VersionScheme != version.Identity().VersionScheme {
 		t.Fatalf("healthy response = %d %q", rr.Code, rr.Body.String())
 	}
 }

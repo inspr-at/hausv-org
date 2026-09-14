@@ -63,7 +63,7 @@ func TestPortalShellCSSIsExternalizedHAUSV549(t *testing.T) {
 	}
 	critical := homeHTML[criticalStart:]
 	critical = critical[:strings.Index(critical, "</style>")]
-	for _, marker := range []string{"--sidebar-w:280px", "--context-bar-h:40px", "--context-bar-h:74px", "grid-template-columns:var(--sidebar-w) minmax(0,1fr)", "background:var(--nav)", "linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))", ".sidebar,.desktop-context-bar{display:none}"} {
+	for _, marker := range []string{"--sidebar-w:280px", "--context-bar-h:72px", "--context-bar-h:74px", "grid-template-columns:var(--sidebar-w) minmax(0,1fr)", "background:var(--nav)", "linear-gradient(90deg,var(--nav) 0 var(--sidebar-w),var(--paper) var(--sidebar-w))", ".sidebar,.desktop-context-bar{display:none}"} {
 		if !strings.Contains(critical, marker) {
 			t.Errorf("first paint lacks %s", marker)
 		}
@@ -108,7 +108,7 @@ func TestPortalShellCSSIsExternalizedHAUSV549(t *testing.T) {
 	criticalClasses := []string{
 		`class="shell"`,
 		`class="sidebar"`,
-		`class="context-bar mobile-head"`,
+		`class="context-bar unified-context-bar"`,
 		`data-portal-section-landing`, // attribute, not class
 	}
 

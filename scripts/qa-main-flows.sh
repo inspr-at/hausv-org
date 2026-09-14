@@ -171,7 +171,7 @@ if [ "$ha_ready" -eq 0 ]; then
 fi
 
 echo "── building current worktree"
-( cd "$repo" && "$go_bin" build -o "$tmp/hausv-org" ./cmd/hausv-org ) >"$build_log" 2>&1
+( cd "$repo" && HV_GO="$go_bin" bash scripts/build.sh -o "$tmp/hausv-org" ./cmd/hausv-org ) >"$build_log" 2>&1
 build_status=$?
 if [ "$build_status" -ne 0 ]; then
     command tail -n 80 "$build_log" >&2
@@ -184,10 +184,18 @@ start_portal
 node "$repo/scripts/snapshot/qa-support-view.mjs" "http://localhost:$port" >"$log_dir/support-view.log" 2>&1
 support_status=$?
 if [ "$support_status" -ne 0 ]; then
-    cat "$log_dir/support-view.log" >&2
+    cat "$log_dir/support-view.log"
+node "$repo/scripts/snapshot/qa-unified-context.mjs" "http://localhost:$port" >"$log_dir/unified-context.log" 2>&1
+context_status=$?
+cat "$log_dir/unified-context.log"
+if [ "$context_status" -ne 0 ]; then exit "$context_status"; fi >&2
     exit "$support_status"
 fi
 cat "$log_dir/support-view.log"
+node "$repo/scripts/snapshot/qa-unified-context.mjs" "http://localhost:$port" >"$log_dir/unified-context.log" 2>&1
+context_status=$?
+cat "$log_dir/unified-context.log"
+if [ "$context_status" -ne 0 ]; then exit "$context_status"; fi
 
 if [ "${HV_QA_ENERGY_ONLY:-}" = true ]; then
     echo "── running focused Playwright energy and breakpoint flows"

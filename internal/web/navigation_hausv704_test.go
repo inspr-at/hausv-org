@@ -45,7 +45,7 @@ func TestSharedSidebarTokensAndHeaderWidthHAUSV704(t *testing.T) {
 			t.Errorf("obsolete shell selector/width %s", forbidden)
 		}
 	}
-	for _, required := range []string{"--sidebar-w:280px", "--sidebar-pad-x:18px", "--context-bar-h:40px", "--context-bar-h:74px", ".portal-section-landing.portal-section-wide{--portal-content-width:1440px}"} {
+	for _, required := range []string{"--sidebar-w:280px", "--sidebar-pad-x:18px", "--context-bar-h:72px", "--context-bar-h:74px", ".portal-section-landing.portal-section-wide{--portal-content-width:1440px}"} {
 		if !strings.Contains(css, required) {
 			t.Errorf("shared token missing: %s", required)
 		}

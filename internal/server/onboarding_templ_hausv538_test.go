@@ -29,7 +29,7 @@ func TestOnboardingTemplUsesSharedPermissionGatedShell(t *testing.T) {
 		`<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 		`href="/demo/app/energie" class="nav-item active" aria-current="page"`,
 		`<nav class="nav" aria-label="Bereiche"`,
-		`<header class="context-bar mobile-head" data-context-bar>`,
+		`<header class="context-bar unified-context-bar" data-context-bar>`,
 		"Versionsverlauf",
 	} {
 		if !strings.Contains(body, want) {

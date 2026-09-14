@@ -80,8 +80,8 @@ func TestVerwaltungAccountTileShowsThePictureOrTheInitials(t *testing.T) {
 
 	withoutPicture := renderComponent(t, PortalVerwaltungPage(shell, "Portfolio", PortalSectionTitle("Portfolio")))
 	tiles := avatarTiles(t, withoutPicture)
-	if len(tiles) < 2 {
-		t.Fatalf("expected the sidebar and the mobile header tile, got %d", len(tiles))
+	if len(tiles) != 1 {
+		t.Fatalf("expected one responsive account tile, got %d", len(tiles))
 	}
 	for _, tile := range tiles {
 		if !strings.Contains(tile, "VV") || strings.Contains(tile, "<img") {

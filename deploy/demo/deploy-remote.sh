@@ -64,7 +64,8 @@ if [ -n "$(git status --porcelain)" ]; then
     exit 1
 fi
 sha=$(git rev-parse --short=12 HEAD)
-version="$(tr -d '[:space:]' < VERSION)-demo.${sha:0:7}"
+full_sha=$(git rev-parse HEAD)
+version="$(tr -d '[:space:]' < VERSION)"
 release_dir="$remote_dir/releases/$sha"
 
 echo "release  $version ($sha)"
@@ -96,7 +97,11 @@ sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$r
 grep -q '^TRUSTED_PROXY_CIDRS=$trusted_proxies\$' demo.env || { echo 'demo.env.example lacks a TRUSTED_PROXY_CIDRS line' >&2; exit 1; }
 export COMPOSE_PROJECT_NAME='$project' HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port' HAUSV_DEMO_SUBNET='$subnet'
 export HAUSV_DEMO_SECRETS_FILE='$secrets_file' HAUSV_DEMO_IMAGE='hausv-demo:$sha'
+mkdir -p '$remote_dir/release-records'
+[ ! -e '$remote_dir/release-records/$version.json' ] || { echo 'release coordinate already frozen; reuse its exact image or reserve a new version'; exit 1; }
 compose -p '$project' build
+image_digest=\$(docker image ls --no-trunc --quiet 'hausv-demo:$sha')
+python3 ../../scripts/release-manifest.py --channel demo --commit '$full_sha' --image 'hausv-demo:$sha' --image-digest "\$image_digest" --output '$remote_dir/release-records/$version.json'
 ln -sfn '$release_dir' '$remote_dir/src'
 compose -p '$project' up -d --remove-orphans
 for i in \$(seq 1 30); do

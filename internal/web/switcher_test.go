@@ -93,7 +93,7 @@ func TestContextBarInBothShellsAndRoles(t *testing.T) {
 
 func TestScopePreviewMovesIntoContextBar(t *testing.T) {
 	html := renderComponent(t, PortalPage(PortalPageData{HouseName: "Annenstraße 71", DisplayName: "Ada Admin", Role: "Bewohner", RolePreview: &RolePreviewState{RoleLabel: "Bewohner", HouseName: "Annenstraße 71", EndPath: "/app/ansicht/ende", EndsInMinutes: 10}}))
-	for _, marker := range []string{"context-preview", "Vorschau: Bewohner-Sicht", `<span aria-hidden="true">·</span>`, `aria-label="Vorschau beenden">beenden</button>`, `action="/app/ansicht/ende"`, "schreibgeschützt"} {
+	for _, marker := range []string{"unified-context-bar", "Vorschau: Bewohner-Sicht", `>Ansicht verlassen</button>`, `action="/app/ansicht/ende"`, "Schreibgeschützt"} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("missing %s", marker)
 		}
@@ -108,7 +108,7 @@ func TestContextPreviewWithoutPreviewOffersRoleChoice(t *testing.T) {
 		{Role: "Bewohner", Label: "Bewohner", StartPath: "/app/ansicht/start"},
 	}}
 	html := renderComponent(t, ContextPreview(scope, "context-desktop"))
-	for _, marker := range []string{`class="context-view-chip">Ansicht als …</span>`, `popovertarget="context-desktop-preview"`, `action="/app/ansicht/start"`, `name="role" value="Bewohner"`} {
+	for _, marker := range []string{`class="context-action">Ansicht als …</span>`, `popovertarget="context-desktop-preview"`, `action="/app/ansicht/start"`, `name="role" value="Bewohner"`} {
 		if !strings.Contains(html, marker) {
 			t.Errorf("role choice missing %q", marker)
 		}

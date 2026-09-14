@@ -43,6 +43,9 @@ templ LiegenschaftSwitcher(data LiegenschaftSwitcherData, id, label, place, surf
 				<span class="house-header-eyebrow">{ eyebrow }</span>
 				<span class="nav-icon switcher-building">@PortalAssetIcon(icon)</span>
 			}
+   if switcherIsScope(surface) {
+    <span class="context-house-icon nav-icon" aria-hidden="true">@PortalAssetIcon("house")</span>
+   }
 			<span class={ "house-header-copy", templ.KV("side-address-label", !switcherIsScope(surface)) } lang="de-AT"><strong>{ label }</strong><small>{ place }</small></span>
 			@DisclosureChevron()
 		</summary>
@@ -106,56 +109,46 @@ templ LiegenschaftRow(entry LiegenschaftEntry) {
 	</form>
 }
 
+// One DOM header is shared by desktop, mobile, role preview and support.
 templ Kontextleiste(data ScopeContext, mobile bool, navigation templ.Component) {
-	{{ id := "context-desktop"; if mobile { id = "context-mobile" } }}
-	<header class={ "context-bar", templ.KV("mobile-head", mobile), templ.KV("desktop-context-bar", !mobile), templ.KV("context-preview", data.Preview != nil) } data-context-bar>
-		if mobile {
-			<details class="menu"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel" data-navigation-surface="mobile">@navigation</div></details>
-		}
-		@ContextAccount(data, id, mobile)
-		<div class="context-scope" aria-label="Aktueller Bereich">
-			for i, segment := range data.Segments {
-				if i > 0 {
-					<span class="scope-separator nav-icon" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
-				}
-				@LiegenschaftSwitcher(data.Switcher, fmt.Sprintf("%s-scope-%d", id, i), segment, "", scopeSurface(i, len(data.Segments)), "", "")
-			}
-		</div>
-		if !mobile {
-			@ContextPreview(data, id)
-			<form class="context-logout" method="post" action="/auth/logout"><button type="submit" title="Abmelden" aria-label="Abmelden"><span class="nav-icon">@PortalIcon("logout")</span></button></form>
-		}
-	</header>
+ <header class="context-bar unified-context-bar" data-context-bar>
+  @ContextAccount(data, "context", false)
+  <div class="context-scope" aria-label="Aktuelle Liegenschaft">
+   @LiegenschaftSwitcher(data.Switcher, "context-property", scopePropertyLabel(data), scopePropertyAddress(data), "scope", "", "house")
+  </div>
+  <div class="context-view-slot">@ContextPreview(data, "context")</div>
+  if navigation != nil {
+   <details class="menu context-navigation"><summary aria-label="Navigation öffnen"><span class="hamburger" aria-hidden="true"></span></summary><div class="menu-panel" data-navigation-surface="mobile">@navigation</div></details>
+  }
+ </header>
 }
 
 templ ContextAccount(data ScopeContext, id string, mobile bool) {
-	<details class="context-account" data-context-account>
-		<summary aria-label={ "Konto von " + data.DisplayName }><span class="avatar" aria-hidden="true">@PortalAvatarBadge(data.AvatarURL, data.Initials)</span><span class="context-person">{ data.DisplayName }</span><span class="context-role">{ data.Role }</span></summary>
-		<div class="context-account-menu">
-			<strong>{ data.DisplayName }</strong><small>{ data.Role }</small>
-			if data.CanUseSettings {
-				<a href="/app/settings/profile">Profil</a><a href="/app/settings">Einstellungen</a>
-			}
-			if mobile {
-				@ContextPreview(data, id)
-			}
-			<form method="post" action="/auth/logout"><button type="submit"><span class="nav-icon">@PortalIcon("logout")</span> Abmelden</button></form>
-		</div>
-	</details>
+ <details class="context-account" data-context-account>
+  <summary aria-label={ "Konto von " + data.DisplayName }><span class="avatar" aria-hidden="true">@PortalAvatarBadge(data.AvatarURL, data.Initials)</span><span class="context-person" title={ data.DisplayName }>{ data.DisplayName }</span><span class="context-role">{ data.Role }</span></summary>
+  <div class="context-account-menu">
+   <strong>{ data.DisplayName }</strong><small>{ data.Role }</small>
+   if data.CanUseSettings {
+    <a href="/app/settings/profile">Profil</a><a href="/app/settings">Einstellungen</a>
+   }
+   <form method="post" action="/auth/logout"><button type="submit"><span class="nav-icon">@PortalIcon("logout")</span> Abmelden</button></form>
+  </div>
+ </details>
 }
 
 templ ContextPreview(data ScopeContext, id string) {
-	if data.Preview != nil {
-		<form class="context-preview-chip" method="post" action={ templ.SafeURL(data.Preview.EndPath) } data-preview-role={ data.Preview.RoleLabel }>
-			<span title={ fmt.Sprintf("Schreibgeschützt · endet in %d Min", data.Preview.EndsInMinutes) }>Vorschau: { data.Preview.RoleLabel }-Sicht</span><span aria-hidden="true">·</span><button type="submit" aria-label="Vorschau beenden">beenden</button>
-			<span class="sr-only">Ansicht als { data.Preview.RoleLabel } · { data.Preview.HouseName } · schreibgeschützt · endet in { data.Preview.EndsInMinutes } Min</span>
-		</form>
-	}
-	if len(data.PreviewChoices) > 0 {
-		@RolePreviewChooser(id + "-preview", data.PreviewChoices, data.SupportURL) {
-			<span class="context-view-chip">Ansicht als …</span>
-		}
-	}
+ if data.SupportView != nil {
+  @SupportViewBanner(*data.SupportView)
+ } else if data.Preview != nil {
+  <div class="context-view" data-preview-role={ data.Preview.RoleLabel } aria-label="Aktive Rollenansicht">
+   <div class="context-view-copy"><strong title={ "Vorschau: " + data.Preview.RoleLabel + "-Sicht" }>Vorschau: { data.Preview.RoleLabel }-Sicht</strong><span><span class="nav-icon" aria-hidden="true">@PortalAssetIcon("lock")</span> Schreibgeschützt · endet in { data.Preview.EndsInMinutes } Min</span></div>
+   <form method="post" action={ templ.SafeURL(data.Preview.EndPath) }><button class="context-action" type="submit">Ansicht verlassen</button></form>
+  </div>
+ } else if len(data.PreviewChoices) > 0 {
+  @RolePreviewChooser(id + "-preview", data.PreviewChoices, data.SupportURL) {
+   <span class="context-action">Ansicht als …</span>
+  }
+ }
 }
 
 templ SidebarResizeHandle() {
