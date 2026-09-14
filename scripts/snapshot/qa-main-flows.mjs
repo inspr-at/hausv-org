@@ -2342,6 +2342,7 @@ async function assertLogoutBackNavigation() {
     fail('Abmelden/Zurück: geschützte Ausgangsseite fehlt');
   }
 
+  await page.locator('[data-context-account] > summary').click();
   await Promise.all([
     page.waitForURL((url) => url.pathname.endsWith('/')),
     page.getByRole('button', { name: 'Abmelden' }).click(),
