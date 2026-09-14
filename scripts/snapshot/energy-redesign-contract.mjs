@@ -295,6 +295,7 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
   const cards = page.locator('.energy-flow-rail .energy-flow-big[data-consumer-id]');
   if (!(await cards.count())) fail(label, 'kein direkt bearbeitbarer Verbraucher vorhanden');
   const first = cards.first();
+  const consumerID = await first.getAttribute('data-consumer-id');
   const editTrigger = first.locator('button.energy-flow-main');
   const before = await cards.evaluateAll((nodes) => nodes.map((node) => {
     const box = node.getBoundingClientRect();
@@ -400,29 +401,45 @@ async function assertEnergyConsumerManagement(page, { label, width }) {
   // Cancelling restores the dialog's default state asynchronously. Pressing Escape before that
   // settles closes nothing, so wait for the confirmation to actually go away first.
   await dialog.locator('[data-consumer-delete-confirm]').waitFor({ state: 'hidden' });
-  await page.keyboard.press('Escape');
-  // Closing a native <dialog> and restoring focus to its invoker are BOTH asynchronous. Wait
-  // for both conditions before asserting — checking them separately created a race where the
-  // test sampled too early on slow runners.
+  // Exercise the live-update race on every run: an update received while the dialog is
+  // open is queued, then replaces the invoker on close. Keep the old node only to prove
+  // that this rebuild happened; focus must follow the same consumer's current button.
   const openerHandle = await editTrigger.elementHandle();
+  await page.locator('[data-energy-flow]').evaluate((wrap) => {
+    const config = JSON.parse(wrap.querySelector('script[type="application/json"]').textContent);
+    wrap._energyFlowUpdate(config);
+    if (!wrap._energyFlowPending) throw new Error('Consumer dialog did not defer the live update');
+  });
+  await page.keyboard.press('Escape');
   try {
-    await page.waitForFunction((opener) => {
+    await page.waitForFunction((opener) => !opener.isConnected, openerHandle, { timeout: 5000 });
+  } finally {
+    await openerHandle.dispose();
+  }
+  // Re-resolve by consumer identity on every poll: another live update may replace the
+  // button again while we wait. A sibling consumer, drag grip or add button is not enough.
+  try {
+    await page.waitForFunction((id) => {
       const dialog = document.querySelector('#energy-consumer-dialog');
-      return !dialog?.open && document.activeElement === opener;
-    }, openerHandle, { timeout: 5000 });
+      const opener = document.querySelector(
+        `.energy-flow-rail .energy-flow-big[data-consumer-id="${CSS.escape(id)}"] button.energy-flow-main`,
+      );
+      return Boolean(dialog && !dialog.open && opener && document.activeElement === opener);
+    }, consumerID, { timeout: 5000 });
   } catch {
     const state = await page.evaluate(() => {
       const dialog = document.querySelector('#energy-consumer-dialog');
       const el = document.activeElement;
       return {
         dialogOpen: dialog?.open,
+        activeConsumerID: el?.closest('[data-consumer-id]')?.dataset.consumerId || null,
         activeElement: el ? `${el.tagName.toLowerCase()}${el.className ? '.' + String(el.className).split(' ')[0] : ''}` : 'none',
       };
     });
     if (state.dialogOpen) {
       fail(label, 'Escape schließt den Dialog nicht');
     }
-    fail(label, 'Escape gibt den Fokus nicht an den Auslöser zurück', { activeElement: state.activeElement });
+    fail(label, 'Escape gibt den Fokus nicht an den Auslöser zurück', { expectedConsumerID: consumerID, ...state });
   }
 
   const addTrigger = page.locator('.energy-flow-big.ghost button.energy-flow-main');
