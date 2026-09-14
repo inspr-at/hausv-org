@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [1.10.0] - 2026-09-14
+
+### Neu
+
+- Downloads: Auf der Startseite stehen die HAUSV-Professional-Handouts auf Deutsch, Englisch und Spanisch als einseitige PDFs zum Herunterladen bereit.
+
 ## [1.9.26] - 2026-09-10
 
 ### Verbessert

@@ -91,6 +91,14 @@ func DisplayVersion(version string) string {
 func Notes() []Note {
 	return []Note{
 		{
+			Version:  "1.10.0",
+			Date:     "14. September 2026",
+			Kind:     "Neu",
+			Headline: "HAUSV zum Mitnehmen",
+			Intro:    "Die Professional-Handouts stehen direkt auf der Startseite bereit.",
+			Items:    []NoteItem{{Label: "Downloads", Text: "Einseitige PDFs auf Deutsch, Englisch und Spanisch zum Nachlesen, Weitergeben und Ausdrucken."}},
+		},
+		{
 			Version:  "1.9.26",
 			Date:     "10. September 2026",
 			Kind:     "Verbessert",

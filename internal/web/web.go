@@ -509,6 +509,15 @@ const PageTemplates = `
     .trust-line strong { font-size: 17px; line-height: 1.3; }
     .trust-line p { margin: 7px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
 
+    /* ---- Downloads ------------------------------------------------------ */
+    .download-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+    .download-link { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 96px; padding: 20px 24px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); color: var(--ink); text-decoration: none; }
+    .download-link:hover { border-color: var(--leaf); background: var(--panel-soft); }
+    .download-link:focus-visible { outline: 3px solid var(--leaf); outline-offset: 4px; }
+    .download-link strong { display: block; font-size: 18px; }
+    .download-meta { display: block; margin-top: 6px; color: var(--muted); font-size: 14px; }
+    .download-arrow { color: var(--leaf); font-size: 26px; }
+
     /* ---- Imprint and closing --------------------------------------------- */
     .imprint-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
     .imprint-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; background: var(--panel-soft); }
@@ -775,6 +784,23 @@ const PageTemplates = `
         <div><strong>Home oder Professional?</strong><p>Wir zeigen beide Produkte persönlich und klären gemeinsam, welcher Betrieb zu Ihrem Haus passt.</p></div>
         <a class="landing-button js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV kennenlernen" data-mail-reveal="false">Gespräch anfragen</a>
       </div>
+    </div>
+  </section>
+
+  <section id="downloads" class="section downloads-section" aria-labelledby="downloads-title">
+    <div class="section-inner">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Zum Mitnehmen</p>
+          <h2 id="downloads-title">Downloads</h2>
+        </div>
+        <p class="section-lead">HAUSV Professional auf einer Seite – zum Nachlesen, Weitergeben und Ausdrucken.</p>
+      </div>
+      <ul class="download-list" aria-label="HAUSV Professional Handouts">
+        <li><a class="download-link" href="/assets/downloads/HAUSV-Professional_Handout-de.pdf?v={{.AssetVersion}}" download="HAUSV-Professional_Handout-de.pdf" hreflang="de" type="application/pdf"><span><strong lang="de">Deutsch</strong><span class="download-meta">PDF herunterladen · 1 Seite</span></span><span class="download-arrow" aria-hidden="true">↓</span></a></li>
+        <li><a class="download-link" href="/assets/downloads/HAUSV-Professional_Handout-en.pdf?v={{.AssetVersion}}" download="HAUSV-Professional_Handout-en.pdf" hreflang="en" type="application/pdf"><span><strong lang="en">English</strong><span class="download-meta">PDF herunterladen · 1 Seite</span></span><span class="download-arrow" aria-hidden="true">↓</span></a></li>
+        <li><a class="download-link" href="/assets/downloads/HAUSV-Professional_Handout-es.pdf?v={{.AssetVersion}}" download="HAUSV-Professional_Handout-es.pdf" hreflang="es" type="application/pdf"><span><strong lang="es">Español</strong><span class="download-meta">PDF herunterladen · 1 Seite</span></span><span class="download-arrow" aria-hidden="true">↓</span></a></li>
+      </ul>
     </div>
   </section>
 
