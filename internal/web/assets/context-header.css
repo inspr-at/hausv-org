@@ -1,8 +1,8 @@
 /* One geometry contract. Menus float; neither identity nor a late script changes height. */
 :root{--context-bar-h:72px}
-html{scrollbar-gutter:stable}
-/* Fullscreen owns the entire viewport, including the normal scrollbar gutter. */
-html:has(:fullscreen),html:has(.is-fullscreen-fallback){scrollbar-gutter:auto}
+/* Keep native scrollbar space stable; overlay scrollbars need no extra gutter. */
+html{overflow-y:scroll}
+html:has(:fullscreen),html:has(.is-fullscreen-fallback){overflow-y:auto}
 body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--context-bar-h);min-height:var(--context-bar-h);box-sizing:border-box;display:grid;grid-template-columns:minmax(180px,.85fr) minmax(210px,1fr) minmax(330px,1.55fr);gap:20px;padding:0 20px;background:var(--paper);color:var(--ink);border-bottom:1px solid var(--gold);z-index:220}
 .unified-context-bar .context-navigation{display:none}
 .unified-context-bar .context-account{min-width:0;max-width:none}
