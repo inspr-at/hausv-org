@@ -49,14 +49,18 @@ type SessionStore struct {
 }
 
 type Session struct {
-	Email            string `json:"email"`
-	TenantSlug       string `json:"tenant_slug"`
-	AuthMethod       string `json:"auth_method"`
-	Role             string `json:"role,omitempty"`
-	ExpiresAt        int64  `json:"expires_at"`
-	PreviewRole      string `json:"preview_role,omitempty"`
-	PreviewStartedAt int64  `json:"preview_started_at,omitempty"`
-	PreviewExpiresAt int64  `json:"preview_expires_at,omitempty"`
+	SupportTargetEmail string `json:"support_target_email,omitempty"`
+	SupportTargetRole  string `json:"support_target_role,omitempty"`
+	SupportStartedAt   int64  `json:"support_started_at,omitempty"`
+	SupportExpiresAt   int64  `json:"support_expires_at,omitempty"`
+	Email              string `json:"email"`
+	TenantSlug         string `json:"tenant_slug"`
+	AuthMethod         string `json:"auth_method"`
+	Role               string `json:"role,omitempty"`
+	ExpiresAt          int64  `json:"expires_at"`
+	PreviewRole        string `json:"preview_role,omitempty"`
+	PreviewStartedAt   int64  `json:"preview_started_at,omitempty"`
+	PreviewExpiresAt   int64  `json:"preview_expires_at,omitempty"`
 }
 
 type OidcLogin struct {
@@ -194,6 +198,27 @@ func (s *SessionStore) PutSession(email string, tenantSlug string, authMethod st
 	return s.putSession(item)
 }
 
+// PutSupportView issues a short-lived, signed view of another user's exact
+// tenant role while retaining the real authenticated identity in Email/Role.
+// The caller must validate the explicit support permission and target
+// membership before calling it. The ordinary session expiry remains the cookie
+// expiry; SupportExpiresAt is the stricter viewing window, so a deliberate or
+// automatic exit can restore the original login without extending it.
+func (s *SessionStore) PutSupportView(email string, tenantSlug string, authMethod string, role string, targetEmail string, targetRole string, startedAt time.Time, supportExpiresAt time.Time, parentExpiresAt time.Time) (string, time.Time, error) {
+	item := Session{
+		Email:              textutil.Email(email),
+		TenantSlug:         textutil.Slug(tenantSlug),
+		AuthMethod:         store.NormalizeAuthMethod(authMethod),
+		Role:               store.NormalizeRole(role),
+		ExpiresAt:          parentExpiresAt.Unix(),
+		SupportTargetEmail: textutil.Email(targetEmail),
+		SupportTargetRole:  store.NormalizeRole(targetRole),
+		SupportStartedAt:   startedAt.Unix(),
+		SupportExpiresAt:   supportExpiresAt.Unix(),
+	}
+	return s.putSession(item)
+}
+
 // PutRolePreview narrows an existing administrative session to one of the two
 // resident-facing roles. The parent login expiry remains authoritative.
 func (s *SessionStore) PutRolePreview(parent Session, previewRole string, startedAt time.Time, previewExpiresAt time.Time) (string, time.Time, error) {
@@ -220,8 +245,10 @@ func (s *SessionStore) putSession(item Session) (string, time.Time, error) {
 	item.TenantSlug = textutil.Slug(item.TenantSlug)
 	item.AuthMethod = store.NormalizeAuthMethod(item.AuthMethod)
 	item.Role = store.NormalizeRole(item.Role)
+	item.SupportTargetEmail = textutil.Email(item.SupportTargetEmail)
+	item.SupportTargetRole = store.NormalizeRole(item.SupportTargetRole)
 	item.PreviewRole = store.NormalizeRole(item.PreviewRole)
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() || !validRolePreview(item) {
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() || !validRolePreview(item) || !validSupportSession(item) {
 		return "", time.Time{}, fmt.Errorf("invalid session")
 	}
 	payload, err := json.Marshal(item)
@@ -311,8 +338,10 @@ func (s *SessionStore) verify(token string) (Session, bool) {
 	item.TenantSlug = textutil.Slug(item.TenantSlug)
 	item.AuthMethod = store.NormalizeAuthMethod(item.AuthMethod)
 	item.Role = store.NormalizeRole(item.Role)
+	item.SupportTargetEmail = textutil.Email(item.SupportTargetEmail)
+	item.SupportTargetRole = store.NormalizeRole(item.SupportTargetRole)
 	item.PreviewRole = store.NormalizeRole(item.PreviewRole)
-	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() || !validRolePreview(item) {
+	if item.Email == "" || item.TenantSlug == "" || item.AuthMethod == "" || !validSessionRole(item.Role) || item.ExpiresAt <= time.Now().Unix() || !validRolePreview(item) || !validSupportSession(item) {
 		return Session{}, false
 	}
 	return item, true
@@ -326,6 +355,13 @@ func validRolePreview(item Session) bool {
 		return false
 	}
 	return item.PreviewStartedAt > 0 && item.PreviewExpiresAt > item.PreviewStartedAt && item.PreviewExpiresAt <= item.ExpiresAt
+}
+
+func validSupportSession(item Session) bool {
+	if item.SupportTargetEmail == "" && item.SupportTargetRole == "" && item.SupportStartedAt == 0 && item.SupportExpiresAt == 0 {
+		return true
+	}
+	return item.SupportTargetEmail != "" && item.SupportTargetEmail != item.Email && item.SupportTargetRole != "" && validSessionRole(item.SupportTargetRole) && item.Role == store.RoleAdmin && item.PreviewRole == "" && item.PreviewStartedAt == 0 && item.PreviewExpiresAt == 0 && item.SupportStartedAt > 0 && item.SupportStartedAt <= time.Now().Unix() && item.SupportStartedAt < item.SupportExpiresAt && item.SupportExpiresAt-item.SupportStartedAt <= 15*60 && item.SupportExpiresAt <= item.ExpiresAt
 }
 
 func validSessionRole(role string) bool {

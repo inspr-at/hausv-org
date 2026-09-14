@@ -1121,8 +1121,10 @@ func (a *app) energyCockpit(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	// Named EVs from the pilot inventory predate per-consumer mappings. When
 	// Home Assistant exposes an unambiguous matching home-charging sensor, bind
 	// it once and then use the normal persisted measurement path.
-	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
-		mappings = updated
+	if ac.supportView == nil {
+		if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
+			mappings = updated
+		}
 	}
 	metrics, _, liveLastSeen := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
 	live := buildEnergyLiveView(metrics)
@@ -1290,8 +1292,10 @@ func (a *app) energyLiveRefresh(w http.ResponseWriter, r *http.Request, ac authC
 	}
 	assets, _ := a.energyFor(ac).ListAssets(ac.tenant.Slug)
 	mappings, _ := a.energyFor(ac).ListMappings(ac.tenant.Slug)
-	if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
-		mappings = updated
+	if ac.supportView == nil {
+		if updated, changed := a.ensureNamedEVMeasurementMappings(r.Context(), ac.tenant, assets, mappings); changed {
+			mappings = updated
+		}
 	}
 	metrics, _, _ := a.currentEnergyMetrics(r.Context(), ac.tenant, mappings, profile)
 	if len(metrics) == 0 {

@@ -205,7 +205,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
 	openIssueCreate := canCreateIssue && (!msgOK && msg != "" || r.URL.Query().Get("new") == "1" || len(issues) == 0)
 	calendarFeedURL := ""
-	if token, err := a.calendarFeedToken(email, tenant.Slug); err == nil {
+	if token, err := a.calendarFeedTokenForActor(ac); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"
 	}
 	serviceContacts := a.serviceContactOptions(ac.repositories.contacts)

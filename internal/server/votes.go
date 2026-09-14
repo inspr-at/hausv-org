@@ -212,13 +212,14 @@ func (a *app) ballots(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	now := time.Now()
 	all := []ballot{}
 	if a.voteStore != nil {
-		if _, err := ac.repositories.votes.CloseExpired(now); err != nil {
+		if err := closeExpiredBallotsForActor(ac, now); err != nil {
 			logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 		}
 		all = ac.repositories.votes.List()
 	}
 	visible := make([]ballot, 0, len(all))
 	for _, item := range all {
+		item = ballotForSupport(ac, item, now)
 		switch normalizeBallotStatus(item.Status) {
 		case ballotStatusOpen, ballotStatusClosed:
 			visible = append(visible, item)
@@ -397,7 +398,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		return
 	}
 	now := time.Now()
-	if _, err := ac.repositories.votes.CloseExpired(now); err != nil {
+	if err := closeExpiredBallotsForActor(ac, now); err != nil {
 		logError("ballot auto-close failed", err, "tenant", tenant.Slug)
 	}
 	id := strings.TrimSpace(r.PathValue("id"))
@@ -406,6 +407,7 @@ func (a *app) ballotProtocol(w http.ResponseWriter, r *http.Request, ac authCtx)
 		http.NotFound(w, r)
 		return
 	}
+	item = ballotForSupport(ac, item, now)
 	if normalizeBallotStatus(item.Status) != ballotStatusClosed {
 		http.Error(w, "Protokoll erst nach Abschluss verfügbar.", http.StatusConflict)
 		return
@@ -846,3 +848,19 @@ func (a *app) ballotReminderRecipients(units unitRepository, tenant store.Tenant
 // StartVoteReminderWorker starts the ballot-reminder worker; the returned func
 // stops it.
 func (a *app) StartVoteReminderWorker() func() { return a.startVoteReminderWorker() }
+
+// A support read reflects expiry without persisting a lifecycle transition.
+func closeExpiredBallotsForActor(ac authCtx, now time.Time) error {
+	if ac.supportView != nil {
+		return nil
+	}
+	_, err := ac.repositories.votes.CloseExpired(now)
+	return err
+}
+func ballotForSupport(ac authCtx, item ballot, now time.Time) ballot {
+	if ac.supportView != nil && normalizeBallotStatus(item.Status) == ballotStatusOpen && !item.ClosesAt.IsZero() && !now.Before(item.ClosesAt) {
+		item.Status = ballotStatusClosed
+		item.UpdatedAt = now
+	}
+	return item
+}

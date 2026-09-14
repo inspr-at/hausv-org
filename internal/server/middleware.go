@@ -87,6 +87,8 @@ type authCtx struct {
 	email        string
 	role         string
 	realRole     string
+	realEmail    string
+	supportView  *supportViewContext
 	preview      *rolePreviewContext
 	tenant       tenantConfig
 	tenantRef    store.TenantRef
@@ -133,6 +135,19 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		return authCtx{}, false
 	}
 	tenant := resolved.tenant
+	if session, ok := a.sessionForRequest(r); ok && session.SupportTargetEmail != "" {
+		if session.TenantSlug != tenant.Slug {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return authCtx{}, false
+		}
+		if reason := a.supportSessionEndReason(session); reason != "" {
+			a.terminateSupportView(w, r, session, reason)
+			return authCtx{}, false
+		}
+		return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: session.SupportTargetEmail, role: session.SupportTargetRole, realEmail: session.Email, realRole: session.Role,
+			supportView: a.supportContextForSession(session),
+			tenant:      tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+	}
 	if session, ok := a.rolePreviewSessionForRequest(r); ok && session.PreviewRole != "" {
 		if session.TenantSlug != tenant.Slug {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -153,7 +168,7 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return authCtx{}, false
 	}
-	return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, realRole: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
+	return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, realEmail: email, realRole: role, tenant: tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
 }
 
 func (a *app) rolePreviewSessionForRequest(r *http.Request) (auth.Session, bool) {
@@ -230,6 +245,14 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ac, ok := a.authenticate(w, r)
 		if !ok {
+			return
+		}
+		if ac.supportView != nil {
+			if r.Header.Get("Sec-Fetch-Dest") == "document" || strings.Contains(r.Header.Get("Accept"), "text/html") {
+				a.writeErrorPage(w, r, ac, true, http.StatusForbidden, "Die Supportansicht ist schreibgeschützt. Bitte zuerst die Supportansicht beenden.")
+				return
+			}
+			http.Error(w, "Die Supportansicht ist schreibgeschützt. Bitte zuerst die Supportansicht beenden.", http.StatusForbidden)
 			return
 		}
 		if ac.preview != nil && !strings.HasSuffix(r.URL.Path, "/app/ansicht/ende") {

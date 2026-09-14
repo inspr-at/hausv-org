@@ -401,7 +401,7 @@ func UserInvite(data UserSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = AccessOptions(false, false, true, true).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccessOptions(false, false, true, true, data.IsAdmin, false).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1773,7 +1773,7 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccessOptions(user.ParkingChecked, user.EnergyCaretakerChecked, user.EmailAuthChecked, user.OIDCAuthChecked, data.IsAdmin, user.SupportViewChecked).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1832,7 +1832,7 @@ func UserEditDialog(data UserSettingsPageData, user view.UserRow) templ.Componen
 	})
 }
 
-func AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) templ.Component {
+func AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth, admin, support bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1853,47 +1853,67 @@ func AccessOptions(parking, energyCaretaker, emailAuth, oidcAuth bool) templ.Com
 			templ_7745c5c3_Var81 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "<div class=\"access-options\"><fieldset><legend>Sonderrechte</legend><span class=\"scope personal\" data-preset-label>Gespeicherte Rechte</span><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"parking\" data-permission=\"parking\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "<div class=\"access-options\"><fieldset><legend>Sonderrechte</legend> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if admin {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "<label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"support-view\" data-permission=\"support-view\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if support {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, " checked")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "><span><strong>Supportansicht</strong><small>Erlaubt Admins eine protokollierte, schreibgeschützte Ansicht als andere Person.</small></span></label> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "<span class=\"scope personal\" data-preset-label>Gespeicherte Rechte</span><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"parking\" data-permission=\"parking\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if parking {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 177, "><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"energy-caretaker\" data-permission=\"energy-caretaker\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if energyCaretaker {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"email\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if emailAuth {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"oidc\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "><span><strong>Parkplatznutzung</strong><small>Privater Bereich für Stellplatz- und Ladeabrechnung.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"permissions\" value=\"energy-caretaker\" data-permission=\"energy-caretaker\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if oidcAuth {
+		if energyCaretaker {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Zugang zur Liegenschaft.</small></span></label></fieldset></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "><span><strong>Technische Vertrauensperson</strong><small>Darf Energiedaten ansehen und die Einrichtung unterstützen.</small></span></label></fieldset><fieldset><legend>Anmeldung</legend><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"email\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if emailAuth {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "><span><strong>E-Mail-Link</strong><small>Anmeldung per Magic-Link.</small></span></label><label class=\"check-card\"><input type=\"checkbox\" name=\"auth_methods\" value=\"oidc\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if oidcAuth {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "><span><strong>Sichere Anmeldung</strong><small>Anmeldung über den zentralen Zugang zur Liegenschaft.</small></span></label></fieldset></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1922,7 +1942,7 @@ func UserSettingsStyles() templ.Component {
 			templ_7745c5c3_Var82 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "<style>\n  .users .portal-section-header{align-items:center;padding-top:24px}.users .button.primary{color:var(--nav)}.users [data-templ-user-settings]{display:grid;gap:16px}.users .metrics.four{grid-template-columns:repeat(4,minmax(0,1fr));background:var(--panel);border-radius:8px}.users .metrics.four>span{display:grid;padding:16px;border-left:1px solid var(--line)}.users .metrics.four>span:first-child{border-left:0}.users .metrics strong{font-size:28px}.users .metrics small{font-size:13px}\n  .users-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);align-items:start;gap:16px;scroll-margin-top:80px}.people-panel{min-width:0;padding:16px;box-shadow:none}.people-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}.people-head h2{font-size:28px}.people-head h2 small{font-size:16px;color:var(--muted);margin-left:8px}.people-head p{color:var(--muted);font-size:13px;margin-top:4px}.people-filters{display:flex;gap:8px;flex:1 1 256px;justify-content:flex-end}.people-filters label{min-width:0}.people-filters label:first-child{flex:1 1 160px;max-width:224px}.people-filters input,.people-filters select{min-width:0;padding:8px;min-height:40px;font-size:13px}.people-columns{display:grid;grid-template-columns:minmax(0,1fr) 112px 88px 40px;gap:8px;padding:0 8px 8px;color:var(--muted);font-size:12px}.users .user-list{gap:8px}\n  .users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 88px 40px;gap:8px;padding:8px;min-height:72px;position:relative;box-shadow:none}.users .user-card.is-selected{border-color:var(--gold);background:var(--panel-soft)}.users .user-avatar{width:48px;height:48px;font-size:18px}.users .user-identity{gap:2px}.users .user-select{display:block;color:var(--ink);font-size:14px;text-decoration:none}.users .user-select::after{content:\"\";position:absolute;inset:0;border-radius:8px}.users .user-identity>a:not(.user-select),.users .row-edit{position:relative;z-index:1}.users .user-select:focus-visible::after{outline:2px solid var(--gold-ink);outline-offset:2px}.users .user-identity small,.users .user-identity>a:not(.user-select){font-size:11px;line-height:1.3}.user-role{display:grid;gap:4px;font-size:13px;overflow-wrap:anywhere}.user-role small{color:var(--muted);font-size:11px}.user-status{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.user-status>span{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}.user-status.active>span{background:var(--leaf)}.users .icon-button{width:40px;height:40px;font-size:18px}.users .icon-button svg,.users .access-edit svg,.users .button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}.user-readonly{text-align:center;color:var(--muted)}.people-count,.users-no-match{margin-top:16px;color:var(--muted);font-size:12px}\n  .user-access-stack{display:grid;gap:16px;min-width:0}.user-access{display:grid;gap:24px;padding:24px;min-width:0;box-shadow:none;scroll-margin-top:80px}.user-access>.eyebrow{color:var(--muted);font-size:10px}.access-person{display:flex;align-items:center;gap:16px;min-width:0}.access-person>div{min-width:0}.access-person h2{font-size:26px;line-height:1.2;overflow-wrap:anywhere;margin-bottom:8px}.users .access-person .user-avatar{width:56px;height:56px;flex-shrink:0}.access-facts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}.access-facts dt{color:var(--muted)}.access-facts dd{margin:0;overflow-wrap:anywhere}.access-units h3{font-size:22px}.access-units>p{font-size:12px;color:var(--muted);line-height:1.5}.unit-tree{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 16px}.unit-tree>summary{display:flex;gap:8px;align-items:center;padding:8px 24px 8px 0;cursor:pointer;font-size:13px}.unit-tree>summary svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.unit-tree>summary span{min-width:0;overflow-wrap:anywhere}.unit-tree>summary small{display:block;margin-top:4px;color:var(--muted);font-size:12px}.unit-branch{border-top:1px solid var(--line)}.unit-branch>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:48px;padding:8px 24px 8px 0;font-size:13px;font-weight:700}.unit-branch>summary small{font-weight:400}.unit-branch ul,.permission-family ul{margin:0 0 8px;padding:0 0 0 16px;list-style:none;border-left:1px solid var(--line)}.unit-branch li,.permission-family li{padding:4px 0;color:var(--muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere}.unit-branch ul{max-height:160px;overflow:auto}.access-help{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}.access-permissions{border-block:1px solid var(--line)}.access-permissions>summary{min-height:48px;display:flex;align-items:center;padding-right:24px;cursor:pointer;font-size:13px}.permission-family{padding:8px 0}.permission-family>summary,.permission-area>summary{cursor:pointer;font-size:13px;padding:8px 24px 8px 0}.permission-family>summary{font-weight:700}.permission-area{margin-left:16px}.permission-area>summary{color:var(--gold-ink)}.access-edit{width:100%;min-height:48px}.users .danger>summary,.users .danger button{color:var(--gold-ink);border-color:var(--line)}.users .flash.bad{color:var(--gold-ink);background:var(--panel-soft);border-color:var(--line)}.users .user-dialog{position:fixed;z-index:10}.users .user-dialog .form-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.users .user-dialog label{font-size:12px}.users .user-dialog input,.users .user-dialog select{font-size:16px}.users .user-dialog .check-card input{width:20px;min-height:20px}\n  .users .invite>form{display:grid;gap:16px}.users-enhanced .invite:not([open]){display:none}.users [hidden]{display:none!important}\n  @media(max-width:1200px){.users-layout{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}.users .user-card{grid-template-columns:40px minmax(0,1fr) 88px 40px}.users .user-card>.user-avatar{width:40px;height:40px}.users .user-role{grid-column:2;grid-row:2;display:flex;gap:8px}.users .user-status{grid-column:3;grid-row:1/3}.users .user-card>.row-edit,.users .user-readonly{grid-column:4;grid-row:1/3}.people-columns{display:none}.user-access{padding:16px}}\n  @media(max-width:1000px){.users-layout{grid-template-columns:minmax(0,1fr)}.user-access-stack{grid-row:2}.users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 96px 40px}.users .user-role{grid-column:3;grid-row:1;display:grid}.users .user-status{grid-column:4;grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-column:5;grid-row:1}}\n  @media(max-width:600px){.users .metrics.four{grid-template-columns:repeat(2,minmax(0,1fr))}.users .metrics.four>span:nth-child(3){border-left:0;border-top:1px solid var(--line)}.users .metrics.four>span:nth-child(4){border-top:1px solid var(--line)}.people-panel{padding:8px}.people-head{padding:8px}.people-filters{flex-basis:100%;justify-content:flex-start}.users .user-card{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px}.users .user-card>.user-avatar,.users .user-card>.user-identity{grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-row:1;grid-column:3}.users .user-role{grid-column:2/-1;grid-row:2;display:flex}.users .user-status{grid-column:2/-1;grid-row:3}.users .user-dialog .form-grid.three{grid-template-columns:minmax(0,1fr)}.users .access-options{grid-template-columns:minmax(0,1fr)}}\n  .users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary{position:relative;list-style:none;padding-right:24px}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::-webkit-details-marker{display:none}\n </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "<style>\n  .users .portal-section-header{align-items:center;padding-top:24px}.users .button.primary{color:var(--nav)}.users [data-templ-user-settings]{display:grid;gap:16px}.users .metrics.four{grid-template-columns:repeat(4,minmax(0,1fr));background:var(--panel);border-radius:8px}.users .metrics.four>span{display:grid;padding:16px;border-left:1px solid var(--line)}.users .metrics.four>span:first-child{border-left:0}.users .metrics strong{font-size:28px}.users .metrics small{font-size:13px}\n  .users-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);align-items:start;gap:16px;scroll-margin-top:80px}.people-panel{min-width:0;padding:16px;box-shadow:none}.people-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}.people-head h2{font-size:28px}.people-head h2 small{font-size:16px;color:var(--muted);margin-left:8px}.people-head p{color:var(--muted);font-size:13px;margin-top:4px}.people-filters{display:flex;gap:8px;flex:1 1 256px;justify-content:flex-end}.people-filters label{min-width:0}.people-filters label:first-child{flex:1 1 160px;max-width:224px}.people-filters input,.people-filters select{min-width:0;padding:8px;min-height:40px;font-size:13px}.people-columns{display:grid;grid-template-columns:minmax(0,1fr) 112px 88px 40px;gap:8px;padding:0 8px 8px;color:var(--muted);font-size:12px}.users .user-list{gap:8px}\n  .users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 88px 40px;gap:8px;padding:8px;min-height:72px;position:relative;box-shadow:none}.users .user-card.is-selected{border-color:var(--gold);background:var(--panel-soft)}.users .user-avatar{width:48px;height:48px;font-size:18px}.users .user-identity{gap:2px}.users .user-select{display:block;color:var(--ink);font-size:14px;text-decoration:none}.users .user-select::after{content:\"\";position:absolute;inset:0;border-radius:8px}.users .user-identity>a:not(.user-select),.users .row-edit{position:relative;z-index:1}.users .user-select:focus-visible::after{outline:2px solid var(--gold-ink);outline-offset:2px}.users .user-identity small,.users .user-identity>a:not(.user-select){font-size:11px;line-height:1.3}.user-role{display:grid;gap:4px;font-size:13px;overflow-wrap:anywhere}.user-role small{color:var(--muted);font-size:11px}.user-status{display:flex;align-items:center;gap:8px;font-size:12px;overflow-wrap:anywhere}.user-status>span{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}.user-status.active>span{background:var(--leaf)}.users .icon-button{width:40px;height:40px;font-size:18px}.users .icon-button svg,.users .access-edit svg,.users .button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}.user-readonly{text-align:center;color:var(--muted)}.people-count,.users-no-match{margin-top:16px;color:var(--muted);font-size:12px}\n  .user-access-stack{display:grid;gap:16px;min-width:0}.user-access{display:grid;gap:24px;padding:24px;min-width:0;box-shadow:none;scroll-margin-top:80px}.user-access>.eyebrow{color:var(--muted);font-size:10px}.access-person{display:flex;align-items:center;gap:16px;min-width:0}.access-person>div{min-width:0}.access-person h2{font-size:26px;line-height:1.2;overflow-wrap:anywhere;margin-bottom:8px}.users .access-person .user-avatar{width:56px;height:56px;flex-shrink:0}.access-facts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}.access-facts dt{color:var(--muted)}.access-facts dd{margin:0;overflow-wrap:anywhere}.access-units h3{font-size:22px}.access-units>p{font-size:12px;color:var(--muted);line-height:1.5}.unit-tree{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 16px}.unit-tree>summary{display:flex;gap:8px;align-items:center;padding:8px 24px 8px 0;cursor:pointer;font-size:13px}.unit-tree>summary svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}.unit-tree>summary span{min-width:0;overflow-wrap:anywhere}.unit-tree>summary small{display:block;margin-top:4px;color:var(--muted);font-size:12px}.unit-branch{border-top:1px solid var(--line)}.unit-branch>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:48px;padding:8px 24px 8px 0;font-size:13px;font-weight:700}.unit-branch>summary small{font-weight:400}.unit-branch ul,.permission-family ul{margin:0 0 8px;padding:0 0 0 16px;list-style:none;border-left:1px solid var(--line)}.unit-branch li,.permission-family li{padding:4px 0;color:var(--muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere}.unit-branch ul{max-height:160px;overflow:auto}.access-help{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}.access-permissions{border-block:1px solid var(--line)}.access-permissions>summary{min-height:48px;display:flex;align-items:center;padding-right:24px;cursor:pointer;font-size:13px}.permission-family{padding:8px 0}.permission-family>summary,.permission-area>summary{cursor:pointer;font-size:13px;padding:8px 24px 8px 0}.permission-family>summary{font-weight:700}.permission-area{margin-left:16px}.permission-area>summary{color:var(--gold-ink)}.access-edit{width:100%;min-height:48px}.users .danger>summary,.users .danger button{color:var(--gold-ink);border-color:var(--line)}.users .flash.bad{color:var(--gold-ink);background:var(--panel-soft);border-color:var(--line)}.users .user-dialog{position:fixed;z-index:10}.users .user-dialog .form-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.users .user-dialog label{font-size:12px}.users .user-dialog input,.users .user-dialog select{font-size:16px}.users .user-dialog .check-card input{width:20px;min-height:20px}\n  .users .invite>form{display:grid;gap:16px}.users-enhanced .invite:not([open]){display:none}.users [hidden]{display:none!important}\n  @media(max-width:1200px){.users-layout{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}.users .user-card{grid-template-columns:40px minmax(0,1fr) 88px 40px}.users .user-card>.user-avatar{width:40px;height:40px}.users .user-role{grid-column:2;grid-row:2;display:flex;gap:8px}.users .user-status{grid-column:3;grid-row:1/3}.users .user-card>.row-edit,.users .user-readonly{grid-column:4;grid-row:1/3}.people-columns{display:none}.user-access{padding:16px}}\n  @media(max-width:1000px){.users-layout{grid-template-columns:minmax(0,1fr)}.user-access-stack{grid-row:2}.users .user-card{grid-template-columns:48px minmax(0,1fr) 112px 96px 40px}.users .user-role{grid-column:3;grid-row:1;display:grid}.users .user-status{grid-column:4;grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-column:5;grid-row:1}}\n  @media(max-width:600px){.users .metrics.four{grid-template-columns:repeat(2,minmax(0,1fr))}.users .metrics.four>span:nth-child(3){border-left:0;border-top:1px solid var(--line)}.users .metrics.four>span:nth-child(4){border-top:1px solid var(--line)}.people-panel{padding:8px}.people-head{padding:8px}.people-filters{flex-basis:100%;justify-content:flex-start}.users .user-card{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px}.users .user-card>.user-avatar,.users .user-card>.user-identity{grid-row:1}.users .user-card>.row-edit,.users .user-readonly{grid-row:1;grid-column:3}.users .user-role{grid-column:2/-1;grid-row:2;display:flex}.users .user-status{grid-column:2/-1;grid-row:3}.users .user-dialog .form-grid.three{grid-template-columns:minmax(0,1fr)}.users .access-options{grid-template-columns:minmax(0,1fr)}}\n  .users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary{position:relative;list-style:none;padding-right:24px}.users :is(.unit-tree,.unit-branch,.permission-family,.permission-area,.access-permissions)>summary::-webkit-details-marker{display:none}\n </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -181,6 +181,14 @@ fi
 : >"$app_log"
 start_portal
 
+node "$repo/scripts/snapshot/qa-support-view.mjs" "http://localhost:$port" >"$log_dir/support-view.log" 2>&1
+support_status=$?
+if [ "$support_status" -ne 0 ]; then
+    cat "$log_dir/support-view.log" >&2
+    exit "$support_status"
+fi
+cat "$log_dir/support-view.log"
+
 if [ "${HV_QA_ENERGY_ONLY:-}" = true ]; then
     echo "── running focused Playwright energy and breakpoint flows"
 elif [ "${HV_QA_CI_CORE:-}" = true ]; then

@@ -828,7 +828,7 @@ func (a *app) inboxOpenCount(ac *authCtx) int {
 }
 
 func (a *app) managedIntakeFilter(ac *authCtx, statuses []store.IntakeStatus) store.IntakeFilter {
-	filter := store.IntakeFilter{Statuses: statuses, IncludeUnassigned: true}
+	filter := store.IntakeFilter{Statuses: statuses, IncludeUnassigned: ac.supportView == nil}
 	for _, tenant := range a.managedTenants(ac) {
 		filter.TenantSlugs = append(filter.TenantSlugs, tenant.Ref.Slug)
 	}
@@ -874,7 +874,7 @@ func (a *app) actorManagesTenant(ac *authCtx, slug string) bool {
 }
 func (a *app) actorCanAccessIntake(ac *authCtx, item store.IntakeItem) bool {
 	if item.TenantSlug == "" {
-		return len(a.managedTenants(ac)) > 0
+		return ac.supportView == nil && len(a.managedTenants(ac)) > 0
 	}
 	return a.actorManagesTenant(ac, item.TenantSlug)
 }

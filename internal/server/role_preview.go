@@ -184,7 +184,7 @@ func rolePreviewPortalData(ac *authCtx) *web.RolePreviewState {
 }
 
 func (a *app) rolePreviewChoices(ac *authCtx) []web.RolePreviewChoice {
-	if ac == nil || ac.preview != nil || normalizeRole(ac.realRole) != roleAdmin {
+	if ac == nil || ac.supportView != nil || ac.preview != nil || normalizeRole(ac.realRole) != roleAdmin {
 		return nil
 	}
 	return []web.RolePreviewChoice{

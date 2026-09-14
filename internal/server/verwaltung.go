@@ -27,6 +27,12 @@ func (a *app) managedTenants(ac *authCtx) []managedTenant {
 	if ac.preview != nil {
 		return nil
 	}
+	if ac.supportView != nil {
+		if ac.role != roleAdmin && ac.role != roleManager {
+			return nil
+		}
+		return []managedTenant{{Ref: ac.tenantRef, Config: ac.tenant, Role: ac.role}}
+	}
 	email := normalizeEmail(ac.email)
 	_, breakGlass := a.admins[email]
 	slugs := a.ownTenantSlugs(email)
@@ -194,7 +200,7 @@ func (a *app) organisationHouseContext(ctx context.Context, ac *authCtx) authCtx
 	if a.isSwitcherProperty(ac.tenant.Slug) {
 		return *ac
 	}
-	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	contexts := a.portalContextsForActor(ac)
 	selectHouse := func(slug, role string) (authCtx, bool) {
 		if !a.isSwitcherProperty(slug) {
 			return authCtx{}, false

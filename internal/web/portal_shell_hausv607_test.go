@@ -31,7 +31,7 @@ func TestRolePreviewBandAndChooserRenderOnlyWhenConfigured(t *testing.T) {
 		"Hausverwaltung", "Ihre Rolle · Portfolio, Posteingang, alle Häuser",
 		"Ruhiger Hausüberblick, Dokumente, Abstimmungen", "Bewohner",
 		"Hausüberblick, Aushang, eigene Anliegen", "Bestimmte Person (Supportansicht)",
-		"Nur Plattform-Admin", `class="role-preview-row role-preview-row-disabled" aria-disabled="true"`,
+		"Separate Freigabe erforderlich", `class="role-preview-row role-preview-row-disabled" aria-disabled="true"`,
 		"15 Minuten · schreibgeschützt · wird protokolliert", "Aktuell",
 	} {
 		if !strings.Contains(with, want) {

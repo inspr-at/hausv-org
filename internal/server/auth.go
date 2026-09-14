@@ -332,7 +332,7 @@ func (a *app) verifyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.startSession(w, email, tenantSlug, authMethodEmail); errors.Is(err, errServiceProviderAccessClosed) {
+	if err := a.startSession(w, r, email, tenantSlug, authMethodEmail); errors.Is(err, errServiceProviderAccessClosed) {
 		http.Error(w, serviceProviderAccessClosedMessage, http.StatusForbidden)
 		return
 	} else if err != nil {
@@ -569,7 +569,7 @@ func (a *app) finishOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, tenant.PublicURL("/?denied=1"), http.StatusSeeOther)
 		return
 	}
-	if err := a.startSession(w, email, tenant.Slug, authMethodOIDC); err != nil {
+	if err := a.startSession(w, r, email, tenant.Slug, authMethodOIDC); err != nil {
 		http.Error(w, "Could not create session", http.StatusInternalServerError)
 		return
 	}
@@ -583,13 +583,26 @@ func (a *app) oidcRedirectURL() string {
 	return a.oidc.RedirectURL(a.baseURL)
 }
 
-func (a *app) startSession(w http.ResponseWriter, email string, tenantSlug string, authMethod string) error {
+func (a *app) startSession(w http.ResponseWriter, r *http.Request, email string, tenantSlug string, authMethod string) error {
 	if a.serviceProviderAccessClosedFor(tenantSlug, email) {
 		return errServiceProviderAccessClosed
 	}
 	token, expiresAt, err := a.sessions.Put(email, tenantSlug, authMethod, a.sessionTTL)
 	if err != nil {
 		return err
+	}
+	if r != nil {
+		if c, e := r.Cookie("weg_session"); e == nil {
+			if current, ok := a.sessions.GetSession(c.Value); ok {
+				if current.SupportTargetEmail != "" {
+					a.recordSupportViewEnd(current, "relogin")
+				}
+				if current.PreviewRole != "" {
+					a.recordRolePreviewEnd(current, "relogin")
+				}
+			}
+			a.sessions.Delete(c.Value)
+		}
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "weg_session",
@@ -626,6 +639,9 @@ func (a *app) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c, err := r.Cookie("weg_session"); err == nil {
+		if session, ok := a.sessions.GetSession(c.Value); ok && session.SupportTargetEmail != "" {
+			a.recordSupportViewEnd(session, "logout")
+		}
 		if session, ok := a.sessions.GetSession(c.Value); ok && session.PreviewRole != "" {
 			a.recordRolePreviewEnd(session, "logout")
 		}

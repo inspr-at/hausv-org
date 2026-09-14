@@ -21,6 +21,7 @@ const (
 	PermissionEnergyView      = "energy-view"
 	PermissionEnergyConfigure = "energy-configure"
 	PermissionEnergyControl   = "energy-control"
+	PermissionSupportView     = "support-view"
 	// PermissionEnergyCaretaker is the legacy combined view/configure grant.
 	// It remains readable so existing profiles do not lose access.
 	PermissionEnergyCaretaker = "energy-caretaker"

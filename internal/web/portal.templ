@@ -456,6 +456,9 @@ templ PortalNavigation(data PortalPageData, icons bool, renderHouseHeader bool) 
 // permission-gated navigation.
 templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 	{{ scope := portalScopeContext(data) }}
+	if scope.SupportView != nil {
+ @SupportViewBanner(*scope.SupportView)
+ }
 	@Kontextleiste(scope, false, nil)
 	@Kontextleiste(scope, true, PortalMobileNavigation(data))
 }

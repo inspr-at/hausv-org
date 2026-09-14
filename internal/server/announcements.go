@@ -71,7 +71,7 @@ func (a *app) announcements(w http.ResponseWriter, r *http.Request, ac authCtx) 
 		AnnouncementsBlank:     emptyState("Noch keine Beiträge", "Sobald ein Aushang veröffentlicht ist, erscheint er hier."),
 		HasAnyAnnouncements:    len(archive) > 0,
 	})
-	if announcementReads != nil {
+	if ac.supportView == nil && announcementReads != nil {
 		if err := announcementReads.MarkSeen(email, now); err != nil {
 			logError("announcement read mark failed", err, "tenant", tenant.Slug, "actor", redactedEmail(email))
 		}

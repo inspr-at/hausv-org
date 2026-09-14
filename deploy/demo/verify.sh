@@ -24,7 +24,7 @@ check() {
 }
 
 healthcheck() {
-    curl --fail --silent --show-error "$base_url/healthz" | grep -q '"status":"ok"'
+    curl --fail --silent --show-error "$base_url/healthz" | grep -F '"status":"ok"' >/dev/null
 }
 
 login_vera() {
@@ -43,11 +43,13 @@ login_vera() {
     curl --fail --silent --show-error --location --cookie "$cookie_jar" --cookie-jar "$cookie_jar" "$target" >/dev/null
 }
 
+# Consume the complete response: grep -q can close the pipe early and turn a
+# successful match into SIGPIPE (141) under pipefail on larger portal pages.
 verwaltung_page() {
     local page
     page=$(curl --fail --silent --show-error --cookie "$cookie_jar" "$base_url/app/verwaltung")
-    printf '%s' "$page" | grep -q 'Hausverwaltung Musterstadt GmbH'
-    printf '%s' "$page" | grep -q 'Janusbergweg 123'
+    printf '%s' "$page" | grep -F 'Hausverwaltung Musterstadt GmbH' >/dev/null
+    printf '%s' "$page" | grep -F 'Janusbergweg 123' >/dev/null
 }
 
 inbox_count() {
@@ -56,7 +58,7 @@ inbox_count() {
     local page text
     page=$(curl --fail --silent --show-error --cookie "$cookie_jar" "$base_url/app/verwaltung/posteingang")
     text=$(printf '%s' "$page" | tr '\n' ' ' | sed 's/<[^>]*>/ /g')
-    printf '%s' "$text" | grep -Eq '(^|[^0-9])[1-9][0-9]* offen'
+    printf '%s' "$text" | grep -E '(^|[^0-9])[1-9][0-9]* offen' >/dev/null
 }
 
 check 'healthz' healthcheck

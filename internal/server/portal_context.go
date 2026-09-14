@@ -112,7 +112,7 @@ func (a *app) portalShellData(ac *authCtx) web.PortalShellData {
 		shell.IsVerwaltung = shell.CanManageOrganisationSettings || len(managed) > 1
 	}
 
-	contexts := a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
+	contexts := a.portalContextsForActor(ac)
 	// The picker offers every house the person can switch to: the ones they
 	// administer plus the ones they own or rent. ScopeContext also preserves
 	// every personal role and private Home portal in the shared panel.
