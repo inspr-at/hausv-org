@@ -505,15 +505,16 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   registry entry in `hostnames.json` (DNS + aliases), `/srv/hausv-demo` and a
   boot unit that runs `up -d` for the bundle. Rotating the access code is a
   secret edit plus deploy there; the AGM-16 trigger restarts the bundle.
-- This repository owns the application half. The image is private and CI
-  never pushes it, so the code travels exactly like production: `git archive
-  HEAD` to the host, built there, run from `deploy/demo/`. Ship with
+- This repository owns the application half. After the candidate passes CI,
+  `git archive HEAD` sends its source to the demo host, where the separate
+  demo image is built and run from `deploy/demo/`. Production uses the CI-built
+  GHCR image through the path above. Ship the demo with
 
   ```sh
   HAUSV_DEMO_SSH_HOST=mba@<ip> HAUSV_DEMO_SSH_PORT=2222 HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy \
   HAUSV_DEMO_BASE_URL=https://hausv.agm.ng \
   HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env \
-  deploy/demo/deploy-remote.sh --seed
+  deploy/demo/deploy-remote.sh
   ```
 
   It refuses a dirty tree, keeps every release in
@@ -523,10 +524,17 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   prints the rollback line. `HAUSV_DEMO_SECRETS_FILE` is the host-side path
   that replaces `./secrets.env` in the compose `env_file` list;
   `HAUSV_DEMO_SEED_ANCHOR=today` shifts the fixture dates to the deploy day.
+  The immutable release manifest requires host-side Python 3. If `python3`
+  is not in the remote shell's PATH, pass its existing absolute executable path
+  as `HAUSV_DEMO_PYTHON`; the deploy checks it before building or activating.
   The compose project is `hausv-demo`; a manual `seed.sh`/`reset.sh` on the
   host needs `COMPOSE_PROJECT_NAME=hausv-demo` (or `HAUSV_DEMO_PROJECT`).
-- No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
-  and the data is disposable.
+- Demo uses the canonical reserved `VERSION`, with `demo` as a separate release
+  channel and the commit as separate metadata. Before activation, the immutable
+  `/srv/hausv-demo/release-records/<version>.json` freezes the image and binary
+  digests. Reusing a frozen coordinate is refused. The release coordinator
+  checks CI; the script itself does not query it. Normal releases preserve
+  existing demo data; use `--seed` only for explicitly requested fixture resets.
 - Proxy trust: with a public `BASE_URL` the app refuses to start without
   `TRUSTED_PROXY_CIDRS`. The bundle pins its compose subnet
   (`HAUSV_DEMO_SUBNET`, default `172.30.98.0/24`) so the proxy's source address
@@ -561,3 +569,39 @@ Total wall-clock for restore, database, comparison and app boot: under three
 minutes; evidence (dump, blob copy, row inventories, scripts) stays in
 `/home/mba/drills/hausv-restore-20260910/` on csb1. Repeat the drill after every
 schema series and at least quarterly; record it on the HAUSV-520 line of work.
+
+## Kalender-Versionen ab 260914170935.0.0
+
+HAUSV verwendet `inspr-calendar-v2`: `YYMMDDhhmmss.0.0`, einmal in UTC
+reserviert. `VERSION` ist die maßgebliche Koordinate. `internal/version/release.json`
+und `internal/version/release.go` tragen Kanal, fortlaufende Release-Sequenz und
+den Übergang von der unveränderten letzten Legacy-Version `1.11.0` zur ersten
+Kalender-Version (Sequenz 1). Neue Releases erhöhen die Sequenz und verwenden eine
+spätere UTC-Sekunde; `.0.0` bleibt konstant. Demo und Produktion sind getrennte
+Kanäle; ein Suffix ist kein Bestandteil der Version. Alte Releases und ihre
+exakten Images bleiben für Rollbacks erhalten. Es gibt keine SemVer-Bereichs-
+oder Major/Minor-Entscheidung über die Versionsgrenze.
+
+Normale lokale Builds laufen über `bash scripts/build.sh -o hausv-org ./cmd/hausv-org`.
+Das Skript, Docker und CI prüfen vor dem Build die komplette Offline-Dateimenge,
+Hashes und Größen des gemeinsam ausgelieferten INSPR-Renderers, einschließlich
+Interaktionsmodul, Animation und Lizenz. Im Git-Checkout müssen alle Dateien
+verfolgt sein. Git-Archive/Docker-Kontexte prüfen dieselben unabhängigen Pins ohne
+Git-Datenbank. Ein zusätzliches Start-Gate prüft auch die tatsächlich eingebetteten
+Bytes. `go build` ohne das Build-Skript ist kein freigegebener Release-Buildpfad.
+Die Quell- und Manifest-Pins stehen in `internal/versionbundle/bundle.go`;
+`internal/version/release.json` dokumentiert aktive Darstellungsflächen. Es gibt
+keinen Abruf veränderlicher Einstellungen von inspr.at zur Laufzeit.
+
+Die Produktion veröffentlicht pro neuer Koordinate genau einen GitHub-Release
+mit `release-manifest.json`: Source-Commit, Abhängigkeitshashes, OCI-Digest und
+Hashes beider Connector-Binaries sowie des Servers. Bereits veröffentlichte
+Koordinaten werden nicht neu publiziert. Ein Merge ohne neue Version lässt daher
+weiterhin das bisherige Produktionsimage aktiv. Rollback verwendet den im alten
+Manifest festgehaltenen Digest bzw. bei historischen Releases den bereits
+protokollierten exakten Image-Digest; die Release-Sequenz wird nicht zurückgedreht.
+`/healthz` ergänzt den bisherigen Status um das Objekt `release` mit explizitem
+Versionsschema, Koordinate, Kanal, Sequenz und Commit. Der HTML-Build-Marker bleibt
+für ältere Deploy-Leser erhalten. Die sichtbare Anzeige verwendet den gemeinsamen
+Pretty-Renderer, bietet SemVer als reduzierte Ansicht und kopiert die kanonische
+Koordinate. Der Versionsverlauf ist eine separate Aktion.

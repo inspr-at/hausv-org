@@ -12,7 +12,7 @@ mkdirSync(out, { recursive: true });
 const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, ...(process.env.CI === 'true' ? [] : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium', '/usr/bin/chromium'])].filter(Boolean).find(existsSync);
 const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}), args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1, MAP *.hausv.test 127.0.0.1', '--no-proxy-server'] });
 const measurements = [], footerMeasurements = [], scrollMeasurements = [], failures = [];
-const expectedBlocks = ['organisation-identity', 'organisation', 'house-card', 'map', 'house-navigation', 'release'];
+const expectedBlocks = ['organisation-identity', 'organisation', 'map', 'house-navigation', 'release'];
 // The expanded geometry matrix must not exhaust the fixture's login limit.
 const sessions = new Map();
 
@@ -37,7 +37,7 @@ async function login(context, email) {
   return page;
 }
 async function navigation(page, width) {
-  const menu = page.locator('.mobile-head details.menu');
+  const menu = page.locator('[data-context-bar] details.menu');
   if (width <= 760 && await menu.getAttribute('open') === null) await menu.locator(':scope > summary').click();
   return page.locator('[data-navigation-surface]:visible');
 }
@@ -62,7 +62,7 @@ async function measure(page, width, sidebarWidth, label) {
       blocks: blocks.map(el => ({ name: el.dataset.navigationBlock, visible: visible(el), className: el.dataset.navigationBlock === "map" ? "side-map-hero" : el.className })),
       links: links.map(el => ({ href: el.getAttribute('href'), label: el.querySelector('.nav-label')?.textContent.trim() })),
       active: links.filter(el => el.getAttribute('aria-current') === 'page').length,
-      taps: [...links, surface.querySelector('.house-header-card'), surface.querySelector('.release-trigger')].map(el => ({ label: el?.textContent.trim(), height: el?.getBoundingClientRect().height })),
+      taps: [...links, document.querySelector('[data-context-bar] .house-header-card'), surface.querySelector('.release-trigger')].map(el => ({ label: el?.textContent.trim(), height: el?.getBoundingClientRect().height })),
       navigationCount: [...document.querySelectorAll('nav[aria-label="Bereiche"]')].filter(visible).length,
       barCount: bar.length, barHeight: bar[0]?.getBoundingClientRect().height,
       headerCount: document.querySelectorAll('[data-portal-section-header]').length,
@@ -75,9 +75,9 @@ async function measure(page, width, sidebarWidth, label) {
         const content = calm.closest('.portal-section-content'), s = getComputedStyle(content);
         return { width: calm.getBoundingClientRect().width, available: content.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight), columns: getComputedStyle(calm.querySelector('.disclosures')).gridTemplateColumns.split(' ').length, locationsNoWrap: [...calm.querySelectorAll('.issue-location')].every(el => getComputedStyle(el).whiteSpace === 'nowrap') };
       })(),
-      overview: surface.querySelector('.house-header-copy strong')?.textContent.trim(),
+      overview: document.querySelector('[data-context-bar] .house-header-copy strong')?.textContent.trim(),
       portfolioMap: !!surface.querySelector('.side-map-portfolio'),
-      left, overflow: document.documentElement.scrollWidth > innerWidth + 1,
+      layoutWidth:bar[0]?.getBoundingClientRect().width, left, overflow: document.documentElement.scrollWidth > innerWidth + 1,
     };
   });
   measurements.push({ label, viewport: width, sidebarWidth, ...result });
@@ -88,7 +88,7 @@ async function measure(page, width, sidebarWidth, label) {
   }
   assert.equal(result.navigationCount, 1, `${label}: exactly one navigation`);
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
-  assert.equal(Math.round(result.barHeight), width <= 760 ? 74 : 40, `${label}: context height`);
+  assert.equal(Math.round(result.barHeight), width <= 760 ? 148 : width <= 1100 ? 116 : 72, `${label}: context height`);
   assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : expectedBlocks.slice(2), `${label}: block order`);
   // The phone drawer carries its own head above the navigation; the gap rule is a desktop-sidebar rule.
   if (!result.organisation && width > 760) {
@@ -109,9 +109,9 @@ async function measure(page, width, sidebarWidth, label) {
   assert.equal(result.box.paddingLeft, '18px', `${label}: shared padding`);
   assert.equal(result.box.paddingRight, '18px', `${label}: shared padding`);
   assert(Math.abs(result.box.x) <= 1, `${label}: sidebar starts at x=0`);
-  assert(Math.abs(result.box.width - (width <= 760 ? width : sidebarWidth)) <= 1, `${label}: shared width`);
+  assert(Math.abs(result.box.width - (width <= 760 ? result.layoutWidth : sidebarWidth)) <= 1, `${label}: shared width`);
   if (new URL(page.url()).pathname.includes('/app/verwaltung')) {
-    assert.match(result.overview, /^Alle Liegenschaften · \d+$/, `${label}: overview card`);
+    assert.match(result.overview, /^Alle Liegenschaften/, `${label}: overview card`);
     assert(result.portfolioMap, `${label}: neutral portfolio map`);
   } else assert(!result.portfolioMap, `${label}: house map`);
   return result;

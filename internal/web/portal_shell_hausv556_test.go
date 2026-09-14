@@ -11,8 +11,8 @@ import (
 func TestPortalSwitcherUsesOneSharedPanelHAUSV556(t *testing.T) {
 	portal := PortalPageData{HouseName: "A deliberately long active portal name", DisplayName: "Test User", Role: "Admin", Contexts: []PortalContext{{TenantSlug: "active", HouseName: "Active portal", Role: "Admin", Current: true}, {TenantSlug: "other", HouseName: "Another portal", Role: "Admin"}}}
 	html := renderComponent(t, PortalPage(portal))
-	if got := strings.Count(html, `id="portal-house-picker"`) + strings.Count(html, `id="portal-house-picker-mobile"`); got != 2 {
-		t.Fatalf("sidebar/drawer picker count: %d", got)
+	if got := strings.Count(html, `data-house-picker-shell=`); got != 1 {
+		t.Fatalf("single responsive picker count: %d", got)
 	}
 	if strings.Contains(html, ">Portal wechseln<") {
 		t.Fatal("third dropdown remains")

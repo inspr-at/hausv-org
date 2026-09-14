@@ -4,6 +4,7 @@
 #   HAUSV_DEMO_SSH_HOST=mba@<ip> [HAUSV_DEMO_SSH_PORT=2222] [HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy]
 #   HAUSV_DEMO_BASE_URL=https://hausv.agm.ng
 #   [HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env]   # absolute path ON THE HOST
+#   [HAUSV_DEMO_PYTHON=python3]   # Python executable ON THE HOST, for the release manifest
 #   [HAUSV_DEMO_REMOTE_DIR=/srv/hausv-demo] [HAUSV_DEMO_PORT=8098] [HAUSV_DEMO_SEED_ANCHOR=today]
 #   [HAUSV_DEMO_SUBNET=172.30.98.0/24] [HAUSV_DEMO_TRUSTED_PROXY_CIDRS=<gateway>/32]
 #   deploy/demo/deploy-remote.sh [--seed] [--dry-run]
@@ -14,8 +15,9 @@
 # endpoint is checked. Releases are kept in <dir>/releases/<sha>; <dir>/src
 # points at the live one, so a rollback is `ln -sfn` plus `up -d`.
 #
-# Demo only. No VERSION bump, no CI gate, no snapshot: the data is fixture data
-# and --seed recreates it from scratch.
+# Demo only: uses the already reserved VERSION in a separate demo channel.
+# The release coordinator must check CI first; this script does not query CI.
+# Existing data is retained; --seed explicitly recreates the fixture data.
 set -euo pipefail
 
 usage() { sed -n '2,12p' "$0" >&2; exit 2; }
@@ -39,6 +41,8 @@ remote_dir=${HAUSV_DEMO_REMOTE_DIR:-/srv/hausv-demo}
 port=${HAUSV_DEMO_PORT:-8098}
 base_url=${HAUSV_DEMO_BASE_URL%/}
 secrets_file=${HAUSV_DEMO_SECRETS_FILE:-$remote_dir/secrets.env}
+python_bin=${HAUSV_DEMO_PYTHON:-python3}
+case $python_bin in *[!a-zA-Z0-9/_+.-]*) echo "invalid remote Python executable" >&2; exit 2 ;; esac
 seed_anchor=${HAUSV_DEMO_SEED_ANCHOR:-}
 # The reverse proxy reaches the container from the compose network gateway,
 # the first host of the pinned subnet. A /24 is assumed for the derivation;
@@ -64,7 +68,8 @@ if [ -n "$(git status --porcelain)" ]; then
     exit 1
 fi
 sha=$(git rev-parse --short=12 HEAD)
-version="$(tr -d '[:space:]' < VERSION)-demo.${sha:0:7}"
+full_sha=$(git rev-parse HEAD)
+version="$(tr -d '[:space:]' < VERSION)"
 release_dir="$remote_dir/releases/$sha"
 
 echo "release  $version ($sha)"
@@ -92,11 +97,16 @@ set -euo pipefail
 cd '$release_dir/deploy/demo'
 if docker compose version >/dev/null 2>&1; then compose() { docker compose "\$@"; }; else compose() { docker-compose "\$@"; }; fi
 [ -r '$secrets_file' ] || { echo "secrets file $secrets_file is missing or unreadable for \$(id -un)" >&2; exit 1; }
+command -v '$python_bin' >/dev/null || { echo 'remote Python executable is unavailable; set HAUSV_DEMO_PYTHON'; exit 1; }
 sed -e 's#^BASE_URL=.*#BASE_URL=$base_url#' -e 's#^ROOT_DOMAIN=.*#ROOT_DOMAIN=$root_domain#' -e 's#^TRUSTED_PROXY_CIDRS=.*#TRUSTED_PROXY_CIDRS=$trusted_proxies#' demo.env.example > demo.env
 grep -q '^TRUSTED_PROXY_CIDRS=$trusted_proxies\$' demo.env || { echo 'demo.env.example lacks a TRUSTED_PROXY_CIDRS line' >&2; exit 1; }
 export COMPOSE_PROJECT_NAME='$project' HAUSV_DEMO_VERSION='$version' HAUSV_DEMO_COMMIT='$sha' HAUSV_DEMO_PORT='$port' HAUSV_DEMO_SUBNET='$subnet'
 export HAUSV_DEMO_SECRETS_FILE='$secrets_file' HAUSV_DEMO_IMAGE='hausv-demo:$sha'
+mkdir -p '$remote_dir/release-records'
+[ ! -e '$remote_dir/release-records/$version.json' ] || { echo 'release coordinate already frozen; reuse its exact image or reserve a new version'; exit 1; }
 compose -p '$project' build
+image_digest=\$(docker image ls --no-trunc --quiet 'hausv-demo:$sha')
+'$python_bin' ../../scripts/release-manifest.py --channel demo --commit '$full_sha' --image 'hausv-demo:$sha' --image-digest "\$image_digest" --output '$remote_dir/release-records/$version.json'
 ln -sfn '$release_dir' '$remote_dir/src'
 compose -p '$project' up -d --remove-orphans
 for i in \$(seq 1 30); do

@@ -6,6 +6,7 @@ services:
       args:
         APP_VERSION: ${HAUSV_DEMO_VERSION:-demo}
         GIT_COMMIT: ${HAUSV_DEMO_COMMIT:-dev}
+        RELEASE_CHANNEL: demo
     image: ${HAUSV_DEMO_IMAGE:-hausv-demo:local}
     # A fresh Docker-managed volume is root-owned; the demo initializes /data.
     user: "0:0"

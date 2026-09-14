@@ -54,7 +54,7 @@ func TestNavigationShellAcrossRoutesAndRolesHAUSV704(t *testing.T) {
 					for _, block := range blocks {
 						names = append(names, block[1])
 					}
-					want := []string{"house-card", "map", "house-navigation", "release"}
+					want := []string{"map", "house-navigation", "release"}
 					if role == roleAdmin || role == roleManager {
 						want = append([]string{"organisation-identity", "organisation"}, want...)
 					}
@@ -75,7 +75,7 @@ func TestNavigationShellAcrossRoutesAndRolesHAUSV704(t *testing.T) {
 						}
 					}
 					if strings.HasPrefix(route, "/app/verwaltung") {
-						if !strings.Contains(side, "Alle Liegenschaften · 1") || !strings.Contains(side, "side-map-portfolio") {
+						if !strings.Contains(body, "Alle Liegenschaften") || !strings.Contains(side, "side-map-portfolio") {
 							t.Fatal("overview must keep the house card and neutral map")
 						}
 						for _, path := range []string{"/demo/app", "/demo/app/announcements", "/demo/app/settings"} {

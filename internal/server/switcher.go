@@ -45,6 +45,15 @@ func (a *app) switcherCounts(ac *authCtx, entries []web.LiegenschaftEntry) {
 func (a *app) scopeContext(ac *authCtx, organisation string, overview bool) web.ScopeContext {
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
 	data := web.ScopeContext{Ready: true, CanUseSettings: roleCanUseResidentAreas(ac.role), DisplayName: profile.DisplayName(), Initials: profile.Initials(), AvatarURL: a.profilePictureURL(ac.email), Role: ac.role, SupportView: supportViewPortalData(ac), Preview: rolePreviewPortalData(ac), PreviewChoices: a.rolePreviewChoices(ac)}
+	// Display the real principal while all data and permissions remain target-scoped.
+	if ac.supportView != nil {
+		actor := a.profileForTenant(ac.supportView.ActorEmail, ac.tenant.Slug)
+		data.DisplayName, data.Initials = actor.DisplayName(), actor.Initials()
+		data.AvatarURL, data.Role = a.profilePictureURL(ac.supportView.ActorEmail), ac.supportView.ActorRole
+	}
+	if ac.preview != nil || ac.supportView != nil {
+		data.CanUseSettings = false
+	}
 	if a.canStartSupportView(ac) {
 		data.SupportURL = ac.tenant.PublicURL("/app/support-view")
 	}

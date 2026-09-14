@@ -1,0 +1,57 @@
+{
+  "version_scheme": "inspr-calendar-v2",
+  "version": "260914170935.0.0",
+  "release_sequence": 1,
+  "channels": [
+    "production",
+    "demo"
+  ],
+  "migration": {
+    "legacy_scheme": "legacy",
+    "last_legacy_version": "1.11.0",
+    "first_calendar_version": "260914170935.0.0",
+    "first_calendar_release_sequence": 1,
+    "compatibility_window": "Historical release notes and exact-image rollback remain supported. No cross-era range sorting."
+  },
+  "presentation": {
+    "repository": "inspr-at/inspr",
+    "revision": "3ef6b03e3a347ff095123a16647f0b32f5e13288",
+    "config_sha256": "7843f3515ce329277d2d576000bd60ac410d725b241d502a9a3fecb2533d956d",
+    "manifest_sha256": "24cf7ba69a2e3cda5a7e894865cba32bd2199f58e369c080e032357cbbbaabef",
+    "adapter": "internal/web/assets/product-version.js",
+    "active_surfaces": [
+      "portal footer",
+      "release history",
+      "login",
+      "landing",
+      "legal",
+      "public error pages"
+    ],
+    "runtime_editor_fetch": false
+  },
+  "artifact_coordinates": [
+    "oci/linux-amd64/production",
+    "oci/linux-amd64/demo",
+    "server/linux-amd64/production",
+    "connector/linux-amd64/production",
+    "connector/linux-arm64/production",
+    "server/linux-amd64/demo",
+    "connector/linux-amd64/demo",
+    "connector/linux-arm64/demo"
+  ],
+  "machine_surfaces": [
+    "VERSION",
+    "healthz.release",
+    "CLI build label",
+    "OCI release tag",
+    "connector handshake",
+    "support diagnostics",
+    "backup and rollback labels"
+  ],
+  "not_applicable": [
+    "package registries",
+    "Nix derivation release",
+    "update feed",
+    "SemVer dependency ranges"
+  ]
+}

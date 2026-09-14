@@ -16,7 +16,8 @@
 ## Release And Deployment
 
 - Every production deployment must bump `VERSION` first.
-- Use patch bumps for small fixes, minor bumps for product-facing improvements, and major bumps for breaking or strategically large changes.
+- HAUSV uses INSPR Calendar Versioning v2 (`YYMMDDhhmmss.0.0`, UTC). Reserve one later coordinate per release; never append demo/build suffixes. Keep channel, sequence and migration anchor in the release record. Historical SemVer releases stay unchanged.
+- Use `scripts/build.sh` for normal local builds; Docker and CI enforce the same offline presentation-bundle gate. Update `internal/version/release.go`, `VERSION` and release notes together.
 - Keep `docs/CHANGELOG.md` in German, newest entry first, with customer-facing release language. Prefer positive wording such as "Stabilität verbessert" over raw bug wording.
 - Add a matching entry to `Notes()` in `internal/version/version.go`. Its newest entry must equal `VERSION`; a test enforces this, so bump the version *before* the final test run — it has been forgotten once already.
 - Build and deploy with `VERSION` as `APP_VERSION`; do not deploy a changed product with an unchanged visible version.

@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260914170935.0.0] - 2026-09-14
+
+### Verbessert
+
+- Eine helle, gemeinsame Kopfzeile verbindet Konto, Liegenschaft und Ansicht. Der bewährte Liegenschaftssucher ist zentral erreichbar; „Ansicht verlassen“ beendet Rollen- und Supportansichten.
+- Die Navigation behält beim Seitenwechsel ihre Position. Inhalte blenden sanft über; reduzierte Bewegung wird berücksichtigt.
+- Versionsangaben folgen dem INSPR-Kalenderformat und lassen sich direkt kopieren. Der Versionsverlauf bleibt separat erreichbar; bisherige Versionen bleiben unverändert.
+
 ## [1.11.0] - 2026-09-14
 
 ### Neu

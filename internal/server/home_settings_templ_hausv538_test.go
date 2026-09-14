@@ -104,7 +104,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 	// switcher.js belong to the shell itself and ship with every portal page.
 	var extra []string
 	for _, match := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(body, -1) {
-		if match[1] != "app.js" && match[1] != "switcher.js" {
+		if match[1] != "app.js" && match[1] != "switcher.js" && match[1] != "support-view.js" && match[1] != "product-version.js" {
 			extra = append(extra, match[1])
 		}
 	}

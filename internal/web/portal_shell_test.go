@@ -46,6 +46,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		marker       string
 		extraScripts []string
 	}{
+		{"PortalErrorPage", PortalErrorPage(portal, 403, "Nicht freigegeben", "Keine Berechtigung", "", "/app", "Zum Hausüberblick", nil), "data-portal-error", nil},
 		{"SupportViewPage", SupportViewPage(portal, nil), "data-templ-settings", nil},
 		{"PortalPage", PortalPage(portal), "data-templ-portal", nil},
 		{"PortalOrganisationPage", PortalOrganisationPage(portal, "Portfolio", nil, nil, nil, VerwaltungPlaceholder()), "data-templ-verwaltung", nil},
@@ -124,7 +125,7 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			for _, m := range regexp.MustCompile(`/assets/([a-z-]+\.js)\?v=`).FindAllStringSubmatch(html, -1) {
 				// app.js and switcher.js belong to the shell itself and ship with
 				// every portal page; the per-page set is what must match exactly.
-				if m[1] != "app.js" && m[1] != "switcher.js" {
+				if m[1] != "app.js" && m[1] != "switcher.js" && m[1] != "support-view.js" && m[1] != "product-version.js" {
 					loaded = append(loaded, m[1])
 				}
 			}
@@ -154,8 +155,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 				t.Errorf("styles rendered before app.js")
 			}
 
-			if strings.Count(html, `action="/app/context"`) < 2 || !strings.Contains(html, "context-bar mobile-head") {
-				t.Errorf("desktop and mobile context switches must both be rendered")
+			if strings.Count(html, `data-house-picker-shell=`) != 1 || strings.Count(html, `data-context-bar`) != 1 {
+				t.Errorf("one responsive header and property switcher required")
 			}
 			if !strings.Contains(html, "/map-tiles/17/1/2.png") || !strings.Contains(html, `class="side-map-tile"`) {
 				t.Errorf("authenticated shell is missing OSM map tiles")
@@ -166,8 +167,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 			if at := strings.Index(html, `<aside class="sidebar"`); at >= 0 {
 				side = html[at:]
 			}
-			if i, j := strings.Index(side, `class="map side-map"`), strings.Index(side, `class="house-header-copy side-address-label"`); i < 0 || j < 0 || i <= j {
-				t.Errorf("house copy must come before the location map")
+			if i, j := strings.Index(side, `class="map side-map"`), strings.Index(side, `class="house-header-copy"`); i < 0 || j >= 0 {
+				t.Errorf("sidebar keeps map without duplicating the header picker")
 			}
 			if !strings.Contains(html, `class="side-map-pin-mark"`) {
 				t.Errorf("map pin is missing the brand mark")
@@ -241,7 +242,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			for _, marker := range []string{
 				`data-portal-shell`, `data-portal-section-landing`,
 				`data-portal-section-header`, `class="sidebar"`,
-				`class="map side-map"`, `class="house-header-copy side-address-label"`, `class="sidebar-release"`,
+				`class="map side-map"`, `class="house-header-copy"`, `class="sidebar-release"`,
 			} {
 				if !strings.Contains(html, marker) {
 					t.Errorf("%s is missing shared chrome marker %q", page.name, marker)
@@ -288,7 +289,7 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 	}
 }
 
-func TestHousePickerUsesDistinctDesktopAndMobileIDs(t *testing.T) {
+func TestHousePickerUsesOneResponsiveID(t *testing.T) {
 	portal := PortalPageData{
 		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
 		MapURL: "https://www.openstreetmap.org/", DisplayName: "Vera Verwaltung", Initials: "VV", Role: "Admin",
@@ -300,8 +301,7 @@ func TestHousePickerUsesDistinctDesktopAndMobileIDs(t *testing.T) {
 	}
 	html := renderComponent(t, PortalPage(portal))
 	for _, marker := range []string{
-		`id="portal-house-picker"`, `data-house-picker-shell="sidebar"`,
-		`id="portal-house-picker-mobile"`, `data-house-picker-shell="mobile"`,
+		`id="context-property"`, `data-house-picker-shell="scope"`,
 		`class="map side-map"`, `title="Parkgasse 1, 8010 Graz in OpenStreetMap öffnen"`,
 	} {
 		if !strings.Contains(html, marker) {
@@ -644,7 +644,7 @@ func TestHouseCardDoesNotRepeatThePlaceOfAnAddressUsedAsName(t *testing.T) {
 	}
 	html := renderComponent(t, PortalPage(portal))
 	if !strings.Contains(html, `<strong>Janischhofweg 22</strong><small>8043 Graz</small>`) {
-		t.Errorf("house card should show the street above the place once, got %q", between(html, `class="house-header-copy side-address-label"`, `</span>`))
+		t.Errorf("house card should show the street above the place once, got %q", between(html, `class="house-header-copy"`, `</span>`))
 	}
 	if !strings.Contains(html, `.house-header-copy strong{display:block;overflow:hidden;overflow-wrap:normal;text-overflow:ellipsis;white-space:nowrap`) {
 		t.Errorf("sidebar house title must stay on one line and ellipsize long addresses")
@@ -681,8 +681,8 @@ func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	hero, card := strings.Index(side, `class="side-map-hero"`), strings.Index(side, `class="house-header-card`)
 	label := strings.Index(side, `class="nav-group nav-level-label nav-house-label"`)
 	navigation := strings.Index(side, `class="nav-house-items`)
-	if label < 0 || card <= label || hero <= card || navigation <= hero {
-		t.Fatalf("sidebar must show label, house card, map, navigation (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
+	if label < 0 || card != -1 || hero <= label || navigation <= hero {
+		t.Fatalf("sidebar must show label, map, navigation without a duplicate picker (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
 	}
 	if strings.Count(html, `class="side-map-hero`) != 2 {
 		t.Errorf("desktop sidebar and mobile drawer must each carry the hero, found %d", strings.Count(html, `class="side-map-hero`))
@@ -762,7 +762,7 @@ func TestResidentOverviewUsesFullWidthAndOptionalOrganisationBlock(t *testing.T)
 		for _, match := range regexp.MustCompile(`data-navigation-block="([^"]+)"`).FindAllStringSubmatch(html, -1) {
 			names = append(names, match[1])
 		}
-		want := []string{"house-card", "map", "house-navigation", "release"}
+		want := []string{"map", "house-navigation", "release"}
 		if organisation {
 			want = append([]string{"organisation-identity", "organisation"}, want...)
 		}

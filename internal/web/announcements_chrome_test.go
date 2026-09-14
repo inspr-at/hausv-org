@@ -138,7 +138,7 @@ func TestAnnouncementPageDoesNotBreakMobileChrome(t *testing.T) {
 	// "do not restyle shared .mobile-head position/height"
 
 	// Verify mobile-head is present from PortalMobileHeader
-	if !strings.Contains(html, `class="context-bar mobile-head"`) {
+	if !strings.Contains(html, `class="context-bar unified-context-bar"`) {
 		t.Error("Mobile header is missing")
 	}
 

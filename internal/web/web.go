@@ -251,6 +251,8 @@ const PageTemplates = `
       .footer-links { gap: 13px; flex-wrap: wrap; }
     }
   </style>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body{{if .Sent}} class="auth-sent"{{else if .Expired}} class="auth-expired"{{else if .Denied}} class="auth-denied"{{end}}>
   <section class="hero">
@@ -325,7 +327,7 @@ const PageTemplates = `
     </main>
     <footer>
       <span>{{.Tenant.Address}} · Privat für eingeladene Personen</span>
-      <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a><span class="version">{{.AppVersion}}</span></span>
+      <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a><span class="version">{{.VersionHTML}}</span></span>
     </footer>
   </section>
 </body>
@@ -628,6 +630,8 @@ const PageTemplates = `
       .landing-hero { padding-top: 176px; }
     }
   </style></noscript>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
   <!-- Darkens the top strip once the hero mark has scrolled away, so the header
@@ -805,7 +809,7 @@ const PageTemplates = `
   </section>
 
   <footer>
-    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.AppVersion}}</span></div>
+    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.VersionHTML}}</span></div>
   </footer>
 </body>
 </html>
@@ -905,6 +909,8 @@ const PageTemplates = `
   <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
   <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
 {{end}}
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
   <div class="home-start-shell">
@@ -954,6 +960,8 @@ const PageTemplates = `
   <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
   <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
 {{end}}
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
   <div class="home-start-shell">
@@ -1033,9 +1041,11 @@ const PageTemplates = `
     footer { border-top: 1px solid var(--line); padding: 22px 0 36px; color: var(--muted); font-size: 14px; }
     @media (max-width: 620px) { dl { grid-template-columns: 1fr; } dt { margin-top: 8px; } }
   </style>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
-  <header><a href="/">← Zurück zur Startseite</a><span>{{.AppVersion}}</span></header>
+  <header><a href="/">← Zurück zur Startseite</a><span>{{.VersionHTML}}</span></header>
   <main>
     <h1>Impressum &amp; Infos</h1>
     <p class="lead">Direkter Kontakt statt anonymer Hotline – und die rechtlichen Angaben zu hausv.org an einem Ort.</p>
@@ -1098,9 +1108,11 @@ const PageTemplates = `
     footer { border-top: 1px solid var(--line); padding: 22px 0 36px; color: var(--muted); font-size: 14px; }
     @media (max-width: 620px) { dl { grid-template-columns: 1fr; } dt { margin-top: 8px; } }
   </style>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
-  <header><a href="/">← Zurück zur Startseite</a><span>{{.AppVersion}}</span></header>
+  <header><a href="/">← Zurück zur Startseite</a><span>{{.VersionHTML}}</span></header>
   <main>
     <h1>Datenschutz</h1>
     <p class="lead">Diese Information beschreibt den tatsächlichen Pilotbetrieb von HAUSV Gemeinschaft und HAUSV Zuhause. Sie ist eine dokumentierte Betreiber-Selbstprüfung nach den Grundsätzen der DSGVO, kein Zertifikat und keine unabhängige Rechtsberatung.</p>
@@ -3709,6 +3721,8 @@ const PageTemplates = `
       table { font-size: 13px; }
     }
   </style>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body>
   <main>
@@ -3746,7 +3760,7 @@ const PageTemplates = `
         </tbody>
       </table>
     </section>
-    <footer>{{.AppVersion}}</footer>
+    <footer>{{.VersionHTML}}</footer>
   </main>
 </body>
 </html>
@@ -3761,6 +3775,8 @@ const PageTemplates = `
   <title>{{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   {{template "appStyles" .}}
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body class="handover-confirm-body">
   <main class="handover-confirm-page">
@@ -3844,9 +3860,11 @@ const PageTemplates = `
       .hv-error-onward ul { grid-template-columns: repeat(2,minmax(0,1fr)); }
     }
   </style>
+<meta name="hausv-build" content="{{.AppVersion}}">
+<script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
 <body class="hv-error-body">
-{{.SupportViewBanner}}
+
   <div class="hv-error-shell">
     <header class="hv-error-top">
       <span class="hv-error-mark">{{template "tenantBrandMark" .}}</span>

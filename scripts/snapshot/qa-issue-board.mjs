@@ -143,8 +143,8 @@ try {
         const b = el.getBoundingClientRect();
         return b.left < -1 || b.right > innerWidth + 1;
       }).map(el => el.tagName + '.' + el.className);
-      const navs = [document.querySelector('.sidebar'), document.querySelector('.mobile-head')].filter(visible);
-      const mobile = document.querySelector('.mobile-head');
+      const navs = [document.querySelector('.sidebar'), document.querySelector('[data-context-bar]')].filter(visible);
+      const mobile = document.querySelector('[data-context-bar]');
       return { width: innerWidth, documentWidth: document.documentElement.scrollWidth, main: box(main), content: box(content),
         contentPadding: parseFloat(getComputedStyle(content).paddingLeft), header: box(main.querySelector('.portal-section-header')),
         toolbar: box(main.querySelector('.board-toolbar')), grid: box(grid), gridClient: grid.clientWidth, gridScroll: grid.scrollWidth,

@@ -102,7 +102,7 @@ jobs:
         run: go test -race ./...
 
       - name: Build
-        run: go build ./...
+        run: bash scripts/build.sh ./...
 
   govulncheck:
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -148,6 +148,7 @@ jobs:
         run: |
           bash scripts/test-deploy.sh
           bash scripts/test-deploy-from-ci-image.sh
+          python3 scripts/test-release-manifest.py
 
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
@@ -256,9 +257,10 @@ jobs:
           retention-days: 7
 
   docker:
+    needs: [test, govulncheck, browser-role-qa, portal-oracles]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -267,6 +269,20 @@ jobs:
         id: version
         run: echo "app_version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
       
+      - name: Check immutable release coordinate
+        id: release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.app_version }}
+        run: |
+          gh api --paginate repos/${{ github.repository }}/releases --jq '.[].tag_name' > /tmp/hausv-release-tags
+          if grep -Fxq "v${RELEASE_VERSION}" /tmp/hausv-release-tags; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build image
         run: |
           docker build \
@@ -276,11 +292,12 @@ jobs:
             ./
       
       - name: Log in to GHCR
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: steps.release.outputs.publish == 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       
       - name: Push image to GHCR
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: push
+        if: steps.release.outputs.publish == 'true'
         run: |
           IMAGE_BASE="ghcr.io/inspr-at/hausv-org"
           COMMIT_SHORT="${GITHUB_SHA::7}"
@@ -302,3 +319,16 @@ jobs:
           DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_BASE}:${GITHUB_SHA}" | cut -d'@' -f2)
           echo "Pushed image digest: ${DIGEST}"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Freeze and publish exact release set
+        if: steps.release.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.app_version }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          python3 scripts/release-manifest.py --channel production --commit "$GITHUB_SHA" \
+            --image "ghcr.io/inspr-at/hausv-org@${IMAGE_DIGEST}" --image-digest "$IMAGE_DIGEST" --output release-manifest.json
+          gh release create "v${RELEASE_VERSION}" release-manifest.json \
+            --target "$GITHUB_SHA" --title "HAUSV ${RELEASE_VERSION}" \
+            --notes "Versionsverlauf: docs/CHANGELOG.md. Das Manifest enthält die exakten Artefakte und die INSPR-Migrations- und Darstellungspins."

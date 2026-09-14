@@ -65,8 +65,8 @@ func TestAuthenticatedAppShellIsKeyboardOperable(t *testing.T) {
 	for _, want := range []string{
 		`<a class="skip-link" href="#main-content">Zum Inhalt springen</a>`,
 		`<main id="main-content" tabindex="-1"`,
-		`class="context-bar mobile-head"`, `data-context-bar`,
-		`<details class="menu"><summary aria-label="Navigation öffnen">`,
+		`class="context-bar unified-context-bar"`, `data-context-bar`,
+		`<details class="menu context-navigation"><summary aria-label="Navigation öffnen">`,
 		`class="menu-panel"`, `<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">`,
 	} {
 		if !strings.Contains(html, want) {

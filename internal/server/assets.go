@@ -54,6 +54,9 @@ func staticAssetHandler() http.Handler {
 		if r.URL.Query().Get("v") == assetVersion {
 			cacheControl = "public, max-age=31536000, immutable"
 		}
+		if strings.HasPrefix(name, "assets/versioning/") {
+			cacheControl = "public, no-cache"
+		}
 		w.Header().Set("Cache-Control", cacheControl)
 		http.ServeContent(w, r, info.Name(), info.ModTime(), content)
 	})

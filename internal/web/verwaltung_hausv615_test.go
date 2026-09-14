@@ -7,7 +7,7 @@ import (
 
 func TestHausv615VerwaltungNavigationOrderCountAndActiveState(t *testing.T) {
 	body := renderComponent(t, PortalNavigation(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{Active: "inbox", ShowInboxNav: true, InboxOpenCount: 17, CanManageSettings: true, Houses: []VerwaltungHouse{{Slug: "muenze", Name: "Münzgrabenstraße 12", Role: "Verwalter"}, {Slug: "haupt", Name: "Hauptplatz 3", Role: "Verwalter"}}}}), true, true))
-	labels := []string{"Portfolio", "Posteingang", "Textbausteine", "Rechte", "Einstellungen", "Alle Liegenschaften · 2"}
+	labels := []string{"Portfolio", "Posteingang", "Textbausteine", "Rechte", "Einstellungen"}
 	last := -1
 	for _, label := range labels {
 		index := strings.Index(body, label)
@@ -16,7 +16,7 @@ func TestHausv615VerwaltungNavigationOrderCountAndActiveState(t *testing.T) {
 		}
 		last = index
 	}
-	for _, want := range []string{`Alle Liegenschaften · 2`, `class="nav-icon switcher-building"`, `href="/app/verwaltung/posteingang" class="nav-item active"`} {
+	for _, want := range []string{`data-navigation-block="map"`, `href="/app/verwaltung/posteingang" class="nav-item active"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("navigation missing %q: %s", want, body)
 		}

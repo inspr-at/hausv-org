@@ -34,7 +34,7 @@ async function brightness(frame) {
     context.drawImage(img, 0, 0);
     const { data: pixels } = context.getImageData(0, 0, canvas.width, canvas.height);
     const boundary = Math.round(280 * canvas.width / viewport.width);
-    const top = Math.ceil(40 * canvas.height / viewport.height);
+    const top = Math.ceil(72 * canvas.height / viewport.height);
     let sidebar = 0, content = 0, sidebarCount = 0, contentCount = 0;
     for (let y = top; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {

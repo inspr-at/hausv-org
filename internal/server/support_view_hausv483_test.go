@@ -335,10 +335,10 @@ func TestSupportViewIssueDetailKeepsBannerWithoutPublicLeak(t *testing.T) {
 		t.Fatalf("legacy support issue status=%d body=%s", page.Code, page.Body.String())
 	}
 	body := page.Body.String()
-	stylesheet := `/assets/support-view.css?v=`
+	stylesheet := `/assets/context-header.css?v=`
 	for _, want := range []string{
 		stylesheet,
-		`class="support-view-banner"`,
+		`class="context-view"`,
 		`data-support-view-banner`,
 		`class="shell"`,
 		`id="main-content"`,
@@ -377,7 +377,7 @@ func TestSupportViewUsesTargetPermissionsBlocksWritesAndExitsSafely(t *testing.T
 	page := httptest.NewRecorder()
 	a.handler().ServeHTTP(page, pageReq)
 	body := page.Body.String()
-	for _, want := range []string{"Portal anzeigen als Rita Resident", roleResident, "Supportansicht beenden", "data-support-view-banner"} {
+	for _, want := range []string{"Portal anzeigen als Rita Resident", roleResident, "Ansicht verlassen", "data-support-view-banner"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("support portal missing %q", want)
 		}

@@ -1,0 +1,79 @@
+/* One geometry contract. Menus float; neither identity nor a late script changes height. */
+:root{--context-bar-h:72px}
+/* Keep native scrollbar space stable; overlay scrollbars need no extra gutter. */
+html{overflow-y:scroll;view-transition-name:none}
+html:has(:fullscreen),html:has(.is-fullscreen-fallback){overflow-y:auto}
+body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--context-bar-h);min-height:var(--context-bar-h);box-sizing:border-box;display:grid;grid-template-columns:minmax(180px,.85fr) minmax(210px,1fr) minmax(330px,1.55fr);gap:20px;padding:0 20px;background:var(--paper);color:var(--ink);border-bottom:1px solid var(--gold);z-index:220}
+.unified-context-bar .context-navigation{display:none}
+.unified-context-bar .context-account{min-width:0;max-width:none}
+.unified-context-bar .context-account>summary{min-height:44px;padding:0;gap:10px;background:none;font-size:13px}
+.unified-context-bar .context-account>summary::before{display:none}
+.unified-context-bar .context-person{display:block;max-width:none;font-weight:650}
+.unified-context-bar .context-account>summary>.context-role{display:block;flex-shrink:0;border:0;padding:0;color:var(--muted);font-size:11px}
+.unified-context-bar .context-account .avatar{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;background:var(--gold);color:var(--panel);font-size:11px}
+.unified-context-bar .context-account .avatar-image{width:30px;height:30px}
+.unified-context-bar .context-scope{min-width:0;display:block}
+.unified-context-bar .context-scope>.liegenschaft-switcher{display:block;margin:0}
+.unified-context-bar .context-scope .house-header-card{height:52px;min-height:44px;position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) 18px;gap:10px;margin:0;padding:6px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-md)}
+.unified-context-bar .context-scope .house-header-card::before{display:none}
+.unified-context-bar .context-scope .house-header-card>.disclosure-chevron{position:static;transform:none;width:18px;height:18px;border:0;background:none;color:var(--muted)}
+.unified-context-bar .context-house-icon{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line);border-radius:50%;color:var(--gold-ink)}
+.unified-context-bar .context-scope .house-header-copy{gap:2px}
+.unified-context-bar .context-scope .house-header-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-sans);font-size:13px;line-height:18px}
+.unified-context-bar .context-scope .house-header-copy small{display:block;font-size:11px;line-height:15px;color:var(--muted)}
+.context-view-slot{min-width:0;justify-self:stretch}
+.context-view{display:flex;align-items:center;justify-content:flex-end;min-width:0;gap:16px}
+.context-view-copy{min-width:0;display:grid;gap:4px}
+.context-view-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:650;line-height:17px}
+.context-view-copy>span{display:flex;align-items:center;gap:5px;font-size:11px;line-height:15px;color:var(--muted);white-space:nowrap}
+.context-view-copy .nav-icon svg{width:12px;height:12px}
+.context-view form{flex:0 0 auto;margin:0}
+.context-action,.unified-context-bar .switcher-search button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;padding:8px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font-family:var(--font-sans);font-size:12px;font-weight:650;line-height:18px;cursor:pointer;white-space:nowrap}
+.context-action:hover,.unified-context-bar .switcher-search button:hover{background:var(--panel-soft)}
+.unified-context-bar .role-preview-trigger{display:block;margin-left:auto;color:var(--ink)}
+.unified-context-bar .context-account>summary:hover,.unified-context-bar .context-scope summary:hover{background-color:var(--panel-soft)}
+.unified-context-bar :is(a,button,summary):focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+.unified-context-bar .context-account-menu{z-index:240;color:var(--ink)}
+.unified-context-bar .role-preview-menu{inset:calc(var(--context-bar-h) + 8px) 16px auto auto}
+@media(min-width:761px) and (max-width:1100px){
+ :root{--context-bar-h:116px}
+ body .unified-context-bar[data-context-bar]{grid-template-columns:minmax(180px,1fr) minmax(240px,1fr);grid-template-rows:58px 58px;gap:0 20px}
+ .unified-context-bar .context-view-slot{grid-column:1/-1;grid-row:2;width:100%}
+ .context-view{justify-content:space-between}
+}
+@media(max-width:760px){
+ :root{--context-bar-h:148px}
+ body .unified-context-bar[data-context-bar]{grid-template-columns:minmax(0,1fr) 44px;grid-template-rows:44px 52px 52px;gap:0 8px;padding:0 12px}
+ .unified-context-bar .context-account{grid-column:1;grid-row:1}
+ .unified-context-bar .context-account>summary{width:auto;padding:0;justify-content:flex-start}
+ .unified-context-bar .context-navigation{display:block;grid-column:2;grid-row:1;color:var(--ink)}
+ .unified-context-bar .menu>summary{height:44px;width:44px;display:grid;place-items:center;cursor:pointer}
+ .unified-context-bar .context-scope{grid-column:1/-1;grid-row:2}
+ .unified-context-bar .context-scope .house-header-card{height:44px}
+ .unified-context-bar .context-view-slot{grid-column:1/-1;grid-row:3}
+ .context-view{gap:8px;justify-content:space-between}
+ .context-view-copy strong{font-size:11px}
+ .context-view-copy>span{font-size:10px;gap:3px}
+ .context-action{padding:8px 10px;font-size:11px}
+ .unified-context-bar .menu-panel{position:fixed;inset:var(--context-bar-h) 0 0;overflow:auto;overscroll-behavior:contain;background:var(--nav);color:var(--panel);z-index:225}
+ .unified-context-bar .role-preview-menu{inset:auto 0 0;width:100%;max-height:calc(100dvh - 16px)}
+}
+/* Cross-document snapshots keep chrome stationary and fade only the content. */
+@view-transition{navigation:auto}
+::view-transition{pointer-events:none}
+.portal-shell-content{view-transition-name:portal-content}
+::view-transition-old(root),::view-transition-new(root){animation:none}
+::view-transition-group(root),::view-transition-group(portal-content){animation:none}
+::view-transition-old(portal-content){animation:portal-content-out 90ms ease-out both}
+::view-transition-new(portal-content){animation:portal-content-in 140ms ease-out both}
+@keyframes portal-content-out{to{opacity:0}}
+@keyframes portal-content-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}::view-transition-old(portal-content),::view-transition-new(portal-content){animation:none}}
+
+.portal-error-main{padding:40px 32px;max-width:900px}.portal-error-main h1{font-family:var(--font-serif);font-weight:500;font-size:36px}.portal-error-main p{color:var(--muted);line-height:1.6}.portal-error-links{display:grid;gap:12px;margin-top:24px}.portal-error-links a{display:grid;gap:4px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.portal-error-links small{color:var(--muted)}
+
+.unified-context-bar .hamburger,.unified-context-bar .hamburger::before,.unified-context-bar .hamburger::after{background:var(--ink)}
+
+.release-version{display:block;margin:8px 0 0;font-size:11px;line-height:24px;color:var(--soft)}.version-display-choice{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}.version-display-choice select{min-height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);padding:8px}.product-version{font-variant-numeric:tabular-nums}
+
+.unified-context-bar :is(.context-navigation,.context-account,.liegenschaft-switcher):not([open])>:is(.menu-panel,.context-account-menu,.switcher-panel){display:none}

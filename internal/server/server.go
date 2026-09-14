@@ -2157,7 +2157,11 @@ func (a *app) health(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, `{"service":"hausv-org","status":"unhealthy"}`)
 		return
 	}
-	_, _ = io.WriteString(w, `{"service":"hausv-org","status":"ok"}`)
+	_ = json.NewEncoder(w).Encode(struct {
+		Service string                  `json:"service"`
+		Status  string                  `json:"status"`
+		Release version.ReleaseIdentity `json:"release"`
+	}{"hausv-org", "ok", version.Identity()})
 }
 
 func probeWritableDir(dir string) error {
@@ -5764,14 +5768,25 @@ func (a *app) withBase(ac authCtx, pageData map[string]any) map[string]any {
 // logic — just template + data → HTML. This is the piece that becomes
 // internal/web.Renderer.
 func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[string]any) {
-	viewData := data
+	viewData := make(map[string]any, len(data)+3)
+	for key, value := range data {
+		viewData[key] = value
+	}
+	var stamp bytes.Buffer
+	if err := web.CurrentVersionStamp().Render(context.Background(), &stamp); err != nil {
+		http.Error(w, "Version unavailable", 500)
+		return
+	}
+	viewData["VersionHTML"] = template.HTML(stamp.String())
+	if _, ok := viewData["AppVersion"]; !ok {
+		viewData["AppVersion"] = version.BuildLabel()
+	}
+	if _, ok := viewData["AssetVersion"]; !ok {
+		viewData["AssetVersion"] = version.AssetVersion()
+	}
 	tenantSlug := ""
 	if tenant, ok := data["Tenant"].(tenantConfig); ok {
 		tenantSlug = tenant.Slug
-		viewData = make(map[string]any, len(data))
-		for key, value := range data {
-			viewData[key] = value
-		}
 		viewData["Tenant"] = tenantTemplateViewFrom(tenant)
 	}
 	var rendered bytes.Buffer

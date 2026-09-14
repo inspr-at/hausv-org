@@ -79,3 +79,19 @@ func switcherSummaryLabel(surface, label string) string {
 	}
 	return "Liegenschaft wechseln, aktuell " + label
 }
+
+func scopePropertyLabel(data ScopeContext) string {
+	if data.Switcher.Current != nil {
+		return portalHouseTitle(data.Switcher.Current.Name, data.Switcher.Current.Address)
+	}
+	if len(data.Segments) > 0 {
+		return data.Segments[len(data.Segments)-1]
+	}
+	return "Liegenschaft wählen"
+}
+func scopePropertyAddress(data ScopeContext) string {
+	if data.Switcher.Current != nil {
+		return portalHousePlace(data.Switcher.Current.Address)
+	}
+	return switcherCountLabel(data.Switcher.Count)
+}

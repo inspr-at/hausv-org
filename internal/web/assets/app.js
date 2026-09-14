@@ -531,7 +531,7 @@
 // gives open/close on the summary for free; it does not give Escape, outside-click, or
 // focus return, so those are supplied here.
 (function () {
-  var menu = document.querySelector(".mobile-head details.menu");
+  var menu = document.querySelector("[data-context-bar] details.menu");
   if (!menu) return;
   var summary = menu.querySelector("summary");
   function close(returnFocus) {
