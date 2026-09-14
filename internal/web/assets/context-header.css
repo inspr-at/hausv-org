@@ -67,7 +67,7 @@ body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--c
 ::view-transition-new(portal-content){animation:portal-content-in 140ms ease-out both}
 @keyframes portal-content-out{to{opacity:0}}
 @keyframes portal-content-in{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){::view-transition-old(portal-content),::view-transition-new(portal-content){animation:none}}
+@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}::view-transition-old(portal-content),::view-transition-new(portal-content){animation:none}}
 
 .portal-error-main{padding:40px 32px;max-width:900px}.portal-error-main h1{font-family:var(--font-serif);font-weight:500;font-size:36px}.portal-error-main p{color:var(--muted);line-height:1.6}.portal-error-links{display:grid;gap:12px;margin-top:24px}.portal-error-links a{display:grid;gap:4px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.portal-error-links small{color:var(--muted)}
 

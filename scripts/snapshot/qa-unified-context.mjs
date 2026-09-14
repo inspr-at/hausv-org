@@ -49,5 +49,18 @@ try{
  await choice.selectOption('pretty');assert((await footer.locator('.separator').count())>0);
  await page.emulateMedia({reducedMotion:'reduce'});const stamp=page.locator('#release-history [data-product-version]').first();await stamp.focus();await stamp.press('Enter');assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),canonical);
  assert.equal(await page.locator('#release-history [data-version-scheme="legacy"]').first().innerText(),'1.11.0');
- writeFileSync(`${out}/context-geometry.json`,JSON.stringify(report,null,2));console.log(`PASS unified context: ${report.length} route/mode/viewport cases, parser-frame geometry, real identity, one picker, Pretty/SemVer, exact clipboard, separate history, reduced motion`);
+ const transitionErrors=[];page.on('pageerror',error=>transitionErrors.push(error.message));
+ await context.addInitScript(()=>{
+  window.__revealedTransition=false;
+  window.addEventListener('pagereveal',event=>{if(event.viewTransition){window.__revealedTransition=true;event.viewTransition.skipTransition();}});
+ });
+ await page.goto(app+'/app',{waitUntil:'networkidle'});
+ for(const [motion,route] of [['reduce','dokumente'],['no-preference','events']]){
+  await page.emulateMedia({reducedMotion:motion});
+  await page.locator(`aside.sidebar a[href$="/app/${route}"]`).click();await page.waitForLoadState('networkidle');
+  assert.equal(await page.evaluate(()=>window.__revealedTransition),motion==='no-preference',`${motion}: transition opt-in`);
+  assert(await page.locator('main').first().isVisible(),'navigation remains usable after skipped transition');
+ }
+ assert.deepEqual(transitionErrors,[],'optional transition cancellation must not reject unhandled');
+ writeFileSync(`${out}/context-geometry.json`,JSON.stringify(report,null,2));console.log(`PASS unified context: ${report.length} route/mode/viewport cases, parser-frame geometry, real identity, one picker, Pretty/SemVer, exact clipboard, separate history, reduced motion, real transition cancellation`);
 }finally{await browser.close();}

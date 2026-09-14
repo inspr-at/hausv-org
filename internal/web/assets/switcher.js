@@ -2,6 +2,13 @@
 // The observer runs between parser tasks, before rendering; wait for the last
 // footer link so scrollHeight includes the entire navigation, even in streamed HTML.
 (() => {
+  // A resize, hidden tab or newer navigation can cancel this optional effect.
+  // Observe its ready promise before first paint; the navigation still succeeds.
+  for (const type of ['pageswap', 'pagereveal']) {
+    window.addEventListener(type, (event) => {
+      event.viewTransition?.ready.catch(() => {});
+    });
+  }
   const install = () => {
     const sidebar = document.querySelector('aside.sidebar');
     if (!sidebar?.querySelector('.sidebar-release .release-trigger')) return false;
