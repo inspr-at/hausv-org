@@ -15,8 +15,9 @@
 # endpoint is checked. Releases are kept in <dir>/releases/<sha>; <dir>/src
 # points at the live one, so a rollback is `ln -sfn` plus `up -d`.
 #
-# Demo only. No VERSION bump, no CI gate, no snapshot: the data is fixture data
-# and --seed recreates it from scratch.
+# Demo only: uses the already reserved VERSION in a separate demo channel.
+# The release coordinator must check CI first; this script does not query CI.
+# Existing data is retained; --seed explicitly recreates the fixture data.
 set -euo pipefail
 
 usage() { sed -n '2,12p' "$0" >&2; exit 2; }

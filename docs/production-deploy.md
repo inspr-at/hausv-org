@@ -505,15 +505,16 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   registry entry in `hostnames.json` (DNS + aliases), `/srv/hausv-demo` and a
   boot unit that runs `up -d` for the bundle. Rotating the access code is a
   secret edit plus deploy there; the AGM-16 trigger restarts the bundle.
-- This repository owns the application half. The image is private and CI
-  never pushes it, so the code travels exactly like production: `git archive
-  HEAD` to the host, built there, run from `deploy/demo/`. Ship with
+- This repository owns the application half. After the candidate passes CI,
+  `git archive HEAD` sends its source to the demo host, where the separate
+  demo image is built and run from `deploy/demo/`. Production uses the CI-built
+  GHCR image through the path above. Ship the demo with
 
   ```sh
   HAUSV_DEMO_SSH_HOST=mba@<ip> HAUSV_DEMO_SSH_PORT=2222 HAUSV_DEMO_SSH_KEY=~/.ssh/agm_deploy \
   HAUSV_DEMO_BASE_URL=https://hausv.agm.ng \
   HAUSV_DEMO_SECRETS_FILE=/run/agenix/agm1-hausv-demo-env \
-  deploy/demo/deploy-remote.sh --seed
+  deploy/demo/deploy-remote.sh
   ```
 
   It refuses a dirty tree, keeps every release in
@@ -528,8 +529,12 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   as `HAUSV_DEMO_PYTHON`; the deploy checks it before building or activating.
   The compose project is `hausv-demo`; a manual `seed.sh`/`reset.sh` on the
   host needs `COMPOSE_PROJECT_NAME=hausv-demo` (or `HAUSV_DEMO_PROJECT`).
-- No `VERSION` bump and no CI gate: the demo version is `<VERSION>-demo.<sha>`
-  and the data is disposable.
+- Demo uses the canonical reserved `VERSION`, with `demo` as a separate release
+  channel and the commit as separate metadata. Before activation, the immutable
+  `/srv/hausv-demo/release-records/<version>.json` freezes the image and binary
+  digests. Reusing a frozen coordinate is refused. The release coordinator
+  checks CI; the script itself does not query it. Normal releases preserve
+  existing demo data; use `--seed` only for explicitly requested fixture resets.
 - Proxy trust: with a public `BASE_URL` the app refuses to start without
   `TRUSTED_PROXY_CIDRS`. The bundle pins its compose subnet
   (`HAUSV_DEMO_SUBNET`, default `172.30.98.0/24`) so the proxy's source address
