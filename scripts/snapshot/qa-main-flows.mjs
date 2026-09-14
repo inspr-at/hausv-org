@@ -1639,7 +1639,8 @@ async function assertResidentContentResponsiveMatrix(sizes = [
           const box = node.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
         });
-        if (Math.abs(sticky.top) > 1 || sticky.height > 76 || sticky.bottom > 77) {
+        // The unified phone header reserves three accessible rows: account, property, view.
+        if (Math.abs(sticky.top) > 1 || Math.abs(sticky.height - 148) > 1 || sticky.bottom > 149) {
           fail(`Mobile Navigation überdeckt beim Scrollen zu viel Inhalt (${JSON.stringify(sticky)})`);
         }
         await page.evaluate(() => window.scrollTo(0, 0));
