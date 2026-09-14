@@ -45,8 +45,19 @@ try {
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`overflow ${width} ${path}`);
    assert.ok((await banner.getByRole('button').boundingBox()).height>=44);
    if (path==='/app' && artifactDir) await page.screenshot({path:`${artifactDir}/support-${width}.png`});
+   if (path==='/app') {
+    await banner.locator('strong').evaluate(el=>el.textContent='Portal anzeigen als Alexandra-Maria Elisabeth von Beispielhausen-Langenfeld '.repeat(3)+' · Bewohner');
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`long name overflow ${width}`);
+    assert.ok((await banner.getByRole('button').boundingBox()).y<900,`long name exit unreachable ${width}`);
+   }
   }
  }
+ const denied=await page.goto(appBase+'/app/settings/users');assert.equal(denied.status(),403);
+ assert.match(await page.locator('[data-support-view-banner]').innerText(),/Portal anzeigen als Rita Bewohnerin/);
+ if (artifactDir) await page.screenshot({path:`${artifactDir}/support-denied.png`});
+ const noScriptWrite=await context.request.post(appBase+'/app/settings/profile',{form:{first_name:'Changed'},headers:{Origin:origin,Accept:'text/html','Sec-Fetch-Dest':'document'},maxRedirects:0});
+ assert.equal(noScriptWrite.status(),403);assert.match(await noScriptWrite.text(),/data-support-view-banner/);
  const blocked=await context.request.post(appBase+'/app/settings/profile',{form:{first_name:'Changed'},headers:{Origin:origin},maxRedirects:0});assert.equal(blocked.status(),403);
  const foreign=await context.request.get(origin+'/haus-b/app',{maxRedirects:0});assert.equal(foreign.status(),303);
  assert.equal(await page.locator('a[href*="/calendar/"]').count(),0);

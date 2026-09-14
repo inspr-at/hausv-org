@@ -144,9 +144,8 @@ func (a *app) authenticate(w http.ResponseWriter, r *http.Request) (authCtx, boo
 			a.terminateSupportView(w, r, session, reason)
 			return authCtx{}, false
 		}
-		profile := a.profileForTenant(session.SupportTargetEmail, tenant.Slug)
 		return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: session.SupportTargetEmail, role: session.SupportTargetRole, realEmail: session.Email, realRole: session.Role,
-			supportView: &supportViewContext{ActorEmail: session.Email, ActorRole: session.Role, TargetEmail: session.SupportTargetEmail, TargetName: profile.DisplayName(), TargetRole: session.SupportTargetRole, StartedAt: time.Unix(session.SupportStartedAt, 0), ExpiresAt: time.Unix(session.SupportExpiresAt, 0)},
+			supportView: a.supportContextForSession(session),
 			tenant:      tenant, tenantRef: resolved.tenantRef, repositories: resolved.repositories}, true
 	}
 	if session, ok := a.rolePreviewSessionForRequest(r); ok && session.PreviewRole != "" {
@@ -249,6 +248,10 @@ func (a *app) action(h authedHandler) http.HandlerFunc {
 			return
 		}
 		if ac.supportView != nil {
+			if r.Header.Get("Sec-Fetch-Dest") == "document" || strings.Contains(r.Header.Get("Accept"), "text/html") {
+				a.writeErrorPage(w, r, ac, true, http.StatusForbidden, "Die Supportansicht ist schreibgeschützt. Bitte zuerst die Supportansicht beenden.")
+				return
+			}
 			http.Error(w, "Die Supportansicht ist schreibgeschützt. Bitte zuerst die Supportansicht beenden.", http.StatusForbidden)
 			return
 		}

@@ -2,8 +2,11 @@ package server
 
 import (
 	"bytes"
+	"html/template"
 	"net/http"
 	"strings"
+
+	"github.com/inspr-at/hausv-org/internal/web"
 )
 
 // This file holds the seam that turns a failed page request into a page.
@@ -128,7 +131,12 @@ func (a *app) sessionActor(r *http.Request) (authCtx, bool) {
 	if !ok || tenantSlug != tenant.Slug {
 		return authCtx{}, false
 	}
-	return authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, tenant: tenant}, true
+	ac := authCtx{policy: a.capabilityPolicy(r.Context(), tenant, false), email: email, role: role, realEmail: email, realRole: role, tenant: tenant}
+	if session, valid := a.sessionForRequest(r); valid && session.SupportTargetEmail != "" {
+		ac.realEmail, ac.realRole = session.Email, session.Role
+		ac.supportView = a.supportContextForSession(session)
+	}
+	return ac, true
 }
 
 // wantsHTMLErrorPage reports whether this request is a person navigating to a
@@ -325,6 +333,15 @@ func (a *app) writeErrorPage(w http.ResponseWriter, r *http.Request, ac authCtx,
 		data["ErrorPrimaryLabel"] = "Zur Anmeldung"
 	}
 
+	if state := supportViewPortalData(&ac); authenticated && state != nil {
+		var banner bytes.Buffer
+		if err := web.SupportViewBanner(*state).Render(r.Context(), &banner); err != nil {
+			http.Error(w, "Supportansicht konnte nicht dargestellt werden.", http.StatusInternalServerError)
+			return
+		}
+		// Only templ-rendered, escaped component HTML crosses the legacy template seam.
+		data["SupportViewBanner"] = template.HTML(banner.String())
+	}
 	buffered := &bufferedPage{}
 	a.executeTemplate(buffered, "errorPage", data)
 	if buffered.body.Len() == 0 {

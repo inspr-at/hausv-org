@@ -690,3 +690,69 @@ func TestSupportViewRefusesStartWithoutDurableAudit(t *testing.T) {
 		t.Fatal("failed start revoked the original login")
 	}
 }
+
+func TestSupportViewBannerSurvivesErrorsAndNoScriptWrite(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+	token, _ := startSupportViewForResident(t, a)
+	for _, item := range []struct {
+		method, path string
+		status       int
+	}{
+		{http.MethodGet, "/app/settings/users", http.StatusForbidden},
+		{http.MethodGet, "/app/dokumente/unknown/download", http.StatusNotFound},
+		{http.MethodGet, "/app/nonexistent-support-test", http.StatusNotFound},
+		{http.MethodPost, "/app/settings/profile", http.StatusForbidden},
+	} {
+		t.Run(item.method+item.path, func(t *testing.T) {
+			req := httptest.NewRequest(item.method, "http://hausv.org/demo"+item.path, strings.NewReader("first_name=Blocked"))
+			req.Header.Set("Accept", "text/html")
+			req.Header.Set("Origin", "http://hausv.org")
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.AddCookie(&http.Cookie{Name: "weg_session", Value: token})
+			rr := httptest.NewRecorder()
+			a.handler().ServeHTTP(rr, req)
+			if rr.Code != item.status || strings.Count(rr.Body.String(), "data-support-view-banner") != 1 || !strings.Contains(rr.Body.String(), "Portal anzeigen als Rita Resident") || !strings.Contains(rr.Body.String(), "/demo/app/support-view/end") {
+				t.Fatalf("support error lost identity/exit: %d", rr.Code)
+			}
+		})
+	}
+}
+
+func TestSupportViewDoesNotPersistBallotExpiry(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+	repo := testRepositories(a, "demo").votes
+	now := time.Now()
+	item, err := repo.Create(ballot{TenantSlug: "demo", Title: "Abgelaufene Abstimmung", Options: []string{"Ja", "Nein"}, Type: store.BallotTypeCircular, Weighting: store.BallotWeightingPerHead, CreatedBy: "admin@example.com", ClosesAt: now.Add(-time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := repo.Open(item.ID, now.Add(-2*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	token, _ := startSupportViewForTarget(t, a, "manager@example.com", roleManager)
+	for _, path := range []string{"/app/abstimmungen", "/app/abstimmungen/" + item.ID + "/protokoll"} {
+		if rr := supportViewGet(t, a, token, path); rr.Code != http.StatusOK {
+			t.Fatalf("expired ballot display %s: %d", path, rr.Code)
+		}
+	}
+	stored, _ := repo.Get(item.ID)
+	if stored.Status != ballotStatusOpen {
+		t.Fatal("support read persisted a ballot transition")
+	}
+}
+
+func TestSupportViewDocumentPreviewAuditsRealActor(t *testing.T) {
+	a := newSupportViewTestApp(t, true)
+	document, err := documentRepositoryForTest(a, "demo").Create(documentRecord{TenantSlug: "demo", Title: "Hausordnung", Category: documentCategoryRules, Visibility: documentVisibilityAllResidents, UploadedBy: "admin@example.com"}, testMultipartHeader(t, "document", "hausordnung.pdf", []byte("%PDF-1.4\n% support preview\n")), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, _ := startSupportViewForResident(t, a)
+	if rr := supportViewGet(t, a, token, "/app/dokumente/"+document.ID+"/preview"); rr.Code != http.StatusOK {
+		t.Fatalf("preview: %d", rr.Code)
+	}
+	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionDocumentDownload})
+	if len(events) != 1 || events[0].ActorEmail != "admin@example.com" || events[0].Details["support_target_email"] != "resident@example.com" || events[0].Details["access"] != "preview" {
+		t.Fatal("preview audit lacks real actor and target context")
+	}
+}

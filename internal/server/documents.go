@@ -273,6 +273,9 @@ func (a *app) previewDocument(w http.ResponseWriter, r *http.Request, ac authCtx
 	if item.ContentType != "" {
 		w.Header().Set("Content-Type", item.ContentType)
 	}
+	if ac.supportView != nil {
+		a.recordAuthenticatedReadAudit(ac, auditEvent{TenantSlug: tenant.Slug, Action: auditActionDocumentDownload, TargetType: "document", TargetID: item.ID, Summary: "Dokumentvorschau angezeigt", Details: map[string]string{"access": "preview"}})
+	}
 	http.ServeContent(w, r, item.Filename, item.UploadedAt, file)
 }
 

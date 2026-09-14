@@ -345,3 +345,8 @@ func (a *app) portalContextsForActor(ac *authCtx) []portalContextView {
 	}
 	return a.portalContextsFor(ac.email, ac.tenant.Slug, ac.role)
 }
+
+func (a *app) supportContextForSession(session auth.Session) *supportViewContext {
+	profile := a.profileForTenant(session.SupportTargetEmail, session.TenantSlug)
+	return &supportViewContext{ActorEmail: session.Email, ActorRole: session.Role, TargetEmail: session.SupportTargetEmail, TargetName: profile.DisplayName(), TargetRole: session.SupportTargetRole, StartedAt: time.Unix(session.SupportStartedAt, 0), ExpiresAt: time.Unix(session.SupportExpiresAt, 0)}
+}

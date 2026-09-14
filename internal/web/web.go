@@ -3846,6 +3846,7 @@ const PageTemplates = `
   </style>
 </head>
 <body class="hv-error-body">
+{{.SupportViewBanner}}
   <div class="hv-error-shell">
     <header class="hv-error-top">
       <span class="hv-error-mark">{{template "tenantBrandMark" .}}</span>
