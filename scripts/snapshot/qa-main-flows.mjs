@@ -106,7 +106,7 @@ async function contextBarBox(page) {
 }
 
 async function toggleMobileMenu(page) {
-  const summary = page.locator('[data-context-bar] details > summary').first();
+  const summary = page.locator('[data-context-bar] > details.menu > summary');
   if (!(await summary.count())) fail('Mobiles Menü: kein Bedienelement gefunden');
   await summary.click();
 }

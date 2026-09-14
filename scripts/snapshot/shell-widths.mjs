@@ -73,6 +73,7 @@ for (const [name, route] of ROUTES) {
       const vis = eval(`(${visibleSrc})`);
       return {
         sidebar: vis(document.querySelector('.sidebar')),
+        contextCount: document.querySelectorAll('[data-context-bar]').length,
         // HAUSV-704: every desktop route uses the persisted sidebar token,
         // including the tablet band that formerly switched to 210/250px.
         sidebarGeometry: (() => {
@@ -80,13 +81,10 @@ for (const [name, route] of ROUTES) {
           const box = el.getBoundingClientRect(), style = getComputedStyle(el);
           return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
         })(),
-        mobile: vis(document.querySelector('[data-context-bar]')),
-        // The hamburger must be operable, not merely present — and matched by
-        // structure, not by class. Keying this on `.menu` reported eight false
-        // failures on the very code it was written to judge, because those pages
-        // spell it `.mobile-menu`. A probe that only passes the layout it was
-        // built for measures nothing.
-        menu: vis(document.querySelector('[data-context-bar] details > summary')),
+        mobile: vis(document.querySelector('[data-context-bar] .context-navigation')),
+        // The unified bar is always visible; only its navigation disclosure
+        // marks the mobile shell. The account disclosure is a separate control.
+        menu: vis(document.querySelector('[data-context-bar] .context-navigation > summary')),
         links: document.querySelectorAll('.nav a').length,
         // Visible is not the same as reachable. Six routes rendered the mobile
         // header AFTER the content, and one behind an empty 100vh grid, so the
@@ -141,6 +139,7 @@ for (const [name, route] of ROUTES) {
         const h = document.querySelector('[data-context-bar]');
         return {
           sidebar: vis(document.querySelector('.sidebar')),
+        contextCount: document.querySelectorAll('[data-context-bar]').length,
         // HAUSV-704: every desktop route uses the persisted sidebar token,
         // including the tablet band that formerly switched to 210/250px.
         sidebarGeometry: (() => {
@@ -148,8 +147,8 @@ for (const [name, route] of ROUTES) {
           const box = el.getBoundingClientRect(), style = getComputedStyle(el);
           return { x: box.x, width: box.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight, expectedWidth: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) };
         })(),
-          mobile: vis(h),
-          menu: vis(document.querySelector('[data-context-bar] details > summary')),
+          mobile: vis(document.querySelector('[data-context-bar] .context-navigation')),
+          menu: vis(document.querySelector('[data-context-bar] .context-navigation > summary')),
           links: document.querySelectorAll('.nav a').length,
           headTop: h ? Math.round(h.getBoundingClientRect().top) : null,
           templ: [...document.body.attributes].some((a) => a.name.startsWith('data-templ')),
@@ -314,7 +313,7 @@ console.log(`${'width'.padStart(6)}  ${'shell'.padEnd(8)} routes`);
 for (const w of WIDTHS) {
   const all = results.filter((r) => r.width === w);
   const wrongRenderer = all.filter((r) => !r.templ);
-  const none = all.filter((r) => !r.sidebar && !r.mobile);
+  const none = all.filter((r) => (!r.sidebar && !r.mobile) || r.contextCount !== 1);
   const both = all.filter((r) => r.sidebar && r.mobile);
   const desktop = all.filter((r) => r.sidebar && !r.mobile).map((r) => r.route);
   const mob = all.filter((r) => r.mobile && !r.sidebar).map((r) => r.route);

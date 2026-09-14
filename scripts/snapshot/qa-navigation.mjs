@@ -77,7 +77,7 @@ async function measure(page, width, sidebarWidth, label) {
       })(),
       overview: document.querySelector('[data-context-bar] .house-header-copy strong')?.textContent.trim(),
       portfolioMap: !!surface.querySelector('.side-map-portfolio'),
-      layoutWidth:document.documentElement.clientWidth, left, overflow: document.documentElement.scrollWidth > innerWidth + 1,
+      layoutWidth:bar[0]?.getBoundingClientRect().width, left, overflow: document.documentElement.scrollWidth > innerWidth + 1,
     };
   });
   measurements.push({ label, viewport: width, sidebarWidth, ...result });
