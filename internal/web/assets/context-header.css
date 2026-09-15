@@ -74,6 +74,6 @@ body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--c
 
 .unified-context-bar .hamburger,.unified-context-bar .hamburger::before,.unified-context-bar .hamburger::after{background:var(--ink)}
 
-.release-version{display:block;margin:8px 0 0;font-size:11px;line-height:24px;color:var(--soft)}.version-display-choice{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}.version-display-choice select{min-height:44px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);padding:8px}.product-version{font-variant-numeric:tabular-nums}
+.release-trigger{gap:6px;font-size:11px;line-height:24px}.product-version{font-variant-numeric:tabular-nums}
 
 .unified-context-bar :is(.context-navigation,.context-account,.liegenschaft-switcher):not([open])>:is(.menu-panel,.context-account-menu,.switcher-panel){display:none}

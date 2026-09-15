@@ -345,8 +345,9 @@ func portalBool(value bool) string {
 templ PortalSidebar(data PortalPageData) {
 	{{ shell := portalShellData(data) }}
 	<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">
+		@PortalSideMapHero(data)
 		@PortalOrganisationIdentity(shell)
-		@PortalNavigation(data, true, true)
+		@PortalNavigation(data, true, false)
 		<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
 	</aside>
 	@SidebarResizeHandle()
@@ -462,8 +463,9 @@ templ PortalMobileHeader(data PortalPageData, pageLabel string) {
 }
 
 templ PortalMobileNavigation(data PortalPageData) {
+	@PortalSideMapHero(data)
 	@PortalOrganisationIdentity(portalShellData(data))
-	@PortalNavigation(data, false, true)
+	@PortalNavigation(data, false, false)
 	<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
 }
 
@@ -538,8 +540,8 @@ templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool
  </div>
 }
 
-// PortalSideMapHero sits between the house selector and house navigation
-// (HAUSV-680): full sidebar width, pin on the address, link to OpenStreetMap.
+// PortalSideMapHero starts the sidebar and mobile drawer, flush with the header:
+// full sidebar width, pin on the address, link to OpenStreetMap.
 // Without coordinates it collapses to a short placeholder band.
 templ PortalSideMapHero(data PortalPageData) {
  if data.Overview {
@@ -874,7 +876,7 @@ templ PortalCalm(data PortalPageData) {
 }
 
 templ CalmIssues(data PortalPageData) {
-	<details class="module" open><summary><span class="dot gold" aria-hidden="true"></span><h3>Anliegen</h3><span class="summary-count">{ len(data.Issues) } offen</span>
+	<details class="module calm-issues" open><summary><span class="dot gold" aria-hidden="true"></span><h3>Anliegen</h3><span class="summary-count">{ len(data.Issues) } offen</span>
 		@DisclosureChevron()
 	</summary><div class="module-body"><ol class="rows">
 		for index, issue := range data.Issues {
@@ -1043,15 +1045,14 @@ templ PortalReleaseNotes(data PortalPageData) {
 // :target rule in PortalBaseStyles shows it. With JavaScript app.js cancels the
 // navigation and opens the same element with showModal().
 templ ReleaseNotesTrigger(displayVersion string) {
- <span class="release-version">@VersionStamp(displayVersion, version.Identity().VersionScheme)</span>
 	<a
 		class="release-trigger"
 		href="#release-history"
 		data-dialog="release-history"
 		aria-haspopup="dialog"
 		aria-controls="release-history"
-		aria-label={ "v" + displayVersion + " · Versionsverlauf öffnen" }
-	>Versionsverlauf</a>
+		aria-label={ "Version " + displayVersion + " · Versionsverlauf öffnen" }
+	><span>Version:</span> @VersionStamp(displayVersion, version.Identity().VersionScheme)</a>
 }
 
 // ReleaseHistoryDialog is rendered once per portal page, outside the sidebar, so
@@ -1065,7 +1066,6 @@ templ ReleaseHistoryDialog(notes []version.Note) {
 				<a class="release-dialog-close release-dialog-close-nojs" href="#main-content" aria-label="Versionsverlauf schließen"><span aria-hidden="true">×</span></a>
 			</div>
 			<div class="release-dialog-body" tabindex="0">
- @VersionDisplayChoice()
 				for _, note := range notes {
 					<article class="release-entry"><small>@VersionStamp(note.Version, version.NoteScheme(note)) · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
 						for _, item := range note.Items {

@@ -56,7 +56,7 @@ func TestNavigationShellAcrossRoutesAndRolesHAUSV704(t *testing.T) {
 					}
 					want := []string{"map", "house-navigation", "release"}
 					if role == roleAdmin || role == roleManager {
-						want = append([]string{"organisation-identity", "organisation"}, want...)
+						want = []string{"map", "organisation-identity", "organisation", "house-navigation", "release"}
 					}
 					if !reflect.DeepEqual(names, want) {
 						t.Fatalf("block order %v, want %v", names, want)

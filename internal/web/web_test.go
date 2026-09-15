@@ -111,7 +111,7 @@ func TestAppShellLoadsSharedSubmitGuard(t *testing.T) {
 			t.Fatalf("app shell missing logo/fav icon convention %q", want)
 		}
 	}
-	for _, want := range []string{`class="map side-map"`, `target="_blank"`, `rel="noopener noreferrer"`, `class="side-map-pin-shape"`, `class="side-map-pin-mark"`, `data-dialog="release-history"`, `Versionsverlauf`, `vtest`} {
+	for _, want := range []string{`class="map side-map"`, `target="_blank"`, `rel="noopener noreferrer"`, `class="side-map-pin-shape"`, `class="side-map-pin-mark"`, `data-dialog="release-history"`, `Versionsverlauf`, `Version test`} {
 		if !strings.Contains(shell, want) {
 			t.Fatalf("shared shell missing map/version convention %q", want)
 		}

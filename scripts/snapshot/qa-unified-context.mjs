@@ -9,6 +9,7 @@ const executablePath=[process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,...(proces
 const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{}),args:['--host-resolver-rules=MAP hausv.test 127.0.0.1','--no-proxy-server']});
 const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage(),report=[];
 await context.addInitScript(()=>{
+ localStorage.setItem('hausv:version-display','reduced');
  window.__chromeFrames=[];
  const frame=()=>{const bar=document.querySelector('[data-context-bar]'),content=document.querySelector('.portal-shell-content');
  if(bar&&content){const b=bar.getBoundingClientRect(),c=content.getBoundingClientRect();window.__chromeFrames.push([b.x,b.y,b.width,b.height,c.x,c.y]);}
@@ -29,6 +30,10 @@ try{
     await page.goto(app+route,{waitUntil:'networkidle'});await page.waitForTimeout(180);
     const frames=await page.evaluate(()=>window.__chromeFrames);assert(frames.length>=2,`${mode}/${width}/${route}: frame samples`);
     for(const frame of frames){assert(Math.abs(frame[1])<=.5,`header top ${frame}`);assert(Math.abs(frame[3]-expectedHeight)<=.5,`height changed ${frame}`);assert(Math.abs(frame[5]-expectedHeight)<=.5,`content shifted ${frame}`);assert(Math.abs(frame[4]-(width<=760?0:280))<=.5,`content x changed ${frame}`);}
+    if(width>760){
+     const map=await page.locator('aside.sidebar .side-map-hero').boundingBox();
+     assert(map && Math.abs(map.y-expectedHeight)<=.5,`${mode}/${width}/${route}: map touches header`);
+    }
     assert.equal(await page.locator('[data-context-bar]').count(),1);assert.equal(await page.locator('[data-house-picker]').count(),1);
     assert.match(await page.locator('[data-context-account] summary').innerText(),/Ada Admin/);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
@@ -42,11 +47,12 @@ try{
  await context.grantPermissions(['clipboard-read','clipboard-write'],{origin:new URL(page.url()).origin});
  const footer=page.locator('aside.sidebar [data-product-version]');await footer.scrollIntoViewIfNeeded();await footer.waitFor();
  const canonical=await footer.getAttribute('data-product-version');assert.match(canonical,/^[1-9][0-9]{11}\.0\.0$/);
- await footer.focus();await footer.press('Enter');assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),canonical);
- assert.equal(await page.locator('#release-history').getAttribute('open'),null,'copy must not open history');
- await page.locator('aside.sidebar .release-trigger').click();assert(await page.locator('#release-history').isVisible());
- const choice=page.locator('[data-version-display]');await choice.selectOption('reduced');assert.equal(await footer.locator('.separator').count(),0);
- await choice.selectOption('pretty');assert((await footer.locator('.separator').count())>0);
+ const historyLink=page.locator('aside.sidebar .release-trigger');
+ assert.match(await historyLink.innerText(),/^Version:/);
+ assert.equal(await historyLink.locator('[role="button"]').count(),0,'one native link, no nested copy action');
+ await historyLink.focus();await historyLink.press('Enter');assert(await page.locator('#release-history').isVisible());
+ assert.equal(await page.locator('[data-version-display]').count(),0,'no display selector');
+ assert((await footer.locator('.separator').count())>0,'Pretty ignores the old reduced preference');
  await page.emulateMedia({reducedMotion:'reduce'});const stamp=page.locator('#release-history [data-product-version]').first();await stamp.focus();await stamp.press('Enter');assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),canonical);
  assert.equal(await page.locator('#release-history [data-version-scheme="legacy"]').first().innerText(),'1.11.0');
  const transitionErrors=[];page.on('pageerror',error=>transitionErrors.push(error.message));
@@ -62,5 +68,5 @@ try{
   assert(await page.locator('main').first().isVisible(),'navigation remains usable after skipped transition');
  }
  assert.deepEqual(transitionErrors,[],'optional transition cancellation must not reject unhandled');
- writeFileSync(`${out}/context-geometry.json`,JSON.stringify(report,null,2));console.log(`PASS unified context: ${report.length} route/mode/viewport cases, parser-frame geometry, real identity, one picker, Pretty/SemVer, exact clipboard, separate history, reduced motion, real transition cancellation`);
+ writeFileSync(`${out}/context-geometry.json`,JSON.stringify(report,null,2));console.log(`PASS unified context: ${report.length} route/mode/viewport cases, parser-frame geometry, real identity, one picker, Pretty only despite old preference, exact clipboard in history, version link opens history, reduced motion, real transition cancellation`);
 }finally{await browser.close();}
