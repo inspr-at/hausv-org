@@ -258,7 +258,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await ctx.close();
 }
 
-// 5f. Throwing cookie access after acceptance: withdrawal still clears local and session storage and closes the next page.
+// 5f. Throwing cookie access after acceptance: the gate closes, re-prompts, and a refusal still clears local and session storage.
 {
   const { ctx, page, requests } = await open();
   // Gated by a session flag so the same tab can flip into the failure mode later.
@@ -280,14 +280,18 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
     Object.defineProperty(document, 'cookie', { configurable: true, get() { throw new Error('cookie jar unavailable'); }, set() { throw new Error('cookie jar unavailable'); } });
   });
   const before = requests.length;
+  // The grant is no longer readable, so the primitive reconciles before any
+  // user-triggered activation: the privacy control does not open the sheet,
+  // it denies the loaded tag and reloads; the next document has no readable
+  // decision and prompts again — fail closed, nothing loads.
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.ic-sheet[open]');
-  await page.locator('#ic-cat-marketing').uncheck();
-  await page.getByRole('button', { name: 'Speichern' }).click();
-  await page.waitForLoadState('load');
+  await page.waitForSelector('.ic-bar');
+  await page.waitForTimeout(500);
+  check('throwing cookie jar after acceptance: the unreadable grant closes the gate and prompts again', await page.locator('.ic-bar').isVisible() && googleHits(requests.slice(before)).length === 0, googleHits(requests.slice(before)).join(','));
+  await page.getByRole('button', { name: 'Ablehnen' }).click();
   await page.waitForTimeout(500);
   const state = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('consent_fired_google-ads'), sessionStorage.getItem('hausv_consent_revoked')]);
-  check('throwing cookie jar: withdrawal still clears local and session storage and records the revocation', state[0] === null && state[1] === null && state[2] === '1', JSON.stringify(state));
+  check('throwing cookie jar: refusal still clears local and session storage and records the revocation', state[0] === null && state[1] === null && state[2] === '1', JSON.stringify(state));
   check('throwing cookie jar: no page error during withdrawal', errors.length === 0, errors.join(' | '));
   await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
   check('throwing cookie jar: the next page loads nothing from Google', googleHits(requests.slice(before)).length === 0 && errors.length === 0, errors.join(' | '));
