@@ -79,8 +79,8 @@ func (w *securityResponseWriter) shouldPreventCaching(status int) bool {
 
 // contentSecurityPolicy is the default policy for every page. With a Google
 // Ads tag configured (demo host), Google's tag and conversion hosts are
-// allowed in addition; the gtag bootstrap itself is a self-hosted script,
-// so script-src never needs 'unsafe-inline'.
+// allowed in addition; the consent gate that injects the tag after consent is
+// a self-hosted script, so script-src never needs 'unsafe-inline'.
 func (a *app) contentSecurityPolicy() string {
 	if a == nil || a.googleAdsTagID == "" {
 		return "default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'"

@@ -100,6 +100,7 @@ func (a *app) privacyNotice(w http.ResponseWriter, r *http.Request) {
 	portalType, portalClassified := classifiedPortalType(tenant)
 	a.render(w, "privacy", map[string]any{
 		"Title":                         "Datenschutz · hausv.org",
+		"GoogleAdsTagID":                a.googleAdsTagID,
 		"Tenant":                        tenant,
 		"HouseContactName":              firstNonEmpty(tenant.ContactName, tenant.Name, "Hausverwaltung"),
 		"HouseContactAddress":           tenant.ContactAddress,
