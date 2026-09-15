@@ -666,9 +666,8 @@ func between(s, start, end string) string {
 	return rest
 }
 
-// HAUSV-680: the location map follows the house label and card, before navigation,
-// in both navigation surfaces (HAUSV-704); the compact card carries no thumbnail.
-func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
+// The location map is the first sidebar block, before organisation and navigation.
+func TestSidebarStartsWithLocationMapBeforeNavigation(t *testing.T) {
 	portal := PortalPageData{
 		Title: "Portal", TenantSlug: "park", HouseName: "Haus am Park", Address: "Parkgasse 1, 8010 Graz",
 		MapURL: "https://www.openstreetmap.org/", DisplayName: "Vera Verwaltung", Initials: "VV", Role: "Admin",
@@ -681,8 +680,8 @@ func TestSidebarShowsTheLocationMapBetweenHouseCardAndNavigation(t *testing.T) {
 	hero, card := strings.Index(side, `class="side-map-hero"`), strings.Index(side, `class="house-header-card`)
 	label := strings.Index(side, `class="nav-group nav-level-label nav-house-label"`)
 	navigation := strings.Index(side, `class="nav-house-items`)
-	if label < 0 || card != -1 || hero <= label || navigation <= hero {
-		t.Fatalf("sidebar must show label, map, navigation without a duplicate picker (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
+	if label < 0 || card != -1 || hero < 0 || label <= hero || navigation <= hero {
+		t.Fatalf("sidebar must show map, label, navigation without a duplicate picker (label=%d card=%d hero=%d navigation=%d)", label, card, hero, navigation)
 	}
 	if strings.Count(html, `class="side-map-hero`) != 2 {
 		t.Errorf("desktop sidebar and mobile drawer must each carry the hero, found %d", strings.Count(html, `class="side-map-hero`))
@@ -751,7 +750,7 @@ func TestResidentOverviewUsesFullWidthAndOptionalOrganisationBlock(t *testing.T)
 		t.Fatal("unit label must remain a single item")
 	}
 	calm := renderComponent(t, PortalCalm(portal))
-	issues, updates, events, announcements := strings.Index(calm, `class="module"`), strings.Index(calm, `class="calm-updates"`), strings.Index(calm, `class="module events"`), strings.Index(calm, `class="module announcements"`)
+	issues, updates, events, announcements := strings.Index(calm, `class="module calm-issues"`), strings.Index(calm, `class="calm-updates"`), strings.Index(calm, `class="module events"`), strings.Index(calm, `class="module announcements"`)
 	if issues < 0 || updates <= issues || events <= updates || announcements <= events {
 		t.Fatal("expected issues left, then events and announcements in shared right column")
 	}
@@ -764,7 +763,7 @@ func TestResidentOverviewUsesFullWidthAndOptionalOrganisationBlock(t *testing.T)
 		}
 		want := []string{"map", "house-navigation", "release"}
 		if organisation {
-			want = append([]string{"organisation-identity", "organisation"}, want...)
+			want = []string{"map", "organisation-identity", "organisation", "house-navigation", "release"}
 		}
 		if !reflect.DeepEqual(names, want) {
 			t.Fatalf("organisation=%v blocks=%v want=%v", organisation, names, want)
@@ -778,9 +777,9 @@ func TestResidentOverviewUsesFullWidthAndOptionalOrganisationBlock(t *testing.T)
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		`.portal-home-landing.calm-main .portal-section-content{width:min(var(--portal-content-width),100%)`,
+		`.portal-home-landing.calm-main .portal-section-content{width:100%;margin-inline:0;padding-inline:var(--home-inset)}`,
 		`@media(min-width:1100px){.calm-column .disclosures{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}`,
-		`.calm-column .issue-location{white-space:nowrap}`,
+		`.calm-issues .row .issue-location{grid-area:location;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.4}`,
 		`.nav[data-two-level="false"]>.nav-house-label{margin-top:0;padding-top:0;border-top:0}`,
 	} {
 		if !strings.Contains(string(css), want) {

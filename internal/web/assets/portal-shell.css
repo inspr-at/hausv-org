@@ -195,6 +195,22 @@ main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) 
 .calm-column{container-type:inline-size}
 .calm-updates{display:grid;align-content:start;gap:var(--space-3);min-width:0}
 .calm-column .disclosures{align-items:start}
-.calm-column .issue-location{white-space:nowrap}
+/* Keep long subjects and locations readable, including expanded rows. */
+.calm-issues .row a{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title date" "location date";align-items:start;gap:4px var(--space-3);padding:12px 0}
+.calm-issues .row strong{grid-area:title;min-width:0;white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.4}
+.calm-issues .row .issue-location{grid-area:location;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.calm-issues .row time{grid-area:date;max-width:10ch;white-space:normal;line-height:1.4}
+@media(max-width:600px){.calm-issues .row a{grid-template-columns:minmax(0,1fr);grid-template-areas:"title" "location" "date"}.calm-issues .row time{max-width:none;text-align:left}}
 @media(min-width:1100px){.calm-column .disclosures{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @container(max-width:700px){.calm-column .disclosures{grid-template-columns:minmax(0,1fr)}}
+
+/* The map starts at the shell edge in every account and view mode. */
+.sidebar{padding-top:0}
+.sidebar>.side-map-hero,.menu-panel>.side-map-hero{flex-shrink:0;margin-top:0}
+.unified-context-bar .menu-panel{padding-top:0;border-top:0}
+/* Home greeting and its cards share a left edge and responsive inset. */
+.portal-home-landing{--home-inset:clamp(20px,3vw,48px)}
+.portal-home-landing .portal-section-header{width:100%;margin-inline:0;padding-inline:var(--home-inset)}
+.portal-home-landing.calm-main .portal-section-content{width:100%;margin-inline:0;padding-inline:var(--home-inset)}
+.portal-home-landing.dense-main .portal-section-content{padding-inline:var(--home-inset)}
+@media(max-width:760px){.portal-home-landing{--home-inset:16px}}

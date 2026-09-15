@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260915071943.0.0] - 2026-09-15
+
+### Verbessert
+
+- Lange Anliegen-Titel und Ortsangaben bleiben im Hausüberblick vollständig lesbar und umbrechen passend zur verfügbaren Breite.
+- Die Karte beginnt direkt am Header. Begrüßung und Karten im Hausüberblick sind linksbündig mit einheitlichem Innenabstand.
+- Versionen erscheinen immer im Pretty-Format. „Version:“ und Versionsangabe bilden einen gemeinsamen Link zum Versionsverlauf; die zusätzliche Auswahl und der zweite Link entfallen.
+
 ## [260914170935.0.0] - 2026-09-14
 
 ### Verbessert

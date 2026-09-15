@@ -12,7 +12,7 @@ mkdirSync(out, { recursive: true });
 const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, ...(process.env.CI === 'true' ? [] : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium', '/usr/bin/chromium'])].filter(Boolean).find(existsSync);
 const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}), args: ['--host-resolver-rules=MAP hausv.test 127.0.0.1, MAP *.hausv.test 127.0.0.1', '--no-proxy-server'] });
 const measurements = [], footerMeasurements = [], scrollMeasurements = [], failures = [];
-const expectedBlocks = ['organisation-identity', 'organisation', 'map', 'house-navigation', 'release'];
+const expectedBlocks = ['map', 'organisation-identity', 'organisation', 'house-navigation', 'release'];
 // The expanded geometry matrix must not exhaust the fixture's login limit.
 const sessions = new Map();
 
@@ -57,7 +57,8 @@ async function measure(page, width, sidebarWidth, label) {
     return {
       box: { x: rect.x, width: rect.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight },
       organisation: nav.dataset.twoLevel === 'true',
-      navTopGap: nav.getBoundingClientRect().top - rect.top + surface.scrollTop - parseFloat(style.paddingTop),
+      mapTopGap: surface.querySelector('.side-map-hero').getBoundingClientRect().top - rect.top + surface.scrollTop,
+      navTopGap: nav.getBoundingClientRect().top - surface.querySelector('.side-map-hero').getBoundingClientRect().bottom - parseFloat(getComputedStyle(surface.querySelector('.side-map-hero')).marginBottom),
       houseLabelGap: parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).marginTop) + parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).paddingTop),
       blocks: blocks.map(el => ({ name: el.dataset.navigationBlock, visible: visible(el), className: el.dataset.navigationBlock === "map" ? "side-map-hero" : el.className })),
       links: links.map(el => ({ href: el.getAttribute('href'), label: el.querySelector('.nav-label')?.textContent.trim() })),
@@ -73,7 +74,7 @@ async function measure(page, width, sidebarWidth, label) {
         const calm = document.querySelector('.calm-column');
         if (!visible(calm)) return null;
         const content = calm.closest('.portal-section-content'), s = getComputedStyle(content);
-        return { width: calm.getBoundingClientRect().width, available: content.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight), columns: getComputedStyle(calm.querySelector('.disclosures')).gridTemplateColumns.split(' ').length, locationsNoWrap: [...calm.querySelectorAll('.issue-location')].every(el => getComputedStyle(el).whiteSpace === 'nowrap') };
+        return { width: calm.getBoundingClientRect().width, available: content.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight), columns: getComputedStyle(calm.querySelector('.disclosures')).gridTemplateColumns.split(' ').length, locationsWrap: [...calm.querySelectorAll('.issue-location')].every(el => getComputedStyle(el).whiteSpace === 'normal') };
       })(),
       overview: document.querySelector('[data-context-bar] .house-header-copy strong')?.textContent.trim(),
       portfolioMap: !!surface.querySelector('.side-map-portfolio'),
@@ -84,13 +85,14 @@ async function measure(page, width, sidebarWidth, label) {
   if (width > 760 && result.calm) {
     assert(Math.abs(result.calm.width - result.calm.available) < 1, `${label}: summary fills available content width`);
     assert.equal(result.calm.columns, width >= 1100 && result.calm.width > 700 ? 2 : 1, `${label}: responsive summary columns`);
-    assert(result.calm.locationsNoWrap, `${label}: unit label stays on one line`);
+    assert(result.calm.locationsWrap, `${label}: long issue locations can wrap`);
   }
   assert.equal(result.navigationCount, 1, `${label}: exactly one navigation`);
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
   assert.equal(Math.round(result.barHeight), width <= 760 ? 148 : width <= 1100 ? 116 : 72, `${label}: context height`);
-  assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : expectedBlocks.slice(2), `${label}: block order`);
-  // The phone drawer carries its own head above the navigation; the gap rule is a desktop-sidebar rule.
+  assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : ['map','house-navigation','release'], `${label}: block order`);
+  assert(Math.abs(result.mapTopGap) < 1, `${label}: map starts flush at navigation surface edge`);
+  // Without organisation context, navigation follows the map's normal bottom margin.
   if (!result.organisation && width > 760) {
     assert(Math.abs(result.navTopGap) < 1, `${label}: no empty organisation header gap`);
     assert.equal(result.houseLabelGap, 0, `${label}: house label starts at usual surface padding`);

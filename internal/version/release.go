@@ -11,7 +11,8 @@ import (
 const Scheme = "inspr-calendar-v2"
 const FirstCalendarVersion = "260914170935.0.0"
 const LastLegacyVersion = "1.11.0"
-const ReleaseSequence = 1
+const ReleaseSequence = 2
+const FirstCalendarReleaseSequence = 1
 
 // Channel is a separate artifact dimension, never a canonical version suffix.
 var Channel = "production"
@@ -78,10 +79,10 @@ func Compare(a, b ReleaseIdentity) (int, error) {
 	if a.VersionScheme == Scheme && b.VersionScheme == Scheme {
 		return strings.Compare(a.Version, b.Version), nil
 	}
-	if a.VersionScheme == "legacy" && a.Version == LastLegacyVersion && b.VersionScheme == Scheme && b.ReleaseSequence >= ReleaseSequence {
+	if a.VersionScheme == "legacy" && a.Version == LastLegacyVersion && b.VersionScheme == Scheme && b.ReleaseSequence >= FirstCalendarReleaseSequence {
 		return -1, nil
 	}
-	if b.VersionScheme == "legacy" && b.Version == LastLegacyVersion && a.VersionScheme == Scheme && a.ReleaseSequence >= ReleaseSequence {
+	if b.VersionScheme == "legacy" && b.Version == LastLegacyVersion && a.VersionScheme == Scheme && a.ReleaseSequence >= FirstCalendarReleaseSequence {
 		return 1, nil
 	}
 	if a.VersionScheme == b.VersionScheme && a.Version == b.Version {

@@ -6,12 +6,6 @@ templ VersionStamp(value, scheme string) {
  <span class="product-version" data-product-version={ value } data-version-scheme={ scheme }>{ value }</span>
 }
 
-templ VersionDisplayChoice() {
- <label class="version-display-choice">Versionsanzeige
-  <select data-version-display aria-label="Darstellung der Version"><option value="pretty">Pretty</option><option value="reduced">SemVer</option></select>
- </label>
-}
-
 templ CurrentVersionStamp() {
  @VersionStamp(version.Version, version.Identity().VersionScheme)
 }
