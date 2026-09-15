@@ -172,6 +172,12 @@ jobs:
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
         run: bash scripts/qa-main-flows.sh
 
+      - name: Run consent-gate browser suite (HAUSV-742)
+        env:
+          CI: "true"
+          HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
+        run: bash scripts/qa-consent-gate.sh
+
       - name: Upload browser failure evidence
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

@@ -1187,9 +1187,9 @@ const PageTemplates = `
     <dl>
       <dt>Anbieter</dt><dd>Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland; Daten können an Google LLC in die USA übertragen werden (EU-US Data Privacy Framework beziehungsweise Standardvertragsklauseln).</dd>
       <dt>Zweck</dt><dd>Messung, ob eine über eine Anzeige begonnene Anfrage auf <code>/start</code> abgeschlossen wurde (Conversion), und Zuordnung der Klick-ID aus der Anzeige.</dd>
-      <dt>Cookies</dt><dd><code>_gcl_au</code>, <code>_gcl_aw</code>, <code>_gcl_gs</code> und verwandte <code>_gcl_*</code>-Cookies, gesetzt nur auf diesem Host, bis zu 90 Tage.</dd>
+      <dt>Cookies und Speicher</dt><dd><code>_gcl_au</code>, <code>_gcl_aw</code>, <code>_gcl_gs</code> und verwandte <code>_gcl_*</code>-Cookies sowie der Eintrag <code>_gcl_ls</code> im lokalen Browserspeicher, gesetzt nur auf diesem Host, bis zu 90 Tage; ein Sitzungsmerker verhindert, dass dieselbe Anfrage doppelt gezählt wird. Personalisierte Werbung bleibt ausgeschaltet (Consent Mode: <code>ad_personalization</code> verweigert).</dd>
       <dt>Rechtsgrundlage</dt><dd>Ihre Einwilligung nach § 165 Abs 3 TKG 2021 und Art. 6 Abs. 1 lit. a DSGVO. Das Ablehnen ist genauso einfach wie das Akzeptieren; ohne Wahl bleibt alles aus.</dd>
-      <dt>Ihre Wahl</dt><dd>Das Cookie <code>hausv_consent</code> merkt sich Ihre Entscheidung für 6 Monate, ohne Kennung. Ein Widerruf ist jederzeit über „Privatsphäre“ in der Fußzeile möglich; dann werden die Google-Cookies dieses Hosts entfernt. Ein aktiviertes Global-Privacy-Control- oder Do-Not-Track-Signal Ihres Browsers gilt als Ablehnung und blendet die Leiste aus.</dd>
+      <dt>Ihre Wahl</dt><dd>Das Cookie <code>hausv_consent</code> merkt sich Ihre Entscheidung für 6 Monate, ohne Kennung. Ein Widerruf ist jederzeit über „Privatsphäre“ in der Fußzeile möglich; dann werden die Google-Cookies und der lokale Speichereintrag dieses Hosts entfernt. Ein aktiviertes Global-Privacy-Control- oder Do-Not-Track-Signal Ihres Browsers gilt als Ablehnung und blendet die Leiste aus.</dd>
     </dl>
 {{end}}
     <h2>Aufbewahrung</h2>
@@ -1198,7 +1198,7 @@ const PageTemplates = `
       <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen. Aktivierter Portalpfad, Zuhause-Name und Eigentümer-Mitgliedschaft: bis zur Beendigung beziehungsweise Löschung des privaten Portals.</li>
       <li>Connector-Einmal-Codes: zehn Minuten gültig und nach erfolgreicher Nutzung verworfen. Der abgeleitete Connector-Zugang, seine Statusdaten, der begrenzte Sensorkatalog und die letzten ausgewählten Energiewerte bleiben bis zum Widerruf, zur Löschung des Energieprofils oder zur Löschung des Zuhause-Bereichs gespeichert. Ein Widerruf beendet den Zugang sofort und entfernt Status und Messwertkopie.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
-      {{if .GoogleAdsTagID}}<li>Einwilligungs-Cookie <code>hausv_consent</code>: 6 Monate; Google-Ads-Cookies nach Einwilligung: bis zu 90 Tage, beim Widerruf sofort entfernt.</li>{{end}}
+      {{if .GoogleAdsTagID}}<li>Einwilligungs-Cookie <code>hausv_consent</code>: 6 Monate; Google-Ads-Cookies und lokaler Speichereintrag nach Einwilligung: bis zu 90 Tage, beim Widerruf sofort entfernt.</li>{{end}}
       <li>Liegenschaftszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>
       <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>

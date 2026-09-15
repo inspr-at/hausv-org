@@ -19,6 +19,7 @@
   var MAX_AGE = 15552000; // 180 days, for a grant and for a refusal alike
   var LEAD_KEY = "hausv_ads_lead_fired";
   var GOOGLE_COOKIE = /^(_gcl_|_gac_|_ga|_gid)/;
+  var GOOGLE_LOCAL = ["_gcl_ls"];
   var BOT = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview/i;
 
   function parse(raw) {
@@ -77,9 +78,34 @@
     return null;
   }
 
+  // Returns true only when the decision can be read back: without a
+  // persisted decision nothing optional may load (fail closed).
   function writeCookie(marketing) {
     var secure = location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = COOKIE + "=" + encodeURIComponent(serialize(marketing, Date.now() / 1000)) + "; Max-Age=" + MAX_AGE + "; Path=/; SameSite=Lax" + secure;
+    try {
+      document.cookie = COOKIE + "=" + encodeURIComponent(serialize(marketing, Date.now() / 1000)) + "; Max-Age=" + MAX_AGE + "; Path=/; SameSite=Lax" + secure;
+    } catch (_) { return false; }
+    var stored = readCookie();
+    return !!stored && stored.marketing === marketing && stored.revision === PURPOSE_REVISION;
+  }
+
+  function signalActive() {
+    return navigator.globalPrivacyControl === true || navigator.doNotTrack === "1" || window.doNotTrack === "1";
+  }
+
+  function isBot() { return BOT.test(navigator.userAgent || ""); }
+
+  // Every load re-evaluates the full policy: a stale grant, an active privacy
+  // signal, a bot or a failed cookie write never lets the tag through.
+  function authorized() {
+    var decision = decide({ stored: readCookie(), now: Date.now() / 1000, signal: signalActive(), bot: isBot() });
+    return decision.marketing === true;
+  }
+
+  function clearMarketingStorage() {
+    clearGoogleCookies();
+    GOOGLE_LOCAL.forEach(function (key) { try { localStorage.removeItem(key); } catch (_) { /* unavailable */ } });
+    try { sessionStorage.removeItem(LEAD_KEY); } catch (_) { /* unavailable */ }
   }
 
   function clearGoogleCookies() {
@@ -99,14 +125,16 @@
   function gtag() { window.dataLayer.push(arguments); }
 
   function loadGoogle() {
-    if (googleLoaded || !tagId) return;
+    if (googleLoaded || !tagId || !authorized()) return;
     googleLoaded = true;
     window.dataLayer = window.dataLayer || [];
     window.gtag = gtag;
     // Consent Mode v2, basic: defaults are denied and the tag is only injected
     // after the update, so no cookieless ping ever leaves before consent.
     gtag("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" });
-    gtag("consent", "update", { ad_storage: "granted", ad_user_data: "granted", ad_personalization: "granted" });
+    // Only what the bar and the privacy notice disclose: conversion
+    // measurement. Personalised advertising stays denied.
+    gtag("consent", "update", { ad_storage: "granted", ad_user_data: "granted", ad_personalization: "denied", analytics_storage: "denied" });
     gtag("js", new Date());
     // accept_incoming: the company site links here with the click id in the
     // URL so a lead submitted on /start is credited to the ad (HAUSV-734).
@@ -131,9 +159,9 @@
 
   function withdraw() {
     writeCookie(false);
-    if (!googleLoaded) { clearGoogleCookies(); return; }
-    gtag("consent", "update", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
-    clearGoogleCookies();
+    if (!googleLoaded) { clearMarketingStorage(); return; }
+    gtag("consent", "update", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" });
+    clearMarketingStorage();
     // An already-loaded tag has no reliable teardown; a reload starts clean.
     location.reload();
   }
@@ -159,7 +187,12 @@
     if (event.key === "Escape" && bar) refuse();
   }
 
-  function accept() { writeCookie(true); removeBar(); loadGoogle(); }
+  function accept() {
+    removeBar();
+    // A grant that cannot be persisted is no grant; a refusal signal wins.
+    if (signalActive() || !writeCookie(true)) { withdraw(); return; }
+    loadGoogle();
+  }
   function refuse() { removeBar(); withdraw(); }
 
   function renderBar() {
@@ -178,11 +211,12 @@
     document.addEventListener("keydown", onEscape);
   }
 
+  var marketingBox = null;
+
   function openSheet() {
     if (!sheet) {
-      var current = readCookie();
       var marketing = el("input", { type: "checkbox", id: "hv-consent-marketing" });
-      marketing.checked = !!(current && current.marketing && current.revision === PURPOSE_REVISION);
+      marketingBox = marketing;
       var necessary = el("input", { type: "checkbox", id: "hv-consent-necessary", checked: "", disabled: "" });
       var save = el("button", { type: "button", class: "hv-consent-btn", text: "Speichern" });
       var cancel = el("button", { type: "button", class: "hv-consent-btn", text: "Abbrechen" });
@@ -198,9 +232,15 @@
         sheet.close();
         if (marketing.checked) accept(); else refuse();
       });
-      cancel.addEventListener("click", function () { sheet.close(); });
+      // Cancel keeps an existing decision; while the first-layer bar is still
+      // open there is none yet, and dismissing counts as refusal.
+      cancel.addEventListener("click", function () { sheet.close(); if (bar) refuse(); });
+      sheet.addEventListener("cancel", function () { if (bar) refuse(); });
       document.body.appendChild(sheet);
     }
+    // Reflect the validated current state on every open, never a stale draft.
+    marketingBox.checked = authorized();
+    marketingBox.disabled = signalActive();
     if (typeof sheet.showModal === "function") sheet.showModal(); else sheet.setAttribute("open", "");
   }
 
@@ -216,9 +256,8 @@
   function boot() {
     wireControls();
     if (!tagId) return;
-    var signal = navigator.globalPrivacyControl === true || navigator.doNotTrack === "1" || window.doNotTrack === "1";
-    var decision = decide({ stored: readCookie(), now: Date.now() / 1000, signal: signal, bot: BOT.test(navigator.userAgent || "") });
-    if (decision.persist === "refuse") { writeCookie(false); clearGoogleCookies(); }
+    var decision = decide({ stored: readCookie(), now: Date.now() / 1000, signal: signalActive(), bot: isBot() });
+    if (decision.persist === "refuse") { writeCookie(false); clearMarketingStorage(); }
     if (decision.marketing) loadGoogle();
     if (decision.prompt) renderBar();
   }
