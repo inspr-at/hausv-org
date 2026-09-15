@@ -153,6 +153,23 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 			if keys := dest["consent"].([]any); len(keys) != 2 || keys[0] != "ad_storage" || keys[1] != "ad_user_data" {
 				t.Fatalf("only measurement keys may be declared: %v", keys)
 			}
+			// Withdrawal must clear Google's cookies in both forms (host-only
+			// and Domain=<scope>) plus the local-storage fallback.
+			var hostOnly, domain, local bool
+			for _, raw := range svc["storage"].([]any) {
+				st := raw.(map[string]any)
+				switch {
+				case st["kind"] == "cookie" && st["name"] == "_gcl_*" && st["domain"] == nil:
+					hostOnly = true
+				case st["kind"] == "cookie" && st["name"] == "_gcl_*" && st["domain"] == "hausv.example" && st["path"] == "/":
+					domain = true
+				case st["kind"] == "local" && st["name"] == "_gcl_ls":
+					local = true
+				}
+			}
+			if !hostOnly || !domain || !local {
+				t.Fatalf("declared storage incomplete: %v", svc["storage"])
+			}
 			csp := rr.Header().Get("Content-Security-Policy")
 			mustContain(t, csp, path+" CSP", "script-src 'self' https://www.googletagmanager.com", "connect-src 'self' https://www.google.com", "frame-ancestors 'none'")
 			for _, directive := range strings.Split(csp, ";") {

@@ -334,10 +334,15 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await page.locator('[data-consent-open]').first().click();
   await page.waitForSelector('dialog.ic-sheet[open]');
   await page.locator('#ic-cat-marketing').uncheck();
+  // The patches above die with the reload: the marked document has working
+  // writers again, stores the refusal and retires the marker before load.
+  const marked = page.waitForURL((u) => String(u).includes('#consent-revoked'), { waitUntil: 'commit' });
   await page.getByRole('button', { name: 'Speichern' }).click();
+  await marked;
   await page.waitForLoadState('load');
   await page.waitForTimeout(500);
-  check('both stores blocked: the reload carried the revocation marker', page.url().includes('#consent-revoked'), page.url());
+  check('both stores blocked: the reload carried the revocation marker', true);
+  check('both stores blocked: the marked document stored the refusal and retired the marker', !page.url().includes('#consent-revoked') && (await consentCookie(ctx))?.value.includes(REFUSED) === true, page.url());
   check('both stores blocked: nothing loads on the marked document', googleHits(requests.slice(before)).length === 0);
   await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
   check('after the marker the refusal is stored and the next page loads nothing', googleHits(requests.slice(before)).length === 0 && (await consentCookie(ctx))?.value.includes(REFUSED) === true);

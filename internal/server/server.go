@@ -1579,9 +1579,9 @@ func newApp() (*app, error) {
 	if demoLogin {
 		logInfo("demo login enabled: fixture-only instance expected", "host", parsed.Hostname())
 	}
-	// Google Ads (demo host only): the tag id goes on every public page, the
-	// lead conversion fires once on the page that follows a successful demo
-	// login request. Both are plain configuration, never secrets.
+	// Google Ads (demo host only): the tag id goes on every public page behind
+	// the consent gate, the lead conversion fires once on the "sent" view of
+	// /start only. Both are plain configuration, never secrets.
 	googleAdsTagID := strings.TrimSpace(env("GOOGLE_ADS_TAG_ID", ""))
 	googleAdsLeadConversion := strings.TrimSpace(env("GOOGLE_ADS_LEAD_CONVERSION", ""))
 	if googleAdsTagID != "" {
