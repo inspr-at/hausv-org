@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Initialize consent-gate source (doctrine submodule)
+        run: git submodule update --init -- doctrine
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
@@ -152,9 +154,6 @@ jobs:
 
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
-
-      - name: Check consent-gate policy (HAUSV-742)
-        run: node scripts/test-consent-policy.mjs
 
       - name: Install browser QA dependencies
         run: |

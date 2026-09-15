@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260915135640.0.0] - 2026-09-15
+
+### Verbessert
+
+- Die Einwilligungsleiste des Demo-Hosts kommt jetzt aus dem gemeinsamen INSPR-Bauteil und verhält sich auf allen Seiten gleich: Ablehnen und Akzeptieren bleiben gleichwertig, Ihre Wahl gilt sechs Monate, ein Global-Privacy-Control- oder Do-Not-Track-Signal gilt als Ablehnung, „Privatsphäre“ in der Fußzeile widerruft jederzeit.
+
 ## [260915100741.0.0] - 2026-09-15
 
 ### Verbessert

@@ -125,28 +125,16 @@ const PageTemplates = `
 {{end}}
 {{end}}
 {{define "consentGate"}}{{if .GoogleAdsTagID}}
-  <!-- Consent gate (HAUSV-742): the Google tag loads only after "marketing" was granted; the bootstrap is self-hosted so the CSP needs no inline script -->
-  <script src="/assets/consent.js?v={{.AssetVersion}}" defer data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+  <!-- Consent gate (HAUSV-742/753): the vendored inspr-modules consent-gate loads the Google tag only after "marketing" was granted; the manifest travels with the page, the script is self-hosted so the CSP needs no inline script -->
+  <script type="application/json" id="consent-manifest">{{.ConsentManifest}}</script>
+  <script src="/assets/consent-gate.js?v={{.AssetVersion}}" defer data-consent-manifest="#consent-manifest" data-consent-fire="{{if .GoogleAdsConversion}}google-ads{{end}}"></script>
 {{end}}{{end}}
-{{define "consentControl"}}{{if .GoogleAdsTagID}}<button type="button" class="hv-consent-control" data-consent-open>Privatsphäre</button>{{end}}{{end}}
+{{define "consentControl"}}{{if .GoogleAdsTagID}}<button type="button" data-consent-open>Privatsphäre</button>{{end}}{{end}}
 {{define "consentStyles"}}{{if .GoogleAdsTagID}}
-    /* Consent bar and sheet (HAUSV-742): non-modal, both first-layer choices identical, design tokens only. */
-    .hv-consent { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 16px 18px; font-family: var(--font-sans); font-size: 15px; line-height: 1.5; z-index: 60; }
-    @media (prefers-reduced-motion: no-preference) { .hv-consent { animation: hv-consent-in .25s ease-out; } @keyframes hv-consent-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } } }
-    .hv-consent-text { margin: 0 0 12px; }
-    .hv-consent-text a, .hv-consent-mini a { color: var(--leaf); }
-    .hv-consent-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .hv-consent-btn { appearance: none; font: inherit; font-weight: 700; color: var(--ink); background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 18px; min-width: 140px; cursor: pointer; }
-    .hv-consent-btn:hover { background: var(--panel-soft); }
-    .hv-consent-link, .hv-consent-control { appearance: none; font: inherit; color: var(--leaf); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
-    .hv-consent-btn:focus-visible, .hv-consent-link:focus-visible, .hv-consent-control:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-    .hv-consent-sheet { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); color: var(--ink); padding: 22px 24px; width: min(560px, calc(100% - 32px)); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; box-shadow: var(--shadow-dialog); }
-    .hv-consent-sheet::backdrop { background: rgba(32,37,31,.45); }
-    .hv-consent-sheet h2 { margin: 0 0 8px; font-family: var(--font-serif); font-size: 26px; }
-    .hv-consent-row { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 10px; align-items: start; margin: 12px 0; }
-    .hv-consent-row input { margin: 3px 0 0; width: 18px; height: 18px; }
-    .hv-consent-mini { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
-    @media (max-width: 620px) { .hv-consent { bottom: 8px; width: calc(100% - 16px); } .hv-consent-btn { flex: 1 1 auto; } }
+    /* consent-gate tokens (HAUSV-753): the vendored bar, sheet and placeholders draw from the surface's design tokens. */
+    :root { --ic-surface: var(--panel); --ic-surface-soft: var(--panel-soft); --ic-ink: var(--ink); --ic-muted: var(--muted); --ic-line: var(--line); --ic-accent: var(--leaf); --ic-focus: var(--gold-light); --ic-radius: var(--radius-lg); --ic-radius-pill: var(--radius-pill); --ic-font: var(--font-sans); --ic-font-heading: var(--font-serif); --ic-shadow: var(--shadow-md); --ic-shadow-dialog: var(--shadow-dialog); }
+{{end}}{{end}}
+{{define "consentLink"}}{{if .GoogleAdsTagID}}  <link rel="stylesheet" href="/assets/consent-gate.css?v={{.AssetVersion}}">
 {{end}}{{end}}
 {{define "home"}}
 <!doctype html>
@@ -158,7 +146,7 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
   <style>
     :root {
       color-scheme: light;
@@ -366,7 +354,7 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
   <!-- Rotating 3D brand mark. ESM (module scripts defer by default); it mounts
        only when WebGL is present, so the inline SVG below stays the fallback. -->
   <script type="module" src="/assets/hausv-mark-3d.js?v={{.AssetVersion}}"></script>
@@ -923,7 +911,7 @@ const PageTemplates = `
   <meta name="description" content="HAUSV Home sicher und in wenigen Schritten vorbereiten.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
 <meta name="hausv-build" content="{{.AppVersion}}">
 <script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
@@ -970,7 +958,7 @@ const PageTemplates = `
   <title>{{.Title}} · hausv.org</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
 <meta name="hausv-build" content="{{.AppVersion}}">
 <script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
@@ -1080,7 +1068,7 @@ const PageTemplates = `
   </main>
   <footer>hausv.org · <a href="/datenschutz">Datenschutz</a> · <a href="/">Startseite</a>{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
 </body>
 </html>
 {{end}}
@@ -1217,7 +1205,7 @@ const PageTemplates = `
     <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj" rel="noopener noreferrer">DSGVO</a>, Leitlinien des <a href="https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en" rel="noopener noreferrer">Europäischen Datenschutzausschusses zu Verantwortlichen und Auftragsverarbeitern</a>, Informationen der <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung anhand verfügbarer Primärquellen – ausdrücklich keine externe Zertifizierung oder Rechtsberatung. Solange kein externer Auditor verfügbar ist, bleibt diese dokumentierte Selbstprüfung der Freigabeweg. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
   </main>
   <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
-{{template "consentGate" .}}
+{{template "consentLink" .}}{{template "consentGate" .}}
 </body>
 </html>
 {{end}}
