@@ -568,8 +568,16 @@ async function assertSharedAppShellNavigation() {
       fail(`App-Shell ${width}px: Enter öffnet das native Menü nicht erneut`);
     }
     await page.keyboard.press('Tab');
+    // The location map leads the drawer and remains keyboard-accessible.
+    const mapLink = panel.locator('[data-house-map-link]');
+    if (await mapLink.count()) {
+      if (!(await mapLink.evaluate((link) => link === document.activeElement))) {
+        fail(`App-Shell ${width}px: Tab erreicht die vorangestellte Standortkarte nicht`);
+      }
+      await page.keyboard.press('Tab');
+    }
     const tabReachedNavigation = await navigation.evaluate((nav) => nav.contains(document.activeElement));
-    if (!tabReachedNavigation) fail(`App-Shell ${width}px: Tab erreicht nach dem Menüknopf nicht die Navigation`);
+    if (!tabReachedNavigation) fail(`App-Shell ${width}px: Tab erreicht nach der Standortkarte nicht die Navigation`);
 
     const navEntries = navigation.locator('a');
     const navEntryCount = await navEntries.count();
