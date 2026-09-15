@@ -1528,7 +1528,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		`href="/start"`,
 		"HAUSV Home starten",
 		"Eigenbetrieb vormerken",
-		"Professional anfragen",
+		`data-mail-subject="HAUSV Free im Eigenbetrieb"`,
+		`href="https://augmentoring.com/hausv/"`,
+		"Professional bei Augmentoring",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("landing page missing %q:\n%s", want, body)
@@ -1557,7 +1559,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page still carries the pre-HAUSV-668 state %q", stale)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter"} {
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter", "Professional anfragen", "HAUSV Professional kennenlernen", `target="_blank"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -1567,6 +1569,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	}
 	if got := strings.Count(body, `class="product-path-start`); got != 3 {
 		t.Fatalf("product CTA count = %d, want 3", got)
+	}
+	if got := strings.Count(body, `class="product-path-start js-mail-link"`); got != 1 {
+		t.Fatalf("mailto product CTA count = %d, want 1 (Free only)", got)
 	}
 	if got := strings.Count(body, `class="feature-card"`); got != 10 {
 		t.Fatalf("feature card count = %d, want 10", got)

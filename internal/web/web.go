@@ -714,7 +714,7 @@ const PageTemplates = `
           <p>Das volle Hausportal für professionelle Verwaltungen mit mehreren WEGs – gehostet oder auf der eigenen Infrastruktur betrieben.</p>
           <ul class="product-capabilities"><li>Mehrere WEGs &amp; Rollen</li><li>Dokumente &amp; Aushänge</li><li>Anliegen mit Verlauf</li><li>Energie &amp; Messwerte</li></ul>
           <div class="product-path-price"><strong>0&nbsp;€ Grundgebühr</strong><span>25 WE kostenlos · danach Verrechnung je&nbsp;WE&nbsp;/&nbsp;Monat</span></div>
-          <a class="product-path-start js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}" data-mail-subject="HAUSV Professional kennenlernen" data-mail-reveal="false">Professional anfragen</a>
+          <a class="product-path-start" href="https://augmentoring.com/hausv/">Professional bei Augmentoring</a>
         </article>
       </div>
       <div class="shared-core" aria-label="Gemeinsamer Vertrauenskern">
