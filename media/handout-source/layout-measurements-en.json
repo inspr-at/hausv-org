@@ -1,0 +1,318 @@
+[
+  {
+    "text": "HAUSV",
+    "x": 90,
+    "y": 27,
+    "w": 90.07,
+    "h": 23,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "P R O F E S S I O N A L",
+    "x": 91,
+    "y": 53,
+    "w": 81.0,
+    "h": 7.4,
+    "font": "BodyBold"
+  },
+  {
+    "text": "THE PORTAL FOR",
+    "x": 478.36,
+    "y": 34,
+    "w": 81.92,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "YOUR PROPERTY MANAGEMENT",
+    "x": 409.79,
+    "y": 47,
+    "w": 150.49,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "More clarity.",
+    "x": 35,
+    "y": 101,
+    "w": 225.67,
+    "h": 34,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "Less busywork.",
+    "x": 35,
+    "y": 144,
+    "w": 171.95,
+    "h": 25.5,
+    "font": "Display"
+  },
+  {
+    "text": "All properties, requests and people in one place. HAUSV helps your team identify priorities and act faster.",
+    "x": 35,
+    "y": 192,
+    "w": 197,
+    "h": 45.6
+  },
+  {
+    "text": "<b>AI does the groundwork.<br/>Your team decides.</b>",
+    "x": 35,
+    "y": 286,
+    "w": 197,
+    "h": 30.0
+  },
+  {
+    "text": "Requests. Simply handled.",
+    "x": 54,
+    "y": 349,
+    "w": 216.7,
+    "h": 18.5,
+    "font": "Display"
+  },
+  {
+    "text": "AI INBOX",
+    "x": 496.78,
+    "y": 354,
+    "w": 44.5,
+    "h": 8.2,
+    "font": "BodyBold"
+  },
+  {
+    "text": "01",
+    "x": 54.0,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Bring requests together",
+    "x": 73.0,
+    "y": 386,
+    "w": 114.48,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Manage emails and call notes by property, status and assignee.",
+    "x": 54.0,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 25.6
+  },
+  {
+    "text": "02",
+    "x": 222.76,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Get suggestions",
+    "x": 241.76,
+    "y": 386,
+    "w": 79.13,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "AI suggests category, priority, assignment and a reply, using your response templates.",
+    "x": 222.75853018372706,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "03",
+    "x": 391.52,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Review and move on",
+    "x": 410.52,
+    "y": 386,
+    "w": 99.91,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Review, adjust or approve. Then open the next case straight away.",
+    "x": 391.5170603674541,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 25.6
+  },
+  {
+    "text": "YOU SET THE RULES",
+    "x": 54,
+    "y": 467,
+    "w": 80.57,
+    "h": 7.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Manual  /  With approval  /  Automatic by category",
+    "x": 371.37,
+    "y": 467,
+    "w": 169.9,
+    "h": 7.7,
+    "font": "Body"
+  },
+  {
+    "text": "One portal for everyday property management.",
+    "x": 35,
+    "y": 501,
+    "w": 394.31,
+    "h": 19.0,
+    "font": "Display"
+  },
+  {
+    "text": "Daily operations",
+    "x": 50.0,
+    "y": 542,
+    "w": 80.13,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Notices, events and votes. Handle damage reports with photos and a clear history.",
+    "x": 35.0,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Documents & handovers",
+    "x": 232.09,
+    "y": 542,
+    "w": 121.34,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Share documents. Record handovers with photos, meter readings and keys.",
+    "x": 217.09186351706037,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Parking & integrations",
+    "x": 414.18,
+    "y": 542,
+    "w": 109.89,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Charging status and access rights. CAMT/ebInterface and data for your specialist systems.",
+    "x": 399.18372703412075,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Live energy insights",
+    "x": 50.0,
+    "y": 621,
+    "w": 99.6,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "PV, grid, storage and loads at a glance. Identify energy flows and demand peaks.",
+    "x": 35.0,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Plan peak shaving",
+    "x": 232.09,
+    "y": 621,
+    "w": 89.87,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Compare flexible loads and storage in scenarios. Assess potential peak reduction before implementation.",
+    "x": 217.09186351706037,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Targeted device control",
+    "x": 414.18,
+    "y": 621,
+    "w": 116.19,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "As a project extension: connect and test devices. Enable active control only with separate approval.",
+    "x": 399.18372703412075,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Roles by property and unit  ·  Cloud or your infrastructure  ·  Local AI setup on request",
+    "x": 35,
+    "y": 700,
+    "w": 323.16,
+    "h": 8.5,
+    "font": "Body"
+  },
+  {
+    "text": "Let's start with one property.",
+    "x": 48,
+    "y": 726,
+    "w": 233.19,
+    "h": 18.3,
+    "font": "Display"
+  },
+  {
+    "text": "Define the pilot scope, data and approvals together.",
+    "x": 48,
+    "y": 752,
+    "w": 410,
+    "h": 12.3
+  },
+  {
+    "text": "sales@augmentoring.com",
+    "x": 48,
+    "y": 776,
+    "w": 116.05,
+    "h": 9.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "hausv.agm.ng",
+    "x": 492.04,
+    "y": 784,
+    "w": 54.46,
+    "h": 8.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Onboarding & Integration",
+    "x": 257.97,
+    "y": 815,
+    "w": 79.34,
+    "h": 7.1,
+    "font": "Body"
+  },
+  {
+    "text": "Git baseline 2d208dc · 05.09.2026",
+    "x": 451.72,
+    "y": 815,
+    "w": 108.55,
+    "h": 7.1,
+    "font": "Body"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "git_basis": "2d208dcc66827f14fdfe6b81b948ad767c156f68",
+  "git_url": "https://agm.ng/hausv-2d208dc",
+  "demo_url": "https://hausv.agm.ng",
+  "date": "05.09.2026",
+  "hero_image": "hausv-portfolio-base.png",
+  "hero_components": [
+    {
+      "file": "hausv-rear-old.png",
+      "box_pt": [342.5, 127.5, 93.0, 44.3269],
+      "clip_pt": [353.1, 133.5, 73.2, 33.0],
+      "requested_shift_cm": [3.0, -0.5],
+      "scale": 1.0
+    },
+    {
+      "file": "hausv-rear-modern.png",
+      "box_pt": [415.1, 99.2, 93.0, 44.2771],
+      "clip_pt": [423.3, 103.0, 80.0, 36.0],
+      "requested_shift_cm": [-2.0, -1.5],
+      "scale": 1.1
+    }
+  ]
+}

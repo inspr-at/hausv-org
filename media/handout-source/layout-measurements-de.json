@@ -1,0 +1,318 @@
+[
+  {
+    "text": "HAUSV",
+    "x": 90,
+    "y": 27,
+    "w": 90.07,
+    "h": 23,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "P R O F E S S I O N A L",
+    "x": 91,
+    "y": 53,
+    "w": 81.0,
+    "h": 7.4,
+    "font": "BodyBold"
+  },
+  {
+    "text": "DAS PORTAL FÜR",
+    "x": 477.91,
+    "y": 34,
+    "w": 82.36,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "IHRE HAUSVERWALTUNG",
+    "x": 442.74,
+    "y": 47,
+    "w": 117.53,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Mehr Überblick.",
+    "x": 35,
+    "y": 101,
+    "w": 287.44,
+    "h": 34,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "Weniger Routine.",
+    "x": 35,
+    "y": 144,
+    "w": 198.5,
+    "h": 25.5,
+    "font": "Display"
+  },
+  {
+    "text": "Alle Häuser, Anliegen und Beteiligten an einem Ort. HAUSV hilft Ihrem Team, Prioritäten zu erkennen und schneller zu handeln.",
+    "x": 35,
+    "y": 192,
+    "w": 197,
+    "h": 60.8
+  },
+  {
+    "text": "<b>Die KI bereitet vor.<br/>Ihr Team entscheidet.</b>",
+    "x": 35,
+    "y": 286,
+    "w": 197,
+    "h": 30.0
+  },
+  {
+    "text": "Anliegen. Einfach erledigt.",
+    "x": 54,
+    "y": 349,
+    "w": 216.74,
+    "h": 18.5,
+    "font": "Display"
+  },
+  {
+    "text": "KI-POSTEINGANG",
+    "x": 454.8,
+    "y": 354,
+    "w": 86.48,
+    "h": 8.2,
+    "font": "BodyBold"
+  },
+  {
+    "text": "01",
+    "x": 54.0,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Eingänge bündeln",
+    "x": 73.0,
+    "y": 386,
+    "w": 87.53,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "E-Mails und Telefonnotizen nach Haus, Status und Zuständigkeit bearbeiten.",
+    "x": 54.0,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "02",
+    "x": 222.76,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Vorschläge erhalten",
+    "x": 241.76,
+    "y": 386,
+    "w": 96.55,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "KI schlägt Kategorie, Priorität, Zuordnung und Antwort vor - mit Ihren Textbausteinen.",
+    "x": 222.75853018372706,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "03",
+    "x": 391.52,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Prüfen und weiter",
+    "x": 410.52,
+    "y": 386,
+    "w": 85.3,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Prüfen, anpassen oder übernehmen. Anschließend direkt den nächsten Fall öffnen.",
+    "x": 391.5170603674541,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "SIE GEBEN DEN RAHMEN VOR",
+    "x": 54,
+    "y": 467,
+    "w": 116.47,
+    "h": 7.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Manuell  /  Mit Freigabe  /  Automatisch je Kategorie",
+    "x": 364.52,
+    "y": 467,
+    "w": 176.75,
+    "h": 7.7,
+    "font": "Body"
+  },
+  {
+    "text": "Ein Portal für den ganzen Hausalltag.",
+    "x": 35,
+    "y": 501,
+    "w": 314.41,
+    "h": 19.0,
+    "font": "Display"
+  },
+  {
+    "text": "Hausalltag organisieren",
+    "x": 50.0,
+    "y": 542,
+    "w": 116.77,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Aushänge, Termine und Abstimmungen. Schäden mit Fotos und Verlauf bearbeiten.",
+    "x": 35.0,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Dokumente & Übergaben",
+    "x": 232.09,
+    "y": 542,
+    "w": 123.05,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Unterlagen teilen. Übergaben mit Fotos, Zählerständen und Schlüsseln dokumentieren.",
+    "x": 217.09186351706037,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Parken, Laden & Systeme",
+    "x": 414.18,
+    "y": 542,
+    "w": 125.94,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Ladezustände und Berechtigungen. CAMT/ebInterface und Daten für Ihre Fachsysteme.",
+    "x": 399.18372703412075,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Energie live verstehen",
+    "x": 50.0,
+    "y": 621,
+    "w": 109.35,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "PV, Netz, Speicher und Verbraucher im Blick. Energieflüsse und Lastspitzen erkennen.",
+    "x": 35.0,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Peak Shaving planen",
+    "x": 232.09,
+    "y": 621,
+    "w": 103.04,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Flexible Verbraucher und Speicher in Szenarien vergleichen. Mögliche Entlastung vorab bewerten.",
+    "x": 217.09186351706037,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Geräte gezielt steuern",
+    "x": 414.18,
+    "y": 621,
+    "w": 107.62,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Als Projektausbau: Geräte anbinden und im Testlauf prüfen. Aktive Eingriffe separat freigeben.",
+    "x": 399.18372703412075,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Klare Rollen nach Haus und Einheit  ·  Cloud oder eigene Infrastruktur  ·  KI auf Wunsch lokal eingerichtet",
+    "x": 35,
+    "y": 700,
+    "w": 397.35,
+    "h": 8.5,
+    "font": "Body"
+  },
+  {
+    "text": "Starten wir mit einer Liegenschaft.",
+    "x": 48,
+    "y": 726,
+    "w": 279.97,
+    "h": 18.3,
+    "font": "Display"
+  },
+  {
+    "text": "Pilotumfang, Daten und Freigaben gemeinsam festlegen.",
+    "x": 48,
+    "y": 752,
+    "w": 410,
+    "h": 12.3
+  },
+  {
+    "text": "sales@augmentoring.com",
+    "x": 48,
+    "y": 776,
+    "w": 116.05,
+    "h": 9.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "hausv.agm.ng",
+    "x": 492.04,
+    "y": 784,
+    "w": 54.46,
+    "h": 8.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Einführung & Integration",
+    "x": 259.35,
+    "y": 815,
+    "w": 76.57,
+    "h": 7.1,
+    "font": "Body"
+  },
+  {
+    "text": "Git-Basis 2d208dc · 05.09.2026",
+    "x": 460.42,
+    "y": 815,
+    "w": 99.86,
+    "h": 7.1,
+    "font": "Body"
+  }
+]

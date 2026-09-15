@@ -1,0 +1,95 @@
+{
+  "de": {
+    "masthead": ["DAS PORTAL FÜR", "IHRE HAUSVERWALTUNG"],
+    "headline": ["Mehr Überblick.", "Weniger Routine."],
+    "intro": "Alle Häuser, Anliegen und Beteiligten an einem Ort. HAUSV hilft Ihrem Team, Prioritäten zu erkennen und schneller zu handeln.",
+    "hook": ["Die KI bereitet vor.", "Ihr Team entscheidet."],
+    "process_title": "Anliegen. Einfach erledigt.",
+    "process_kicker": "KI-POSTEINGANG",
+    "steps": [
+      {"title": "Eingänge bündeln", "body": "E-Mails und Telefonnotizen nach Haus, Status und Zuständigkeit bearbeiten."},
+      {"title": "Vorschläge erhalten", "body": "KI schlägt Kategorie, Priorität, Zuordnung und Antwort vor - mit Ihren Textbausteinen."},
+      {"title": "Prüfen und weiter", "body": "Prüfen, anpassen oder übernehmen. Anschließend direkt den nächsten Fall öffnen."}
+    ],
+    "controls_label": "SIE GEBEN DEN RAHMEN VOR",
+    "controls_modes": "Manuell  /  Mit Freigabe  /  Automatisch je Kategorie",
+    "features_title": "Ein Portal für den ganzen Hausalltag.",
+    "features": [
+      {"title": "Hausalltag organisieren", "body": "Aushänge, Termine und Abstimmungen. Schäden mit Fotos und Verlauf bearbeiten."},
+      {"title": "Dokumente & Übergaben", "body": "Unterlagen teilen. Übergaben mit Fotos, Zählerständen und Schlüsseln dokumentieren."},
+      {"title": "Parken, Laden & Systeme", "body": "Ladezustände und Berechtigungen. CAMT/ebInterface und Daten für Ihre Fachsysteme."},
+      {"title": "Energie live verstehen", "body": "PV, Netz, Speicher und Verbraucher im Blick. Energieflüsse und Lastspitzen erkennen."},
+      {"title": "Peak Shaving planen", "body": "Flexible Verbraucher und Speicher in Szenarien vergleichen. Mögliche Entlastung vorab bewerten."},
+      {"title": "Geräte gezielt steuern", "body": "Als Projektausbau: Geräte anbinden und im Testlauf prüfen. Aktive Eingriffe separat freigeben."}
+    ],
+    "trust_line": "Klare Rollen nach Haus und Einheit  ·  Cloud oder eigene Infrastruktur  ·  KI auf Wunsch lokal eingerichtet",
+    "cta_title": "Starten wir mit einer Liegenschaft.",
+    "cta_body": "Pilotumfang, Daten und Freigaben gemeinsam festlegen.",
+    "footer_service": "Einführung & Integration",
+    "git_label": "Git-Basis",
+    "subject": "Kundenhandout für Hausverwaltungen",
+    "mail_subject": "HAUSV Pilot"
+  },
+  "en": {
+    "masthead": ["THE PORTAL FOR", "YOUR PROPERTY MANAGEMENT"],
+    "headline": ["More clarity.", "Less busywork."],
+    "intro": "All properties, requests and people in one place. HAUSV helps your team identify priorities and act faster.",
+    "hook": ["AI does the groundwork.", "Your team decides."],
+    "process_title": "Requests. Simply handled.",
+    "process_kicker": "AI INBOX",
+    "steps": [
+      {"title": "Bring requests together", "body": "Manage emails and call notes by property, status and assignee."},
+      {"title": "Get suggestions", "body": "AI suggests category, priority, assignment and a reply, using your response templates."},
+      {"title": "Review and move on", "body": "Review, adjust or approve. Then open the next case straight away."}
+    ],
+    "controls_label": "YOU SET THE RULES",
+    "controls_modes": "Manual  /  With approval  /  Automatic by category",
+    "features_title": "One portal for everyday property management.",
+    "features": [
+      {"title": "Daily operations", "body": "Notices, events and votes. Handle damage reports with photos and a clear history."},
+      {"title": "Documents & handovers", "body": "Share documents. Record handovers with photos, meter readings and keys."},
+      {"title": "Parking & integrations", "body": "Charging status and access rights. CAMT/ebInterface and data for your specialist systems."},
+      {"title": "Live energy insights", "body": "PV, grid, storage and loads at a glance. Identify energy flows and demand peaks."},
+      {"title": "Plan peak shaving", "body": "Compare flexible loads and storage in scenarios. Assess potential peak reduction before implementation."},
+      {"title": "Targeted device control", "body": "As a project extension: connect and test devices. Enable active control only with separate approval."}
+    ],
+    "trust_line": "Roles by property and unit  ·  Cloud or your infrastructure  ·  Local AI setup on request",
+    "cta_title": "Let's start with one property.",
+    "cta_body": "Define the pilot scope, data and approvals together.",
+    "footer_service": "Onboarding & Integration",
+    "git_label": "Git baseline",
+    "subject": "Customer handout for property managers",
+    "mail_subject": "HAUSV Pilot"
+  },
+  "es": {
+    "masthead": ["EL PORTAL PARA", "ADMINISTRAR INMUEBLES"],
+    "headline": ["Más claridad.", "Menos rutina."],
+    "intro": "Inmuebles, solicitudes y personas en un solo lugar. HAUSV ayuda a su equipo a identificar prioridades y actuar con mayor agilidad.",
+    "hook": ["La IA prepara el trabajo.", "Su equipo decide."],
+    "process_title": "Solicitudes, paso a paso.",
+    "process_kicker": "BANDEJA CON IA",
+    "steps": [
+      {"title": "Todo en un lugar", "body": "Gestione correos y notas de llamadas por inmueble, estado y responsable."},
+      {"title": "Reciba sugerencias", "body": "La IA sugiere categoría, prioridad y asignación, y prepara una respuesta con sus textos modelo."},
+      {"title": "Revise y continúe", "body": "Revise, ajuste o acepte la propuesta. Luego, abra directamente el siguiente caso."}
+    ],
+    "controls_label": "USTED DEFINE LAS REGLAS",
+    "controls_modes": "Manual / Con aprobación / Automático por categoría",
+    "features_title": "Un portal para la gestión diaria.",
+    "features": [
+      {"title": "Gestión diaria", "body": "Avisos, eventos y votaciones. Gestione reportes de daños con fotos e historial de cada caso."},
+      {"title": "Documentos y entregas", "body": "Comparta documentos. Registre entregas de inmuebles con fotos, lecturas de medidores y llaves."},
+      {"title": "Parqueo, carga y datos", "body": "Consulte estados de carga y permisos. CAMT/ebInterface y datos para sus sistemas de gestión."},
+      {"title": "Energía en tiempo real", "body": "Generación solar, red, baterías y consumos a la vista. Identifique flujos de energía y picos de demanda."},
+      {"title": "Simular reducción de picos", "body": "Compare escenarios con cargas flexibles y baterías. Evalúe cuánto podrían reducirse los picos de demanda."},
+      {"title": "Control de dispositivos", "body": "Como ampliación del proyecto: integre y pruebe dispositivos. El control activo requiere aprobación por separado."}
+    ],
+    "trust_line": "Roles por inmueble y unidad  ·  Nube o infraestructura propia  ·  IA local a solicitud",
+    "cta_title": "Empecemos con un inmueble.",
+    "cta_body": "Definamos juntos el alcance del piloto, los datos y las aprobaciones.",
+    "footer_service": "Implementación e integración",
+    "git_label": "Base Git",
+    "subject": "Folleto para administradores de inmuebles",
+    "mail_subject": "Piloto HAUSV"
+  }
+}

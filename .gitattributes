@@ -1,1 +1,7 @@
 internal/web/assets/downloads/*.pdf binary
+
+# Agent command symlinks are local tooling, not part of a deploy archive.
+.claude export-ignore
+.claude/** export-ignore
+internal/scripts/.claude export-ignore
+internal/scripts/.claude/** export-ignore

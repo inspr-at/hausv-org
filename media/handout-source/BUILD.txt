@@ -1,0 +1,64 @@
+HAUSV Professional handout source
+
+Build on macOS with Python 3 and the packages in requirements.txt:
+  python3 build_handout.py --lang de
+  python3 build_handout.py --lang en
+  python3 build_handout.py --lang es
+  python3 verify_handouts.py
+
+Local outputs (ignored by Git): ../HAUSV-Professional_Handout-de.pdf, -en.pdf
+and -es.pdf. The published editions live in
+../../internal/web/assets/downloads/. Compare and review a new edition before
+replacing those public files; changing source alone does not publish a PDF.
+Each language has one A4 page. The default language is de.
+Use --output PATH to write a separate preview instead of replacing the handout.
+To verify the published editions without rebuilding (from this directory):
+  python3 verify_handouts.py --pdf-dir ../../internal/web/assets/downloads
+The geometry checks also use the committed layout-measurements files.
+
+All customer-facing copy is in locales.json. Spanish is neutral Latin American
+Spanish, suitable for Colombia. Qualifiers for planning/simulation, project
+expansion, test runs and separate approval must stay intact in every language.
+The build uses the installed Arial and Georgia fonts from macOS; fonts are
+embedded in the exported PDF, not redistributed as separate font files.
+
+Edit build-config.json for the approved Git source basis and short link.
+The Git-Basis label identifies the product source commit, not the commit that
+contains the PDF itself. The agm.ng URL must continue pointing at that exact
+commit; do not retarget an older source-basis link for a new edition.
+
+The source image assets/hausv-portfolio.png is the approved five-house ivory
+derivative; its prompt is in assets/hero-image-prompt.txt. For the revised layout,
+built-in ImageGen separated the three-building foreground and the two small rear
+properties into assets/hausv-portfolio-base.png, hausv-rear-old.png and
+hausv-rear-modern.png. Exact component prompts are in hero-components-prompts.txt
+inside assets/. These are opaque ivory-backed images, not alpha cutouts.
+
+The rear properties are separate PDF layout elements. build-config.json records
+their page-space boxes in points (origin top-left), canvas clipping and requested
+offsets: old +3 cm right / 0.5 cm up; modern 2 cm left / 1.5 cm up and 110% size.
+Image framing margins are accounted for in the placement boxes; AI composition
+alone is not used to determine those distances. Export uses full-resolution,
+high-quality JPEG encoding with subtle PDF-native edge masks. The source assets
+are never modified during builds. The base layer preserves alpha if supplied.
+
+The primary slogan is 34 pt Georgia Bold in dark green; the secondary line is
+25.5 pt Georgia in muted gray-green. All three languages use the same hierarchy.
+
+Six small feature icons come from the repository's Lucide set and remain native
+vector paths in the PDF. Their license is included in assets/icons/LICENSE.
+The footer label is centered on the page; visible contact and mailto both use
+sales@augmentoring.com.
+
+The HAUSV mark uses shared central walls, with both outer roofs ending on
+those walls. The footer uses the supplied official Augmentoring V6 wordmark
+in a neutral gray derivative. Pre-rendered bitmap derivatives are included.
+
+Before delivery, render the final PDF and inspect the entire page; verify
+one A4 page, text boundaries, embedded fonts, clickable annotations and an
+independent QR decode to https://hausv.agm.ng. verify_handouts.py checks all three
+PDFs for complete localized copy, language metadata, page size, text boundaries,
+embedded visible fonts, hyperlinks, footer centering, headline hierarchy and
+vector feature icons. It does not replace visual inspection or QR decoding.
+Device control remains labeled
+as project expansion; peak shaving is planning/simulation, not a guarantee.
