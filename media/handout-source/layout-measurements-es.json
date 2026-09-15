@@ -1,0 +1,318 @@
+[
+  {
+    "text": "HAUSV",
+    "x": 90,
+    "y": 27,
+    "w": 90.07,
+    "h": 23,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "P R O F E S S I O N A L",
+    "x": 91,
+    "y": 53,
+    "w": 81.0,
+    "h": 7.4,
+    "font": "BodyBold"
+  },
+  {
+    "text": "EL PORTAL PARA",
+    "x": 478.35,
+    "y": 34,
+    "w": 81.92,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "ADMINISTRAR INMUEBLES",
+    "x": 436.94,
+    "y": 47,
+    "w": 123.33,
+    "h": 8.0,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Más claridad.",
+    "x": 35,
+    "y": 101,
+    "w": 237.34,
+    "h": 34,
+    "font": "DisplayBold"
+  },
+  {
+    "text": "Menos rutina.",
+    "x": 35,
+    "y": 144,
+    "w": 158.13,
+    "h": 25.5,
+    "font": "Display"
+  },
+  {
+    "text": "Inmuebles, solicitudes y personas en un solo lugar. HAUSV ayuda a su equipo a identificar prioridades y actuar con mayor agilidad.",
+    "x": 35,
+    "y": 192,
+    "w": 197,
+    "h": 60.8
+  },
+  {
+    "text": "<b>La IA prepara el trabajo.<br/>Su equipo decide.</b>",
+    "x": 35,
+    "y": 286,
+    "w": 197,
+    "h": 30.0
+  },
+  {
+    "text": "Solicitudes, paso a paso.",
+    "x": 54,
+    "y": 349,
+    "w": 197.87,
+    "h": 18.5,
+    "font": "Display"
+  },
+  {
+    "text": "BANDEJA CON IA",
+    "x": 455.71,
+    "y": 354,
+    "w": 85.57,
+    "h": 8.2,
+    "font": "BodyBold"
+  },
+  {
+    "text": "01",
+    "x": 54.0,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Todo en un lugar",
+    "x": 73.0,
+    "y": 386,
+    "w": 81.91,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Gestione correos y notas de llamadas por inmueble, estado y responsable.",
+    "x": 54.0,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "02",
+    "x": 222.76,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Reciba sugerencias",
+    "x": 241.76,
+    "y": 386,
+    "w": 94.87,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "La IA sugiere categoría, prioridad y asignación, y prepara una respuesta con sus textos modelo.",
+    "x": 222.75853018372706,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "03",
+    "x": 391.52,
+    "y": 388,
+    "w": 9.08,
+    "h": 7.8,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Revise y continúe",
+    "x": 410.52,
+    "y": 386,
+    "w": 85.88,
+    "h": 10.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Revise, ajuste o acepte la propuesta. Luego, abra directamente el siguiente caso.",
+    "x": 391.5170603674541,
+    "y": 406,
+    "w": 149.75853018372706,
+    "h": 38.4
+  },
+  {
+    "text": "USTED DEFINE LAS REGLAS",
+    "x": 54,
+    "y": 467,
+    "w": 109.7,
+    "h": 7.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Manual / Con aprobación / Automático por categoría",
+    "x": 362.79,
+    "y": 467,
+    "w": 178.49,
+    "h": 7.7,
+    "font": "Body"
+  },
+  {
+    "text": "Un portal para la gestión diaria.",
+    "x": 35,
+    "y": 501,
+    "w": 266.52,
+    "h": 19.0,
+    "font": "Display"
+  },
+  {
+    "text": "Gestión diaria",
+    "x": 50.0,
+    "y": 542,
+    "w": 68.69,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Avisos, eventos y votaciones. Gestione reportes de daños con fotos e historial de cada caso.",
+    "x": 35.0,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Documentos y entregas",
+    "x": 232.09,
+    "y": 542,
+    "w": 116.77,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Comparta documentos. Registre entregas de inmuebles con fotos, lecturas de medidores y llaves.",
+    "x": 217.09186351706037,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Parqueo, carga y datos",
+    "x": 414.18,
+    "y": 542,
+    "w": 113.34,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Consulte estados de carga y permisos. CAMT/ebInterface y datos para sus sistemas de gestión.",
+    "x": 399.18372703412075,
+    "y": 561,
+    "w": 161.09186351706037,
+    "h": 37.8
+  },
+  {
+    "text": "Energía en tiempo real",
+    "x": 50.0,
+    "y": 621,
+    "w": 110.47,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Generación solar, red, baterías y consumos a la vista. Identifique flujos de energía y picos de demanda.",
+    "x": 35.0,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 50.4
+  },
+  {
+    "text": "Simular reducción de picos",
+    "x": 232.09,
+    "y": 621,
+    "w": 134.51,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Compare escenarios con cargas flexibles y baterías. Evalúe cuánto podrían reducirse los picos de demanda.",
+    "x": 217.09186351706037,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 50.4
+  },
+  {
+    "text": "Control de dispositivos",
+    "x": 414.18,
+    "y": 621,
+    "w": 114.45,
+    "h": 10.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Como ampliación del proyecto: integre y pruebe dispositivos. El control activo requiere aprobación por separado.",
+    "x": 399.18372703412075,
+    "y": 640,
+    "w": 161.09186351706037,
+    "h": 50.4
+  },
+  {
+    "text": "Roles por inmueble y unidad  ·  Nube o infraestructura propia  ·  IA local a solicitud",
+    "x": 35,
+    "y": 700,
+    "w": 310.41,
+    "h": 8.5,
+    "font": "Body"
+  },
+  {
+    "text": "Empecemos con un inmueble.",
+    "x": 48,
+    "y": 726,
+    "w": 242.92,
+    "h": 18.3,
+    "font": "Display"
+  },
+  {
+    "text": "Definamos juntos el alcance del piloto, los datos y las aprobaciones.",
+    "x": 48,
+    "y": 752,
+    "w": 410,
+    "h": 12.3
+  },
+  {
+    "text": "sales@augmentoring.com",
+    "x": 48,
+    "y": 776,
+    "w": 116.05,
+    "h": 9.3,
+    "font": "BodyBold"
+  },
+  {
+    "text": "hausv.agm.ng",
+    "x": 492.04,
+    "y": 784,
+    "w": 54.46,
+    "h": 8.1,
+    "font": "BodyBold"
+  },
+  {
+    "text": "Implementación e integración",
+    "x": 251.26,
+    "y": 815,
+    "w": 92.75,
+    "h": 7.1,
+    "font": "Body"
+  },
+  {
+    "text": "Base Git 2d208dc · 05.09.2026",
+    "x": 461.99,
+    "y": 815,
+    "w": 98.29,
+    "h": 7.1,
+    "font": "Body"
+  }
+]

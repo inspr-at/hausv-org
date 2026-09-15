@@ -1,0 +1,14 @@
+Mode: built-in image_gen tool, three component edits.
+Reference image: assets/hausv-portfolio.png (approved five-house ivory image).
+The resulting components are placed independently in PDF page coordinates.
+Requested page-space moves: old +3 cm x / -0.5 cm y; modern -2 cm x / -1.5 cm y, 110% scale.
+No generative repositioning variant was used; layout placement is deterministic.
+
+BASE
+Image 1 is the exact edit target. Professional photographic real-estate miniature cutout, not a new design. Preserve exact architecture, plants, warm colors, lighting and perspective of the specified existing subject. Uniform flat ivory #F7F3EA background, no checkerboard, no labels or text. Remove ONLY the two small detached houses at the upper-left and upper-right including their separate oval podiums and vegetation. Fill those two removed areas with the same ivory background and subtle tan map/parcel lines. Keep all THREE LARGE FOREGROUND BUILDINGS, trees and the entire connected podium EXACTLY unchanged, in their original size and pixel positions. Keep the original 1452 by 1083 framing, no rescaling, no new objects. The result has exactly the three large foreground buildings and no small houses at the top.
+
+OLD
+Image 1 is the exact edit target. Professional photographic real-estate miniature cutout, not a new design. Preserve exact architecture, plants, warm colors, lighting and perspective of the specified existing subject. Uniform flat ivory #F7F3EA background, no checkerboard, no labels or text. Extract ONLY the small OLD PITCHED-ROOF HOUSE in the UPPER LEFT of Image 1 with its own oval plinth, its conifer on the left and deciduous tree on the right, all surrounding shrubs and its gentle shadow. Remove all other houses, foreground podiums and map lines. Do not change this small house at all. Frame that whole individual group tightly but completely as a wide horizontal asset, approximately 2.1:1 aspect ratio, with only a thin 2 percent ivory margin around the silhouette. No crop of trees or platform. This is an isolated asset for precise independent placement in a PDF.
+
+MODERN
+Image 1 is the exact edit target. Professional photographic real-estate miniature cutout, not a new design. Preserve exact architecture, plants, warm colors, lighting and perspective of the specified existing subject. Uniform flat ivory #F7F3EA background, no checkerboard, no labels or text. Extract ONLY the small MODERN FLAT-ROOF HOUSE in the UPPER RIGHT of Image 1 with its own oval plinth, tall conifer on the left, shrubs and gentle shadow. Remove all other houses, foreground podiums and map lines. Do not change this modern house at all. Frame the whole individual group tightly but completely as a wide horizontal asset, approximately 2.1:1 aspect ratio, with only a thin 2 percent ivory margin around the silhouette. No crop of trees or platform. This is an isolated asset for precise independent placement in a PDF.

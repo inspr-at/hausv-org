@@ -1,0 +1,2 @@
+# Generated print artifacts must be stored and compared as binary files.
+*.pdf binary

@@ -22,3 +22,6 @@ scripts/mark3d/node_modules/
 
 # Agent worktrees are per-machine; the command symlinks are shared wiring.
 .claude/worktrees/
+
+# Local handout build outputs; published PDFs live in internal/web/assets/downloads/.
+/media/HAUSV-Professional_Handout-*.pdf

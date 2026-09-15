@@ -1,0 +1,8 @@
+Mode: built-in image_gen tool, edit of the user-selected image.
+Historical input label: media/hausv-hero-5-houses-trans.png. That input was not
+found in the source branch or the 2026-09-15 inventory; its original bytes are
+not preserved here. The resulting ivory derivative used by this handout is
+preserved as assets/hausv-portfolio.png. The prompt below records the historical
+edit request, not a claim that the missing input can be reconstructed.
+
+Use case: precise-object-edit. Image 1 is the edit target. Replace the gray-and-white checkerboard in this image with one perfectly uniform solid warm ivory color RGB(247,243,234), hex #F7F3EA. Output an ordinary opaque image, not transparent. The checkerboard must be completely gone: no squares or pattern anywhere. Keep all five existing buildings, every platform, vegetation, architectural details, shadows, delicate tan map/parcel lines and exact arrangement unchanged. Keep the same framing, all plinths inside the frame, the same photographic muted colors. Change ONLY the empty checkerboard background to flat uniform #F7F3EA. No gradients, new objects, text, or logos.
