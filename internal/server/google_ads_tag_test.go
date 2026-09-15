@@ -1,19 +1,47 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// The Google Ads tag is demo-host configuration behind a consent gate
-// (HAUSV-742): with GOOGLE_ADS_TAG_ID set, the public pages carry only the
-// self-hosted consent script that injects Google's tag after "marketing" was
-// granted; the served HTML never references Google's host, the CSP opens
-// Google's hosts in exactly that case, and the lead conversion is configured
-// only on the "sent" view of /start, never on a plain visit.
+// The vendored inspr-modules consent-gate is pinned byte for byte
+// (HAUSV-753): these digests are the files of inspr-modules v0.14.0
+// (packages/consent-gate). Re-copy and re-pin when the doctrine moves.
+const (
+	consentGateJSSHA256  = "7447e4e1ef8821e84a0db2d14c7506a873ebb3f960cc9da1549385ec6104d2f3"
+	consentGateCSSSHA256 = "9610aac261f8df04978562f44bcbbc7fdf93305774daaf3788f616498dc9c262"
+)
+
+func TestVendoredConsentGateIsPinned(t *testing.T) {
+	for name, want := range map[string]string{"consent-gate.js": consentGateJSSHA256, "consent-gate.css": consentGateCSSSHA256} {
+		raw, err := os.ReadFile(filepath.Join("..", "web", "assets", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(raw)
+		if got := hex.EncodeToString(sum[:]); got != want {
+			t.Fatalf("%s drifted from the pinned inspr-modules bytes: %s != %s (re-copy from doctrine/packages/consent-gate and re-pin)", name, got, want)
+		}
+		if upstream, err := os.ReadFile(filepath.Join("..", "..", "doctrine", "packages", "consent-gate", name)); err == nil && string(upstream) != string(raw) {
+			t.Fatalf("%s differs from doctrine/packages/consent-gate/%s", name, name)
+		}
+	}
+}
+
+// The Google Ads tag is demo-host configuration behind the consent gate
+// (HAUSV-742, HAUSV-753): with GOOGLE_ADS_TAG_ID set, the public pages carry
+// the manifest and the self-hosted gate script that injects Google's tag after
+// "marketing" was granted; the served HTML never references Google's host, the
+// CSP opens Google's hosts in exactly that case, and the conversion fires only
+// on the "sent" view of /start, never on a plain visit.
 func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 	setEnv := func(t *testing.T, tag, conversion string) {
 		t.Helper()
@@ -53,6 +81,20 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 			}
 		}
 	}
+	manifestOf := func(t *testing.T, body string) map[string]any {
+		t.Helper()
+		start := strings.Index(body, `<script type="application/json" id="consent-manifest">`)
+		if start < 0 {
+			t.Fatal("manifest script missing")
+		}
+		start += len(`<script type="application/json" id="consent-manifest">`)
+		end := strings.Index(body[start:], "</script>")
+		var m map[string]any
+		if err := json.Unmarshal([]byte(body[start:start+end]), &m); err != nil {
+			t.Fatalf("manifest is not JSON: %v", err)
+		}
+		return m
+	}
 
 	t.Run("off by default", func(t *testing.T) {
 		setEnv(t, "", "")
@@ -65,13 +107,12 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 			if rr.Code != http.StatusOK {
 				t.Fatalf("%s: %d", path, rr.Code)
 			}
-			mustNotContain(t, rr.Body.String(), path, "googletagmanager", "consent.js", "data-consent-open", "hv-consent", "Werbe-Cookies")
+			mustNotContain(t, rr.Body.String(), path, "googletagmanager", "consent-gate", "consent-manifest", "data-consent-open", "Werbe-Cookies")
 			if csp := rr.Header().Get("Content-Security-Policy"); strings.Contains(csp, "google") {
 				t.Fatalf("CSP must not open Google hosts without a tag: %q", csp)
 			}
 		}
-		privacy := get(t, a, "/datenschutz").Body.String()
-		mustContain(t, privacy, "privacy without a tag", "Es gibt keine Werbung, keine Analyse-Skripte")
+		mustContain(t, get(t, a, "/datenschutz").Body.String(), "privacy without a tag", "Es gibt keine Werbung, keine Analyse-Skripte")
 	})
 
 	t.Run("gated tag on the public pages, conversion only on the sent view", func(t *testing.T) {
@@ -80,9 +121,6 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Every public page: the gate script with the tag id, a withdrawal
-		// control, the bar styles — and no reference to Google's host in the
-		// markup, because the tag only exists after consent.
 		for _, path := range []string{"/", "/impressum", "/datenschutz", "/start"} {
 			rr := get(t, a, path)
 			if rr.Code != http.StatusOK {
@@ -91,18 +129,27 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 			body := rr.Body.String()
 			mustContain(t, body, path,
 				// asset URLs are tenant-prefixed by the response rewriter (/demo/assets/...)
-				`assets/consent.js?v=`,
-				`data-tag-id="AW-18425188397"`,
+				`assets/consent-gate.js?v=`,
+				`assets/consent-gate.css?v=`,
+				`data-consent-manifest="#consent-manifest"`,
 				`data-consent-open`,
-				`.hv-consent-btn {`,
+				`--ic-surface: var(--panel)`,
 			)
-			mustNotContain(t, body, path, "googletagmanager", "google-ads.js", "gtag/js")
+			mustNotContain(t, body, path, "googletagmanager", "google-ads.js", "consent.js", "gtag/js", "data-tag-id")
+			m := manifestOf(t, body)
+			if m["scope"] != "hausv.example" || m["cookieName"] != "hausv_consent" || m["language"] != "de" || m["privacyUrl"] != "/datenschutz" {
+				t.Fatalf("manifest identity wrong: %v", m)
+			}
+			svc := m["services"].([]any)[0].(map[string]any)
+			dest := svc["destination"].(map[string]any)
+			if dest["tagId"] != "AW-18425188397" || dest["conversion"].(map[string]any)["sendTo"] != "AW-18425188397/sEB6CJKVjvEcEK2g6NFE" {
+				t.Fatalf("destination wrong: %v", dest)
+			}
+			if keys := dest["consent"].([]any); len(keys) != 2 || keys[0] != "ad_storage" || keys[1] != "ad_user_data" {
+				t.Fatalf("only measurement keys may be declared: %v", keys)
+			}
 			csp := rr.Header().Get("Content-Security-Policy")
-			mustContain(t, csp, path+" CSP",
-				"script-src 'self' https://www.googletagmanager.com",
-				"connect-src 'self' https://www.google.com",
-				"frame-ancestors 'none'",
-			)
+			mustContain(t, csp, path+" CSP", "script-src 'self' https://www.googletagmanager.com", "connect-src 'self' https://www.google.com", "frame-ancestors 'none'")
 			for _, directive := range strings.Split(csp, ";") {
 				directive = strings.TrimSpace(directive)
 				if strings.HasPrefix(directive, "script-src") && strings.Contains(directive, "'unsafe-inline'") {
@@ -111,39 +158,40 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 			}
 		}
 
-		landing := get(t, a, "/").Body.String()
-		mustNotContain(t, landing, "landing", "data-lead-conversion")
-
-		start := get(t, a, "/start").Body.String()
-		mustNotContain(t, start, "plain /start", "data-lead-conversion")
-		sent := get(t, a, "/start?sent=1").Body.String()
-		mustContain(t, sent, "/start?sent=1", `data-lead-conversion="AW-18425188397/sEB6CJKVjvEcEK2g6NFE"`)
+		mustContain(t, get(t, a, "/").Body.String(), "landing", `data-consent-fire=""`)
+		mustContain(t, get(t, a, "/start").Body.String(), "plain /start", `data-consent-fire=""`)
+		mustContain(t, get(t, a, "/start?sent=1").Body.String(), "/start?sent=1", `data-consent-fire="google-ads"`)
 
 		privacy := get(t, a, "/datenschutz").Body.String()
-		mustContain(t, privacy, "privacy with a tag",
-			"Werbe-Cookies (Google Ads)",
-			"hausv_consent",
-			"Global-Privacy-Control",
-			"§ 165 Abs 3 TKG 2021",
-		)
+		mustContain(t, privacy, "privacy with a tag", "Werbe-Cookies (Google Ads)", "hausv_consent", "Global-Privacy-Control", "§ 165 Abs 3 TKG 2021")
 		mustNotContain(t, privacy, "privacy with a tag", "Es gibt keine Werbung, keine Analyse-Skripte")
 
-		asset := get(t, a, "/assets/consent.js")
-		if asset.Code != http.StatusOK {
-			t.Fatalf("self-hosted consent script not served: %d", asset.Code)
+		for _, name := range []string{"consent-gate.js", "consent-gate.css"} {
+			if rr := get(t, a, "/assets/"+name); rr.Code != http.StatusOK {
+				t.Fatalf("vendored %s not served: %d", name, rr.Code)
+			}
 		}
-		script := asset.Body.String()
-		mustContain(t, script, "consent.js",
-			`gtag("consent", "default", { ad_storage: "denied"`,
-			`cookie_domain: location.hostname`,
-			`linker: { accept_incoming: true }`,
-			`navigator.globalPrivacyControl === true`,
-		)
-		if strings.Count(script, "googletagmanager.com") != 1 {
-			t.Fatal("consent.js must reference Google's host exactly once, inside the gated loader")
+		script := get(t, a, "/assets/consent-gate.js").Body.String()
+		if strings.Count(script, "googletagmanager.com/gtag/js") != 1 {
+			t.Fatal("consent-gate.js must reference the tag loader exactly once, inside the gated loader")
 		}
-		if rr := get(t, a, "/assets/google-ads.js"); rr.Code == http.StatusOK {
-			t.Fatal("the ungated bootstrap must be gone")
+		for _, gone := range []string{"/assets/google-ads.js", "/assets/consent.js"} {
+			if rr := get(t, a, gone); rr.Code == http.StatusOK {
+				t.Fatalf("%s must be gone", gone)
+			}
+		}
+	})
+
+	t.Run("manifest omits the conversion without a configured lead conversion", func(t *testing.T) {
+		setEnv(t, "AW-18425188397", "")
+		a, err := newApp()
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := manifestOf(t, get(t, a, "/start?sent=1").Body.String())
+		dest := m["services"].([]any)[0].(map[string]any)["destination"].(map[string]any)
+		if _, has := dest["conversion"]; has {
+			t.Fatal("conversion must not be declared without GOOGLE_ADS_LEAD_CONVERSION")
 		}
 	})
 }

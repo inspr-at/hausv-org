@@ -153,9 +153,6 @@ jobs:
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
 
-      - name: Check consent-gate policy (HAUSV-742)
-        run: node scripts/test-consent-policy.mjs
-
       - name: Install browser QA dependencies
         run: |
           npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund

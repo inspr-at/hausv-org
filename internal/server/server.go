@@ -5681,6 +5681,9 @@ func (a *app) render(w http.ResponseWriter, name string, data map[string]any) {
 	if _, ok := data["AssetVersion"]; !ok {
 		data["AssetVersion"] = version.AssetVersion()
 	}
+	if _, ok := data["GoogleAdsTagID"]; ok && a.googleAdsTagID != "" {
+		data["ConsentManifest"] = a.consentManifest()
+	}
 	if tenant, ok := data["Tenant"].(tenantConfig); ok {
 		data["TenantBrandLucideSVG"] = tenantBrandLucideSVG(tenant.BrandIcon)
 	}

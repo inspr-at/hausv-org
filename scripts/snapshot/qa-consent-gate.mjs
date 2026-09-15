@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Browser regression suite for the Google Ads consent gate (HAUSV-742).
+// Browser regression suite for the Google Ads consent gate (HAUSV-742/753):
+// the vendored inspr-modules consent-gate driven by this instance's manifest.
 //
 // Runs against an isolated instance started with GOOGLE_ADS_TAG_ID and
 // GOOGLE_ADS_LEAD_CONVERSION set (scripts/qa-consent-gate.sh). Google's host
@@ -69,35 +70,48 @@ async function open(opts = {}) {
   page.on('request', (r) => requests.push(r.url()));
   return { ctx, page, requests };
 }
-const consentCookie = async (ctx) => (await ctx.cookies(baseURL)).find((c) => c.name === 'hausv_consent');
+const consentCookie = async (ctx) => { const c = (await ctx.cookies(baseURL)).find((k) => k.name === 'hausv_consent'); return c ? { ...c, value: decodeURIComponent(c.value) } : undefined; };
+const REFUSED = ';g=;s=;';
+const GRANTED = 'g=marketing@';
 const googleHits = (requests) => requests.filter((u) => GOOGLE.test(u));
 const tagLoads = (requests) => requests.filter((u) => u.includes(TAG_URL));
+// seedGrant stores a valid marketing grant the way the gate itself would (binding, per-entry record).
+async function seedGrant(ctx, page) {
+  await page.goto(`${baseURL}/datenschutz`, { waitUntil: 'networkidle' });
+  const value = await page.evaluate(() => {
+    const m = JSON.parse(document.querySelector('#consent-manifest').textContent);
+    const core = window.insprConsentCore;
+    const now = Math.floor(Date.now() / 1000) - 10;
+    return core.serialize({ binding: core.binding(m), revision: m.revision, textVersion: m.textVersion, granted: [{ id: 'marketing', at: now, rev: 1, tv: m.textVersion }], services: [], at: now });
+  });
+  await ctx.addCookies([{ name: 'hausv_consent', value: encodeURIComponent(value), url: baseURL }]);
+}
 const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) => Array.from(a).map((x) => (typeof x === 'object' && !(x instanceof Date) ? JSON.stringify(x) : String(x))).join(' ')));
 
 // 1. Fresh visit: bar, no Google, equivalent first-layer choices, Escape = refusal.
 {
   const { ctx, page, requests } = await open();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  const bar = page.locator('.hv-consent');
+  const bar = page.locator('.ic-bar');
   check('fresh visit shows the bar', await bar.isVisible());
   check('fresh visit sends nothing to Google', googleHits(requests).length === 0, googleHits(requests).join(','));
   check('fresh visit sets no consent cookie', !(await consentCookie(ctx)));
-  const styles = await page.$$eval('.hv-consent .hv-consent-btn', (els) => els.map((e) => { const s = getComputedStyle(e); return [s.fontSize, s.fontWeight, s.color, s.backgroundColor, s.borderColor, s.paddingLeft, s.borderRadius, e.offsetWidth, e.offsetHeight].join('|'); }));
+  const styles = await page.$$eval('.ic-bar .ic-btn', (els) => els.map((e) => { const s = getComputedStyle(e); return [s.fontSize, s.fontWeight, s.color, s.backgroundColor, s.borderColor, s.paddingLeft, s.borderRadius, e.offsetWidth, e.offsetHeight].join('|'); }));
   check('reject and accept are rendered identically', styles.length === 2 && styles[0] === styles[1], styles.join(' vs '));
   const s = shot('bar-desktop'); if (s) await page.screenshot(s);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(200);
   const c = await consentCookie(ctx);
-  check('Escape records a refusal and removes the bar', !!c && c.value.includes('m%3D0') && !(await bar.isVisible()));
-  check('consent cookie is host-only, Lax and carries no identifier', !!c && !c.domain.startsWith('.') && c.sameSite === 'Lax' && /^v1%3Br%3D\d+%3Bm%3D0%3Bt%3D\d+$/.test(c.value), c && JSON.stringify({ d: c.domain, s: c.sameSite, v: c.value }));
+  check('Escape records a refusal and removes the bar', !!c && c.value.includes(REFUSED) && !(await bar.isVisible()));
+  check('consent cookie is host-only, Lax and carries no identifier', !!c && !c.domain.startsWith('.') && c.sameSite === 'Lax' && /^v1;b=[0-9a-f]{8};r=\d+;v=\d+;g=;s=;t=\d+$/.test(c.value), c && JSON.stringify({ d: c.domain, s: c.sameSite, v: c.value }));
   await page.reload({ waitUntil: 'networkidle' });
   check('refusal is remembered on reload', !(await bar.isVisible()) && googleHits(requests).length === 0);
   // Settings after a refusal must not resurrect a draft grant.
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  check('settings after refusal show marketing off', !(await page.locator('#hv-consent-marketing').isChecked()));
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  check('settings after refusal show marketing off', !(await page.locator('#ic-cat-marketing').isChecked()));
   await page.getByRole('button', { name: 'Abbrechen' }).click();
-  check('cancel keeps the refusal', (await consentCookie(ctx)).value.includes('m%3D0') && googleHits(requests).length === 0);
+  check('cancel keeps the refusal', (await consentCookie(ctx)).value.includes(REFUSED) && googleHits(requests).length === 0);
   await ctx.close();
 }
 
@@ -108,7 +122,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   const s = shot('bar-mobile'); if (s) await page.screenshot(s);
   await page.getByRole('button', { name: 'Ablehnen' }).click();
   await page.waitForTimeout(200);
-  check('Ablehnen stores a refusal', (await consentCookie(ctx))?.value.includes('m%3D0') === true);
+  check('Ablehnen stores a refusal', (await consentCookie(ctx))?.value.includes(REFUSED) === true);
   check('nothing reaches Google after Ablehnen', googleHits(requests).length === 0);
   await ctx.close();
 }
@@ -118,14 +132,14 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   const { ctx, page, requests } = await open();
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Einstellungen' }).click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  await page.locator('#hv-consent-marketing').check();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').check();
   await page.getByRole('button', { name: 'Abbrechen' }).click();
   await page.waitForTimeout(200);
-  check('cancelling the sheet during the first prompt counts as refusal', (await consentCookie(ctx))?.value.includes('m%3D0') === true && !(await page.locator('.hv-consent').isVisible()));
+  check('cancelling the sheet during the first prompt counts as refusal', (await consentCookie(ctx))?.value.includes(REFUSED) === true && !(await page.locator('.ic-bar').isVisible()));
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  check('reopened settings drop the unsaved draft', !(await page.locator('#hv-consent-marketing').isChecked()));
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  check('reopened settings drop the unsaved draft', !(await page.locator('#ic-cat-marketing').isChecked()));
   await page.keyboard.press('Escape');
   check('no Google load throughout', googleHits(requests).length === 0);
   await ctx.close();
@@ -137,7 +151,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Akzeptieren' }).click();
   await page.waitForTimeout(800);
-  check('Akzeptieren stores a grant', (await consentCookie(ctx))?.value.includes('m%3D1') === true);
+  check('Akzeptieren stores a grant', (await consentCookie(ctx))?.value.includes(GRANTED) === true);
   check('the tag is requested exactly once after accept', tagLoads(requests).length === 1, tagLoads(requests).join(','));
   const layer = await layerOf(page);
   check('Consent Mode: default denied, then update', layer[0]?.startsWith('consent default') && layer[0].includes('"ad_storage":"denied"') && layer[1]?.startsWith('consent update'), layer.slice(0, 2).join(' || '));
@@ -147,19 +161,19 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   const s = shot('after-accept'); if (s) await page.screenshot(s);
   // Seed what Google's tag would have stored, then withdraw.
   await ctx.addCookies([{ name: '_gcl_au', value: 'seeded', url: baseURL }]);
-  await page.evaluate(() => { localStorage.setItem('_gcl_ls', 'seeded'); sessionStorage.setItem('hausv_ads_lead_fired', '1'); });
+  await page.evaluate(() => { localStorage.setItem('_gcl_ls', 'seeded'); sessionStorage.setItem('consent_fired_google-ads', '1'); });
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  check('settings reflect the grant', await page.locator('#hv-consent-marketing').isChecked());
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  check('settings reflect the grant', await page.locator('#ic-cat-marketing').isChecked());
   const s2 = shot('sheet'); if (s2) await page.screenshot(s2);
-  await page.locator('#hv-consent-marketing').uncheck();
+  await page.locator('#ic-cat-marketing').uncheck();
   const before = requests.length;
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForLoadState('networkidle');
-  check('withdrawal stores a refusal and reloads', (await consentCookie(ctx))?.value.includes('m%3D0') === true);
+  check('withdrawal stores a refusal and reloads', (await consentCookie(ctx))?.value.includes(REFUSED) === true);
   check('no Google request after withdrawal', googleHits(requests.slice(before)).length === 0);
   const leftovers = (await ctx.cookies(baseURL)).filter((k) => /^(_gcl_|_gac_|_ga)/.test(k.name)).map((k) => k.name);
-  const local = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('hausv_ads_lead_fired')]);
+  const local = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('consent_fired_google-ads')]);
   check('withdrawal clears Google cookies and storage', leftovers.length === 0 && local.every((v) => v === null), `${leftovers.join(',')} ${JSON.stringify(local)}`);
   await ctx.close();
 }
@@ -167,14 +181,14 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
 // 5. GPC: no bar, refusal persisted over an older grant, settings cannot re-enable.
 {
   const { ctx, page, requests } = await open({ gpc: true });
-  await ctx.addCookies([{ name: 'hausv_consent', value: `v1%3Br%3D1%3Bm%3D1%3Bt%3D${Math.floor(Date.now() / 1000)}`, url: baseURL }]);
+  await seedGrant(ctx, page);
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  check('GPC: no bar', !(await page.locator('.hv-consent').isVisible()));
+  check('GPC: no bar', !(await page.locator('.ic-bar').isVisible()));
   check('GPC: no Google request despite an older grant', googleHits(requests).length === 0, googleHits(requests).join(','));
-  check('GPC: refusal persisted over the older grant', (await consentCookie(ctx))?.value.includes('m%3D0') === true);
+  check('GPC: refusal persisted over the older grant', (await consentCookie(ctx))?.value.includes(REFUSED) === true);
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  const box = page.locator('#hv-consent-marketing');
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  const box = page.locator('#ic-cat-marketing');
   check('GPC: marketing cannot be enabled in settings', (await box.isDisabled()) && !(await box.isChecked()));
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForTimeout(300);
@@ -185,9 +199,9 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
 // 5b. DNT: an existing grant is overridden, nothing loads, refusal persisted.
 {
   const { ctx, page, requests } = await open({ dnt: true });
-  await ctx.addCookies([{ name: 'hausv_consent', value: `v1%3Br%3D1%3Bm%3D1%3Bt%3D${Math.floor(Date.now() / 1000)}`, url: baseURL }]);
+  await seedGrant(ctx, page);
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  check('DNT: no bar, no Google, refusal persisted over the older grant', !(await page.locator('.hv-consent').isVisible()) && googleHits(requests).length === 0 && (await consentCookie(ctx))?.value.includes('m%3D0') === true);
+  check('DNT: no bar, no Google, refusal persisted over the older grant', !(await page.locator('.ic-bar').isVisible()) && googleHits(requests).length === 0 && (await consentCookie(ctx))?.value.includes(REFUSED) === true);
   await ctx.close();
 }
 
@@ -199,7 +213,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await page.waitForTimeout(500);
   check('rejected cookie writes: accept loads nothing and stores nothing', googleHits(requests).length === 0 && !(await consentCookie(ctx)));
   await page.reload({ waitUntil: 'networkidle' });
-  check('rejected cookie writes: the bar returns on reload', await page.locator('.hv-consent').isVisible());
+  check('rejected cookie writes: the bar returns on reload', await page.locator('.ic-bar').isVisible());
   await ctx.close();
 }
 
@@ -209,7 +223,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  check('throwing cookie jar: bar shows, no script error', (await page.locator('.hv-consent').isVisible()) && errors.length === 0, errors.join(' | '));
+  check('throwing cookie jar: bar shows, no script error', (await page.locator('.ic-bar').isVisible()) && errors.length === 0, errors.join(' | '));
   await page.getByRole('button', { name: 'Akzeptieren' }).click();
   await page.waitForTimeout(500);
   check('throwing cookie jar: accept loads nothing', googleHits(requests).length === 0 && errors.length === 0, errors.join(' | '));
@@ -230,16 +244,17 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   });
   const before = requests.length;
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  await page.locator('#hv-consent-marketing').uncheck();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').uncheck();
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForLoadState('load');
   await page.waitForTimeout(500);
   const flag = await page.evaluate(() => sessionStorage.getItem('hausv_consent_revoked'));
   check('withdrawal with a blocked cookie jar records a session revocation', flag === '1');
+  check('withdrawal with a blocked cookie jar keeps the page authoritative (no marker needed while the session flag holds)', !page.url().includes('#consent-revoked') || flag === '1');
   check('withdrawal with a blocked cookie jar loads nothing afterwards', googleHits(requests.slice(before)).length === 0, googleHits(requests.slice(before)).join(','));
   await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
-  check('the surviving grant cookie does not authorise the next page', googleHits(requests.slice(before)).length === 0 && !(await page.locator('.hv-consent').isVisible()));
+  check('the surviving grant cookie does not authorise the next page', googleHits(requests.slice(before)).length === 0 && !(await page.locator('.ic-bar').isVisible()));
   await ctx.close();
 }
 
@@ -260,18 +275,18 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   check('throwing-after-accept setup: tag loaded once', tagLoads(requests).length === 1);
   await page.evaluate(() => {
     localStorage.setItem('_gcl_ls', 'seeded');
-    sessionStorage.setItem('hausv_ads_lead_fired', '1');
+    sessionStorage.setItem('consent_fired_google-ads', '1');
     sessionStorage.setItem('qa_cookie_throw', '1');
     Object.defineProperty(document, 'cookie', { configurable: true, get() { throw new Error('cookie jar unavailable'); }, set() { throw new Error('cookie jar unavailable'); } });
   });
   const before = requests.length;
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  await page.locator('#hv-consent-marketing').uncheck();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').uncheck();
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForLoadState('load');
   await page.waitForTimeout(500);
-  const state = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('hausv_ads_lead_fired'), sessionStorage.getItem('hausv_consent_revoked')]);
+  const state = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('consent_fired_google-ads'), sessionStorage.getItem('hausv_consent_revoked')]);
   check('throwing cookie jar: withdrawal still clears local and session storage and records the revocation', state[0] === null && state[1] === null && state[2] === '1', JSON.stringify(state));
   check('throwing cookie jar: no page error during withdrawal', errors.length === 0, errors.join(' | '));
   await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
@@ -289,7 +304,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
     const desc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
     Object.defineProperty(document, 'cookie', { configurable: true, get() { return desc.get.call(document); }, set(v) { if (!String(v).startsWith('hausv_consent=')) desc.set.call(document, v); } });
   });
-  await ctx.addCookies([{ name: 'hausv_consent', value: `v1%3Br%3D1%3Bm%3D1%3Bt%3D${Math.floor(Date.now() / 1000)}`, url: baseURL }]);
+  await seedGrant(ctx, page);
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
   check('signal with rejected writes: nothing loads and a session revocation is recorded', googleHits(requests).length === 0 && (await page.evaluate(() => sessionStorage.getItem('hausv_consent_revoked'))) === '1');
   await page.evaluate(() => sessionStorage.setItem('qa_gpc_off', '1'));
@@ -302,7 +317,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
 {
   const { ctx, page, requests } = await open({ bot: true });
   await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
-  check('crawler UA: no bar, no Google, no cookie', !(await page.locator('.hv-consent').isVisible()) && googleHits(requests).length === 0 && !(await consentCookie(ctx)));
+  check('crawler UA: no bar, no Google, no cookie', !(await page.locator('.ic-bar').isVisible()) && googleHits(requests).length === 0 && !(await consentCookie(ctx)));
   await ctx.close();
 }
 
@@ -325,15 +340,15 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   // Withdraw and re-consent on the sent view: the new grant is a new decision
   // and fires at most once again; nothing fires while withdrawn.
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  await page.locator('#hv-consent-marketing').uncheck();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').uncheck();
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForLoadState('networkidle');
   layer = await layerOf(page);
   check('after withdrawal the sent view fires nothing', !layer.some((l) => l.startsWith('event conversion')));
   await page.locator('[data-consent-open]').first().click();
-  await page.waitForSelector('dialog.hv-consent-sheet[open]');
-  await page.locator('#hv-consent-marketing').check();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').check();
   await page.getByRole('button', { name: 'Speichern' }).click();
   await page.waitForTimeout(400);
   layer = await layerOf(page);
