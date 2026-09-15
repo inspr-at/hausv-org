@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260915181116.0.0] - 2026-09-15
+
+### Verbessert
+
+- Der Einstieg zu HAUSV Professional auf der Produktseite führt zur Angebotsseite bei Augmentoring.
+
 ## [260915135640.0.0] - 2026-09-15
 
 ### Verbessert
