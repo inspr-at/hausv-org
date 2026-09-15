@@ -18,6 +18,9 @@
   var PURPOSE_REVISION = 1;
   var MAX_AGE = 15552000; // 180 days, for a grant and for a refusal alike
   var LEAD_KEY = "hausv_ads_lead_fired";
+  // Session-scoped revocation for the case that the refusal cookie cannot be
+  // written: it must still outrank a surviving grant on the next page.
+  var REVOKE_KEY = "hausv_consent_revoked";
   var GOOGLE_COOKIE = /^(_gcl_|_gac_|_ga|_gid)/;
   var GOOGLE_LOCAL = ["_gcl_ls"];
   var BOT = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview/i;
@@ -67,26 +70,38 @@
   var tagId = config.tagId || "";
   var leadConversion = config.leadConversion || "";
   var googleLoaded = false;
+  var revoked = false; // in-memory revocation, effective immediately
   var bar = null;
   var sheet = null;
 
+  // Cookie access is exception-safe: a throwing or blocked cookie jar reads
+  // as "no decision", which never authorises anything.
   function readCookie() {
-    var parts = document.cookie ? document.cookie.split("; ") : [];
+    var raw;
+    try { raw = document.cookie; } catch (_) { return null; }
+    var parts = raw ? raw.split("; ") : [];
     for (var i = 0; i < parts.length; i++) {
-      if (parts[i].indexOf(COOKIE + "=") === 0) return parse(decodeURIComponent(parts[i].slice(COOKIE.length + 1)));
+      if (parts[i].indexOf(COOKIE + "=") === 0) {
+        try { return parse(decodeURIComponent(parts[i].slice(COOKIE.length + 1))); } catch (_) { return null; }
+      }
     }
     return null;
   }
 
-  // Returns true only when the decision can be read back: without a
-  // persisted decision nothing optional may load (fail closed).
+  // Returns true only when exactly the written value can be read back:
+  // without a persisted decision nothing optional may load (fail closed).
   function writeCookie(marketing) {
     var secure = location.protocol === "https:" ? "; Secure" : "";
+    var value = serialize(marketing, Date.now() / 1000);
     try {
-      document.cookie = COOKIE + "=" + encodeURIComponent(serialize(marketing, Date.now() / 1000)) + "; Max-Age=" + MAX_AGE + "; Path=/; SameSite=Lax" + secure;
+      document.cookie = COOKIE + "=" + encodeURIComponent(value) + "; Max-Age=" + MAX_AGE + "; Path=/; SameSite=Lax" + secure;
     } catch (_) { return false; }
     var stored = readCookie();
-    return !!stored && stored.marketing === marketing && stored.revision === PURPOSE_REVISION;
+    return !!stored && serialize(stored.marketing, stored.at) === value;
+  }
+
+  function sessionRevoked() {
+    try { return sessionStorage.getItem(REVOKE_KEY) === "1"; } catch (_) { return false; }
   }
 
   function signalActive() {
@@ -98,6 +113,7 @@
   // Every load re-evaluates the full policy: a stale grant, an active privacy
   // signal, a bot or a failed cookie write never lets the tag through.
   function authorized() {
+    if (revoked || sessionRevoked()) return false;
     var decision = decide({ stored: readCookie(), now: Date.now() / 1000, signal: signalActive(), bot: isBot() });
     return decision.marketing === true;
   }
@@ -157,13 +173,23 @@
     gtag("event", "conversion", { send_to: leadConversion, value: 1.0, currency: "EUR" });
   }
 
+  // Withdrawal is effective immediately in this page; whether it may reload
+  // depends on the refusal being persisted somewhere the next page reads.
   function withdraw() {
-    writeCookie(false);
-    if (!googleLoaded) { clearMarketingStorage(); return; }
-    gtag("consent", "update", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" });
-    clearMarketingStorage();
-    // An already-loaded tag has no reliable teardown; a reload starts clean.
-    location.reload();
+    revoked = true;
+    if (googleLoaded) {
+      try { gtag("consent", "update", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" }); } catch (_) { /* tag state is best effort */ }
+    }
+    try { clearMarketingStorage(); } catch (_) { /* cleanup is best effort */ }
+    var persisted = writeCookie(false);
+    if (!persisted) {
+      try { sessionStorage.setItem(REVOKE_KEY, "1"); persisted = sessionRevoked(); } catch (_) { persisted = false; }
+    } else {
+      try { sessionStorage.removeItem(REVOKE_KEY); } catch (_) { /* nothing to clear */ }
+    }
+    // An already-loaded tag has no reliable teardown; a reload starts clean —
+    // but only once the next page is guaranteed to read the refusal.
+    if (googleLoaded && persisted) location.reload();
   }
 
   function el(tag, attrs, children) {
@@ -191,6 +217,8 @@
     removeBar();
     // A grant that cannot be persisted is no grant; a refusal signal wins.
     if (signalActive() || !writeCookie(true)) { withdraw(); return; }
+    revoked = false;
+    try { sessionStorage.removeItem(REVOKE_KEY); } catch (_) { /* nothing to clear */ }
     loadGoogle();
   }
   function refuse() { removeBar(); withdraw(); }

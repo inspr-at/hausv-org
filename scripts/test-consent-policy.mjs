@@ -54,6 +54,9 @@ assert.ok(/gtag\("consent", "default", \{ ad_storage: "denied"/.test(source), "C
 assert.ok(/gtag\("consent", "update", \{ ad_storage: "granted", ad_user_data: "granted", ad_personalization: "denied"/.test(source), "grant covers measurement only, personalisation stays denied");
 assert.ok(/localStorage\.removeItem\(key\)/.test(source) && /"_gcl_ls"/.test(source), "withdrawal clears Google's local storage entry");
 assert.ok(/if \(googleLoaded \|\| !tagId \|\| !authorized\(\)\) return;/.test(source), "the loader re-checks authorization on every call");
+assert.ok(/if \(revoked \|\| sessionRevoked\(\)\) return false;/.test(source), "an in-page or session revocation outranks a surviving grant");
+assert.ok(/if \(googleLoaded && persisted\) location\.reload\(\);/.test(source), "withdrawal reloads only once the refusal is persisted");
+assert.ok(/try \{ raw = document\.cookie; \} catch/.test(source), "cookie reads are exception-safe");
 assert.ok(!/<script/.test(source), "no inline script markup");
 
 console.log("consent policy: ok");
