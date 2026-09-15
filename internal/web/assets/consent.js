@@ -118,8 +118,10 @@
     return decision.marketing === true;
   }
 
+  // Each store is cleaned inside its own failure boundary: a broken cookie
+  // jar must not leave local or session storage behind.
   function clearMarketingStorage() {
-    clearGoogleCookies();
+    try { clearGoogleCookies(); } catch (_) { /* cookie cleanup unavailable */ }
     GOOGLE_LOCAL.forEach(function (key) { try { localStorage.removeItem(key); } catch (_) { /* unavailable */ } });
     try { sessionStorage.removeItem(LEAD_KEY); } catch (_) { /* unavailable */ }
   }
@@ -285,7 +287,9 @@
     wireControls();
     if (!tagId) return;
     var decision = decide({ stored: readCookie(), now: Date.now() / 1000, signal: signalActive(), bot: isBot() });
-    if (decision.persist === "refuse") { writeCookie(false); clearMarketingStorage(); }
+    // A signal-driven refusal goes through the same verified path as an
+    // explicit withdrawal, so it outlives a rejected cookie write.
+    if (decision.persist === "refuse") withdraw();
     if (decision.marketing) loadGoogle();
     if (decision.prompt) renderBar();
   }

@@ -57,6 +57,8 @@ assert.ok(/if \(googleLoaded \|\| !tagId \|\| !authorized\(\)\) return;/.test(so
 assert.ok(/if \(revoked \|\| sessionRevoked\(\)\) return false;/.test(source), "an in-page or session revocation outranks a surviving grant");
 assert.ok(/if \(googleLoaded && persisted\) location\.reload\(\);/.test(source), "withdrawal reloads only once the refusal is persisted");
 assert.ok(/try \{ raw = document\.cookie; \} catch/.test(source), "cookie reads are exception-safe");
+assert.ok(/try \{ clearGoogleCookies\(\); \} catch/.test(source), "cookie cleanup has its own failure boundary");
+assert.ok(/if \(decision\.persist === "refuse"\) withdraw\(\);/.test(source), "signal-driven refusal uses the verified withdrawal path");
 assert.ok(!/<script/.test(source), "no inline script markup");
 
 console.log("consent policy: ok");

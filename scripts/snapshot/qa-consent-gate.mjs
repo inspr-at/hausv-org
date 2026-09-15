@@ -243,6 +243,61 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await ctx.close();
 }
 
+// 5f. Throwing cookie access after acceptance: withdrawal still clears local and session storage and closes the next page.
+{
+  const { ctx, page, requests } = await open();
+  // Gated by a session flag so the same tab can flip into the failure mode later.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('qa_cookie_throw') === '1') {
+      Object.defineProperty(document, 'cookie', { configurable: true, get() { throw new Error('cookie jar unavailable'); }, set() { throw new Error('cookie jar unavailable'); } });
+    }
+  });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Akzeptieren' }).click();
+  await page.waitForTimeout(500);
+  check('throwing-after-accept setup: tag loaded once', tagLoads(requests).length === 1);
+  await page.evaluate(() => {
+    localStorage.setItem('_gcl_ls', 'seeded');
+    sessionStorage.setItem('hausv_ads_lead_fired', '1');
+    sessionStorage.setItem('qa_cookie_throw', '1');
+    Object.defineProperty(document, 'cookie', { configurable: true, get() { throw new Error('cookie jar unavailable'); }, set() { throw new Error('cookie jar unavailable'); } });
+  });
+  const before = requests.length;
+  await page.locator('[data-consent-open]').first().click();
+  await page.waitForSelector('dialog.hv-consent-sheet[open]');
+  await page.locator('#hv-consent-marketing').uncheck();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(500);
+  const state = await page.evaluate(() => [localStorage.getItem('_gcl_ls'), sessionStorage.getItem('hausv_ads_lead_fired'), sessionStorage.getItem('hausv_consent_revoked')]);
+  check('throwing cookie jar: withdrawal still clears local and session storage and records the revocation', state[0] === null && state[1] === null && state[2] === '1', JSON.stringify(state));
+  check('throwing cookie jar: no page error during withdrawal', errors.length === 0, errors.join(' | '));
+  await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
+  check('throwing cookie jar: the next page loads nothing from Google', googleHits(requests.slice(before)).length === 0 && errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+// 5g. Signal refusal with rejected cookie writes, then the signal disappears: the superseded grant must stay dead.
+{
+  const { ctx, page, requests } = await open();
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('qa_gpc_off') !== '1') {
+      Object.defineProperty(navigator, 'globalPrivacyControl', { configurable: true, get: () => true });
+    }
+    const desc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
+    Object.defineProperty(document, 'cookie', { configurable: true, get() { return desc.get.call(document); }, set(v) { if (!String(v).startsWith('hausv_consent=')) desc.set.call(document, v); } });
+  });
+  await ctx.addCookies([{ name: 'hausv_consent', value: `v1%3Br%3D1%3Bm%3D1%3Bt%3D${Math.floor(Date.now() / 1000)}`, url: baseURL }]);
+  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  check('signal with rejected writes: nothing loads and a session revocation is recorded', googleHits(requests).length === 0 && (await page.evaluate(() => sessionStorage.getItem('hausv_consent_revoked'))) === '1');
+  await page.evaluate(() => sessionStorage.setItem('qa_gpc_off', '1'));
+  await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
+  check('after the signal disappears the superseded grant still loads nothing', googleHits(requests).length === 0 && (await page.evaluate(() => navigator.globalPrivacyControl)) !== true, googleHits(requests).join(','));
+  await ctx.close();
+}
+
 // 6. Bots (headless UA): no bar, no Google, nothing stored.
 {
   const { ctx, page, requests } = await open({ bot: true });
