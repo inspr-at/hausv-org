@@ -213,7 +213,7 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await page.waitForTimeout(500);
   check('rejected cookie writes: accept loads nothing and stores nothing', googleHits(requests).length === 0 && !(await consentCookie(ctx)));
   await page.reload({ waitUntil: 'networkidle' });
-  check('rejected cookie writes: the bar returns on reload', await page.locator('.ic-bar').isVisible());
+  check('rejected cookie writes: session refusal survives reload', !(await page.locator('.ic-bar').isVisible()) && (await page.evaluate(() => sessionStorage.getItem('hausv_consent_revoked'))) === '1' && googleHits(requests).length === 0);
   await ctx.close();
 }
 
@@ -310,6 +310,50 @@ const layerOf = (page) => page.evaluate(() => (window.dataLayer || []).map((a) =
   await page.evaluate(() => sessionStorage.setItem('qa_gpc_off', '1'));
   await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
   check('after the signal disappears the superseded grant still loads nothing', googleHits(requests).length === 0 && (await page.evaluate(() => navigator.globalPrivacyControl)) !== true, googleHits(requests).join(','));
+  await ctx.close();
+}
+
+// 5h. Both refusal stores fail after acceptance: the reload carries the revocation marker and the next page loads nothing.
+{
+  const { ctx, page, requests } = await open();
+  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Akzeptieren' }).click();
+  await page.waitForTimeout(500);
+  check('marker setup: tag loaded once', tagLoads(requests).length === 1);
+  await page.evaluate(() => {
+    const desc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
+    Object.defineProperty(document, 'cookie', { configurable: true, get() { return desc.get.call(document); }, set(v) { if (!String(v).startsWith('hausv_consent=')) desc.set.call(document, v); } });
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('hausv_consent')) throw new Error('blocked'); return set.call(this, k, v); };
+  });
+  const before = requests.length;
+  await page.locator('[data-consent-open]').first().click();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').uncheck();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(500);
+  check('both stores blocked: the reload carried the revocation marker', page.url().includes('#consent-revoked'), page.url());
+  check('both stores blocked: nothing loads on the marked document', googleHits(requests.slice(before)).length === 0);
+  await page.goto(`${baseURL}/impressum`, { waitUntil: 'networkidle' });
+  check('after the marker the refusal is stored and the next page loads nothing', googleHits(requests.slice(before)).length === 0 && (await consentCookie(ctx))?.value.includes(REFUSED) === true);
+  await ctx.close();
+}
+// 5i. Google's domain cookie is cleared on withdrawal too
+{
+  const { ctx, page } = await open();
+  await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Akzeptieren' }).click();
+  await page.waitForTimeout(500);
+  const host = new URL(baseURL).hostname;
+  await ctx.addCookies([{ name: '_gcl_au', value: 'host', url: baseURL }, { name: '_gcl_aw', value: 'domain', domain: '.' + host, path: '/' }]);
+  await page.locator('[data-consent-open]').first().click();
+  await page.waitForSelector('dialog.ic-sheet[open]');
+  await page.locator('#ic-cat-marketing').uncheck();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.waitForLoadState('networkidle');
+  const left = (await ctx.cookies(baseURL)).filter((k) => /^_gcl_/.test(k.name)).map((k) => k.name + "@" + k.domain);
+  check('withdrawal clears host-only and domain Google cookies', left.length === 0, left.join(','));
   await ctx.close();
 }
 

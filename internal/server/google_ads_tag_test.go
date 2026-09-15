@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +31,11 @@ func TestVendoredConsentGateIsPinned(t *testing.T) {
 		if got := hex.EncodeToString(sum[:]); got != want {
 			t.Fatalf("%s drifted from the pinned inspr-modules bytes: %s != %s (re-copy from doctrine/packages/consent-gate and re-pin)", name, got, want)
 		}
-		if upstream, err := os.ReadFile(filepath.Join("..", "..", "doctrine", "packages", "consent-gate", name)); err == nil && string(upstream) != string(raw) {
+		upstream, err := os.ReadFile(filepath.Join("..", "..", "doctrine", "packages", "consent-gate", name))
+		if err != nil {
+			t.Fatalf("doctrine submodule not checked out (git submodule update --init -- doctrine): %v", err)
+		}
+		if string(upstream) != string(raw) {
 			t.Fatalf("%s differs from doctrine/packages/consent-gate/%s", name, name)
 		}
 	}
@@ -180,6 +185,32 @@ func TestGoogleAdsTagIsConsentGatedAndScopedToPublicPages(t *testing.T) {
 				t.Fatalf("%s must be gone", gone)
 			}
 		}
+	})
+
+	t.Run("the login response after a demo login request carries no conversion trigger", func(t *testing.T) {
+		const email = "manager@example.com"
+		a := newTestPortalApp(t, userProfile{
+			Email: email, FirstName: "Vera", LastName: "Verwaltung", Role: roleManager,
+			Tenants: []string{"demo"}, TenantMemberships: map[string]tenantMembership{"demo": {Role: roleManager}},
+			AuthMethods: defaultAuthMethods(),
+		})
+		a.localDevLogin = false
+		a.demoLogin = true
+		a.demoLoginCode = "musterstadt-2026"
+		a.googleAdsTagID = "AW-18425188397"
+		a.googleAdsLeadConversion = "AW-18425188397/sEB6CJKVjvEcEK2g6NFE"
+		values := url.Values{"email": {email}, "access_code": {"musterstadt-2026"}}
+		req := httptest.NewRequest(http.MethodPost, "http://hausv.org/demo/auth/request", strings.NewReader(values.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Origin", "http://hausv.org")
+		rr := httptest.NewRecorder()
+		a.handler().ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `class="dev-link"`) {
+			t.Fatalf("demo login request: %d", rr.Code)
+		}
+		body := rr.Body.String()
+		mustContain(t, body, "login response", `data-consent-manifest="#consent-manifest"`, `data-consent-fire=""`)
+		mustNotContain(t, body, "login response", `data-consent-fire="google-ads"`, "googletagmanager")
 	})
 
 	t.Run("manifest omits the conversion without a configured lead conversion", func(t *testing.T) {

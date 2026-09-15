@@ -177,18 +177,16 @@ func (a *app) requestLogin(w http.ResponseWriter, r *http.Request) {
 	if devLink {
 		copy := a.publicHomeCopy(tenant.Slug)
 		a.render(w, "home", map[string]any{
-			"Title":            tenant.Address + " · Hausportal",
-			"Tenant":           tenant,
-			"HouseName":        houseDisplayName(tenant),
-			"Email":            email,
-			"Sent":             true,
-			"Expired":          false,
-			"MailConfigured":   false,
-			"DevLoginLink":     link,
-			"DemoLoginEnabled": a.demoLogin,
-			"GoogleAdsTagID":   a.googleAdsTagID,
-			// The page after a successful demo login request is the lead conversion.
-			"GoogleAdsConversion": a.googleAdsLeadConversion,
+			"Title":               tenant.Address + " · Hausportal",
+			"Tenant":              tenant,
+			"HouseName":           houseDisplayName(tenant),
+			"Email":               email,
+			"Sent":                true,
+			"Expired":             false,
+			"MailConfigured":      false,
+			"DevLoginLink":        link,
+			"DemoLoginEnabled":    a.demoLogin,
+			"GoogleAdsTagID":      a.googleAdsTagID,
 			"DemoCodeWrong":       false,
 			"Denied":              false,
 			"OIDCConfigured":      a.oidc.Configured(),

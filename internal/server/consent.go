@@ -47,8 +47,11 @@ func (a *app) consentManifest() template.JS {
 			"category": "marketing",
 			"provider": "Google Ireland Limited",
 			"purposes": []string{"Conversion-Messung", "Zuordnung der Anzeige zur Anfrage"},
+			// Google may set its cookies host-only or on the domain; both
+			// forms are declared so withdrawal clears both (scope = this host).
 			"storage": []map[string]any{
 				{"kind": "cookie", "name": "_gcl_*", "days": 90},
+				{"kind": "cookie", "name": "_gcl_*", "days": 90, "domain": scope, "path": "/"},
 				{"kind": "local", "name": "_gcl_ls"},
 			},
 			"destination": destination,
