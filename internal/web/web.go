@@ -124,6 +124,30 @@ const PageTemplates = `
 </svg>
 {{end}}
 {{end}}
+{{define "consentGate"}}{{if .GoogleAdsTagID}}
+  <!-- Consent gate (HAUSV-742): the Google tag loads only after "marketing" was granted; the bootstrap is self-hosted so the CSP needs no inline script -->
+  <script src="/assets/consent.js?v={{.AssetVersion}}" defer data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
+{{end}}{{end}}
+{{define "consentControl"}}{{if .GoogleAdsTagID}}<button type="button" class="hv-consent-control" data-consent-open>Privatsphäre</button>{{end}}{{end}}
+{{define "consentStyles"}}{{if .GoogleAdsTagID}}
+    /* Consent bar and sheet (HAUSV-742): non-modal, both first-layer choices identical, design tokens only. */
+    .hv-consent { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 16px 18px; font-family: var(--font-sans); font-size: 15px; line-height: 1.5; z-index: 60; }
+    @media (prefers-reduced-motion: no-preference) { .hv-consent { animation: hv-consent-in .25s ease-out; } @keyframes hv-consent-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } } }
+    .hv-consent-text { margin: 0 0 12px; }
+    .hv-consent-text a, .hv-consent-mini a { color: var(--leaf); }
+    .hv-consent-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .hv-consent-btn { appearance: none; font: inherit; font-weight: 700; color: var(--ink); background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 18px; min-width: 140px; cursor: pointer; }
+    .hv-consent-btn:hover { background: var(--panel-soft); }
+    .hv-consent-link, .hv-consent-control { appearance: none; font: inherit; color: var(--leaf); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
+    .hv-consent-btn:focus-visible, .hv-consent-link:focus-visible, .hv-consent-control:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+    .hv-consent-sheet { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); color: var(--ink); padding: 22px 24px; width: min(560px, calc(100% - 32px)); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; box-shadow: var(--shadow-dialog); }
+    .hv-consent-sheet::backdrop { background: rgba(32,37,31,.45); }
+    .hv-consent-sheet h2 { margin: 0 0 8px; font-family: var(--font-serif); font-size: 26px; }
+    .hv-consent-row { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 10px; align-items: start; margin: 12px 0; }
+    .hv-consent-row input { margin: 3px 0 0; width: 18px; height: 18px; }
+    .hv-consent-mini { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+    @media (max-width: 620px) { .hv-consent { bottom: 8px; width: calc(100% - 16px); } .hv-consent-btn { flex: 1 1 auto; } }
+{{end}}{{end}}
 {{define "home"}}
 <!doctype html>
 <html lang="de">
@@ -134,17 +158,14 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/home.js?v={{.AssetVersion}}" defer></script>
-{{if .GoogleAdsTagID}}
-  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
-  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
-{{end}}
+{{template "consentGate" .}}
   <style>
     :root {
       color-scheme: light;
 {{template "designTokens" .}}
     }
     * { box-sizing: border-box; }
+{{template "consentStyles" .}}
     body { margin: 0; color: var(--ink); background: var(--paper); }
     /* Accessibility convention: all keyboard-reachable controls keep a visible focus ring. */
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
@@ -327,7 +348,7 @@ const PageTemplates = `
     </main>
     <footer>
       <span>{{.Tenant.Address}} · Privat für eingeladene Personen</span>
-      <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a><span class="version">{{.VersionHTML}}</span></span>
+      <span class="footer-links"><a href="/datenschutz">Datenschutz</a><a href="https://hausv.org/#impressum">Impressum</a>{{template "consentControl" .}}<span class="version">{{.VersionHTML}}</span></span>
     </footer>
   </section>
 </body>
@@ -345,11 +366,7 @@ const PageTemplates = `
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.svg">
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
-{{if .GoogleAdsTagID}}
-  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
-  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
-{{end}}
+{{template "consentGate" .}}
   <!-- Rotating 3D brand mark. ESM (module scripts defer by default); it mounts
        only when WebGL is present, so the inline SVG below stays the fallback. -->
   <script type="module" src="/assets/hausv-mark-3d.js?v={{.AssetVersion}}"></script>
@@ -359,6 +376,7 @@ const PageTemplates = `
 {{template "designTokens" .}}
     }
     * { box-sizing: border-box; }
+{{template "consentStyles" .}}
     html { max-width: 100%; overflow-x: clip; scroll-behavior: smooth; }
     body { max-width: 100%; overflow-x: clip; margin: 0; color: var(--ink); background: var(--panel); font-family: var(--font-sans); }
     /* The header is fixed chrome, so an anchor jump would otherwise park the
@@ -809,7 +827,7 @@ const PageTemplates = `
   </section>
 
   <footer>
-    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a> · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.VersionHTML}}</span></div>
+    <div><span>hausv.org · sicher, fair und datensparsam</span><span><a href="/datenschutz">Datenschutz</a> · <a href="#impressum">Impressum</a>{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}} · <a class="js-mail-link" href="#kontakt" data-mail-local="{{.ContactLocal}}" data-mail-domain="{{.ContactDomain}}">{{.ContactDisplay}}</a> · {{.VersionHTML}}</span></div>
   </footer>
 </body>
 </html>
@@ -892,6 +910,7 @@ const PageTemplates = `
     .home-connector-note { color: var(--muted); font-size: 13px; line-height: 1.5; }
     .home-start-foot { padding: 20px 0 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
     @media (max-width: 760px) { .home-start-main { grid-template-columns: minmax(0,1fr); padding-top: 24px; } .home-start-copy h1 { max-width: none; } .home-connector-facts { grid-template-columns: minmax(0,1fr); } }
+{{template "consentStyles" .}}
 {{end}}
 
 {{define "homeStart"}}
@@ -904,11 +923,7 @@ const PageTemplates = `
   <meta name="description" content="HAUSV Home sicher und in wenigen Schritten vorbereiten.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
-{{if .GoogleAdsTagID}}
-  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
-  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
-{{end}}
+{{template "consentGate" .}}
 <meta name="hausv-build" content="{{.AppVersion}}">
 <script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
@@ -940,7 +955,7 @@ const PageTemplates = `
         {{end}}
       </section>
     </main>
-    <footer class="home-start-foot">HAUSV Home · datensparsam · zunächst nur beobachten</footer>
+    <footer class="home-start-foot">HAUSV Home · datensparsam · zunächst nur beobachten{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
   </div>
 </body>
 </html>
@@ -955,11 +970,7 @@ const PageTemplates = `
   <title>{{.Title}} · hausv.org</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>{{template "homeStartStyles" .}}</style>
-{{if .GoogleAdsTagID}}
-  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
-  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
-{{end}}
+{{template "consentGate" .}}
 <meta name="hausv-build" content="{{.AppVersion}}">
 <script type="module" src="/assets/product-version.js?v={{.AssetVersion}}"></script>
 </head>
@@ -1004,7 +1015,7 @@ const PageTemplates = `
         <div class="home-help"><strong>Brauchen Sie Hilfe?</strong> Sie können diesen Schritt überspringen und Ihr Portal bereits verwenden. Für die Verbindung braucht die unterstützende Person nur Zugriff auf den Computer Ihres Energiesystems, niemals Ihr HAUSV-Passwort.</div>
       </section>
     </main>
-    <footer class="home-start-foot">HAUSV Home · keine Geheimnisse im Portal · keine Steuerung ohne Freigabe</footer>
+    <footer class="home-start-foot">HAUSV Home · keine Geheimnisse im Portal · keine Steuerung ohne Freigabe{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
   </div>
 </body>
 </html>
@@ -1022,6 +1033,7 @@ const PageTemplates = `
   <style>
     :root { color-scheme: light; {{template "designTokens" .}} }
     * { box-sizing: border-box; }
+{{template "consentStyles" .}}
     body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
     a { color: var(--leaf); }
     :where(a):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
@@ -1066,13 +1078,9 @@ const PageTemplates = `
 
     <p class="mini">Betreiber-Selbstprüfung vom {{.LegalReviewDate}} anhand von <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a>, <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a> und der <a href="https://www.dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>. Keine externe Zertifizierung oder Rechtsberatung. Details zum Datenschutz in der <a href="/datenschutz">Datenschutzinformation</a>.</p>
   </main>
-  <footer>hausv.org · <a href="/datenschutz">Datenschutz</a> · <a href="/">Startseite</a></footer>
+  <footer>hausv.org · <a href="/datenschutz">Datenschutz</a> · <a href="/">Startseite</a>{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
   <script src="/assets/landing.js?v={{.AssetVersion}}" defer></script>
-{{if .GoogleAdsTagID}}
-  <!-- Google tag (gtag.js): bootstrap is self-hosted so the CSP needs no inline script -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{.GoogleAdsTagID}}"></script>
-  <script src="/assets/google-ads.js?v={{.AssetVersion}}" data-tag-id="{{.GoogleAdsTagID}}"{{if .GoogleAdsConversion}} data-lead-conversion="{{.GoogleAdsConversion}}"{{end}}></script>
-{{end}}
+{{template "consentGate" .}}
 </body>
 </html>
 {{end}}
@@ -1088,6 +1096,7 @@ const PageTemplates = `
   <style>
     :root { color-scheme: light; {{template "designTokens" .}} }
     * { box-sizing: border-box; }
+{{template "consentStyles" .}}
     body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
     a { color: var(--leaf); }
     :where(a):focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
@@ -1167,17 +1176,29 @@ const PageTemplates = `
       <li>{{.WebAccessNotice}}</li>
       <li>{{.BackupStorageNotice}}</li>
       <li>{{.MailDeliveryNotice}}</li>
-      <li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>
+      {{if .GoogleAdsTagID}}<li>Es gibt keine Analyse-Skripte und keine extern geladenen Web-Schriften. Auf den öffentlichen Seiten dieses Hosts wird Google Ads ausschließlich nach Ihrer Einwilligung geladen (siehe „Werbe-Cookies“).</li>{{else}}<li>Es gibt keine Werbung, keine Analyse-Skripte und keine extern geladenen Web-Schriften.</li>{{end}}
       <li>Die festen Kartenausschnitte auf der Anmeldeseite und in der Portalnavigation nutzen OpenStreetMap-Kartenkacheln. hausv.org ruft ausschließlich die für das konfigurierte Haus benötigten Kacheln serverseitig ab und speichert sie mindestens sieben Tage zwischen; OpenStreetMap erhält dabei weder die IP-Adresse noch Anmelde- oder Kontodaten der Portalbesuchenden. In den Gebäudeeinstellungen wird eine eingegebene Hausadresse nur nach einem bewussten Klick serverseitig an den OpenStreetMap-Suchdienst Nominatim übermittelt. Erst beim bewussten Öffnen des Kartenlinks baut der Browser eine direkte Verbindung zu OpenStreetMap auf.</li>
       {{if .EnergyProfileExists}}<li>Home-Assistant-Endpunkt und Zugangstoken bleiben in der verschlüsselten Host-Konfiguration. Sie werden weder in der Fachdatenbank noch im Energieexport gespeichert oder angezeigt.</li>{{end}}
     </ul>
 
+    {{if .GoogleAdsTagID}}
+    <h2>Werbe-Cookies (Google Ads) – nur mit Einwilligung</h2>
+    <p>Die öffentlichen Seiten dieses Hosts (Startseite, Impressum, HAUSV-Home-Einrichtung, Anmeldeseite) können den Google-Ads-Tag laden, damit erkennbar ist, ob eine Anzeige zu einer Anfrage geführt hat. Das passiert erst, nachdem Sie in der Einwilligungsleiste „Akzeptieren“ gewählt haben. Vorher wird weder ein Skript von Google geladen noch ein Cookie gesetzt, und es wird kein Signal an Google gesendet (Consent Mode v2, Basismodus).</p>
+    <dl>
+      <dt>Anbieter</dt><dd>Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland; Daten können an Google LLC in die USA übertragen werden (EU-US Data Privacy Framework beziehungsweise Standardvertragsklauseln).</dd>
+      <dt>Zweck</dt><dd>Messung, ob eine über eine Anzeige begonnene Anfrage auf <code>/start</code> abgeschlossen wurde (Conversion), und Zuordnung der Klick-ID aus der Anzeige.</dd>
+      <dt>Cookies und Speicher</dt><dd><code>_gcl_au</code>, <code>_gcl_aw</code>, <code>_gcl_gs</code> und verwandte <code>_gcl_*</code>-Cookies sowie der Eintrag <code>_gcl_ls</code> im lokalen Browserspeicher, gesetzt nur auf diesem Host, bis zu 90 Tage; ein Sitzungsmerker verhindert, dass dieselbe Anfrage doppelt gezählt wird. Personalisierte Werbung bleibt ausgeschaltet (Consent Mode: <code>ad_personalization</code> verweigert).</dd>
+      <dt>Rechtsgrundlage</dt><dd>Ihre Einwilligung nach § 165 Abs 3 TKG 2021 und Art. 6 Abs. 1 lit. a DSGVO. Das Ablehnen ist genauso einfach wie das Akzeptieren; ohne Wahl bleibt alles aus.</dd>
+      <dt>Ihre Wahl</dt><dd>Das Cookie <code>hausv_consent</code> merkt sich Ihre Entscheidung für 6 Monate, ohne Kennung. Ein Widerruf ist jederzeit über „Privatsphäre“ in der Fußzeile möglich; dann werden die Google-Cookies und der lokale Speichereintrag dieses Hosts entfernt. Ein aktiviertes Global-Privacy-Control- oder Do-Not-Track-Signal Ihres Browsers gilt als Ablehnung und blendet die Leiste aus.</dd>
+    </dl>
+{{end}}
     <h2>Aufbewahrung</h2>
     <ul>
       <li>Einmalige E-Mail-Anmelde- und Reservierungslinks: 15 Minuten; OIDC-Anmeldevorgänge: 10 Minuten; alle nur einmal nutzbar.</li>
       <li>Unbestätigte HAUSV-Home-Reservierungen: nach 24 Stunden zur Löschung fällig und spätestens im nächsten stündlichen Bereinigungslauf entfernt. Bestätigte Reservierungen: bis zur Aktivierung des angeforderten Bereichs oder bis zum Widerruf beziehungsweise Löschverlangen. Aktivierter Portalpfad, Zuhause-Name und Eigentümer-Mitgliedschaft: bis zur Beendigung beziehungsweise Löschung des privaten Portals.</li>
       <li>Connector-Einmal-Codes: zehn Minuten gültig und nach erfolgreicher Nutzung verworfen. Der abgeleitete Connector-Zugang, seine Statusdaten, der begrenzte Sensorkatalog und die letzten ausgewählten Energiewerte bleiben bis zum Widerruf, zur Löschung des Energieprofils oder zur Löschung des Zuhause-Bereichs gespeichert. Ein Widerruf beendet den Zugang sofort und entfernt Status und Messwertkopie.</li>
       <li>Sitzungscookie: regulär höchstens 30 Tage oder bis zur Abmeldung beziehungsweise Sperre.</li>
+      {{if .GoogleAdsTagID}}<li>Einwilligungs-Cookie <code>hausv_consent</code>: 6 Monate; Google-Ads-Cookies und lokaler Speichereintrag nach Einwilligung: bis zu 90 Tage, beim Widerruf sofort entfernt.</li>{{end}}
       <li>Liegenschaftszugehörigkeit und Dienstleister-Zugriff: bis zum Entzug; der Zugriff endet sofort.</li>
       <li>Gelöschte Anhangdateien: sofort entfernt; leere Löschmarkierung nach einem Jahr.</li>
       <li>Geschlossene Anliegen samt Kommentaren und Anhängen: jährliche Prüfung, regulär Löschung nach {{.ServiceProviderRetentionYears}} Jahren, sofern keine offene Gewährleistungs-, Rechts- oder Dokumentationspflicht entgegensteht.</li>
@@ -1195,7 +1216,8 @@ const PageTemplates = `
     <h2>Stand und Überprüfung</h2>
     <p>Stand: {{.LegalReviewDate}}. Die Selbstprüfung stützt sich auf die <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj" rel="noopener noreferrer">DSGVO</a>, Leitlinien des <a href="https://www.edpb.europa.eu/documents/guideline/guidelines-072020-on-the-concepts-of-controller-and-processor-in-the-gdpr_en" rel="noopener noreferrer">Europäischen Datenschutzausschusses zu Verantwortlichen und Auftragsverarbeitern</a>, Informationen der <a href="https://dsb.gv.at/" rel="noopener noreferrer">Österreichischen Datenschutzbehörde</a>, <a href="https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20001703&Paragraf=5" rel="noopener noreferrer">§ 5 ECG (RIS)</a> und <a href="https://www.usp.gv.at/themen/brancheninformationen/information-und-kommunikation/impressumspflicht-gemaess-para-24-mediengesetz.html" rel="noopener noreferrer">§ 24 MedienG (USP)</a>. Sie ist eine interne Betreiberbewertung anhand verfügbarer Primärquellen – ausdrücklich keine externe Zertifizierung oder Rechtsberatung. Solange kein externer Auditor verfügbar ist, bleibt diese dokumentierte Selbstprüfung der Freigabeweg. Sie wird mindestens jährlich sowie bei neuen Empfängern, Datenarten, Rechtsgrundlagen, Speicherorten oder wesentlichen Produktänderungen erneut durchgeführt. Wenn sich ein hohes, nicht ausreichend gemindertes Risiko zeigt, bleibt die Funktion geschlossen und die Datenschutzbehörde wird nach Art. 36 DSGVO konsultiert.</p>
   </main>
-  <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb</footer>
+  <footer>hausv.org · Datenschutzinformation für den Pilotbetrieb{{if .GoogleAdsTagID}} · {{template "consentControl" .}}{{end}}</footer>
+{{template "consentGate" .}}
 </body>
 </html>
 {{end}}

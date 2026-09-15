@@ -46,14 +46,21 @@ func (a *app) homeStartPage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	sent := r.URL.Query().Get("sent") == "1"
+	// The page a visitor reaches after submitting the landing form is the
+	// Google Ads "lead form" conversion (demo host only; empty = off). It is
+	// configured only on that "sent" view, never on a plain visit of /start,
+	// and fires only after the consent gate granted marketing (HAUSV-742).
+	conversion := ""
+	if sent {
+		conversion = a.googleAdsLeadConversion
+	}
 	a.render(w, "homeStart", map[string]any{
-		"Title":   "HAUSV Home einrichten",
-		"Sent":    r.URL.Query().Get("sent") == "1",
-		"Expired": r.URL.Query().Get("link") == "expired",
-		// The page a visitor reaches after submitting the landing form is the
-		// Google Ads "lead form" conversion (demo host only; empty = off).
+		"Title":               "HAUSV Home einrichten",
+		"Sent":                sent,
+		"Expired":             r.URL.Query().Get("link") == "expired",
 		"GoogleAdsTagID":      a.googleAdsTagID,
-		"GoogleAdsConversion": a.googleAdsLeadConversion,
+		"GoogleAdsConversion": conversion,
 	})
 }
 

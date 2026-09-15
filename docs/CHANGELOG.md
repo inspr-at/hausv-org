@@ -2,6 +2,14 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260915100741.0.0] - 2026-09-15
+
+### Verbessert
+
+- Auf dem öffentlichen Demo-Host lädt Google Ads erst nach Ihrer Zustimmung. Die Einwilligungsleiste bietet Ablehnen und Akzeptieren gleichwertig an; Einstellungen und Widerruf sind über „Privatsphäre“ in der Fußzeile jederzeit möglich.
+- Ihre Wahl wird sechs Monate ohne Kennung gemerkt. Ein aktiviertes Global-Privacy-Control- oder Do-Not-Track-Signal gilt als Ablehnung und blendet die Leiste aus.
+- Die Datenschutzinformation beschreibt Google Ads, die gesetzten Cookies, Laufzeiten und die Rechtsgrundlage. Alle anderen Instanzen bleiben wie bisher ohne Werbung und ohne Analyse-Skripte.
+
 ## [260915071943.0.0] - 2026-09-15
 
 ### Verbessert

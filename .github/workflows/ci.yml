@@ -153,6 +153,9 @@ jobs:
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
 
+      - name: Check consent-gate policy (HAUSV-742)
+        run: node scripts/test-consent-policy.mjs
+
       - name: Install browser QA dependencies
         run: |
           npm --prefix scripts/snapshot ci --ignore-scripts --no-audit --no-fund
@@ -168,6 +171,12 @@ jobs:
           HV_QA_HEADLESS: "true"
           HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
         run: bash scripts/qa-main-flows.sh
+
+      - name: Run consent-gate browser suite (HAUSV-742)
+        env:
+          CI: "true"
+          HV_QA_ARTIFACT_DIR: ${{ github.workspace }}/artifacts/browser-role-qa
+        run: bash scripts/qa-consent-gate.sh
 
       - name: Upload browser failure evidence
         if: failure()
