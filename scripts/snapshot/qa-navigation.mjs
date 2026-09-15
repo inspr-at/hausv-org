@@ -57,7 +57,8 @@ async function measure(page, width, sidebarWidth, label) {
     return {
       box: { x: rect.x, width: rect.width, paddingLeft: style.paddingLeft, paddingRight: style.paddingRight },
       organisation: nav.dataset.twoLevel === 'true',
-      navTopGap: nav.getBoundingClientRect().top - rect.top + surface.scrollTop - parseFloat(style.paddingTop),
+      mapTopGap: surface.querySelector('.side-map-hero').getBoundingClientRect().top - rect.top + surface.scrollTop,
+      navTopGap: nav.getBoundingClientRect().top - surface.querySelector('.side-map-hero').getBoundingClientRect().bottom - parseFloat(getComputedStyle(surface.querySelector('.side-map-hero')).marginBottom),
       houseLabelGap: parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).marginTop) + parseFloat(getComputedStyle(nav.querySelector('.nav-house-label')).paddingTop),
       blocks: blocks.map(el => ({ name: el.dataset.navigationBlock, visible: visible(el), className: el.dataset.navigationBlock === "map" ? "side-map-hero" : el.className })),
       links: links.map(el => ({ href: el.getAttribute('href'), label: el.querySelector('.nav-label')?.textContent.trim() })),
@@ -90,7 +91,8 @@ async function measure(page, width, sidebarWidth, label) {
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
   assert.equal(Math.round(result.barHeight), width <= 760 ? 148 : width <= 1100 ? 116 : 72, `${label}: context height`);
   assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : ['map','house-navigation','release'], `${label}: block order`);
-  // The phone drawer carries its own head above the navigation; the gap rule is a desktop-sidebar rule.
+  assert(Math.abs(result.mapTopGap) < 1, `${label}: map starts flush at navigation surface edge`);
+  // Without organisation context, navigation follows the map's normal bottom margin.
   if (!result.organisation && width > 760) {
     assert(Math.abs(result.navTopGap) < 1, `${label}: no empty organisation header gap`);
     assert.equal(result.houseLabelGap, 0, `${label}: house label starts at usual surface padding`);
