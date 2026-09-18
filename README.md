@@ -10,6 +10,8 @@ HAUSV is an open source portal for property communication, administration, and e
 | **HAUSV Home** | Hosted | 12 months free, then 12 EUR per year | Email |
 | **HAUSV Professional** | Hosted or self-hosted | First 25 units free, then 3 EUR per additional unit and month | Email and phone |
 
+Self-host (Free and Professional) uses **PostgreSQL**, the same engine as the hosted product. SQLite (`hausv.db`) was the earlier local and demo store; it is not a supported product backend. An existing file can be copied once with `hausv-org migrate-data`. Finishing an old instance is a straightforward one-off — a current coding agent is usually enough — not an ongoing dual-database edition.
+
 ## Features
 
 - Central overview of tasks, appointments, announcements, open issues, and energy status
@@ -27,7 +29,7 @@ HAUSV is an open source portal for property communication, administration, and e
 
 HAUSV is a communication, administration and energy management portal. Annual-statement calculations are working drafts based on the period’s configured cost types, allocation keys, unit bases, confirmed receipts and recorded prepayments. Each successful run saves all unit balances and its input snapshot; missing keys, receipts, original files, prepayments or required measurements block the entire run. Earlier runs remain unchanged when inputs are corrected. Each run keeps only the checked consumption vector and the two boundary facts per unit; interior readings are checked for resets in one streaming scan and are not copied into every run. These calculations do not constitute a legal assessment under Austrian WEG/MRG.
 
-The management page is `/app/settings/annual-statement`; `POST /app/settings/annual-statement/runs` calculates the selected `year` using stored data only. Every allocatable cost type requires a confirmed receipt. An explicit zero prepayment is accepted, while a missing row is not. Nutzwert requires a complete total of 1,000,000 ppm; cents are distributed per cost type by largest remainder, with unit-ID order breaking ties. SQLite and PostgreSQL persist each run with a calculation version and input hash.
+The management page is `/app/settings/annual-statement`; `POST /app/settings/annual-statement/runs` calculates the selected `year` using stored data only. Every allocatable cost type requires a confirmed receipt. An explicit zero prepayment is accepted, while a missing row is not. Nutzwert requires a complete total of 1,000,000 ppm; cents are distributed per cost type by largest remainder, with unit-ID order breaking ties. PostgreSQL persists each run with a calculation version and input hash.
 
 Stored runs offer German PDF working drafts per unit and owner/tenant party at `GET /app/settings/annual-statement/runs/{runID}/pdf?unit=...&party=...`; omitting both selectors downloads every party's pages in one PDF. The management capability is required. Downloads read the immutable run only, produce repeatable bytes and create no document record or audit entry. New runs snapshot organisation/building contact details and explicitly imported party names/addresses alongside the owner/renter email assignments. The CSV accepts optional `Name` and `Anschrift` columns; missing addresses are printed as `Anschrift fehlt`. Older runs without recipients require a new run; a bulk export never silently skips a unit. Each page says `Entwurf zur Prüfung — keine Rechtsauskunft nach WEG/MRG`.
 
@@ -40,6 +42,7 @@ HAUSV does not replace property accounting software or issue bookkeeping records
 Requirements:
 
 - Go 1.26.6
+- Docker (PostgreSQL for `scripts/dev.sh` and browser QA), or `DATABASE_URL` pointing at an existing database
 - A local `.env.local` file for development settings
 
 Run the application:
@@ -60,8 +63,9 @@ automatic rebuilds for `.go` and `.templ` files), run:
 scripts/dev.sh
 ```
 
-It opens `http://localhost:8098` with local-development login enabled and
-removes its temporary data when stopped with Ctrl-C. Use another port with
+It starts a throwaway PostgreSQL, opens `http://localhost:8098` with
+local-development login enabled, and removes its temporary data when stopped
+with Ctrl-C. Use another port with
 `HV_DEV_PORT=8100 scripts/dev.sh`. If [`templ`](https://templ.guide/) is
 installed, its generator runs in watch mode too; without it the script keeps
 running and reports that generation is unavailable.

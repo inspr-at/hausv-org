@@ -223,11 +223,10 @@ async function createHandover() {
 }
 
 function installFixtureTokens(id, tokens) {
-  const dbPath = process.env.DB_PATH?.trim() || join(process.env.HV_DATA || '', 'hausv.db');
-  if (!dbPath || !existsSync(dbPath)) fail(`Fixture-Datenbank fehlt: ${dbPath}`);
   const helper = fileURLToPath(new URL('./set-handover-fixture-tokens.py', import.meta.url));
-  const result = spawnSync('python3', [helper, dbPath, id], {
+  const result = spawnSync('python3', [helper, id], {
     encoding: 'utf8',
+    env: process.env,
     input: `${JSON.stringify({ tokens })}\n`,
   });
   if (result.status !== 0 || result.stdout.trim() !== '1') {

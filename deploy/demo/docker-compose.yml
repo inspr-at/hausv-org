@@ -1,4 +1,20 @@
 services:
+  hausv-demo-postgres:
+    # Same pin as CI. Demo-only credentials; not a production secret.
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    environment:
+      POSTGRES_DB: hausv
+      POSTGRES_USER: hausv
+      POSTGRES_PASSWORD: hausv-demo
+    volumes:
+      - hausv-demo-pg:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hausv -d hausv"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   hausv-demo:
     build:
       context: ../..
@@ -18,6 +34,9 @@ services:
       - ./demo.env
       # On a NixOS host the secrets are an agenix file; point the variable at it.
       - ${HAUSV_DEMO_SECRETS_FILE:-./secrets.env}
+    depends_on:
+      hausv-demo-postgres:
+        condition: service_healthy
     volumes:
       - hausv-demo-data:/data
       - ../../scripts/demo/seed:/seed:ro
@@ -45,6 +64,7 @@ services:
 
 volumes:
   hausv-demo-data:
+  hausv-demo-pg:
 
 # A pinned subnet makes the proxy's source address (the bridge gateway,
 # first host of the subnet) predictable, so TRUSTED_PROXY_CIDRS can name it

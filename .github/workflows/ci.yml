@@ -14,12 +14,10 @@ jobs:
     env:
       HAUSV_TEST_POSTGRES_DSN: postgres://hausv_ci:hausv_ci@127.0.0.1:5432/hausv_ci?sslmode=disable
       HAUSV_TEST_POSTGRES_REQUIRED: "true"
-      # Selects PostgreSQL for the full race suite below. The explicitly labelled
-      # SQLite store step clears all three variables and runs the same package
-      # separately, so both engines remain required rather than implied.
-      # Without this the two-tenant isolation oracle silently runs on SQLite, where
-      # there is no row-level security to observe — it was measured returning ok in
-      # 0.697s against a dead port, i.e. never dialling at all.
+      # PostgreSQL is the product store (HAUSV-757). Without this the two-tenant
+      # isolation oracle silently runs on SQLite, where there is no row-level
+      # security to observe — it was measured returning ok in 0.697s against a
+      # dead port, i.e. never dialling at all.
       HAUSV_STORE_TEST_POSTGRES: "1"
     services:
       postgres:
@@ -90,15 +88,8 @@ jobs:
       - name: Boot app on PostgreSQL
         run: go test ./internal/server -run '^TestBootsOnPostgres$' -count=1
 
-      - name: Verify dual-engine store CI contract
-        run: go test ./internal/dbtest -run '^TestCIDualEngineStoreContract$' -count=1
-
-      - name: Store suite (SQLite)
-        env:
-          HAUSV_TEST_POSTGRES_DSN: ""
-          HAUSV_TEST_POSTGRES_REQUIRED: ""
-          HAUSV_STORE_TEST_POSTGRES: ""
-        run: go test -race ./internal/store -count=1
+      - name: Verify PostgreSQL store CI contract
+        run: go test ./internal/dbtest -run '^TestCIPostgresStoreContract$' -count=1
 
       - name: Full suite (PostgreSQL)
         run: go test -race ./...
@@ -128,6 +119,23 @@ jobs:
     # The specialist lifecycles and broad role/route matrix must stay in the
     # required gate; a focused energy subset previously hid stale shell flows.
     timeout-minutes: 30
+    env:
+      DB_BACKEND: postgres
+      DATABASE_URL: postgres://hausv:hausv@127.0.0.1:5432/hausv?sslmode=disable
+    services:
+      postgres:
+        image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        env:
+          POSTGRES_DB: hausv
+          POSTGRES_USER: hausv
+          POSTGRES_PASSWORD: hausv
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username hausv --dbname hausv"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -194,6 +202,23 @@ jobs:
     # rather than tight — a timeout here reads as a product failure and costs
     # far more than the minutes it saves.
     timeout-minutes: 25
+    env:
+      DB_BACKEND: postgres
+      DATABASE_URL: postgres://hausv:hausv@127.0.0.1:5432/hausv?sslmode=disable
+    services:
+      postgres:
+        image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        env:
+          POSTGRES_DB: hausv
+          POSTGRES_USER: hausv
+          POSTGRES_PASSWORD: hausv
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username hausv --dbname hausv"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

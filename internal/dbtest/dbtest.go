@@ -1,10 +1,8 @@
-// Package dbtest opens a database for tests against whichever backend is
-// configured, so the same store tests can prove themselves on both engines.
-//
-// Until now every store test opened SQLite directly. That made "the stores work
-// on PostgreSQL" an untested claim: the SQL looked portable, nothing checked it.
-// With HAUSV_TEST_POSTGRES_DSN set, the same tests run against PostgreSQL in an
-// isolated schema; without it they behave exactly as before.
+// Package dbtest opens a database for tests against PostgreSQL when CI (or a
+// developer) sets HAUSV_STORE_TEST_POSTGRES and HAUSV_TEST_POSTGRES_DSN.
+// Without those variables Open still uses an in-process SQLite file so `go test`
+// on a laptop without Docker can run; that path is a test helper, not a product
+// backend (HAUSV-757).
 package dbtest
 
 import (
