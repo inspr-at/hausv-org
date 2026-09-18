@@ -52,7 +52,7 @@ func (s *SQLParkingStore) tenantRef(slug string) (TenantRef, error) {
 	if s == nil || s.db == nil {
 		return TenantRef{}, fmt.Errorf("parking store unavailable")
 	}
-	return newTenantIDCache(s.db.Unscoped("parking tenant_id lookup")).ref(parkingSlug(slug))
+	return newTenantIDCache(s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to")).ref(parkingSlug(slug))
 }
 
 func loadParkingTx(tx *sql.Tx, tenant TenantRef) (ParkingTenantData, error) {
@@ -215,7 +215,7 @@ func (s *SQLParkingStore) ImportParking(src *ParkingStore) error {
 		snapshot[slug] = data
 	}
 	src.mu.Unlock()
-	imports := s.db.Unscoped("boot import of the JSON parking snapshot: it spans every tenant and runs before the first request")
+	imports := s.db.Unscoped("boot import replay of the JSON parking snapshot: it spans every tenant and runs before the first request")
 	var n int
 	if err := imports.QueryRow(`SELECT COUNT(*) FROM parking`).Scan(&n); err != nil {
 		return err

@@ -179,7 +179,8 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 	"handovers": {allowed: []laneClass{laneFor, laneUnscopedOther}, why: randomIDReason + " ConfirmByToken additionally " +
 		"rewrites the handover from its confirmation link, which names a token and no tenant, so that one write is on the maintenance " +
 		"lane for a structural reason: the orphan is reachable there, and the lane will not revert to For(tenant)."},
-	"issues": {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"issues":  {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"parking": {allowed: []laneClass{laneFor}, why: "PRIMARY KEY is tenant_slug and tenant_id is NOT NULL from the first parking migration; there is no orphan generation, so For(tenant) is the live write lane."},
 
 	"home_portals": {allowed: []laneClass{laneUnscopedOther}, why: "Activate is the moment the tenant identity is MINTED: there is no TenantRef " +
 		"before it runs, so its transaction is on the maintenance lane for a structural reason that outlives the flip. The upsert still " +

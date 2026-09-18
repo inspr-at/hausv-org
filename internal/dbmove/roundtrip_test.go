@@ -416,6 +416,7 @@ func seedFull(t *testing.T) *source {
 		if _, err := issues.Create(store.ResidentIssue{TenantSlug: slug, AuthorEmail: "owner@example.com", AuthorName: "Otto", Category: "Sonstiges", LocationType: "Gemeinschaft", Title: "Licht im Stiegenhaus", Body: "Flackert."}); err != nil {
 			t.Fatalf("%s issue 2: %v", slug, err)
 		}
+		must(t, slug+" parking", store.NewSQLParkingStore(src.lanes).SetGridFee(slug, 0.19))
 
 		// integration_imports is written by internal/server's import ledger with
 		// this exact statement shape.
