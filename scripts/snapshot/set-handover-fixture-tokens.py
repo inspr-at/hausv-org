@@ -36,6 +36,7 @@ def sql_literal(value: str) -> str:
 
 
 def run_psql(sql: str) -> str:
+    sql = "SET hausv.cross_tenant = 'on';\n" + sql
     container = os.environ.get("HAUSV_EPHEMERAL_PG_CONTAINER", "").strip()
     if container:
         command = [
