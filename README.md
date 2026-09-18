@@ -12,8 +12,6 @@ HAUSV is an open source portal for property communication, administration, and e
 
 Self-host (Free and Professional) uses **PostgreSQL**, the same engine as the hosted product. SQLite (`hausv.db`) was the earlier local and demo store; it is not a supported product backend. An existing file can be copied once with `hausv-org migrate-data`. Finishing an old instance is a straightforward one-off — a current coding agent is usually enough — not an ongoing dual-database edition.
 
-Self-host (Free and Professional) uses **PostgreSQL**, the same engine as the hosted product. SQLite (`hausv.db`) was the earlier local and demo store; it is not a supported product backend. An existing file can be copied once with `hausv-org migrate-data`. Finishing an old instance is a straightforward one-off — a current coding agent is usually enough — not an ongoing dual-database edition.
-
 ## Features
 
 - Central overview of tasks, appointments, announcements, open issues, and energy status
