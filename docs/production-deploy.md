@@ -205,9 +205,11 @@ HAUSV_DEPLOY_MKTEMP_BIN=/run/current-system/sw/bin/mktemp
 
 ## GHCR authentication
 
-The `hausv-org` GHCR package is private and inherits repository visibility.
-Production deployment pulls the CI-built image from `ghcr.io/inspr-at/hausv-org`
-and requires authentication before every pull.
+The `hausv-org` GHCR package must stay **private even if this git repository
+is public**. GitHub packages inherit repository visibility unless the package
+visibility is set independently — pin the package private before flipping the
+repo. Production pulls `ghcr.io/inspr-at/hausv-org` and requires authentication
+before every pull.
 
 Both `deploy.sh` (remote SSH pull) and `deploy-from-ci-image.sh` (runs on csb1)
 read a token from a file on the target host and fail closed if the file is
@@ -404,7 +406,7 @@ repository:
 ```sh
 HAUSV_OPERATOR_NAME=Example Operator GmbH
 HAUSV_OPERATOR_ADDRESS=Example Street 1, 1010 Vienna, Austria
-HAUSV_PRIMARY_APP_URL=https://hausv.org/demo/
+HAUSV_PRIMARY_APP_URL=https://hausv.agm.ng/
 HAUSV_PROFESSIONAL_SERVICES_NOTICE=Professional service notice
 HAUSV_IDENTITY_STORAGE_NOTICE=Accurate identity and hosting disclosure
 HAUSV_BACKUP_STORAGE_NOTICE=Accurate encrypted backup disclosure

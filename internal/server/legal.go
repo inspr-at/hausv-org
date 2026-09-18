@@ -14,7 +14,7 @@ func platformOperatorAddress() string {
 }
 
 func primaryAppURL() string {
-	return env("HAUSV_PRIMARY_APP_URL", "https://hausv.org/demo/")
+	return env("HAUSV_PRIMARY_APP_URL", "https://hausv.agm.ng/")
 }
 
 func professionalServicesNotice() string {

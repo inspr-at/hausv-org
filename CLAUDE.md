@@ -9,15 +9,18 @@
   ./doctrine submodule; bump with `git submodule update --remote doctrine`.
 
   NOTE ON BUILDS: the submodule is checkout-only and never reaches a built
-  artefact. scripts/deploy.sh ships production via `git archive HEAD`, which
-  silently omits submodule contents, and neither CI nor the Dockerfile checks
-  out submodules recursively. That is fine for docs — nothing in the build
-  reads doctrine — but do not grow a runtime dependency on anything under
-  ./doctrine.
+  artefact. Production on csb1 pulls the CI image from GHCR; it does not
+  `git archive` onto the production host. The demo path on agm1 does use
+  `git archive HEAD`, which silently omits submodule contents. Neither CI
+  nor the Dockerfile checks out submodules recursively. That is fine for
+  docs — nothing in the build reads doctrine — but do not grow a runtime
+  dependency on anything under ./doctrine.
+
+  Studio-only private kernel lives in a local `doctrine-private/` checkout
+  that is gitignored and must not be a submodule of this public tree.
 -->
 
 @./doctrine/docs/AGENTS-KERNEL.md
-@./doctrine-private/docs/AGENTS-KERNEL-PRIVATE.md
 @./AGENTS.md
 
 ## Commands wired in this repo
