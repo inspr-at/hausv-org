@@ -127,18 +127,30 @@ jobs:
         image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
         env:
           POSTGRES_DB: hausv
-          POSTGRES_USER: hausv
-          POSTGRES_PASSWORD: hausv
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready --username hausv --dbname hausv"
+          --health-cmd "pg_isready --username postgres --dbname hausv"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Create unprivileged PostgreSQL application role
+        run: |
+          postgres_image='postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94'
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE ROLE hausv LOGIN PASSWORD 'hausv' NOSUPERUSER NOBYPASSRLS"
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "ALTER DATABASE hausv OWNER TO hausv"
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname hausv --set ON_ERROR_STOP=1 \
+            --command "GRANT ALL ON SCHEMA public TO hausv"
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
@@ -210,18 +222,30 @@ jobs:
         image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
         env:
           POSTGRES_DB: hausv
-          POSTGRES_USER: hausv
-          POSTGRES_PASSWORD: hausv
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready --username hausv --dbname hausv"
+          --health-cmd "pg_isready --username postgres --dbname hausv"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Create unprivileged PostgreSQL application role
+        run: |
+          postgres_image='postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94'
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE ROLE hausv LOGIN PASSWORD 'hausv' NOSUPERUSER NOBYPASSRLS"
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "ALTER DATABASE hausv OWNER TO hausv"
+          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+            psql --host 127.0.0.1 --username postgres --dbname hausv --set ON_ERROR_STOP=1 \
+            --command "GRANT ALL ON SCHEMA public TO hausv"
 
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6

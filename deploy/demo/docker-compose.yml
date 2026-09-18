@@ -4,13 +4,14 @@ services:
     image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
     environment:
       POSTGRES_DB: hausv
-      POSTGRES_USER: hausv
-      POSTGRES_PASSWORD: hausv-demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
       - hausv-demo-pg:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hausv -d hausv"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hausv"]
       interval: 5s
       timeout: 5s
       retries: 10

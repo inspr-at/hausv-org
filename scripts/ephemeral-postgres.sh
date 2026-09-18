@@ -39,8 +39,8 @@ HAUSV_EPHEMERAL_PG_CONTAINER=$(
     docker run -d --rm \
         --name "$hausv_pg_name" \
         -e POSTGRES_DB=hausv \
-        -e POSTGRES_USER=hausv \
-        -e POSTGRES_PASSWORD=hausv-dev \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=postgres \
         -p "$hausv_pg_publish" \
         "$hausv_postgres_image"
 ) || {
@@ -51,7 +51,7 @@ export HAUSV_EPHEMERAL_PG_CONTAINER
 
 hausv_pg_ready=0
 for _ in $(seq 40); do
-    if docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" pg_isready -U hausv -d hausv >/dev/null 2>&1; then
+    if docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" pg_isready -U postgres -d hausv >/dev/null 2>&1; then
         hausv_pg_ready=1
         break
     fi
@@ -62,6 +62,12 @@ if [ "$hausv_pg_ready" -eq 0 ]; then
     hausv_ephemeral_postgres_stop
     return 1 2>/dev/null || exit 1
 fi
+# The product refuses a superuser / BYPASSRLS role. The image's POSTGRES_USER is
+# both; mint the application role the same way CI does.
+docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -v ON_ERROR_STOP=1 \
+    -c "CREATE ROLE hausv LOGIN PASSWORD 'hausv-dev' NOSUPERUSER NOBYPASSRLS" \
+    -c "ALTER DATABASE hausv OWNER TO hausv" \
+    -c "GRANT ALL ON SCHEMA public TO hausv" >/dev/null
 
 hausv_pg_port=$(docker port "$HAUSV_EPHEMERAL_PG_CONTAINER" 5432/tcp | awk -F: 'END { print $NF }')
 if [ -z "$hausv_pg_port" ]; then
