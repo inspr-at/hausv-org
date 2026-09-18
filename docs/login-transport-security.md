@@ -166,13 +166,13 @@ Nach jedem Deployment ist die unveränderte äußere Antwort zusätzlich
 read-only zu prüfen:
 
 ```fish
-curl -sS -D - -o /dev/null https://hausv.org/demo/ \
+curl -sS -D - -o /dev/null https://hausv.org/jhw22/ \
   | string match -r -i '^(HTTP/|strict-transport-security:|cache-control:)'
 
-curl -sS -D - -o /dev/null 'https://hausv.org/demo/auth/verify?token=ungueltiger-qa-token' \
+curl -sS -D - -o /dev/null 'https://hausv.org/jhw22/auth/verify?token=ungueltiger-qa-token' \
   | string match -r -i '^(HTTP/|location:|strict-transport-security:|cache-control:)'
 
-curl -sS -D - -o /dev/null https://hausv.org/demo/absichtlich-nicht-vorhanden \
+curl -sS -D - -o /dev/null https://hausv.org/absichtlich-nicht-vorhanden \
   | string match -r -i '^(HTTP/|strict-transport-security:|cache-control:)'
 ```
 

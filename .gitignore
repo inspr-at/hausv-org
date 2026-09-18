@@ -1,4 +1,7 @@
 .DS_Store
+
+# Studio-only private kernel. Never publish this gitlink.
+/doctrine-private/
 # Compiled binaries at the repo root. Anchored with a leading slash so the
 # pattern does NOT also match the cmd/hausv-org package directory.
 /hausv-org

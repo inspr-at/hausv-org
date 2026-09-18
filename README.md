@@ -7,8 +7,8 @@ HAUSV is an open source portal for property communication, administration, and e
 | Product | Operation | Price | Support |
 | --- | --- | --- | --- |
 | **HAUSV Free** | Self-hosted | Free under the GNU AGPL-3.0 | [GitHub issues](https://github.com/inspr-at/hausv-org/issues) and [pull requests](https://github.com/inspr-at/hausv-org/pulls) |
-| **HAUSV Home** | Hosted | 12 months free, then 12 EUR per year | Email |
-| **HAUSV Professional** | Hosted or self-hosted | First 25 units free, then 3 EUR per additional unit and month | Email and phone |
+| **HAUSV Home** | Hosted | 12 months free, then 12 € per year | Email |
+| **HAUSV Professional** | Hosted or self-hosted | 0 € base fee, 25 units free, then billed per unit / month | Email and phone |
 
 ## Features
 
@@ -69,8 +69,9 @@ running and reports that generation is unavailable.
 ## Tenant URLs
 
 One installation serves multiple portals below one domain. Each tenant has a
-stable slug and is available at `https://hausv.org/<slug>`, for example
-`https://hausv.org/demo`. Adding a tenant does not require a DNS change.
+stable slug at `https://hausv.org/<slug>/`. Adding a tenant does not require a
+DNS change. The public demo is `https://hausv.agm.ng`; `https://hausv.org/demo/`
+is not a live tenant.
 
 Tenant metadata is supplied through `WEG_TENANTS_JSON`. Hosting paths, operator
 details, Home Assistant credentials and other deployment-specific values stay
