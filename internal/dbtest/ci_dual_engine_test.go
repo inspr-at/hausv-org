@@ -9,55 +9,54 @@ import (
 )
 
 const (
-	dualEngineGuardStep = "Verify dual-engine store CI contract"
-	sqliteStoreStep     = "Store suite (SQLite)"
-	postgresFullStep    = "Full suite (PostgreSQL)"
+	postgresContractStep = "Verify PostgreSQL store CI contract"
+	postgresFullStep     = "Full suite (PostgreSQL)"
 )
 
-// TestCIDualEngineStoreContract closes HAUSV-555's last acceptance gap: the
-// required CI job must run the store package on SQLite and the full race suite
-// on PostgreSQL. The mutations make the oracle non-vacuous; deleting either
-// lane, narrowing either command, or letting the SQLite lane inherit the
-// PostgreSQL selector must make this test fail.
-func TestCIDualEngineStoreContract(t *testing.T) {
+// TestCIPostgresStoreContract closes HAUSV-757: the required CI job must run
+// the full race suite on PostgreSQL and must not keep a SQLite product lane.
+func TestCIPostgresStoreContract(t *testing.T) {
 	workflowPath := filepath.Join("..", "..", ".github", "workflows", "ci.yml")
 	raw, err := os.ReadFile(workflowPath)
 	if err != nil {
 		t.Fatalf("read %s: %v", workflowPath, err)
 	}
 	workflow := string(raw)
-	if err := validateDualEngineStoreCI(workflow); err != nil {
+	if err := validatePostgresStoreCI(workflow); err != nil {
 		t.Fatal(err)
 	}
 
 	mutations := map[string]string{
-		"guard step removed":              removeWorkflowStep(workflow, dualEngineGuardStep),
-		"SQLite step removed":             removeWorkflowStep(workflow, sqliteStoreStep),
-		"SQLite DSN inherited":            replaceInWorkflowStep(workflow, sqliteStoreStep, `HAUSV_TEST_POSTGRES_DSN: ""`, `HAUSV_TEST_POSTGRES_DSN: inherited`),
-		"SQLite required flag inherited":  replaceInWorkflowStep(workflow, sqliteStoreStep, `HAUSV_TEST_POSTGRES_REQUIRED: ""`, `HAUSV_TEST_POSTGRES_REQUIRED: "true"`),
-		"SQLite store selector inherited": replaceInWorkflowStep(workflow, sqliteStoreStep, `HAUSV_STORE_TEST_POSTGRES: ""`, `HAUSV_STORE_TEST_POSTGRES: "1"`),
-		"SQLite suite narrowed":           replaceInWorkflowStep(workflow, sqliteStoreStep, "go test -race ./internal/store -count=1", "go test -race ./internal/dbtest -count=1"),
-		"PostgreSQL step removed":         removeWorkflowStep(workflow, postgresFullStep),
-		"PostgreSQL suite narrowed":       replaceInWorkflowStep(workflow, postgresFullStep, "go test -race ./...", "go test -race ./internal/store"),
-		"PostgreSQL DSN empty":            replaceTestJobEnv(workflow, "HAUSV_TEST_POSTGRES_DSN: postgres://hausv_ci:hausv_ci@127.0.0.1:5432/hausv_ci?sslmode=disable", `HAUSV_TEST_POSTGRES_DSN: ""`),
-		"PostgreSQL required flag empty":  replaceTestJobEnv(workflow, `HAUSV_TEST_POSTGRES_REQUIRED: "true"`, `HAUSV_TEST_POSTGRES_REQUIRED: ""`),
-		"PostgreSQL selector empty":       replaceTestJobEnv(workflow, `HAUSV_STORE_TEST_POSTGRES: "1"`, `HAUSV_STORE_TEST_POSTGRES: ""`),
-		"PostgreSQL step clears selector": replaceInWorkflowStep(workflow, postgresFullStep,
-			"run: go test -race ./...", "env:\n          HAUSV_STORE_TEST_POSTGRES: \"\"\n        run: go test -race ./..."),
+		"guard step removed":             removeWorkflowStep(workflow, postgresContractStep),
+		"PostgreSQL step removed":        removeWorkflowStep(workflow, postgresFullStep),
+		"PostgreSQL suite narrowed":      replaceInWorkflowStep(workflow, postgresFullStep, "go test -race ./...", "go test -race ./internal/store"),
+		"PostgreSQL DSN empty":           replaceTestJobEnv(workflow, "HAUSV_TEST_POSTGRES_DSN: postgres://hausv_ci:hausv_ci@127.0.0.1:5432/hausv_ci?sslmode=disable", `HAUSV_TEST_POSTGRES_DSN: ""`),
+		"PostgreSQL required flag empty": replaceTestJobEnv(workflow, `HAUSV_TEST_POSTGRES_REQUIRED: "true"`, `HAUSV_TEST_POSTGRES_REQUIRED: ""`),
+		"PostgreSQL selector empty":      replaceTestJobEnv(workflow, `HAUSV_STORE_TEST_POSTGRES: "1"`, `HAUSV_STORE_TEST_POSTGRES: ""`),
+		"SQLite store suite revived":     insertAfterContractStep(workflow, sqliteStoreLane),
 	}
 	for name, mutated := range mutations {
 		t.Run(name, func(t *testing.T) {
 			if mutated == workflow {
 				t.Fatal("mutation did not change the workflow fixture")
 			}
-			if err := validateDualEngineStoreCI(mutated); err == nil {
-				t.Fatal("mutated workflow unexpectedly satisfied the dual-engine contract")
+			if err := validatePostgresStoreCI(mutated); err == nil {
+				t.Fatal("mutated workflow unexpectedly satisfied the PostgreSQL contract")
 			}
 		})
 	}
 }
 
-func validateDualEngineStoreCI(workflow string) error {
+const sqliteStoreLane = `
+      - name: Store suite (SQLite)
+        env:
+          HAUSV_TEST_POSTGRES_DSN: ""
+          HAUSV_TEST_POSTGRES_REQUIRED: ""
+          HAUSV_STORE_TEST_POSTGRES: ""
+        run: go test -race ./internal/store -count=1
+`
+
+func validatePostgresStoreCI(workflow string) error {
 	testJob, err := workflowSection(workflow, "  test:", "  govulncheck:")
 	if err != nil {
 		return err
@@ -79,25 +78,16 @@ func validateDualEngineStoreCI(workflow string) error {
 		return fmt.Errorf("PostgreSQL store selector: %w", err)
 	}
 
-	guard, err := namedWorkflowStep(testJob, dualEngineGuardStep)
+	guard, err := namedWorkflowStep(testJob, postgresContractStep)
 	if err != nil {
 		return err
 	}
-	if !containsLine(guard, `run: go test ./internal/dbtest -run '^TestCIDualEngineStoreContract$' -count=1`) {
-		return fmt.Errorf("%q must run the exact contract oracle", dualEngineGuardStep)
+	if !containsLine(guard, `run: go test ./internal/dbtest -run '^TestCIPostgresStoreContract$' -count=1`) {
+		return fmt.Errorf("%q must run the exact contract oracle", postgresContractStep)
 	}
 
-	sqlite, err := namedWorkflowStep(testJob, sqliteStoreStep)
-	if err != nil {
-		return err
-	}
-	for _, key := range []string{"HAUSV_TEST_POSTGRES_DSN", "HAUSV_TEST_POSTGRES_REQUIRED", "HAUSV_STORE_TEST_POSTGRES"} {
-		if err := requireMappingValue(sqlite, key, func(value string) bool { return value == `""` }); err != nil {
-			return fmt.Errorf("%q %s override: %w", sqliteStoreStep, key, err)
-		}
-	}
-	if !containsLine(sqlite, "run: go test -race ./internal/store -count=1") {
-		return fmt.Errorf("%q must run the exact store race suite", sqliteStoreStep)
+	if _, err := namedWorkflowStep(testJob, "Store suite (SQLite)"); err == nil {
+		return fmt.Errorf("SQLite store suite must not remain a CI product job")
 	}
 
 	postgres, err := namedWorkflowStep(testJob, postgresFullStep)
@@ -113,6 +103,14 @@ func validateDualEngineStoreCI(workflow string) error {
 		}
 	}
 	return nil
+}
+
+func insertAfterContractStep(workflow, extra string) string {
+	step, err := namedWorkflowStep(workflow, postgresContractStep)
+	if err != nil {
+		return workflow
+	}
+	return strings.Replace(workflow, step+"\n", step+"\n"+extra, 1)
 }
 
 func workflowSection(workflow, start, end string) (string, error) {

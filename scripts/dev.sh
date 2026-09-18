@@ -34,6 +34,9 @@ cleanup() {
         wait "$ha_pid" 2>/dev/null || true
         ha_pid=""
     fi
+    if command -v hausv_ephemeral_postgres_stop >/dev/null 2>&1 || [ "$(type -t hausv_ephemeral_postgres_stop 2>/dev/null)" = function ]; then
+        hausv_ephemeral_postgres_stop
+    fi
     command rm -rf -- "$tmp"
 }
 trap cleanup EXIT
@@ -98,6 +101,8 @@ export HV_PORT="$port"
 export HV_QA_HA_PORT="$ha_port"
 export HV_DATA="$tmp/data"
 mkdir -p "$HV_DATA" || exit 1
+# shellcheck source=scripts/ephemeral-postgres.sh
+. "$repo/scripts/ephemeral-postgres.sh" || exit 1
 if [ "${HV_DEV_FIXTURE:-}" = "demo" ]; then
     # shellcheck source=scripts/demo/env.sh
     . "$repo/scripts/demo/env.sh"

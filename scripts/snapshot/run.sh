@@ -35,6 +35,8 @@ fi
 export HV_PORT=$port
 export HV_DATA=$tmp/data
 mkdir -p "$HV_DATA"
+# shellcheck source=scripts/ephemeral-postgres.sh
+. "$repo/scripts/ephemeral-postgres.sh" || exit 1
 
 # Build. Note: after the cmd/ split this must target the main package's dir, so
 # resolve it rather than assuming the repo root.
@@ -115,6 +117,7 @@ if [ "$ready" -eq 0 ]; then
     cat "$tmp/app.log" >&2
     kill "$pid" 2>/dev/null
     [ -n "$ha_pid" ] && kill "$ha_pid" 2>/dev/null
+    hausv_ephemeral_postgres_stop
     exit 1
 fi
 
@@ -127,6 +130,7 @@ rc=$?
 
 kill "$pid" 2>/dev/null
 [ -n "$ha_pid" ] && kill "$ha_pid" 2>/dev/null
+hausv_ephemeral_postgres_stop
 if [ "$ref" != WORKTREE ]; then
     git -C "$repo" worktree remove --force "$src" 2>/dev/null
 fi

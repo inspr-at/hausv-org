@@ -73,6 +73,9 @@ cleanup_main_flow_qa() {
     if [ -n "${HAUSV_QA_SMTP_PID:-}" ]; then
         kill "$HAUSV_QA_SMTP_PID" 2>/dev/null
     fi
+    if command -v hausv_ephemeral_postgres_stop >/dev/null 2>&1 || [ "$(type -t hausv_ephemeral_postgres_stop 2>/dev/null)" = function ]; then
+        hausv_ephemeral_postgres_stop
+    fi
     if [ -n "${HAUSV_QA_TMP:-}" ] && [ -d "$HAUSV_QA_TMP" ]; then
         command rm -rf -- "$HAUSV_QA_TMP"
     fi
@@ -120,6 +123,8 @@ export HV_QA_SMTP_PORT=$smtp_port
 export HV_QA_SMTP_API="http://127.0.0.1:$smtp_api_port"
 export HV_DATA="$tmp/data"
 mkdir -p "$HV_DATA"
+# shellcheck source=scripts/ephemeral-postgres.sh
+. "$repo/scripts/ephemeral-postgres.sh" || exit 1
 # shellcheck source=scripts/snapshot/env.sh
 . "$repo/scripts/snapshot/env.sh"
 

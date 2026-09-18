@@ -71,8 +71,13 @@ export TELEGRAM_DATA_PATH="${HV_DATA:-}/telegram.json"
 export SERVICE_PROVIDER_ACCESS_ENABLED=false
 export SERVICE_PROVIDER_ASSESSMENT_VERSION=""
 
-# All state under one dir, seeded identically per run.
-export DB_PATH="${HV_DATA:-}/hausv.db"
+# PostgreSQL is the product store (HAUSV-757). Callers set DATABASE_URL
+# (CI service or scripts/ephemeral-postgres.sh) before sourcing this file.
+export DB_BACKEND=postgres
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo "DATABASE_URL is required. Source scripts/ephemeral-postgres.sh or set the DSN." >&2
+    return 1 2>/dev/null || exit 1
+fi
 export PARKING_DATA_PATH="${HV_DATA:-}/parking.json"
 export ANNOUNCE_DATA_PATH="${HV_DATA:-}/announcements.json"
 export ANNOUNCE_READ_DATA_PATH="${HV_DATA:-}/announcement_reads.json"

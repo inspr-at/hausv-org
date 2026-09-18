@@ -15,6 +15,9 @@ cleanup() {
         kill "$pid" 2>/dev/null
         wait "$pid" 2>/dev/null || true
     fi
+    if command -v hausv_ephemeral_postgres_stop >/dev/null 2>&1 || [ "$(type -t hausv_ephemeral_postgres_stop 2>/dev/null)" = function ]; then
+        hausv_ephemeral_postgres_stop
+    fi
     command rm -rf -- "$tmp"
 }
 trap cleanup EXIT INT TERM
@@ -45,11 +48,15 @@ fi
 echo "── building isolated binary"
 (cd "$repo" && HV_GO="$go_bin" bash scripts/build.sh -o "$tmp/hausv-org" ./cmd/hausv-org) || exit 1
 
+# shellcheck source=scripts/ephemeral-postgres.sh
+. "$repo/scripts/ephemeral-postgres.sh" || exit 1
+
 echo "── starting isolated portal with the Ads tag on :$port"
 (
     cd "$repo" && \
     ADDR=":$port" \
-    DB_PATH="$tmp/boot.db" \
+    DB_BACKEND=postgres \
+    DATABASE_URL="$DATABASE_URL" \
     PARKING_DATA_PATH="$tmp/parking.json" \
     BASE_URL="http://localhost:$port" \
     ROOT_DOMAIN="localhost" \
