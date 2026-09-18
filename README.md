@@ -10,6 +10,8 @@ HAUSV is an open source portal for property communication, administration, and e
 | **HAUSV Home** | Hosted | 12 months free, then 12 € per year | Email |
 | **HAUSV Professional** | Hosted or self-hosted | 0 € base fee, 25 units free, then billed per unit / month | Email and phone |
 
+Self-host (Free and Professional) uses **PostgreSQL**, the same engine as the hosted product. SQLite (`hausv.db`) was the earlier local and demo store; it is not a supported product backend. An existing file can be copied once with `hausv-org migrate-data`. Finishing an old instance is a straightforward one-off — a current coding agent is usually enough — not an ongoing dual-database edition.
+
 ## Features
 
 - Central overview of tasks, appointments, announcements, open issues, and energy status
