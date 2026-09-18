@@ -114,6 +114,7 @@ var TableOrder = []string{
 	"units",
 	"ballots",
 	"issues",
+	"parking",
 	"integration_imports",
 	// The energy chain.
 	"home_profiles",

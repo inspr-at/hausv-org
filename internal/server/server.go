@@ -820,7 +820,7 @@ type app struct {
 	protocolFiler             protocolFiler
 	voteStore                 voteStorage
 	voteReminderInterval      time.Duration
-	parkingStore              *parkingStore
+	parkingStore              store.ParkingStorage
 	parkingSampleInterval     time.Duration
 	parkingHistoryStart       time.Time
 	energyStore               energy.Storage
@@ -1870,6 +1870,7 @@ func newApp() (*app, error) {
 	sqlUnits := newSQLUnitStore(tenantDB)
 	sqlVotes := newSQLVoteStore(tenantDB)
 	sqlIssues := newSQLIssueStore(tenantDB, issueAttachmentDir)
+	sqlParking := store.NewSQLParkingStore(tenantDB)
 	identity := newSQLIdentityStore(tenantDB)
 	personAvatars := store.NewSQLPersonAvatarStore(tenantDB)
 	energyBackend := energy.NewSQLStore(tenantDB)
@@ -1920,6 +1921,7 @@ func newApp() (*app, error) {
 		{"vote", func() error { return sqlVotes.ImportBallots(votes) }},
 		{"issue", func() error { return sqlIssues.ImportIssues(issues) }},
 		{"identity", func() error { return identity.ImportProfiles(invites, time.Now()) }},
+		{"parking", func() error { return sqlParking.ImportParking(parkingStore) }},
 	} {
 		if err := step.import_(); err != nil {
 			return nil, fmt.Errorf("%s import to sqlite: %w", step.name, err)
@@ -2053,7 +2055,7 @@ func newApp() (*app, error) {
 		protocolFiler:             filer,
 		voteStore:                 voteBackend,
 		voteReminderInterval:      voteReminderInterval,
-		parkingStore:              parkingStore,
+		parkingStore:              sqlParking,
 		parkingSampleInterval:     parkingSampleInterval,
 		parkingHistoryStart:       parkingHistoryStart,
 		energyStore:               energyBackend,
