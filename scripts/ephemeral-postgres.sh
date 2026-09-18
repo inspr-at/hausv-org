@@ -64,12 +64,31 @@ if [ "$hausv_pg_ready" -eq 0 ]; then
 fi
 # The product refuses a superuser / BYPASSRLS role. The image's POSTGRES_USER is
 # both; mint the application role the same way CI does.
-docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -v ON_ERROR_STOP=1 \
-    -c "CREATE ROLE hausv LOGIN PASSWORD 'hausv-dev' NOSUPERUSER NOBYPASSRLS" \
-    -c "ALTER DATABASE hausv OWNER TO hausv" \
-    -c "GRANT ALL ON SCHEMA public TO hausv" >/dev/null
+if ! docker exec -i "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+CREATE ROLE hausv LOGIN PASSWORD 'hausv-dev' NOSUPERUSER NOBYPASSRLS;
+ALTER DATABASE hausv OWNER TO hausv;
+SQL
+then
+    echo "Could not create the PostgreSQL application role." >&2
+    hausv_ephemeral_postgres_stop
+    return 1 2>/dev/null || exit 1
+fi
+if ! docker exec -i "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -v ON_ERROR_STOP=1 <<'SQL'
+GRANT ALL ON SCHEMA public TO hausv;
+SQL
+then
+    echo "Could not grant schema rights to the PostgreSQL application role." >&2
+    hausv_ephemeral_postgres_stop
+    return 1 2>/dev/null || exit 1
+fi
+if ! docker exec -e PGPASSWORD=hausv-dev "$HAUSV_EPHEMERAL_PG_CONTAINER" \
+    psql -h 127.0.0.1 -U hausv -d hausv -c 'SELECT 1' >/dev/null 2>&1; then
+    echo "PostgreSQL application role cannot log in with its password." >&2
+    hausv_ephemeral_postgres_stop
+    return 1 2>/dev/null || exit 1
+fi
 
-hausv_pg_port=$(docker port "$HAUSV_EPHEMERAL_PG_CONTAINER" 5432/tcp | awk -F: 'END { print $NF }')
+hausv_pg_port=$(docker port "$HAUSV_EPHEMERAL_PG_CONTAINER" 5432/tcp | sed -n 's/.*://p' | head -1)
 if [ -z "$hausv_pg_port" ]; then
     echo "Could not read the published PostgreSQL port." >&2
     hausv_ephemeral_postgres_stop
