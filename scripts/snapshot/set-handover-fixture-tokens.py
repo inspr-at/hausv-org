@@ -53,6 +53,7 @@ def run_psql(sql: str) -> str:
             "ON_ERROR_STOP=1",
             "-t",
             "-A",
+            "-q",
             "-c",
             sql,
         ]
@@ -86,6 +87,7 @@ def run_psql(sql: str) -> str:
             "ON_ERROR_STOP=1",
             "-t",
             "-A",
+            "-q",
             "-c",
             sql,
         ]
