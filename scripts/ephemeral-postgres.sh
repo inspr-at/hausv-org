@@ -64,18 +64,16 @@ if [ "$hausv_pg_ready" -eq 0 ]; then
 fi
 # The product refuses a superuser / BYPASSRLS role. The image's POSTGRES_USER is
 # both; mint the application role the same way CI does.
-if ! docker exec -i "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-CREATE ROLE hausv LOGIN PASSWORD 'hausv-dev' NOSUPERUSER NOBYPASSRLS;
-ALTER DATABASE hausv OWNER TO hausv;
-SQL
+if ! docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+    -c "CREATE ROLE hausv LOGIN PASSWORD 'hausv-dev' NOSUPERUSER NOBYPASSRLS" \
+    -c "ALTER DATABASE hausv OWNER TO hausv"
 then
     echo "Could not create the PostgreSQL application role." >&2
     hausv_ephemeral_postgres_stop
     return 1 2>/dev/null || exit 1
 fi
-if ! docker exec -i "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -v ON_ERROR_STOP=1 <<'SQL'
-GRANT ALL ON SCHEMA public TO hausv;
-SQL
+if ! docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -v ON_ERROR_STOP=1 \
+    -c "GRANT ALL ON SCHEMA public TO hausv"
 then
     echo "Could not grant schema rights to the PostgreSQL application role." >&2
     hausv_ephemeral_postgres_stop
