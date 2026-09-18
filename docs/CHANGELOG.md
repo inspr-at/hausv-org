@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260918171745.0.0] - 2026-09-18
+
+### Verbessert
+
+- Stellplatz- und Ladedaten liegen in der Datenbank, nicht mehr in einer separaten Datei.
+
 ## [260915181116.0.0] - 2026-09-15
 
 ### Verbessert

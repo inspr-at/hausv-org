@@ -29,7 +29,7 @@ var expectedTenantTables = []string{
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
-	"house_memberships", "integration_imports", "issues", "unit_payment_status", "units",
+	"house_memberships", "integration_imports", "issues", "parking", "unit_payment_status", "units",
 }
 
 func TestOpenConfigDefaultsToSQLite(t *testing.T) {

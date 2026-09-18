@@ -230,6 +230,9 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if _, _, err := deliveries.Attempt(t.Context(), AnnualStatementDelivery{RunID: "identity-run", Revision: 1, PartyID: "a@example.com", UnitID: "u1", DocumentID: receiptDocument.ID, SHA256: "fixture", Recipient: "a@example.com", Actor: "a@example.com"}, func(context.Context) error { return nil }); err != nil {
 		t.Fatalf("annual statement delivery: %v", err)
 	}
+	if err := NewSQLParkingStore(lanes).SetGridFee(tenant.Slug, 0.21); err != nil {
+		t.Fatalf("parking: %v", err)
+	}
 	attachments, _ := BindAttachmentRepository(NewSQLAttachmentStore(lanes, filepath.Join(fileDir, "att")), tenant)
 	if _, err := attachments.CreateUploaded("issue", "i1", "a@example.com",
 		[]UploadedFile{uploadFrom("photo.png", onePixelPNG)}, now); err != nil {

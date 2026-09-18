@@ -87,6 +87,7 @@ var tenantIDTables = []tenantIDTable{
 	{name: "house_memberships", slugColumn: "tenant_slug"},
 	{name: "integration_imports", slugColumn: "tenant_slug"},
 	{name: "issues", slugColumn: "tenant_slug"},
+	{name: "parking", slugColumn: "tenant_slug"},
 	{name: "unit_payment_status", slugColumn: "tenant_slug"},
 	{name: "units", slugColumn: "tenant_slug"},
 }
