@@ -50,8 +50,8 @@ HAUSV_EPHEMERAL_PG_CONTAINER=$(
 export HAUSV_EPHEMERAL_PG_CONTAINER
 
 hausv_pg_ready=0
-for _ in $(seq 40); do
-    if docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" pg_isready -U postgres -d hausv >/dev/null 2>&1; then
+for _ in $(seq 60); do
+    if docker exec "$HAUSV_EPHEMERAL_PG_CONTAINER" psql -U postgres -d hausv -c 'SELECT 1' >/dev/null 2>&1; then
         hausv_pg_ready=1
         break
     fi
