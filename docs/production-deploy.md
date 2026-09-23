@@ -557,8 +557,9 @@ account data, browser cookies or screenshots containing residents' information.
 The nightly 01:30 restic snapshot contains the quiesced copies
 `hausv-postgres-backup-snapshot/hausv.dump` (01:10) and
 `hausv-org-backup-snapshot` (01:20), not the live data volumes. These are separate
-capture times, not an atomic database/files snapshot. Validate every referenced
-blob; a missing blob fails the drill. Select the full snapshot ID for the correct
+capture times, not an atomic database/files snapshot. Validate every live referenced
+blob, including mail-intake files; deleted attachment tombstones need no file.
+A missing blob fails the drill. Select the full snapshot ID for the correct
 host and path set: `snapshots --latest 1` can return several host/path groups.
 Never substitute an unqualified `latest` for the recorded ID.
 
@@ -608,9 +609,13 @@ Never substitute an unqualified `latest` for the recorded ID.
 
    Set `DOCKER_CONTEXT` explicitly when using a dedicated local VM. Choose the
    expected migration from the selected release and backup, not from whatever
-   database happened to restore. The verifier checks schema grants, application
+   database happened to restore: use the newest filename in
+   `internal/db/postgres/migrations/` at the release manifest's source commit.
+   The verifier checks schema grants, application
    role restrictions, tenant and organisation RLS, row counts, file sizes,
-   snapshot byte equality, archived-document hashes and database avatar hashes.
+   snapshot byte equality, frozen JSON metadata, archived-document hashes,
+   database avatar hashes and energy-import payload hashes. The append-only
+   `audit.jsonl` can grow during app/browser checks and is not a frozen JSON store.
    It checks legacy/unreferenced blobs too. It intentionally rejects an empty
    blob archive; a deliberately empty installation needs a separate acceptance
    plan. A green report does not prove external authentication or integrations.

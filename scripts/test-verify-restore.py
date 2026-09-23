@@ -29,8 +29,9 @@ class RestoreBlobChecks(unittest.TestCase):
         self.archive = self.root / 'snapshot.tar'
         with tarfile.open(self.archive, 'w') as archive:
             archive.add(self.blob, arcname='backup/snapshot-data/documents/test/document.pdf')
+            archive.add(self.data / 'tenant_overrides.json', arcname='backup/snapshot-data/tenant_overrides.json')
         self.records = {'documents': [{'tenant': 'test', 'stored_filename': 'document.pdf', 'size': 9}],
-                        'attachments': [], 'issues': []}
+                        'attachments': [], 'issues': [], 'intake_items': []}
 
     def verify(self):
         return module.verify_files(self.data, self.archive, self.records)
@@ -59,6 +60,30 @@ class RestoreBlobChecks(unittest.TestCase):
     def test_path_escape(self):
         self.records['documents'][0]['stored_filename'] = '../../../../outside.pdf'
         with self.assertRaisesRegex(ValueError, 'escapes'):
+            self.verify()
+
+    def test_deleted_attachment_needs_no_file(self):
+        self.records['attachments'] = [{'tenant': 'test', 'stored_filename': 'deleted.pdf',
+                                        'size': 9, 'deleted_at': '2026-09-23T00:00:00Z'}]
+        self.assertEqual(self.verify()['verified_blobs'], 1)
+
+    def test_intake_reference_missing_from_both_snapshot_and_disk(self):
+        self.records['intake_items'] = [{'status': 'open', 'attachments': [{'path': 'org/case/mail.pdf', 'size': 9}]}]
+        with self.assertRaisesRegex(ValueError, 'missing'):
+            self.verify()
+
+    def test_intake_attachment(self):
+        self.records['intake_items'] = [{'status': 'open', 'attachments': [{'path': 'org/case/mail.pdf', 'size': 9}]}]
+        blob = self.data / 'attachments/intake-mail/org/case/mail.pdf'
+        blob.parent.mkdir(parents=True)
+        blob.write_bytes(b'%PDF-mail')
+        with tarfile.open(self.archive, 'a') as archive:
+            archive.add(blob, arcname='backup/snapshot-data/attachments/intake-mail/org/case/mail.pdf')
+        self.assertEqual(self.verify()['verified_blobs'], 2)
+
+    def test_tenant_metadata_drift(self):
+        (self.data / 'tenant_overrides.json').write_text('{"tenants":{"test":{}}}')
+        with self.assertRaisesRegex(ValueError, 'Metadata differs'):
             self.verify()
 
     def test_archive_checksum(self):

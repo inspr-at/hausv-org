@@ -13,14 +13,19 @@ import subprocess
 import tarfile
 
 
+class VerificationError(ValueError):
+    """A fixed, value-free diagnostic safe to report to the operator."""
+
+
 def require(condition, message):
     if not condition:
-        raise ValueError(message)
+        raise VerificationError(message)
 
 
 def verify_files(data, archive, records):
     """Compare every referenced blob to metadata and the snapshot's exact bytes."""
     expected = {}
+    metadata = {}
     with tarfile.open(archive) as tar:
         for member in tar:
             if not member.isfile():
@@ -30,10 +35,19 @@ def verify_files(data, archive, records):
                 continue
             relative = Path(*parts[parts.index(data.name) + 1:])
             require('..' not in relative.parts, 'Unsafe snapshot path')
+            if len(relative.parts) == 1 and relative.suffix == '.json':
+                require(str(relative) not in metadata, 'Duplicate snapshot metadata')
+                metadata[str(relative)] = hashlib.sha256(tar.extractfile(member).read()).hexdigest()
             if relative.parts and relative.parts[0] in ('documents', 'attachments', 'issue-attachments', 'tenant-heroes'):
                 require(str(relative) not in expected, 'Duplicate snapshot blob')
                 expected[str(relative)] = hashlib.sha256(tar.extractfile(member).read()).hexdigest()
     require(expected, 'Snapshot has no blob inventory; choose the intended data snapshot')
+    require('tenant_overrides.json' in metadata, 'Snapshot tenant metadata missing')
+    for relative, digest in metadata.items():
+        path = data / relative
+        require(path.resolve().is_relative_to(data.resolve()), 'Metadata escapes data directory')
+        require(path.is_file(), 'Snapshot metadata file missing')
+        require(hashlib.sha256(path.read_bytes()).hexdigest() == digest, 'Metadata differs from selected snapshot')
     checked = set()
 
     def check(relative, size=None, digest=None):
@@ -50,6 +64,8 @@ def verify_files(data, archive, records):
 
     for table, folder in [('documents', 'documents'), ('attachments', 'attachments')]:
         for row in records[table]:
+            if table == 'attachments' and row.get('deleted_at'):
+                continue  # Tombstones retain names after the files have been removed.
             fields = [('stored_filename', 'size')]
             if table == 'attachments':
                 fields += [('preview_filename', 'preview_size'), ('thumb_filename', 'thumb_size')]
@@ -63,6 +79,11 @@ def verify_files(data, archive, records):
     for row in records['issues']:
         for photo in row.get('photo_paths') or []:
             check(Path(photo))
+    for item in records['intake_items']:
+        for attachment in item.get('attachments') or []:
+            require(bool(attachment.get('path')), 'Intake attachment has no path')
+            require(isinstance(attachment.get('size'), int) and attachment['size'] > 0, 'Invalid intake attachment size')
+            check(Path('attachments/intake-mail') / attachment['path'], attachment['size'])
     overrides = json.loads((data / 'tenant_overrides.json').read_text())
     for row in overrides.get('tenants', {}).values():
         if row.get('hero_image'):
@@ -70,7 +91,7 @@ def verify_files(data, archive, records):
     # Also prove all unreferenced/legacy blobs survived extraction unchanged.
     for relative in expected:
         check(Path(relative))
-    return {'snapshot_blobs': len(expected), 'verified_blobs': len(checked)}
+    return {'snapshot_blobs': len(expected), 'verified_blobs': len(checked), 'verified_metadata_files': len(metadata)}
 
 
 def main():
@@ -129,20 +150,25 @@ def main():
             require(total == visible, 'Organisation lane exposes wrong row count')
             require(sql(f"SET ROLE hausv_app; SET app.org_key='{literal}'; SELECT count(*) FROM {table} WHERE org_key IS DISTINCT FROM '{literal}';") == '0', 'Foreign organisation row visible')
     records = {t: json.loads(sql(f"SELECT coalesce(json_agg(data::json),'[]') FROM {t};"))
-               for t in ('documents', 'attachments', 'issues')}
+               for t in ('documents', 'attachments', 'issues', 'intake_items')}
     avatars = json.loads(sql("SELECT coalesce(json_agg(json_build_array(byte_size,sha256,encode(image,'hex'))),'[]') FROM person_avatars;"))
     for size, digest, encoded in avatars:
         raw = bytes.fromhex(encoded)
         require(len(raw) == size and hashlib.sha256(raw).hexdigest() == digest, 'Avatar payload mismatch')
+    imports = json.loads(sql("SELECT coalesce(json_agg(json_build_array(sha256,encode(payload,'hex'))),'[]') FROM energy_imports;"))
+    for digest, encoded in imports:
+        require(hashlib.sha256(bytes.fromhex(encoded)).hexdigest() == digest, 'Energy import payload mismatch')
     files = verify_files(args.data_dir, args.snapshot_archive, records)
     print(json.dumps({'migration': migration, 'tables': len(tables), 'rows': rows,
                       'forced_tenant_rls_tables': len(isolated), 'forced_organisation_rls_tables': len(organisation_tables), 'tenant_lanes': len(tenants),
-                      'isolation': 'passed', 'verified_avatars': len(avatars), **files}, indent=2))
+                      'isolation': 'passed', 'verified_avatars': len(avatars), 'verified_energy_imports': len(imports), **files}, indent=2))
 
 
 if __name__ == '__main__':
     try:
         main()
-    except (ValueError, OSError, KeyError, tarfile.TarError):
+    except VerificationError as error:
+        raise SystemExit('Restore verification FAILED: ' + str(error)) from None
+    except Exception:
         # Exception values can include personal filenames; never print them.
         raise SystemExit('Restore verification FAILED: schema, isolation or blob check did not pass.') from None
