@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260923172835.0.0] - 2026-09-23
+
+### Verbessert
+
+- HAUSV Free führt direkt zum öffentlich verfügbaren AGPL-Quellcode.
+- Die Produktseite erklärt klar, dass externe Dienstleister-Zugänge vorbereitet und noch nicht freigeschaltet sind.
+
 ## [260923082241.0.0] - 2026-09-23
 
 ### Verbessert

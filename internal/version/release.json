@@ -1,7 +1,7 @@
 {
   "version_scheme": "inspr-calendar-v2",
-  "version": "260923082241.0.0",
-  "release_sequence": 7,
+  "version": "260923172835.0.0",
+  "release_sequence": 8,
   "channels": [
     "production",
     "demo"

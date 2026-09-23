@@ -1486,7 +1486,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Quelloffen · selbst betrieben",
 		"AGPL-3.0",
 		"0&nbsp;€ für immer",
-		"Quellcode ab Version 1.0",
+		"Quellcode öffentlich verfügbar",
 		"Volle Rollen &amp; Rechte",
 		"Dokumente &amp; Aushänge",
 		"Anliegen mit Verlauf",
@@ -1512,7 +1512,7 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Wir bauen sie mit ausgewählten Verwaltungen statt am grünen Tisch.",
 		"Energie: kontrolliert statt unbedacht",
 		"Aktive Steuerung nach bewusster Freigabe",
-		"Dienstleister-Zugänge bleiben rollenbasiert.",
+		"Zugänge für externe Dienstleister sind vorbereitet, aber noch nicht freigeschaltet.",
 		"Kein öffentlicher Marktplatz, kein Handel im Hintergrund.",
 		// HAUSV-668: the media area fills the card to its hairline, and no card
 		// carries a tinted border any more.
@@ -1527,8 +1527,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 		"Gespräch anfragen",
 		`href="/start"`,
 		"HAUSV Home starten",
-		"Eigenbetrieb vormerken",
-		`data-mail-subject="HAUSV Free im Eigenbetrieb"`,
+		"Quellcode ansehen",
+		`href="https://github.com/inspr-at/hausv-org"`,
 		`href="https://augmentoring.com/hausv/"`,
 		"Professional bei Augmentoring",
 	} {
@@ -1559,7 +1559,9 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 			t.Fatalf("landing page still carries the pre-HAUSV-668 state %q", stale)
 		}
 	}
-	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "Betreiberfreigabe vorbereitet", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter", "Professional anfragen", "HAUSV Professional kennenlernen", `target="_blank"`} {
+	// HAUSV-761 replaces the old operator-approval copy ban with the positive
+	// availability contract above; launch-gate mechanics remain outside product copy.
+	for _, forbidden := range []string{"hallo@hausv.org", "hello@hausv.org", "Peak Shaving", "Bis 10 Häuser kostenlos", "Fair Use bis 10 Einheiten kostenlos", "Bis 25 Einheiten im Pilot kostenlos", "Richtwert für später", "Spenden", "3&nbsp;€ je Einheit", "500 €", "900 €", "Ladungsfähige Anschrift", "Musterweg 1", "Einfach kalkulierbar", "Klein starten. Erst mit dem Nutzen wachsen.", "Alle drei Produkte starten kostenlos", "25 Einheiten kostenlos", "0,12&nbsp;€ je Einheit / Monat", "Quellcode-Veröffentlichung mit Version 1.0", "Quellcode ab Version 1.0", "Eigenbetrieb vormerken", "Dienstleister-Zugänge bleiben rollenbasiert.", "Eigentümer und Dienstleister erhalten", `id="preise"`, `href="#preise"`, `class="offer-card`, `class="open-source-note"`, `class="boundary-strip"`, "mark3d-top", "data-mark3d-top", "KI-first", `mailto:hallo`, `mailto:hello`, "Pilot verfügbar", "camt.053", "camt.054", "BMD/RZL", "[Name oder Firma", "[Straße und Hausnummer", "[Firmenbuchnummer", "Platzhalter", "Professional anfragen", "HAUSV Professional kennenlernen", `target="_blank"`} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("landing page should not expose/regress %q:\n%s", forbidden, body)
 		}
@@ -1570,8 +1572,8 @@ func TestRootDomainRendersMarketingLanding(t *testing.T) {
 	if got := strings.Count(body, `class="product-path-start`); got != 3 {
 		t.Fatalf("product CTA count = %d, want 3", got)
 	}
-	if got := strings.Count(body, `class="product-path-start js-mail-link"`); got != 1 {
-		t.Fatalf("mailto product CTA count = %d, want 1 (Free only)", got)
+	if got := strings.Count(body, `class="product-path-start js-mail-link"`); got != 0 {
+		t.Fatalf("mailto product CTA count = %d, want 0 (all products have a direct destination)", got)
 	}
 	if got := strings.Count(body, `class="feature-card"`); got != 10 {
 		t.Fatalf("feature card count = %d, want 10", got)
