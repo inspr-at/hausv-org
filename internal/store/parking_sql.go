@@ -67,7 +67,8 @@ func loadParkingTx(tx *sql.Tx, tenant TenantRef) (ParkingTenantData, error) {
 	// A process-local mutex cannot protect independent store instances.
 	var raw string
 	err = tx.QueryRow(`INSERT INTO parking(tenant_id, tenant_slug, data) VALUES($1, $2, $3)
-		ON CONFLICT(tenant_slug) DO UPDATE SET data=parking.data
+		ON CONFLICT(tenant_slug) DO UPDATE SET data=parking.data,
+			tenant_id=coalesce(parking.tenant_id, excluded.tenant_id)
 		RETURNING data`, tenant.ID, tenant.Slug, string(initial)).Scan(&raw)
 	if err != nil {
 		return ParkingTenantData{}, err
