@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260923082241.0.0] - 2026-09-23
+
+### Verbessert
+
+- Stellplatzdaten werden auch bei gleichzeitigen Zahlungsänderungen und neuen Lademesswerten zuverlässig gespeichert.
+
 ## [260918171745.0.0] - 2026-09-18
 
 ### Verbessert

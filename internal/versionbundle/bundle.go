@@ -9,9 +9,9 @@ import (
 	"path"
 )
 
-const Revision = "3ef6b03e3a347ff095123a16647f0b32f5e13288"
+const Revision = "0cdcd1bb9b899d6f316a43563f824aae86075569"
 const ConfigSHA256 = "7843f3515ce329277d2d576000bd60ac410d725b241d502a9a3fecb2533d956d"
-const ManifestSHA256 = "24cf7ba69a2e3cda5a7e894865cba32bd2199f58e369c080e032357cbbbaabef"
+const ManifestSHA256 = "b02ba5605831ded80f8c1c191a9ef6e8a8c3e470eb1aeffc31056d76e5f48e32"
 const Directory = "assets/versioning"
 
 type Manifest struct {
