@@ -27,7 +27,7 @@ func TestCompleteBundleClosure(t *testing.T) {
 	if err := Verify(read(), "."); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"display.json", "version.js", "presentation.js", "version-interaction.js", "auto-animate.js", "auto-animate-license.js", "package.json", "manifest.json"} {
+	for _, name := range []string{"display.json", "version.js", "presentation.js", "version-interaction.js", "auto-animate.js", "auto-animate-license.js", "package.json", "schemes.json", "manifest.json"} {
 		t.Run(name, func(t *testing.T) {
 			missing := read()
 			delete(missing, name)

@@ -25,6 +25,11 @@ Self-host (Free and Professional) uses **PostgreSQL**, the same engine as the ho
 - Live energy flows for solar, grid, batteries, homes, and individual consumers through direct Home Assistant integration or the outbound-only local connector
 - Parking, charging, CAMT, ebInterface, and structured data exchange with specialist systems
 
+Parking payments, meter readings and charging state share one database record per
+tenant. Updates acquire a database write lock before reading that record, including
+its first creation, so concurrent writers preserve each other's changes. Failed
+updates roll back the entire transaction.
+
 ## Scope
 
 HAUSV is a communication, administration and energy management portal. Annual-statement calculations are working drafts based on the period’s configured cost types, allocation keys, unit bases, confirmed receipts and recorded prepayments. Each successful run saves all unit balances and its input snapshot; missing keys, receipts, original files, prepayments or required measurements block the entire run. Earlier runs remain unchanged when inputs are corrected. Each run keeps only the checked consumption vector and the two boundary facts per unit; interior readings are checked for resets in one streaming scan and are not copied into every run. These calculations do not constitute a legal assessment under Austrian WEG/MRG.
