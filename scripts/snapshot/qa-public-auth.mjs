@@ -231,6 +231,22 @@ async function captureViewport(viewport) {
   }
   const productHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
   if (productHref !== '#produkte') throw new Error(`Landing ${viewport.name}: primary product action is not ready`);
+  const sourceLink = page.locator('#free .product-path-start');
+  if (await sourceLink.getAttribute('href') !== 'https://github.com/inspr-at/hausv-org' ||
+      await sourceLink.getAttribute('target') ||
+      await sourceLink.evaluate((element) => element.classList.contains('js-mail-link')) ||
+      !(await sourceLink.isVisible())) {
+    throw new Error(`Landing ${viewport.name}: Free must offer a direct, visible source-code link`);
+  }
+  const sourceBox = await sourceLink.boundingBox();
+  if (!sourceBox || sourceBox.height < 44 || sourceBox.x < -1 || sourceBox.x + sourceBox.width > viewport.width + 1) {
+    throw new Error(`Landing ${viewport.name}: source-code action is not reachable`);
+  }
+  const accessCard = page.locator('.feature-card').filter({ has: page.getByRole('heading', { name: 'Kontakte, Rollen und Rechte' }) });
+  const providerAvailability = 'Zugänge für externe Dienstleister sind vorbereitet, aber noch nicht freigeschaltet.';
+  if (!(await accessCard.getByText(providerAvailability, { exact: false }).isVisible())) {
+    throw new Error(`Landing ${viewport.name}: access card must explain provider availability`);
+  }
   for (const id of ['produkte', 'leistungen', 'sicherheit', 'impressum', 'kontakt']) {
     if (!(await page.locator(`#${id}`).count())) throw new Error(`Landing ${viewport.name}: #${id} destination is missing`);
   }
@@ -265,6 +281,9 @@ async function captureViewport(viewport) {
   }
   if (await page.getByText('Kein Verrechnungssystem', { exact: false }).count()) {
     throw new Error(`Landing ${viewport.name}: the retired "Kein Verrechnungssystem" disclosure is back`);
+  }
+  if (!(await productDetails.getByText(providerAvailability, { exact: true }).isVisible())) {
+    throw new Error(`Landing ${viewport.name}: outlook must explain provider availability`);
   }
   await productDetails.locator('summary').click();
   // The legal details moved to their own /impressum page (0.68.0).
