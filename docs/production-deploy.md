@@ -545,32 +545,141 @@ The public demo runs on the Augmentoring host `agm1`. Ownership is split:
   every visitor shares one login rate-limit bucket. The container port binds to
   `127.0.0.1` only; Docker-published ports bypass the host firewall.
 
-## Restore drill from the off-site backup (HAUSV-728, 2026-09-10)
+## Restore drill from the off-site backup (HAUSV-760, 2026-09-23)
 
-Production data on csb1 is written to the Hetzner storage box by the
-`restic-cron-hetzner` container at 01:30 nightly. The snapshot does **not**
-contain the live `hausv-org` data directory (open files); it contains the two
-quiesced copies the host timers publish just before: `hausv-org-backup-snapshot`
-(blobs + JSON stores, 01:20) and `hausv-postgres-backup-snapshot/hausv.dump`
-(custom-format `pg_dump` by the `hausv_backup` role, 01:10). A restore therefore
-always uses those two directories, never `hausv-org`.
+Run drills on a workstation or an isolated CI runner. Production hosts are never
+lab hosts: do not create restore directories or disposable containers on them.
+Use the existing restic container only to read the backup with its own credentials;
+stream the selected HAUSV files directly to the workstation. Keep the workspace
+private (mode 0700), outside version control, and never publish dumps, logs,
+account data, browser cookies or screenshots containing residents' information.
 
-Drill on 2026-09-10 (operator `mba`, snapshot `2dc993b5` of 01:30 that night, all
-on csb1, nothing touched production):
+The nightly 01:30 restic snapshot contains the quiesced copies
+`hausv-postgres-backup-snapshot/hausv.dump` (01:10) and
+`hausv-org-backup-snapshot` (01:20), not the live data volumes. These are separate
+capture times, not an atomic database/files snapshot. Validate every referenced
+blob; a missing blob fails the drill. Select the full snapshot ID for the correct
+host and path set: `snapshots --latest 1` can return several host/path groups.
+Never substitute an unqualified `latest` for the recorded ID.
 
-| Step | Command (inside the restic container it owns the credentials) | Time |
-| --- | --- | --- |
-| Restore | `docker exec csb1-restic-cron-hetzner-1 sh -c 'restic $RESTIC_BACKUP_OPTIONS restore <id> --target /restore-drill --include /backup/var/lib/csb1-docker/hausv-postgres-backup-snapshot --include /backup/var/lib/csb1-docker/hausv-org-backup-snapshot'` then `docker cp` out | 10 s |
-| Database | throwaway `postgres:17-alpine` on an isolated network; `create role hausv_app login nosuperuser nobypassrls; create role hausv_backup login nosuperuser bypassrls;` then `pg_restore -U postgres -d hausv --exit-on-error /tmp/hausv.dump` (52 `TABLE DATA` entries) | 4 s |
-| Grants | `grant usage, create on schema public to hausv_app; grant usage on schema public to hausv_backup;` — the dump restores tables owned by `hausv_app` with their ACLs but **not** the `public` schema ACL; without it the app fails with `permission denied for schema public` | – |
-| Compare | policies 41, indexes 122, RLS-forced tables 41, migration `0022_person_avatars.sql` identical to live; row counts identical except `energy_intervals` and `annual_statement_consumption_evidence`, which live keeps ingesting | – |
-| Blobs | every `stored_filename` (plus attachment preview/thumb) referenced by the restored `documents` and `attachments` rows exists in the restored blob copy with matching size (7/7) | – |
-| App | `ghcr.io/inspr-at/hausv-org:latest` on the drill network, loopback port only, `DB_BACKEND=postgres`, `DATABASE_URL` to the drill database, blob copy mounted read-only at `/data`: tenant landing `/jhw22/` 200 with login form, `/jhw22/app` 303 to login, no error logs; `/healthz` reports 503 only because `/data` was mounted read-only (the health probe writes a marker) | 45 s |
+### Repeatable procedure
 
-Total wall-clock for restore, database, comparison and app boot: under three
-minutes; evidence (dump, blob copy, row inventories, scripts) stays in
-`/home/mba/drills/hausv-restore-20260910/` on csb1. Repeat the drill after every
-schema series and at least quarterly; record it on the HAUSV-520 line of work.
+1. Record the snapshot ID/time, live `/healthz` release metadata and immutable
+   release manifest. Stream just the dump and the data directory, for example:
+
+   ```sh
+   # Run on the workstation; replace SNAPSHOT with the recorded full ID.
+   # WORK is an existing private directory shared with the local Docker VM.
+   ssh csb1 "docker exec csb1-restic-cron-hetzner-1 sh -c 'restic \$RESTIC_BACKUP_OPTIONS dump SNAPSHOT /backup/var/lib/csb1-docker/hausv-postgres-backup-snapshot/hausv.dump'" > "$WORK/hausv.dump"
+   ssh csb1 "docker exec csb1-restic-cron-hetzner-1 sh -c 'restic \$RESTIC_BACKUP_OPTIONS dump SNAPSHOT /backup/var/lib/csb1-docker/hausv-org-backup-snapshot'" > "$WORK/data.tar"
+   ```
+
+   Check both exit statuses, file sizes and SHA256 digests. Extract the tar with
+   Python `tarfile.extractall(..., filter="data")` into a separate directory;
+   reject links or unexpected secret/config files before extraction. Preserve
+   `data.tar` unchanged as the independent file-content oracle. A Colima VM may
+   not share macOS `/tmp`; use an explicitly shared workstation directory.
+2. Start a fresh PostgreSQL 17 container on a Docker `--internal` network, with
+   no published database port. The verified image was
+   `postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94`.
+   Create only local roles, restore using `pg_restore --exit-on-error`, then grant:
+
+   ```sql
+   CREATE ROLE hausv_app LOGIN NOSUPERUSER NOBYPASSRLS;
+   CREATE ROLE hausv_backup LOGIN NOSUPERUSER BYPASSRLS;
+   -- pg_restore -U postgres -d hausv --exit-on-error (read dump from stdin)
+   GRANT USAGE, CREATE ON SCHEMA public TO hausv_app;
+   GRANT USAGE ON SCHEMA public TO hausv_backup;
+   ```
+
+   The dump does not include the required schema-create grant. Do not make the
+   application a superuser or grant BYPASSRLS to work around a failed restore.
+   Local trust authentication is suitable only for this private, disposable
+   network; it is not production configuration.
+3. Before browser activity, run the read-only verifier against that container:
+
+   ```sh
+   python3 scripts/verify-restore.py \
+     --container LOCAL_POSTGRES_CONTAINER \
+     --data-dir "$WORK/restored/backup/var/lib/csb1-docker/hausv-org-backup-snapshot" \
+     --snapshot-archive "$WORK/data.tar" \
+     --expected-migration 0024_parking.sql
+   ```
+
+   Set `DOCKER_CONTEXT` explicitly when using a dedicated local VM. Choose the
+   expected migration from the selected release and backup, not from whatever
+   database happened to restore. The verifier checks schema grants, application
+   role restrictions, tenant and organisation RLS, row counts, file sizes,
+   snapshot byte equality, archived-document hashes and database avatar hashes.
+   It checks legacy/unreferenced blobs too. It intentionally rejects an empty
+   blob archive; a deliberately empty installation needs a separate acceptance
+   plan. A green report does not prove external authentication or integrations.
+4. Start the exact released app image on the same internal network, without
+   production environment files or credentials. If registry access is unavailable,
+   stream `docker image save IMAGE` over SSH into local `docker image load`.
+   Compare the recovered `/hausv-org` binary SHA256 to the release manifest;
+   Docker's local image identifier alone is not the published OCI digest.
+
+   Use `--workdir /`, mount the extracted data directory **writable at `/tmp`**,
+   and leave the default `tmp/...` store paths in effect. Run with the local
+   directory owner's UID/GID, `--cap-drop=ALL`, and `no-new-privileges`.
+   Set `DB_BACKEND=postgres`, a DSN for the isolated `hausv_app` role,
+   `ADDR=:8080`, `BASE_URL=http://localhost:PORT`, `ROOT_DOMAIN=localhost`, and
+   `LOCAL_DEV_LOGIN=true`. Configure `WEG_TENANTS_JSON` with the restored tenant
+   slugs, `DEFAULT_TENANT`, and dedicated synthetic role accounts in
+   `WEG_USERS_JSON`/`INVITE_EMAILS`/`ADMIN_EMAILS`. Do not reuse residents' accounts.
+   Keep SMTP, OIDC, Home Assistant, Telegram, intake and AI settings absent;
+   block browser requests outside localhost as well.
+
+   Publish only a loopback HTTP proxy. The app and database stay on the internal
+   network; a minimal proxy can join that network and a normal bridge, forwarding
+   the original Host header. Some Docker versions do not publish ports directly
+   from an internal network. On Apple Silicon, use a dedicated local Rosetta VM
+   for the AMD64 image: the default emulator crashed during this drill, whereas
+   the unchanged image passed under Rosetta. Never replace the production
+   artifact with a local rebuild to hide an emulation failure.
+5. Require `/healthz` HTTP 200 with `service=hausv-org`, `status=ok`, and the
+   expected release tuple. Use Playwright to log in through the local development
+   link as admin, manager, owner and resident in each restored tenant. Assert
+   exact route/status outcomes, management denials and cross-tenant redirects.
+   Download a restored document while authenticated and compare its bytes with
+   the snapshot. Restart the app and repeat health/browser checks.
+6. Prove failures: temporarily move one restored blob aside, require a nonzero
+   verifier exit, restore it, and require green again. A deliberately wrong
+   expected migration must also fail. The automated verifier tests additionally
+   cover same-size corruption, path escape and an incorrect archive checksum.
+7. Record only aggregate evidence in the ticket and PPM runbook, then stop/remove
+   the drill containers and network, stop its dedicated VM, and trash the private
+   workspace. Do not remove somebody else's old drill or Docker resources.
+
+### Verified result
+
+Snapshot `216c5f8119c3e7cebcf747f0504392f79ba4f009e60551ec2a809ff0bec4c25e`
+was captured on 2026-09-23 at 01:30 Europe/Vienna. The restored application was
+release `260923082241.0.0`, production sequence 7, source `d1271bc2bf3b675d559c3c05ca9d49c00da91956`:
+
+- OCI digest: `sha256:0ef07c2496f865215547bbb482a9002d7e78abc5943ab22d7430124e0ea77693`.
+- Server SHA256: `0b4c75178d66da2eb2f9bbc660b3a2b29933bf9262146e1dce3f981268548c32`.
+- Dump SHA256: `64f0121badc1fee772beb5c7e8a634450be0ca9f4799523132d9b54f5bd9ff41`.
+- Data archive SHA256: `3d112adb5d58954201150b8f5ad61908e990c4fa48e209b4d864dfd6dabea12d`.
+- 56 restored tables; migration `0024_parking.sql`; 35 tenant and 10 organisation
+  tables with forced RLS; both tenant lanes verified.
+- All 9 snapshot blobs byte-identical, including 7 document/attachment variants
+  and the tenant-image/legacy files. Health, four roles in both tenants,
+  management denials, cross-tenant denial and the authenticated PDF download
+  passed. Missing-blob and wrong-schema negative controls failed as required.
+
+This proves recovery through the local application boundary, using synthetic
+accounts and disabled external integrations. It does not prove production SMTP,
+OIDC, connector control, DNS/TLS recovery or writes since the backup captures.
+No production data was changed and no replacement product release was created.
+Repeat after schema series and at least quarterly, retaining dated evidence in
+PPM `restore-drill-offsite-snapshot`.
+
+Historical HAUSV-728 (2026-09-10, snapshot `2dc993b5`, PR #229) restored the data
+but returned `/healthz` 503 because the data mount was read-only. That was an
+incomplete application recovery proof. Its production-host lab placement is not
+the current procedure; the older evidence remains historical only.
 
 ## Kalender-Versionen ab 260914170935.0.0
 

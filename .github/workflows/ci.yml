@@ -142,6 +142,7 @@ jobs:
           bash scripts/test-deploy.sh
           bash scripts/test-deploy-from-ci-image.sh
           python3 scripts/test-release-manifest.py
+          python3 scripts/test-verify-restore.py
 
       - name: Check supply-chain pins
         run: python3 scripts/check-supply-chain-pins.py
