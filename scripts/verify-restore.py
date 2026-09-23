@@ -82,7 +82,7 @@ def verify_files(data, archive, records):
     for item in records['intake_items']:
         for attachment in item.get('attachments') or []:
             require(bool(attachment.get('path')), 'Intake attachment has no path')
-            require(isinstance(attachment.get('size'), int) and attachment['size'] > 0, 'Invalid intake attachment size')
+            require(isinstance(attachment.get('size'), int) and attachment['size'] >= 0, 'Invalid intake attachment size')
             check(Path('attachments/intake-mail') / attachment['path'], attachment['size'])
     overrides = json.loads((data / 'tenant_overrides.json').read_text())
     for row in overrides.get('tenants', {}).values():

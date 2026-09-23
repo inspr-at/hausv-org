@@ -81,6 +81,15 @@ class RestoreBlobChecks(unittest.TestCase):
             archive.add(blob, arcname='backup/snapshot-data/attachments/intake-mail/org/case/mail.pdf')
         self.assertEqual(self.verify()['verified_blobs'], 2)
 
+    def test_empty_intake_attachment(self):
+        self.records['intake_items'] = [{'attachments': [{'path': 'org/case/empty.txt', 'size': 0}]}]
+        blob = self.data / 'attachments/intake-mail/org/case/empty.txt'
+        blob.parent.mkdir(parents=True)
+        blob.write_bytes(b'')
+        with tarfile.open(self.archive, 'a') as archive:
+            archive.add(blob, arcname='backup/snapshot-data/attachments/intake-mail/org/case/empty.txt')
+        self.assertEqual(self.verify()['verified_blobs'], 2)
+
     def test_tenant_metadata_drift(self):
         (self.data / 'tenant_overrides.json').write_text('{"tenants":{"test":{}}}')
         with self.assertRaisesRegex(ValueError, 'Metadata differs'):
