@@ -106,8 +106,18 @@ func TestStoreTestsRunOnRealLanes(t *testing.T) {
 	// The fixture handle is the maintenance lane, not the process pool: since
 	// migration 0006 the pool sees nothing, so a suite whose fixtures still
 	// went through it would seed nothing and count nothing.
-	if lanes.Unscoped("prove the fixture handle is the maintenance lane") != appdb.Handle(database) {
-		t.Fatal("the fixture handle is not the maintenance lane; on a fail-closed database it can neither seed nor assert")
+	// The fixture owns an explicit lease of the underlying maintenance pool;
+	// ordinary handles are stable executors, so pointer identity is no longer
+	// the contract. Compare the backend actually used by the two access paths.
+	var fixturePID, lanePID int
+	if err := database.QueryRow(`SELECT pg_backend_pid()`).Scan(&fixturePID); err != nil {
+		t.Fatal(err)
+	}
+	if err := lanes.Unscoped("prove the fixture uses the maintenance pool").QueryRow(`SELECT pg_backend_pid()`).Scan(&lanePID); err != nil {
+		t.Fatal(err)
+	}
+	if fixturePID != lanePID {
+		t.Fatal("fixture and maintenance handle use different pools")
 	}
 	var scope string
 	if err := lanes.For(tenant).QueryRow(`SELECT current_setting('hausv.tenant_id', true)`).Scan(&scope); err != nil {
