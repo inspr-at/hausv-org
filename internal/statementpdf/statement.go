@@ -37,6 +37,7 @@ type Document struct {
 	ApprovalNotice             string
 	PaymentTerms               []string
 	Proposals                  []string
+	Reserve                    []string
 	Inspection                 []string
 	InspectionBasis            string
 	Receipts                   []string
@@ -182,6 +183,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	}
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
+	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
 }
