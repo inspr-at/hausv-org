@@ -185,10 +185,8 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 	"home_portals": {allowed: []laneClass{laneUnscopedOther}, why: "Activate is the moment the tenant identity is MINTED: there is no TenantRef " +
 		"before it runs, so its transaction is on the maintenance lane for a structural reason that outlives the flip. The upsert still " +
 		"coalesces tenant_id, so an orphan portal row is adopted — on the one lane that can reach it."},
-	"house_memberships": {allowed: []laneClass{laneUnscopedOther}, why: "besides SetMembership, which names the heal, the membership upsert runs " +
-		"inside three transactions that are cross-tenant by nature and stay so after the flip: home-portal Activate (no TenantRef exists yet) " +
-		"and the whole-profile writes (a UserProfile spans every house and the same transaction touches persons, which has no tenant_id). " +
-		"All of them are on the maintenance lane, so the orphan is reachable; none of them will revert to For(tenant)."},
+	"house_memberships": {allowed: []laneClass{laneFor, laneUnscopedOther}, why: "PostgreSQL migration 0006 enforces tenant_id NOT NULL, so SetMembership resolves the registry identity and writes on For(tenant). " +
+		"Home-portal activation, whole-profile writes and organisation membership transactions still span houses by design and declare the maintenance lane."},
 
 	// internal/energy has no entry, and that is the point of its absence: its
 	// seven coalescing upserts on six tables (home_profiles, energy_assets,

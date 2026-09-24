@@ -23,15 +23,17 @@ const (
 
 // OrganisationMember is an employee of a Hausverwaltung.
 //
-// Granted is the undo record: for every house whose role this membership
-// changed, the role that house had before ("" when the person had none). House
-// roles themselves live where authorization reads them; this only remembers
-// what to put back when the employee leaves.
+// Granted retains the role-only legacy record and roster house count. Undo is
+// the complete restoration snapshot used by OrganisationMembershipService;
+// grant_origin on each house membership identifies which grants it still owns.
 type OrganisationMember struct {
-	OrgKey    string
-	Email     string
-	Role      string
-	Granted   map[string]string
+	OrgKey  string
+	Email   string
+	Role    string
+	Granted map[string]string
+	// Undo is keyed by immutable tenant ID. Granted remains readable for legacy
+	// records and the roster; only Undo plus grant_origin authorizes restoration.
+	Undo      map[string]OrganisationMembershipUndo
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -44,14 +46,16 @@ type OrganisationMemberRepository interface {
 }
 
 type sqlOrganisationMemberRepository struct {
-	begin  func(context.Context, string) (*sql.Tx, error)
-	orgKey string
+	begin    func(context.Context, string) (*sql.Tx, error)
+	orgKey   string
+	postgres bool
 }
 
 func BindOrganisationMemberRepository(database *sql.DB, orgKey string) OrganisationMemberRepository {
 	return &sqlOrganisationMemberRepository{
-		begin:  func(ctx context.Context, key string) (*sql.Tx, error) { return beginOrgTx(ctx, database, key) },
-		orgKey: textutil.Slug(orgKey),
+		begin:    func(ctx context.Context, key string) (*sql.Tx, error) { return beginOrgTx(ctx, database, key) },
+		orgKey:   textutil.Slug(orgKey),
+		postgres: database != nil && strings.Contains(fmt.Sprintf("%T", database.Driver()), "stdlib"),
 	}
 }
 
@@ -109,7 +113,7 @@ func (r *sqlOrganisationMemberRepository) List(ctx context.Context) ([]Organisat
 		return nil, err
 	}
 	defer tx.Rollback()
-	rows, err := tx.QueryContext(ctx, `SELECT email, role, granted, created_at, updated_at
+	rows, err := tx.QueryContext(ctx, `SELECT email, role, granted, undo, created_at, updated_at
 		FROM organisation_members WHERE org_key=$1 ORDER BY email`, r.orgKey)
 	if err != nil {
 		return nil, err
@@ -142,9 +146,12 @@ type rowScanner interface {
 
 func scanOrganisationMember(row rowScanner, orgKey string) (OrganisationMember, error) {
 	item := OrganisationMember{OrgKey: orgKey, Granted: map[string]string{}}
-	var granted, createdAt, updatedAt string
-	if err := row.Scan(&item.Email, &item.Role, &granted, &createdAt, &updatedAt); err != nil {
+	var granted, undo, createdAt, updatedAt string
+	if err := row.Scan(&item.Email, &item.Role, &granted, &undo, &createdAt, &updatedAt); err != nil {
 		return OrganisationMember{}, err
+	}
+	if err := json.Unmarshal([]byte(undo), &item.Undo); err != nil {
+		return OrganisationMember{}, fmt.Errorf("organisation member: unreadable undo record: %w", err)
 	}
 	if strings.TrimSpace(granted) != "" {
 		if err := json.Unmarshal([]byte(granted), &item.Granted); err != nil {
@@ -171,7 +178,7 @@ func (r *sqlOrganisationMemberRepository) Get(ctx context.Context, email string)
 		return OrganisationMember{}, false, err
 	}
 	defer tx.Rollback()
-	row := tx.QueryRowContext(ctx, `SELECT email, role, granted, created_at, updated_at
+	row := tx.QueryRowContext(ctx, `SELECT email, role, granted, undo, created_at, updated_at
 		FROM organisation_members WHERE org_key=$1 AND email=$2`, r.orgKey, email)
 	item, err := scanOrganisationMember(row, r.orgKey)
 	if err == sql.ErrNoRows {
@@ -201,15 +208,19 @@ func (r *sqlOrganisationMemberRepository) Save(ctx context.Context, item Organis
 	if err != nil {
 		return err
 	}
+	undo, err := json.Marshal(item.Undo)
+	if err != nil {
+		return err
+	}
 	tx, err := r.begin(ctx, r.orgKey)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, `INSERT INTO organisation_members(org_key,email,role,granted,created_at,updated_at)
-		VALUES($1,$2,$3,$4,$5,$6)
-		ON CONFLICT(org_key,email) DO UPDATE SET role=excluded.role, granted=excluded.granted, updated_at=excluded.updated_at`,
-		item.OrgKey, item.Email, item.Role, string(granted),
+	_, err = tx.ExecContext(ctx, `INSERT INTO organisation_members(org_key,email,role,granted,undo,created_at,updated_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7)
+		ON CONFLICT(org_key,email) DO UPDATE SET role=excluded.role, granted=excluded.granted, undo=excluded.undo, updated_at=excluded.updated_at`,
+		item.OrgKey, item.Email, item.Role, string(granted), string(undo),
 		item.CreatedAt.Format(time.RFC3339Nano), item.UpdatedAt.Format(time.RFC3339Nano))
 	if err != nil {
 		return err

@@ -361,7 +361,14 @@ func (s *SQLIdentityStore) SetMembership(m HouseMembership, at time.Time) (House
 		at = time.Now()
 	}
 	at = at.UTC()
-	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
+	// Resolve/mint the registry identity before entering the one-house lane.
+	// Registry rows are global; privilege-bearing writes remain tenant-bound.
+	m.TenantSlug = textutil.Slug(m.TenantSlug)
+	ref, err := tenantRefFor(s.db.Unscoped("membership house identity is resolved or minted in the global tenant registry before entering its tenant lane"), m.TenantSlug)
+	if err != nil {
+		return HouseMembership{}, err
+	}
+	tx, err := s.db.For(ref).Begin()
 	if err != nil {
 		return HouseMembership{}, err
 	}
@@ -398,8 +405,13 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 		return HouseMembership{}, identityErr
 	}
 	m.TenantID = tenantID
-	var personExists int
-	if err := tx.QueryRow(`SELECT 1 FROM persons WHERE id=$1`, m.PersonID).Scan(&personExists); err != nil {
+	// Serialize with bundled organisation grants, including a first house grant
+	// for which there is no membership row to lock yet.
+	res, err := tx.Exec(`UPDATE persons SET id=id WHERE id=$1`, m.PersonID)
+	if err != nil {
+		return HouseMembership{}, err
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
 		return HouseMembership{}, fmt.Errorf("person not found")
 	}
 	var createdAt string
@@ -407,8 +419,10 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 		`SELECT created_at FROM house_memberships WHERE person_id=$1 AND tenant_id=$2`, m.PersonID, m.TenantID,
 	).Scan(&createdAt); err == nil {
 		m.CreatedAt = parseIdentityTime(createdAt)
-	} else {
+	} else if err == sql.ErrNoRows {
 		m.CreatedAt = at
+	} else {
+		return HouseMembership{}, err
 	}
 	m.UpdatedAt = at
 	var directoryOptIn any
@@ -418,7 +432,7 @@ func (s *SQLIdentityStore) setMembershipTx(tx *sql.Tx, m HouseMembership, at tim
 	if _, err := tx.Exec(
 		`INSERT INTO house_memberships(`+membershipColumns+`) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		 ON CONFLICT(person_id, tenant_slug) DO UPDATE SET
-		   role=excluded.role, permissions=excluded.permissions, status=excluded.status,
+		   role=excluded.role, permissions=excluded.permissions, status=excluded.status, grant_origin='',
 		   directory_opt_in=excluded.directory_opt_in, updated_at=excluded.updated_at,
 		   tenant_id=coalesce(house_memberships.tenant_id, excluded.tenant_id)`,
 		m.PersonID, m.TenantID, m.TenantSlug, NormalizeRole(m.Role), encodeStringList(NormalizePermissions(m.Permissions)),

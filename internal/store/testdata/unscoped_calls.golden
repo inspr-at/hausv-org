@@ -51,7 +51,7 @@ internal/store/identity_sql.go	(*SQLIdentityStore).ListPersons	literal	persons h
 internal/store/identity_sql.go	(*SQLIdentityStore).MembershipsForPerson	literal	cross-tenant by design: this answers which houses a person is in, so scoping it to one would answer a different question
 internal/store/identity_sql.go	(*SQLIdentityStore).PersonByEmail	literal	persons has no tenant_id: one identity per email, shared by every house it belongs to
 internal/store/identity_sql.go	(*SQLIdentityStore).PersonByID	literal	persons has no tenant_id: one identity per email, shared by every house it belongs to
-internal/store/identity_sql.go	(*SQLIdentityStore).SetMembership	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
+internal/store/identity_sql.go	(*SQLIdentityStore).SetMembership	literal	membership house identity is resolved or minted in the global tenant registry before entering its tenant lane
 internal/store/identity_sql.go	(*SQLIdentityStore).UpsertPerson	literal	persons has no tenant_id: minting or updating an identity is a platform-level act
 internal/store/identity_sql.go	(*SQLIdentityStore).membershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
 internal/store/identity_sql.go	(*SQLIdentityStore).removeMembershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
@@ -59,6 +59,7 @@ internal/store/issue_sql.go	(*SQLIssueStore).ImportIssues	literal	boot import re
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).Get	literal	notification_prefs has no tenant_id: a person has one mail preference set, not one per house
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).ImportPrefs	literal	boot import replay of the JSON preference snapshot into a table with no tenant_id, before the first request
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).Set	literal	notification_prefs has no tenant_id: a person has one mail preference set, not one per house
+internal/store/organisation_membership_service.go	(*OrganisationMembershipService).change	literal	organisation membership transaction spans the selected organisation's stored house set and its origin-owned undo records, member row and durable audit
 internal/store/parking_sql.go	(*SQLParkingStore).ImportParking	literal	boot import replay of the JSON parking snapshot: it spans every tenant and runs before the first request
 internal/store/parking_sql.go	(*SQLParkingStore).tenantRef	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
 internal/store/person_avatar_sql.go	(*SQLPersonAvatarStore).Avatar	const:personAvatarLane	person_avatars has no tenant_id: the profile picture follows the person across every house

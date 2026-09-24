@@ -546,6 +546,12 @@ func seedFull(t *testing.T) *source {
 		Email: "sachbearbeiter@example.com", Role: store.OrganisationRoleClerk,
 		Granted: map[string]string{"demo": "bewohner", "haus-a": ""}, CreatedAt: now,
 	}))
+	// Exercise the new provenance, full undo JSON and durable audit through the
+	// actual transaction; dbmove must retain them byte-for-byte on both engines.
+	membershipService, err := store.NewOrganisationMembershipService(store.BindOrganisationMemberRepository(src.db, orgKey), src.identity)
+	must(t, "membership service", err)
+	_, err = membershipService.Add(ctx, "resident@example.com", store.OrganisationRoleClerk, store.AuditEvent{ActorEmail: "admin@example.com"})
+	must(t, "transactional membership", err)
 	must(t, "intake mail seen", store.BindIntakeMailSeenRepository(src.db, orgKey).Record(ctx, "<seed-mail@example.com>", "in-0001"))
 	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
 		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},
