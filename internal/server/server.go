@@ -53,7 +53,6 @@ type (
 	announcementView        = view.AnnouncementView
 	attachmentGroup         = view.AttachmentGroup
 	attachmentView          = view.AttachmentView
-	auditDetailView         = view.AuditDetailView
 	auditEventView          = view.AuditEventView
 	auditFilterChipView     = view.AuditFilterChipView
 	auditStatsView          = view.AuditStatsView
@@ -93,11 +92,8 @@ var announcementViewFrom = view.AnnouncementViewFrom
 var attachmentViewFromRecord = view.AttachmentViewFromRecord
 var auditActionLabel = view.AuditActionLabel
 var auditActionTone = view.AuditActionTone
-var auditDetailLabel = view.AuditDetailLabel
 var auditEventViewFrom = view.AuditEventViewFrom
-var auditTargetLabel = view.AuditTargetLabel
 var auditTargetTypeLabel = view.AuditTargetTypeLabel
-var auditToneLabel = view.AuditToneLabel
 var authMethodsLabel = view.AuthMethodsLabel
 var ballotWeightingLabel = view.BallotWeightingLabel
 var ballotWinnerLabel = view.BallotWinnerLabel
@@ -111,16 +107,12 @@ var documentUnitLabel = view.DocumentUnitLabel
 var documentUnitOptions = view.DocumentUnitOptions
 var documentVersionLabel = view.DocumentVersionLabel
 var documentViewFrom = view.DocumentViewFrom
-var documentVisibilityClass = view.DocumentVisibilityClass
 var documentVisibilityLabel = view.DocumentVisibilityLabel
 var documentVisibilityOptions = view.DocumentVisibilityOptions
 var emptyState = view.EmptyState
-var eventCategoryClass = view.EventCategoryClass
 var eventViewFrom = view.EventViewFrom
 var formatBallotReminder = view.FormatBallotReminder
 var formatBallotResultWeight = view.FormatBallotResultWeight
-var formatBallotSharePercent = view.FormatBallotSharePercent
-var formatBallotShareWeight = view.FormatBallotShareWeight
 var formatBallotWeight = view.FormatBallotWeight
 var formatBillableUnitWeight = view.FormatBillableUnitWeight
 var formatBytes = view.FormatBytes
@@ -135,7 +127,6 @@ var formatKWh = view.FormatKWh
 var formatLocalDate = view.FormatLocalDate
 var formatLocalDateTime = view.FormatLocalDateTime
 var formatLocalDateTimeInput = view.FormatLocalDateTimeInput
-var formatLocalShortDateTime = view.FormatLocalShortDateTime
 var formatLocalTime = view.FormatLocalTime
 var formatMiteigentumsanteil = view.FormatMiteigentumsanteil
 var formatMonthLabel = view.FormatMonthLabel
@@ -146,7 +137,6 @@ var formatPreciseEUR = view.FormatPreciseEUR
 var formatPreciseEURPerKWh = view.FormatPreciseEURPerKWh
 var formatPreciseKWh = view.FormatPreciseKWh
 var issueBoardFilterOptions = view.IssueBoardFilterOptions
-var issueFilterOptions = view.IssueFilterOptions
 var issueLocationLabel = view.IssueLocationLabel
 var issueSelectOptions = view.IssueSelectOptions
 var issueStatusClass = view.IssueStatusClass
@@ -161,9 +151,7 @@ var roleClass = view.RoleClass
 var tenantBrandIconOptions = view.TenantBrandIconOptions
 var togglePaidLabel = view.TogglePaidLabel
 var unitBillableLabel = view.UnitBillableLabel
-var unitCountLabel = view.UnitCountLabel
 var unitPaymentRelationLabel = view.UnitPaymentRelationLabel
-var unitPaymentStatusClass = view.UnitPaymentStatusClass
 var unitPaymentStatusLabel = view.UnitPaymentStatusLabel
 var unitPaymentStatusOptions = view.UnitPaymentStatusOptions
 var unitPaymentStatusViewFromUnit = view.UnitPaymentStatusViewFromUnit
@@ -178,7 +166,6 @@ var permissionLabelList = view.PermissionLabelList
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var documentCanPreview = view.DocumentCanPreview
-var documentFileKind = view.DocumentFileKind
 var selectedDocumentSort = view.SelectedDocumentSort
 
 // ── extracted to view ──────────────────────────────────────────────
@@ -188,32 +175,24 @@ var documentCategories = view.DocumentCategories
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var notificationEventCatalog = view.NotificationEventCatalog
-var unitPaymentStatusDetail = view.UnitPaymentStatusDetail
 
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var eventTimeRange = view.EventTimeRange
 var germanDateLong = view.GermanDateLong
-var germanMonthShort = view.GermanMonthShort
-var issueCategories = view.IssueCategories
 var issuePriorities = view.IssuePriorities
 var issueStatuses = view.IssueStatuses
 
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var announcementUnread = view.AnnouncementUnread
-var plainTextHTML = view.PlainTextHTML
 var sameLocalDate = view.SameLocalDate
 
 // ── extracted to auth ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	loginToken     = auth.LoginToken
-	oidcFlow       = auth.OidcFlow
 	oidcFlowStore  = auth.OidcFlowStore
 	oidcLogin      = auth.OidcLogin
 	oidcUserClaims = auth.OidcUserClaims
-	session        = auth.Session
 	sessionStore   = auth.SessionStore
 	tokenStore     = auth.TokenStore
 )
@@ -222,7 +201,6 @@ var newOIDCLogin = auth.NewOIDCLogin
 var newSessionStore = auth.NewSessionStore
 var pkceChallenge = auth.PkceChallenge
 var randomToken = auth.RandomToken
-var safeInternalRedirectPath = auth.SafeInternalRedirectPath
 
 // ── extracted to mail ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -252,7 +230,6 @@ var parseOrganisations = config.ParseOrganisations
 var parseTenants = config.ParseTenants
 var parseUserProfiles = config.ParseUserProfiles
 var sessionSecret = config.SessionSecret
-var trimEnvQuotes = config.TrimEnvQuotes
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -280,11 +257,9 @@ func newHomeAssistantConfig() homeAssistantConfig {
 
 type haState = homeassistant.EntityState
 type haStatistic = homeassistant.Statistic
-type haHistoryState = homeassistant.HistoryState
 
 var (
 	samplesFromStatistics = homeassistant.SamplesFromStatistics
-	samplesFromHistory    = homeassistant.SamplesFromHistory
 	parseHAFloat          = homeassistant.ParseFloat
 )
 
@@ -335,13 +310,10 @@ var defaultAuthMethods = store.DefaultAuthMethods
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	inviteStore      = store.InviteStore
-	inviteStoreData  = store.InviteStoreData
 	tenantMembership = store.TenantMembership
 	userProfile      = store.UserProfile
 )
 
-var initialLetter = store.InitialLetter
 var newInviteStore = store.NewInviteStore
 var normalizeAuthMethod = store.NormalizeAuthMethod
 var normalizeAuthMethods = store.NormalizeAuthMethods
@@ -377,48 +349,32 @@ const (
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var cleanParkingPaymentField = store.CleanParkingPaymentField
 var handoverTokenHash = store.HandoverTokenHash
-var subtleConstantStringCompare = store.SubtleConstantStringCompare
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var defaultParkingTenantData = store.DefaultParkingTenantData
 var normalizeNumericSamples = store.NormalizeNumericSamples
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var copyMonthStates = store.CopyMonthStates
 var uniqueEmails = store.UniqueEmails
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	attachmentFileSave    = store.AttachmentFileSave
 	attachmentRecord      = store.AttachmentRecord
-	attachmentStore       = store.AttachmentStore
-	attachmentStoreData   = store.AttachmentStoreData
-	documentFileSave      = store.DocumentFileSave
 	documentRecord        = store.DocumentRecord
-	documentStore         = store.DocumentStore
-	documentStoreData     = store.DocumentStoreData
 	handoverConfirmation  = store.HandoverConfirmation
 	handoverKey           = store.HandoverKey
 	handoverMeter         = store.HandoverMeter
 	handoverRecord        = store.HandoverRecord
 	handoverRoom          = store.HandoverRoom
-	handoverStore         = store.HandoverStore
-	handoverStoreData     = store.HandoverStoreData
 	handoverTokenDelivery = store.HandoverTokenDelivery
 	issueComment          = store.IssueComment
-	issueStatusChange     = store.IssueStatusChange
-	issueStore            = store.IssueStore
-	issueStoreData        = store.IssueStoreData
 	issueWorkflowUpdate   = store.IssueWorkflowUpdate
 	chargingSession       = store.ChargingSession
 	parkingMonthState     = store.ParkingMonthState
 	parkingNumericSample  = store.ParkingNumericSample
 	parkingSettings       = store.ParkingSettings
-	parkingStore          = store.ParkingStore
-	parkingStoreData      = store.ParkingStoreData
 	parkingStoredSample   = store.ParkingStoredSample
 	parkingTariff         = store.ParkingTariff
 	parkingTenantData     = store.ParkingTenantData
@@ -426,12 +382,7 @@ type (
 	uploadedFile          = store.UploadedFile
 )
 
-var attachmentExtension = store.AttachmentExtension
 var copyDocument = store.CopyDocument
-var copyHandover = store.CopyHandover
-var copyIssue = store.CopyIssue
-var detectAttachmentContentType = store.DetectAttachmentContentType
-var documentExtension = store.DocumentExtension
 var isImageContentType = store.IsImageContentType
 var issuePhotoExtension = store.IssuePhotoExtension
 var newAttachmentStore = store.NewAttachmentStore
@@ -441,16 +392,11 @@ var newIssueStore = store.NewIssueStore
 var newParkingStore = store.NewParkingStore
 var normalizeAttachmentEntity = store.NormalizeAttachmentEntity
 var normalizeDocumentCategory = store.NormalizeDocumentCategory
-var normalizeDocumentRecord = store.NormalizeDocumentRecord
 var normalizeDocumentVisibility = store.NormalizeDocumentVisibility
-var normalizeDocuments = store.NormalizeDocuments
 var normalizeHandover = store.NormalizeHandover
-var normalizeHandoverConfirmations = store.NormalizeHandoverConfirmations
 var normalizeHandoverKeys = store.NormalizeHandoverKeys
 var normalizeHandoverMeters = store.NormalizeHandoverMeters
 var normalizeHandoverRooms = store.NormalizeHandoverRooms
-var normalizeHandoverType = store.NormalizeHandoverType
-var normalizeHandovers = store.NormalizeHandovers
 var normalizeIssueCategory = store.NormalizeIssueCategory
 var normalizeIssueCommentKind = store.NormalizeIssueCommentKind
 var normalizeIssueLocation = store.NormalizeIssueLocation
@@ -458,19 +404,12 @@ var normalizeIssuePriority = store.NormalizeIssuePriority
 var normalizeIssueStatus = store.NormalizeIssueStatus
 var normalizeParkingMonthState = store.NormalizeParkingMonthState
 var normalizeParkingMonthStates = store.NormalizeParkingMonthStates
-var normalizeParkingMonths = store.NormalizeParkingMonths
 var normalizeParkingSettings = store.NormalizeParkingSettings
 var normalizeParkingTariff = store.NormalizeParkingTariff
 var normalizeParkingTariffDate = store.NormalizeParkingTariffDate
 var normalizeChargingSessions = store.NormalizeChargingSessions
 var surplusRate = store.SurplusRate
-var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
-var resizeImageNearest = store.ResizeImageNearest
-var sanitizeDocumentFilename = store.SanitizeDocumentFilename
-var sortHandovers = store.SortHandovers
 var sortIssues = store.SortIssues
-var writeImageAttachmentVariant = store.WriteImageAttachmentVariant
-var writePrivateFile = store.WritePrivateFile
 
 // Vocabulary constants now owned by the store; aliased so call sites are unchanged.
 const (
@@ -545,24 +484,14 @@ var defaultUnitBillableWeight = store.DefaultUnitBillableWeight
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	announcement          = store.Announcement
-	announcementStore     = store.AnnouncementStore
-	announcementStoreData = store.AnnouncementStoreData
-	auditEvent            = store.AuditEvent
-	auditFilter           = store.AuditFilter
-	auditStore            = store.AuditStore
-	ballot                = store.Ballot
-	ballotVote            = store.BallotVote
-	eventStore            = store.EventStore
-	eventStoreData        = store.EventStoreData
-	houseEvent            = store.HouseEvent
-	unit                  = store.Unit
-	unitMembers           = store.UnitMembers
-	unitMembership        = store.UnitMembership
-	unitStore             = store.UnitStore
-	unitStoreData         = store.UnitStoreData
-	voteStore             = store.VoteStore
-	voteStoreData         = store.VoteStoreData
+	announcement   = store.Announcement
+	auditEvent     = store.AuditEvent
+	auditFilter    = store.AuditFilter
+	auditStore     = store.AuditStore
+	ballot         = store.Ballot
+	houseEvent     = store.HouseEvent
+	unit           = store.Unit
+	unitMembership = store.UnitMembership
 )
 
 var auditDetailValues = store.AuditDetailValues
@@ -570,9 +499,6 @@ var auditEventMatches = store.AuditEventMatches
 var ballotHasOption = store.BallotHasOption
 var billableUnitWeight = store.BillableUnitWeight
 var copyAuditEvent = store.CopyAuditEvent
-var copyBallot = store.CopyBallot
-var copyEvent = store.CopyEvent
-var copyUnit = store.CopyUnit
 var emailListContains = store.EmailListContains
 var eventRollsOffAt = store.EventRollsOffAt
 var newAnnouncementStore = store.NewAnnouncementStore
@@ -582,27 +508,14 @@ var newUnitStore = store.NewUnitStore
 var newVoteStore = store.NewVoteStore
 var normalizeAnnouncementCategory = store.NormalizeAnnouncementCategory
 var normalizeAuditAction = store.NormalizeAuditAction
-var normalizeAuditEvent = store.NormalizeAuditEvent
 var normalizeBallot = store.NormalizeBallot
-var normalizeBallotOptions = store.NormalizeBallotOptions
 var normalizeBallotStatus = store.NormalizeBallotStatus
 var normalizeBallotType = store.NormalizeBallotType
 var normalizeBallotWeighting = store.NormalizeBallotWeighting
-var normalizeBallots = store.NormalizeBallots
 var normalizeEmailList = store.NormalizeEmailList
 var normalizeEventCategory = store.NormalizeEventCategory
-var normalizeHouseEvent = store.NormalizeHouseEvent
 var normalizeRole = store.NormalizeRole
-var normalizeUnitBillableWeight = store.NormalizeUnitBillableWeight
 var normalizeUnitType = store.NormalizeUnitType
-var normalizeUnits = store.NormalizeUnits
-var sanitizeAuditDetails = store.SanitizeAuditDetails
-var sortAnnouncements = store.SortAnnouncements
-var sortBallots = store.SortBallots
-var sortEvents = store.SortEvents
-var sortUnits = store.SortUnits
-var truncateAuditValue = store.TruncateAuditValue
-var unitLess = store.UnitLess
 
 const (
 	unitPaymentStatusOpen    = store.UnitPaymentStatusOpen
@@ -614,8 +527,6 @@ const (
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	activityRecord             = store.ActivityRecord
-	activityStore              = store.ActivityStore
 	activityStorage            = store.ActivityStorage
 	announcementRepository     = store.AnnouncementRepository
 	profileOverlayStorage      = store.ProfileOverlayStorage
@@ -629,9 +540,7 @@ type (
 	announcementStorage        = store.AnnouncementStorage
 	eventRepository            = store.EventRepository
 	eventStorage               = store.EventStorage
-	handoverRepository         = store.HandoverRepository
 	handoverStorage            = store.HandoverStorage
-	identityRepository         = store.IdentityRepository
 	documentStorage            = store.DocumentStorage
 	protocolFiler              = store.ProtocolFiler
 	attachmentStorage          = store.AttachmentStorage
@@ -642,25 +551,14 @@ type (
 	voteStorage                = store.VoteStorage
 	issueStorage               = store.IssueStorage
 	profileStorage             = store.ProfileStorage
-	announcementReadStore      = store.AnnouncementReadStore
-	announcementReadStoreData  = store.AnnouncementReadStoreData
-	contactBookStore           = store.ContactBookStore
-	contactBookStoreData       = store.ContactBookStoreData
 	managedContact             = store.ManagedContact
-	notificationPrefStore      = store.NotificationPrefStore
-	notificationPrefStoreData  = store.NotificationPrefStoreData
 	notificationPreferences    = store.NotificationPreferences
 	profileOverlay             = store.ProfileOverlay
-	profileOverlayStore        = store.ProfileOverlayStore
-	profileOverlayStoreData    = store.ProfileOverlayStoreData
 	unitPaymentStatus          = store.UnitPaymentStatus
-	unitPaymentStatusData      = store.UnitPaymentStatusData
-	unitPaymentStatusStore     = store.UnitPaymentStatusStore
 )
 
 var defaultNotificationPreferences = store.DefaultNotificationPreferences
 var managedContactDisplayName = store.ManagedContactDisplayName
-var mergeNotificationPreferences = store.MergeNotificationPreferences
 var newActivityStore = store.NewActivityStore
 var newSQLActivityStore = store.NewSQLActivityStore
 var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
@@ -689,14 +587,9 @@ var newUnitPaymentStatusStore = store.NewUnitPaymentStatusStore
 var normalizeContactKind = store.NormalizeContactKind
 var normalizeManagedContact = store.NormalizeManagedContact
 var normalizeNotificationEvent = store.NormalizeNotificationEvent
-var normalizeNotificationPreferences = store.NormalizeNotificationPreferences
-var normalizeProfileOverlay = store.NormalizeProfileOverlay
 var normalizeUnitID = store.NormalizeUnitID
-var normalizeUnitPaymentRecord = store.NormalizeUnitPaymentRecord
 var normalizeUnitPaymentStatus = store.NormalizeUnitPaymentStatus
 var saveJSONAtomic = store.SaveJSONAtomic
-var sortManagedContacts = store.SortManagedContacts
-var sortUnitPaymentStatuses = store.SortUnitPaymentStatuses
 
 const (
 	roleAdmin                     = store.RoleAdmin
@@ -5856,83 +5749,6 @@ func tenantHeroURLIsServerOwned(tenant tenantConfig) bool {
 		return false
 	}
 	return strings.HasPrefix(parsed.Path, "/assets/") && path.Clean(parsed.Path) == parsed.Path
-}
-
-func enrichCapabilityData(data map[string]any) {
-	role, _ := data["Role"].(string)
-	if role == "" {
-		return
-	}
-	tenant, _ := data["Tenant"].(tenantConfig)
-	person, _ := data["Email"].(string)
-	actor := actorFor(person, tenant.Slug, role)
-	resource := resourceFor(tenant.Slug)
-	if _, ok := data["IsAdmin"]; !ok {
-		data["IsAdmin"] = can(actor, capabilityPlatformAdmin, resource)
-	}
-	if _, ok := data["IsServiceProvider"]; !ok {
-		data["IsServiceProvider"] = isServiceProviderRole(role)
-	}
-	if _, ok := data["CanUseResidentAreas"]; !ok {
-		data["CanUseResidentAreas"] = roleCanUseResidentAreas(role)
-	}
-	if _, ok := data["CanManageUsers"]; !ok {
-		data["CanManageUsers"] = can(actor, capabilityManageUsers, resource)
-	}
-	if _, ok := data["CanManageAnnouncements"]; !ok {
-		data["CanManageAnnouncements"] = can(actor, capabilityManageAnnouncements, resource)
-	}
-	if _, ok := data["CanManageIssues"]; !ok {
-		data["CanManageIssues"] = can(actor, capabilityManageIssues, resource)
-	}
-	if _, ok := data["CanManageDocuments"]; !ok {
-		data["CanManageDocuments"] = can(actor, capabilityManageDocuments, resource)
-	}
-	if _, ok := data["CanManageBuilding"]; !ok {
-		data["CanManageBuilding"] = can(actor, capabilityManageBuilding, resource)
-	}
-	if _, ok := data["CanManageHandovers"]; !ok {
-		data["CanManageHandovers"] = canManageHandovers(actor, resource)
-	}
-	if _, ok := data["CanViewAudit"]; !ok {
-		data["CanViewAudit"] = canViewAudit(actor, resource)
-	}
-}
-
-func (a *app) enrichIssueData(data map[string]any) {
-	if _, ok := data["OpenIssues"]; ok {
-		if _, hasFlag := data["HasOpenIssues"]; !hasFlag {
-			if count, ok := data["OpenIssues"].(int); ok {
-				data["HasOpenIssues"] = count > 0
-			}
-		}
-		return
-	}
-	tenant, ok := data["Tenant"].(tenantConfig)
-	if !ok || tenant.Slug == "" || a.issueStore == nil {
-		data["OpenIssues"] = 0
-		data["HasOpenIssues"] = false
-		return
-	}
-	email, _ := data["Email"].(string)
-	role, _ := data["Role"].(string)
-	identity, identityOK := a.tenantIdentity(tenant.Slug)
-	if !identityOK {
-		data["OpenIssues"] = 0
-		data["HasOpenIssues"] = false
-		return
-	}
-	count := issueOpenCount(a.visibleIssuesForActor(identity.Ref(), email, role))
-	data["OpenIssues"] = count
-	data["HasOpenIssues"] = count > 0
-}
-
-func emptyStateAction(title string, message string, actionURL string, actionLabel string) emptyStateView {
-	state := emptyState(title, message)
-	state.ActionURL = actionURL
-	state.ActionLabel = actionLabel
-	state.HasAction = actionURL != "" && actionLabel != ""
-	return state
 }
 
 func (a *app) tenantPathRedirect(w http.ResponseWriter, r *http.Request) {
