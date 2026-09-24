@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
@@ -383,6 +384,28 @@ func leaseFromForm(r *http.Request, unitID, actor string) (store.Lease, store.Le
 		FullChangeOnTrigger: true, TwoWay: checked(r, "two_way"), ClauseText: value("clause_text"),
 		ReviewStatus: value("review_status"), ValidFrom: lease.StartsOn,
 	}
+	if clause.ClauseType == store.ClauseStaffel {
+		dates, kinds, values := r.Form["staffel_date"], r.Form["staffel_kind"], r.Form["staffel_value"]
+		if len(dates) == 0 || len(dates) != len(kinds) || len(dates) != len(values) || len(dates) > indexation.MaxStaffelSteps {
+			return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+		}
+		for i, date := range dates {
+			v := strings.TrimSpace(values[i])
+			if kinds[i] == "percent" {
+				v += "%"
+			} else if kinds[i] != "amount" {
+				return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+			}
+			step, err := store.ParseStaffelStep(date, v)
+			if err != nil || date <= clause.ValidFrom {
+				return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+			}
+			clause.StaffelSteps = append(clause.StaffelSteps, step)
+		}
+		if err := indexation.ValidateStaffelSteps(clause.StaffelSteps); err != nil {
+			return lease, party, component, clause, addComponent, err
+		}
+	}
 	return lease, party, component, clause, addComponent, nil
 }
 
@@ -475,6 +498,16 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 			Threshold: thresholdLabel(clause), Text: clause.ClauseText,
 			Review: reviewLabel(clause.ReviewStatus), ReviewClass: reviewClass(clause.ReviewStatus), Note: clause.ReviewNote,
 		}
+		if clause.ClauseType == store.ClauseStaffel {
+			detail.Clause.Line, detail.Clause.Threshold = "", ""
+			for _, step := range clause.StaffelSteps {
+				value := "+" + strings.ReplaceAll(step.Percent, ".", ",") + " % auf den vorigen Vertragsbetrag"
+				if step.NetCents != nil {
+					value = web.LeaseMoney(*step.NetCents) + " HMZ netto"
+				}
+				detail.Clause.Staffel = append(detail.Clause.Staffel, "Ab "+web.LeaseDate(step.EffectiveOn)+": "+value)
+			}
+		}
 		if clause.State != nil && clause.State.ContractBasePeriod != "" {
 			detail.Anchor = "Ausgangswert " + strings.ReplaceAll(clause.State.ContractValue, ".", ",") + " €, Index " + web.LeaseMonth(clause.State.ContractBasePeriod) + " = " + strings.ReplaceAll(clause.State.ContractBaseValue, ".", ",") + "."
 		}
@@ -536,6 +569,13 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 		form.BaseValue = strings.ReplaceAll(clause.BaseValue, ".", ",")
 		form.Threshold = strings.ReplaceAll(clause.ThresholdValue, ".", ",")
 		form.ClauseText = clause.ClauseText
+		for _, step := range clause.StaffelSteps {
+			row := web.LeaseStaffelRow{Date: step.EffectiveOn, Value: strings.ReplaceAll(step.Percent, ".", ","), Percent: step.Percent != ""}
+			if step.NetCents != nil {
+				row.Value = strings.TrimSuffix(web.LeaseMoney(*step.NetCents), " €")
+			}
+			form.Staffel = append(form.Staffel, row)
+		}
 		form.TwoWay = clause.TwoWay
 		form.Inclusive = clause.ThresholdInclusive
 		form.ClauseTypes = leaseOptions(clause.ClauseType, "mieweg_model", "MieWeG-Modell", "vpi_threshold", "VPI mit Schwelle", "vpi_periodic", "VPI periodisch", "staffel", "Staffel", "none", "Keine")
@@ -572,6 +612,8 @@ func leaseIssueLabels(codes []string) []string {
 			out = append(out, "Einheit ist nicht vorhanden")
 		case "invalid_amount":
 			out = append(out, "Betrag ist ungültig")
+		case "invalid_staffel":
+			out = append(out, "Staffelstufen prüfen: eindeutige aufsteigende Daten und je ein Betrag oder Prozentsatz erforderlich.")
 		case "invalid_lease":
 			out = append(out, "Vertragsdaten sind ungültig")
 		case "overlap":

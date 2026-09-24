@@ -23,14 +23,19 @@ func TestLetterVariants(t *testing.T) {
 		t.Fatal(err)
 	}
 	when, _ := time.Parse(time.DateOnly, "2026-04-01")
-	for _, variant := range []string{"mieweg-full", "mieweg-partial", "contract-full", "contract-exempt", "decrease"} {
+	for _, variant := range []string{"mieweg-full", "mieweg-partial", "contract-full", "contract-exempt", "decrease", "staffel-mieweg-full", "staffel-mieweg-partial", "staffel-contract-full", "staffel-contract-exempt", "staffel-decrease"} {
 		t.Run(variant, func(t *testing.T) {
+			kind := strings.TrimPrefix(variant, "staffel-")
 			lease := store.Lease{ID: "e1", UnitID: "Top 1", Status: store.LeaseStatusActive, ConcludedOn: "2024-09-01", StartsOn: "2024-09-01", LeaseKind: store.LeaseKindHauptmiete, UseKind: store.UseKindWohnung, MRGScope: store.MRGTeil, PriceRestrictedSet: true, ZinsterminDay: 5,
 				Parties:    []store.LeaseParty{{ID: "eva", Name: "Eva Huber", Address: "Janusbergweg 123/1\n8010 Graz", Email: "eva.huber@musterstadt.example", Role: store.PartyHauptmieter, ValidFrom: "2024-09-01"}},
 				Components: []store.RentComponent{{Kind: store.ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2024-09-01"}, {Kind: store.ComponentBKAkonto, NetCents: 18000, VATRateBP: 1000, ValidFrom: "2024-09-01"}},
 				Clauses:    []store.IndexClause{{ID: "clause", ComponentKind: store.ComponentHMZ, ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2024-09", BaseValue: "123.6", ThresholdKind: "percent", ThresholdValue: "5", TwoWay: true, FullChangeOnTrigger: true, ReviewStatus: store.ReviewOK, ValidFrom: "2024-09-01", ClauseText: "Der Hauptmietzins ist nach dem VPI 2020 wertgesichert. Die Schwelle von 5 Prozent gilt in beide Richtungen; nach Überschreitung wird die volle Änderung berücksichtigt."}},
 			}
-			switch variant {
+			if strings.HasPrefix(variant, "staffel-") {
+				amount := int64(110000)
+				lease.Clauses[0] = store.IndexClause{ID: "clause", ComponentKind: store.ComponentHMZ, ClauseType: store.ClauseStaffel, TwoWay: true, ReviewStatus: store.ReviewOK, ValidFrom: lease.StartsOn, StaffelSteps: []indexation.StaffelStep{{EffectiveOn: "2026-04-01", NetCents: &amount}}}
+			}
+			switch kind {
 			case "mieweg-full":
 				lease.MRGScope = store.MRGVoll
 				lease.PriceRestricted = true
@@ -53,7 +58,7 @@ func TestLetterVariants(t *testing.T) {
 			if item.Group != "ready" {
 				t.Fatal(item.Exceptions)
 			}
-			if variant == "decrease" {
+			if kind == "decrease" {
 				item.NewCents = 95000
 				item.NewVATCents = 9500
 				item.NewGrossCents = 104500
@@ -79,6 +84,9 @@ func TestLetterVariants(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(out)
+			if strings.HasPrefix(variant, "staffel-") && !strings.Contains(text, "Staffelmietzins laut Vertrag") {
+				t.Fatal("Staffel letter basis missing", text)
+			}
 			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1`).MatchString(text) {
 				t.Fatal("technical notation in letter", text)
 			}
@@ -99,10 +107,10 @@ func TestLetterVariants(t *testing.T) {
 			if item.MieWeG && !strings.Contains(text, "niedrigere Betrag") {
 				t.Fatal("parallel decision missing")
 			}
-			if variant == "mieweg-full" && !strings.Contains(text, "Sonderdeckel") {
+			if kind == "mieweg-full" && !strings.Contains(text, "Sonderdeckel") {
 				t.Fatal("special cap missing")
 			}
-			if variant == "decrease" && (!strings.Contains(text, "Verminderung") || !strings.Contains(text, "Manuelle Entscheidung")) {
+			if kind == "decrease" && (!strings.Contains(text, "Verminderung") || !strings.Contains(text, "Manuelle Entscheidung")) {
 				t.Fatal("decrease / override missing")
 			}
 			if dir := os.Getenv("HAUSV_VALORISATION_PDF_DIR"); dir != "" {
