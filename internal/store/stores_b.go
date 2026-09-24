@@ -1195,6 +1195,10 @@ func normalizeUnitPartyUpdates(updates []UnitPartyUpdate) map[string]UnitPartyUp
 	return out
 }
 
+func (s *UnitStore) listTenantChecked(tenant TenantRef) ([]Unit, error) {
+	return s.listTenant(tenant), nil
+}
+
 func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
 	tenantSlug := tenant.Slug
 	if s == nil {
@@ -1215,6 +1219,10 @@ func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
 
 func (s *UnitStore) unitCount(tenant TenantRef) int {
 	return len(s.listTenant(tenant))
+}
+
+func (s *UnitStore) unitCountChecked(tenant TenantRef) (int, error) {
+	return s.unitCount(tenant), nil
 }
 
 func (s *UnitStore) billableUnitWeight(tenant TenantRef) int {

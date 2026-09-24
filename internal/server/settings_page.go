@@ -125,6 +125,7 @@ func (a *app) renderBuildingSettingsTempl(w http.ResponseWriter, r *http.Request
 		UnitsEmpty:            data["UnitsEmpty"].(emptyStateView),
 		UnitMsg:               data["UnitMsg"].(string),
 		UnitOK:                data["UnitOK"].(bool),
+		UnitDataNotice:        data["UnitDataNotice"].(string),
 		PaymentMsg:            data["PaymentMsg"].(string),
 		PaymentOK:             data["PaymentOK"].(bool),
 		HasHomeProfile:        data["HasHomeProfile"].(bool),

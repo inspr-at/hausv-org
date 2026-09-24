@@ -42,7 +42,7 @@ func (s *SQLAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantRef,
 	defer tx.Rollback()
 	input, err := s.load(tx, tenant, year, consumption)
 	if err != nil {
-		return input, AnnualStatementRunResult{}, err
+		return input, AnnualStatementRunResult{}, annualStatementUnitDataBlock(err)
 	}
 	return evaluateAnnualStatementRun(input)
 }
@@ -54,7 +54,7 @@ func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, 
 	defer tx.Rollback()
 	input, err := s.load(tx, tenant, year, nil)
 	if err != nil {
-		return AnnualStatementRun{}, err
+		return AnnualStatementRun{}, annualStatementUnitDataBlock(err)
 	}
 	input, result, err := evaluateAnnualStatementRun(input)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		}
 		var unit Unit
 		if err := json.Unmarshal([]byte(raw), &unit); err != nil {
-			return err
+			return unitDataErr(tenant, id, "decode", err)
 		}
 		if unit.ID != id {
 			return fmt.Errorf("annual statement unit identity mismatch")

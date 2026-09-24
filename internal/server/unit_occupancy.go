@@ -108,15 +108,18 @@ func occupancyPersonLabel(people []web.Person) string {
 	return people[0].Name + " +" + strconv.Itoa(len(people)-1)
 }
 
-func (a *app) unitOccupancies(tenant store.TenantRef) []web.UnitOccupancy {
+func (a *app) unitOccupancies(tenant store.TenantRef) ([]web.UnitOccupancy, error) {
 	if a == nil {
-		return nil
+		return nil, nil
 	}
 	units := a.repositoriesFor(tenant).units
 	if units == nil {
-		return nil
+		return nil, nil
 	}
-	items := units.List()
+	items, err := units.ListChecked()
+	if err != nil {
+		return nil, err
+	}
 	occupancies := make([]web.UnitOccupancy, 0, len(items))
 	for _, unit := range items {
 		occupancies = append(occupancies, a.unitOccupancy(tenant.Slug, unit.Label))
@@ -129,7 +132,7 @@ func (a *app) unitOccupancies(tenant store.TenantRef) []web.UnitOccupancy {
 		}
 		return store.UnitLabelLess(occupancies[i].UnitLabel, occupancies[j].UnitLabel)
 	})
-	return occupancies
+	return occupancies, nil
 }
 
 func (a *app) buildingUnitViewsWithOccupancy(repositories requestRepositories, tenant store.TenantRef, units []unit) []buildingUnitView {

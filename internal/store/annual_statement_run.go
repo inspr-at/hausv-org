@@ -156,7 +156,11 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 		}
 	}
 	input.Structure, _ = periods.Structure(year)
-	for _, unit := range units.List() {
+	listed, err := units.ListChecked()
+	if err != nil {
+		return input, annualStatementUnitDataBlock(err)
+	}
+	for _, unit := range listed {
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{ID: unit.ID, Label: unit.Label, UnitType: NormalizeUnitType(unit.UnitType)})
 		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
 	}
@@ -220,6 +224,14 @@ func annualStatementRunDocumentReadable(doc DocumentRecord, repository DocumentR
 	info, err := file.Stat()
 	return err == nil && info.Mode().IsRegular() && info.Size() > 0 && info.Size() == doc.Size
 }
+func annualStatementUnitDataBlock(err error) error {
+	var dataErr *UnitDataError
+	if !errors.As(err, &dataErr) {
+		return err
+	}
+	return &AnnualStatementRunBlockedError{Issues: []AnnualStatementRunIssue{{Code: "unit-data", UnitID: dataErr.UnitID}}}
+}
+
 func evaluateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunInput, AnnualStatementRunResult, error) {
 	result, issues := CalculateAnnualStatementRun(input)
 	if len(issues) > 0 {

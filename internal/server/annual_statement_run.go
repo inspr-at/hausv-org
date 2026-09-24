@@ -284,6 +284,8 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		return "Abrechnungsperiode fehlt oder ist ungültig. Bitte eine gespeicherte Periode wählen."
 	case "units":
 		return "Die Einheiten sind unvollständig oder nicht eindeutig. Bitte die Einheitenzuordnung prüfen."
+	case "unit-data":
+		return unitDataUnreadableNotice
 	case "structure":
 		return "Die Einheiten und die Verteilerbasis des Abrechnungsjahres stimmen nicht überein. Bitte die Periodenbasis für alle Einheiten speichern."
 	case "cost-types":

@@ -3839,6 +3839,24 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.renderSettingsHubTempl(w, r, ac, pageData)
 }
 
+const unitDataUnreadableNotice = "Die Einheitendaten dieser Liegenschaft sind unvollständig lesbar. Bitte wenden Sie sich an den Betreiber."
+
+func unitsForPage(units unitRepository) ([]unit, string) {
+	if units == nil {
+		return nil, ""
+	}
+	listed, err := units.ListChecked()
+	if err == nil {
+		return listed, ""
+	}
+	var dataErr *store.UnitDataError
+	if errors.As(err, &dataErr) {
+		return nil, unitDataUnreadableNotice
+	}
+	logError("unit list failed", err)
+	return nil, unitDataUnreadableNotice
+}
+
 func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, _, _, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
@@ -3849,7 +3867,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
 	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
 	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
-	units := ac.repositories.units.List()
+	units, unitNotice := unitsForPage(ac.repositories.units)
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
 	homeProfile, hasHomeProfile, profileErr := a.energyFor(ac).Profile(tenant.Slug)
@@ -3883,6 +3901,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
+		"UnitDataNotice":        unitNotice,
 		"Units":                 a.buildingUnitViewsWithOccupancy(ac.repositories, ac.tenantRef, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),

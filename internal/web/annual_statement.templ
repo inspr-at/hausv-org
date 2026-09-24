@@ -169,6 +169,7 @@ type AnnualStatementPageData struct {
 	HasReceipts           bool
 	Units                  []AnnualStatementUnitView
 	HasUnits               bool
+	UnitDataNotice         string
 	Allocation             AnnualStatementAllocationView
 	Consumption            AnnualStatementConsumptionView
 	BasesMsg               string
@@ -320,7 +321,9 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			if data.Allocation.KeylessCostTypes != "" {
 				<p class="notice"><strong>Ohne Verteilerschlüssel:</strong> { data.Allocation.KeylessCostTypes }. Jede umlagefähige Kostenart braucht genau einen Schlüssel; bis dahin ist die Verteilung blockiert.</p>
 			}
-			if data.HasUnits {
+			if data.UnitDataNotice != "" {
+				<p class="notice" role="status">{ data.UnitDataNotice }</p>
+			} else if data.HasUnits {
 				<form method="post" action="/app/settings/annual-statement/allocation-bases"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
 					for _, basis := range data.Allocation.Bases {
 						<div class="allocation-row"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label></div>
@@ -487,7 +490,9 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 
 		<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
 			@SettingsFlash(data.ImportMsg, data.ImportOK)
-			if data.HasUnits {
+			if data.UnitDataNotice != "" {
+				<p class="notice" role="status">{ data.UnitDataNotice }</p>
+			} else if data.HasUnits {
 				<div class="unit-list">
 					for _, unit := range data.Units {
 						<article class="unit-card"><span class="unit-kind">@PortalIcon("home")</span><div class="unit-title"><strong>{ unit.Label }</strong><small>{ unit.TypeLabel }</small></div><div class="assignment"><small>Wohnungseigentümer</small><strong>{ unit.OwnerSummary }</strong><small>Mietverhältnis</small><strong>{ unit.RenterSummary }</strong></div><div></div><a class="icon-button" href={ templ.SafeURL("/app/settings/building?section=units#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>

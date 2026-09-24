@@ -92,6 +92,7 @@ type BuildingSettingsPageData struct {
 	UnitsEmpty              view.EmptyStateView
 	UnitMsg                 string
 	UnitOK                  bool
+	UnitDataNotice          string
 	PaymentMsg              string
 	PaymentOK               bool
 	HasHomeProfile          bool
@@ -517,7 +518,9 @@ templ BuildingUnits(data BuildingSettingsPageData) {
 			<aside class="notice"><strong>{ data.HomeProfileName }</strong> ist { homeProfileScope(data.HomeProfileType) }. <a href="/app/settings/home?from=building">Zuhause bearbeiten</a></aside>
 		}
 		@SettingsFlash(data.UnitMsg, data.UnitOK) @SettingsFlash(data.PaymentMsg, data.PaymentOK)
-		if len(data.Units) == 0 {
+		if data.UnitDataNotice != "" {
+			<p class="notice" role="status">{ data.UnitDataNotice }</p>
+		} else if len(data.Units) == 0 {
 			@SettingsEmpty(data.UnitsEmpty)
 		} else {
 			<div class="unit-list">
