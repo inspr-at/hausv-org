@@ -2,6 +2,19 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924183440.0.0] - 2026-09-24
+
+### Neu
+
+- Jahresabrechnung: Eigentümerwechsel im Jahr werden in Eigentümergemeinschaften zugeordnet, Mieterwechsel in Mietshäusern; Heizkosten werden nach Zwischenablesung oder Monatsanteilen aufgeteilt.
+- Wertsicherung: Der Zeitpunkt der Wirksamkeit ist je Hausverwaltung und je Mietvertrag wählbar; verfrühte Anpassungsschreiben werden verhindert.
+- Hilfe: Neue Seite „Rechtliche Grundlagen und Entscheidungen“ mit Erläuterungen und Quellen.
+
+### Verbessert
+
+- Verwaltung von Mitarbeiterinnen und Mitarbeitern der Hausverwaltung zuverlässiger.
+- Stabilität und Datensicherheit verbessert.
+
 ## [260924152649.0.0] - 2026-09-24
 
 ### Neu
