@@ -74,6 +74,10 @@ templ AnnouncementsStyles() {
 		[data-templ-portal] .announcement-new::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);}
 		[data-templ-portal] .announcement-card-preview{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);font-size:13px;line-height:1.5;}
 		[data-templ-portal] .announcement-body[open] .announcement-card-preview{display:none;}
+		[data-templ-portal] .announcement-card-lead,[data-templ-portal] .announcement-static .entry-body{color:var(--muted);font-size:13px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;}
+		[data-templ-portal] .announcement-static{display:grid;grid-template-columns:6px minmax(0,1fr) auto;align-items:start;gap:12px;min-width:0;padding:16px 16px 12px 8px;}
+		[data-templ-portal] .announcement-static .announcement-card-header{display:grid;gap:4px;min-width:0;}
+		[data-templ-portal] .announcement-static-actions{padding:0 16px 12px 26px;}
 		[data-templ-portal] .announcement-card-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 20px;max-width:240px;color:var(--muted);font-size:13px;}
 		[data-templ-portal] .announcement-date{white-space:nowrap;}
 		[data-templ-portal] .announcement-category{display:inline-flex;align-items:center;justify-content:center;min-width:70px;padding:3px 10px;border:1px solid currentColor;border-radius:var(--radius-pill);font-size:12px;font-weight:500;line-height:1.5;background:transparent;}
@@ -169,7 +173,9 @@ templ AnnouncementsStyles() {
 		[data-templ-portal] .lightbox-prev,[data-templ-portal] .lightbox-next{width:46px;height:70px;font-size:28px;}
 		[data-templ-portal] .lightbox-prev{grid-column:1;grid-row:2;}
 		[data-templ-portal] .lightbox-next{grid-column:3;grid-row:2;}
-		@media (max-width:899px){[data-templ-portal] .archive-tools{flex-wrap:wrap;gap:8px;}
+		@media (max-width:899px){[data-templ-portal] .announcement-static{grid-template-columns:6px minmax(0,1fr);}
+		[data-templ-portal] .announcement-static .announcement-card-meta{grid-column:2;}
+		[data-templ-portal] .archive-tools{flex-wrap:wrap;gap:8px;}
 		[data-templ-portal] .filter-tabs{flex-wrap:wrap;}
 		[data-templ-portal] .filter-form{flex-basis:100%;}
 		[data-templ-portal] .announcement-card-meta{max-width:100%;justify-content:flex-start;gap:8px 12px;}
@@ -288,43 +294,63 @@ templ AnnouncementGroup(id, title string, items []view.AnnouncementView) {
 
 templ AnnouncementEntry(item view.AnnouncementView) {
 	<article class={ "announcement-card", templ.KV("is-expired", item.Expired) } id={ "announcement-" + item.ID }>
-		<details class="announcement-body" open?={ item.Unread }>
-			<summary class="announcement-card-content">
-				<span class={ "announcement-category-dot", item.CategoryClass } aria-hidden="true"></span>
-				<div class="announcement-card-header">
-					<div class="announcement-card-title-group">
-						<span class="announcement-card-title">{ item.Title }</span>
-						if item.Unread {
-							<span class="announcement-new" title="Neu"><span class="announcement-sr-only">Neu</span></span>
-						}
-					</div>
-					if item.Body != "" {
-						<div class="announcement-card-preview">{ truncateText(item.Body, 160) }</div>
+		if announcementShowsMore(item) {
+			<details class="announcement-body" open?={ item.Unread && announcementBodyTruncated(item) }>
+				<summary class="announcement-card-content">
+					@AnnouncementEntryHead(item)
+					@DisclosureChevron()
+				</summary>
+				<div class="announcement-body-content">
+					if announcementBodyTruncated(item) {
+						<div class="entry-body">@templ.Raw(string(item.BodyHTML))
+</div>
+					}
+					@AnnouncementAttachments(item)
+					if item.CanManage {
+						<div class="announcement-card-actions"><button class="announcement-text-action edit" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button><span aria-hidden="true">·</span><form method="post" action="/app/announcements/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="announcement-text-action" type="submit">Löschen</button></form><span aria-hidden="true" data-announcement-collapse hidden>·</span><button class="announcement-text-action" type="button" data-announcement-collapse hidden>Einklappen</button></div>
 					}
 				</div>
-				<div class="announcement-card-meta">
-					<span class={ "announcement-category", item.CategoryClass }>{ item.Category }</span><span class="announcement-date" title={ item.PublishedAt }>{ announcementDate(item.PublishedAt) }</span>
-					if item.Pinned {
-						<span class="announcement-fixiert-label">Fixiert</span>
-					}
-					if item.Expired {
-						<span>Abgelaufen</span>
-					}
-				</div>
-				@DisclosureChevron()
-			</summary>
-			<div class="announcement-body-content">
-				<div class="entry-body">@templ.Raw(string(item.BodyHTML))
-</div>@AnnouncementAttachments(item)
-				if item.CanManage {
-					<div class="announcement-card-actions"><button class="announcement-text-action edit" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button><span aria-hidden="true">·</span><form method="post" action="/app/announcements/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="announcement-text-action" type="submit">Löschen</button></form><span aria-hidden="true" data-announcement-collapse hidden>·</span><button class="announcement-text-action" type="button" data-announcement-collapse hidden>Einklappen</button></div>
-				}
+			</details>
+		} else {
+			<div class="announcement-static">
+				@AnnouncementEntryHead(item)
 			</div>
-		</details>
+			if item.CanManage {
+				<div class="announcement-static-actions"><div class="announcement-card-actions"><button class="announcement-text-action edit" type="button" data-dialog={ item.EditDialogID } aria-haspopup="dialog" aria-controls={ item.EditDialogID }>Bearbeiten</button><span aria-hidden="true">·</span><form method="post" action="/app/announcements/delete" data-confirm={ item.DeleteConfirmLabel }><input type="hidden" name="id" value={ item.ID }/><button class="announcement-text-action" type="submit">Löschen</button></form></div></div>
+			}
+		}
 	</article>
 	if item.CanManage {
 		@AnnouncementEditDialog(item)
 	}
+}
+
+templ AnnouncementEntryHead(item view.AnnouncementView) {
+	<span class={ "announcement-category-dot", item.CategoryClass } aria-hidden="true"></span>
+	<div class="announcement-card-header">
+		<div class="announcement-card-title-group">
+			<span class="announcement-card-title">{ item.Title }</span>
+			if item.Unread {
+				<span class="announcement-new" title="Neu"><span class="announcement-sr-only">Neu</span></span>
+			}
+		</div>
+		if item.Body != "" {
+			if announcementBodyTruncated(item) {
+				<div class="announcement-card-preview">{ announcementPreviewText(item.Body) }</div>
+			} else {
+				<div class="announcement-card-lead">{ item.Body }</div>
+			}
+		}
+	</div>
+	<div class="announcement-card-meta">
+		<span class={ "announcement-category", item.CategoryClass }>{ item.Category }</span><span class="announcement-date" title={ item.PublishedAt }>{ announcementDate(item.PublishedAt) }</span>
+		if item.Pinned {
+			<span class="announcement-fixiert-label">Fixiert</span>
+		}
+		if item.Expired {
+			<span>Abgelaufen</span>
+		}
+	</div>
 }
 
 templ AnnouncementAttachments(item view.AnnouncementView) {
@@ -426,7 +452,34 @@ templ AnnouncementCategoryIcon(category string) {
 }
 
 func truncateText(text string, maxLength int) string {
-	return textutil.Truncate(text, maxLength) + "…"
+	preview, truncated := announcementPreview(text, maxLength)
+	if !truncated {
+		return preview
+	}
+	return preview
+}
+
+func announcementPreview(text string, maxLength int) (string, bool) {
+	value := strings.TrimSpace(text)
+	cut := textutil.Truncate(value, maxLength)
+	if cut == value {
+		return value, false
+	}
+	return cut + "…", true
+}
+
+func announcementPreviewText(text string) string {
+	preview, _ := announcementPreview(text, 160)
+	return preview
+}
+
+func announcementBodyTruncated(item view.AnnouncementView) bool {
+	_, truncated := announcementPreview(item.Body, 160)
+	return truncated
+}
+
+func announcementShowsMore(item view.AnnouncementView) bool {
+	return announcementBodyTruncated(item) || item.HasAttachments
 }
 
 func announcementDate(publishedAt string) string {

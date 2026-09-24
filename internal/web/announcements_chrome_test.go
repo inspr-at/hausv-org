@@ -171,4 +171,19 @@ func TestAnnouncementTruncationIsRuneSafe(t *testing.T) {
 	if len(runes) > 15 {
 		t.Errorf("Truncated text has %d runes, expected <= 15", len(runes))
 	}
+	if short, cut := announcementPreview("Kurzer Hinweis.", 160); cut || short != "Kurzer Hinweis." {
+		t.Fatalf("short preview = %q truncated=%v", short, cut)
+	}
+}
+
+func TestShortAnnouncementIsNotRepeatedBehindADisclosure(t *testing.T) {
+	html := renderComponent(t, AnnouncementEntry(view.AnnouncementView{
+		ID: "short", Title: "Hinweis", Body: "Kurz und vollständig.", Category: "Info", CategoryClass: "info",
+	}))
+	if strings.Contains(html, "<details") || strings.Contains(html, "announcement-card-preview") {
+		t.Fatalf("short announcement still discloses:\n%s", html)
+	}
+	if strings.Count(html, "Kurz und vollständig.") != 1 {
+		t.Fatalf("short text count:\n%s", html)
+	}
 }
