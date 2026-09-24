@@ -121,7 +121,7 @@ try {
   await approved.locator('.vr-cancel > summary').click();
   const href = await pdfLink.getAttribute('href');
   if (!href) fail('PDF-Link fehlt');
-  const pdf = await manager.request.get(new URL(href, baseURL).href);
+  const pdf = await manager.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
   if (pdf.status() !== 200 || !(await pdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-'))) fail('Archiv-PDF fehlt');
   await shot(page, 'valorisation-approved-390');
   await manager.close();

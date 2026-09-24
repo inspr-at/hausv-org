@@ -35,7 +35,7 @@ try {
   await page.screenshot({ path: `${out}/vat-off.png`, fullPage: true });
   await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
   const offHref = await page.locator('.annual-pdf a').first().getAttribute('href');
-  const offPDF = await (await context.request.get(new URL(offHref, baseURL).href)).body();
+  const offPDF = await (await context.request.get(new URL(offHref, baseURL).href, { headers: { Connection: 'close' } })).body();
   assert(!pdfText(offPDF).includes('USt-Satz'));
   await writeFile(`${out}/vat-off.pdf`, offPDF);
   await page.goto(route);
@@ -51,7 +51,7 @@ try {
   await page.screenshot({ path: `${out}/vat-on.png`, fullPage: true });
   await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
   const onHref = await page.locator('.annual-pdf a').first().getAttribute('href');
-  const onPDF = await (await context.request.get(new URL(onHref, baseURL).href)).body();
+  const onPDF = await (await context.request.get(new URL(onHref, baseURL).href, { headers: { Connection: 'close' } })).body();
   const text = pdfText(onPDF);
   for (const want of ['Netto', 'USt-Satz', 'Brutto', '10 %', '20 %']) {
     assert(text.includes(want), `pdf missing ${want}`);
@@ -59,5 +59,7 @@ try {
   await writeFile(`${out}/vat-on.pdf`, onPDF);
   console.log('vat switch and pdf text ok');
 } finally {
+  await context.request.dispose();
+  await context.close();
   await browser.close();
 }

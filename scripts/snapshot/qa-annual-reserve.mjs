@@ -44,7 +44,7 @@ try {
   const run = page.locator('[data-annual-statement-run]');
   await run.waitFor();
   const pdfURL = await run.locator('.annual-pdf a').first().getAttribute('href');
-  const response = await context.request.get(new URL(pdfURL, baseURL).href);
+  const response = await context.request.get(new URL(pdfURL, baseURL).href, { headers: { Connection: 'close' } });
   assert.equal(response.status(), 200);
   const pdf = await response.body();
   await writeFile(`${out}/statement.pdf`, pdf);
@@ -60,5 +60,7 @@ try {
   }
   assert.deepEqual(pageErrors, []);
 } finally {
+  await context.request.dispose();
+  await context.close();
   await browser.close();
 }
