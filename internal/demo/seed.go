@@ -81,13 +81,14 @@ type seedHouse struct {
 }
 
 type seedUnit struct {
-	StatementBasis *seedStatementBasis      `json:"-"`
-	PartyContacts  []store.UnitPartyContact `json:"-"`
-	Label          string                   `json:"label"`
-	Floor          string                   `json:"floor"`
-	UnitType       string                   `json:"unit_type"`
-	OwnerEmail     string                   `json:"owner_email"`
-	TenantEmail    string                   `json:"tenant_email"`
+	PreviousTenantEmail string                   `json:"-"`
+	StatementBasis      *seedStatementBasis      `json:"-"`
+	PartyContacts       []store.UnitPartyContact `json:"-"`
+	Label               string                   `json:"label"`
+	Floor               string                   `json:"floor"`
+	UnitType            string                   `json:"unit_type"`
+	OwnerEmail          string                   `json:"owner_email"`
+	TenantEmail         string                   `json:"tenant_email"`
 }
 
 type seedIntake struct {
@@ -482,6 +483,9 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 		}
 		if raw.TenantEmail != "" {
 			unit.RenterEmails = []string{raw.TenantEmail}
+			if raw.PreviousTenantEmail != "" {
+				unit.RenterEmails = append(unit.RenterEmails, raw.PreviousTenantEmail)
+			}
 		}
 		units = append(units, unit)
 	}
@@ -489,6 +493,23 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 }
 
 func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.TenantIdentity, id string, value any) error {
+	if unit, ok := value.(store.Unit); ok && table == "units" {
+		data, validity, err := store.EncodeUnitWithValidity(unit)
+		if err != nil {
+			return err
+		}
+		result, err := tx.ExecContext(ctx, `UPDATE units SET tenant_id=$1,data=$4,party_validity=$5 WHERE tenant_slug=$2 AND id=$3`, tenant.ID, tenant.Slug, id, data, validity)
+		if err != nil {
+			return err
+		}
+		updated, err := result.RowsAffected()
+		if err != nil || updated > 0 {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `INSERT INTO units(tenant_id,tenant_slug,id,data,party_validity) VALUES($1,$2,$3,$4,$5)`, tenant.ID, tenant.Slug, id, data, validity)
+		return err
+	}
+
 	blob, err := json.Marshal(value)
 	if err != nil {
 		return err

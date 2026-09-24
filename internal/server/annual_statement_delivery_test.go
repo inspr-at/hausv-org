@@ -92,11 +92,11 @@ func TestMusterstadt2025DeliveryThroughRoutes(t *testing.T) {
 		t.Fatal(response.Code, response.Body.String())
 	}
 	location := response.Header().Get("Location")
-	if !strings.Contains(location, "sent=30") || !strings.Contains(location, "failed=0") || !strings.Contains(location, "skipped=0") {
+	if !strings.Contains(location, "sent=31") || !strings.Contains(location, "failed=0") || !strings.Contains(location, "skipped=0") {
 		t.Fatal(location)
 	}
 	rows, err := repos.annualStatementDeliveries.List(run.ID)
-	if err != nil || len(rows) != 30 {
+	if err != nil || len(rows) != 31 {
 		t.Fatal(len(rows), err)
 	}
 	expected := map[string]store.AnnualStatementDelivery{}
@@ -107,7 +107,7 @@ func TestMusterstadt2025DeliveryThroughRoutes(t *testing.T) {
 		expected[row.DocumentID] = row
 	}
 	entries, err := os.ReadDir(directory)
-	if err != nil || len(entries) != 30 {
+	if err != nil || len(entries) != 31 {
 		t.Fatal(len(entries), err)
 	}
 	seen := map[string]bool{}
@@ -171,36 +171,36 @@ func TestMusterstadt2025DeliveryThroughRoutes(t *testing.T) {
 			t.Fatal("extra attachment", err)
 		}
 	}
-	if len(seen) != 30 {
+	if len(seen) != 31 {
 		t.Fatal("not all archives sent")
 	}
 	page = archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, strings.Split(strings.TrimPrefix(location, "/"+archiveDemoTenant), "#")[0], nil)
-	for _, want := range []string{"30 gesendet · 0 fehlgeschlagen · 0 übersprungen", "Versandprotokoll", "Adresse", "Gesendet"} {
+	for _, want := range []string{"31 gesendet · 0 fehlgeschlagen · 0 übersprungen", "Versandprotokoll", "Adresse", "Gesendet"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatal("page missing", want)
 		}
 	}
 	response = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if response.Code != http.StatusSeeOther || !strings.Contains(response.Header().Get("Location"), "skipped=30") {
+	if response.Code != http.StatusSeeOther || !strings.Contains(response.Header().Get("Location"), "skipped=31") {
 		t.Fatal(response.Code, response.Header())
 	}
 	entries, _ = os.ReadDir(directory)
 	rows, _ = repos.annualStatementDeliveries.List(run.ID)
-	if len(entries) != 30 || len(rows) != 30 {
+	if len(entries) != 31 || len(rows) != 31 {
 		t.Fatal("retry created mail or row")
 	}
 	events := a.auditStore.List(auditFilter{TenantSlug: archiveDemoTenant, Action: store.AuditActionAnnualRunSend, Limit: 10})
-	if len(events) != 2 || events[0].Details["skipped"] != "30" || events[1].Details["sent"] != "30" {
+	if len(events) != 2 || events[0].Details["skipped"] != "31" || events[1].Details["sent"] != "31" {
 		t.Fatal(events)
 	}
 	if err := reseed(); err != nil {
 		t.Fatal(err)
 	}
 	rows, _ = repos.annualStatementDeliveries.List(run.ID)
-	if len(rows) != 30 {
+	if len(rows) != 31 {
 		t.Fatal("reseed lost deliveries")
 	}
-	t.Log("fresh SQLite seed → run → archive → send: 30 MIME files, each byte-identical to its party archive; 30 sent rows; retry sends zero")
+	t.Log("fresh SQLite seed → run → archive → send: 31 MIME files, each byte-identical to its party archive; 31 sent rows; retry sends zero")
 }
 
 type failingDocumentMailer struct {
@@ -232,11 +232,11 @@ func TestAnnualStatementDeliveryFailureRetryIntegrityAndCancellation(t *testing.
 	failure := &failingDocumentMailer{Mailer: sink}
 	a.mailer = failure
 	w := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "failed=30") || failure.calls != 30 {
+	if w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "failed=31") || failure.calls != 31 {
 		t.Fatal(w.Code, w.Header(), failure.calls)
 	}
 	rows, err := repos.annualStatementDeliveries.List(run.ID)
-	if err != nil || len(rows) != 30 {
+	if err != nil || len(rows) != 31 {
 		t.Fatal(err)
 	}
 	for _, row := range rows {
@@ -261,11 +261,11 @@ func TestAnnualStatementDeliveryFailureRetryIntegrityAndCancellation(t *testing.
 	}
 	a.mailer = sink
 	w = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "sent=29") || !strings.Contains(w.Header().Get("Location"), "failed=1") {
+	if w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "sent=30") || !strings.Contains(w.Header().Get("Location"), "failed=1") {
 		t.Fatal(w.Code, w.Header())
 	}
 	entries, _ := os.ReadDir(directory)
-	if len(entries) != 29 {
+	if len(entries) != 30 {
 		t.Fatal(len(entries))
 	}
 	rows, _ = repos.annualStatementDeliveries.List(run.ID)
@@ -286,12 +286,12 @@ func TestAnnualStatementDeliveryFailureRetryIntegrityAndCancellation(t *testing.
 		t.Fatal(err)
 	}
 	w = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if !strings.Contains(w.Header().Get("Location"), "sent=1") || !strings.Contains(w.Header().Get("Location"), "skipped=29") {
+	if !strings.Contains(w.Header().Get("Location"), "sent=1") || !strings.Contains(w.Header().Get("Location"), "skipped=30") {
 		t.Fatal(w.Header())
 	}
 	entries, _ = os.ReadDir(directory)
 	rows, _ = repos.annualStatementDeliveries.List(run.ID)
-	if len(entries) != 30 || len(rows) != 61 {
+	if len(entries) != 31 || len(rows) != 63 {
 		t.Fatal(len(entries), len(rows))
 	}
 	next := createArchiveDemoRun(t, a, repos)

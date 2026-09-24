@@ -576,6 +576,17 @@ templ BuildingUnitDialog(unit view.BuildingUnitView, types, payments []view.Sele
 				<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 			}
 		</select></label></fieldset>
+		<fieldset class="span-all"><legend>Gültigkeit der Parteien</legend>
+			<p>Ein- und Auszugstag inklusive; leere Grenzen gelten unbefristet. Frühere Parteien in der Zuordnung belassen, damit die Abrechnung ihren Zeitraum kennt.</p>
+			for _, party := range unit.PartyDates {
+				<div class="form-grid three"><label>Partei<input name="party_email" value={ party.Email } readonly/></label>
+				<label>Gültig ab<input type="date" name="party_valid_from" value={ party.From }/></label>
+				<label>Gültig bis<input type="date" name="party_valid_to" value={ party.To }/></label></div>
+			}
+			<div class="form-grid three"><label>Neue Partei mit Zeitraum (E-Mail aus der Zuordnung)<input type="email" name="party_email"/></label>
+			<label>Gültig ab<input type="date" name="party_valid_from"/></label>
+			<label>Gültig bis<input type="date" name="party_valid_to"/></label></div>
+		</fieldset>
 	</form><footer>
 		if !add {
 			<form method="post" action="/app/settings/building/units/delete" data-confirm={ unit.DeleteConfirmLabel + "?" }><input type="hidden" name="id" value={ unit.ID }/><button class="button ghost" type="submit">Einheit löschen</button></form>

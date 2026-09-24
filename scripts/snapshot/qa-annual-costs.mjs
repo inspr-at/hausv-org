@@ -31,7 +31,7 @@ try {
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
   assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
-  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'Fixture covers multiple parties');
+  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 3, 'Fixture covers an owner and a tenant change');
   const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
   })));

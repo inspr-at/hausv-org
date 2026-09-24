@@ -18,15 +18,23 @@ import (
 	"github.com/inspr-at/hausv-org/internal/view"
 )
 
+type seedStatementPartyChange struct {
+	UnitID        string `json:"unit_id"`
+	PreviousEmail string `json:"previous_email"`
+	CurrentEmail  string `json:"current_email"`
+	ChangedOn     string `json:"changed_on"`
+}
+
 type seedStatement struct {
-	Legal      store.AnnualStatementLegalSettings `json:"legal"`
-	House      string                             `json:"house"`
-	Year       int                                `json:"year"`
-	StartsOn   string                             `json:"starts_on"`
-	EndsOn     string                             `json:"ends_on"`
-	RecordedAt time.Time                          `json:"recorded_at"`
-	CostTypes  []seedStatementCost                `json:"cost_types"`
-	UnitBases  []seedStatementBasis               `json:"unit_bases"`
+	PartyChanges []seedStatementPartyChange         `json:"party_changes,omitempty"`
+	Legal        store.AnnualStatementLegalSettings `json:"legal"`
+	House        string                             `json:"house"`
+	Year         int                                `json:"year"`
+	StartsOn     string                             `json:"starts_on"`
+	EndsOn       string                             `json:"ends_on"`
+	RecordedAt   time.Time                          `json:"recorded_at"`
+	CostTypes    []seedStatementCost                `json:"cost_types"`
+	UnitBases    []seedStatementBasis               `json:"unit_bases"`
 }
 type seedStatementCost struct {
 	Supplier             string `json:"supplier"`
@@ -119,6 +127,25 @@ func loadStatementFixture(dir string, houses []seedHouse, documentDir string) (*
 				return nil, fmt.Errorf("demo basis missing for %s", unit.Label)
 			}
 			unit.StatementBasis = &basis
+			for _, change := range statement.PartyChanges {
+				if change.UnitID != basis.UnitID {
+					continue
+				}
+				if unit.TenantEmail != change.CurrentEmail {
+					return nil, fmt.Errorf("demo party change mismatch")
+				}
+				previous, ok := contacts[change.PreviousEmail]
+				if !ok {
+					return nil, fmt.Errorf("demo previous party missing")
+				}
+				at, err := time.Parse("2006-01-02", change.ChangedOn)
+				if err != nil {
+					return nil, err
+				}
+				previous.ValidTo = at.AddDate(0, 0, -1).Format("2006-01-02")
+				unit.PreviousTenantEmail = previous.Email
+				unit.PartyContacts = append(unit.PartyContacts, previous)
+			}
 			if unit.OwnerEmail == "" {
 				return nil, fmt.Errorf("demo owner missing for %s", unit.Label)
 			}
@@ -129,6 +156,11 @@ func loadStatementFixture(dir string, houses []seedHouse, documentDir string) (*
 				contact, ok := contacts[email]
 				if !ok {
 					return nil, fmt.Errorf("demo party %s absent from persons.json", email)
+				}
+				for _, change := range statement.PartyChanges {
+					if change.UnitID == basis.UnitID && email == change.CurrentEmail {
+						contact.ValidFrom = change.ChangedOn
+					}
 				}
 				unit.PartyContacts = append(unit.PartyContacts, contact)
 			}

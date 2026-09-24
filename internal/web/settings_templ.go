@@ -2953,69 +2953,118 @@ func BuildingUnitDialog(unit view.BuildingUnitView, types, payments []view.Selec
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</select></label></fieldset></form><footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</select></label></fieldset><fieldset class=\"span-all\"><legend>Gültigkeit der Parteien</legend><p>Ein- und Auszugstag inklusive; leere Grenzen gelten unbefristet. Frühere Parteien in der Zuordnung belassen, damit die Abrechnung ihren Zeitraum kennt.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if !add {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "<form method=\"post\" action=\"/app/settings/building/units/delete\" data-confirm=\"")
+		for _, party := range unit.PartyDates {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "<div class=\"form-grid three\"><label>Partei<input name=\"party_email\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var133 string
-			templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.DeleteConfirmLabel + "?")
+			templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.ResolveAttributeValue(party.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 581, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 582, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var133)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "\" readonly></label> <label>Gültig ab<input type=\"date\" name=\"party_valid_from\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var134 string
-			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
+			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.ResolveAttributeValue(party.From)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 581, Col: 161}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 583, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "\"><button class=\"button ghost\" type=\"submit\">Einheit löschen</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "\"></label> <label>Gültig bis<input type=\"date\" name=\"party_valid_to\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var135 string
+			templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.ResolveAttributeValue(party.To)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 584, Col: 79}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var135)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\"></label></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "<a class=\"button ghost\" href=\"?section=units\">Abbrechen</a><button class=\"button primary\" type=\"submit\" form=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "<div class=\"form-grid three\"><label>Neue Partei mit Zeitraum (E-Mail aus der Zuordnung)<input type=\"email\" name=\"party_email\"></label> <label>Gültig ab<input type=\"date\" name=\"party_valid_from\"></label> <label>Gültig bis<input type=\"date\" name=\"party_valid_to\"></label></div></fieldset></form><footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var135 string
-		templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 583, Col: 146}
+		if !add {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "<form method=\"post\" action=\"/app/settings/building/units/delete\" data-confirm=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var136 string
+			templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.DeleteConfirmLabel + "?")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 592, Col: 112}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var136)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "\"><input type=\"hidden\" name=\"id\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var137 string
+			templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.ResolveAttributeValue(unit.ID)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 592, Col: 161}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var137)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "\"><button class=\"button ghost\" type=\"submit\">Einheit löschen</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var135)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "<a class=\"button ghost\" href=\"?section=units\">Abbrechen</a><button class=\"button primary\" type=\"submit\" form=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "\">")
+		var templ_7745c5c3_Var138 string
+		templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.ResolveAttributeValue(unitDialogID(unit, add) + "-form")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 594, Col: 146}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var138)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var136 string
-		templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogButton(add))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 583, Col: 172}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "</button></footer></div></section>")
+		var templ_7745c5c3_Var139 string
+		templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.JoinStringErrs(unitDialogButton(add))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 594, Col: 172}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var139))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "</button></footer></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3070,12 +3119,12 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var137 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var137 == nil {
-			templ_7745c5c3_Var137 = templ.NopComponent
+		templ_7745c5c3_Var140 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var140 == nil {
+			templ_7745c5c3_Var140 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3087,48 +3136,48 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "<div class=\"appearance-grid\" data-appearance-workspace><div class=\"aside-stack\"><form class=\"panel inset\" method=\"post\" action=\"/app/settings/building/appearance\"><fieldset><legend>Portal-Symbol</legend><input type=\"hidden\" name=\"brand_icon\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "<div class=\"appearance-grid\" data-appearance-workspace><div class=\"aside-stack\"><form class=\"panel inset\" method=\"post\" action=\"/app/settings/building/appearance\"><fieldset><legend>Portal-Symbol</legend><input type=\"hidden\" name=\"brand_icon\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var138 string
-		templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandIcon)
+		var templ_7745c5c3_Var141 string
+		templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandIcon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 594, Col: 273}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 273}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var138)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var141)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\" data-brand-icon-value><div class=\"brand-grid\" role=\"radiogroup\" aria-label=\"Portal-Symbol\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "\" data-brand-icon-value><div class=\"brand-grid\" role=\"radiogroup\" aria-label=\"Portal-Symbol\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, option := range data.BrandIconOptions {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "<label class=\"brand-icon-choice\"><input type=\"radio\" name=\"brand_icon_choice\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "<label class=\"brand-icon-choice\"><input type=\"radio\" name=\"brand_icon_choice\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var139 string
-			templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
+			var templ_7745c5c3_Var142 string
+			templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.ResolveAttributeValue(option.Value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 596, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 607, Col: 102}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var139)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var142)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if option.Selected {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, " checked")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, " checked")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "><span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3136,129 +3185,129 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "</span><strong>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "</span><strong>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var140 string
-			templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
+			var templ_7745c5c3_Var143 string
+			templ_7745c5c3_Var143, templ_7745c5c3_Err = templ.JoinStringErrs(option.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 596, Col: 213}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 607, Col: 213}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var140))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var143))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "</strong></label>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "</strong></label>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "</div></fieldset><section class=\"icon-search\"><label>Weitere Symbole aus Lucide<input type=\"search\" placeholder=\"Symbol suchen\" autocomplete=\"off\" data-brand-icon-search></label><div data-brand-icon-results hidden></div><p data-brand-icon-result-note")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "</div></fieldset><section class=\"icon-search\"><label>Weitere Symbole aus Lucide<input type=\"search\" placeholder=\"Symbol suchen\" autocomplete=\"off\" data-brand-icon-search></label><div data-brand-icon-results hidden></div><p data-brand-icon-result-note")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if !data.BrandIconIsLucide {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, " hidden")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, " hidden")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, ">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, ">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.BrandIconIsLucide {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "Aktuell ausgewählt: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "Aktuell ausgewählt: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var141 string
-			templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.JoinStringErrs(data.BrandIconLabel)
+			var templ_7745c5c3_Var144 string
+			templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.JoinStringErrs(data.BrandIconLabel)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 601, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 612, Col: 47}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var141))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var144))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "</p></section><label>Kurzkennung<input id=\"brand-abbreviation\" name=\"brand_abbreviation\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var142 string
-		templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandAbbreviation)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 604, Col: 124}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var142)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "\" maxlength=\"12\" placeholder=\"HAUS\"><span data-abbreviation-count>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var143 string
-		templ_7745c5c3_Var143, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Tenant.BrandAbbreviation))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 604, Col: 228}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var143))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, " / 12</span></label><button class=\"button primary\" type=\"submit\">Portal-Kennung speichern</button></form><section class=\"panel inset\"><h3>Titelbild</h3><img class=\"hero-preview\" src=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var144 string
-		templ_7745c5c3_Var144, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 121}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var144)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "\" alt=\"Aktuelles Titelbild\" data-hero-preview><p data-hero-file-name>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "</p></section><label>Kurzkennung<input id=\"brand-abbreviation\" name=\"brand_abbreviation\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var145 string
-		templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.JoinStringErrs(heroLabel(data.HasCustomHero))
+		templ_7745c5c3_Var145, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Tenant.BrandAbbreviation)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 605, Col: 223}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 615, Col: 124}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var145))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "</p><form method=\"post\" action=\"/app/settings/building/hero\" enctype=\"multipart/form-data\"><label>Neues Titelbild<input id=\"hero-image\" type=\"file\" name=\"hero_image\" accept=\"image/jpeg,image/png,image/webp\" required></label><button class=\"button\" type=\"submit\">Titelbild übernehmen</button></form>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var145)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if data.HasCustomHero {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "<form method=\"post\" action=\"/app/settings/building/hero/delete\" data-confirm=\"Titelbild entfernen und Standardbild verwenden?\"><button class=\"button ghost\" type=\"submit\">Standardbild verwenden</button></form>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "</section></div><aside class=\"preview panel\"><span class=\"eyebrow\">Live-Vorschau</span><img src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "\" maxlength=\"12\" placeholder=\"HAUS\"><span data-abbreviation-count>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var146 string
-		templ_7745c5c3_Var146, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
+		templ_7745c5c3_Var146, templ_7745c5c3_Err = templ.JoinStringErrs(len(data.Tenant.BrandAbbreviation))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 610, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 615, Col: 228}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var146)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var146))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "\" alt=\"\" data-hero-stage><div><span class=\"preview-mark\" data-brand-preview-mark>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, " / 12</span></label><button class=\"button primary\" type=\"submit\">Portal-Kennung speichern</button></form><section class=\"panel inset\"><h3>Titelbild</h3><img class=\"hero-preview\" src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var147 string
+		templ_7745c5c3_Var147, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 616, Col: 121}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var147)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "\" alt=\"Aktuelles Titelbild\" data-hero-preview><p data-hero-file-name>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var148 string
+		templ_7745c5c3_Var148, templ_7745c5c3_Err = templ.JoinStringErrs(heroLabel(data.HasCustomHero))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 616, Col: 223}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var148))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "</p><form method=\"post\" action=\"/app/settings/building/hero\" enctype=\"multipart/form-data\"><label>Neues Titelbild<input id=\"hero-image\" type=\"file\" name=\"hero_image\" accept=\"image/jpeg,image/png,image/webp\" required></label><button class=\"button\" type=\"submit\">Titelbild übernehmen</button></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.HasCustomHero {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "<form method=\"post\" action=\"/app/settings/building/hero/delete\" data-confirm=\"Titelbild entfernen und Standardbild verwenden?\"><button class=\"button ghost\" type=\"submit\">Standardbild verwenden</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "</section></div><aside class=\"preview panel\"><span class=\"eyebrow\">Live-Vorschau</span><img src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var149 string
+		templ_7745c5c3_Var149, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(data.Tenant.HeroImageURL))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 621, Col: 124}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var149)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "\" alt=\"\" data-hero-stage><div><span class=\"preview-mark\" data-brand-preview-mark>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3266,33 +3315,33 @@ func BuildingAppearance(data BuildingSettingsPageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "</span><strong data-brand-preview-abbreviation>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "</span><strong data-brand-preview-abbreviation>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var147 string
-		templ_7745c5c3_Var147, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.BrandAbbreviation)
+		var templ_7745c5c3_Var150 string
+		templ_7745c5c3_Var150, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.BrandAbbreviation)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 610, Col: 304}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 621, Col: 304}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var147))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "</strong><small>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var150))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var148 string
-		templ_7745c5c3_Var148, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 610, Col: 340}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var148))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "</strong><small>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class=\"button primary\">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div><script id=\"brand-lucide-icon-names\" type=\"application/json\">@templ.Raw(data.LucideIconNamesJSON)</script></section>")
+		var templ_7745c5c3_Var151 string
+		templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.JoinStringErrs(data.Tenant.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 621, Col: 340}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var151))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class=\"button primary\">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div><script id=\"brand-lucide-icon-names\" type=\"application/json\">@templ.Raw(data.LucideIconNamesJSON)</script></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3329,44 +3378,44 @@ func SettingsFlash(message string, ok bool) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var149 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var149 == nil {
-			templ_7745c5c3_Var149 = templ.NopComponent
+		templ_7745c5c3_Var152 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var152 == nil {
+			templ_7745c5c3_Var152 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if message != "" {
-			var templ_7745c5c3_Var150 = []any{"flash", templ.KV("ok", ok), templ.KV("bad", !ok)}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var150...)
+			var templ_7745c5c3_Var153 = []any{"flash", templ.KV("ok", ok), templ.KV("bad", !ok)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var153...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "<p class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, "<p class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var151 string
-			templ_7745c5c3_Var151, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var150).String())
+			var templ_7745c5c3_Var154 string
+			templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.CSSClasses(templ_7745c5c3_Var153).String())
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 1, Col: 0}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var151)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var154)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "\" role=\"status\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "\" role=\"status\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var152 string
-			templ_7745c5c3_Var152, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+			var templ_7745c5c3_Var155 string
+			templ_7745c5c3_Var155, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 620, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 631, Col: 88}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var152))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var155))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, "</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3391,74 +3440,74 @@ func SettingsEmpty(empty view.EmptyStateView) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var153 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var153 == nil {
-			templ_7745c5c3_Var153 = templ.NopComponent
+		templ_7745c5c3_Var156 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var156 == nil {
+			templ_7745c5c3_Var156 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "<section class=\"empty\"><h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "<section class=\"empty\"><h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var154 string
-		templ_7745c5c3_Var154, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Title)
+		var templ_7745c5c3_Var157 string
+		templ_7745c5c3_Var157, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 41}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var154))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "</h2><p>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var157))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var155 string
-		templ_7745c5c3_Var155, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Message)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 625, Col: 66}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var155))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "</h2><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, "</p>")
+		var templ_7745c5c3_Var158 string
+		templ_7745c5c3_Var158, templ_7745c5c3_Err = templ.JoinStringErrs(empty.Message)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 636, Col: 66}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var158))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if empty.HasAction {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "<a class=\"button\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, "<a class=\"button\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var156 templ.SafeURL
-			templ_7745c5c3_Var156, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(empty.ActionURL))
+			var templ_7745c5c3_Var159 templ.SafeURL
+			templ_7745c5c3_Var159, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(empty.ActionURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 627, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 638, Col: 58}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var156))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, "\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var159))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var157 string
-			templ_7745c5c3_Var157, templ_7745c5c3_Err = templ.JoinStringErrs(empty.ActionLabel)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 627, Col: 80}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var157))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "</a>")
+			var templ_7745c5c3_Var160 string
+			templ_7745c5c3_Var160, templ_7745c5c3_Err = templ.JoinStringErrs(empty.ActionLabel)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 638, Col: 80}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var160))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, "</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, "</section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3482,12 +3531,12 @@ func SettingsStyles() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var158 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var158 == nil {
-			templ_7745c5c3_Var158 = templ.NopComponent
+		templ_7745c5c3_Var161 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var161 == nil {
+			templ_7745c5c3_Var161 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.settings-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.settings-main>*{max-width:1180px;margin-inline:auto}.settings-main>*+*{margin-top:var(--space-5)}.eyebrow{color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.panel{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.text-link{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}.muted{color:var(--muted)}\n\t\t.identity-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:var(--space-4);padding:var(--space-4)}.identity-card p{overflow-wrap:anywhere}.identity-icon,.link-icon,.unit-kind{display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);color:var(--gold-ink);border-radius:var(--radius-sm)}.identity-icon{width:58px;height:58px;background:var(--ink);color:var(--panel)}.identity-icon svg{width:28px}.identity-card h2{font-size:23px}.identity-card p{margin-top:3px;color:var(--muted);font-size:13px}.pill,.scope{display:inline-flex;align-items:center;width:max-content;white-space:nowrap;padding:4px 10px;border-radius:var(--radius-pill);background:var(--panel-soft);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800}.scope.personal{padding:0;border:0;background:none;color:var(--muted);font-weight:600}.scope.management{background:rgba(200,153,63,.12);color:var(--gold-ink)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.span-all{grid-column:1/-1}.settings-group{overflow:hidden}.settings-group>header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3);align-items:start;padding:var(--space-4)}.settings-group h2{font-size:21px}.settings-group header p{margin-top:4px;color:var(--muted);font-size:12px}.settings-links{display:grid}.settings-links a{min-height:72px;display:grid;grid-template-columns:42px minmax(0,1fr) 16px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line)}.settings-links a:hover{background:var(--panel-soft)}.settings-links .link-icon{width:42px;height:42px}.link-icon svg,.unit-kind svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.settings-links strong,.settings-links small{display:block}.settings-links strong{font-family:var(--font-serif);font-size:17px}.settings-links small{margin-top:3px;color:var(--muted);font-size:12px}.settings-links b{color:var(--gold-ink);font-size:22px}.management-links{grid-template-columns:repeat(2,minmax(0,1fr))}.management-links a:nth-child(even){border-left:1px solid var(--line)}\n\t\t.two-column{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:var(--space-4);align-items:start}.form-card{padding:var(--space-4)}.form-card form,.workspace form,.user-dialog form{display:grid;gap:var(--space-4)}fieldset{min-width:0;display:grid;gap:var(--space-3);margin:0;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}legend{padding-inline:var(--space-2);font-family:var(--font-serif);font-size:19px;font-weight:700}fieldset>p{color:var(--muted);font-size:12px}.form-grid,.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-grid{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:grid;gap:6px;color:var(--gold-ink);font-size:11px;font-weight:800}label small{color:var(--soft);font-weight:600}input,select,textarea,.readonly{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}textarea{min-height:92px;resize:vertical}.readonly{display:flex;align-items:center;overflow-wrap:anywhere}.check-card{min-height:64px;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.check-card input{width:19px;min-height:19px;margin:1px 0 0;accent-color:var(--leaf)}.check-card span{display:grid;gap:3px;color:var(--ink);font-size:13px}.check-card small{color:var(--muted);font-size:12px;line-height:1.4}.form-actions,.dialog-card>footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:var(--space-2)}.aside-stack{display:grid;gap:var(--space-3)}.note{overflow:hidden}.note>summary{min-height:52px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850;list-style:none}.note>summary::-webkit-details-marker{display:none}.note>div{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4);color:var(--muted);font-size:12px}.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.facts li{display:grid;gap:2px}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{color:var(--ink);font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{display:inline-flex;padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.flash,.notice{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:rgba(200,153,63,.09);color:var(--gold-ink);font-size:12px;line-height:1.45}.flash.ok{background:rgba(47,107,74,.08);color:var(--leaf)}.flash.bad{border-color:#8c3434;background:rgba(140,52,52,.07);color:#8c3434}\n\t\t.notification-form{display:grid;gap:var(--space-4)}.master-switch{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.master-switch .link-icon{width:48px;height:48px}.master-switch strong,.master-switch small{display:block}.master-switch strong{font-family:var(--font-serif);font-size:18px}.master-switch small{margin-top:3px;color:var(--muted);font-size:12px}.switch{position:relative;width:46px;height:27px}.switch input{position:absolute;opacity:0}.switch i{position:absolute;inset:0;border-radius:var(--radius-pill);background:var(--line);box-shadow:inset 0 0 0 1px rgba(32,37,31,.08)}.switch i::after{content:\"\";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--panel);box-shadow:0 2px 5px rgba(32,37,31,.18);transition:.16s}.switch input:checked+i{background:var(--leaf)}.switch input:checked+i::after{transform:translateX(19px)}.subhead{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--space-3)}.subhead>div{min-width:0}.subhead h2{font-size:21px}.subhead p,.subhead>span{color:var(--muted);font-size:12px}.option-group{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.option-group h3{padding:9px var(--space-3);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.option-group>label{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);color:var(--ink)}.option-group strong,.option-group small{display:block}.option-group small{margin-top:3px;color:var(--muted);font-size:12px}.paused-note{display:none}.email-paused .paused-note{display:block}.email-paused .option-group{opacity:.7}\n\t\t.identity-avatar{overflow:hidden;border-radius:var(--radius-pill);background:var(--gold)}.identity-avatar-image{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}.identity-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.identity-actions form{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.button.small{min-height:36px;padding:7px 13px;font-size:11px}.profile-picture-choose{position:relative;overflow:hidden;color:var(--gold-ink);font-weight:800;cursor:pointer}.profile-picture-choose input{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;opacity:0;cursor:pointer}body.profile-picture-enhanced [data-profile-picture-submit]{display:none}.user-dialog.profile-picture-dialog{width:min(408px,calc(100vw - 32px));padding:var(--space-4)}.profile-picture-dialog .dialog-head h2{font-size:21px}.profile-picture-dialog .dialog-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.profile-picture-dialog .dialog-body{display:grid;gap:var(--space-3);margin-top:var(--space-4);outline:none}.profile-picture-dialog .dialog-footer{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-4)}.crop-stage{position:relative;width:min(320px,100%);aspect-ratio:1;margin-inline:auto;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);touch-action:none;cursor:grab}.crop-stage:active{cursor:grabbing}.crop-canvas{width:100%;height:100%;display:block}.crop-mask{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(32,37,31,.45)}.crop-zoom{gap:var(--space-2)}.crop-zoom input{min-height:0;padding:0;border:0;background:transparent;accent-color:var(--gold)}.crop-hint{color:var(--muted);font-size:11px}\n\t\t.settings-home-unit{display:block;font-weight:650}.section-tabs{display:flex;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.section-tabs a{min-height:46px;display:grid;place-items:center;padding:0 var(--space-4);border-right:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.section-tabs a.active{background:var(--ink);color:var(--panel)}.workspace{padding:var(--space-4)}.workspace>*+*{margin-top:var(--space-4)}.workspace-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.workspace-head h2{font-size:24px}.workspace-head p{margin-top:3px;color:var(--muted);font-size:12px}.head-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.map-card{min-height:180px;display:grid;place-content:center;justify-items:center;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);text-align:center}.map-card .map-pin{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.map-card svg{width:23px;fill:none;stroke:currentColor}.map-card small{color:var(--muted)}.inline-details{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inline-details>summary{cursor:pointer;font-weight:800}.inline-details>*+*{margin-top:var(--space-3)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.metrics.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metrics span{display:grid;gap:3px;padding:var(--space-3);border-left:1px solid var(--line)}.metrics span:first-child{border-left:0}.metrics strong{font-family:var(--font-serif);font-size:22px}.metrics small{color:var(--muted);font-size:11px}.unit-list,.user-list{display:grid;gap:var(--space-2)}.unit-card>*{min-width:0}.unit-card .assignment strong,.unit-card .assignment small,.unit-card .unit-title strong{overflow-wrap:anywhere}.unit-card{display:grid;grid-template-columns:42px minmax(150px,1.1fr) minmax(180px,1fr) minmax(100px,.5fr) minmax(120px,.6fr) 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.unit-kind{width:42px;height:42px}.unit-title,.assignment,.unit-card>div{min-width:0;display:grid;gap:3px}.unit-card small{color:var(--muted);font-size:11px}.unit-title em{color:var(--gold-ink);font-size:11px;font-style:normal}.icon-button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:20px}.anchor-dialog{position:fixed;z-index:300;inset:0;display:none;place-items:center;padding:var(--space-4)}.anchor-dialog:target{display:grid}.dialog-backdrop{position:absolute;inset:0;background:rgba(32,37,31,.48)}.dialog-card{position:relative;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.dialog-card>header{display:flex;justify-content:space-between;gap:var(--space-3)}.dialog-card>form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.dialog-card>form fieldset{align-content:start}.dialog-card>footer form{margin-right:auto}.appearance-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.7fr);gap:var(--space-4);align-items:start}.inset{padding:var(--space-4)}.inset>*+*{margin-top:var(--space-3)}.brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.brand-grid label{position:relative;place-items:center;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);text-align:center}.brand-grid input{position:absolute;opacity:0}.brand-grid label:has(input:checked){background:var(--panel-soft);border-color:var(--gold)}.brand-grid svg{width:26px;fill:none;stroke:var(--gold-ink)}.hero-preview{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:var(--radius-sm)}.preview{position:sticky;top:calc(var(--context-bar-h) + var(--space-4));overflow:hidden;padding:var(--space-4)}.preview>img{width:100%;aspect-ratio:16/9;object-fit:cover;margin-top:var(--space-3);border-radius:var(--radius-sm)}.preview>div{display:grid;grid-template-columns:38px 1fr;gap:var(--space-2);margin-top:var(--space-3)}.preview-mark{grid-row:1/3;display:grid;place-items:center}.preview-mark svg{width:24px;fill:none;stroke:var(--gold-ink)}.preview small{color:var(--muted)}.preview h3{margin-block:var(--space-5);font-size:27px}.preview p{margin-top:var(--space-3);color:var(--muted);font-size:11px}\n\t\t.invite{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.invite>summary{min-height:54px;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:var(--space-2);padding:var(--space-3);cursor:pointer;list-style:none}.invite>summary span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--panel)}.invite>summary small{color:var(--muted)}.invite>form{padding:0 var(--space-4) var(--space-4)}.access-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}.user-card{display:grid;grid-template-columns:42px minmax(180px,1.25fr) auto minmax(110px,.7fr) auto 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.user-card.attention{background:var(--panel-soft)}.user-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:rgba(200,153,63,.14);color:var(--gold-ink);font-weight:800}.user-identity{min-width:0;display:grid;gap:2px}.user-identity a,.user-identity small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.user-dialog{width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.user-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.user-dialog>p{margin:3px 0 var(--space-4);color:var(--muted);font-size:12px}.dialog-close{float:right}.dialog-close button{width:42px;height:42px;border:0;background:transparent;font-size:22px}.danger{margin-top:var(--space-4);border-top:1px solid var(--line);padding-top:var(--space-3)}.danger>summary{cursor:pointer;color:#8c3434;font-weight:800}.danger form{margin-top:var(--space-3)}.danger button{justify-self:start;min-height:42px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:var(--panel);color:#8c3434;font-weight:800}\n\t\t.empty{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.empty p{color:var(--muted);font-size:12px}.cost-type-list{display:grid;gap:var(--space-2)}.cost-type-card,.allocation-row{display:grid!important;align-items:end;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.cost-type-card{grid-template-columns:minmax(180px,1.2fr) minmax(160px,.8fr) minmax(180px,.8fr) auto}.cost-type-list>form.cost-type-card{grid-template-columns:minmax(170px,1.2fr) minmax(120px,.6fr) minmax(150px,.7fr) minmax(150px,.7fr) auto}.allocation-row{grid-template-columns:minmax(170px,1.2fr) minmax(150px,.8fr) minmax(150px,.8fr) minmax(120px,.7fr)}.cost-type-card code{font-size:12px}.cost-type-card .button{min-height:42px}\n\t\t.home-identity .form-grid{align-items:start}.home-identity .form-grid fieldset{align-content:start}.home-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-scope{min-height:116px;display:grid;align-content:center;gap:5px;padding:var(--space-4) var(--space-5);border-right:1px solid var(--line)}.home-scope:last-child{border-right:0}.home-scope.current{background:var(--panel-soft)}.home-scope>span{color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.home-scope strong{font-family:var(--font-serif);font-size:21px;line-height:1.2;overflow-wrap:anywhere}.home-scope small{color:var(--muted);font-size:12px;line-height:1.4}.home-scope .home-scope-unit{font-weight:700}.home-scope .home-scope-meta{color:var(--soft);font-size:11px}.home-readonly{min-height:50px;justify-content:space-between;gap:var(--space-3);background:var(--panel-soft)}.home-readonly strong{font-size:15px;overflow-wrap:break-word}.home-readonly small{color:var(--muted);font-size:12px;font-weight:600;text-align:right}.home-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45}.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;padding:13px 14px;border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:11px;line-height:1.4}.home-note{display:grid;grid-template-columns:34px minmax(0,1fr);gap:11px;align-items:start;padding-top:var(--space-4);border-top:1px solid var(--line)}.home-note svg{width:32px;height:32px;padding:7px;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);fill:none;stroke:currentColor;stroke-width:1.8}.home-note strong{display:block;font-size:13px}.home-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}\n\t\t@media(max-width:720px){.home-map{grid-template-columns:1fr}.home-scope{min-height:0;padding:var(--space-3) var(--space-4);border-right:0;border-bottom:1px solid var(--line)}.home-scope:last-child{border-bottom:0}}\n\t\t@media(max-width:1050px){.two-column,.appearance-grid{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr 1fr}.unit-card{grid-template-columns:42px minmax(0,1fr) minmax(180px,1fr) auto}.unit-card>div:nth-of-type(3){display:none}.user-card{grid-template-columns:42px minmax(0,1fr) auto auto 42px}.user-card>.chips{display:none}.preview{position:static}.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}.cost-type-list>form.cost-type-card>.button{grid-column:1/-1}}\n\t\t/* HAUSV-640: the cost-type rows are 700–781px of minimum tracks, but the settings column\n\t\t   is only 727–790px between 1051 and 1160px; two columns there as below 1050px. */\n\t\t@media(max-width:1160px) and (min-width:1051px){.cost-type-card,.cost-type-list>form.cost-type-card{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}.cost-type-list>form.cost-type-card>.button{grid-column:1/-1}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.settings-main{padding:var(--space-5) var(--space-4) 48px}.settings-grid,.management-links,.form-grid,.form-grid.three,.contact-grid,.access-options,.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:1fr}.span-all{grid-column:auto}.management-links a:nth-child(even){border-left:0}.identity-card{grid-template-columns:48px minmax(0,1fr)}.identity-icon{width:48px;height:48px}.identity-card>.pill{grid-column:2}.identity-card>.identity-actions{grid-column:1/-1}.identity-actions .button.small{flex:1 1 auto;justify-content:center}.section-tabs{margin-inline:-4px}.section-tabs a{padding-inline:var(--space-3)}.workspace{padding:var(--space-3)}.workspace-head{display:grid}.head-actions{display:grid}.metrics.four{grid-template-columns:repeat(3,1fr)}.metrics.four span:first-child{display:none}.metrics.four span:nth-child(2){border-left:0}.dialog-card>form{grid-template-columns:1fr}.brand-grid{grid-template-columns:repeat(2,1fr)}.unit-card{grid-template-columns:38px minmax(0,1fr) 42px}.unit-card .assignment{display:grid;grid-column:2/-1}.unit-card>div:nth-of-type(3),.unit-card>div:nth-of-type(4){display:none}.user-card{grid-template-columns:38px minmax(0,1fr) 42px;row-gap:var(--space-2)}.user-card>.user-avatar,.user-card>.user-identity{grid-row:1}.user-card>.icon-button{grid-row:1;grid-column:3}.user-card>.pill{grid-column:2/-1;justify-self:start}.user-card>.chips,.user-card>.muted{display:none}.invite>summary{grid-template-columns:26px 1fr}.invite>summary small{grid-column:2}.form-actions{display:grid;grid-template-columns:1fr}.form-actions .button{width:100%}}\n\t\t[data-templ-profile-settings] .two-column{gap:24px}[data-templ-profile-settings] .form-card{padding:24px}[data-templ-profile-settings] .form-card form{gap:24px}[data-templ-profile-settings] fieldset{gap:16px;padding:16px}[data-templ-profile-settings] fieldset>p{line-height:1.5}[data-templ-profile-settings] .form-grid{gap:16px;align-items:start}[data-templ-profile-settings] .form-grid.three{grid-template-columns:minmax(0,.65fr) repeat(2,minmax(0,1fr))}[data-templ-profile-settings] .form-grid label{min-width:0;gap:8px;line-height:1.5}[data-templ-profile-settings] .form-grid label>span>small{margin-left:8px}[data-templ-profile-settings] input:not([type=checkbox]),[data-templ-profile-settings] .readonly{min-width:0;min-height:48px;padding:8px 16px}[data-templ-profile-settings] .check-card{gap:16px;padding:16px}[data-templ-profile-settings] .check-card span{gap:8px}[data-templ-profile-settings] .form-actions{gap:8px;padding-top:16px}[data-templ-profile-settings] .form-actions .button{min-height:48px}[data-templ-profile-settings] .note>div{padding:16px}[data-templ-profile-settings] .facts{gap:16px}[data-templ-profile-settings] .facts li+li{padding-top:16px}@media(max-width:760px){[data-templ-profile-settings] .two-column{gap:16px}[data-templ-profile-settings] .form-card{padding:16px}[data-templ-profile-settings] .form-grid.three{grid-template-columns:minmax(0,1fr)}[data-templ-profile-settings] .form-actions{display:grid;grid-template-columns:minmax(0,1fr)}}\n\t\t.home-identity [data-templ-home-settings]{display:grid;gap:24px;max-width:992px;margin-inline:auto}.home-identity .workspace{padding:0;overflow:hidden}.home-identity .workspace-head{padding:32px 40px;margin:0}.home-form-kicker{display:block;margin-bottom:16px;color:var(--gold-ink);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.home-identity .workspace-head h2{font-size:40px;line-height:1.1}.home-identity .workspace-head p{font-size:16px;line-height:1.5;margin-top:16px}.home-identity .workspace form{padding:32px 40px 0;margin:0;gap:24px}.home-identity .form-grid{grid-template-columns:minmax(0,1fr);gap:24px}.home-identity .form-grid fieldset{padding:0;border:0;background:transparent;gap:24px}.home-identity .form-grid legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.home-identity fieldset.home-assignment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.home-identity label{gap:8px;font-size:12px;letter-spacing:.06em}.home-identity input,.home-identity select,.home-identity .readonly{min-height:56px;padding:8px 16px;font-size:18px;letter-spacing:normal;font-weight:400}.home-identity .home-readonly{flex-wrap:wrap;gap:8px}.home-identity .home-readonly small{text-align:left}.home-identity .home-field-help{font-size:14px;font-weight:400;margin-top:8px}.home-identity .home-type-explanation{padding:24px;grid-template-columns:64px minmax(0,1fr);gap:24px;border:1px solid var(--line)}.home-identity .home-type-explanation-icon{width:64px;height:64px}.home-identity .home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.home-identity .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:16px;margin-top:8px}.home-identity .home-note{gap:16px;padding-top:0;border:0}.home-identity .form-actions{display:flex;justify-content:space-between;margin-inline:-40px;padding:24px 40px;border-top:1px solid var(--line)}.home-identity .form-actions .button{min-height:56px;font-size:16px;padding:8px 24px}.home-identity .home-map{padding:0;box-shadow:none}.home-identity .home-scope{padding:24px;gap:8px}.home-identity .flash.bad{border-color:var(--gold);background:var(--panel-soft);color:var(--gold-ink)}\n\t\t@media(max-width:760px){.home-identity .workspace-head{padding:24px}.home-identity .workspace-head h2{font-size:32px}.home-identity .workspace form{padding:24px 24px 0}.home-identity fieldset.home-assignment-fields{grid-template-columns:minmax(0,1fr)}.home-identity .home-type-explanation{grid-template-columns:40px minmax(0,1fr);gap:16px;padding:16px}.home-identity .home-type-explanation-icon{width:40px;height:40px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:14px}.home-identity .form-actions{margin-inline:-24px;padding:24px;flex-direction:column-reverse}.home-identity .form-actions .button{width:100%;font-size:14px}}\n\n\t</style><style>\n\t\tbody.unit-dialog-enhanced .unit-dialog-shell{display:none}body.unit-dialog-enhanced .unit-dialog-shell.is-open{display:grid}\n\t\t.home-identity [data-templ-home-settings]{display:grid;gap:24px;max-width:992px;margin-inline:auto}.home-identity .workspace{padding:0;overflow:hidden}.home-identity .workspace-head{padding:32px 40px;margin:0}.home-form-kicker{display:block;margin-bottom:16px;color:var(--gold-ink);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.home-identity .workspace-head h2{font-size:40px;line-height:1.1}.home-identity .workspace-head p{font-size:16px;line-height:1.5;margin-top:16px}.home-identity .workspace form{padding:32px 40px 0;margin:0;gap:24px}.home-identity .form-grid{grid-template-columns:minmax(0,1fr);gap:24px}.home-identity .form-grid fieldset{padding:0;border:0;background:transparent;gap:24px}.home-identity .form-grid legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.home-identity fieldset.home-assignment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.home-identity label{gap:8px;font-size:12px;letter-spacing:.06em}.home-identity input,.home-identity select,.home-identity .readonly{min-height:56px;padding:8px 16px;font-size:18px;letter-spacing:normal;font-weight:400}.home-identity .home-readonly{flex-wrap:wrap;gap:8px}.home-identity .home-readonly small{text-align:left}.home-identity .home-field-help{font-size:14px;font-weight:400;margin-top:8px}.home-identity .home-type-explanation{padding:24px;grid-template-columns:64px minmax(0,1fr);gap:24px;border:1px solid var(--line)}.home-identity .home-type-explanation-icon{width:64px;height:64px}.home-identity .home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.home-identity .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:16px;margin-top:8px}.home-identity .home-note{gap:16px;padding-top:0;border:0}.home-identity .form-actions{display:flex;justify-content:space-between;margin-inline:-40px;padding:24px 40px;border-top:1px solid var(--line)}.home-identity .form-actions .button{min-height:56px;font-size:16px;padding:8px 24px}.home-identity .home-map{padding:0;box-shadow:none}.home-identity .home-scope{padding:24px;gap:8px}.home-identity .flash.bad{border-color:var(--gold);background:var(--panel-soft);color:var(--gold-ink)}\n\t\t@media(max-width:760px){.home-identity .workspace-head{padding:24px}.home-identity .workspace-head h2{font-size:32px}.home-identity .workspace form{padding:24px 24px 0}.home-identity fieldset.home-assignment-fields{grid-template-columns:minmax(0,1fr)}.home-identity .home-type-explanation{grid-template-columns:40px minmax(0,1fr);gap:16px;padding:16px}.home-identity .home-type-explanation-icon{width:40px;height:40px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:14px}.home-identity .form-actions{margin-inline:-24px;padding:24px;flex-direction:column-reverse}.home-identity .form-actions .button{width:100%;font-size:14px}}\n\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "<style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-serif);font-weight:600}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.nav-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}\n\t\t.settings-main{min-width:0;padding:42px clamp(var(--space-5),4vw,56px) 64px}.settings-main>*{max-width:1180px;margin-inline:auto}.settings-main>*+*{margin-top:var(--space-5)}.eyebrow{color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.panel{border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}.button.primary{background:var(--gold);color:var(--panel)}.button.ghost{border-color:var(--line);color:var(--muted)}.text-link{color:var(--gold-ink);font-weight:800;text-decoration:underline;text-underline-offset:3px}.muted{color:var(--muted)}\n\t\t.identity-card{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:var(--space-4);padding:var(--space-4)}.identity-card p{overflow-wrap:anywhere}.identity-icon,.link-icon,.unit-kind{display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);color:var(--gold-ink);border-radius:var(--radius-sm)}.identity-icon{width:58px;height:58px;background:var(--ink);color:var(--panel)}.identity-icon svg{width:28px}.identity-card h2{font-size:23px}.identity-card p{margin-top:3px;color:var(--muted);font-size:13px}.pill,.scope{display:inline-flex;align-items:center;width:max-content;white-space:nowrap;padding:4px 10px;border-radius:var(--radius-pill);background:var(--panel-soft);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800}.scope.personal{padding:0;border:0;background:none;color:var(--muted);font-weight:600}.scope.management{background:rgba(200,153,63,.12);color:var(--gold-ink)}.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.span-all{grid-column:1/-1}.settings-group{overflow:hidden}.settings-group>header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3);align-items:start;padding:var(--space-4)}.settings-group h2{font-size:21px}.settings-group header p{margin-top:4px;color:var(--muted);font-size:12px}.settings-links{display:grid}.settings-links a{min-height:72px;display:grid;grid-template-columns:42px minmax(0,1fr) 16px;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-top:1px solid var(--line)}.settings-links a:hover{background:var(--panel-soft)}.settings-links .link-icon{width:42px;height:42px}.link-icon svg,.unit-kind svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.settings-links strong,.settings-links small{display:block}.settings-links strong{font-family:var(--font-serif);font-size:17px}.settings-links small{margin-top:3px;color:var(--muted);font-size:12px}.settings-links b{color:var(--gold-ink);font-size:22px}.management-links{grid-template-columns:repeat(2,minmax(0,1fr))}.management-links a:nth-child(even){border-left:1px solid var(--line)}\n\t\t.two-column{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:var(--space-4);align-items:start}.form-card{padding:var(--space-4)}.form-card form,.workspace form,.user-dialog form{display:grid;gap:var(--space-4)}fieldset{min-width:0;display:grid;gap:var(--space-3);margin:0;padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}legend{padding-inline:var(--space-2);font-family:var(--font-serif);font-size:19px;font-weight:700}fieldset>p{color:var(--muted);font-size:12px}.form-grid,.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-grid{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:grid;gap:6px;color:var(--gold-ink);font-size:11px;font-weight:800}label small{color:var(--soft);font-weight:600}input,select,textarea,.readonly{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink)}textarea{min-height:92px;resize:vertical}.readonly{display:flex;align-items:center;overflow-wrap:anywhere}.check-card{min-height:64px;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.check-card input{width:19px;min-height:19px;margin:1px 0 0;accent-color:var(--leaf)}.check-card span{display:grid;gap:3px;color:var(--ink);font-size:13px}.check-card small{color:var(--muted);font-size:12px;line-height:1.4}.form-actions,.dialog-card>footer{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:var(--space-2)}.aside-stack{display:grid;gap:var(--space-3)}.note{overflow:hidden}.note>summary{min-height:52px;display:flex;align-items:center;padding:0 var(--space-4);cursor:pointer;font-weight:850;list-style:none}.note>summary::-webkit-details-marker{display:none}.note>div{display:grid;gap:var(--space-3);padding:0 var(--space-4) var(--space-4);color:var(--muted);font-size:12px}.facts{display:grid;gap:var(--space-2);margin:0;padding:0;list-style:none}.facts li{display:grid;gap:2px}.facts li+li{padding-top:var(--space-2);border-top:1px solid var(--line)}.facts strong{color:var(--ink);font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips span{display:inline-flex;padding:3px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:11px}.flash,.notice{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:rgba(200,153,63,.09);color:var(--gold-ink);font-size:12px;line-height:1.45}.flash.ok{background:rgba(47,107,74,.08);color:var(--leaf)}.flash.bad{border-color:#8c3434;background:rgba(140,52,52,.07);color:#8c3434}\n\t\t.notification-form{display:grid;gap:var(--space-4)}.master-switch{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.master-switch .link-icon{width:48px;height:48px}.master-switch strong,.master-switch small{display:block}.master-switch strong{font-family:var(--font-serif);font-size:18px}.master-switch small{margin-top:3px;color:var(--muted);font-size:12px}.switch{position:relative;width:46px;height:27px}.switch input{position:absolute;opacity:0}.switch i{position:absolute;inset:0;border-radius:var(--radius-pill);background:var(--line);box-shadow:inset 0 0 0 1px rgba(32,37,31,.08)}.switch i::after{content:\"\";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--panel);box-shadow:0 2px 5px rgba(32,37,31,.18);transition:.16s}.switch input:checked+i{background:var(--leaf)}.switch input:checked+i::after{transform:translateX(19px)}.subhead{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--space-3)}.subhead>div{min-width:0}.subhead h2{font-size:21px}.subhead p,.subhead>span{color:var(--muted);font-size:12px}.option-group{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm)}.option-group h3{padding:9px var(--space-3);background:var(--panel-soft);color:var(--gold-ink);font-family:var(--font-sans);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.option-group>label{min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-3);padding:var(--space-3);border-top:1px solid var(--line);color:var(--ink)}.option-group strong,.option-group small{display:block}.option-group small{margin-top:3px;color:var(--muted);font-size:12px}.paused-note{display:none}.email-paused .paused-note{display:block}.email-paused .option-group{opacity:.7}\n\t\t.identity-avatar{overflow:hidden;border-radius:var(--radius-pill);background:var(--gold)}.identity-avatar-image{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}.identity-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.identity-actions form{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}.button.small{min-height:36px;padding:7px 13px;font-size:11px}.profile-picture-choose{position:relative;overflow:hidden;color:var(--gold-ink);font-weight:800;cursor:pointer}.profile-picture-choose input{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;opacity:0;cursor:pointer}body.profile-picture-enhanced [data-profile-picture-submit]{display:none}.user-dialog.profile-picture-dialog{width:min(408px,calc(100vw - 32px));padding:var(--space-4)}.profile-picture-dialog .dialog-head h2{font-size:21px}.profile-picture-dialog .dialog-head p{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}.profile-picture-dialog .dialog-body{display:grid;gap:var(--space-3);margin-top:var(--space-4);outline:none}.profile-picture-dialog .dialog-footer{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-4)}.crop-stage{position:relative;width:min(320px,100%);aspect-ratio:1;margin-inline:auto;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);touch-action:none;cursor:grab}.crop-stage:active{cursor:grabbing}.crop-canvas{width:100%;height:100%;display:block}.crop-mask{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(32,37,31,.45)}.crop-zoom{gap:var(--space-2)}.crop-zoom input{min-height:0;padding:0;border:0;background:transparent;accent-color:var(--gold)}.crop-hint{color:var(--muted);font-size:11px}\n\t\t.settings-home-unit{display:block;font-weight:650}.section-tabs{display:flex;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.section-tabs a{min-height:46px;display:grid;place-items:center;padding:0 var(--space-4);border-right:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.section-tabs a.active{background:var(--ink);color:var(--panel)}.workspace{padding:var(--space-4)}.workspace>*+*{margin-top:var(--space-4)}.workspace-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--line)}.workspace-head h2{font-size:24px}.workspace-head p{margin-top:3px;color:var(--muted);font-size:12px}.head-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}.map-card{min-height:180px;display:grid;place-content:center;justify-items:center;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);text-align:center}.map-card .map-pin{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.map-card svg{width:23px;fill:none;stroke:currentColor}.map-card small{color:var(--muted)}.inline-details{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.inline-details>summary{cursor:pointer;font-weight:800}.inline-details>*+*{margin-top:var(--space-3)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.metrics.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metrics span{display:grid;gap:3px;padding:var(--space-3);border-left:1px solid var(--line)}.metrics span:first-child{border-left:0}.metrics strong{font-family:var(--font-serif);font-size:22px}.metrics small{color:var(--muted);font-size:11px}.unit-list,.user-list{display:grid;gap:var(--space-2)}.unit-card>*{min-width:0}.unit-card .assignment strong,.unit-card .assignment small,.unit-card .unit-title strong{overflow-wrap:anywhere}.unit-card{display:grid;grid-template-columns:42px minmax(150px,1.1fr) minmax(180px,1fr) minmax(100px,.5fr) minmax(120px,.6fr) 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.unit-kind{width:42px;height:42px}.unit-title,.assignment,.unit-card>div{min-width:0;display:grid;gap:3px}.unit-card small{color:var(--muted);font-size:11px}.unit-title em{color:var(--gold-ink);font-size:11px;font-style:normal}.icon-button{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--gold-ink);font-size:20px}.anchor-dialog{position:fixed;z-index:300;inset:0;display:none;place-items:center;padding:var(--space-4)}.anchor-dialog:target{display:grid}.dialog-backdrop{position:absolute;inset:0;background:rgba(32,37,31,.48)}.dialog-card{position:relative;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-dialog)}.dialog-card>header{display:flex;justify-content:space-between;gap:var(--space-3)}.dialog-card>form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3)}.dialog-card>form fieldset{align-content:start}.dialog-card>footer form{margin-right:auto}.appearance-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.7fr);gap:var(--space-4);align-items:start}.inset{padding:var(--space-4)}.inset>*+*{margin-top:var(--space-3)}.brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}.brand-grid label{position:relative;place-items:center;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);text-align:center}.brand-grid input{position:absolute;opacity:0}.brand-grid label:has(input:checked){background:var(--panel-soft);border-color:var(--gold)}.brand-grid svg{width:26px;fill:none;stroke:var(--gold-ink)}.hero-preview{width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:var(--radius-sm)}.preview{position:sticky;top:calc(var(--context-bar-h) + var(--space-4));overflow:hidden;padding:var(--space-4)}.preview>img{width:100%;aspect-ratio:16/9;object-fit:cover;margin-top:var(--space-3);border-radius:var(--radius-sm)}.preview>div{display:grid;grid-template-columns:38px 1fr;gap:var(--space-2);margin-top:var(--space-3)}.preview-mark{grid-row:1/3;display:grid;place-items:center}.preview-mark svg{width:24px;fill:none;stroke:var(--gold-ink)}.preview small{color:var(--muted)}.preview h3{margin-block:var(--space-5);font-size:27px}.preview p{margin-top:var(--space-3);color:var(--muted);font-size:11px}\n\t\t.invite{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.invite>summary{min-height:54px;display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:var(--space-2);padding:var(--space-3);cursor:pointer;list-style:none}.invite>summary span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--panel)}.invite>summary small{color:var(--muted)}.invite>form{padding:0 var(--space-4) var(--space-4)}.access-options{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}.user-card{display:grid;grid-template-columns:42px minmax(180px,1.25fr) auto minmax(110px,.7fr) auto 42px;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel)}.user-card.attention{background:var(--panel-soft)}.user-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:rgba(200,153,63,.14);color:var(--gold-ink);font-weight:800}.user-identity{min-width:0;display:grid;gap:2px}.user-identity a,.user-identity small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.user-dialog{width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.user-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.user-dialog>p{margin:3px 0 var(--space-4);color:var(--muted);font-size:12px}.dialog-close{float:right}.dialog-close button{width:42px;height:42px;border:0;background:transparent;font-size:22px}.danger{margin-top:var(--space-4);border-top:1px solid var(--line);padding-top:var(--space-3)}.danger>summary{cursor:pointer;color:#8c3434;font-weight:800}.danger form{margin-top:var(--space-3)}.danger button{justify-self:start;min-height:42px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:var(--panel);color:#8c3434;font-weight:800}\n\t\t.empty{display:grid;justify-items:start;gap:var(--space-2);padding:var(--space-5);border:1px dashed var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.empty p{color:var(--muted);font-size:12px}.cost-type-list{display:grid;gap:var(--space-2)}.cost-type-card,.allocation-row{display:grid!important;align-items:end;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}.cost-type-card{grid-template-columns:minmax(180px,1.2fr) minmax(160px,.8fr) minmax(180px,.8fr) auto}.cost-type-list>form.cost-type-card{grid-template-columns:minmax(170px,1.2fr) minmax(120px,.6fr) minmax(150px,.7fr) minmax(150px,.7fr) auto}.allocation-row{grid-template-columns:minmax(170px,1.2fr) minmax(150px,.8fr) minmax(150px,.8fr) minmax(120px,.7fr)}.cost-type-card code{font-size:12px}.cost-type-card .button{min-height:42px}\n\t\t.home-identity .form-grid{align-items:start}.home-identity .form-grid fieldset{align-content:start}.home-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-scope{min-height:116px;display:grid;align-content:center;gap:5px;padding:var(--space-4) var(--space-5);border-right:1px solid var(--line)}.home-scope:last-child{border-right:0}.home-scope.current{background:var(--panel-soft)}.home-scope>span{color:var(--gold-ink);font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.home-scope strong{font-family:var(--font-serif);font-size:21px;line-height:1.2;overflow-wrap:anywhere}.home-scope small{color:var(--muted);font-size:12px;line-height:1.4}.home-scope .home-scope-unit{font-weight:700}.home-scope .home-scope-meta{color:var(--soft);font-size:11px}.home-readonly{min-height:50px;justify-content:space-between;gap:var(--space-3);background:var(--panel-soft)}.home-readonly strong{font-size:15px;overflow-wrap:break-word}.home-readonly small{color:var(--muted);font-size:12px;font-weight:600;text-align:right}.home-field-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.45}.home-type-explanation{display:grid;grid-template-columns:36px minmax(0,1fr);gap:var(--space-3);align-items:start;padding:13px 14px;border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--ink)}.home-type-explanation-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);font-size:18px;line-height:1}.home-type-explanation strong{display:block;font-size:14px;line-height:1.3}.home-type-explanation p{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}.home-type-explanation small{display:block;margin-top:6px;color:var(--soft);font-size:11px;line-height:1.4}.home-note{display:grid;grid-template-columns:34px minmax(0,1fr);gap:11px;align-items:start;padding-top:var(--space-4);border-top:1px solid var(--line)}.home-note svg{width:32px;height:32px;padding:7px;border-radius:50%;background:rgba(47,107,74,.08);color:var(--leaf);fill:none;stroke:currentColor;stroke-width:1.8}.home-note strong{display:block;font-size:13px}.home-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.45}\n\t\t@media(max-width:720px){.home-map{grid-template-columns:1fr}.home-scope{min-height:0;padding:var(--space-3) var(--space-4);border-right:0;border-bottom:1px solid var(--line)}.home-scope:last-child{border-bottom:0}}\n\t\t@media(max-width:1050px){.two-column,.appearance-grid{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr 1fr}.unit-card{grid-template-columns:42px minmax(0,1fr) minmax(180px,1fr) auto}.unit-card>div:nth-of-type(3){display:none}.user-card{grid-template-columns:42px minmax(0,1fr) auto auto 42px}.user-card>.chips{display:none}.preview{position:static}.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}.cost-type-list>form.cost-type-card>.button{grid-column:1/-1}}\n\t\t/* HAUSV-640: the cost-type rows are 700–781px of minimum tracks, but the settings column\n\t\t   is only 727–790px between 1051 and 1160px; two columns there as below 1050px. */\n\t\t@media(max-width:1160px) and (min-width:1051px){.cost-type-card,.cost-type-list>form.cost-type-card{grid-template-columns:repeat(2,minmax(0,1fr))}.cost-type-card .button{width:100%}.cost-type-list>form.cost-type-card>.button{grid-column:1/-1}}\n\t\t@media(max-width:760px){.menu>summary{width:42px;height:42px;display:grid;place-content:center;list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}.settings-main{padding:var(--space-5) var(--space-4) 48px}.settings-grid,.management-links,.form-grid,.form-grid.three,.contact-grid,.access-options,.cost-type-card,.cost-type-list>form.cost-type-card,.allocation-row{grid-template-columns:1fr}.span-all{grid-column:auto}.management-links a:nth-child(even){border-left:0}.identity-card{grid-template-columns:48px minmax(0,1fr)}.identity-icon{width:48px;height:48px}.identity-card>.pill{grid-column:2}.identity-card>.identity-actions{grid-column:1/-1}.identity-actions .button.small{flex:1 1 auto;justify-content:center}.section-tabs{margin-inline:-4px}.section-tabs a{padding-inline:var(--space-3)}.workspace{padding:var(--space-3)}.workspace-head{display:grid}.head-actions{display:grid}.metrics.four{grid-template-columns:repeat(3,1fr)}.metrics.four span:first-child{display:none}.metrics.four span:nth-child(2){border-left:0}.dialog-card>form{grid-template-columns:1fr}.brand-grid{grid-template-columns:repeat(2,1fr)}.unit-card{grid-template-columns:38px minmax(0,1fr) 42px}.unit-card .assignment{display:grid;grid-column:2/-1}.unit-card>div:nth-of-type(3),.unit-card>div:nth-of-type(4){display:none}.user-card{grid-template-columns:38px minmax(0,1fr) 42px;row-gap:var(--space-2)}.user-card>.user-avatar,.user-card>.user-identity{grid-row:1}.user-card>.icon-button{grid-row:1;grid-column:3}.user-card>.pill{grid-column:2/-1;justify-self:start}.user-card>.chips,.user-card>.muted{display:none}.invite>summary{grid-template-columns:26px 1fr}.invite>summary small{grid-column:2}.form-actions{display:grid;grid-template-columns:1fr}.form-actions .button{width:100%}}\n\t\t[data-templ-profile-settings] .two-column{gap:24px}[data-templ-profile-settings] .form-card{padding:24px}[data-templ-profile-settings] .form-card form{gap:24px}[data-templ-profile-settings] fieldset{gap:16px;padding:16px}[data-templ-profile-settings] fieldset>p{line-height:1.5}[data-templ-profile-settings] .form-grid{gap:16px;align-items:start}[data-templ-profile-settings] .form-grid.three{grid-template-columns:minmax(0,.65fr) repeat(2,minmax(0,1fr))}[data-templ-profile-settings] .form-grid label{min-width:0;gap:8px;line-height:1.5}[data-templ-profile-settings] .form-grid label>span>small{margin-left:8px}[data-templ-profile-settings] input:not([type=checkbox]),[data-templ-profile-settings] .readonly{min-width:0;min-height:48px;padding:8px 16px}[data-templ-profile-settings] .check-card{gap:16px;padding:16px}[data-templ-profile-settings] .check-card span{gap:8px}[data-templ-profile-settings] .form-actions{gap:8px;padding-top:16px}[data-templ-profile-settings] .form-actions .button{min-height:48px}[data-templ-profile-settings] .note>div{padding:16px}[data-templ-profile-settings] .facts{gap:16px}[data-templ-profile-settings] .facts li+li{padding-top:16px}@media(max-width:760px){[data-templ-profile-settings] .two-column{gap:16px}[data-templ-profile-settings] .form-card{padding:16px}[data-templ-profile-settings] .form-grid.three{grid-template-columns:minmax(0,1fr)}[data-templ-profile-settings] .form-actions{display:grid;grid-template-columns:minmax(0,1fr)}}\n\t\t.home-identity [data-templ-home-settings]{display:grid;gap:24px;max-width:992px;margin-inline:auto}.home-identity .workspace{padding:0;overflow:hidden}.home-identity .workspace-head{padding:32px 40px;margin:0}.home-form-kicker{display:block;margin-bottom:16px;color:var(--gold-ink);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.home-identity .workspace-head h2{font-size:40px;line-height:1.1}.home-identity .workspace-head p{font-size:16px;line-height:1.5;margin-top:16px}.home-identity .workspace form{padding:32px 40px 0;margin:0;gap:24px}.home-identity .form-grid{grid-template-columns:minmax(0,1fr);gap:24px}.home-identity .form-grid fieldset{padding:0;border:0;background:transparent;gap:24px}.home-identity .form-grid legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.home-identity fieldset.home-assignment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.home-identity label{gap:8px;font-size:12px;letter-spacing:.06em}.home-identity input,.home-identity select,.home-identity .readonly{min-height:56px;padding:8px 16px;font-size:18px;letter-spacing:normal;font-weight:400}.home-identity .home-readonly{flex-wrap:wrap;gap:8px}.home-identity .home-readonly small{text-align:left}.home-identity .home-field-help{font-size:14px;font-weight:400;margin-top:8px}.home-identity .home-type-explanation{padding:24px;grid-template-columns:64px minmax(0,1fr);gap:24px;border:1px solid var(--line)}.home-identity .home-type-explanation-icon{width:64px;height:64px}.home-identity .home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.home-identity .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:16px;margin-top:8px}.home-identity .home-note{gap:16px;padding-top:0;border:0}.home-identity .form-actions{display:flex;justify-content:space-between;margin-inline:-40px;padding:24px 40px;border-top:1px solid var(--line)}.home-identity .form-actions .button{min-height:56px;font-size:16px;padding:8px 24px}.home-identity .home-map{padding:0;box-shadow:none}.home-identity .home-scope{padding:24px;gap:8px}.home-identity .flash.bad{border-color:var(--gold);background:var(--panel-soft);color:var(--gold-ink)}\n\t\t@media(max-width:760px){.home-identity .workspace-head{padding:24px}.home-identity .workspace-head h2{font-size:32px}.home-identity .workspace form{padding:24px 24px 0}.home-identity fieldset.home-assignment-fields{grid-template-columns:minmax(0,1fr)}.home-identity .home-type-explanation{grid-template-columns:40px minmax(0,1fr);gap:16px;padding:16px}.home-identity .home-type-explanation-icon{width:40px;height:40px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:14px}.home-identity .form-actions{margin-inline:-24px;padding:24px;flex-direction:column-reverse}.home-identity .form-actions .button{width:100%;font-size:14px}}\n\n\t</style><style>\n\t\tbody.unit-dialog-enhanced .unit-dialog-shell{display:none}body.unit-dialog-enhanced .unit-dialog-shell.is-open{display:grid}\n\t\t.home-identity [data-templ-home-settings]{display:grid;gap:24px;max-width:992px;margin-inline:auto}.home-identity .workspace{padding:0;overflow:hidden}.home-identity .workspace-head{padding:32px 40px;margin:0}.home-form-kicker{display:block;margin-bottom:16px;color:var(--gold-ink);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.home-identity .workspace-head h2{font-size:40px;line-height:1.1}.home-identity .workspace-head p{font-size:16px;line-height:1.5;margin-top:16px}.home-identity .workspace form{padding:32px 40px 0;margin:0;gap:24px}.home-identity .form-grid{grid-template-columns:minmax(0,1fr);gap:24px}.home-identity .form-grid fieldset{padding:0;border:0;background:transparent;gap:24px}.home-identity .form-grid legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.home-identity fieldset.home-assignment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.home-identity label{gap:8px;font-size:12px;letter-spacing:.06em}.home-identity input,.home-identity select,.home-identity .readonly{min-height:56px;padding:8px 16px;font-size:18px;letter-spacing:normal;font-weight:400}.home-identity .home-readonly{flex-wrap:wrap;gap:8px}.home-identity .home-readonly small{text-align:left}.home-identity .home-field-help{font-size:14px;font-weight:400;margin-top:8px}.home-identity .home-type-explanation{padding:24px;grid-template-columns:64px minmax(0,1fr);gap:24px;border:1px solid var(--line)}.home-identity .home-type-explanation-icon{width:64px;height:64px}.home-identity .home-type-explanation-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}.home-identity .home-type-explanation strong{font-family:var(--font-serif);font-size:24px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:16px;margin-top:8px}.home-identity .home-note{gap:16px;padding-top:0;border:0}.home-identity .form-actions{display:flex;justify-content:space-between;margin-inline:-40px;padding:24px 40px;border-top:1px solid var(--line)}.home-identity .form-actions .button{min-height:56px;font-size:16px;padding:8px 24px}.home-identity .home-map{padding:0;box-shadow:none}.home-identity .home-scope{padding:24px;gap:8px}.home-identity .flash.bad{border-color:var(--gold);background:var(--panel-soft);color:var(--gold-ink)}\n\t\t@media(max-width:760px){.home-identity .workspace-head{padding:24px}.home-identity .workspace-head h2{font-size:32px}.home-identity .workspace form{padding:24px 24px 0}.home-identity fieldset.home-assignment-fields{grid-template-columns:minmax(0,1fr)}.home-identity .home-type-explanation{grid-template-columns:40px minmax(0,1fr);gap:16px;padding:16px}.home-identity .home-type-explanation-icon{width:40px;height:40px}.home-identity .home-type-explanation p,.home-identity .home-type-explanation small{font-size:14px}.home-identity .form-actions{margin-inline:-24px;padding:24px;flex-direction:column-reverse}.home-identity .form-actions .button{width:100%;font-size:14px}}\n\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

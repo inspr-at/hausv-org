@@ -126,7 +126,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		renderedUnits[party.UnitID] = true
 		pdfs[party.UnitID+"/"+party.ID] = raw
 	}
-	if len(renderedUnits) != 24 || len(pdfs) != 30 {
+	if len(renderedUnits) != 24 || len(pdfs) != 31 {
 		t.Fatalf("units=%d documents=%d", len(renderedUnits), len(pdfs))
 	}
 	all, err := statementpdf.Render(loaded, "", "")
