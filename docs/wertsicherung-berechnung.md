@@ -1,6 +1,7 @@
 # Wertsicherung: Daten und Rechenkern
 
-HAUSV-768, Slice 1. Implementierung: `internal/indexation`. Stand der Daten und
+HAUSV-768, Rechenkern: `internal/indexation`; HAUSV-778, Läufe und Schreiben:
+`internal/store/valorisation*`, `internal/valorisationpdf`. Stand der Daten und
 Rechtsquellen: 24.09.2026. Diese Schnittstelle berechnet Vertragsklauseln,
 gesetzliche Vergleichswerte und Termine getrennt. Sie speichert keine
 Mietverträge, erstellt keine Vorschreibungen und verschickt keine Schreiben.
@@ -248,13 +249,15 @@ Datenlücken, endgültige Basis, vorläufiger August, direkte und abgeleitete
 Reihen, Überläufe, Aliquotierung, Dezember-Anker, Gewerbe-Ausnahme, 2026/2027-
 Deckel, ungültige Schreiben, 14-Tage-Grenze, Jahreswechsel und Schaltjahr.
 
-## Grenzen für den nächsten Slice
+## Grenzen des Rechenkerns
 
 Die Vertragswirksamkeit, MRG-Einstufung, Haupt-/Untermiete, Rechtsgrundlage einer
-Staffel und der historische Anker müssen vor Nutzung geprüft sein. Periodische
-Klauseln und reine §-2-Verweisklauseln benötigen einen Adapter; `Evaluate`
-implementiert hier die Monats-/Schwellenklausel. Veröffentlichungsdaten,
-Liefernachweise, Vertrags-/Laufpersistenz, Schreiben und UI folgen separat.
+Staffel und der historische Anker müssen vor Nutzung geprüft sein. `Evaluate` implementiert die Monats-/Schwellenklausel.
+Der Laufadapter ruft für periodische Klauseln `EvaluateReference` mit dem
+geprüften Referenzmonat auf; Zwischenmonate lösen dabei nicht aus. Reine
+§-2-Verweisklauseln verwenden die gesetzliche Kurve. Eine Staffel ohne
+strukturierte Stufen bleibt `clause_invalid`; aus Freitext wird kein Betrag
+erfunden. Veröffentlichungsdaten und Laufpersistenz sind im Adapter ergänzt.
 
 Rechtlich offen bleiben insbesondere der Wirksamkeitszeitpunkt kommerzieller
 Hauptmietverträge in Vollanwendung, Richtwertkopplung gegenüber dem
@@ -267,3 +270,73 @@ Der VPI-2020-Bestand enthält Jahresmittel ab 2021. Fehlt für einen älteren
 Anker ein benötigtes Vorjahresmittel, verweigert `CapCurve` die Berechnung;
 es wird kein Mittel einer anderen Basis stillschweigend eingesetzt. BK- und
 Heizungsakonti gehören nicht in `AmountCents`.
+
+## Persistierte Läufe (HAUSV-778)
+
+`PreviewValorisation` berechnet eine Liegenschaft ohne HTTP und ohne Schreibzugriff.
+Die Organisationsseite bündelt nur die ausgewählten, berechtigten Häuser; jedes
+Haus besitzt einen eigenen, mandantengebundenen Lauf. `ValorisationRepository`
+lädt die geprüften Verträge, erzeugt Revisionen und speichert Eingabe-SHA-256,
+Index-Snapshot und Berechnungsevidenz. Die Gruppen sind Bereit, Unverändert
+und Ausnahmen; jede Ausnahme trägt einen stabilen Code und deutschen Text.
+
+`PublishedIndexValue` verwendet den eingebetteten endgültigen Originalwert.
+Der Adapter ergänzt amtliche Veröffentlichungskalender 2021–2026 aus den in
+`valorisation_publications.go` verlinkten Tabellen. Die erste Veröffentlichung
+ist vorläufig; endgültig wird der Monat am Erstveröffentlichungstag des
+Folgemonats. Fehlende Kalender- oder Indexdaten sperren eine benötigte Berechnung.
+Ein heutiger Snapshot rekonstruiert keine früheren Revisionsstände.
+
+Die Tabellen `valorisation_runs`, `valorisation_items`, `valorisation_deliveries`
+und `valorisation_events` haben Mandanten-IDs und in PostgreSQL erzwungenes RLS.
+SQL-Trigger sperren nach Freigabe Änderungen der Berechnungen sowie Hinzufügen
+und Löschen von Positionen. Versandstatus, Stornovermerk und neue Briefreferenzen
+bleiben getrennt veränderbar. Ein Datenbankumzug stellt eingefrorene Positionen
+innerhalb einer Transaktion wieder her und aktiviert die Einfügesperre vor der
+abschließenden Prüfung erneut.
+
+Freigabe benötigt `manage_leases` und `approve_valorisation`, bei aktivierter
+Vier-Augen-Regel zusätzlich eine andere Person. Geänderte Verträge, Einstellungen
+oder Index-Snapshots erzwingen eine neue Berechnung. Die Transaktion archiviert
+unveränderliche PDF-Dateien mit SHA-256, ergänzt den HMZ-Bestandteil ab
+`wirksam_on` mit `origin=valorisation_item:<id>` und schreibt den Kurvenzustand
+fort. Die exakte Vertragskurve und der ursprüngliche Deckelanker bleiben im
+vorherigen Lauf erhalten; der niedrigere vorgeschriebene Betrag setzt sie nicht
+zurück. Ausnahmen müssen bearbeitet oder begründet ausgeschlossen sein.
+
+Organisationsadministratoren konfigurieren unter Verwaltung → Einstellungen
+`wirksamwerden_mode` (Standard `cautious`), die Behandlung ungeprüfter Klauseln,
+Vier-Augen-Freigabe und die Absenderzeile. Eine manuelle Betragsentscheidung
+benötigt Freigaberecht und Begründung; sie darf den berechneten zulässigen Betrag
+nicht erhöhen und erscheint ausdrücklich im Schreiben. Rechtliche Ausnahmen
+lassen sich damit nicht umgehen.
+
+Versand verwendet eine Reservierung mit `pending`/`sent`/`failed`, Wiederholung
+fehlgeschlagener Versuche und höchstens einen erfolgreichen Eintrag je
+Lauf/Einheit/E-Mail. Vor dem Versand wird der Brief zum tatsächlichen Tag erneut
+terminiert und unveränderlich archiviert; jeder Versand speichert genau dessen
+Dokument-ID und SHA-256. Die Planung nimmt Zugang am Versandtag an. Ein späterer
+Zugang verschiebt die Einhebbarkeit; SMTP-Erfolg ist kein Zugangsnachweis.
+Storno verlangt einen Grund und bewahrt bereits gebuchte Mietzinse und Schreiben.
+Eine nötige Mietzinskorrektur bzw. ein Korrekturschreiben erfolgt gesondert.
+
+Die fünf Briefvarianten verwenden `internal/pdf` und österreichisches Geldformat:
+MieWeG Voll-/Teilanwendung, vertragliche Vollanwendung/Ausnahme und Verminderung.
+Nach Freigabe entfällt „Entwurf“. Haupt-/Untermiete, mehrere Empfänger, unveränderte
+weitere Mietbestandteile, zwei Kurven, USt und Einhebungstermin sind sichtbar.
+Die gemeinsame Briefkopfgestaltung mit `statementpdf` wird nach dem parallelen
+Layoutreview konsolidiert; die PDF-Zeichen- und Messprimitiven sind gemeinsam.
+
+Hausroute: `/app/settings/valorisation`; Organisationsroute:
+`/app/verwaltung/wertsicherung`. Mutationen liegen unter
+`/app/settings/valorisation/runs`, ergänzt um `/{runID}/approve`, `/send`, `/cancel`
+und `/items/{itemID}`. Das PDF liegt unter `/items/{itemID}/pdf`.
+Mietvertragsseiten zeigen die zugehörige Laufhistorie. Der Demoreset erzeugt
+für Janusbergweg 123 einen April-2026-Entwurf mit zwölf Verträgen, E1 1.040,28 €,
+E2 1.017,35 €, mehreren Ausnahmetypen und einer vertraglichen Gewerbeanpassung.
+
+Browserprüfung gegen ein frisches Demo-Rig (verändert ausschließlich lokale
+Demodaten): `node scripts/snapshot/qa-valorisation.mjs http://localhost:8309
+/absoluter/artefaktpfad`. Sie prüft Vorschau, Beträge, Freigabe, PDF, Rollenabsage
+und 390/1440 Pixel. Die PDF-Inhaltstests benötigen `pdftotext`; mit
+`HAUSV_VALORISATION_PDF_DIR` werden die fünf Testbriefe zusätzlich exportiert.

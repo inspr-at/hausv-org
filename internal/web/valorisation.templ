@@ -1,0 +1,456 @@
+package web
+
+import (
+	"fmt"
+	"github.com/inspr-at/hausv-org/internal/store"
+)
+
+type ValorisationPageData struct {
+	Portal       PortalPageData
+	EffectiveOn  string
+	Houses       []ValorisationHouseView
+	Runs         []ValorisationRunView
+	Previews     []ValorisationRunView
+	New          bool
+	Organisation bool
+}
+type ValorisationHouseView struct {
+	Slug, Name string
+	Selected   bool
+}
+type ValorisationRunView struct {
+	Run        store.ValorisationRun
+	URL        string
+	CanApprove bool
+	Groups     []ValorisationGroupView
+	Deliveries []store.ValorisationDelivery
+}
+type ValorisationGroupView struct {
+	Key, Label string
+	Items      []store.ValorisationItem
+}
+
+func ValorisationGroups(run store.ValorisationRun) []ValorisationGroupView {
+	groups := []ValorisationGroupView{{Key: "ready", Label: "Bereit"}, {Key: "unchanged", Label: "Unverändert"}, {Key: "exception", Label: "Ausnahmen"}}
+	for _, item := range run.Items {
+		for j := range groups {
+			if groups[j].Key == item.Group {
+				groups[j].Items = append(groups[j].Items, item)
+			}
+		}
+	}
+	return groups
+}
+
+func valorisationDeliveryStatus(status string) string {
+	switch status {
+	case "pending":
+		return "Versand läuft"
+	case "sent":
+		return "Versandt"
+	case "failed":
+		return "Fehlgeschlagen"
+	}
+	return status
+}
+func valorisationStatus(status string) string {
+	switch status {
+	case "draft":
+		return "Entwurf"
+	case "approved":
+		return "Freigegeben"
+	case "sent":
+		return "Versandt"
+	case "cancelled":
+		return "Storniert"
+	}
+	return status
+}
+
+templ ValorisationPage(data ValorisationPageData) {
+	@SettingsFrame(data.Portal, "Wertsicherung", nil, ValorisationBody(data))
+}
+
+templ ValorisationBody(data ValorisationPageData) {
+	<main class="settings-main valorisation-page">
+		<style>
+			.valorisation-page {
+				display: grid;
+				gap: 24px;
+				min-width: 0;
+			}
+			.valorisation-page h1,
+			.valorisation-page h2,
+			.valorisation-page h3 {
+				font-family: var(--font-serif);
+				margin: 0 0 12px;
+			}
+			.valorisation-page .vr-card {
+				padding: 24px;
+				border: 1px solid var(--line);
+				border-radius: var(--radius-md);
+				background: var(--panel);
+				min-width: 0;
+			}
+			.valorisation-page .vr-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				align-items: center;
+				margin: 16px 0;
+			}
+			.valorisation-page label {
+				display: grid;
+				gap: 6px;
+			}
+			.valorisation-page .vr-check {
+				display: flex;
+				gap: 8px;
+				align-items: center;
+			}
+			.valorisation-page input {
+				max-width: 100%;
+				min-width: 0;
+				padding: 8px;
+			}
+			.valorisation-page .vr-table {
+				overflow: auto;
+			}
+			.valorisation-page table {
+				border-collapse: collapse;
+				width: 100%;
+			}
+			.valorisation-page td,
+			.valorisation-page th {
+				text-align: left;
+				padding: 10px;
+				border-bottom: 1px solid var(--line);
+				vertical-align: top;
+			}
+			.valorisation-page .num {
+				white-space: nowrap;
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+			}
+			.valorisation-page details {
+				border-top: 1px solid var(--line);
+				padding: 14px 0;
+			}
+			.valorisation-page summary {
+				cursor: pointer;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				justify-content: space-between;
+			}
+			.valorisation-page .vr-exception,
+			.valorisation-page .vr-deadline {
+				padding: 12px;
+				background: var(--panel-soft);
+				border-left: 3px solid var(--accent);
+				margin: 12px 0;
+			}
+			.valorisation-page p,
+			.valorisation-page li,
+			.valorisation-page code {
+				overflow-wrap: anywhere;
+			}
+			.valorisation-page .vr-meta {
+				color: var(--muted);
+				font-size: 13px;
+			}
+			.valorisation-page .vr-excluded {
+				opacity: 0.65;
+			}
+			.valorisation-page .vr-cols {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 16px;
+			}
+			.valorisation-page .vr-history {
+				display: grid;
+				gap: 16px;
+			}
+			.valorisation-page .vr-money {
+				font-weight: 700;
+			}
+			.valorisation-page button {
+				max-width: 100%;
+			}
+			@media (max-width: 600px) {
+				.valorisation-page .vr-card {
+					padding: 16px;
+				}
+				.valorisation-page .vr-cols {
+					grid-template-columns: 1fr;
+				}
+				.valorisation-page .vr-actions {
+					align-items: stretch;
+					flex-direction: column;
+				}
+				.valorisation-page .vr-table {
+					font-size: 13px;
+				}
+			}
+		</style>
+		<header><p>Einstellungen · Wertsicherung</p><h1>Wertsicherung</h1><p>Vertragliche Anpassung prüfen, freigeben und verständigen.</p><a class="button primary" href="?new=1">Neuer Lauf</a></header>
+		if data.New {
+			<section class="vr-card">
+				<h2>Neuer Lauf</h2>
+				<form method="get">
+					<input type="hidden" name="new" value="1"/>
+					<label>Wirksamkeitsdatum<input type="date" name="effective_on" value={ data.EffectiveOn } required/></label>
+					<fieldset>
+						<legend>Liegenschaften</legend>
+						for _,house:=range data.Houses {
+							<label class="vr-check">
+								<input type="checkbox" name="house" value={ house.Slug } checked?={ house.Selected }/>{ house.Name }
+							</label>
+						}
+					</fieldset>
+					<button class="button primary" type="submit" name="preview" value="1">Vorschau berechnen</button>
+				</form>
+			</section>
+		}
+		for _,preview:=range data.Previews {
+			@ValorisationRun(preview, true)
+		}
+		<section class="vr-history">
+			<h2>Läufe</h2>
+			if len(data.Runs)==0 {
+				<p>Noch kein Lauf. Erstellen Sie eine Vorschau für Ihre Liegenschaft.</p>
+			}
+			for _,run:=range data.Runs {
+				@ValorisationRun(run, false)
+			}
+		</section>
+	</main>
+}
+
+templ ValorisationRun(view ValorisationRunView, preview bool) {
+	<article class="vr-card" id={ "run-" + view.Run.ID } data-run-id={ view.Run.ID }>
+		<h2>
+			{ view.Run.Input.House } · { LeaseDate(view.Run.EffectiveOn) }
+		</h2>
+		<p>
+			{ valorisationStatus(view.Run.Status) } · { fmt.Sprintf("Revision %d",view.Run.Revision) }
+		</p>
+		if preview {
+			<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button primary" type="submit">Lauf anlegen</button></form>
+		}
+		for _,group:=range view.Groups {
+			<section data-group={ group.Key }>
+				<h3>
+					{ group.Label }
+					<span class="pill">
+						{ fmt.Sprint(len(group.Items)) }
+					</span>
+				</h3>
+				for _,item:=range group.Items {
+					<details id={ "item-" + item.ID } class={ templ.KV("vr-excluded", item.Excluded) } data-lease-id={ item.LeaseID }>
+						<summary>
+							<strong>
+								{ item.UnitID }
+							</strong>
+							<span>
+								{ item.Reason }
+							</span>
+							<span class="vr-money">
+								{ LeaseMoney(item.OldCents) } → { LeaseMoney(item.NewCents) }
+							</span>
+						</summary>
+						if item.Excluded {
+							<p>
+								Ausgeschlossen: { item.ExcludeReason }
+							</p>
+						}
+						for _,code:=range item.Exceptions {
+							<p class="vr-exception">
+								<strong>
+									{ code }
+								</strong> · { store.ValorisationExceptionLabels[code] }
+							</p>
+						}
+						if item.NoticeDeadline!="" {
+							<p class="vr-deadline">
+								Schreiben bis
+								<strong>
+									{ LeaseDate(item.NoticeDeadline) }
+								</strong> versenden, damit der erhöhte Mietzins ab
+								<strong>
+									{ LeaseDate(item.CollectableFrom) }
+								</strong> fällig wird (§ 16 Abs 9 MRG).
+							</p>
+						}
+						<p>
+							{ item.Lease.Notes }
+						</p>
+						<p><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						<div class="vr-table">
+							<table>
+								<caption>Vertrags- und Deckelkurve</caption><thead><tr><th>Stichtag</th><th>Vertrag</th><th>MieWeG</th><th>Vorgeschrieben</th></tr></thead>
+								<tbody>
+									<tr>
+										<td>
+											{ LeaseDate(view.Run.EffectiveOn) }
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.ContractCents) }
+										</td>
+										<td class="num">
+											if item.MieWeG {
+												{ LeaseMoney(item.CapCents) }
+											} else {
+												entfällt
+											}
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.NewCents) }
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div class="vr-table">
+							<table>
+								<thead><tr><th>Monatlicher HMZ</th><th>Netto</th><th>USt</th><th>Brutto</th></tr></thead>
+								<tbody>
+									<tr>
+										<th>Bisher</th>
+										<td class="num">
+											{ LeaseMoney(item.OldCents) }
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.OldVATCents) }
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.OldGrossCents) }
+										</td>
+									</tr>
+									<tr>
+										<th>Neu</th>
+										<td class="num">
+											{ LeaseMoney(item.NewCents) }
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.NewVATCents) }
+										</td>
+										<td class="num">
+											{ LeaseMoney(item.NewGrossCents) }
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<p>
+							Wirksam: { LeaseDate(item.WirksamOn) } · Einhebbar: { LeaseDate(item.CollectableFrom) }
+						</p>
+						<h4>Wie kommt dieser Betrag zustande?</h4>
+						<ol>
+							for _,step:=range item.Explanation {
+								<li>
+									{ step }
+								</li>
+							}
+						</ol>
+						<div class="vr-table">
+							<table>
+								<caption>Indexwerte und Quellen</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
+								<tbody>
+									for _,index:=range item.Indices {
+										<tr>
+											<td>
+												<a href={ templ.SafeURL(index.Source) } rel="noreferrer" target="_blank">
+													{ index.Series } · { index.Period }
+												</a>
+											</td>
+											<td>
+												{ index.Value }
+											</td>
+											<td>
+												{ index.Status }
+											</td>
+											<td>
+												<a href={ templ.SafeURL(index.PublicationSource) } rel="noreferrer" target="_blank">
+													{ LeaseDate(index.PublishedOn) }
+												</a>
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</div>
+						if item.OverrideCents!=nil {
+							<p>
+								Manuelle Entscheidung: { item.OverrideReason } · { item.OverrideBy }
+							</p>
+						}
+						if !preview {
+							if item.LetterDocumentID!="" || item.Group=="ready" {
+								<p><a class="button" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Anpassungsschreiben PDF</a></p>
+							}
+							if view.Run.Status=="draft" {
+								<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID) } class="vr-actions">
+									<label>Begründung<input type="text" name="reason" required maxlength="4000"/></label>
+									<button class="button" type="submit" name="action" value="exclude">Ausschließen</button>
+									if item.ClauseID!="" {
+										<button class="button" type="submit" name="action" value="review">Klausel geprüft · neu berechnen</button>
+									}
+									if view.CanApprove && item.Group=="ready" {
+										<label>Manueller Nettobetrag (€)<input type="text" name="amount" inputmode="decimal"/></label><button class="button" type="submit" name="action" value="override">Betrag übernehmen</button>
+									}
+								</form>
+							}
+						}
+					</details>
+				}
+			</section>
+		}
+		if !preview {
+			if len(view.Deliveries)>0 {
+				<div class="vr-table">
+					<table>
+						<caption>Versandverlauf</caption><thead><tr><th>Einheit / Empfänger</th><th>Versuch</th><th>Status</th></tr></thead>
+						<tbody>
+							for _,delivery:=range view.Deliveries {
+								<tr>
+									<td>{ delivery.UnitID }<br/>{ delivery.Recipient }</td>
+									<td>{ fmt.Sprint(delivery.Attempt) }</td>
+									<td>
+										{ valorisationDeliveryStatus(delivery.Status) }
+										if delivery.Error!="" {
+											<p>{ delivery.Error }</p>
+										}
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+			<div class="vr-actions">
+				if view.Run.Status=="draft" {
+					if view.CanApprove {
+						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }><button class="button primary" type="submit">Freigeben und archivieren</button></form>
+					}
+					<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button" type="submit">Neu berechnen</button></form>
+				}
+				if view.Run.Status=="approved" {
+					<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/send") }><button class="button primary" type="submit">Schreiben versenden · Fehlversuche erneut versuchen</button></form>
+				}
+				if view.Run.Status!="cancelled" {
+					<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/cancel") }><label>Stornogrund<input name="reason" required maxlength="4000"/></label><button class="button" type="submit">Lauf stornieren</button></form>
+				}
+			</div>
+			if view.Run.Status=="cancelled" {
+				<p>Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
+			}
+			<p class="vr-meta">
+				Erstellt von { view.Run.CreatedBy } · Eingaben SHA-256
+				<code>
+					{ view.Run.InputsSHA256 }
+				</code>
+			</p>
+		}
+	</article>
+}

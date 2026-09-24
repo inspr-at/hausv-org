@@ -17,6 +17,7 @@ type SettingsHubPageData struct {
 	SettingsCanManageEnergyData bool
 	CanManageHomeIdentity       bool
 	CanManageBuilding           bool
+	CanManageLeases             bool
 	CanManageDocuments          bool
 	CanManageHandovers          bool
 	CanViewAudit                bool
@@ -207,6 +208,9 @@ templ SettingsHubBody(data SettingsHubPageData) {
 			</nav></section>
 			if settingsHasManagement(data) {
 				<section class="settings-group panel span-all"><header><div><h2>Verwaltung</h2><p>Nur Bereiche, für die Sie berechtigt sind. Änderungen wirken für die ganze Liegenschaft.</p></div><span class="scope management">Verwaltungsrechte</span></header><nav class="settings-links management-links">
+					if data.CanManageLeases {
+						@SettingsLink("document", "Wertsicherung", "Mietzinse prüfen, freigeben und verständigen", "/app/settings/valorisation")
+					}
 					if data.CanManageBuilding {
 						@SettingsLink("home", "Gebäude & Einheiten", "Liegenschaftsdaten und Einheiten pflegen", "/app/settings/building")
 						@SettingsLink("document", "Jahresabrechnung", "Grunddaten, Kostenarten, Einheiten und Abrechnungsperiode", "/app/settings/annual-statement")
@@ -239,7 +243,7 @@ templ SettingsHubBody(data SettingsHubPageData) {
 		<details class="note panel"><summary>Berechtigungen erklärt
 			@DisclosureChevron()
 		</summary><div><strong>Nur Sie</strong><p>Persönliche Einstellungen wirken allein auf Ihren Zugang.</p>
-			if data.CanManageBuilding || data.Portal.CanManageUsers || data.CanManageDocuments || data.CanManageHandovers || data.IsAdmin {
+			if data.CanManageLeases || data.CanManageBuilding || data.Portal.CanManageUsers || data.CanManageDocuments || data.CanManageHandovers || data.IsAdmin {
 				<strong>Verwaltungsrechte</strong><p>Änderungen gelten für die ganze Liegenschaft und werden im Verlauf festgehalten.</p>
 			}
 		</div></details>
@@ -296,7 +300,7 @@ func settingsHomeDetail(home view.HomeIdentityView) string {
 }
 
 func settingsHasAdministrativeManagement(data SettingsHubPageData) bool {
-	return data.CanManageBuilding || (data.Portal.Modules.Users && data.Portal.CanManageUsers) || (data.Portal.Modules.Documents && data.CanManageDocuments) || (data.Portal.Modules.Handovers && data.CanManageHandovers) || (data.Portal.Modules.Parking && data.IsAdmin)
+	return data.CanManageLeases || data.CanManageBuilding || (data.Portal.Modules.Users && data.Portal.CanManageUsers) || (data.Portal.Modules.Documents && data.CanManageDocuments) || (data.Portal.Modules.Handovers && data.CanManageHandovers) || (data.Portal.Modules.Parking && data.IsAdmin)
 }
 
 func settingsHasManagement(data SettingsHubPageData) bool {

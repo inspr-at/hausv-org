@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/textutil"
@@ -80,6 +81,10 @@ func seedLeases(ctx context.Context, database *sql.DB, identities map[string]sto
 		if err := store.ReplaceLeaseGraph(tx, identity.Ref(), item.lease()); err != nil {
 			return fmt.Errorf("demo lease %s: %w", item.ID, err)
 		}
+	}
+	identity := identities[textutil.Slug("janusbergweg-123")]
+	if err := store.SeedValorisationDraft(tx, identity.Ref(), store.ValorisationInput{EffectiveOn: "2026-04-01", House: "Janusbergweg 123", Address: "Janusbergweg 123, 8010 Graz", Organisation: "Hausverwaltung Musterstadt", Contact: "vera.verwalter@musterstadt.example"}, "musterstadt", time.Date(2026, 4, 1, 9, 0, 0, 0, time.UTC)); err != nil {
+		return err
 	}
 	return tx.Commit()
 }

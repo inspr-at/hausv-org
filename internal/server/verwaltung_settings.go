@@ -187,6 +187,9 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	after := before
+	if r.FormValue("valorisation_present") == "1" {
+		after.Valorisation = store.ValorisationSettings{WirksamwerdenMode: r.FormValue("valorisation_mode"), UnreviewedClausePolicy: r.FormValue("valorisation_review"), FourEyes: r.FormValue("valorisation_four_eyes") == "1", LetterSenderText: strings.TrimSpace(r.FormValue("valorisation_sender"))}.Normalized()
+	}
 	after.TrustLevels = map[string]string{}
 	for _, category := range store.IntakeCategories() {
 		level := r.FormValue("trust_" + category.Key)
@@ -299,6 +302,7 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		logError("organisation members could not be read", membersErr, "organisation", organisation.Key)
 	}
 	data := web.VerwaltungSettingsData{
+		ValorisationMode: settings.Valorisation.WirksamwerdenMode, ValorisationReviewPolicy: settings.Valorisation.UnreviewedClausePolicy, ValorisationFourEyes: settings.Valorisation.FourEyes, ValorisationSender: settings.Valorisation.LetterSenderText,
 		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
 		MembersAvailable: a.organisationMemberRepo != nil,
 		MailConfigured:   mailStatus.Configured, MailMailbox: mailStatus.Mailbox, MailInterval: mailStatus.Interval.String(),

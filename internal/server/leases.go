@@ -50,6 +50,25 @@ func (a *app) unitLeasePage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	if has {
 		page.Lease = leaseDetail(current)
+		if runs, ok := a.valorisationRepo(ac); ok {
+			list, err := runs.List()
+			if err != nil {
+				a.valorisationError(w, err)
+				return
+			}
+			for _, run := range list {
+				for _, item := range run.Items {
+					if item.LeaseID != current.ID {
+						continue
+					}
+					entry := web.LeaseValorisationView{URL: "/app/settings/valorisation#item-" + item.ID, Date: web.LeaseDate(run.EffectiveOn), Amount: web.LeaseMoney(item.NewCents), Due: web.LeaseDate(item.CollectableFrom), Status: valorisationHistoryStatus(run.Status)}
+					if item.LetterDocumentID != "" {
+						entry.PDFURL = "/app/settings/valorisation/runs/" + run.ID + "/items/" + item.ID + "/pdf"
+					}
+					page.Lease.Valorisation = append(page.Lease.Valorisation, entry)
+				}
+			}
+		}
 	}
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.LeasePage(page))
 }
@@ -674,6 +693,9 @@ func vatLabel(bp int) string {
 }
 
 func originLabel(raw string) string {
+	if strings.HasPrefix(raw, "valorisation_item:") {
+		return "Wertsicherung"
+	}
 	if raw == store.OriginImport {
 		return "Import"
 	}
@@ -789,4 +811,18 @@ func thresholdLabel(clause store.IndexClause) string {
 		return text + ", inklusive"
 	}
 	return text
+}
+
+func valorisationHistoryStatus(status string) string {
+	switch status {
+	case "draft":
+		return "Entwurf"
+	case "approved":
+		return "Freigegeben"
+	case "sent":
+		return "Versandt"
+	case "cancelled":
+		return "Storniert"
+	}
+	return status
 }

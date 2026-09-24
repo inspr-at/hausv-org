@@ -162,7 +162,19 @@ templ LeaseTimeline(lease LeaseDetail) {
 			}
 		}
 		<h2>Wertsicherung</h2>
-		<p>Noch keine Wertsicherung.</p>
+		if len(lease.Valorisation) == 0 {
+			<p>Noch keine Wertsicherung.</p>
+		} else {
+			<ul class="lease-history">
+				for _, item := range lease.Valorisation {
+					<li><a href={ templ.SafeURL(item.URL) }>{ item.Date } · { item.Status }</a> · { item.Amount } · einhebbar { item.Due }
+						if item.PDFURL != "" {
+							<a href={ templ.SafeURL(item.PDFURL) }>Anpassungsschreiben PDF</a>
+						}
+					</li>
+				}
+			</ul>
+		}
 		if lease.Anchor != "" {
 			<p>{ lease.Anchor }</p>
 		}
