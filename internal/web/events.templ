@@ -48,7 +48,7 @@ templ EventsStyles() {
 		.events-main .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}
 		.events-main .agenda-panel{padding:var(--space-5)}
 		.events-main .section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-4)}
-		.events-main .kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+		.events-main .kicker{color:var(--gold-ink);font-size:11px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
 		.events-main .section-head h2{margin-top:var(--space-1);font-size:26px}
 		.events-main .section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}
 		.events-main .count{color:var(--muted);font-size:11px;white-space:nowrap}
@@ -63,13 +63,13 @@ templ EventsStyles() {
 		.events-main .date-badge{width:60px;height:60px;display:grid;place-content:center;border-radius:var(--radius-sm);background:var(--leaf);color:var(--panel);text-align:center}
 		.events-main .event-card.past .date-badge{background:var(--muted)}
 		.events-main .date-badge strong{font-family:var(--font-serif);font-size:24px;line-height:.85}
-		.events-main .date-badge span{margin-top:6px;font-size:9px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+		.events-main .date-badge span{margin-top:6px;font-size:11px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
 		.events-main .event-copy{min-width:0;display:flex;flex-direction:column;gap:var(--space-2)}
 		.events-main .event-card-head{display:flex;align-items:start;gap:var(--space-3);flex-wrap:wrap}
 		.events-main .event-title-group{display:flex;flex-direction:column;gap:var(--space-1);flex:1;min-width:0}
-		.events-main .next-label{display:inline-block;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
+		.events-main .next-label{display:inline-block;color:var(--gold);font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
 		.events-main .event-card-head h3{font-size:19px;line-height:1.3}
-		.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:700;white-space:nowrap}
+		.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:700;white-space:nowrap}
 		.events-main .event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}
 		.events-main .event-meta>span{white-space:nowrap}
 		.events-main .event-details{margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
@@ -89,15 +89,15 @@ templ EventsStyles() {
 		.events-main .aside-panel h2{margin-top:var(--space-1);font-size:17px}
 		.events-main .aside-panel>p{color:var(--muted);font-size:11px;line-height:1.5}
 		.events-main .aside-panel .button{min-height:38px;font-size:12px}
-		.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:10px;line-height:1.4}
+		.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:11px;line-height:1.4}
 		.events-main .guide>summary{cursor:pointer;list-style:none}
 		.events-main .guide>summary::-webkit-details-marker{display:none}
-		.events-main .guide .kicker{font-size:9px}
+		.events-main .guide .kicker{font-size:11px}
 		.events-main .guide h2{font-size:14px}
 		.events-main .legend{display:grid;gap:var(--space-2);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}
 		.events-main .legend li{display:grid;gap:var(--space-1)}
-		.events-main .legend li .tag{font-size:9px}
-		.events-main .legend li>span:last-child{color:var(--muted);font-size:10px;line-height:1.4}
+		.events-main .legend li .tag{font-size:11px}
+		.events-main .legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.4}
 		.events-main .attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2)}
 		.events-main .attachment-item{position:relative;min-width:0}
 		.events-main .attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}
@@ -231,7 +231,7 @@ templ EventsBody(data EventsPageData) {
 		</div>
 		<aside class="events-aside" aria-label="Hinweise zu Terminen">
 					if data.CalendarFeedURL != "" {
-						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button primary" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
+						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
 					}
 					<details class="panel aside-panel guide" aria-labelledby="events-legend-title"><summary><span class="kicker">Was hier erscheint</span><h2 id="events-legend-title">Termine in der Liegenschaft</h2>
 						@DisclosureChevron()
