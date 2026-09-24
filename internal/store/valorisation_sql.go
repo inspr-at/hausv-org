@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -72,7 +73,7 @@ func (r *ValorisationRepository) previewTx(tx *sql.Tx, input ValorisationInput, 
 			}
 		}
 	}
-	snapshot, err := publishedIndices()
+	snapshot, err := runtimeIndexSnapshot(tx)
 	if err != nil {
 		return ValorisationRun{}, err
 	}
@@ -202,7 +203,14 @@ func (r *ValorisationRepository) getTx(tx *sql.Tx, id string) (ValorisationRun, 
 		}
 		run.Items = append(run.Items, item)
 	}
-	return run, rows.Err()
+	if err = rows.Err(); err != nil {
+		return run, err
+	}
+	if err = rows.Close(); err != nil {
+		return run, err
+	}
+	run.IndexRevised, err = indexRunRevised(tx, run)
+	return run, err
 }
 func (r *ValorisationRepository) List() ([]ValorisationRun, error) {
 	rows, err := r.db.For(r.tenant).Query(`SELECT id FROM valorisation_runs WHERE tenant_id=$1 ORDER BY effective_on DESC,revision DESC`, r.tenant.ID)
@@ -256,6 +264,9 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 		return ValorisationRun{}, err
 	}
 	defer tx.Rollback()
+	if err = lockIndexReference(context.Background(), tx); err != nil {
+		return ValorisationRun{}, err
+	}
 	run, err := r.lockDraft(tx, id)
 	if err != nil {
 		return run, err
@@ -289,11 +300,7 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 			return run, ErrValorisationConflict
 		}
 	}
-	snapshot, err := publishedIndices()
-	if err != nil {
-		return run, err
-	}
-	if snapshot.Manifest.DataSHA256 != run.IndexSHA256 {
+	if run.IndexRevised {
 		return run, fmt.Errorf("index_revised: neuen Lauf berechnen")
 	}
 	included := 0

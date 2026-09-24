@@ -42,7 +42,7 @@ func finalIndexPublication(month indexation.Month) (time.Time, string, bool) {
 }
 
 func indexEvidence(v indexation.IndexValue) ValorisationIndex {
-	pub, source, ok := finalIndexPublication(v.Month)
+	pub, source, ok := indexValuePublication(v)
 	date := ""
 	if ok {
 		date = pub.Format(time.DateOnly)
@@ -54,11 +54,11 @@ func indexEvidence(v indexation.IndexValue) ValorisationIndex {
 	if v.ChainSource != "" {
 		status = "derived"
 	}
-	return ValorisationIndex{Series: string(v.Series), Period: string(v.Month), Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
+	return ValorisationIndex{RevisionID: v.RevisionID, Series: string(v.Series), Period: string(v.Month), Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
 }
 
 func annualEvidence(v indexation.AnnualValue) ValorisationIndex {
-	pub, source, ok := finalIndexPublication(indexation.Month(fmt.Sprintf("%d-12", v.Year)))
+	pub, source, ok := indexValuePublication(indexation.IndexValue{Month: indexation.Month(fmt.Sprintf("%d-12", v.Year)), Runtime: v.Runtime, Preliminary: v.Preliminary, Source: v.Source, FetchedAt: v.FetchedAt})
 	date := ""
 	if ok {
 		date = pub.Format(time.DateOnly)
@@ -67,5 +67,26 @@ func annualEvidence(v indexation.AnnualValue) ValorisationIndex {
 	if v.Preliminary {
 		status = "preliminary"
 	}
-	return ValorisationIndex{Series: string(v.Series), Period: fmt.Sprint(v.Year), Used: true, Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
+	return ValorisationIndex{RevisionID: v.RevisionID, Series: string(v.Series), Period: fmt.Sprint(v.Year), Used: true, Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
+}
+
+// Beyond the evidenced publication calendar, a final observation is usable no
+// earlier than the day its official status was retrieved. This is conservative:
+// it never invents an earlier legal publication date from a monthly schedule.
+func indexValuePublication(v indexation.IndexValue) (time.Time, string, bool) {
+	if date, source, ok := finalIndexPublication(v.Month); ok {
+		return date, source, true
+	}
+	if v.Runtime && !v.Preliminary && !v.FetchedAt.IsZero() {
+		date, _ := time.Parse(time.DateOnly, v.FetchedAt.UTC().Format(time.DateOnly))
+		return date, indexation.PeriodsURL(v.Source), true
+	}
+	return time.Time{}, "", false
+}
+
+func snapshotIndexPublication(snapshot indexation.Snapshot, series indexation.Series, month indexation.Month) (time.Time, string, bool) {
+	if v, ok, err := snapshot.Data.Lookup(series, month); err == nil && ok {
+		return indexValuePublication(v)
+	}
+	return finalIndexPublication(month)
 }
