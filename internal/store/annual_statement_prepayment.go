@@ -269,23 +269,28 @@ type AnnualStatementSettlementUnit struct {
 	AllocatedCents int64
 }
 
-func AnnualStatementSettlementPreview(costTypes []AnnualStatementCostType, receipts []AnnualStatementReceipt, units []Unit) ([]AnnualStatementSettlementUnit, bool) {
-	if AnnualStatementRunBlocked(costTypes, units) {
+func AnnualStatementSettlementPreview(costTypes []AnnualStatementCostType, receipts []AnnualStatementReceipt, units []Unit, consumption ...map[string]AnnualStatementConsumptionVector) ([]AnnualStatementSettlementUnit, bool) {
+	if len(units) == 0 || len(AnnualStatementCostTypesWithoutKey(costTypes)) > 0 {
 		return nil, false
 	}
+	// Match the run's tie-break order, independent of register display order.
+	units = append([]Unit(nil), units...)
+	sort.Slice(units, func(i, j int) bool { return units[i].ID < units[j].ID })
 	costTypeKey := map[string]string{}
 	for _, item := range costTypes {
 		if item.Allocatable && ValidAllocationKey(item.AllocationKey) {
 			costTypeKey[item.Key] = item.AllocationKey
 		}
 	}
-	totalByKey := map[string]int64{}
+	totalByCost := map[string]int64{}
+	var total int64
 	for _, receipt := range receipts {
 		if key := costTypeKey[receipt.CostTypeKey]; key != "" {
-			if receipt.AmountCents < 0 || totalByKey[key] > math.MaxInt64-receipt.AmountCents {
+			if receipt.AmountCents < 0 || total > math.MaxInt64-receipt.AmountCents {
 				return nil, false
 			}
-			totalByKey[key] += receipt.AmountCents
+			total += receipt.AmountCents
+			totalByCost[receipt.CostTypeKey] += receipt.AmountCents
 		}
 	}
 	out := make([]AnnualStatementSettlementUnit, len(units))
@@ -295,45 +300,38 @@ func AnnualStatementSettlementPreview(costTypes []AnnualStatementCostType, recei
 		indexByUnit[unit.ID] = index
 	}
 	for _, preview := range AnnualStatementAllocationPreviews(costTypes, units) {
-		amount := totalByKey[preview.Key]
-		shares := append([]AnnualStatementUnitShare(nil), preview.Shares...)
-		distributeAnnualStatementCents(shares, amount)
-		for _, share := range shares {
-			index := indexByUnit[share.UnitID]
-			cents := int64(share.SharePPM)
-			if out[index].AllocatedCents > math.MaxInt64-cents {
-				return nil, false
+		if preview.Key != AllocationKeyVerbrauch && (preview.Blocked || (preview.Key == AllocationKeyNutzwert && preview.BasisTotal != MiteigentumsanteilTotalPPM)) {
+			return nil, false
+		}
+		// Round each cost type separately, exactly as the stored run does.
+		for _, cost := range preview.CostTypeKeys {
+			shares := preview.Shares
+			if preview.Key == AllocationKeyVerbrauch {
+				if len(consumption) != 1 || (cost != "heizung" && cost != "warmwasser") {
+					return nil, false
+				}
+				vector, found := consumption[0][cost]
+				if !found || vector.CostTypeKey != cost {
+					return nil, false
+				}
+				for _, receipt := range receipts {
+					if receipt.CostTypeKey == cost && receipt.PeriodYear != vector.PeriodYear {
+						return nil, false
+					}
+				}
+				var complete bool
+				shares, complete = AnnualStatementConsumptionShares(vector, units)
+				if !complete {
+					return nil, false
+				}
 			}
-			out[index].AllocatedCents += cents
+			cents := annualStatementRunCents(shares, totalByCost[cost])
+			for i, share := range shares {
+				out[indexByUnit[share.UnitID]].AllocatedCents += cents[i]
+			}
 		}
 	}
 	return out, true
-}
-
-// distributeAnnualStatementCents temporarily stores allocated cents in
-// SharePPM to avoid a second private tuple type. Inputs are share ppm; outputs
-// are cents. The largest remainders receive the remaining cents in unit order.
-func distributeAnnualStatementCents(shares []AnnualStatementUnitShare, amount int64) {
-	const million int64 = 1_000_000
-	type remainder struct {
-		index int
-		value int64
-	}
-	remainders := make([]remainder, len(shares))
-	var assigned int64
-	for index := range shares {
-		ppm := int64(shares[index].SharePPM)
-		whole := (amount / million) * ppm
-		fraction := (amount % million) * ppm
-		cents := whole + fraction/million
-		assigned += cents
-		remainders[index] = remainder{index: index, value: fraction % million}
-		shares[index].SharePPM = int(cents)
-	}
-	sort.SliceStable(remainders, func(i, j int) bool { return remainders[i].value > remainders[j].value })
-	for step := int64(0); step < amount-assigned && step < int64(len(remainders)); step++ {
-		shares[remainders[step].index].SharePPM++
-	}
 }
 
 var _ AnnualStatementPrepaymentStorage = (*MemoryAnnualStatementPrepaymentStore)(nil)

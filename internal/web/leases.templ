@@ -1,0 +1,417 @@
+package web
+
+import "strconv"
+
+templ LeasePage(data LeasePageData) {
+	@SettingsFrame(data.Portal, "Mietvertrag", []string{}, LeasePageContent(data))
+}
+
+templ LeasePageContent(data LeasePageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Mietvertrag",
+			Class: "settings-main building lease-page",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Einheiten · " + data.UnitLabel, Icon: "home", URL: "/app/settings/building?section=units"},
+		},
+		PortalSectionTitle("Mietvertrag"),
+		PortalSectionLede(data.Subtitle),
+		leasePrimaryAction(data),
+		nil,
+		nil,
+		LeasePageBody(data),
+	)
+}
+
+templ leasePrimaryAction(data LeasePageData) {
+	if !data.Editing && !data.Ending {
+		<a class="button primary" href={ templ.SafeURL(leaseEditURL(data)) }>Bearbeiten</a>
+	}
+}
+
+func leaseEditURL(data LeasePageData) string {
+	return "/app/settings/building/units/" + data.UnitID + "/lease?bearbeiten=1"
+}
+
+func leaseReadURL(data LeasePageData) string {
+	return "/app/settings/building/units/" + data.UnitID + "/lease"
+}
+
+func leaseEndURL(data LeasePageData) string {
+	return "/app/settings/building/units/" + data.UnitID + "/lease?beenden=1"
+}
+
+templ leaseBackLink() {
+	<a class="lease-back" href="/app/settings/building?section=units">Zurück zu den Einheiten</a>
+}
+
+templ LeasePageBody(data LeasePageData) {
+	@leaseStyles()
+	<div class="lease-stack">
+		@leaseBackLink()
+		@SettingsFlash(data.Message, data.OK)
+		if data.Ending {
+			@LeaseEndConfirm(data)
+		} else if data.Editing {
+			@LeaseFormSection(data)
+		} else if data.HasLease {
+			@LeaseSummary(data.Lease)
+			@LeaseTimeline(data.Lease)
+			if len(data.History) > 1 {
+				<section class="lease-card"><h2>Weitere Verträge</h2>
+					<ul class="lease-history">
+						for _, item := range data.History {
+							if item.ID != data.Lease.ID {
+								<li>{ item.Starts } – { item.Ends } · { item.Status } · { item.Kind }</li>
+							}
+						}
+					</ul>
+				</section>
+			}
+		} else {
+			<section class="lease-card"><h2>Noch kein Mietvertrag</h2><p>Legen Sie den Vertrag für { data.UnitLabel } an. Eine Tabelle importieren Sie über die Einheiten.</p></section>
+		}
+	</div>
+}
+
+templ LeaseSummary(lease LeaseDetail) {
+	<section class="lease-card">
+		<h2>Vertrag</h2>
+		if len(lease.Parties) > 0 {
+			<ul class="lease-parties">
+				for _, party := range lease.Parties {
+					<li>
+						<strong>{ party.Name }</strong>
+						<span class="pill">{ party.Role }</span>
+						<small>{ party.Email }</small>
+						if party.Address != "" {
+							<small>{ party.Address }</small>
+						}
+						<small>{ party.From } – { party.To }</small>
+					</li>
+				}
+			</ul>
+		}
+		<dl class="lease-facts">
+			<dt>Abschluss</dt><dd>{ lease.Concluded }</dd>
+			<dt>Beginn</dt><dd>{ lease.Starts }</dd>
+			<dt>Ende</dt><dd>{ lease.Ends }</dd>
+			<dt>Art</dt><dd>{ lease.Kind }</dd>
+			<dt>Nutzung</dt><dd>{ lease.Use }</dd>
+			<dt>Regime</dt><dd>{ lease.MRG } · { lease.Regime }</dd>
+			<dt>MieWeG</dt><dd>{ lease.MieWeG }<small>{ lease.MieWeGReason }</small></dd>
+			<dt>Sonderdeckel</dt><dd>{ lease.SpecialCap }<small>{ lease.CapReason }</small></dd>
+			<dt>Zinstermin</dt><dd>{ lease.Zinstermin }</dd>
+		</dl>
+		if lease.Notes != "" {
+			<p class="lease-notes">{ lease.Notes }</p>
+		}
+	</section>
+}
+
+templ LeaseTimeline(lease LeaseDetail) {
+	<section class="lease-card">
+		<h2>Mietzins</h2>
+		if len(lease.Components) == 0 {
+			<p>Noch kein Mietzins.</p>
+		} else {
+			<div class="lease-table-wrap">
+				<table class="lease-rent">
+					<thead><tr><th>Gültig ab</th><th>Bestandteil</th><th class="num">Netto</th><th class="num">USt</th><th class="num">Brutto</th><th>Herkunft</th></tr></thead>
+					<tbody>
+						for _, item := range lease.Components {
+							<tr>
+								<td data-label="Gültig ab">{ item.From }</td>
+								<td data-label="Bestandteil">{ item.Kind }</td>
+								<td class="num" data-label="Netto">{ item.Net }</td>
+								<td class="num" data-label="USt">{ item.VAT }</td>
+								<td class="num" data-label="Brutto">{ item.Gross }</td>
+								<td data-label="Herkunft">{ item.Origin }</td>
+							</tr>
+						}
+						if lease.HasMonthly {
+							<tr class="lease-total">
+								<td data-label="Gültig ab"></td>
+								<td data-label="Bestandteil">Monatlich gesamt</td>
+								<td class="num" data-label="Netto">{ lease.MonthlyNet }</td>
+								<td class="num" data-label="USt">{ lease.MonthlyVAT }</td>
+								<td class="num" data-label="Brutto">{ lease.MonthlyGross }</td>
+								<td data-label="Herkunft"></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		<h2>Klausel</h2>
+		if !lease.HasClause {
+			<p>Keine Klausel hinterlegt.</p>
+		} else {
+			<p class="lease-clause-head"><strong>{ lease.Clause.Type }</strong> <span class={ "lease-chip", lease.Clause.ReviewClass }>{ lease.Clause.Review }</span></p>
+			if lease.Clause.Line != "" {
+				<p>{ lease.Clause.Line }</p>
+			}
+			if lease.Clause.Threshold != "" {
+				<p>Schwelle { lease.Clause.Threshold }</p>
+			}
+			if lease.Clause.Text != "" {
+				<blockquote>{ lease.Clause.Text }</blockquote>
+			}
+			if lease.Clause.Note != "" {
+				<p>{ lease.Clause.Note }</p>
+			}
+		}
+		<h2>Wertsicherung</h2>
+		<p>Noch keine Wertsicherung.</p>
+		if lease.Anchor != "" {
+			<p>{ lease.Anchor }</p>
+		}
+	</section>
+}
+
+templ LeaseFormSection(data LeasePageData) {
+	<section class="lease-card">
+		<h2>Erfassen</h2>
+		<form method="post" action={ templ.SafeURL("/app/settings/building/units/" + data.UnitID + "/lease") }>
+			if data.Form.ID != "" {
+				<input type="hidden" name="lease_id" value={ data.Form.ID }/>
+			}
+			<input type="hidden" name="price_restricted_set" value="1"/>
+			<fieldset>
+				<legend>Vertrag</legend>
+				<div class="lease-grid">
+					<label class="lease-field">Abschluss<input type="date" name="concluded_on" value={ data.Form.Concluded } required/></label>
+					<label class="lease-field">Beginn<input type="date" name="starts_on" value={ data.Form.Starts } required/></label>
+					<label class="lease-field">Ende<input type="date" name="ends_on" value={ data.Form.Ends }/></label>
+					<label class="lease-field">Art<select name="lease_kind">
+						for _, option := range data.Form.Kinds {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Nutzung<select name="use_kind">
+						for _, option := range data.Form.Uses {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">MRG<select name="mrg_scope">
+						for _, option := range data.Form.Scopes {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Regime<select name="rent_regime">
+						for _, option := range data.Form.Regimes {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Zinstermin<input type="number" name="zinstermin_day" min="1" max="28" value={ data.Form.Zinstermin }/></label>
+				</div>
+				<div class="lease-toggles">
+					<label class="lease-toggle"><span>Sonderdeckel</span><span class="switch"><input type="checkbox" name="price_restricted" checked?={ data.Form.PriceRestricted }/><i></i></span></label>
+					<label class="lease-toggle"><span>Vermieter ist Unternehmer</span><span class="switch"><input type="checkbox" name="landlord_is_business" checked?={ data.Form.Business }/><i></i></span></label>
+					<label class="lease-toggle"><span>Mieter ist Verbraucher</span><span class="switch"><input type="checkbox" name="tenant_is_consumer" checked?={ data.Form.Consumer }/><i></i></span></label>
+				</div>
+			</fieldset>
+			<fieldset>
+				<legend>Partei</legend>
+				<div class="lease-grid">
+					<label class="lease-field">Name<input name="party_name" value={ data.Form.PartyName } maxlength="160"/></label>
+					<label class="lease-field">E-Mail<input type="email" name="party_email" value={ data.Form.PartyEmail }/></label>
+					<label class="lease-field lease-span">Adresse<input name="party_address" value={ data.Form.PartyAddress } maxlength="300"/></label>
+					<label class="lease-field">Rolle<select name="party_role">
+						for _, option := range data.Form.PartyRoles {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Gültig ab<input type="date" name="party_from" value={ data.Form.PartyFrom }/></label>
+					<label class="lease-field">Gültig bis<input type="date" name="party_to" value={ data.Form.PartyTo }/></label>
+				</div>
+			</fieldset>
+			<fieldset>
+				<legend>Neuer Mietzinsbestandteil</legend>
+				<div class="lease-grid">
+					<label class="lease-field">Art<select name="component_kind">
+						for _, option := range data.Form.ComponentKinds {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Netto<input name="component_net" value={ data.Form.ComponentNet } inputmode="decimal" placeholder="1.000,00"/></label>
+					<label class="lease-field">USt<select name="component_vat">
+						for _, option := range data.Form.VATRates {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Gültig ab<input type="date" name="component_from" value={ data.Form.ComponentFrom }/></label>
+				</div>
+			</fieldset>
+			<fieldset>
+				<legend>Klausel</legend>
+				<div class="lease-grid">
+					if data.Form.ClauseID != "" {
+						<input type="hidden" name="clause_id" value={ data.Form.ClauseID }/>
+					}
+					<label class="lease-field">Typ<select name="clause_type">
+						for _, option := range data.Form.ClauseTypes {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Indexreihe<select name="series">
+						for _, option := range data.Form.SeriesOptions {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field">Basismonat<input type="month" name="base_period" value={ data.Form.BasePeriod }/></label>
+					<label class="lease-field">Basiswert<input name="base_value" value={ data.Form.BaseValue } inputmode="decimal" placeholder="123,6"/></label>
+					<label class="lease-field">Schwelle<span class="lease-suffix"><input name="threshold" value={ data.Form.Threshold } inputmode="decimal"/><select name="threshold_kind">
+						for _, option := range data.Form.ThresholdKinds {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></span></label>
+					<label class="lease-field">Prüfung<select name="review_status">
+						for _, option := range data.Form.Reviews {
+							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="lease-field lease-span">Wortlaut<textarea name="clause_text" maxlength="4000">{ data.Form.ClauseText }</textarea></label>
+					<label class="lease-field lease-span">Notiz<textarea name="notes" maxlength="2000">{ data.Form.Notes }</textarea></label>
+				</div>
+				<div class="lease-toggles">
+					<label class="lease-toggle"><span>Schwelle inklusive</span><span class="switch"><input type="checkbox" name="threshold_inclusive" checked?={ data.Form.Inclusive }/><i></i></span></label>
+					<label class="lease-toggle"><span>Auch Senkung</span><span class="switch"><input type="checkbox" name="two_way" checked?={ data.Form.TwoWay }/><i></i></span></label>
+				</div>
+			</fieldset>
+			<footer class="lease-actions"><a class="lease-quiet" href={ templ.SafeURL(leaseReadURL(data)) }>Abbrechen</a><button class="button primary" type="submit">Speichern</button></footer>
+		</form>
+		if data.CanEnd {
+			<p class="lease-end"><a href={ templ.SafeURL(leaseEndURL(data)) }>Vertrag beenden</a></p>
+		}
+	</section>
+}
+
+templ LeaseEndConfirm(data LeasePageData) {
+	<section class="lease-card">
+		<h2>Vertrag beenden</h2>
+		<p>Der Vertrag für { data.UnitLabel } endet an dem gewählten Tag. Danach gilt er nicht mehr als laufende Hauptmiete.</p>
+		<form method="post" action={ templ.SafeURL("/app/settings/building/units/" + data.UnitID + "/lease/end") }>
+			<input type="hidden" name="lease_id" value={ data.Form.ID }/>
+			<label class="lease-field">Ende<input type="date" name="ends_on" required/></label>
+			<footer class="lease-actions"><a class="lease-quiet" href={ templ.SafeURL(leaseEditURL(data)) }>Abbrechen</a><button class="lease-danger" type="submit">Vertrag beenden</button></footer>
+		</form>
+	</section>
+}
+
+templ leaseStyles() {
+	<style>
+		.lease-page .lease-stack{display:grid;gap:var(--space-4);min-width:0}
+		.lease-page .lease-back{color:var(--muted);font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+		.lease-page .lease-card{min-width:0;display:grid;gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}
+		.lease-page .lease-card h2{font-size:22px}
+		.lease-page .lease-card p,.lease-page .lease-card li{overflow-wrap:anywhere}
+		.lease-page .lease-parties{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none}
+		.lease-page .lease-parties li{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--space-2)}
+		.lease-page .lease-parties small{flex-basis:100%;color:var(--muted);font-size:12px}
+		.lease-page .lease-facts{display:grid;grid-template-columns:minmax(7.5rem,max-content) minmax(0,1fr);gap:10px 20px;margin:0}
+		.lease-page .lease-facts dt{margin:0;color:var(--muted);font-size:12px;font-weight:650}
+		.lease-page .lease-facts dd{margin:0;color:var(--ink);font-size:15px}
+		.lease-page .lease-facts small{display:block;margin-top:2px;color:var(--muted);font-size:12px}
+		.lease-page .lease-notes{color:var(--muted);font-size:13px}
+		.lease-page .lease-table-wrap{min-width:0;max-width:100%;overflow-x:auto}
+		.lease-page .lease-rent{width:100%;border-collapse:collapse}
+		.lease-page .lease-rent th,.lease-page .lease-rent td{padding:10px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:13px}
+		.lease-page .lease-rent thead th{border-top:0;color:var(--muted);font-size:11px;font-weight:750}
+		.lease-page .lease-rent .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+		.lease-page .lease-total td{font-weight:750;border-top:2px solid var(--line)}
+		.lease-page .lease-clause-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+		.lease-page .lease-chip{display:inline-flex;align-items:center;min-height:28px;padding:2px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:12px;font-weight:750}
+		.lease-page .lease-chip.is-ok{background:rgba(47,107,74,.08);color:var(--leaf)}
+		.lease-page .lease-chip.is-doubt{background:rgba(200,153,63,.12);color:var(--gold-ink)}
+		.lease-page .lease-chip.is-bad{background:rgba(140,52,52,.08);color:#8c3434}
+		.lease-page blockquote{margin:0;padding-left:var(--space-3);border-left:2px solid var(--line);color:var(--muted);font-size:13px}
+		.lease-page form{display:grid;gap:var(--space-4)}
+		.lease-page fieldset{min-width:0}
+		.lease-page .lease-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
+		.lease-page .lease-span{grid-column:1/-1}
+		.lease-page .lease-field{min-width:0}
+		.lease-page .lease-field input,.lease-page .lease-field select,.lease-page .lease-field textarea{min-height:44px}
+		.lease-page .lease-suffix{display:flex;min-width:0}
+		.lease-page .lease-suffix input{min-width:0;flex:1 1 auto;border-top-right-radius:0;border-bottom-right-radius:0}
+		.lease-page .lease-suffix select{width:auto;flex:0 0 7.5rem;border-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+		.lease-page .lease-toggles{display:grid;gap:var(--space-2)}
+		.lease-page .lease-toggle{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font-size:14px;font-weight:650}
+		.lease-page .lease-actions{display:flex;justify-content:flex-end;align-items:center;gap:var(--space-3)}
+		.lease-page .lease-actions .button,.lease-page .lease-danger{min-height:44px}
+		.lease-page .lease-quiet{color:var(--muted);font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+		.lease-page .lease-end{margin:0;padding-top:var(--space-3);border-top:1px solid var(--line)}
+		.lease-page .lease-end a{color:#8c3434;font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+		.lease-page .lease-danger{padding:10px 18px;border:1px solid #8c3434;border-radius:var(--radius-sm);background:transparent;color:#8c3434;font-size:13px;font-weight:750}
+		.lease-page .lease-history{margin:0;padding-left:1.1rem;color:var(--muted);font-size:13px}
+		@media(max-width:1100px){
+			.lease-page .lease-rent thead{display:none}
+			.lease-page .lease-rent,.lease-page .lease-rent tbody,.lease-page .lease-rent tr,.lease-page .lease-rent td{display:block;width:100%;min-width:0}
+			.lease-page .lease-rent tr{padding:var(--space-3) 0;border-top:1px solid var(--line)}
+			.lease-page .lease-rent td{display:flex;justify-content:space-between;gap:var(--space-3);padding:4px 0;border:0;text-align:right;white-space:normal}
+			.lease-page .lease-rent td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:650;text-align:left}
+			.lease-page .lease-rent .num{text-align:right;white-space:nowrap}
+			.lease-page .lease-total td:empty{display:none}
+		}
+		@media(max-width:760px){
+			.lease-page .lease-grid{grid-template-columns:minmax(0,1fr)}
+			.lease-page .lease-span{grid-column:auto}
+			.lease-page .lease-actions{display:grid}
+			.lease-page .lease-actions .button,.lease-page .lease-danger,.lease-page .lease-quiet{width:100%;text-align:center}
+			.lease-page .lease-rent thead{display:none}
+			.lease-page .lease-rent,.lease-page .lease-rent tbody,.lease-page .lease-rent tr,.lease-page .lease-rent td{display:block;width:100%}
+			.lease-page .lease-rent tr{padding:var(--space-3) 0;border-top:1px solid var(--line)}
+			.lease-page .lease-rent td{display:flex;justify-content:space-between;gap:var(--space-3);padding:4px 0;border:0;text-align:right}
+			.lease-page .lease-rent td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:650;text-align:left}
+			.lease-page .lease-rent .num{text-align:right}
+			.lease-page .lease-total td:empty{display:none}
+		}
+	</style>
+}
+
+templ LeaseImportPage(data LeaseImportPageData) {
+	@SettingsFrame(data.Portal, "Mietverträge importieren", []string{}, LeaseImportContent(data))
+}
+
+templ LeaseImportContent(data LeaseImportPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Mietverträge importieren",
+			Class: "settings-main building lease-page",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Einheiten", Icon: "home", URL: "/app/settings/building?section=units"},
+		},
+		PortalSectionTitle("Mietverträge importieren"),
+		PortalSectionLede("Zuerst prüfen, dann übernehmen. Fehlerhafte Zeilen halten die ganze Datei auf."),
+		leaseBackLink(),
+		nil,
+		nil,
+		LeaseImportBody(data),
+	)
+}
+
+templ LeaseImportBody(data LeaseImportPageData) {
+	@leaseStyles()
+	<section class="lease-card">
+		@SettingsFlash(data.Message, data.OK)
+		<p>Spalten: einheit, mieter_name, mieter_email, mieter_adresse, vertragsabschluss, beginn, ende, nutzung, mrg, regime, hmz_netto, bk_akonto, heiz_akonto, ust_satz, klausel_typ, index, basis_monat, basis_wert, schwelle, schwelle_art, schwelle_inkl, letzte_valorisierung_monat, letzte_valorisierung_wert, hmz_nach_letzter_valorisierung, klausel_text.</p>
+		<form method="post" action="/app/settings/building/leases/import" enctype="multipart/form-data">
+			<label class="lease-field">CSV-Datei<input type="file" name="leases_file" accept=".csv,text/csv" required/></label>
+			<footer class="lease-actions"><button class="button" type="submit">Prüfen</button><button class="button primary" type="submit" name="commit" value="1">Übernehmen</button></footer>
+		</form>
+		if data.HasRows {
+			<ul class="lease-history">
+				for _, row := range data.Rows {
+					<li>Zeile { strconv.Itoa(row.Line) } · { row.Unit }
+						if row.HasErrors {
+							<br/><span>Fehler: { row.Errors }</span>
+						}
+						if row.HasWarnings {
+							<br/><span>Hinweis: { row.Warnings }</span>
+						}
+					</li>
+				}
+			</ul>
+		}
+	</section>
+}

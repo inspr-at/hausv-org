@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/statementpdf"
@@ -34,6 +36,7 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	presentation := store.AnnualStatementRunPresentation{EstateSlug: tenant.Slug, EstateName: tenant.Name, EstateAddress: tenant.Address, Organisation: tenant.ContactName, ContactName: tenant.ContactName, ContactAddress: tenant.ContactAddress, ContactEmail: tenant.ContactEmail, ContactPhone: tenant.ContactPhone}
 	if org, found := a.organisationRecordFor(r.Context(), &ac); found {
 		presentation.Organisation = org.Name
+		presentation.ContactAddress = firstNonEmpty(org.ContactAddress, presentation.ContactAddress)
 		presentation.ContactName = firstNonEmpty(org.ContactName, presentation.ContactName)
 		presentation.ContactEmail = firstNonEmpty(org.ContactEmail, presentation.ContactEmail)
 		presentation.ContactPhone = firstNonEmpty(org.ContactPhone, presentation.ContactPhone)
@@ -78,6 +81,10 @@ func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 	}
 	if !found {
 		http.NotFound(w, r)
+		return
+	}
+	if run.Approval == nil {
+		http.Error(w, "Zuerst den Abrechnungslauf freigeben.", http.StatusConflict)
 		return
 	}
 	selection, err := statementpdf.Documents(run, "", "")
@@ -134,6 +141,9 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		}
 	}
 	switch status {
+	case "approved":
+		out.Message = "Abrechnungslauf freigegeben. Die PDFs sind jetzt endgültig."
+		out.MessageOK = true
 	case "archived":
 		out.Message = "Alle PDFs dieses Laufs sind unveränderlich im Archiv abgelegt."
 		out.MessageOK = true
@@ -164,6 +174,16 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		}
 		if _, err := statementpdf.Documents(run, "", ""); err == nil {
 			out.AllPDFURL = annualStatementPDFURL(run.ID, "", "")
+			if run.Input.Structure.Legal.Regime == "mrg_voll" {
+				out.AushangURL = out.AllPDFURL + "?aushang=1"
+			}
+		}
+		out.Approved = run.Approval != nil
+		out.ManagementAddressMissing = strings.TrimSpace(run.Input.Presentation.ContactAddress) == ""
+		if run.Approval != nil {
+			out.ApprovedAt = run.Approval.ApprovedAt.Format("02.01.2006")
+		} else {
+			out.ApproveAction = "/app/settings/annual-statement/runs/" + url.PathEscape(run.ID) + "/approve"
 		}
 		out.ID = run.ID
 		out.Revision = run.Revision
@@ -198,7 +218,12 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		for _, unit := range store.AnnualStatementRunDisplayOrder(run) {
 			row := web.AnnualStatementRunUnitView{Label: unit.Label, Allocated: formatAnnualStatementMoney(unit.AllocatedCents), Prepaid: formatAnnualStatementMoney(unit.PrepaidCents), Balance: formatAnnualStatementBalance(-unit.BalanceCents)}
 			for _, cost := range unit.Costs {
-				row.Costs = append(row.Costs, web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)})
+				costView := web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)}
+				if run.CalculationVersion >= 2 && run.Input.Structure.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.CostTypeKey) {
+					costView.Key = "HeizKG"
+					costView.Share = "siehe PDF"
+				}
+				row.Costs = append(row.Costs, costView)
 			}
 			for _, party := range run.Input.Parties {
 				if party.UnitID == unit.UnitID {
@@ -244,6 +269,17 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		}
 	}
 	switch issue.Code {
+	case "heating-prepayment":
+		return "HeizKG: Geleistetes Akonto je Einheit und Heizkostenart ergänzen. Die Summe darf das Gesamtakonto nicht überschreiten."
+	case "heating-share":
+		return "HeizKG: Verbrauchsanteil muss zwischen 55 und 85 % liegen."
+	case "heating-area":
+		return "HeizKG: Versorgbare Nutzfläche fehlt oder ergibt keine positive Gesamtsumme."
+	case "heating-category":
+		return "HeizKG: Belege bitte als Energie oder sonstige Betriebskosten zuordnen."
+	case "heating-key":
+		return "HeizKG: Für Heizung und Warmwasser den Schlüssel Verbrauch wählen. Der Flächenanteil wird automatisch ergänzt."
+
 	case "period":
 		return "Abrechnungsperiode fehlt oder ist ungültig. Bitte eine gespeicherte Periode wählen."
 	case "units":
@@ -270,9 +306,55 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		return cost + ": Vollständige, vergleichbare Periodenmessungen für alle Einheiten fehlen. Es wird kein Verbrauch geschätzt."
 	case "measurement-rule":
 		return cost + ": Keine bekannte Messregel hinterlegt. Bitte die Zuordnung klären."
+	case "calculation-version":
+		return "Die gespeicherte Berechnungsversion wird nicht unterstützt."
 	case "overflow":
 		return "Die Beträge oder Verteilerbasen sind zu groß für eine sichere Berechnung. Bitte die Eingaben prüfen."
 	default:
 		return "Eine Abrechnungsgrundlage ist ungeklärt. Der Lauf bleibt gesperrt."
 	}
+}
+
+func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actor, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if ac.repositories.annualStatementRuns == nil {
+		http.Error(w, "Abrechnungslauf derzeit nicht verfügbar.", 503)
+		return
+	}
+	run, found, err := ac.repositories.annualStatementRuns.Get(r.PathValue("runID"))
+	if err != nil {
+		http.Error(w, "Abrechnungslauf konnte nicht gelesen werden.", 500)
+		return
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if run.Approval == nil && ac.repositories.annualStatementPeriods != nil {
+		structure, ok := ac.repositories.annualStatementPeriods.Structure(run.PeriodYear)
+		if !ok || !reflect.DeepEqual(structure.Legal, run.Input.Structure.Legal) {
+			http.Error(w, "Die Rechtsgrundlage wurde geändert. Bitte einen neuen Lauf berechnen.", 409)
+			return
+		}
+	}
+	if _, err := statementpdf.Documents(run, "", ""); err != nil {
+		http.Error(w, "Bitte zuerst alle Parteien zuordnen und einen neuen Lauf berechnen.", 409)
+		return
+	}
+	run, changed, err := ac.repositories.annualStatementRuns.Approve(run.ID, actor, role, time.Now())
+	if err != nil {
+		if errors.Is(err, store.ErrAnnualStatementArchivedDraft) {
+			http.Error(w, "Bereits archivierte Entwürfe benötigen einen neuen Lauf.", http.StatusConflict)
+		} else {
+			http.Error(w, "Die Freigabe konnte nicht gespeichert werden. Bitte erneut versuchen.", http.StatusInternalServerError)
+		}
+		return
+	}
+	if changed {
+		a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualRunApprove, TargetType: "annual_statement_run", TargetID: run.ID, Summary: "Abrechnungslauf freigegeben", Details: map[string]string{"revision": strconv.Itoa(run.Revision), "input_hash": run.InputHash}})
+	}
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status=approved#abrechnungsergebnis", http.StatusSeeOther)
 }

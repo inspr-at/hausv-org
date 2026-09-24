@@ -74,6 +74,8 @@ var AllCapabilities = []Capability{
 	CapabilityOversight,
 	CapabilityManageEnergy,
 	CapabilityControlEnergy,
+	CapabilityManageLeases,
+	CapabilityApproveValorisation,
 }
 
 var AllRoles = []string{
@@ -106,6 +108,7 @@ var RoleAreas = []MatrixArea{
 	{Key: "handovers", Label: "Übergaben"},
 	{Key: "contacts", Label: "Kontakte"},
 	{Key: "units-payments", Label: "Einheiten/Zahlungen"},
+	{Key: "leases", Label: "Mietverträge"},
 	{Key: "energy", Label: "Energie"},
 	{Key: "account", Label: "Konto"},
 }
@@ -124,6 +127,7 @@ var RoleMatrix = []MatrixCell{
 	{FamilyKey: "verwaltung", AreaKey: "handovers", Grants: capabilityGrants(CapabilityManageDocuments, store.RoleManager, MatrixActionView, MatrixActionCreate, MatrixActionChange, MatrixActionApprove)},
 	{FamilyKey: "verwaltung", AreaKey: "contacts", Grants: capabilityGrants(CapabilityManageUsers, store.RoleManager, MatrixActionView, MatrixActionCreate, MatrixActionChange, MatrixActionDelete)},
 	{FamilyKey: "verwaltung", AreaKey: "units-payments", Grants: capabilityGrants(CapabilityManageBuilding, store.RoleManager, MatrixActionView, MatrixActionCreate, MatrixActionChange, MatrixActionDelete)},
+	{FamilyKey: "verwaltung", AreaKey: "leases", Grants: capabilityGrants(CapabilityManageLeases, store.RoleManager, MatrixActionView, MatrixActionCreate, MatrixActionChange)},
 	{FamilyKey: "verwaltung", AreaKey: "energy", Grants: []MatrixGrant{
 		{Action: MatrixActionView, Capability: CapabilityManageEnergy, ActorRole: store.RoleManager},
 		{Action: MatrixActionChange, Capability: CapabilityManageEnergy, ActorRole: store.RoleManager},
@@ -147,6 +151,7 @@ var RoleMatrix = []MatrixCell{
 	{FamilyKey: "eigentuemer", AreaKey: "handovers"},
 	{FamilyKey: "eigentuemer", AreaKey: "contacts", Grants: explicitGrants("freigegebene Kontakte der Liegenschaft", MatrixActionView)},
 	{FamilyKey: "eigentuemer", AreaKey: "units-payments", Grants: explicitGrants("eigene Einheit und eigene Zahlungen", MatrixActionView)},
+	{FamilyKey: "eigentuemer", AreaKey: "leases"},
 	{FamilyKey: "eigentuemer", AreaKey: "energy", Grants: []MatrixGrant{
 		{Action: MatrixActionView, Capability: CapabilityManageEnergy, ActorRole: store.RoleOwner},
 		{Action: MatrixActionChange, Capability: CapabilityManageEnergy, ActorRole: store.RoleOwner},
@@ -167,6 +172,7 @@ var RoleMatrix = []MatrixCell{
 	{FamilyKey: "bewohner", AreaKey: "handovers"},
 	{FamilyKey: "bewohner", AreaKey: "contacts", Grants: explicitGrants("freigegebene Kontakte der Liegenschaft", MatrixActionView)},
 	{FamilyKey: "bewohner", AreaKey: "units-payments", Grants: explicitGrants("eigene Einheit und eigene Zahlungen", MatrixActionView)},
+	{FamilyKey: "bewohner", AreaKey: "leases"},
 	{FamilyKey: "bewohner", AreaKey: "energy", Grants: explicitGrants("eigene Einheit oder ausdrücklich erteilte Freigabe", MatrixActionView)},
 	{FamilyKey: "bewohner", AreaKey: "account", Grants: explicitGrants("eigenes Konto", MatrixActionView, MatrixActionChange)},
 }

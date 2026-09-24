@@ -1,0 +1,128 @@
+{
+  "version": "260924101853.0.0",
+  "retrieved_at": "2026-09-24T10:18:53Z",
+  "final_through": "2026-07",
+  "status_source": "https://www.statistik.at/fileadmin/announcement/2026/09/20260917VPIAugust2026.pdf",
+  "license": "CC BY 4.0",
+  "license_url": "https://data.statistik.gv.at/web/?page=terms",
+  "attribution": "Data source: Statistics Austria — data.statistik.gv.at",
+  "changes": "HAUSV: nur Gesamtindex; Monatswerte und Jahresmittel getrennt; ISO-Zeiträume und Dezimalpunkt; Status ergänzt anhand der Veröffentlichung vom 17.09.2026. Verkettungsfaktoren aus dem amtlichen Factsheet vom 26.02.2026.",
+  "data_sha256": "10b7012fcba989e01d8a54bd8f1e23cdd8d73feae94363b48e56b83fc0354cb6",
+  "sources": [
+    {
+      "series": "VPI1966",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi66_VPI_1966_1.csv",
+      "sha256": "7d21edb74a4e2a11fa1edee75c3349f3528db38783b7b296f4fcf10e997af1b4"
+    },
+    {
+      "series": "VPI1976",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi76_VPI_1976_1.csv",
+      "sha256": "c5ba658115e8070b71c954e19dffe4b455d138d77d688141f7fce03be82b6731"
+    },
+    {
+      "series": "VPI1986",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi86_VPI_1986_1.csv",
+      "sha256": "283d5f5200541809e5ad48ab958e65c3ea8f2bc8a5bef00005d159dc22215ace"
+    },
+    {
+      "series": "VPI1996",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi96_VPI_1996_1.csv",
+      "sha256": "391b4556910709d6662621118fc3bc664054ecd474c7a0bdb094a596dcd5a823"
+    },
+    {
+      "series": "VPI2000",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi00_VPI_2000_1.csv",
+      "sha256": "97fd1f5a6bddeaa01e38969cb20b0de72e2e2167a50cd26b3ee01e23372fde9b"
+    },
+    {
+      "series": "VPI2005",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi05c18_VPI_2005COICOP18_1.csv",
+      "sha256": "86aa771d2739aba65f356f99532cb31d13047b2f56ccf0605d502f1b6bbdeeb8"
+    },
+    {
+      "series": "VPI2010",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi10c18_VPI_2010COICOP18_1.csv",
+      "sha256": "d0a9d178c9fca3f784691c7987ff13887d83a93f2ce21928b83f3d065983abff"
+    },
+    {
+      "series": "VPI2015",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi15c18_VPI_2015COICOP18_1.csv",
+      "sha256": "bd7ccdc095d10c615b4acc6afc9c5059521b96f84d025b614492f630fbcd4815"
+    },
+    {
+      "series": "VPI2020",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi20c18_VPI_2020COICOP18_1.csv",
+      "sha256": "e4f630fd81228c3263bdc76260bfa9ceb68081d55d30d5f410f9cd6987187706"
+    },
+    {
+      "series": "VPI2025",
+      "url": "https://data.statistik.gv.at/data/OGD_vpi25c18_VPI_2025COICOP18_1.csv",
+      "sha256": "0d112396a12618b23e27fef69e872a852a958caa0fe7d7c434a3d159d1142a98"
+    }
+  ],
+  "factors": [
+    {
+      "from": "VPI2025",
+      "to": "VPI2020",
+      "effective_from": "2026-01",
+      "factor_millionths": 1282000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI2015",
+      "effective_from": "2026-01",
+      "factor_millionths": 1387000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI2010",
+      "effective_from": "2026-01",
+      "factor_millionths": 1535000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI2005",
+      "effective_from": "2026-01",
+      "factor_millionths": 1682000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI2000",
+      "effective_from": "2026-01",
+      "factor_millionths": 1858000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI1996",
+      "effective_from": "2026-01",
+      "factor_millionths": 1956000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI1986",
+      "effective_from": "2026-01",
+      "factor_millionths": 2557000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI1976",
+      "effective_from": "2026-01",
+      "factor_millionths": 3975000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    },
+    {
+      "from": "VPI2025",
+      "to": "VPI1966",
+      "effective_from": "2026-01",
+      "factor_millionths": 6976000,
+      "source": "https://www.statistik.at/fileadmin/pages/214/Factsheet_Verkettungsfaktoren.pdf"
+    }
+  ]
+}

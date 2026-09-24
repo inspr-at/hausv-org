@@ -11,6 +11,10 @@ import (
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
 
+// slugRegistryReason is the kept lookup: the tenant table sits outside
+// row-level security, and the slug is known before a tenant lane exists.
+const slugRegistryReason = "slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to"
+
 const (
 	HomeConnectorPairing   = "pairing"
 	HomeConnectorConnected = "connected"
@@ -158,21 +162,20 @@ func (s *SQLHomeConnectorStore) StartPairing(slug string, pairingHash []byte, ex
 	}
 	// Pairing only ever starts for an already-activated house, so the identity
 	// exists; ensureTenantID is here so that a connector row can never be the
-	// one row in the database without one.
-	registry := s.db.Unscoped("slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to")
-	tenantID, err := ensureTenantID(registry, slug)
+	// one row in the database without one. The write itself is that house's lane.
+	registry := s.db.Unscoped(slugRegistryReason)
+	tenant, err := tenantRefFor(registry, slug)
 	if err != nil {
 		return HomeConnector{}, err
 	}
-	unscoped := s.db.Unscoped(HealOrphanReason)
-	_, err = unscoped.Exec(`INSERT INTO home_connectors
+	_, err = s.db.For(tenant).Exec(`INSERT INTO home_connectors
 		(tenant_id,slug,status,credential_hash,generation,pairing_hash,pairing_expires_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		ON CONFLICT(slug) DO UPDATE SET
 		status=CASE WHEN home_connectors.credential_hash IS NULL THEN excluded.status ELSE home_connectors.status END,
 		pairing_hash=excluded.pairing_hash,pairing_expires_at=excluded.pairing_expires_at,updated_at=excluded.updated_at,
 		tenant_id=coalesce(home_connectors.tenant_id,excluded.tenant_id)`,
-		tenantID, slug, HomeConnectorPairing, nil, 0, pairingHash, homeReservationTimestamp(expiresAt), homeReservationTimestamp(now), homeReservationTimestamp(now))
+		tenant.ID, slug, HomeConnectorPairing, nil, 0, pairingHash, homeReservationTimestamp(expiresAt), homeReservationTimestamp(now), homeReservationTimestamp(now))
 	if err != nil {
 		return HomeConnector{}, err
 	}
@@ -251,8 +254,8 @@ func (s *SQLHomeConnectorStore) Get(slug string) (HomeConnector, bool, error) {
 	if s == nil || s.db == nil {
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
-	unscoped := s.db.Unscoped("the home connector read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
-	return getHomeConnector(unscoped.QueryRow, "slug=$1", textutil.Slug(slug))
+	slug = textutil.Slug(slug)
+	return getHomeConnector(s.db.For(existingTenantRef(s.db, slug)).QueryRow, "slug=$1", slug)
 }
 
 func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnector, bool, error) {
@@ -260,8 +263,8 @@ func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnecto
 		return HomeConnector{}, false, fmt.Errorf("home connector store unavailable")
 	}
 	slug = textutil.Slug(slug)
-	unscoped := s.db.Unscoped("the home connector revoke path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
-	result, err := unscoped.Exec(`UPDATE home_connectors SET status=$1,credential_hash=NULL,pairing_hash=NULL,
+	lane := s.db.For(existingTenantRef(s.db, slug))
+	result, err := lane.Exec(`UPDATE home_connectors SET status=$1,credential_hash=NULL,pairing_hash=NULL,
 		pairing_expires_at=NULL,connector_version='',ha_version='',entity_count=0,last_seen_at=NULL,updated_at=$2 WHERE slug=$3`,
 		HomeConnectorRevoked, homeReservationTimestamp(now), slug)
 	if err != nil {
@@ -276,6 +279,24 @@ func (s *SQLHomeConnectorStore) Revoke(slug string, now time.Time) (HomeConnecto
 }
 
 type homeConnectorQueryRow func(string, ...any) *sql.Row
+
+// existingTenantRef resolves a slug that already names a house. An unknown
+// slug returns an unusable reference, and For turns that into the sentinel
+// lane, which matches no row.
+func existingTenantRef(database *TenantDB, slug string) TenantRef {
+	if database == nil {
+		return TenantRef{}
+	}
+	id, ok := lookupTenantID(database.Unscoped(slugRegistryReason), textutil.Slug(slug))
+	if !ok {
+		return TenantRef{}
+	}
+	ref, valid := validTenantRef(TenantRef{ID: id, Slug: slug})
+	if !valid {
+		return TenantRef{}
+	}
+	return ref
+}
 
 func getHomeConnector(query homeConnectorQueryRow, where string, value any) (HomeConnector, bool, error) {
 	var item HomeConnector

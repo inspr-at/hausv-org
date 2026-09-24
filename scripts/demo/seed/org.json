@@ -13,6 +13,7 @@
   ],
   "auto_enabled": true,
   "auto_threshold": 0.9,
+  "contact_address": "Musterstraße 12, 8010 Graz",
   "contact_email": "verwaltung@musterstadt.example",
   "contact_name": "Vera Verwalter",
   "contact_phone": "+43 316 555 100",

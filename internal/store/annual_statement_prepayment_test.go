@@ -80,13 +80,13 @@ func TestAnnualStatementPrepaymentStorage(t *testing.T) {
 
 func TestAnnualStatementSettlementPreviewSplitsReceiptCentsExactly(t *testing.T) {
 	costTypes := []AnnualStatementCostType{
-		{Key: "steuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+		{Key: "steuer", Allocatable: true, AllocationKey: AllocationKeyPersonen},
 		{Key: "ruecklage", Allocatable: false},
 	}
 	units := []Unit{
-		{ID: "top-1", Label: "Top 1", MiteigentumsanteilPPM: 1},
-		{ID: "top-2", Label: "Top 2", MiteigentumsanteilPPM: 1},
-		{ID: "top-3", Label: "Top 3", MiteigentumsanteilPPM: 1},
+		{ID: "top-1", Label: "Top 1", Persons: 1, PersonsRecorded: true},
+		{ID: "top-2", Label: "Top 2", Persons: 1, PersonsRecorded: true},
+		{ID: "top-3", Label: "Top 3", Persons: 1, PersonsRecorded: true},
 	}
 	receipts := []AnnualStatementReceipt{
 		{CostTypeKey: "steuer", AmountCents: 100},
@@ -96,17 +96,17 @@ func TestAnnualStatementSettlementPreviewSplitsReceiptCentsExactly(t *testing.T)
 	if !ready || len(got) != 3 || got[0].AllocatedCents != 34 || got[1].AllocatedCents != 33 || got[2].AllocatedCents != 33 {
 		t.Fatalf("settlement preview = %+v ready=%t", got, ready)
 	}
-	units[2].MiteigentumsanteilPPM = 0
+	units[2].PersonsRecorded = false
 	if got, ready := AnnualStatementSettlementPreview(costTypes, receipts, units); ready || len(got) != 0 {
 		t.Fatalf("blocked allocation must publish no money: %+v ready=%t", got, ready)
 	}
-	units[2].MiteigentumsanteilPPM = 1
+	units[2].PersonsRecorded = true
 	receipts = []AnnualStatementReceipt{{CostTypeKey: "steuer", AmountCents: math.MaxInt64}, {CostTypeKey: "steuer", AmountCents: 1}}
 	if got, ready := AnnualStatementSettlementPreview(costTypes, receipts, units); ready || len(got) != 0 {
 		t.Fatalf("overflowing receipt total must fail closed: %+v ready=%t", got, ready)
 	}
 	costTypes = append(costTypes, AnnualStatementCostType{Key: "reinigung", Allocatable: true, AllocationKey: AllocationKeyFlaeche})
-	units = []Unit{{ID: "top-1", Label: "Top 1", MiteigentumsanteilPPM: 1, UsableAreaM2Hundredths: 1, UsableAreaRecorded: true}}
+	units = []Unit{{ID: "top-1", Label: "Top 1", Persons: 1, PersonsRecorded: true, UsableAreaM2Hundredths: 1, UsableAreaRecorded: true}}
 	receipts = []AnnualStatementReceipt{{CostTypeKey: "steuer", AmountCents: math.MaxInt64}, {CostTypeKey: "reinigung", AmountCents: math.MaxInt64}}
 	if got, ready := AnnualStatementSettlementPreview(costTypes, receipts, units); ready || len(got) != 0 {
 		t.Fatalf("overflowing cross-key unit total must fail closed: %+v ready=%t", got, ready)

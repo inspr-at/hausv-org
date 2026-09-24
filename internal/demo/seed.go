@@ -45,16 +45,17 @@ type SeedResult struct {
 }
 
 type seedOrg struct {
-	Key           string            `json:"key"`
-	Name          string            `json:"name"`
-	ContactName   string            `json:"contact_name,omitempty"`
-	ContactEmail  string            `json:"contact_email,omitempty"`
-	ContactPhone  string            `json:"contact_phone,omitempty"`
-	TrustLevels   map[string]string `json:"trust_levels"`
-	AutoThreshold float64           `json:"auto_threshold"`
-	AutoEnabled   bool              `json:"auto_enabled"`
-	Assignees     []seedAssignee    `json:"assignees"`
-	Members       []seedMember      `json:"members"`
+	Key            string            `json:"key"`
+	Name           string            `json:"name"`
+	ContactName    string            `json:"contact_name,omitempty"`
+	ContactAddress string            `json:"contact_address,omitempty"`
+	ContactEmail   string            `json:"contact_email,omitempty"`
+	ContactPhone   string            `json:"contact_phone,omitempty"`
+	TrustLevels    map[string]string `json:"trust_levels"`
+	AutoThreshold  float64           `json:"auto_threshold"`
+	AutoEnabled    bool              `json:"auto_enabled"`
+	Assignees      []seedAssignee    `json:"assignees"`
+	Members        []seedMember      `json:"members"`
 }
 
 type seedMember struct {
@@ -196,7 +197,8 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	settings := store.BindOrgSettingsRepository(database, org.Key)
 	if err := settings.Save(ctx, store.OrgSettings{
 		Organisation: org.Key, Name: org.Name, TrustLevels: org.TrustLevels,
-		AutoThreshold: org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
+		ContactAddress: org.ContactAddress,
+		AutoThreshold:  org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
 	}); err != nil {
 		return SeedResult{}, err
 	}
@@ -234,6 +236,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	}
 
 	if err := upsertHouseFixtures(ctx, database, houses, identities, intake, events, announcements, org); err != nil {
+		return SeedResult{}, err
+	}
+	if err := seedLeases(ctx, database, identities, dir); err != nil {
 		return SeedResult{}, err
 	}
 	if err := seedDocuments(ctx, database, documents, identities, options.DocumentDir); err != nil {
@@ -537,8 +542,18 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 	// a corrected e-mail, a new normalization) would otherwise leave the old
 	// rows behind and the portal would resolve occupants from stale records.
 	for _, house := range houses {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM units WHERE tenant_slug=$1`, textutil.Slug(house.Slug)); err != nil {
-			return err
+		slug := textutil.Slug(house.Slug)
+		for _, query := range []string{
+			`DELETE FROM valorisation_state WHERE tenant_slug=$1`,
+			`DELETE FROM index_clauses WHERE tenant_slug=$1`,
+			`DELETE FROM rent_components WHERE tenant_slug=$1`,
+			`DELETE FROM lease_parties WHERE tenant_slug=$1`,
+			`DELETE FROM leases WHERE tenant_slug=$1`,
+			`DELETE FROM units WHERE tenant_slug=$1`,
+		} {
+			if _, err := tx.ExecContext(ctx, query, slug); err != nil {
+				return err
+			}
 		}
 	}
 	// A fresh demo day imports each mailbox fixture once again. The ledger

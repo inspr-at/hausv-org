@@ -334,6 +334,22 @@ func seedFull(t *testing.T) *source {
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))
+		leases, _ := store.BindLeaseRepository(store.NewSQLLeaseStore(src.lanes), tenant)
+		if _, err := leases.Create(store.Lease{
+			UnitID: "top-1", ConcludedOn: "2020-01-15", StartsOn: "2020-02-01",
+			UseKind: store.UseKindWohnung, MRGScope: store.MRGTeil, RentRegime: store.RentRegimeFrei,
+			LandlordIsBusiness: true, TenantIsConsumer: true, UpdatedAt: now, UpdatedBy: "verwalter@example.com",
+			Parties:    []store.LeaseParty{{Name: "Rita Bewohner", Email: "resident@example.com", ValidFrom: "2020-02-01"}},
+			Components: []store.RentComponent{{Kind: store.ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: store.OriginManual}},
+			Clauses: []store.IndexClause{{
+				ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
+				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
+				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+			}},
+		}); err != nil {
+			t.Fatalf("%s lease: %v", slug, err)
+		}
 		if unknown, err := units.UpdateAllocationBases([]store.UnitAllocationBasisUpdate{{UnitID: "top-1", UsableAreaM2Hundredths: 7_250, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true}}); err != nil || unknown {
 			t.Fatalf("%s allocation bases: unknown=%t err=%v", slug, unknown, err)
 		}
@@ -375,6 +391,9 @@ func seedFull(t *testing.T) *source {
 			tenant.ID, slug, "run-2026-1", 2026, 1,
 			`{"id":"run-2026-1","period_year":2026,"revision":1,"calculation_version":1,"created_at":"2026-09-06T10:00:00Z","created_by":"verwalter@example.com","input_hash":"seed","input":{},"result":{}}`); err != nil {
 			t.Fatalf("%s annual statement run: %v", slug, err)
+		}
+		if _, err := src.db.Exec(`INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES(?,?,?,?)`, tenant.ID, slug, "run-2026-1", `{"approved_at":"2026-09-07T10:00:00Z","approved_by":"verwalter@example.com","role":"manager"}`); err != nil {
+			t.Fatal(err)
 		}
 		if _, err := src.db.Exec(`INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, tenant.ID, slug, "delivery-1", "run-2026-1", 1, "owner@example.com", "top-1", receiptDocument.ID, "seed-hash", "owner@example.com", now.UTC().Format(time.RFC3339Nano), "sent", "", "verwalter@example.com", 1); err != nil {
 			t.Fatalf("%s annual statement delivery: %v", slug, err)

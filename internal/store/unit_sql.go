@@ -3,7 +3,11 @@ package store
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
 	"sort"
+	"sync"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
@@ -113,95 +117,170 @@ func NewSQLUnitStore(db *TenantDB) *SQLUnitStore {
 
 func (*SQLUnitStore) unitStorage() {}
 
-// replaceTenantTx rewrites a tenant's whole unit set inside a transaction. The
-// JSON store re-normalizes the full tenant slice on every write (which also
-// deduplicates), so mirroring that keeps the two backends byte-identical.
-func (s *SQLUnitStore) replaceTenantTx(tx *sql.Tx, tenant TenantRef, units []Unit) error {
-	// A whole-tenant wipe: getting this predicate wrong destroys a house's unit
-	// set, which is why it is keyed on the identity rather than the label.
-	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1`, tenant.ID); err != nil {
-		return err
-	}
-	for _, item := range NormalizeUnits(units, tenant.Slug) {
-		blob, err := json.Marshal(item)
-		if err != nil {
-			return err
-		}
-		if _, err := tx.Exec(
-			`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)
-			 ON CONFLICT(tenant_slug, id) DO UPDATE SET data=excluded.data,
-			   tenant_id=coalesce(units.tenant_id, excluded.tenant_id)`,
-			tenant.ID, tenant.Slug, item.ID, string(blob),
-		); err != nil {
-			return err
-		}
-	}
-	return nil
+// UnitDataError is a unit row that could not be scanned, decoded, or iterated.
+// A mutation returns it and writes nothing, instead of continuing with the rows
+// that happened to parse.
+type UnitDataError struct {
+	TenantID string
+	UnitID   string
+	Op       string
+	Err      error
 }
 
-func (s *SQLUnitStore) tenantUnits(tenant TenantRef) []Unit {
-	rows, err := s.db.For(tenant).Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
-	if err != nil {
+func (e *UnitDataError) Error() string {
+	if e == nil {
+		return "unit data"
+	}
+	if e.UnitID == "" {
+		return fmt.Sprintf("unit data %s for tenant %s: %v", e.Op, e.TenantID, e.Err)
+	}
+	return fmt.Sprintf("unit data %s for tenant %s unit %s: %v", e.Op, e.TenantID, e.UnitID, e.Err)
+}
+
+func (e *UnitDataError) Unwrap() error {
+	if e == nil {
 		return nil
 	}
-	defer rows.Close()
-	out := []Unit{}
-	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
-			continue
-		}
-		var item Unit
-		if err := json.Unmarshal([]byte(data), &item); err != nil {
-			continue
-		}
-		out = append(out, item)
-	}
-	SortUnits(out)
-	return out
+	return e.Err
 }
 
-func tenantUnitsTx(tx *sql.Tx, tenant TenantRef) ([]Unit, error) {
-	rows, err := tx.Query(`SELECT data FROM units WHERE tenant_id=$1`, tenant.ID)
+// unitDataSeen logs each corrupt row once per process. List and count poll the
+// same row; the log should name it, not repeat it on every read.
+var unitDataSeen sync.Map
+
+func unitDataErr(tenant TenantRef, unitID, op string, err error) error {
+	wrapped := &UnitDataError{TenantID: tenant.ID, UnitID: unitID, Op: op, Err: err}
+	key := tenant.ID + "\x00" + unitID + "\x00" + op
+	if _, loaded := unitDataSeen.LoadOrStore(key, struct{}{}); !loaded {
+		slog.Error("unit row could not be read", "tenant_id", tenant.ID, "unit_id", unitID, "op", op, "error", err)
+	}
+	return wrapped
+}
+
+type unitRows interface {
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+type storedUnit struct {
+	id   string
+	unit Unit
+}
+
+func readStoredUnits(q unitRows, tenant TenantRef) ([]storedUnit, error) {
+	rows, err := q.Query(`SELECT id, data FROM units WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := []Unit{}
+	out := []storedUnit{}
 	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
-			continue
+		var id, data string
+		if err := rows.Scan(&id, &data); err != nil {
+			return nil, unitDataErr(tenant, id, "scan", err)
 		}
 		var item Unit
 		if err := json.Unmarshal([]byte(data), &item); err != nil {
-			continue
+			return nil, unitDataErr(tenant, id, "decode", err)
 		}
-		out = append(out, item)
+		out = append(out, storedUnit{id: id, unit: item})
 	}
-	SortUnits(out)
+	if err := rows.Err(); err != nil {
+		return nil, unitDataErr(tenant, "", "iterate", err)
+	}
 	return out, nil
 }
 
+func loadStoredUnit(q unitRows, tenant TenantRef, id string) (Unit, error) {
+	var data string
+	if err := q.QueryRow(`SELECT data FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+		return Unit{}, err
+	}
+	var item Unit
+	if err := json.Unmarshal([]byte(data), &item); err != nil {
+		return Unit{}, unitDataErr(tenant, id, "decode", err)
+	}
+	if item.ID == "" {
+		item.ID = id
+	}
+	return item, nil
+}
+
+func unitRowExists(tx *sql.Tx, tenant TenantRef, id string) (bool, error) {
+	var one int
+	err := tx.QueryRow(`SELECT 1 FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func writeUnitRow(tx *sql.Tx, tenant TenantRef, item Unit) error {
+	blob, err := json.Marshal(item)
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err = tx.Exec(
+		`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)`,
+		tenant.ID, tenant.Slug, item.ID, string(blob),
+	)
+	return err
+}
+
 func (s *SQLUnitStore) setTenantUnits(tenant TenantRef, units []Unit) error {
-	tenantSlug := tenant.Slug
 	if s == nil {
 		return nil
 	}
-	tenantSlug = textutil.Slug(tenantSlug)
+	tenantSlug := textutil.Slug(tenant.Slug)
 	if tenantSlug == "" {
 		return nil
 	}
-	// The whole transaction, not just one statement: replaceTenantTx upserts by
-	// (tenant_slug, id), which is exactly where a legacy row without an identity
-	// sits. See HealOrphanReason.
-	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
+	normalized := NormalizeUnits(units, tenantSlug)
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if err := s.replaceTenantTx(tx, tenant, units); err != nil {
+	// Lock the rows this replacement will rewrite so a second batch waits and
+	// then reads the committed set. A row that fails to decode aborts the
+	// transaction, so the unreadable unit is not deleted.
+	if _, err := tx.Exec(`UPDATE units SET data = data WHERE tenant_id = $1`, tenant.ID); err != nil {
 		return err
+	}
+	existing, err := readStoredUnits(tx, tenant)
+	if err != nil {
+		return err
+	}
+	want := map[string]Unit{}
+	for _, item := range normalized {
+		want[item.ID] = item
+	}
+	for _, row := range existing {
+		if _, keep := want[row.id]; keep {
+			continue
+		}
+		if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, row.id); err != nil {
+			return err
+		}
+	}
+	for _, item := range normalized {
+		if err := writeUnitRow(tx, tenant, item); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
@@ -219,41 +298,34 @@ func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (b
 	if tenantSlug == "" {
 		return false, nil
 	}
-	item.TenantSlug = tenantSlug
+	prepared := NormalizeUnits([]Unit{item}, tenantSlug)
+	if len(prepared) != 1 {
+		return false, nil
+	}
+	item = prepared[0]
 	wasCreate := origID == ""
+	if origID != "" {
+		origID = NormalizeUnitID(origID)
+	}
 
-	// The whole transaction, not just one statement: replaceTenantTx upserts by
-	// (tenant_slug, id), which is exactly where a legacy row without an identity
-	// sits. See HealOrphanReason.
-	tx, err := s.db.Unscoped(HealOrphanReason).Begin()
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback()
-	mine, err := tenantUnitsTx(tx, tenant)
+	targetTaken, err := unitRowExists(tx, tenant, item.ID)
 	if err != nil {
 		return false, err
 	}
-	for _, u := range mine {
-		if u.ID == item.ID && (wasCreate || origID != item.ID) {
-			return true, nil
+	if targetTaken && (wasCreate || origID != item.ID) {
+		return true, nil
+	}
+	if !wasCreate && origID != item.ID {
+		if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, origID); err != nil {
+			return false, err
 		}
 	}
-	if wasCreate {
-		origID = item.ID
-	}
-	replaced := false
-	for i := range mine {
-		if mine[i].ID == origID {
-			mine[i] = item
-			replaced = true
-			break
-		}
-	}
-	if !replaced {
-		mine = append(mine, item)
-	}
-	if err := s.replaceTenantTx(tx, tenant, mine); err != nil {
+	if err := writeUnitRow(tx, tenant, item); err != nil {
 		return false, err
 	}
 	return false, tx.Commit()
@@ -269,21 +341,12 @@ func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUp
 		return false, err
 	}
 	defer tx.Rollback()
-	units, err := tenantUnitsTx(tx, tenant)
-	if err != nil {
-		return false, err
-	}
-	indexes := map[string]int{}
-	for index, item := range units {
-		indexes[NormalizeUnitID(item.ID)] = index
-	}
-	for id := range normalized {
-		if _, found := indexes[id]; !found {
-			return true, nil
-		}
+	loaded, unknown, err := loadUnitsForUpdate(tx, tenant, keysOf(normalized))
+	if err != nil || unknown {
+		return unknown, err
 	}
 	for id, update := range normalized {
-		item := units[indexes[id]]
+		item := loaded[id]
 		if update.SetOwners {
 			item.OwnerEmails = NormalizeEmailList(update.OwnerEmails)
 		}
@@ -291,11 +354,7 @@ func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUp
 			item.RenterEmails = NormalizeEmailList(update.RenterEmails)
 		}
 		item.PartyContacts = mergeUnitPartyContacts(item, update.Contacts)
-		blob, err := json.Marshal(item)
-		if err != nil {
-			return false, err
-		}
-		if _, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID); err != nil {
+		if err := writeUnitRow(tx, tenant, item); err != nil {
 			return false, err
 		}
 	}
@@ -315,44 +374,70 @@ func (s *SQLUnitStore) updateUnitAllocationBases(tenant TenantRef, updates []Uni
 		return false, err
 	}
 	defer tx.Rollback()
-	units, err := tenantUnitsTx(tx, tenant)
-	if err != nil {
-		return false, err
-	}
-	indexes := map[string]int{}
-	for index, item := range units {
-		indexes[NormalizeUnitID(item.ID)] = index
-	}
-	for id := range normalized {
-		if _, found := indexes[id]; !found {
-			return true, nil
-		}
+	loaded, unknown, err := loadUnitsForUpdate(tx, tenant, keysOf(normalized))
+	if err != nil || unknown {
+		return unknown, err
 	}
 	for id, update := range normalized {
-		item := units[indexes[id]]
+		item := loaded[id]
 		item.UsableAreaM2Hundredths = update.UsableAreaM2Hundredths
 		item.UsableAreaRecorded = update.UsableAreaRecorded
 		item.Persons = update.Persons
 		item.PersonsRecorded = update.PersonsRecorded
-		blob, err := json.Marshal(item)
-		if err != nil {
-			return false, err
-		}
-		if _, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID); err != nil {
+		if err := writeUnitRow(tx, tenant, item); err != nil {
 			return false, err
 		}
 	}
 	return false, tx.Commit()
 }
 
+func keysOf[V any](items map[string]V) []string {
+	out := make([]string, 0, len(items))
+	for id := range items {
+		out = append(out, id)
+	}
+	return out
+}
+
+// loadUnitsForUpdate reads only the rows a narrow update will change. A missing
+// id is unknown and writes nothing. A row that does not decode aborts the
+// mutation even when another id in the same batch is missing.
+func loadUnitsForUpdate(tx *sql.Tx, tenant TenantRef, ids []string) (map[string]Unit, bool, error) {
+	loaded := make(map[string]Unit, len(ids))
+	unknown := false
+	var dataErr error
+	for _, id := range ids {
+		item, err := loadStoredUnit(tx, tenant, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			unknown = true
+			continue
+		}
+		if err != nil {
+			dataErr = err
+			continue
+		}
+		item.ID = id
+		loaded[id] = item
+	}
+	if dataErr != nil {
+		return nil, false, dataErr
+	}
+	if unknown {
+		return nil, true, nil
+	}
+	return loaded, false, nil
+}
+
 // DeleteUnit removes one unit. Returns removed=false if no unit had that ID.
 func (s *SQLUnitStore) deleteUnit(tenant TenantRef, id string) (bool, Unit, error) {
-	tenantSlug := tenant.Slug
 	if s == nil {
 		return false, Unit{}, nil
 	}
-	tenantSlug = textutil.Slug(tenantSlug)
-	if tenantSlug == "" {
+	if textutil.Slug(tenant.Slug) == "" {
+		return false, Unit{}, nil
+	}
+	id = NormalizeUnitID(id)
+	if id == "" {
 		return false, Unit{}, nil
 	}
 	tx, err := s.db.For(tenant).Begin()
@@ -360,13 +445,12 @@ func (s *SQLUnitStore) deleteUnit(tenant TenantRef, id string) (bool, Unit, erro
 		return false, Unit{}, err
 	}
 	defer tx.Rollback()
-	var data string
-	if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	removed, err := loadStoredUnit(tx, tenant, id)
+	if errors.Is(err, sql.ErrNoRows) {
 		return false, Unit{}, nil
 	}
-	var removed Unit
-	if err := json.Unmarshal([]byte(data), &removed); err != nil {
-		return false, Unit{}, nil
+	if err != nil {
+		return false, Unit{}, err
 	}
 	if _, err := tx.Exec(`DELETE FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id); err != nil {
 		return false, Unit{}, err
@@ -381,7 +465,14 @@ func (s *SQLUnitStore) listTenant(tenant TenantRef) []Unit {
 	if s == nil {
 		return nil
 	}
-	units := s.tenantUnits(tenant)
+	stored, err := readStoredUnits(s.db.For(tenant), tenant)
+	if err != nil {
+		return nil
+	}
+	units := make([]Unit, 0, len(stored))
+	for _, row := range stored {
+		units = append(units, row.unit)
+	}
 	out := []Unit{}
 	for _, item := range units {
 		out = append(out, CopyUnit(item))
@@ -408,8 +499,13 @@ func (s *SQLUnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembe
 	if tenantSlug == "" || email == "" {
 		return nil
 	}
+	stored, err := readStoredUnits(s.db.For(tenant), tenant)
+	if err != nil {
+		return nil
+	}
 	out := []UnitMembership{}
-	for _, item := range s.tenantUnits(tenant) {
+	for _, row := range stored {
+		item := row.unit
 		relation := ""
 		if EmailListContains(item.OwnerEmails, email) {
 			relation = RoleOwner
@@ -436,13 +532,12 @@ func (s *SQLUnitStore) membersForUnit(tenant TenantRef, unitID string) UnitMembe
 	if tenantSlug == "" || unitID == "" {
 		return UnitMembers{}
 	}
-	for _, item := range s.tenantUnits(tenant) {
-		if textutil.Slug(item.ID) == unitID {
-			item = CopyUnit(item)
-			return UnitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
-		}
+	item, err := loadStoredUnit(s.db.For(tenant), tenant, unitID)
+	if err != nil || textutil.Slug(item.ID) != unitID {
+		return UnitMembers{}
 	}
-	return UnitMembers{}
+	item = CopyUnit(item)
+	return UnitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
 }
 
 // ImportUnits copies records from a JSON store, each only if absent

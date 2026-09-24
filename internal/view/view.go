@@ -1376,6 +1376,22 @@ func AuditActionLabel(action string) string {
 		return "Einheit gelöscht"
 	case store.AuditActionUnitPayment:
 		return "Zahlungsstatus geändert"
+	case store.AuditActionLeaseCreate:
+		return "Mietvertrag angelegt"
+	case store.AuditActionLeaseUpdate:
+		return "Mietvertrag geändert"
+	case store.AuditActionLeaseEnd:
+		return "Mietvertrag beendet"
+	case store.AuditActionLeasePartyChange:
+		return "Vertragspartei geändert"
+	case store.AuditActionRentComponentAdd:
+		return "Mietzinsbestandteil ergänzt"
+	case store.AuditActionClauseCreate:
+		return "Wertsicherungsklausel angelegt"
+	case store.AuditActionClauseUpdate:
+		return "Wertsicherungsklausel geändert"
+	case store.AuditActionClauseReview:
+		return "Klausel geprüft"
 	case store.AuditActionDocumentUpload:
 		return "Dokument hochgeladen"
 	case store.AuditActionDocumentDownload:
@@ -1527,7 +1543,7 @@ func AuditActionLabel(action string) string {
 
 func AuditActionTone(action string) string {
 	switch store.NormalizeAuditAction(action) {
-	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin:
+	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin, store.AuditActionLeaseCreate, store.AuditActionRentComponentAdd, store.AuditActionClauseCreate:
 		return "add"
 	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionAttachmentDelete, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionEventDelete, store.AuditActionContactDelete:
 		return "danger"
@@ -1606,6 +1622,10 @@ func AuditDetailLabel(key string) string {
 		return "Vorher"
 	case "after":
 		return "Nachher"
+	case "ai_origin_before":
+		return "KI-Ziel vorher"
+	case "ai_origin_after":
+		return "KI-Ziel neu"
 	case "auth_method":
 		return "Anmeldung"
 	case "role_from":

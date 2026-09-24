@@ -505,7 +505,7 @@ templ BuildingContacts(data BuildingSettingsPageData) {
 }
 
 templ BuildingUnits(data BuildingSettingsPageData) {
-	<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class="head-actions"><a class="button ghost" href="/app/settings/payments/import">Bankdatei einlesen</a><a class="button primary" href="#unit-add">Einheit hinzufügen</a></div></header>
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class="head-actions"><a class="button ghost" href="/app/settings/building/leases/import">Tabelle importieren</a><a class="button ghost" href="/app/settings/payments/import">Bankdatei einlesen</a><a class="button primary" href="#unit-add">Einheit hinzufügen</a></div></header>
 		<div class="metrics"><span><strong>{ data.UnitTotal }</strong><small>Einheiten gesamt</small></span><span><strong>{ data.BillableUnits } von { data.FairUseFreeUnits }</strong><small>{ data.BillableLabel } im inkludierten Rahmen</small></span></div>
 		if data.FairUseExceeded {
 			<p class="notice">Über dem inkludierten Rahmen von { data.FairUseFreeUnits } Wohneinheiten. Richtwert: 1 € pro Einheit und Monat.</p>
@@ -548,7 +548,7 @@ templ BuildingUnitRow(unit view.BuildingUnitView) {
 		if unit.HasRenters {
 			<small>{ unit.RenterEmails }</small>
 		}
-	</div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class={ "pill", unit.PaymentStatusClass }>{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
+	</div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class={ "pill", unit.PaymentStatusClass }>{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="button ghost" href={ templ.SafeURL("/app/settings/building/units/" + unit.ID + "/lease") }>Mietvertrag</a><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
 }
 
 func paymentUpdated(unit view.BuildingUnitView) string { if unit.PaymentHasUpdated { return unit.PaymentUpdatedAt }; return "Manuell" }

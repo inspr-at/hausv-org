@@ -18,8 +18,15 @@ type triageProviderCacheEntry struct {
 	label       string
 }
 
-// triageFor resolves the configured suggester for an organisation. The boot
-// provider remains the single environment fallback and is never rebuilt.
+// aiUnavailableLabel is the customer-facing text when an organisation's own
+// provider cannot be read or built. The environment provider is not a
+// substitute: that would send the organisation's data somewhere else.
+const aiUnavailableLabel = "KI derzeit nicht verfügbar"
+
+// triageFor resolves the configured suggester for an organisation. With no
+// organisation override, the boot provider is the operator destination. A
+// read, destination or construction failure stays closed: AI for that
+// organisation is unavailable and the environment provider is not used.
 func (a *app) triageFor(ctx context.Context, orgKey string) (ai.TriageSuggester, string) {
 	if a == nil {
 		return nil, ""
@@ -31,14 +38,15 @@ func (a *app) triageFor(ctx context.Context, orgKey string) (ai.TriageSuggester,
 	}
 	repo := a.orgSettings(orgKey)
 	if repo == nil {
-		return fallback, fallbackLabel
+		logError("organisation ai settings unavailable", fmt.Errorf("settings repository missing"), "organisation", orgKey)
+		return nil, aiUnavailableLabel
 	}
 	settings, err := repo.Get(ctx)
 	if err != nil {
 		logError("organisation ai settings unavailable", err, "organisation", orgKey)
-		return fallback, fallbackLabel
+		return nil, aiUnavailableLabel
 	}
-	if settings.AIProvider == "" && settings.AIBaseURL == "" && settings.AIModel == "" {
+	if !organisationAIOverridden(settings) {
 		return fallback, fallbackLabel
 	}
 
@@ -51,19 +59,33 @@ func (a *app) triageFor(ctx context.Context, orgKey string) (ai.TriageSuggester,
 	if cached, ok := a.triageProviders[orgKey]; ok && cached.fingerprint == fingerprint {
 		return cached.suggester, cached.label
 	}
-
+	if strings.TrimSpace(settings.AIBaseURL) != "" {
+		if err := validateAIBaseURL(settings.AIBaseURL); err != nil {
+			logError("organisation ai destination rejected", err, "organisation", orgKey)
+			return rememberUnavailableAI(a, orgKey, fingerprint)
+		}
+	}
 	configured, buildErr := newSettingsAISuggester(aiSettingsGetenv(os.Getenv, settings))
 	if buildErr != nil || configured == nil {
 		if buildErr == nil {
 			buildErr = fmt.Errorf("ai provider unavailable")
 		}
-		logError("organisation ai provider unavailable; using environment provider", buildErr, "organisation", orgKey)
-		a.triageProviders[orgKey] = triageProviderCacheEntry{fingerprint: fingerprint, suggester: fallback, label: fallbackLabel}
-		return fallback, fallbackLabel
+		logError("organisation ai provider unavailable", buildErr, "organisation", orgKey)
+		return rememberUnavailableAI(a, orgKey, fingerprint)
 	}
 	entry := triageProviderCacheEntry{fingerprint: fingerprint, suggester: configured, label: effectiveAIConfig(os.Getenv, settings).Label}
 	a.triageProviders[orgKey] = entry
 	return entry.suggester, entry.label
+}
+
+func organisationAIOverridden(settings store.OrgSettings) bool {
+	return strings.TrimSpace(settings.AIProvider) != "" || strings.TrimSpace(settings.AIBaseURL) != "" || strings.TrimSpace(settings.AIModel) != ""
+}
+
+// rememberUnavailableAI caches a closed failure. The lock is held by triageFor.
+func rememberUnavailableAI(a *app, orgKey, fingerprint string) (ai.TriageSuggester, string) {
+	a.triageProviders[orgKey] = triageProviderCacheEntry{fingerprint: fingerprint, suggester: nil, label: aiUnavailableLabel}
+	return nil, aiUnavailableLabel
 }
 
 func (a *app) hasTriage(ctx context.Context, orgKey string) bool {

@@ -19,12 +19,11 @@ import (
 // to take CASUALLY. Unscoped("...") compiles just as readily as For(tenant), and
 // the reason string is not read by anything at runtime.
 //
-// So the cross-tenant surface is written down here, whole, as a golden file: 78
-// declared cross-tenant call sites (65 in the stores, 10 in internal/energy, 2
-// in the import ledger in internal/server, 1 in the data mover command in
-// cmd/hausv-org, 1 in internal/dbtest — the maintenance view every test fixture
-// reads and writes through since migration 0006 closed the pool) plus the seam's
-// own forwarder, each with the reason its author typed. The value is in the diff.
+// So the cross-tenant surface is written down here, whole, as a golden file:
+// 71 declared cross-tenant call sites, each with the reason its author typed.
+// HAUSV-779 removed the orphan-heal calls on energy writes, announcement
+// reads, and connector read/revoke/list/clear; the registry lookup, token
+// lookup, bootstrap replay and retention sweep stay. The value is in the diff.
 // Adding a cross-tenant call is a two-line change in a store plus a line in this
 // file, and that second line is what a reviewer sees without having to know the
 // lane mechanism exists or think to grep for it.
@@ -108,6 +107,44 @@ func TestUnscopedCallSiteInventory(t *testing.T) {
 	report.WriteString("\nIf every change above is intended, record it:\n")
 	report.WriteString("  HAUSV_UPDATE_UNSCOPED_GOLDEN=1 go test ./internal/store -run TestUnscopedCallSiteInventory\n")
 	t.Fatal(report.String())
+}
+
+// keptMaintenanceLanes are the Unscoped calls HAUSV-779 left in place, each
+// with the reason it is still cross-tenant. Token lookup happens before a
+// tenant is known. The registry lookup happens before a lane exists. Bootstrap
+// replays and the retention sweep have no single house in scope.
+//
+// Owned by other packages, and not retired here: organisation membership
+// (identity SetMembership), financial imports (unit payment status, camt,
+// ebinterface), and the unit writes HAUSV-774 removes.
+var keptMaintenanceLanes = []struct {
+	file, function, reason string
+}{
+	{"internal/energy/storage.go", "(*SQLStore).registry", "slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to"},
+	{"internal/energy/storage.go", "(*SQLStore).PurgeExpired", "retention sweep over every tenant's expired energy imports, intervals and assessments: the boot path that calls it has no tenant in scope"},
+	{"internal/store/announcement_read_sql.go", "(*SQLAnnouncementReadStore).ImportReads", "boot import replay of the JSON read-marker snapshot: it spans every tenant and runs before the first request"},
+	{"internal/store/home_connector.go", "(*SQLHomeConnectorStore).StartPairing", slugRegistryReason},
+	{"internal/store/home_connector.go", "existingTenantRef", slugRegistryReason},
+	{"internal/store/home_connector.go", "(*SQLHomeConnectorStore).ExchangePairing", "the connector presents a pairing secret, not a tenant: the row is found by hash"},
+	{"internal/store/home_connector.go", "(*SQLHomeConnectorStore).Heartbeat", "the connector presents a credential hash, not a tenant: heartbeats arrive with no request context to take a tenant from"},
+	{"internal/store/home_connector_reading.go", "(*SQLHomeConnectorReadingStore).Upsert", slugRegistryReason},
+}
+
+func TestKeptMaintenanceLanesStayNamed(t *testing.T) {
+	sites := collectUnscopedCallSites(t, repositoryRoot(t))
+	for _, kept := range keptMaintenanceLanes {
+		found := false
+		for _, line := range sites {
+			parts := strings.Split(line, "\t")
+			if len(parts) == 4 && parts[0] == kept.file && parts[1] == kept.function && parts[3] == kept.reason {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("kept maintenance lane missing: %s %s\n  reason: %s", kept.file, kept.function, kept.reason)
+		}
+	}
 }
 
 // collectUnscopedCallSites returns one sorted "path\tfunction\tkind\treason"

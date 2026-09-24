@@ -38,6 +38,14 @@ const (
 	AuditActionUnitSave             = "building.unit.save"
 	AuditActionUnitDelete           = "building.unit.delete"
 	AuditActionUnitPayment          = "building.unit.payment"
+	AuditActionLeaseCreate          = "lease.create"
+	AuditActionLeaseUpdate          = "lease.update"
+	AuditActionLeaseEnd             = "lease.end"
+	AuditActionLeasePartyChange     = "lease_party.change"
+	AuditActionRentComponentAdd     = "rent_component.add"
+	AuditActionClauseCreate         = "clause.create"
+	AuditActionClauseUpdate         = "clause.update"
+	AuditActionClauseReview         = "clause.review"
 	AuditActionProfilePicture       = "profile.picture"
 	AuditActionAnnualPeriodSave     = "annual-statement.period.save"
 	AuditActionAnnualPartiesImport  = "annual-statement.parties.import"
@@ -47,6 +55,7 @@ const (
 	AuditActionAnnualReceiptAmount  = "annual-statement.receipt.update-amount"
 	AuditActionAnnualReceiptDelete  = "annual-statement.receipt.delete"
 	AuditActionAnnualPrepaymentSave = "annual-statement.prepayment.save"
+	AuditActionAnnualRunApprove     = "annual-statement.run.approve"
 	AuditActionAnnualRunCreate      = "annual-statement.run.create"
 	AuditActionAnnualRunSend        = "annual-statement.send"
 	AuditActionAnnualRunArchive     = "annual-statement.archive"
@@ -2181,7 +2190,9 @@ func NormalizeAuditAction(raw string) string {
 	switch raw {
 	case AuditActionCapabilityOverride, AuditActionCapabilityReset, AuditActionUserCapability, AuditActionCapabilityProfile, AuditActionSupportViewStart, AuditActionSupportViewEnd, AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
 		AuditActionBuildingUpdate, AuditActionPortalModulesUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
-		AuditActionUnitPayment, AuditActionProfilePicture,
+		AuditActionUnitPayment, AuditActionLeaseCreate, AuditActionLeaseUpdate, AuditActionLeaseEnd,
+		AuditActionLeasePartyChange, AuditActionRentComponentAdd, AuditActionClauseCreate, AuditActionClauseUpdate, AuditActionClauseReview,
+		AuditActionProfilePicture,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
 		AuditActionAttachmentView, AuditActionAttachmentDelete, AuditActionIntegrationImport, AuditActionIntegrationExport,
 		AuditActionHandoverCreate, AuditActionHandoverConfirm, AuditActionHandoverFile,
@@ -2201,7 +2212,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIssueAICancel, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
 		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionTextbausteinChanged, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
-		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualRunCreate, AuditActionAnnualRunArchive, AuditActionAnnualRunSend:
+		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualRunCreate, AuditActionAnnualRunApprove, AuditActionAnnualRunArchive, AuditActionAnnualRunSend:
 		return raw
 	default:
 		return ""

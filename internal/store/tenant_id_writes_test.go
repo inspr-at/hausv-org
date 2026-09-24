@@ -178,6 +178,22 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1", MiteigentumsanteilPPM: 1000000}}); err != nil {
 		t.Fatalf("units: %v", err)
 	}
+	leaseRepo, _ := BindLeaseRepository(NewSQLLeaseStore(lanes), tenant)
+	if _, err := leaseRepo.Create(Lease{
+		UnitID: "u1", ConcludedOn: "2020-01-15", StartsOn: "2020-02-01",
+		UseKind: UseKindWohnung, MRGScope: MRGTeil, RentRegime: RentRegimeFrei,
+		LandlordIsBusiness: true, TenantIsConsumer: true, UpdatedAt: now, UpdatedBy: "a@example.com",
+		Parties:    []LeaseParty{{Name: "Rita", Email: "a@example.com", ValidFrom: "2020-02-01"}},
+		Components: []RentComponent{{Kind: ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: OriginManual}},
+		Clauses: []IndexClause{{
+			ClauseType: ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+			ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
+			ReviewStatus: ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
+			State: &ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+		}},
+	}); err != nil {
+		t.Fatalf("lease: %v", err)
+	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
 	costTypes, _ := BindAnnualStatementCostTypeRepository(NewSQLAnnualStatementCostTypeStore(lanes), tenant)
 	if _, err := costTypes.Save(AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {
@@ -223,8 +239,12 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("annual statement receipt: %v", err)
 	}
 	runs, _ := BindAnnualStatementRunRepository(NewSQLAnnualStatementRunStore(lanes, NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs"))), tenant)
-	if _, err := runs.Create(2026, "a@example.com", now); err != nil {
+	run, err := runs.Create(2026, "a@example.com", now)
+	if err != nil {
 		t.Fatalf("annual statement run: %v", err)
+	}
+	if _, _, err := runs.Approve(run.ID, "a@example.com", RoleManager, now); err != nil {
+		t.Fatal(err)
 	}
 	deliveries, _ := BindAnnualStatementDeliveryRepository(NewSQLAnnualStatementDeliveryStore(lanes), tenant)
 	if _, _, err := deliveries.Attempt(t.Context(), AnnualStatementDelivery{RunID: "identity-run", Revision: 1, PartyID: "a@example.com", UnitID: "u1", DocumentID: receiptDocument.ID, SHA256: "fixture", Recipient: "a@example.com", Actor: "a@example.com"}, func(context.Context) error { return nil }); err != nil {

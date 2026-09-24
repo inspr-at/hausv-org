@@ -43,6 +43,8 @@ const (
 	CapabilityOversight           Capability = "oversight"
 	CapabilityManageEnergy        Capability = "manage-energy"
 	CapabilityControlEnergy       Capability = "control-energy"
+	CapabilityManageLeases        Capability = "manage_leases"
+	CapabilityApproveValorisation Capability = "approve_valorisation"
 )
 
 func Can(actor Actor, action Capability, resource Resource) bool {
@@ -75,8 +77,10 @@ func RoleHasCapability(role string, action Capability) bool {
 	switch action {
 	case CapabilityPlatformAdmin, CapabilityManageParking:
 		return false
-	case CapabilityManageUsers, CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues, CapabilityManageVotes, CapabilityManageBuilding:
+	case CapabilityManageUsers, CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues, CapabilityManageVotes, CapabilityManageBuilding, CapabilityManageLeases:
 		return role == store.RoleManager
+	case CapabilityApproveValorisation:
+		return false
 	case CapabilityManageEnergy, CapabilityControlEnergy:
 		return role == store.RoleManager || role == store.RoleOwner
 	case CapabilityOwnerDocuments, CapabilityVote:

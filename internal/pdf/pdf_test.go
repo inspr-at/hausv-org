@@ -63,3 +63,27 @@ func TestExplicitPagesDeterministic(t *testing.T) {
 		t.Fatal("page count, encoding or determinism")
 	}
 }
+
+func TestMeasuredWrappingUsesProportionalWinAnsiWidths(t *testing.T) {
+	if TextWidth("111,00 €", Body, 10) != TextWidth("888,00 €", Body, 10) {
+		t.Fatal("amount digits must align")
+	}
+	if TextWidth("iiii", Body, 10) >= TextWidth("WWWW", Body, 10) {
+		t.Fatal("font must be proportional")
+	}
+	for _, style := range []Style{Body, Strong, Heading} {
+		input := strings.Repeat("ÄÖÜß€—", 30)
+		lines := WrapWidth(input, style, 10, 81)
+		if strings.Join(lines, "") != input {
+			t.Fatal("lost encoded glyphs")
+		}
+		for _, line := range lines {
+			if TextWidth(line, style, 10) > 81 {
+				t.Fatal("width exceeded")
+			}
+		}
+	}
+	if got := WrapWidth("Andere Gasse 2\n8020 Graz", Body, 10, 471); len(got) != 2 {
+		t.Fatal("address newline lost", got)
+	}
+}
