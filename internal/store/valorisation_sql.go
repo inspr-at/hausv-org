@@ -79,6 +79,9 @@ func (r *ValorisationRepository) previewTx(tx *sql.Tx, input ValorisationInput, 
 	}
 	run, err := PreviewValorisation(input, snapshot, now)
 	run.TenantSlug = r.tenant.Slug
+	if err == nil {
+		run.IndexDisputed, err = indexRunDisputed(tx, run)
+	}
 	return run, err
 }
 func (r *ValorisationRepository) Create(input ValorisationInput, org string, actor ValorisationActor, now time.Time) (ValorisationRun, error) {
@@ -210,6 +213,10 @@ func (r *ValorisationRepository) getTx(tx *sql.Tx, id string) (ValorisationRun, 
 		return run, err
 	}
 	run.IndexRevised, err = indexRunRevised(tx, run)
+	if err != nil {
+		return run, err
+	}
+	run.IndexDisputed, err = indexRunDisputed(tx, run)
 	return run, err
 }
 func (r *ValorisationRepository) List() ([]ValorisationRun, error) {

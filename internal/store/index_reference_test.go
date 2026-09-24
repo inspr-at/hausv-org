@@ -198,7 +198,7 @@ func TestIndexRevisionFlagsFrozenRunsWithoutChangingApproval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !flagged.IndexRevised || flagged.Status != "approved" || flagged.InputsSHA256 != approved.InputsSHA256 || flagged.Items[0].NewCents != approved.Items[0].NewCents || flagged.Items[0].LetterSHA256 != approved.Items[0].LetterSHA256 {
+	if !flagged.IndexDisputed || flagged.IndexRevised || flagged.Status != "approved" || flagged.InputsSHA256 != approved.InputsSHA256 || flagged.Items[0].NewCents != approved.Items[0].NewCents || flagged.Items[0].LetterSHA256 != approved.Items[0].LetterSHA256 {
 		t.Fatalf("frozen approval changed or warning absent: %+v", flagged)
 	}
 	// A run containing a preliminary input is affected by a status-only revision.
@@ -328,5 +328,69 @@ func TestRuntimeAnnualAverageRevision(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatal("annual average missing or duplicated")
+	}
+}
+
+func TestIndexFinalConflictRemainsAdvisoryForNewApproval(t *testing.T) {
+	database, lanes := testLanes(t)
+	tenant := testTenantRef("demo")
+	if _, err := database.Exec(`INSERT INTO units(tenant_id,tenant_slug,id,data) VALUES($1,$2,'top-1','{}')`, tenant.ID, tenant.Slug); err != nil {
+		t.Fatal(err)
+	}
+	leases, _ := BindLeaseRepository(NewSQLLeaseStore(lanes), tenant)
+	if _, err := leases.Create(valorisationFixture()); err != nil {
+		t.Fatal(err)
+	}
+	service := NewIndexReferenceStore(lanes)
+	if _, err := service.Apply(t.Context(), indexRelease(t, "202512", "Dez.25", "130,0", mustDate("2026-04-01")), "system:index-refresh"); err != nil {
+		t.Fatal(err)
+	}
+	repo, _ := BindValorisationRepository(lanes, NewSQLDocumentStore(lanes, t.TempDir()), tenant)
+	actor := ValorisationActor{Email: "admin@example.com", Manage: true, Approve: true}
+	settings := DefaultValorisationSettings()
+	run, err := repo.Create(ValorisationInput{EffectiveOn: "2026-04-01", Settings: settings}, "org", actor, mustDate("2026-04-01"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := repo.Get(run.ID)
+	if err != nil || loaded.IndexRevised || !loaded.IndexDisputed {
+		t.Fatal("final dispute not advisory", err)
+	}
+	approved, err := repo.Approve(run.ID, actor, settings, mustDate("2026-04-01"), func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) { return []byte("%PDF fixture"), nil })
+	if err != nil {
+		t.Fatal("new run trapped by retained final value", err)
+	}
+	if !approved.IndexDisputed || approved.Items[0].NewCents != 104028 {
+		t.Fatal("disputed correction silently adopted")
+	}
+}
+
+func TestIndexUnchangedDerivedEvidenceIsNotRevised(t *testing.T) {
+	_, lanes := testLanes(t)
+	snapshot, _ := publishedIndices()
+	var source indexation.SnapshotSource
+	for _, s := range snapshot.Manifest.Sources {
+		if s.Series == indexation.VPI2025 {
+			source = s
+		}
+	}
+	release, err := indexation.ParseOGDRelease([]byte("C-VPIZR-0;C-VPICOICOP18_5-0;F-VPIMZBM\nVPIZR-202609;VPICOICOP18-0;104,3\n"), []byte("code;name\nVPIZR-202609;Sep.26\n"), source, mustDate("2026-11-20"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = NewIndexReferenceStore(lanes).Apply(t.Context(), release, "system:index-refresh"); err != nil {
+		t.Fatal(err)
+	}
+	current, err := runtimeIndexSnapshot(lanes.For(testTenantRef("demo")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, ok, err := current.Data.Lookup(indexation.VPI2010, "2026-09")
+	if err != nil || !ok || value.ChainSource == "" {
+		t.Fatal("missing chained fixture", err)
+	}
+	run := ValorisationRun{IndexSnapshot: []ValorisationIndex{indexEvidence(value)}}
+	if changed, err := indexRunRevised(lanes.For(testTenantRef("demo")), run); err != nil || changed {
+		t.Fatal("unchanged derived value marked revised", err)
 	}
 }

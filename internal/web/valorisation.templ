@@ -336,7 +336,10 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			{ valorisationStatus(view.Run.Status) } · { fmt.Sprintf("Revision %d",view.Run.Revision) }
 		</p>
 		if view.Run.IndexRevised {
-			<p class="vr-exception" data-index-status="index_revised"><strong>Neu berechnen empfohlen</strong> · Ein verwendeter Indexwert wurde revidiert oder zur Prüfung markiert. Freigegebene Beträge und Schreiben bleiben unverändert.</p>
+			<p class="vr-exception" data-index-status="index_revised"><strong>Neu berechnen empfohlen</strong> · Ein verwendeter Indexwert wurde revidiert. Freigegebene Beträge und Schreiben bleiben unverändert.</p>
+		}
+		if view.Run.IndexDisputed {
+			<p class="vr-exception" data-index-status="index_disputed"><strong>Indexwert prüfen</strong> · Ein endgültiger Wert weicht von einer neueren Veröffentlichung ab. Der bisherige Wert bleibt Grundlage dieses Laufs. Prüfen Sie die Abweichung im Importverlauf vor der Freigabe.</p>
 		}
 		for _,deadline := range view.Run.NoticeDeadlines() {
 			@ValorisationDeadline(deadline)

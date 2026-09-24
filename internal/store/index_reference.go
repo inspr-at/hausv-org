@@ -317,17 +317,34 @@ func runtimeIndexSnapshot(q indexQuerier) (indexation.Snapshot, error) {
 }
 
 func indexRunRevised(q indexQuerier, run ValorisationRun) (bool, error) {
-	values, err := currentIndexObservations(q)
+	snapshot, err := runtimeIndexSnapshot(q)
 	if err != nil {
 		return false, err
 	}
+	annual := map[string]ValorisationIndex{}
+	for _, value := range snapshot.Annual {
+		current := annualEvidence(value)
+		annual[current.Series+"/"+current.Period] = current
+	}
 	for _, used := range run.IndexSnapshot {
-		v, ok := values[used.Series+"/"+used.Period]
-		if !ok || v.Value.String() != used.Value || v.Status != used.Status || v.ID != used.RevisionID {
+		current, ok := annual[used.Series+"/"+used.Period]
+		if len(used.Period) == 7 {
+			value, found, err := snapshot.Data.Lookup(indexation.Series(used.Series), indexation.Month(used.Period))
+			if err != nil {
+				return false, err
+			}
+			current, ok = indexEvidence(value), found
+		}
+		if !ok || current.Value != used.Value || current.Status != used.Status || current.RevisionID != used.RevisionID {
 			return true, nil
 		}
 	}
-	// A disputed final figure also deserves review although we kept it active.
+	return false, nil
+}
+
+// A final-value conflict is advisory. It did not revise the active observation
+// and must not permanently block approval of every new draft that uses it.
+func indexRunDisputed(q indexQuerier, run ValorisationRun) (bool, error) {
 	rows, err := q.Query(`SELECT changes FROM index_imports WHERE rows_flagged > 0`)
 	if err != nil {
 		return false, err

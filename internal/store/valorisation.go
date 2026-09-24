@@ -48,6 +48,7 @@ type ValorisationInput struct {
 }
 type ValorisationRun struct {
 	IndexRevised                                              bool // Derived warning; the frozen run and approved amounts never change.
+	IndexDisputed                                             bool // Advisory: a final value was disputed but deliberately retained.
 	ID, TenantSlug, OrgKey, EffectiveOn, Status, InputsSHA256 string
 	Revision                                                  int
 	CreatedBy, ApprovedBy, CancelReason, CancelledBy          string

@@ -46,8 +46,10 @@ the next check. Manual checks remain available when scheduling is disabled.
 
 Runtime observations take precedence over the embedded offline snapshot.
 Preliminary revisions append a new observation and link the old one; changes to
-final values are flagged for review and keep the previous value active. Affected
-runs show **Neu berechnen empfohlen** and require a new draft before approval.
+final values are flagged for review and keep the previous value active. Final
+conflicts show **Indexwert prüfen** as an advisory before approval; recalculation
+does not silently accept the disputed number. Runs affected by an accepted
+revision show **Neu berechnen empfohlen** and require a new draft before approval.
 Approved amounts, input snapshots and letters remain unchanged. Beyond the pinned
 publication calendar, the first verified retrieval of final status is used as a
 conservative earliest publication date. Global reference tables have no tenant
