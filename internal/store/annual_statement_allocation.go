@@ -92,7 +92,7 @@ func AnnualStatementRunBlocked(costTypes []AnnualStatementCostType, units []Unit
 // that at least one allocatable cost type uses, in AllocationKeys order.
 // Shares use largest-remainder rounding so every mapped key sums to exactly
 // 1 000 000 ppm; a later run can therefore split cents without drift.
-func AnnualStatementAllocationPreviews(costTypes []AnnualStatementCostType, units []Unit) []AnnualStatementAllocationPreview {
+func AnnualStatementAllocationPreviews(costTypes []AnnualStatementCostType, units []Unit, agreed ...map[string]map[string]int) []AnnualStatementAllocationPreview {
 	byKey := map[string][]string{}
 	for _, costType := range costTypes {
 		if costType.Allocatable && ValidAllocationKey(costType.AllocationKey) {
@@ -106,6 +106,16 @@ func AnnualStatementAllocationPreviews(costTypes []AnnualStatementCostType, unit
 			continue
 		}
 		sort.Strings(costTypeKeys)
+		if key == AllocationKeyAgreed {
+			for _, cost := range costTypeKeys {
+				var shares map[string]int
+				if len(agreed) > 0 {
+					shares = agreed[0][cost]
+				}
+				out = append(out, AnnualStatementAgreedPreview(cost, units, shares))
+			}
+			continue
+		}
 		preview := AnnualStatementAllocationPreview{Key: key, CostTypeKeys: costTypeKeys}
 		total := 0
 		overflow := false

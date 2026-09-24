@@ -34,6 +34,8 @@ func (a *app) saveAnnualStatementLegal(w http.ResponseWriter, r *http.Request, a
 	legal.NextPrepaymentOn = r.FormValue("next_prepayment_on")
 	legal.MonthlyProposals = map[string]map[string]int64{}
 	structure, _ := ac.repositories.annualStatementPeriods.Structure(year)
+	legal.AgreedShares = structure.Legal.AgreedShares
+	legal.HeatingInformation = structure.Legal.HeatingInformation
 	legal.HeatableAreas = map[string]int{}
 	legal.HeatingPrepayments = map[string]map[string]int64{}
 	if ac.repositories.units != nil {

@@ -35,10 +35,11 @@ const (
 	AllocationKeyFlaeche   = "flaeche"
 	AllocationKeyPersonen  = "personen"
 	AllocationKeyVerbrauch = "verbrauch"
+	AllocationKeyAgreed    = "vereinbart"
 )
 
 // AllocationKeys lists the supported keys in display order.
-var AllocationKeys = []string{AllocationKeyNutzwert, AllocationKeyFlaeche, AllocationKeyPersonen, AllocationKeyVerbrauch}
+var AllocationKeys = []string{AllocationKeyNutzwert, AllocationKeyFlaeche, AllocationKeyPersonen, AllocationKeyVerbrauch, AllocationKeyAgreed}
 
 func ValidAllocationKey(key string) bool {
 	for _, known := range AllocationKeys {

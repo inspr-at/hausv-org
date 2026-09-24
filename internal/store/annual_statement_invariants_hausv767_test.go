@@ -53,6 +53,17 @@ func TestAnnualStatementCalculationProperties(t *testing.T) {
 					}
 					input.Consumption[cost] = vector
 				}
+				if key == AllocationKeyAgreed {
+					input.Structure.Legal.AgreedShares = map[string]map[string]int{}
+					for _, cost := range input.Structure.CostTypes {
+						preview := AnnualStatementAllocationPreviews([]AnnualStatementCostType{{Key: cost.Key, Allocatable: true, AllocationKey: AllocationKeyPersonen}}, units)[0]
+						shares := map[string]int{}
+						for _, share := range preview.Shares {
+							shares[share.UnitID] = share.SharePPM
+						}
+						input.Structure.Legal.AgreedShares[cost.Key] = shares
+					}
+				}
 				result, issues := CalculateAnnualStatementRun(input)
 				if len(issues) > 0 {
 					t.Fatalf("trial %d: %+v", trial, issues)
@@ -86,7 +97,7 @@ func TestAnnualStatementCalculationProperties(t *testing.T) {
 					}
 				}
 				slices.Reverse(units)
-				preview, ready := AnnualStatementSettlementPreview(input.Structure.CostTypes, input.Receipts, units, input.Consumption)
+				preview, ready := AnnualStatementSettlementPreviewWithAgreed(input.Structure.CostTypes, input.Receipts, units, input.Consumption, input.Structure.Legal.AgreedShares)
 				if !ready || len(preview) != len(result.Units) {
 					t.Fatal("valid run has no preview")
 				}

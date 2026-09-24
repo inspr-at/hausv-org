@@ -55,8 +55,8 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		}
 		originals[doc.ID] = raw
 	}
-	// Five cost receipts, the Rücklage withdrawal receipt, plus six portal documents (HAUSV-711).
-	if len(originals) != 12 {
+	// Six cost receipts, the Rücklage withdrawal receipt, plus six portal documents (HAUSV-711).
+	if len(originals) != 13 {
 		t.Fatalf("original count=%d", len(originals))
 	}
 	organisation, found, err := store.BindOrganisationRepository(database, "musterstadt").Get(ctx)
@@ -76,10 +76,10 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if err != nil || !found {
 		t.Fatal("load run", err)
 	}
-	if len(loaded.Result.Units) != 24 || len(loaded.Input.Receipts) != 5 || len(loaded.Input.Prepayments) != 24 || loaded.Result.TotalCents != 2070000 || loaded.Input.Period.StartsOn != "2025-01-01" || loaded.Input.Period.EndsOn != "2025-12-31" {
+	if len(loaded.Result.Units) != 24 || len(loaded.Input.Receipts) != 6 || len(loaded.Input.Prepayments) != 24 || loaded.Result.TotalCents != 2250000 || loaded.Input.Period.StartsOn != "2025-01-01" || loaded.Input.Period.EndsOn != "2025-12-31" {
 		t.Fatalf("incomplete fixture: %+v", loaded)
 	}
-	if !loaded.Input.Structure.Legal.HeizKGApplies || loaded.Input.Structure.Legal.HeatingConsumptionPercent != 70 || len(loaded.Result.Proposals) != 96 {
+	if !loaded.Input.Structure.Legal.HeizKGApplies || loaded.Input.Structure.Legal.HeatingConsumptionPercent != 70 || len(loaded.Result.Proposals) != 120 {
 		t.Fatal("missing legal demo inputs")
 	}
 	if loaded.Result.Reserve == nil || loaded.Result.Reserve.ClosingCents != 3184328 || loaded.Result.Reserve.MinimumWarning || len(loaded.Input.Reserve) != 15 {
@@ -132,7 +132,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if len(renderedUnits) != 24 || len(pdfs) != 25 {
 		t.Fatalf("units=%d documents=%d", len(renderedUnits), len(pdfs))
 	}
-	if loaded.CalculationVersion != 4 || len(loaded.Result.PartyShares) != 2 {
+	if loaded.CalculationVersion != 5 || len(loaded.Result.PartyShares) != 2 {
 		t.Fatal("WEG owner change missing", loaded.Result.PartyShares)
 	}
 	if _, err := statementpdf.Render(loaded, "top-3", "matthias.mieter@musterstadt.example"); err != statementpdf.ErrNotFound {
@@ -164,7 +164,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 			t.Fatal("original changed", err)
 		}
 	}
-	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 4, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 5, "annual_statement_prepayments": 24, "annual_statement_reserve_entries": 15, "annual_statement_runs": 1} {
+	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 5, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 6, "annual_statement_prepayments": 24, "annual_statement_reserve_entries": 15, "annual_statement_runs": 1} {
 		var count int
 		if err := database.QueryRow(`SELECT count(*) FROM `+table+` WHERE tenant_id=$1`, tenant.ID).Scan(&count); err != nil || count != want {
 			t.Fatalf("%s=%d want=%d err=%v", table, count, want, err)

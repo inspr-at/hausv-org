@@ -100,6 +100,8 @@ func NewMemoryAnnualStatementRunStore(sources AnnualStatementRunSources) *Memory
 func (*MemoryAnnualStatementRunStore) annualStatementRunStorage() {}
 
 func (s *MemoryAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantRef, year int, consumption map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	input, err := s.load(tenant, year, consumption)
 	if err != nil {
 		return input, AnnualStatementRunResult{}, err
@@ -163,6 +165,8 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 		}
 	}
 	input.Structure, _ = periods.Structure(year)
+	// Both callers hold s.mu; prior-run selection cannot race with creation.
+	input.PreviousHeating = previousHeatingSnapshot(input.Period, s.runs[tenant.ID])
 	listed, err := units.ListChecked()
 	if err != nil {
 		return input, annualStatementUnitDataBlock(err)
@@ -309,6 +313,12 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 		sort.Slice(vector.Units, func(i, j int) bool { return vector.Units[i].UnitID < vector.Units[j].UnitID })
 		input.Consumption[key] = vector
 	}
+	if input.PreviousHeating != nil {
+		for key, vector := range input.PreviousHeating.Consumption {
+			sort.Slice(vector.Units, func(i, j int) bool { return vector.Units[i].UnitID < vector.Units[j].UnitID })
+			input.PreviousHeating.Consumption[key] = vector
+		}
+	}
 	raw, err = json.Marshal(input)
 	if err != nil {
 		return AnnualStatementRun{}, err
@@ -320,6 +330,9 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	}
 	if hasDatedAnnualParties(input) {
 		version = AnnualStatementCalculationVersionParties
+	}
+	if annualStatementHasAgreedShares(input) {
+		version = AnnualStatementCalculationVersionAgreed
 	}
 	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: version, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
 }

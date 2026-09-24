@@ -33,129 +33,214 @@
       "name": "Heizung",
       "operating_amount_cents": 90000,
       "supplier": "Stadtwerke Musterstadt"
+    },
+    {
+      "allocation_key": "vereinbart",
+      "amount_cents": 180000,
+      "invoice_date": "2025-12-01",
+      "key": "lift",
+      "name": "Lift",
+      "supplier": "Aufzüge Musterstadt"
     }
   ],
   "ends_on": "2025-12-31",
   "house": "janusbergweg-123",
   "legal": {
+    "agreed_shares_ppm": {
+      "lift": {
+        "stellplatz-1": 0,
+        "stellplatz-2": 0,
+        "stellplatz-3": 0,
+        "stellplatz-4": 0,
+        "stellplatz-5": 0,
+        "stellplatz-6": 0,
+        "top-1": 0,
+        "top-10": 71429,
+        "top-11": 71429,
+        "top-12": 71429,
+        "top-13": 71429,
+        "top-14": 71429,
+        "top-15": 71429,
+        "top-16": 71429,
+        "top-17": 71429,
+        "top-18": 71428,
+        "top-2": 0,
+        "top-3": 0,
+        "top-4": 0,
+        "top-5": 71428,
+        "top-6": 71428,
+        "top-7": 71428,
+        "top-8": 71428,
+        "top-9": 71428
+      }
+    },
+    "heating_information": {
+      "purchases": [
+        {
+          "cost_type_key": "heizung",
+          "supplier": "Stadtwerke Musterstadt",
+          "carrier": "Fernwärme",
+          "quantity_micros": 100000000000,
+          "unit": "kWh",
+          "price_eur_micros": 90000,
+          "price_note": "01.01.–31.12.2025; tatsächlicher Bruttopreis zum Ablesestichtag 31.12.2025"
+        }
+      ],
+      "taxes_note": "Bruttopreis inklusive 20 % Umsatzsteuer; netto 0,075 EUR/kWh. Keine weiteren Abgaben oder Zolltarife verrechnet.",
+      "district_heating_over_20mw": true,
+      "fuel_mix": "Demodaten: 80 % Biomasse, 20 % Erdgas laut Jahresinformation 2025 der Stadtwerke Musterstadt.",
+      "emissions": "Demodaten: 12.000 t CO2-Äquivalente/Jahr für die Versorgungsanlage, Lieferanteninformation 2025.",
+      "metering_costs_note": "Ablesung und Abrechnung 300,00 EUR, im Beleg über sonstige Betriebskosten enthalten.",
+      "operating_costs_note": "Wartung 600,00 EUR; Ablesung und Abrechnung 300,00 EUR; insgesamt 900,00 EUR.",
+      "remote_meters": "yes",
+      "monthly_information": "Monatliche Bereitstellung während der Heizperiode durch die Stadtwerke Musterstadt; Kontakt über Hausverwaltung Musterstadt, +43 316 555 100.",
+      "climate_current_ppm": 0,
+      "climate_previous_ppm": 0,
+      "climate_source": "",
+      "complaint_contact": "Hausverwaltung Musterstadt GmbH, Musterstraße 12, 8010 Graz; +43 316 555 100."
+    },
     "monthly_proposals_cents": {
       "stellplatz-1": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "stellplatz-2": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "stellplatz-3": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "stellplatz-4": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "stellplatz-5": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "stellplatz-6": {
         "abfall": 0,
+        "lift": 0,
         "reinigung": 350,
         "versicherung": 1700
       },
       "top-1": {
         "abfall": 700,
+        "lift": 0,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-10": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-11": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-12": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-13": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-14": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-15": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-16": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-17": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-18": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-2": {
         "abfall": 700,
+        "lift": 0,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-3": {
         "abfall": 700,
+        "lift": 0,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-4": {
         "abfall": 700,
+        "lift": 0,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-5": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-6": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-7": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-8": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       },
       "top-9": {
         "abfall": 700,
+        "lift": 1071,
         "reinigung": 1500,
         "versicherung": 1700
       }
