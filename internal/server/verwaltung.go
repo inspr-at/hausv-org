@@ -111,13 +111,15 @@ func (a *app) isOrganisationAdmin(ac *authCtx) bool {
 	if _, ok := a.admins[email]; ok {
 		return true
 	}
-	organisation, ok := a.organisationFor(ac)
-	if !ok {
+	// Settings follow the selected house's organisation. A fallback to some
+	// other house the actor administers would open the wrong Verwaltung.
+	access := a.organisationAccessFor(ac)
+	if access.Key == "" || !access.allowed() {
 		return false
 	}
 	found := false
 	for slug, tenant := range a.tenants {
-		if normalizeSlug(tenant.Organisation) != normalizeSlug(organisation.Key) {
+		if normalizeSlug(tenant.Organisation) != access.Key {
 			continue
 		}
 		found = true
@@ -161,9 +163,11 @@ func (a *app) verwaltungShell(ctx context.Context, ac *authCtx, active string) w
 
 func (a *app) requireVerwaltung(next authedHandler) authedHandler {
 	return func(w http.ResponseWriter, r *http.Request, ac authCtx) {
-		managed := a.managedTenants(&ac)
+		// The selected house picks the organisation. Management rights elsewhere
+		// do not admit the actor to this house's Verwaltung.
+		access := a.organisationAccessFor(&ac)
 		allowed := false
-		for _, tenant := range managed {
+		for _, tenant := range access.Houses {
 			// HAUSV-699: the organisation administration (non-delegable rights) keeps
 			// the Verwaltung area even when it switches off delegable rights for
 			// its own family; otherwise it could lock itself out of the rights page.

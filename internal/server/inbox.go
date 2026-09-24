@@ -828,18 +828,15 @@ func (a *app) inboxOpenCount(ac *authCtx) int {
 }
 
 func (a *app) managedIntakeFilter(ac *authCtx, statuses []store.IntakeStatus) store.IntakeFilter {
-	filter := store.IntakeFilter{Statuses: statuses, IncludeUnassigned: ac.supportView == nil}
-	for _, tenant := range a.managedTenants(ac) {
-		filter.TenantSlugs = append(filter.TenantSlugs, tenant.Ref.Slug)
-	}
-	return filter
+	return a.organisationAccessFor(ac).intakeFilter(statuses)
 }
 
 func (a *app) inboxOrganisationKey(ac *authCtx) (string, bool) {
-	if org, ok := a.organisationFor(ac); ok && normalizeSlug(org.Key) != "" {
-		return normalizeSlug(org.Key), true
+	access := a.organisationAccessFor(ac)
+	if !access.allowed() || access.Key == "" {
+		return "", false
 	}
-	return "", false
+	return access.Key, true
 }
 func (a *app) inboxOrganisationName(ac *authCtx) string {
 	if org, ok := a.organisationFor(ac); ok {
@@ -849,7 +846,7 @@ func (a *app) inboxOrganisationName(ac *authCtx) string {
 }
 func (a *app) inboxHouses(ac *authCtx) []web.InboxHouse {
 	out := []web.InboxHouse{}
-	for _, managed := range a.managedTenants(ac) {
+	for _, managed := range a.organisationAccessFor(ac).Houses {
 		house := web.InboxHouse{Slug: managed.Config.Slug, Name: houseDisplayName(managed.Config), Address: managed.Config.Address}
 		if units := a.repositoriesFor(managed.Ref).units; units != nil {
 			for _, unit := range units.List() {
@@ -861,22 +858,20 @@ func (a *app) inboxHouses(ac *authCtx) []web.InboxHouse {
 	return out
 }
 func (a *app) actorManagesTenant(ac *authCtx, slug string) bool {
-	slug = normalizeSlug(slug)
-	if slug == "" {
-		return false
-	}
-	for _, tenant := range a.managedTenants(ac) {
-		if tenant.Ref.Slug == slug {
-			return true
-		}
-	}
-	return false
+	return a.organisationAccessFor(ac).managesHouse(slug)
 }
 func (a *app) actorCanAccessIntake(ac *authCtx, item store.IntakeItem) bool {
-	if item.TenantSlug == "" {
-		return ac.supportView == nil && len(a.managedTenants(ac)) > 0
+	access := a.organisationAccessFor(ac)
+	if !access.allowed() {
+		return false
 	}
-	return a.actorManagesTenant(ac, item.TenantSlug)
+	if item.Organisation != "" && access.Key != "" && normalizeSlug(item.Organisation) != access.Key {
+		return false
+	}
+	if normalizeSlug(item.TenantSlug) == "" {
+		return access.SeesUnassigned
+	}
+	return access.managesHouse(item.TenantSlug)
 }
 func (a *app) inboxProviderLabel() string {
 	return a.inboxProviderLabelFor(context.Background(), "")
