@@ -166,7 +166,7 @@ templ liegenschaftenBody(entries []LiegenschaftEntry, query, previous, next stri
 		@PortalSectionHeader(PortalSectionIdentityData{Label:"Liegenschaften", Icon:"building"}, PortalSectionTitle("Meine Liegenschaften"), nil, nil)
 		<div class="portal-section-content">
 			<form class="switcher-search" method="get"><label for="directory-q">Liegenschaft suchen</label><div><input id="directory-q" name="q" type="search" value={ query } placeholder="Name, Adresse, Ort, Kennzeichen"/><button type="submit">Suchen</button></div></form>
-			<p>{ fmt.Sprintf("%d Kontexte · Seite %d", total, page) }</p>
+			<p>{ fmt.Sprintf("%d Liegenschaften · Seite %d", total, page) }</p>
 			@LiegenschaftGroups(entries)
 			<nav class="portfolio-pagination" aria-label="Ergebnisseiten">
 				if previous != "" {

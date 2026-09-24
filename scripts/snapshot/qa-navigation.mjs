@@ -65,11 +65,14 @@ async function measure(page, width, sidebarWidth, label) {
       active: links.filter(el => el.getAttribute('aria-current') === 'page').length,
       taps: [...links, document.querySelector('[data-context-bar] .house-header-card'), surface.querySelector('.release-trigger')].map(el => ({ label: el?.textContent.trim(), height: el?.getBoundingClientRect().height })),
       navigationCount: [...document.querySelectorAll('nav[aria-label="Bereiche"]')].filter(visible).length,
-      barCount: bar.length, barHeight: bar[0]?.getBoundingClientRect().height,
+      barCount: bar.length, barHeight: bar[0]?.getBoundingClientRect().height, activeView: !!bar[0]?.querySelector('.context-view'),
       headerCount: document.querySelectorAll('[data-portal-section-header]').length,
       h1Count: document.querySelectorAll('main h1').length, headerVisible: visible(header),
       identity: !!header?.querySelector('.portal-section-identity'),
-      badActions: ghost.filter(el => { const s = getComputedStyle(el); return s.backgroundColor !== 'rgba(0, 0, 0, 0)' || parseFloat(s.borderTopWidth) < 1 || el.getBoundingClientRect().height < 40; }).map(el => el.textContent.trim()),
+      // HAUSV-765: a header may carry exactly ONE filled main action (.button.primary);
+      // every other header action stays an outline/ghost button. All are >=40px.
+      filledActions: ghost.filter(el => el.classList.contains('primary')).map(el => el.textContent.trim()),
+      badActions: ghost.filter(el => { const s = getComputedStyle(el); const filled = el.classList.contains('primary'); return (!filled && s.backgroundColor !== 'rgba(0, 0, 0, 0)') || parseFloat(s.borderTopWidth) < 1 || el.getBoundingClientRect().height < 40; }).map(el => el.textContent.trim()),
       calm: (() => {
         const calm = document.querySelector('.calm-column');
         if (!visible(calm)) return null;
@@ -89,7 +92,8 @@ async function measure(page, width, sidebarWidth, label) {
   }
   assert.equal(result.navigationCount, 1, `${label}: exactly one navigation`);
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
-  assert.equal(Math.round(result.barHeight), width <= 760 ? 148 : width <= 1100 ? 116 : 72, `${label}: context height`);
+  // HAUSV-765: the second context row exists only while a role or support view is active.
+  assert.equal(Math.round(result.barHeight), width <= 760 ? (result.activeView ? 148 : 108) : width <= 1100 && result.activeView ? 116 : 72, `${label}: context height`);
   assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : ['map','house-navigation','release'], `${label}: block order`);
   assert(Math.abs(result.mapTopGap) < 1, `${label}: map starts flush at navigation surface edge`);
   // Without organisation context, navigation follows the map's normal bottom margin.
@@ -104,7 +108,8 @@ async function measure(page, width, sidebarWidth, label) {
   assert.equal(result.h1Count, 1, `${label}: one H1`);
   if (!label.startsWith('Mein Zuhause')) assert(result.headerVisible && result.identity, `${label}: visible header with identity`);
   assert.equal(result.active, 1, `${label}: one active menu entry`);
-  assert.deepEqual(result.badActions, [], `${label}: header actions must be ghost buttons ≥40px`);
+  assert.deepEqual(result.badActions, [], `${label}: header actions must be ghost buttons ≥40px (except one filled primary)`);
+  assert(result.filledActions.length <= 1, `${label}: at most one filled primary in the header, got ${result.filledActions.join(', ')}`);
   assert(result.taps.every(t => t.height >= 40), `${label}: tap targets ${JSON.stringify(result.taps)}`);
   assert.deepEqual(result.left, [], `${label}: no element left of viewport`);
   assert(!result.overflow, `${label}: no sideways overflow`);

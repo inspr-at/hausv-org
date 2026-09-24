@@ -16,15 +16,16 @@ import (
 )
 
 type portfolioHouseInput struct {
-	Slug        string
-	Role        string
-	Name        string
-	Address     string
-	UnitCount   int
-	Issues      []store.ResidentIssue
-	Events      []store.HouseEvent
-	AuditEvents []store.AuditEvent
-	PeopleNames map[string]string
+	Slug            string
+	Role            string
+	Name            string
+	Address         string
+	UnitCount       int
+	UnitsUnreadable bool
+	Issues          []store.ResidentIssue
+	Events          []store.HouseEvent
+	AuditEvents     []store.AuditEvent
+	PeopleNames     map[string]string
 }
 
 func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -57,7 +58,12 @@ func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 			house.Events = repositories.events.List()
 		}
 		if repositories.units != nil {
-			house.UnitCount = repositories.units.UnitCount()
+			count, err := repositories.units.UnitCountChecked()
+			if err != nil {
+				house.UnitsUnreadable = true
+			} else {
+				house.UnitCount = count
+			}
 		}
 		if a.auditStore != nil {
 			house.AuditEvents = a.auditStore.List(auditFilter{TenantSlug: tenant.Ref.Slug, Limit: 6})
@@ -133,7 +139,11 @@ func buildPortfolio(now time.Time, organisationName, firstName, sortMode string,
 			ActionClass: "green",
 		}
 		data.HouseCount++
-		data.UnitCount += house.UnitCount
+		if house.UnitsUnreadable {
+			data.UnitNotice = unitDataUnreadableNotice
+		} else {
+			data.UnitCount += house.UnitCount
+		}
 		oldestDays := -1
 		assignees := map[string]int{}
 		for _, issue := range house.Issues {

@@ -55,11 +55,19 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		}
 		originals[doc.ID] = raw
 	}
-	// Five original receipts plus six portal documents (HAUSV-711).
-	if len(originals) != 11 {
+	// Five cost receipts, the Rücklage withdrawal receipt, plus six portal documents (HAUSV-711).
+	if len(originals) != 12 {
 		t.Fatalf("original count=%d", len(originals))
 	}
-	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt", EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: "Vera Verwalter", ContactEmail: "vera.verwalter@musterstadt.example"}
+	organisation, found, err := store.BindOrganisationRepository(database, "musterstadt").Get(ctx)
+	if err != nil || !found {
+		t.Fatal("demo organisation missing", err)
+	}
+	settings, err := store.BindOrgSettingsRepository(database, "musterstadt").Get(ctx)
+	if err != nil || settings.ContactAddress != "Musterstraße 12, 8010 Graz" || organisation.Name != "Hausverwaltung Musterstadt GmbH" || organisation.ContactPhone != "+43 316 555 100" {
+		t.Fatal("incomplete demo letterhead", err)
+	}
+	presentation := store.AnnualStatementRunPresentation{Organisation: organisation.Name, EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: organisation.ContactName, ContactAddress: settings.ContactAddress, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone}
 	run, err := repo.Create(2025, "vera.verwalter@musterstadt.example", time.Date(2026, 1, 20, 9, 0, 0, 0, time.UTC), presentation)
 	if err != nil {
 		t.Fatal(err)
@@ -73,6 +81,9 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	}
 	if !loaded.Input.Structure.Legal.HeizKGApplies || loaded.Input.Structure.Legal.HeatingConsumptionPercent != 70 || len(loaded.Result.Proposals) != 96 {
 		t.Fatal("missing legal demo inputs")
+	}
+	if loaded.Result.Reserve == nil || loaded.Result.Reserve.ClosingCents != 3184328 || loaded.Result.Reserve.MinimumWarning || len(loaded.Input.Reserve) != 15 {
+		t.Fatalf("reserve snapshot: %+v entries=%d", loaded.Result.Reserve, len(loaded.Input.Reserve))
 	}
 	ppm := 0
 	keys := map[string]bool{}
@@ -107,6 +118,11 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		if err != nil || !bytes.HasPrefix(raw, []byte("%PDF-")) {
 			t.Fatal("party PDF", err)
 		}
+		for _, placeholder := range []string{"fehlt", "TODO", "Noch nicht hinterlegt", "Noch festzulegen"} {
+			if bytes.Contains(raw, []byte(placeholder)) {
+				t.Fatalf("complete demo PDF contains %q", placeholder)
+			}
+		}
 		renderedUnits[party.UnitID] = true
 		pdfs[party.UnitID+"/"+party.ID] = raw
 	}
@@ -114,8 +130,8 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		t.Fatalf("units=%d documents=%d", len(renderedUnits), len(pdfs))
 	}
 	all, err := statementpdf.Render(loaded, "", "")
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || !bytes.Contains(all, []byte("R\\374cklage")) || !bytes.Contains(all, []byte("Anfangsstand")) || !bytes.Contains(all, []byte("Anteil dieser Einheit")) {
+		t.Fatal("party PDF missing Rücklage", err)
 	}
 	// A second normal seed is idempotent; reset also repairs edited inputs.
 	options.Reset = false
@@ -139,7 +155,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 			t.Fatal("original changed", err)
 		}
 	}
-	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 4, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 5, "annual_statement_prepayments": 24, "annual_statement_runs": 1} {
+	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 4, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 5, "annual_statement_prepayments": 24, "annual_statement_reserve_entries": 15, "annual_statement_runs": 1} {
 		var count int
 		if err := database.QueryRow(`SELECT count(*) FROM `+table+` WHERE tenant_id=$1`, tenant.ID).Scan(&count); err != nil || count != want {
 			t.Fatalf("%s=%d want=%d err=%v", table, count, want, err)
@@ -198,4 +214,61 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		}
 	}
 	t.Logf("2025: %d units, %d party PDFs, %d originals, total %d cents", len(renderedUnits), len(pdfs), len(originals), loaded.Result.TotalCents)
+}
+
+func TestZinshausAnnualStatementShowsMRGVacancyAndVAT(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.Open(filepath.Join(t.TempDir(), "demo.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	scoped, err := db.NewScoped(db.Config{Backend: db.BackendSQLite}, database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer scoped.Close()
+	lanes := store.NewTenantDB(scoped)
+	options := SeedOptions{Reset: true, DocumentDir: t.TempDir()}
+	if _, err := Load(ctx, database, "../../scripts/demo/seed", options); err != nil {
+		t.Fatal(err)
+	}
+	identities, err := store.EnsureTenantIdentities(ctx, database, []store.TenantIdentity{{Slug: "musterstrasse-12"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tenant := identities["musterstrasse-12"].Ref()
+	docs := store.NewSQLDocumentStore(lanes, options.DocumentDir)
+	repo, _ := store.BindAnnualStatementRunRepository(store.NewSQLAnnualStatementRunStore(lanes, docs), tenant)
+	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt GmbH", EstateSlug: "musterstrasse-12", EstateName: "Musterstraße 12 · Zinshaus", EstateAddress: "Musterstraße 12, 8010 Graz"}
+	run, err := repo.Create(2025, "vera.verwalter@musterstadt.example", time.Date(2026, 1, 20, 9, 0, 0, 0, time.UTC), presentation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, found, err := repo.Get(run.ID)
+	if err != nil || !found {
+		t.Fatal(found, err)
+	}
+	legal := loaded.Input.Structure.Legal
+	if legal.Regime != "mrg_voll" || !legal.HeizKGApplies || legal.HeatingConsumptionPercent != 65 || !legal.ShowVAT {
+		t.Fatalf("legal %+v", legal)
+	}
+	if len(loaded.Result.Vacancy) != 1 || loaded.Result.Vacancy[0].Label != "Top 6" || loaded.Result.Vacancy[0].From != "2025-03-01" || loaded.Result.Vacancy[0].To != "2025-08-31" {
+		t.Fatalf("vacancy %+v", loaded.Result.Vacancy)
+	}
+	keys := map[string]bool{}
+	for _, cost := range loaded.Input.Structure.CostTypes {
+		keys[cost.Key] = true
+	}
+	for _, key := range []string{"wasser", "muell", "versicherung", "hausbetreuung", "verwaltungshonorar", "heizung"} {
+		if !keys[key] {
+			t.Fatalf("missing %s in %+v", key, keys)
+		}
+	}
+	if len(loaded.Result.VATGroups) != 2 || loaded.Result.TotalCents != 1_959_600 || len(loaded.Result.Units) != 11 {
+		t.Fatalf("result units=%d vat=%d total=%d", len(loaded.Result.Units), len(loaded.Result.VATGroups), loaded.Result.TotalCents)
+	}
+	if loaded.Result.Vacancy[0].AmountCents != 50433 {
+		t.Fatalf("vacancy amount %d", loaded.Result.Vacancy[0].AmountCents)
+	}
 }

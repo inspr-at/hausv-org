@@ -302,7 +302,7 @@ func (a *app) authedAction(cap capability, h authedHandler) http.HandlerFunc {
 // capabilityForbiddenMessage centralises the 403 text so the wrapper and any
 // remaining in-handler capability check read identically.
 func capabilityForbiddenMessage(cap capability) string {
-	if cap == capabilityManageDocuments {
+	if cap == capabilityManageDocuments || cap == capabilityManageLeases {
 		return "Dieser Bereich ist der Verwaltung vorbehalten."
 	}
 	return "Dieser Bereich ist Admins vorbehalten."

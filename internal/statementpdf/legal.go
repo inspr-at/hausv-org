@@ -72,8 +72,8 @@ func inspectionAppendix(run store.AnnualStatementRun) ([]string, []string) {
 		names[cost.Key] = cost.Name
 	}
 	var appendix []string
-	for _, receipt := range receipts {
-		appendix = append(appendix, date(receipt.InvoiceDate)+" · "+fallback(receipt.Supplier)+" · "+names[receipt.CostTypeKey]+" · "+money(receipt.AmountCents), "Dokument: "+receipt.DocumentID)
+	for i, receipt := range receipts {
+		appendix = append(appendix, fmt.Sprintf("Beleg %d · ", i+1)+date(receipt.InvoiceDate)+" · "+fallback(receipt.Supplier)+" · "+names[receipt.CostTypeKey]+" · "+money(receipt.AmountCents))
 	}
 	return inspection, appendix
 }
@@ -83,11 +83,10 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 	if run.Input.Structure.Legal.Regime != "mrg_voll" {
 		return nil, ErrNotFound
 	}
-	d := Document{Title: "Jahresabrechnung · Aushang", UnitLabel: "Liegenschaft", Header: []string{run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), run.Input.Structure.Legal.Basis()}, Contact: run.Input.Structure.Legal.InspectionContact, Total: money(run.Result.TotalCents)}
+	d := letterDocument(run, "Liegenschaft")
+	d.Title = fmt.Sprintf("Jahresabrechnung %d — Aushang", run.PeriodYear)
+	d.Total = money(run.Result.TotalCents)
 	d.Inspection, _ = inspectionAppendix(run)
-	if d.Contact == "" {
-		d.Contact = "Kontakt der Verwaltung fehlt"
-	}
 	for _, cost := range run.Input.Structure.CostTypes {
 		if !cost.Allocatable {
 			continue
@@ -98,19 +97,43 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 				total += receipt.AmountCents
 			}
 		}
-		d.Basis = append(d.Basis, cost.Name+": "+money(total))
-	}
-	if run.Approval != nil {
-		role := "Verwaltung"
-		if run.Approval.Role == store.RoleAdmin {
-			role = "Administration"
+		row := CostRow{Name: cost.Name, Amount: money(total)}
+		if run.Input.Structure.Legal.ShowVAT {
+			var net, vat int64
+			var rate int
+			for _, unit := range run.Result.Units {
+				for _, line := range unit.Costs {
+					if line.CostTypeKey != cost.Key {
+						continue
+					}
+					net += line.NetCents
+					vat += line.VATCents
+					rate = line.VATRatePercent
+				}
+			}
+			for _, vacancy := range run.Result.Vacancy {
+				for _, line := range vacancy.Costs {
+					if line.CostTypeKey == cost.Key {
+						net += line.NetCents
+						vat += line.VATCents
+						rate = line.VATRatePercent
+					}
+				}
+			}
+			row.Net, row.Rate, row.VAT, row.Gross = money(net), fmt.Sprintf("%d %%", rate), money(vat), money(total)
+			d.ShowVAT = true
 		}
-		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
+		d.Costs = append(d.Costs, row)
 	}
-	return pdf.Pages(d.Pages(), pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
+	if d.ShowVAT {
+		for _, group := range run.Result.VATGroups {
+			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
+		}
+	}
+	return pdf.Pages(d.Pages(), statementPalette), nil
 }
 
-func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost) []string {
+func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost, prepaid int64) []string {
 	legal := run.Input.Structure.Legal
 	energy, other, consumed, area := store.AnnualStatementHeatingPools(run.Input, cost.CostTypeKey)
 	var totalArea int
@@ -126,7 +149,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Versorgbare Nutzfläche Einheit: " + areaText(legal.HeatableAreas[unit.UnitID]) + "; gesamt: " + areaText(totalArea),
 		"Anteil am gemessenen Verbrauch: " + view.FormatDecimal(float64(cost.SharePPM)/10000, 2) + " %; Methode: Zählerdifferenz",
 		"Kostenanteil Einheit: " + money(cost.AmountCents),
-		"Geleistetes Akonto dieser Heizkostenart: " + money(legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]),
+		"Geleistetes Akonto dieser Heizkostenart: " + money(prepaid) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-prepaid),
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}
 }
@@ -149,7 +172,14 @@ func proposalLines(run store.AnnualStatementRun, unitID string) []string {
 		if p.Missing {
 			amount = "Noch festzulegen"
 		}
-		lines = append(lines, p.Name+": "+amount+" · "+p.Basis)
+		basis := p.Basis
+		switch basis {
+		case "Manuelle Vorausschau / Vereinbarung":
+			basis = "vereinbarte monatliche Vorauszahlung"
+		case "Vorperiode / 12":
+			basis = "Vorauszahlung auf Basis des Vorjahres"
+		}
+		lines = append(lines, p.Name+": "+amount+" · "+basis)
 		if p.AboveTenPercent {
 			lines = append(lines, "Hinweis: Der Vorschlag liegt mehr als 10 % über den Vorjahreskosten / 12. Bitte prüfen (§ 21 Abs. 3 MRG).")
 		}

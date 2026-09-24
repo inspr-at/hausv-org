@@ -1,0 +1,115 @@
+package web
+
+templ EnergyModeStrip(data EnergyPageData) {
+	<section class={ "energy-mode-strip", templ.KV("active", data.IsActiveMode) } aria-label="Energiemodus">
+		<div class="energy-mode-state">
+			<span class="energy-mode-icon" aria-hidden="true"><span class={ "energy-ui-icon", energyModeIconClass(data.IsActiveMode) }></span></span>
+			<div class="energy-mode-copy">
+				<strong>{ energyModeTitle(data) }</strong>
+				<span title={ energyModeHint(data) }>{ energyModeState(data) }</span>
+			</div>
+		</div>
+		if data.Tariff.HasEstimate {
+			<a class="energy-peak-chip" href="#tarif" aria-label={ "Monatsspitze " + data.Tariff.PeakKW + ", verrechnet " + data.Tariff.BilledKW + ", " + data.Tariff.AnnualPowerEUR + " pro Jahr — Details öffnen" }><span class="energy-peak-chip-label">Monatsspitze</span><b>@EnergyValue(data.Tariff.PeakKW)</b><span class="sep" aria-hidden="true">·</span><span>verrechnet</span><b>@EnergyValue(data.Tariff.BilledKW)</b><span class="sep" aria-hidden="true">·</span><b>@EnergyValue(data.Tariff.AnnualPowerEUR)</b><span>/ Jahr</span>
+				if data.Tariff.CoverageLabel != "" {
+					<span class="sep energy-peak-chip-coverage-sep" aria-hidden="true">·</span><span class="energy-peak-chip-coverage">{ data.Tariff.CoverageLabel }</span>
+				}
+			</a>
+		}
+		if data.IsActiveMode {
+			if data.CanControlEnergy {
+				<form method="post" action="/app/energie/mode">
+					<input type="hidden" name="mode" value="observe"/>
+					<button class="energy-mode-action" type="submit" aria-label="Sofort zurück zu Nur beobachten"><span class="energy-mode-action-full">Sofort zurück zu „Nur beobachten“</span><span class="energy-mode-action-compact" aria-hidden="true">Nur beobachten</span></button>
+				</form>
+			}
+		} else {
+			if data.CanControlEnergy {
+				<details class="energy-mode-control">
+					<summary class="energy-mode-action" aria-label="Wirkungslosen Testlauf bewusst starten" title="Wirkungslosen Testlauf bewusst starten"><span class="energy-ui-icon energy-ui-icon-play" aria-hidden="true"></span><span class="energy-mode-action-full">Testlauf</span><span class="energy-mode-action-compact" aria-hidden="true">Testlauf</span></summary>
+					<form class="energy-mode-popover" method="post" action="/app/energie/mode">
+						<h3>Wirkungslosen Testlauf starten?</h3>
+						<p>HAUSV protokolliert nur, welche Entscheidungen seine Regeln treffen würden. Es wird kein Gerät geschaltet. Aktive Steuerung ist erst nach einer späteren, gerätespezifischen Freigabe möglich.</p>
+						<label><input type="checkbox" name="confirm" value="yes" required/><span>Ich bin Eigentümer oder Hausadministrator und möchte diesen wirkungslosen Testlauf für diese Liegenschaft bewusst starten.</span></label>
+						<label><span>Zur Bestätigung <strong>TESTLAUF</strong> eingeben</span></label>
+						<input type="text" name="confirmation_text" autocomplete="off" placeholder="TESTLAUF" required/>
+						<input type="hidden" name="mode" value="active"/>
+						<button class="button primary" type="submit">Testlauf starten</button>
+					</form>
+				</details>
+			} else {
+				<span class="energy-mode-capability">Freigabe nur für Eigentümer oder Hausadministration</span>
+			}
+		}
+	</section>
+}
+
+templ EnergyFlashes(data EnergyPageData) {
+	if data.Welcome {
+		<div class="message success">Ihr Hausprofil ist bereit. Der sichere Beobachtungsmodus bleibt aktiv.</div>
+	}
+	if data.ModeChanged {
+		<div class="message success">Der Energiemodus wurde nachvollziehbar geändert.</div>
+	}
+	if data.ProfileChanged {
+		<div class="message success">Der Anzeigename von „Mein Zuhause“ wurde gespeichert.</div>
+	}
+	switch data.ConsumerNotice {
+		case "1":
+			<div class="message success">Der Verbraucher wurde angelegt.</div>
+		case "gespeichert":
+			<div class="message success">Der Verbraucher wurde gespeichert.</div>
+		case "weg":
+			<div class="message success">Der Verbraucher wurde entfernt.</div>
+		case "name":
+			<div class="message error">Bitte einen Namen angeben.</div>
+		case "leistung":
+			<div class="message error">Die Leistung muss eine positive kW-Zahl sein.</div>
+		case "messwerte":
+			<div class="message error">Die Messwert-Zuordnung konnte nicht gespeichert werden. Bitte Home Assistant und die gewählten Entities prüfen.</div>
+	}
+	if data.MeasureCreated {
+		<div class="message success">Als nachvollziehbare Hausaufgabe angelegt. Erst dort wählen Sie später bewusst einen bekannten Dienstleister.</div>
+	}
+	if data.RecommendationDeferred {
+		<div class="message">Für später gemerkt. HAUSV aktiviert dadurch nichts.</div>
+	} else if data.RecommendationDismissed {
+		<div class="message">Abgelehnt. Die Entscheidung bleibt nachvollziehbar und löst nichts aus.</div>
+	}
+}
+func energyModeIconClass(active bool) string {
+	if active {
+		return "energy-ui-icon-alert"
+	}
+	return "energy-ui-icon-check"
+}
+
+func energyModeTitle(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "Nur beobachten"
+	}
+	if data.IsShadowMode {
+		return "Testlauf aktiv"
+	}
+	return "Aktive Steuerung"
+}
+
+func energyModeState(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "Keine Steuerung"
+	}
+	if data.IsShadowMode {
+		return "Keine Gerätewirkung"
+	}
+	return "Geräte freigegeben"
+}
+
+func energyModeHint(data EnergyPageData) string {
+	if !data.IsActiveMode {
+		return "HAUSV liest und empfiehlt, steuert aber kein Gerät."
+	}
+	if data.IsShadowMode {
+		return "HAUSV protokolliert nur und schaltet kein Gerät."
+	}
+	return "Freigegebene Geräte folgen Ihren Regeln."
+}

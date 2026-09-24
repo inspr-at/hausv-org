@@ -1,5 +1,5 @@
 // HAUSV-662: real stored annual-statement results in the isolated demo fixture.
-// Run with HV_CAPTURE=qa-annual-costs.mjs scripts/snapshot/run.sh WORKTREE <out>.
+// Coordinator: node qa-annual-costs.mjs http://localhost:8313 <out>, demo fixture.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -23,10 +23,37 @@ try {
   await page.goto(`${baseURL}/janusbergweg-123/app/settings/annual-statement?year=2025`);
   const calculate = page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true });
   assert(await calculate.isEnabled(), 'Seed must provide calculable annual costs');
+  // HAUSV-792: a calculable first period starts compact; HeizKG details stay opt-in.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const preparation = page.locator('details.annual-preparation');
+  assert.equal(await preparation.getAttribute('open'), null);
+  const initialHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  console.log(`Default annual page: ${initialHeight}px at 1440px`);
+  assert(initialHeight < 3000, `Default page is ${initialHeight}px tall`);
+  await page.screenshot({ path: `${out}/preparation-default-1440.png`, fullPage: true });
+  await preparation.locator(':scope > summary').click();
+  for (const id of ['heizflaechen', 'heizakontos']) {
+    const section = page.locator(`#${id}`);
+    assert.equal(await section.getAttribute('open'), null);
+    assert.equal(await section.locator('input').first().isVisible(), false);
+    await section.locator('summary').click();
+    assert.equal(await section.locator('input').first().isVisible(), true);
+    await section.locator('summary').click();
+  }
+  await preparation.locator(':scope > summary').click();
   await calculate.click();
   await page.locator('[data-annual-statement-run]').waitFor();
   const run = page.locator('[data-annual-statement-run]');
   const runID = await run.getAttribute('data-annual-statement-run');
+  const pdf = run.getByRole('link', { name: 'PDF für Alina Auer · Top 1', exact: true });
+  assert.equal(await pdf.getAttribute('download'), null);
+  const inlineResponse = await page.request.get(new URL(await pdf.getAttribute('href'), baseURL).href);
+  assert.match(inlineResponse.headers()['content-disposition'], /^inline;/);
+  const download = run.getByRole('link', { name: 'Herunterladen für Alina Auer · Top 1', exact: true });
+  const attachmentResponse = await page.request.get(new URL(await download.getAttribute('href'), baseURL).href);
+  assert.match(attachmentResponse.headers()['content-disposition'], /^attachment;/);
+  assert((await inlineResponse.body()).equals(await attachmentResponse.body()));
+
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
@@ -36,6 +63,7 @@ try {
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
   })));
   const details = page.locator('.annual-costs').first();
+  const costToggle = unitRows.first().getByRole('button', { name: 'Details · Top 1', exact: true });
   const labels = ['Kostenart', 'Verteilerschlüssel', 'Anteil', 'Betrag'];
   const expected = [
     ['Abfallentsorgung', 'Personen', '2,78 %', '66,67 €'],
@@ -70,6 +98,14 @@ try {
           if (Math.abs(name.getBoundingClientRect().top - documents[i].getBoundingClientRect().top) > 1) issues.push('Party/document rows differ');
           if (documents[i].querySelector('a').getBoundingClientRect().height < 44) issues.push('PDF touch target shrunk');
         });
+        const toggle = row.querySelector('.annual-details-toggle').getBoundingClientRect();
+        if (toggle.height < 44 || toggle.width < 44) issues.push('Details touch target shrunk');
+        if (width === 1440 && names.length === 1) {
+          const height = row.getBoundingClientRect().height;
+          if (height < 54 || height > 60) issues.push(`Collapsed unit row is ${height}px; expected about 56px`);
+          if (Math.abs(toggle.top - documents[0].getBoundingClientRect().top) > 1) issues.push('Details not inline with PDF');
+        }
+        if (row.nextElementSibling.getBoundingClientRect().height !== 0) issues.push('Collapsed costs leave a separate row');
         if (row.querySelectorAll('.annual-money').length !== 3) issues.push('Unit totals duplicated');
         if (width > 1050 && names.length) {
           const center = textCenter(names[0].querySelector('.annual-party-name'));
@@ -91,10 +127,14 @@ try {
     await unitRows.first().evaluate(node => node.scrollIntoView({ block: 'center' }));
     await page.screenshot({ path: `${out}/units-${width}.png` });
     assert.equal(await details.getAttribute('open'), null, 'Costs initially collapsed');
-    await details.locator('summary').focus();
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(await costToggle.getAttribute('aria-controls'), await details.getAttribute('id'));
+    assert.equal(await details.isVisible(), false, 'Collapsed cost row takes no space');
+    await costToggle.focus();
     await page.keyboard.press('Enter');
     const table = details.getByRole('table', { name: 'Kostenarten und Anteile · Top 1', exact: true });
     await table.waitFor({ state: 'visible' });
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'true');
     assert.deepEqual(await table.locator('thead th').allTextContents(), labels);
     const rows = table.locator('tbody tr');
     assert.equal(await rows.count(), expected.length);
@@ -130,9 +170,10 @@ try {
     await details.scrollIntoViewIfNeeded();
     await details.screenshot({ path: `${out}/costs-${width}.png` });
     report.push({ width, rows: expected.length, headings: labels, valuesUnchanged: true, layout: 'passed', unitAlignment: 'passed', runDetailsKeyboard: 'passed' });
-    await details.locator('summary').focus();
+    await costToggle.focus();
     await page.keyboard.press('Enter');
     assert.equal(await table.isVisible(), false, 'Keyboard closes cost details');
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'false');
     console.log(`Annual costs ${width}px passed`);
   }
   assert.deepEqual(errors, [], 'Browser JavaScript errors');

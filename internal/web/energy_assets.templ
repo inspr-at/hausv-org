@@ -1,0 +1,29 @@
+package web
+
+templ EnergySystemSection(data EnergyPageData) {
+	<section class="energy-card">
+		<header class="energy-card-head"><div><h2>Ihr Energiesystem</h2><p>Erzeugung und Speicher als Grundlage für Empfehlungen.</p></div>
+			if data.CanManageEnergy {
+				<a class="button" href="/app/zuhause/onboarding?step=3">Anlagen bearbeiten</a>
+			}
+		</header>
+		if data.HasSystemAssets {
+			<div class="energy-system-assets">
+				for _, asset := range data.SystemAssets {
+					<span class="energy-system-asset"><span class={ "energy-ui-icon", energySystemAssetIcon(asset.IsPV) } aria-hidden="true"></span>{ asset.Name }</span>
+				}
+			</div>
+		} else {
+			<p class="muted">Noch keine Erzeugung oder Speicher erfasst.</p>
+		}
+		<p class="energy-system-helper">Verbraucher verwalten Sie direkt oben in „Energie jetzt“.</p>
+		<nav class="energy-related-links" aria-label="Service und Unterlagen"><a href="/app/dokumente">Unterlagen</a><a href="/app/events">Wartungstermine</a><a href="/app/anliegen?new=1">Aufgabe melden</a><a href="/app/kontakte">Fachkontakte</a><a href="/app/hilfe/energie">Hilfe zur Energieverbindung</a></nav>
+		<div class="energy-business-note"><span aria-hidden="true">◎</span><p><strong>Kostenmodell:</strong> { energyCostModelSentence(data.FreeUntil) }</p></div>
+	</section>
+}
+func energySystemAssetIcon(isPV bool) string {
+	if isPV {
+		return "energy-ui-icon-solar-panel"
+	}
+	return "energy-ui-icon-battery"
+}

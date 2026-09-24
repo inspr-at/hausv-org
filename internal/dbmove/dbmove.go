@@ -72,6 +72,8 @@ var TableOrder = []string{
 	"tenant",
 	"persons",
 	"app_meta",
+	"index_imports",
+	"index_values",
 	"login_activity",
 	"profile_overlays",
 	"notification_prefs",
@@ -102,6 +104,7 @@ var TableOrder = []string{
 	"annual_statement_period_unit_bases",
 	"annual_statement_prepayments",
 	"annual_statement_receipts",
+	"annual_statement_reserve_entries",
 	"annual_statement_runs",
 	"annual_statement_run_approvals",
 	"annual_statement_deliveries",
@@ -114,6 +117,15 @@ var TableOrder = []string{
 	"documents",
 	"attachments",
 	"units",
+	"leases",
+	"lease_parties",
+	"rent_components",
+	"index_clauses",
+	"valorisation_state",
+	"valorisation_runs",
+	"valorisation_items",
+	"valorisation_deliveries",
+	"valorisation_events",
 	"ballots",
 	"issues",
 	"parking",
@@ -495,6 +507,11 @@ func Move(ctx context.Context, source *sql.DB, lane db.Handle, opts Options) (*R
 			return report, fmt.Errorf("%w: %s (pass --force to wipe every governed table first; the mover never merges)", ErrTargetNotEmpty, describeCounts(report.TargetRowsBefore))
 		}
 		fmt.Fprintf(out, "--force: wiping %d governed tables inside the load transaction\n", len(tables))
+		// These immutable snapshots have foreign keys between the four tables;
+		// an explicit full-target replacement truncates the group together.
+		if _, err := tx.ExecContext(ctx, `TRUNCATE TABLE valorisation_events,valorisation_deliveries,valorisation_items,valorisation_runs`); err != nil {
+			return report, fmt.Errorf("dbmove: wipe valorisation: %w", err)
+		}
 		for i := len(tables) - 1; i >= 0; i-- {
 			wipe := `DELETE FROM ` + quoteIdent(tables[i].name)
 			if tables[i].name == "annual_statement_runs" || tables[i].name == "annual_statement_run_approvals" {
@@ -520,6 +537,11 @@ func Move(ctx context.Context, source *sql.DB, lane db.Handle, opts Options) (*R
 		fmt.Fprintf(out, "target check: all %d governed tables empty\n", len(tables))
 	}
 
+	// Restoring an approved snapshot inserts its frozen items after its parent.
+	// Only this guard is suspended, transactionally; a failed restore rolls it back.
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE valorisation_items DISABLE TRIGGER valorisation_item_no_insert`); err != nil {
+		return report, err
+	}
 	// Load.
 	for _, t := range tables {
 		moved, nullTenants, err := copyTable(ctx, sourceTx, tx, t)
@@ -535,6 +557,9 @@ func Move(ctx context.Context, source *sql.DB, lane db.Handle, opts Options) (*R
 		report.Tables = append(report.Tables, result)
 	}
 
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE valorisation_items ENABLE TRIGGER valorisation_item_no_insert`); err != nil {
+		return report, err
+	}
 	// Verify, before anything is committed.
 	mismatches := 0
 	for i := range report.Tables {

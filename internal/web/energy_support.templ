@@ -1,0 +1,65 @@
+package web
+
+templ EnergySupportSection(data EnergyPageData) {
+	<details class="energy-card energy-card-quiet energy-collapsible" id="fachhilfe">
+		<summary class="energy-card-head"><div><h2>Fachhilfe, wenn sie wirklich nötig ist</h2><p>
+			if data.HasMeasures {
+				Eine Hausaufgabe ist in Bearbeitung.
+			} else {
+				Bekannte Kontakte statt offener Marktplatz.
+			}
+		</p></div>
+			@DisclosureChevronMasked()
+		</summary>
+		<div class="energy-collapsible-body">
+			<nav class="energy-related-links"><a href="/app/kontakte">Bekannte Kontakte</a></nav>
+			<p>Eine Empfehlung wird zuerst als Hausaufgabe angelegt. Dort bleiben Rückfragen, Angebot, Termin und Nachweis zusammen. Sie entscheiden ausdrücklich, welche Daten geteilt werden.</p>
+			switch data.MeasureStatus {
+				case "saved":
+					<div class="message success">Maßnahmenstand gespeichert und protokolliert.</div>
+				case "appointment":
+					<div class="message error">Für „Termin vereinbart“ bitte einen Termin eintragen.</div>
+				case "ranges":
+					<div class="message error">Für den Abschluss brauchen wir zwei getrennte, gültige Vorher-/Nachher-Zeiträume.</div>
+			}
+			if data.HasMeasures {
+				<div class="energy-measure-list">
+					for _, measure := range data.Measures {
+						<details class="energy-measure-row">
+							<summary class="energy-measure-summary"><span><strong>{ measure.Title }</strong><small>{ energyMeasureMeta(measure) }</small></span><span>Öffnen</span>
+								@DisclosureChevronMasked()
+							</summary>
+							<div class="energy-measure-body">
+								if measure.HasComparison {
+									<div class="energy-comparison"><div><small>Vorher · { measure.BeforeQuality }</small><strong>{ measure.BeforePeak }</strong></div><span>→ Messbefund →</span><div><small>Nachher · { measure.AfterQuality }</small><strong>{ measure.AfterPeak }</strong></div></div>
+								}
+								<nav class="energy-related-links"><a href={ templ.SafeURL("/app/anliegen/" + measure.IssueID) }>Anliegen, Rückfragen &amp; Anhänge öffnen</a></nav>
+								if data.CanManageEnergy {
+									<form class="energy-inline-form" method="post" action="/app/energie/measure/update">
+										<input type="hidden" name="id" value={ measure.ID }/>
+										<label>Status<select name="status"><option value="requested" selected?={ measure.Status == "requested" }>Anfrage vorbereitet</option><option value="assigned" selected?={ measure.Status == "assigned" }>Kontakt ausgewählt</option><option value="scheduled" selected?={ measure.Status == "scheduled" }>Termin vereinbart</option><option value="completed" selected?={ measure.Status == "completed" }>Abgeschlossen</option><option value="cancelled" selected?={ measure.Status == "cancelled" }>Nicht weiterverfolgt</option></select></label>
+										<label>Bekannter Fachkontakt<select name="contact_id"><option value="">Noch niemand</option>
+											for _, option := range data.ContactOptions {
+												<option value={ option.Value } selected?={ option.Value == measure.ContactID }>{ option.Label }</option>
+											}
+										</select></label>
+										<label>Termin<input type="datetime-local" name="appointment_at" value={ measure.AppointmentValue }/></label>
+										<label>Angebot / Rückfrage<input name="offer_note" value={ measure.OfferNote } maxlength="1000" placeholder="Noch keine Zusage oder Zahlung"/></label>
+										<label class="wide">Ausgeführte Arbeit<input name="work_note" value={ measure.WorkNote } maxlength="1000"/></label>
+										<label class="wide">Nachweis / Fachnachweis<input name="evidence_note" value={ measure.EvidenceNote } maxlength="1000" placeholder="Dateien im verknüpften Anliegen anhängen"/></label>
+										<label>Vorher von<input type="date" name="before_from" value={ measure.BeforeFrom }/></label><label>Vorher bis<input type="date" name="before_to" value={ measure.BeforeTo }/></label>
+										<label>Nachher von<input type="date" name="after_from" value={ measure.AfterFrom }/></label><label>Nachher bis<input type="date" name="after_to" value={ measure.AfterTo }/></label>
+										<div class="actions"><button class="button primary" type="submit">Maßnahmenstand speichern</button></div>
+									</form>
+								}
+							</div>
+						</details>
+					}
+				</div>
+			} else {
+				<p class="muted">Noch keine Energieempfehlung wurde als Hausaufgabe übernommen.</p>
+			}
+			<div class="energy-marketplace-gate"><strong>Marktplatz geschlossen</strong><span>Kein Zahlungsfluss, keine Provision und keine öffentliche Anbieterreihung vor belastbaren Pilotdaten.</span></div>
+		</div>
+	</details>
+}

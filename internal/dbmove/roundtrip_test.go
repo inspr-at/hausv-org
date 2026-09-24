@@ -42,6 +42,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/dbmove"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -208,6 +209,22 @@ func seedFull(t *testing.T) *source {
 	ctx := context.Background()
 	now := time.Date(2026, 8, 17, 9, 30, 0, 123456789, time.UTC)
 
+	// Exercise both the global tables and a deferred, forward revision pointer.
+	snapshot, err := indexation.LoadSnapshot()
+	must(t, "index snapshot", err)
+	var indexSource indexation.SnapshotSource
+	for _, source := range snapshot.Manifest.Sources {
+		if source.Series == indexation.VPI2020 {
+			indexSource = source
+		}
+	}
+	for _, label := range []string{"Sep.26 (vorl.)", "Sep.26"} {
+		fetched, err := indexation.ParseOGDRelease([]byte("C-VPIZR-0;C-VPICOICOP18_5-0;F-VPIMZBM\nVPIZR-202609;VPICOICOP18-0;133,2\n"), []byte("code;name\nVPIZR-202609;"+label+"\n"), indexSource, time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC))
+		must(t, "index parse", err)
+		_, err = store.NewIndexReferenceStore(src.lanes).Apply(ctx, fetched, "system:dbmove-fixture")
+		must(t, "index import", err)
+	}
+
 	identities, err := store.EnsureTenantIdentities(ctx, src.db, qaTenants)
 	must(t, "tenants", err)
 	src.tenants = identities
@@ -334,6 +351,25 @@ func seedFull(t *testing.T) *source {
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))
+		leases, _ := store.BindLeaseRepository(store.NewSQLLeaseStore(src.lanes), tenant)
+		if _, err := leases.Create(store.Lease{
+			UnitID: "top-1", ConcludedOn: "2020-01-15", StartsOn: "2020-02-01",
+			UseKind: store.UseKindWohnung, MRGScope: store.MRGTeil, RentRegime: store.RentRegimeFrei,
+			LandlordIsBusiness: true, TenantIsConsumer: true, UpdatedAt: now, UpdatedBy: "verwalter@example.com",
+			Parties:    []store.LeaseParty{{Name: "Rita Bewohner", Email: "resident@example.com", ValidFrom: "2020-02-01"}},
+			Components: []store.RentComponent{{Kind: store.ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: store.OriginManual}},
+			Clauses: []store.IndexClause{{
+				ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2024-09", BaseValue: "123.6",
+				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
+				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
+				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2024-09", ContractBaseValue: "123.6", CapValue: "1000.00", CapAnchorPeriod: "2024-09"},
+			}, {
+				ClauseType: store.ClauseStaffel, ValidFrom: "2027-01-01", TwoWay: true, ReviewStatus: store.ReviewOK,
+				StaffelSteps: []indexation.StaffelStep{{EffectiveOn: "2028-04-01", Percent: "2.5"}},
+			}},
+		}); err != nil {
+			t.Fatalf("%s lease: %v", slug, err)
+		}
 		if unknown, err := units.UpdateAllocationBases([]store.UnitAllocationBasisUpdate{{UnitID: "top-1", UsableAreaM2Hundredths: 7_250, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true}}); err != nil || unknown {
 			t.Fatalf("%s allocation bases: unknown=%t err=%v", slug, unknown, err)
 		}
@@ -367,6 +403,10 @@ func seedFull(t *testing.T) *source {
 		}); err != nil {
 			t.Fatalf("%s annual statement receipt: %v", slug, err)
 		}
+		reserve, _ := store.BindAnnualStatementReserveRepository(store.NewSQLAnnualStatementReserveStore(src.lanes), tenant)
+		if _, err := reserve.Add(store.AnnualStatementReserveEntry{PeriodYear: 2026, Kind: store.ReserveKindOpening, EntryDate: "2026-01-01", AmountCents: 10000, Note: "Eröffnung", CreatedAt: now, CreatedBy: "verwalter@example.com"}); err != nil {
+			t.Fatalf("%s annual statement reserve: %v", slug, err)
+		}
 		// HAUSV-580: a stored run is an immutable calculation with its input
 		// snapshot. The seed inserts the row directly: a valid run through the
 		// repository would need complete unit bases, receipts and prepayments for
@@ -390,6 +430,23 @@ func seedFull(t *testing.T) *source {
 			t.Fatalf("%s payment 2: %v", slug, err)
 		}
 
+		leaseRows, err := leases.List()
+		must(t, "roundtrip leases", err)
+		lease := leaseRows[0]
+		vr, _ := store.BindValorisationRepository(src.lanes, store.NewSQLDocumentStore(src.lanes, filepath.Join(src.files, "documents")), tenant)
+		actor := store.ValorisationActor{Email: "admin@example.com", Manage: true, Approve: true}
+		run, err := vr.Create(store.ValorisationInput{EffectiveOn: "2026-04-01"}, "org", actor, now)
+		must(t, "valorisation draft", err)
+		if len(run.Items) != 1 || run.Items[0].LeaseID != lease.ID {
+			t.Fatal("valorisation seed")
+		}
+		run, err = vr.Approve(run.ID, actor, store.DefaultValorisationSettings(), now, func(store.ValorisationRun, store.ValorisationItem, time.Time) ([]byte, error) {
+			return []byte("%PDF-1.4 seed"), nil
+		})
+		must(t, "valorisation approval", err)
+		deliveryRepo, _ := store.BindValorisationDeliveryRepository(store.NewSQLValorisationDeliveryStore(src.lanes), tenant)
+		_, _, err = deliveryRepo.Attempt(ctx, store.ValorisationDelivery{RunID: run.ID, Revision: run.Revision, PartyID: "resident@example.com", UnitID: "top-1", DocumentID: run.Items[0].LetterDocumentID, SHA256: run.Items[0].LetterSHA256, Recipient: "resident@example.com", Actor: actor.Email}, func(context.Context) error { return nil })
+		must(t, "valorisation delivery", err)
 		votes, _ := store.BindVoteRepository(store.NewSQLVoteStore(src.lanes), tenant)
 		ballot, err := votes.Create(store.Ballot{
 			TenantSlug: slug, Title: "Fassadensanierung", Description: "Angebot Firma Bunt", Options: []string{"Ja", "Nein", "Enthaltung"},
@@ -421,11 +478,11 @@ func seedFull(t *testing.T) *source {
 		}
 		must(t, slug+" parking", store.NewSQLParkingStore(src.lanes).SetGridFee(slug, 0.19))
 
-		// integration_imports is written by internal/server's import ledger with
-		// this exact statement shape.
-		if _, err := src.lanes.Unscoped(store.HealOrphanReason).Exec(
-			`INSERT INTO integration_imports(tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by, assigned, changed, unclear, rejected)
-			 VALUES($1, $2, 'camt.053', $3, '2019', $4, 'verwalter@example.com', 12, 3, 1, 0)`,
+		// Non-default completion fields prove dbmove preserves pending imports
+		// and their recovery identity, not merely the pre-0060 column set.
+		if _, err := src.lanes.For(tenant).Exec(
+			`INSERT INTO integration_imports(tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by, assigned, changed, unclear, rejected, status, blob_key, document_data)
+			 VALUES($1, $2, 'ebinterface', $3, '6.0', $4, 'verwalter@example.com', 0, 0, 0, 0, 'pending', 'import-fixture.xml', '{"id":"import-fixture","title":"E-Rechnung"}')`,
 			tenant.ID, slug, "sha256:"+slug+"-digest", now.Format(time.RFC3339Nano)); err != nil {
 			t.Fatalf("%s integration import: %v", slug, err)
 		}

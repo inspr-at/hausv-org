@@ -1,0 +1,78 @@
+package web
+
+import "strconv"
+
+templ EnergyLead(data EnergyPageData) {
+	<div class="energy-lead-side">
+		<aside class="energy-live" aria-label="Energie gerade jetzt" data-energy-flow-diagram data-energy-reading-count={ strconv.Itoa(data.MetricCount) }>
+			<header class="energy-live-head"><div><div class="energy-live-title"><h2>Energie jetzt</h2></div>
+				if data.HasMetrics {
+					<div class="energy-live-meta" data-energy-live-status><span class="energy-live-dot" aria-hidden="true"></span><strong data-energy-live-label>Live</strong><span>Home Assistant</span><span class="energy-live-updated" data-energy-live-updated>Portal abgerufen vor 0&nbsp;s</span></div>
+				} else {
+					<span class="energy-live-state-offline">Noch nicht verbunden</span>
+				}
+			</div></header>
+			if data.HasMetrics {
+				<div class="energy-flow-area" data-energy-flow>
+					@templ.JSONScript("", data.FlowConfigJSON)
+					<div class="energy-flow-fallback">
+						<div class="energy-help-readings">
+							if data.Live.HasMain {
+								<span>{ data.Live.Main.Label } <strong>{ data.Live.Main.Value }</strong></span>
+							}
+							for _, flow := range data.Live.Flows {
+								<span>{ flow.Label } <strong>{ flow.Value }</strong></span>
+							}
+							if data.Live.HasBattery {
+								<span>{ data.Live.Battery.Label } <strong>{ data.Live.Battery.Value }</strong></span>
+							}
+							if data.Live.HasBatterySOC {
+								<span>Ladestand <strong>{ data.Live.BatterySOC.Value }</strong></span>
+							}
+						</div>
+					</div>
+					<details class="energy-info-disclosure energy-flow-hint" data-energy-disclosure="flow"><summary aria-label="Energiefluss verstehen" aria-controls="energy-flow-help"><span>Energiefluss verstehen</span><span class="energy-info-mark" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-info"></span></span>
+						@DisclosureChevronMasked()
+					</summary><div id="energy-flow-help"><strong>So lesen Sie den Energiefluss</strong><p>Der Hausverbrauch ist der momentane Verbrauch aus allen Quellen. Die bewegten Punkte zeigen die Richtung, die Breite der ruhigen Flussbahn entspricht der Leistung, und die Farbverläufe zeigen anteilig, wohin die Energie geht. 0&nbsp;kW bedeutet: Diese Verbindung ruht gerade. Werte aktualisieren sich unabhängig und können deshalb kurzzeitig nicht exakt aufgehen.</p><div class="energy-help-readings">
+						if data.Live.HasMain {
+							<span>{ data.Live.Main.Label } <strong>{ data.Live.Main.Value }</strong> <small>{ data.Live.Main.Detail }</small></span>
+						}
+						for _, flow := range data.Live.Flows {
+							<span>{ flow.Label } <strong>{ flow.Value }</strong> <small>{ flow.Detail }</small></span>
+						}
+						if data.Live.HasBattery {
+							<span>{ data.Live.Battery.Label } <strong>{ data.Live.Battery.Value }</strong> <small>{ data.Live.Battery.Detail }</small></span>
+						}
+						if data.Live.HasBatterySOC {
+							<span>Ladestand <strong>{ data.Live.BatterySOC.Value }</strong> <small>{ data.Live.BatterySOC.Detail }</small></span>
+						}
+					</div><small>Live aus Home Assistant · nur gelesen</small>
+						if data.CanManageEnergy {
+							<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>
+						}
+					</div></details>
+				</div>
+				<footer class="energy-live-footer">
+					if data.Live.HasAdditional {
+						<details class="energy-live-more"><summary><span><strong>Weitere Messwerte ({ strconv.Itoa(data.Live.AdditionalCount) })</strong><small>{ data.Live.AdditionalTopics }</small></span>
+							@DisclosureChevronMasked()
+						</summary><div class="energy-live-more-list">
+							for _, item := range data.Live.Additional {
+								<div class="energy-live-more-row"><span>{ item.Label }</span><strong>{ item.Value }</strong></div>
+							}
+						</div></details>
+					} else {
+						<span></span>
+					}
+					<button class="energy-recommendation-trigger" type="button" data-dialog="energy-recommendation-dialog" aria-haspopup="dialog" aria-controls="energy-recommendation-dialog"><span class="energy-ui-icon energy-ui-icon-binoculars" aria-hidden="true"></span><span>Empfehlung</span></button>
+				</footer>
+			} else {
+				<div class="energy-live-empty"><strong>Noch keine Live-Werte</strong><span>Home Assistant kann später verbunden werden.</span>
+					if data.CanManageEnergy {
+						<a href="/app/zuhause/onboarding?step=4">Messwerte zuordnen</a>
+					}
+				</div>
+			}
+		</aside>
+	</div>
+}

@@ -1,0 +1,118 @@
+package web
+
+import "strconv"
+
+templ EnergyChartLegend(chart EnergyChartView) {
+	<div class="energy-chart-legend" aria-label="Diagrammlegende">
+		for _, series := range chart.Series {
+			<span class={ series.Key }><i aria-hidden="true"></i>{ series.Label } <strong>@EnergyValue(series.Latest)</strong></span>
+		}
+		if chart.HasThreshold {
+			<span class="threshold"><i aria-hidden="true"></i>{ chart.ThresholdLabel } @EnergyValue(chart.ThresholdValue) <small>(konfigurierbar)</small></span>
+		}
+	</div>
+}
+
+templ EnergyChartInteractive(chart EnergyChartView) {
+	<div class="energy-chart-interactive" data-energy-chart-interactive tabindex="0" aria-label={ chart.Title + ": Viertelstundenwerte. Mit der Maus erkunden oder mit den Pfeiltasten durchgehen." }>
+		<svg class="energy-chart-svg desktop" viewBox="0 0 800 236" role="img" aria-label={ "Leistungsverlauf: " + chart.Title }>
+			<title>{ "Leistungsverlauf: " + chart.Title }</title>
+			<desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+			for _, tick := range chart.YTicks {
+				<line class={ "energy-chart-grid", templ.KV("zero", tick.Label == "0 kW") } x1="52" x2="788" y1={ tick.Position } y2={ tick.Position }></line><text class="energy-chart-axis-label" x="44" y={ tick.Position } text-anchor="end" dominant-baseline="middle">{ tick.Label }</text>
+			}
+			for _, tick := range chart.XTicks {
+				<line class="energy-chart-grid" x1={ tick.Position } x2={ tick.Position } y1="16" y2="204"></line><text class="energy-chart-axis-label" x={ tick.Position } y="226" text-anchor="middle">{ tick.Label }</text>
+			}
+			for _, series := range chart.Series {
+				if series.AreaPath != "" {
+					<path class={ "energy-chart-area", series.Key } d={ series.AreaPath }></path>
+				}
+			}
+			if chart.HasThreshold {
+				<line class="energy-chart-threshold" x1="52" x2="788" y1={ chart.ThresholdPosition } y2={ chart.ThresholdPosition }></line><text class="energy-chart-threshold-label" x="782" y={ chart.ThresholdPosition } dy="-6" text-anchor="end">{ chart.ThresholdValue }</text>
+			}
+			for _, series := range chart.Series {
+				<path class={ "energy-chart-line", series.Key } d={ series.Path }></path>
+			}
+			<line class="energy-chart-guide" data-chart-guide x1="52" x2="52" y1="16" y2="204" hidden></line>
+			for _, sample := range chart.Samples {
+				for _, value := range sample.Values {
+					<circle class={ "energy-chart-marker", value.Key } data-chart-marker-index={ strconv.Itoa(sample.Index) } cx={ sample.Position } cy={ value.Position } r="4" hidden></circle>
+				}
+				<rect class="energy-chart-hit" data-chart-hit data-index={ strconv.Itoa(sample.Index) } data-x={ sample.Position } x={ sample.HitPosition } y="16" width={ sample.HitWidth } height="188"></rect>
+			}
+		</svg>
+		<svg class="energy-chart-svg mobile" viewBox="0 0 400 236" role="img" aria-label={ "Leistungsverlauf: " + chart.Title }>
+			<title>{ "Leistungsverlauf: " + chart.Title }</title>
+			<desc>Hausverbrauch, PV-Erzeugung, Netz und Speicher als Viertelstunden-Verlauf in Kilowatt. Die gestrichelte Linie ist eine konfigurierbare Planungsgrenze.</desc>
+			for _, tick := range chart.YTicks {
+				<line class={ "energy-chart-grid", templ.KV("zero", tick.Label == "0 kW") } x1="44" x2="388" y1={ tick.MobilePosition } y2={ tick.MobilePosition }></line><text class="energy-chart-axis-label" x="37" y={ tick.MobilePosition } text-anchor="end" dominant-baseline="middle">{ tick.Label }</text>
+			}
+			for _, tick := range chart.XTicks {
+				<line class="energy-chart-grid" x1={ tick.MobilePosition } x2={ tick.MobilePosition } y1="16" y2="204"></line><text class="energy-chart-axis-label" x={ tick.MobilePosition } y="226" text-anchor="middle">{ tick.Label }</text>
+			}
+			for _, series := range chart.Series {
+				if series.MobileAreaPath != "" {
+					<path class={ "energy-chart-area", series.Key } d={ series.MobileAreaPath }></path>
+				}
+			}
+			if chart.HasThreshold {
+				<line class="energy-chart-threshold" x1="44" x2="388" y1={ chart.ThresholdMobilePosition } y2={ chart.ThresholdMobilePosition }></line><text class="energy-chart-threshold-label" x="382" y={ chart.ThresholdMobilePosition } dy="-5" text-anchor="end">{ chart.ThresholdValue }</text>
+			}
+			for _, series := range chart.Series {
+				<path class={ "energy-chart-line", series.Key } d={ series.MobilePath }></path>
+			}
+			<line class="energy-chart-guide" data-chart-guide x1="44" x2="44" y1="16" y2="204" hidden></line>
+			for _, sample := range chart.Samples {
+				for _, value := range sample.Values {
+					<circle class={ "energy-chart-marker", value.Key } data-chart-marker-index={ strconv.Itoa(sample.Index) } cx={ sample.MobilePosition } cy={ value.MobilePosition } r="4" hidden></circle>
+				}
+				<rect class="energy-chart-hit" data-chart-hit data-index={ strconv.Itoa(sample.Index) } data-x={ sample.MobilePosition } x={ sample.MobileHit } y="16" width={ sample.MobileHitWidth } height="188"></rect>
+			}
+		</svg>
+		<div class="energy-chart-tooltip" data-chart-tooltip role="status" aria-live="polite" hidden><strong data-chart-tooltip-time></strong><div data-chart-tooltip-values></div></div>
+		<div class="energy-chart-sample-bank" data-chart-sample-bank hidden>
+			for _, sample := range chart.Samples {
+				<div data-chart-sample={ strconv.Itoa(sample.Index) } data-time={ sample.Time }>
+					for _, value := range sample.Values {
+						<span data-key={ value.Key } data-label={ value.Label } data-value={ value.Value }></span>
+					}
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ EnergyChartSection(data EnergyPageData) {
+	<section class="energy-card energy-chart" id="energieverlauf" aria-labelledby="energy-chart-title">
+		<header class="energy-chart-head"><div><h2 id="energy-chart-title">{ data.Chart.Title }</h2><p>Wann war viel los – und woher kam die Energie?</p></div><div class="energy-chart-head-actions"><small>{ data.Chart.Status }</small><div class="energy-chart-toolbar"><nav class="energy-chart-range" aria-label="Zeitraum auswählen"><a href="/app/energie?zeitraum=letzte-24h#energieverlauf" aria-current={ portalAriaCurrent(!data.Chart.IsToday) }>Letzte 24 h</a><a href="/app/energie?zeitraum=heute#energieverlauf" aria-current={ portalAriaCurrent(data.Chart.IsToday) }>Heute</a></nav>
+			if data.Chart.HasData {
+				<div class="energy-chart-size-actions"><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" aria-haspopup="dialog" aria-controls="energy-chart-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Vergrößern</button><button class="button small energy-chart-size-button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-haspopup="dialog" aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span data-fullscreen-label>Vollbild</span></button></div>
+			}
+		</div></div></header>
+		if data.Chart.HasData {
+			<div class="energy-chart-layout">
+				<div class="energy-chart-plot">
+					@EnergyChartLegend(data.Chart)
+					@EnergyChartInteractive(data.Chart)
+					<small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. Die Planungsgrenze ist eine änderbare Modellannahme, kein geltender Tarif. { data.Chart.Range }</small>
+				</div>
+				<aside class="energy-chart-note"><span>Auf einen Blick</span><strong>{ data.Chart.Summary }</strong><p>{ data.Chart.Detail }</p></aside>
+			</div>
+		} else {
+			<div class="energy-chart-empty"><strong>Noch kein vollständiger Tagesverlauf</strong><p>{ data.Chart.Status }</p></div>
+		}
+	</section>
+}
+
+templ EnergyChartDialog(data EnergyPageData) {
+	<dialog id="energy-chart-dialog" class="energy-chart-dialog" aria-labelledby="energy-chart-dialog-title"><div class="energy-chart-dialog-shell" data-energy-fullscreen-surface>
+		<header><div><span class="eyebrow">Energieverlauf</span><h2 id="energy-chart-dialog-title">{ data.Chart.DialogTitle }</h2><p>Fahren Sie über die Kurve oder nutzen Sie die Pfeiltasten.</p></div><div class="energy-chart-dialog-actions"><button class="button" type="button" data-dialog="energy-chart-dialog" data-energy-fullscreen aria-controls="energy-chart-dialog" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span data-fullscreen-label>Vollbild</span></button><button class="button" type="button" data-close-dialog>Schließen</button></div></header>
+		@EnergyChartLegend(data.Chart)
+		<div class="energy-chart-dialog-plot">
+			@EnergyChartInteractive(data.Chart)
+		</div>
+		<small class="energy-chart-hint">Netz und Speicher unter null bedeuten Einspeisung beziehungsweise Laden. { data.Chart.Range }</small>
+	</div></dialog>
+}

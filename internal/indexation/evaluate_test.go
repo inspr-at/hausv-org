@@ -209,3 +209,15 @@ func TestArithmeticOverflowAndRounding(t *testing.T) {
 		}
 	}
 }
+
+func TestEvaluateReferenceDoesNotTriggerOnInterveningMonth(t *testing.T) {
+	data, err := NewDataset([]IndexValue{{Series: VPI2020, Month: "2025-09", Value: 100 * Unit}, {Series: VPI2020, Month: "2025-10", Value: 150 * Unit}, {Series: VPI2020, Month: "2025-12", Value: 102 * Unit}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clause := Clause{Series: VPI2020, BaseMonth: "2025-09", BaseValue: 100 * Unit, AmountCents: 100000, ThresholdKind: PercentThreshold, PercentRounding: UnroundedPercent}
+	result, err := EvaluateReference(clause, data, "2025-12")
+	if err != nil || result.NewAmountCents != 102000 || result.TriggerMonth != "2025-12" {
+		t.Fatal(result, err)
+	}
+}

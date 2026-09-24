@@ -139,7 +139,7 @@ try {
       const targets = [...main.querySelectorAll('a,button,select,input:not([type="hidden"]),summary')].filter(visible);
       const tiny = targets.filter(el => { const b = el.getBoundingClientRect(); return b.width < 43.5 || b.height < 43.5; }).map(el => el.outerHTML.slice(0, 160));
       const offscreen = [...main.querySelectorAll('*')].filter(visible).filter(el => {
-        if (el.classList.contains('sr-only') || el.closest('.board-columns')) return false; // Lanes intentionally scroll inside their region below 900px.
+        if (el.classList.contains('sr-only') || el.closest('.board-columns')) return false;
         const b = el.getBoundingClientRect();
         return b.left < -1 || b.right > innerWidth + 1;
       }).map(el => el.tagName + '.' + el.className);
@@ -157,19 +157,24 @@ try {
     measurements.push(m);
     assert.equal(m.columns.length, 5, `${width}px: five main lanes remain present`);
     assert(m.documentWidth <= width + 1, `${width}px: no page overflow`);
-    if (width >= 900) assert(m.gridScroll <= m.gridClient + 1, `${width}px: desktop lanes fit`);
-    else assert(m.gridScroll > m.gridClient, `${width}px: lanes scroll inside their region`);
+    assert(m.gridScroll <= m.gridClient + 1, `${width}px: lanes fit without a sideways strip`);
     const widths = m.columns.map(c => c.width);
     assert(Math.max(...widths) - Math.min(...widths) <= 2, `${width}px: equal column widths`);
-    if (width < 900) assert(Math.min(...widths) >= 219.5, `${width}px: scrollable lanes at least 220px`);
+    if (width < 900) {
+      for (let i = 1; i < m.columns.length; i++) {
+        assert(m.columns[i].top >= m.columns[i - 1].top + m.columns[i - 1].height - 1, `${width}px: one status column per row`);
+      }
+    }
     if (width >= 900) assert(Math.abs(m.firstRowSum - (m.grid.width - 4)) <= 2, `${width}px: five lanes plus gaps fill content`);
     assert(Math.abs(m.grid.width - (m.content.width - 2 * m.contentPadding)) <= 2, `${width}px: grid uses full content`);
     assert(Math.abs(m.toolbar.width - m.grid.width) <= 2, `${width}px: filter toolbar uses full width`);
     assert(Math.abs(m.header.width - m.main.width) <= 2 && Math.abs(m.content.width - m.main.width) <= 2,
       `${width}px: header/content use viewport minus navigation`);
     if (width >= 1280) assert.equal(m.contentPadding, 32, `${width}px: portfolio padding`);
-    assert.equal(m.navigationCount, 1, `${width}px: exactly one navigation`);
-    if (m.mobileHeight !== null) assert(Math.abs(m.mobileHeight - 74) <= 1, `${width}px: mobile header 74px`);
+    // Desktop shows the sidebar and the context bar together. Phones keep only the mobile bar.
+    const phone = width <= 760;
+    assert.equal(m.navigationCount, phone ? 1 : 2, `${width}px: shell navigation`);
+    if (phone) assert(m.mobileHeight !== null && m.mobileHeight >= 74, `${width}px: mobile header ${m.mobileHeight}px`);
     assert(Math.abs(m.contextHeight - 40) <= 1, `${width}px: context bar 40px`);
     assert.equal(m.filledHeaderActions, 0, `${width}px: ghost header actions`);
     assert.deepEqual(m.tiny, [], `${width}px: targets >= 44px`);

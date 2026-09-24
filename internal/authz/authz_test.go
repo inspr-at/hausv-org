@@ -35,7 +35,7 @@ func TestServiceProviderHasNoCapabilities(t *testing.T) {
 		CapabilityPlatformAdmin, CapabilityManageUsers, CapabilityManageParking,
 		CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues,
 		CapabilityManageVotes, CapabilityManageBuilding, CapabilityOwnerDocuments,
-		CapabilityVote, CapabilityOversight,
+		CapabilityVote, CapabilityOversight, CapabilityManageLeases, CapabilityApproveValorisation,
 	}
 	for _, c := range caps {
 		if RoleHasCapability(store.RoleServiceProvider, c) {
@@ -86,6 +86,7 @@ func TestCanPreservesRoleCapabilityMatrixWithinTenant(t *testing.T) {
 		CapabilityManageAnnouncements, CapabilityManageDocuments, CapabilityManageIssues,
 		CapabilityManageVotes, CapabilityManageBuilding, CapabilityOwnerDocuments,
 		CapabilityVote, CapabilityOversight, CapabilityManageEnergy, CapabilityControlEnergy,
+		CapabilityManageLeases, CapabilityApproveValorisation,
 	}
 	resource := Resource{Tenant: "demo"}
 	for _, role := range roles {

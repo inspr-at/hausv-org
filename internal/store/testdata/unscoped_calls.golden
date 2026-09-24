@@ -1,22 +1,11 @@
 cmd/hausv-org/migrate_data.go	runMigrateData	literal	data mover: copies every tenant's rows from SQLite into an empty PostgreSQL target before the cutover; there is no request and no tenant in scope, and a fail-closed policy would otherwise refuse every insert
 internal/dbtest/dbtest.go	MaintenanceView	literal	test fixtures and assertions read and write outside every tenant lane
 internal/energy/storage.go	(*SQLStore).PurgeExpired	literal	retention sweep over every tenant's expired energy imports, intervals and assessments: the boot path that calls it has no tenant in scope
-internal/energy/storage.go	(*SQLStore).PutImport	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).PutInterval	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).SaveProfile	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).UpsertAsset	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).UpsertMaintenance	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).UpsertMapping	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).UpsertMeasure	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/energy/storage.go	(*SQLStore).adoptUnownedProfile	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/energy/storage.go	(*SQLStore).registry	const:tenantRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
-internal/server/camt_import.go	(*app).recordPaymentImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/server/ebinterface_import.go	(*app).recordEBInterfaceImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/activity_sql.go	(*SQLActivityStore).Get	literal	login_activity has no tenant_id: read on sign-in, before a tenant is chosen
 internal/store/activity_sql.go	(*SQLActivityStore).ImportActivity	literal	boot import replay into login_activity, runs before the first request
 internal/store/activity_sql.go	(*SQLActivityStore).Touch	literal	login_activity has no tenant_id: one row per person, shared by every house
 internal/store/announcement_read_sql.go	(*SQLAnnouncementReadStore).ImportReads	literal	boot import replay of the JSON read-marker snapshot: it spans every tenant and runs before the first request
-internal/store/announcement_read_sql.go	(*SQLAnnouncementReadStore).markSeen	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/announcement_sql.go	(*SQLAnnouncementStore).ImportAnnouncements	literal	boot import replay of the JSON announcement snapshot: it spans every tenant and runs before the first request
 internal/store/attachment_sql.go	(*SQLAttachmentStore).ImportAttachments	literal	boot import replay of the JSON attachment snapshot: it spans every tenant and runs before the first request
 internal/store/attachment_sql.go	(*SQLAttachmentStore).PurgeDeletedBefore	literal	retention purge sweeps every tenant's attachments: the scheduler that calls it has no tenant in scope
@@ -27,14 +16,10 @@ internal/store/handover_sql.go	(*SQLHandoverStore).ConfirmByToken	literal	handov
 internal/store/handover_sql.go	(*SQLHandoverStore).GetByToken	literal	handover confirmation link: the token is the only identifier the recipient has, and it names no tenant
 internal/store/handover_sql.go	(*SQLHandoverStore).ImportHandovers	literal	boot import replay of the JSON handover snapshot: it spans every tenant and runs before the first request
 internal/store/home_connector.go	(*SQLHomeConnectorStore).ExchangePairing	literal	the connector presents a pairing secret, not a tenant: the row is found by hash
-internal/store/home_connector.go	(*SQLHomeConnectorStore).Get	literal	the home connector read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
 internal/store/home_connector.go	(*SQLHomeConnectorStore).Heartbeat	literal	the connector presents a credential hash, not a tenant: heartbeats arrive with no request context to take a tenant from
-internal/store/home_connector.go	(*SQLHomeConnectorStore).Revoke	literal	the home connector revoke path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
-internal/store/home_connector.go	(*SQLHomeConnectorStore).StartPairing	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/store/home_connector.go	(*SQLHomeConnectorStore).StartPairing	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
-internal/store/home_connector_reading.go	(*SQLHomeConnectorReadingStore).Clear	literal	the home connector reading clear path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
-internal/store/home_connector_reading.go	(*SQLHomeConnectorReadingStore).List	literal	the home connector reading list path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
-internal/store/home_connector_reading.go	(*SQLHomeConnectorReadingStore).Upsert	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
+internal/store/home_connector.go	(*SQLHomeConnectorStore).StartPairing	const:slugRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
+internal/store/home_connector.go	existingTenantRef	const:slugRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
+internal/store/home_connector_reading.go	(*SQLHomeConnectorReadingStore).Upsert	const:slugRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
 internal/store/home_portal.go	(*SQLHomePortalStore).Activate	literal	the home portal activation path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
 internal/store/home_portal.go	(*SQLHomePortalStore).Get	literal	the home portal read path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to
 internal/store/home_portal.go	(*SQLHomePortalStore).ListByOwner	literal	cross-tenant by design: this answers which houses one owner has, so scoping it to any single one would hide the rest
@@ -55,6 +40,7 @@ internal/store/identity_sql.go	(*SQLIdentityStore).SetMembership	literal	members
 internal/store/identity_sql.go	(*SQLIdentityStore).UpsertPerson	literal	persons has no tenant_id: minting or updating an identity is a platform-level act
 internal/store/identity_sql.go	(*SQLIdentityStore).membershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
 internal/store/identity_sql.go	(*SQLIdentityStore).removeMembershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
+internal/store/index_reference.go	(*IndexReferenceStore).Apply	literal	VPI system importer writes global Statistics Austria reference data and revision audit
 internal/store/issue_sql.go	(*SQLIssueStore).ImportIssues	literal	boot import replay of the JSON issue snapshot: it spans every tenant and runs before the first request
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).Get	literal	notification_prefs has no tenant_id: a person has one mail preference set, not one per house
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).ImportPrefs	literal	boot import replay of the JSON preference snapshot into a table with no tenant_id, before the first request
@@ -80,6 +66,5 @@ internal/store/telegram_sql.go	(*SQLTelegramStore).Offset	literal	telegram_state
 internal/store/telegram_sql.go	(*SQLTelegramStore).SetOffset	literal	telegram_state has no tenant_id: the bot poll offset is one cursor for the whole process
 internal/store/telegram_sql.go	(*SQLTelegramStore).Unlink	literal	telegram_links has no tenant_id: unlinking is a chat-level act, not a house-level one
 internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).ImportStatuses	literal	boot import replay of the JSON payment-status snapshot: it spans every tenant and runs before the first request
-internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).set	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/unit_sql.go	(*SQLUnitStore).ImportUnits	literal	boot import replay of the JSON unit snapshot: it spans every tenant and runs before the first request
 internal/store/vote_sql.go	(*SQLVoteStore).ImportBallots	literal	boot import replay of the JSON ballot snapshot: it spans every tenant and runs before the first request

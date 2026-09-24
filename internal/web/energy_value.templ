@@ -1,0 +1,26 @@
+package web
+
+import "strings"
+
+templ EnergyValue(value string) {
+	<span class="energy-value" aria-label={ value }>
+		{ energyValueNumber(value) }
+		if energyValueUnit(value) != "" {
+			<span class="u" aria-hidden="true">{ "\u00a0" + energyValueUnit(value) }</span>
+		}
+	</span>
+}
+
+func energyValueNumber(value string) string {
+	if index := strings.LastIndex(value, "\u00a0"); index > 0 {
+		return value[:index]
+	}
+	return value
+}
+
+func energyValueUnit(value string) string {
+	if index := strings.LastIndex(value, "\u00a0"); index > 0 {
+		return strings.TrimSpace(value[index+len("\u00a0"):])
+	}
+	return ""
+}

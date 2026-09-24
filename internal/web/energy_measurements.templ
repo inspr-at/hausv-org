@@ -1,0 +1,54 @@
+package web
+
+templ EnergyMeasurementSection(data EnergyPageData) {
+	<details class="energy-card energy-card-quiet energy-collapsible" id="messwerte">
+		<summary class="energy-card-head"><div><h2>Messwerte &amp; Referenz</h2><p>
+			if data.HasPeaks {
+				Referenz vorhanden – Details und Import öffnen.
+			} else {
+				Home Assistant oder Smart Meter später verbinden.
+			}
+		</p></div>
+			@DisclosureChevronMasked()
+		</summary>
+		<div class="energy-collapsible-body">
+			switch data.ImportStatus {
+				case "added":
+					<div class="message success">Smart-Meter-Datei übernommen. Ein erneuter Import derselben Datei erzeugt keine Duplikate.</div>
+				case "duplicate":
+					<div class="message">Diese Datei war bereits vorhanden; es wurde nichts doppelt gespeichert.</div>
+				case "invalid":
+					<div class="message error">Datei nicht erkannt. Erwartet werden 15-Minuten-Zeilen mit <strong>timestamp</strong> und <strong>import_kwh</strong>.</div>
+			}
+			if data.HasPeaks {
+				<div class="energy-reference-grid">
+					for _, peak := range data.Peaks {
+						<article class="energy-reference-item"><span>Monatsspitze · { peak.Source }</span><strong>{ peak.Value }</strong><span>höchstes abgeschlossenes 15-Minuten-Fenster</span></article>
+					}
+				</div>
+			} else {
+				<p class="muted">Noch keine abgeschlossenen Viertelstunden vorhanden.</p>
+			}
+			if data.HasComparison {
+				<div class={ "energy-quality", data.Comparison.Tone }><span aria-hidden="true">{ energyQualityMark(data.Comparison.Tone == "good") }</span><div><strong>{ data.Comparison.Title }</strong><p>{ data.Comparison.Details }</p></div></div>
+			}
+			if data.HasImports {
+				<div class="energy-assets energy-import-history">
+					for _, item := range data.Imports {
+						<span class="energy-asset">{ item.Filename } · { item.Date }</span>
+					}
+				</div>
+			}
+			if data.CanManageEnergy {
+				<form class="energy-import-form" method="post" action="/app/energie/smart-meter" enctype="multipart/form-data">
+					<label><span class="onboarding-legend">Smart-Meter-CSV auswählen</span><input type="file" name="smart_meter_file" accept=".csv,text/csv" required/></label>
+					<small>Unterstütztes Profil: <strong>timestamp;import_kwh</strong>, exakt um Minute 00, 15, 30 oder 45. Originaldateien werden nach 30 Tagen, Viertelstundenwerte nach 13 Monaten zur Löschung fällig und spätestens sechs Stunden später entfernt.</small>
+					<button class="button" type="submit">Als Referenz importieren</button>
+				</form>
+			}
+			if data.CanManageEnergyData {
+				<nav class="energy-related-links"><a href="/app/settings/energy-data">Energiedaten ansehen, exportieren oder löschen →</a></nav>
+			}
+		</div>
+	</details>
+}

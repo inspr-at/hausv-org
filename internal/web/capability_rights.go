@@ -68,7 +68,7 @@ func (data RechteData) changed(family string, capability authz.Capability) bool 
 
 // Extra capabilities have no dedicated action in the historical matrix.
 func additionalCapabilities() []authz.Capability {
-	return []authz.Capability{authz.CapabilityManageUsers, authz.CapabilityManageParking, authz.CapabilityOwnerDocuments, authz.CapabilityVote, authz.CapabilityOversight}
+	return []authz.Capability{authz.CapabilityManageUsers, authz.CapabilityManageParking, authz.CapabilityOwnerDocuments, authz.CapabilityVote, authz.CapabilityOversight, authz.CapabilityApproveValorisation}
 }
 
 type UserRightsData struct {
@@ -138,4 +138,21 @@ func (data RechteData) cellChanged(family, area string) bool {
 		}
 	}
 	return false
+}
+
+// rechteGrantCaption is the one explanatory line for a switch in the rights
+// matrix. Neighbouring switches usually share it ("Anliegen und Posteingang
+// verwalten"), so the matrix prints it once per run instead of under every
+// checkbox (HAUSV-765).
+func rechteGrantCaption(data RechteData, family string, grant authz.MatrixGrant) string {
+	switch {
+	case grant.Capability == "" && grant.Note == "unavailable":
+		return "Keine eigenständige Aktion in diesem Bereich."
+	case grant.Capability == "":
+		return "Durch Zuordnung oder Produktregel festgelegt."
+	case authz.LockedFor(family, grant.Capability):
+		return lockNote(family, grant.Capability)
+	default:
+		return authz.CapabilityLabel(grant.Capability)
+	}
 }

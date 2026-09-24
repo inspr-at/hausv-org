@@ -204,6 +204,7 @@ type DocumentRecord struct {
 	UploadedBy     string    `json:"uploaded_by"`
 	UploadedAt     time.Time `json:"uploaded_at"`
 
+	ValorisationArchive    *ValorisationArchiveMetadata    `json:"valorisation_archive,omitempty"`
 	AnnualStatementArchive *AnnualStatementArchiveMetadata `json:"annual_statement_archive,omitempty"`
 }
 
@@ -1290,7 +1291,7 @@ func NewDocumentStore(path string, fileDir string) (*DocumentStore, error) {
 func (*DocumentStore) documentStorage() {}
 
 func (s *DocumentStore) create(tenant TenantRef, item DocumentRecord, upload UploadedFile, now time.Time) (DocumentRecord, error) {
-	if item.AnnualStatementArchive != nil {
+	if item.AnnualStatementArchive != nil || item.ValorisationArchive != nil {
 		return DocumentRecord{}, fmt.Errorf("archives require generated documents")
 	}
 	tenantSlug := tenant.Slug
@@ -1407,7 +1408,7 @@ func (s *DocumentStore) replace(tenant TenantRef, id string, uploadedBy string, 
 	if !found || !existing.Current {
 		return DocumentRecord{}, DocumentRecord{}, fmt.Errorf("document not found")
 	}
-	if existing.AnnualStatementArchive != nil {
+	if existing.AnnualStatementArchive != nil || existing.ValorisationArchive != nil {
 		return DocumentRecord{}, DocumentRecord{}, ErrDocumentArchived
 	}
 	if now.IsZero() {
@@ -1643,7 +1644,7 @@ func (s *DocumentStore) createGenerated(tenant TenantRef, item DocumentRecord, f
 		return DocumentRecord{}, fmt.Errorf("document store unavailable")
 	}
 	item.TenantSlug = textutil.Slug(tenantSlug)
-	if item.AnnualStatementArchive != nil {
+	if item.AnnualStatementArchive != nil || item.ValorisationArchive != nil {
 		return s.createArchive(item, filename, contentType, data, now)
 	}
 	item, path, err := prepareGeneratedDocument(s.fileDir, item, filename, contentType, data, now)
@@ -1734,6 +1735,10 @@ func NormalizeDocumentRecord(item DocumentRecord) DocumentRecord {
 }
 
 func CopyDocument(item DocumentRecord) DocumentRecord {
+	if item.ValorisationArchive != nil {
+		c := *item.ValorisationArchive
+		item.ValorisationArchive = &c
+	}
 	if item.AnnualStatementArchive != nil {
 		metadata := *item.AnnualStatementArchive
 		item.AnnualStatementArchive = &metadata

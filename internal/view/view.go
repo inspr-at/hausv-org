@@ -151,6 +151,9 @@ type SelectOption struct {
 
 type DocumentView struct {
 	Archived          bool
+	ArchiveRunID      string
+	ArchiveYear       int
+	ArchiveRevision   int
 	ArchiveParty      string
 	ArchivePartyEmail string
 	ID                string
@@ -1088,6 +1091,20 @@ func IssueLocationLabel(locationType string, detail string) string {
 	return label + " · " + detail
 }
 
+// IssueLocationLabelForManagement names a place from the Verwaltung's point of
+// view. "Eigene Einheit" is the reporter's framing and is misleading in that
+// column; the unit detail itself ("Top 7") is the place.
+func IssueLocationLabelForManagement(locationType string, detail string) string {
+	detail = strings.TrimSpace(detail)
+	if store.NormalizeIssueLocation(locationType) == store.IssueLocationUnit {
+		if detail == "" {
+			return "Einheit"
+		}
+		return detail
+	}
+	return IssueLocationLabel(locationType, detail)
+}
+
 // TruncateIssueDescription truncates body text for the Beschreibung column,
 // keeping approximately 100 chars and breaking on word boundaries.
 func TruncateIssueDescription(body string) string {
@@ -1376,6 +1393,22 @@ func AuditActionLabel(action string) string {
 		return "Einheit gelöscht"
 	case store.AuditActionUnitPayment:
 		return "Zahlungsstatus geändert"
+	case store.AuditActionLeaseCreate:
+		return "Mietvertrag angelegt"
+	case store.AuditActionLeaseUpdate:
+		return "Mietvertrag geändert"
+	case store.AuditActionLeaseEnd:
+		return "Mietvertrag beendet"
+	case store.AuditActionLeasePartyChange:
+		return "Vertragspartei geändert"
+	case store.AuditActionRentComponentAdd:
+		return "Mietzinsbestandteil ergänzt"
+	case store.AuditActionClauseCreate:
+		return "Wertsicherungsklausel angelegt"
+	case store.AuditActionClauseUpdate:
+		return "Wertsicherungsklausel geändert"
+	case store.AuditActionClauseReview:
+		return "Klausel geprüft"
 	case store.AuditActionDocumentUpload:
 		return "Dokument hochgeladen"
 	case store.AuditActionDocumentDownload:
@@ -1492,6 +1525,8 @@ func AuditActionLabel(action string) string {
 		return "Jahresabrechnung per E-Mail versendet"
 	case store.AuditActionAnnualRunArchive:
 		return "Jahresabrechnung im Archiv abgelegt"
+	case store.AuditActionAnnualReserveAdd:
+		return "Rücklage gebucht"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
 	case store.AuditActionIssueAISuggest:
@@ -1527,7 +1562,7 @@ func AuditActionLabel(action string) string {
 
 func AuditActionTone(action string) string {
 	switch store.NormalizeAuditAction(action) {
-	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin:
+	case store.AuditActionInviteCreate, store.AuditActionUnitSave, store.AuditActionDocumentUpload, store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm, store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteCast, store.AuditActionVoteReminder, store.AuditActionParkingReminder, store.AuditActionIssueServiceAdd, store.AuditActionEventCreate, store.AuditActionContactSave, store.AuditActionLogin, store.AuditActionLeaseCreate, store.AuditActionRentComponentAdd, store.AuditActionClauseCreate:
 		return "add"
 	case store.AuditActionInviteDelete, store.AuditActionUnitDelete, store.AuditActionDocumentReplace, store.AuditActionAttachmentDelete, store.AuditActionVoteClose, store.AuditActionIssueServiceDrop, store.AuditActionEventDelete, store.AuditActionContactDelete:
 		return "danger"
@@ -2008,6 +2043,9 @@ func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 	}
 	return DocumentView{
 		Archived:          item.AnnualStatementArchive != nil,
+		ArchiveRunID:      archiveRunID(item),
+		ArchiveYear:       archiveYear(item),
+		ArchiveRevision:   archiveRevision(item),
 		ArchiveParty:      archiveParty,
 		ArchivePartyEmail: archiveEmail,
 		ID:                item.ID,
@@ -2032,6 +2070,27 @@ func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 		VersionLabel:      DocumentVersionLabel(item.Version),
 		ReplaceDialogID:   "document-replace-" + item.ID,
 	}
+}
+
+func archiveRunID(item store.DocumentRecord) string {
+	if item.AnnualStatementArchive == nil {
+		return ""
+	}
+	return strings.TrimSpace(item.AnnualStatementArchive.RunID)
+}
+
+func archiveYear(item store.DocumentRecord) int {
+	if item.AnnualStatementArchive == nil {
+		return 0
+	}
+	return item.AnnualStatementArchive.PeriodYear
+}
+
+func archiveRevision(item store.DocumentRecord) int {
+	if item.AnnualStatementArchive == nil {
+		return 0
+	}
+	return item.AnnualStatementArchive.Revision
 }
 
 func DocumentVersionLabel(version int) string {

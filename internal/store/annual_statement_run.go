@@ -83,6 +83,7 @@ type AnnualStatementRunSources struct {
 	Units       UnitStorage
 	Receipts    AnnualStatementReceiptStorage
 	Prepayments AnnualStatementPrepaymentStorage
+	Reserve     AnnualStatementReserveStorage
 	Consumption AnnualStatementConsumptionStorage
 	Documents   DocumentStorage
 }
@@ -156,7 +157,11 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 		}
 	}
 	input.Structure, _ = periods.Structure(year)
-	for _, unit := range units.List() {
+	listed, err := units.ListChecked()
+	if err != nil {
+		return input, annualStatementUnitDataBlock(err)
+	}
+	for _, unit := range listed {
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{ID: unit.ID, Label: unit.Label, UnitType: NormalizeUnitType(unit.UnitType)})
 		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
 	}
@@ -165,6 +170,14 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 	referenced := map[string]bool{}
 	for _, receipt := range input.Receipts {
 		referenced[receipt.DocumentID] = true
+	}
+	if reserve, ok := BindAnnualStatementReserveRepository(s.sources.Reserve, tenant); ok {
+		input.Reserve = reserve.ListByPeriod(year)
+		for _, entry := range input.Reserve {
+			if entry.DocumentID != "" {
+				referenced[entry.DocumentID] = true
+			}
+		}
 	}
 	for _, doc := range documents.List() {
 		if referenced[doc.ID] && annualStatementRunDocumentReadable(doc, documents) {
@@ -220,6 +233,14 @@ func annualStatementRunDocumentReadable(doc DocumentRecord, repository DocumentR
 	info, err := file.Stat()
 	return err == nil && info.Mode().IsRegular() && info.Size() > 0 && info.Size() == doc.Size
 }
+func annualStatementUnitDataBlock(err error) error {
+	var dataErr *UnitDataError
+	if !errors.As(err, &dataErr) {
+		return err
+	}
+	return &AnnualStatementRunBlockedError{Issues: []AnnualStatementRunIssue{{Code: "unit-data", UnitID: dataErr.UnitID}}}
+}
+
 func evaluateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunInput, AnnualStatementRunResult, error) {
 	result, issues := CalculateAnnualStatementRun(input)
 	if len(issues) > 0 {
@@ -258,6 +279,7 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	sort.Slice(input.Structure.CostTypes, func(i, j int) bool { return input.Structure.CostTypes[i].Key < input.Structure.CostTypes[j].Key })
 	sort.Slice(input.Structure.UnitBases, func(i, j int) bool { return input.Structure.UnitBases[i].UnitID < input.Structure.UnitBases[j].UnitID })
 	sort.Slice(input.Receipts, func(i, j int) bool { return input.Receipts[i].ID < input.Receipts[j].ID })
+	sortAnnualStatementReserveEntries(input.Reserve)
 	sort.Slice(input.Prepayments, func(i, j int) bool { return input.Prepayments[i].UnitID < input.Prepayments[j].UnitID })
 	sort.Slice(input.Documents, func(i, j int) bool { return input.Documents[i].ID < input.Documents[j].ID })
 	sort.Slice(input.Evidence, func(i, j int) bool { return input.Evidence[i].SourceKey < input.Evidence[j].SourceKey })
@@ -270,7 +292,11 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 		return AnnualStatementRun{}, err
 	}
 	hash := sha256.Sum256(raw)
-	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: AnnualStatementCalculationVersion, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
+	version := AnnualStatementCalculationVersion
+	if input.Structure.Legal.ShowVAT {
+		version = AnnualStatementCalculationVersionVAT
+	}
+	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: version, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
 }
 func copyAnnualStatementRun(run AnnualStatementRun) AnnualStatementRun {
 	raw, _ := json.Marshal(run)

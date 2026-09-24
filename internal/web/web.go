@@ -440,8 +440,8 @@ const PageTemplates = `
        One panel language for the whole page: hairline border, 12px radius,
        hairline dividers instead of gaps, so every row shares an edge. */
     .price-panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-panel); overflow: hidden; }
-    .product-paths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: stretch; gap: 18px; }
-    .product-path { min-width: 0; display: grid; grid-template-rows: 78px 134px 150px 68px 48px; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 30px 24px; background: var(--panel); box-shadow: var(--shadow-panel); }
+    .product-paths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(5,auto); align-items: stretch; column-gap: 18px; }
+    .product-path { min-width: 0; grid-row: 1 / -1; display: grid; grid-template-rows: subgrid; row-gap: 0; border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 30px 24px; background: var(--panel); box-shadow: var(--shadow-panel); }
     .product-path.free { border-color: rgba(79,91,80,.32); }
     .product-path.home { border-color: rgba(47,107,74,.42); }
     .product-path.professional { border-color: rgba(200,153,63,.5); }
@@ -452,13 +452,13 @@ const PageTemplates = `
     .product-path-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .product-path-kicker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
     .product-path h3 { margin: 0; font-family: var(--font-serif); font-size: clamp(24px,1.75vw,25px); font-weight: 600; line-height: 1.05; }
-    .product-path > p { margin: 0; padding-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.52; text-wrap: pretty; }
+    .product-path > p { margin: 0; padding: 18px 0 14px; color: var(--muted); font-size: 15px; line-height: 1.52; text-wrap: balance; }
     .product-capabilities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(2,66px); column-gap: 16px; margin: 0; padding: 0; list-style: none; }
     .product-capabilities li { min-width: 0; display: grid; grid-template-columns: 18px minmax(0,1fr); align-items: start; gap: 8px; border-top: 1px solid var(--line); padding: 11px 0; font-size: 13px; font-weight: 780; line-height: 1.4; }
     .product-capabilities li::before { content: "✓"; width: 18px; height: 1.4em; display: grid; place-items: center; align-self: start; color: var(--leaf); font-weight: 900; }
     .product-path.free .product-capabilities li::before { color: var(--muted); }
     .product-path.professional .product-capabilities li::before { color: var(--gold-ink); }
-    .product-path-price { min-width: 0; display: grid; align-content: center; border-top: 1px solid var(--line); }
+    .product-path-price { min-width: 0; display: grid; align-content: start; border-top: 1px solid var(--line); padding: 14px 0; }
     .product-path-price strong { font-family: var(--font-serif); font-size: 18px; font-weight: 650; line-height: 1.15; }
     .product-path-price span { margin-top: 4px; color: var(--soft); font-size: 12px; font-weight: 780; line-height: 1.3; }
     .product-path-start { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); padding: 11px 16px; background: var(--leaf); color: #fff; text-decoration: none; font-size: 14px; font-weight: 900; }
@@ -543,8 +543,8 @@ const PageTemplates = `
        900: the nav collapses. 640: everything stacks. */
     @media (max-width: 1100px) {
       .section-head { grid-template-columns: minmax(0,1fr) minmax(0,320px); }
-      .product-paths { grid-template-columns: minmax(0,1fr); }
-      .product-path { grid-template-rows: auto; }
+      .product-paths { grid-template-columns: minmax(0,1fr); grid-template-rows: none; gap: 18px; }
+      .product-path { grid-row: auto; grid-template-rows: auto; }
       .product-path-head { min-height: 72px; }
       .product-path > p { padding-top: 16px; }
       .product-capabilities { grid-template-rows: repeat(2,minmax(58px,auto)); margin-top: 20px; }

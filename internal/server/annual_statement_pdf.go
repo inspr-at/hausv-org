@@ -55,8 +55,12 @@ func (a *app) downloadAnnualStatementPDF(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	filename := annualStatementPDFFilename(run, unit)
+	disposition := "inline"
+	if query.Get("download") == "1" {
+		disposition = "attachment"
+	}
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": filename}))
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))

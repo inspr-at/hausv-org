@@ -42,7 +42,7 @@ func (s *SQLAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantRef,
 	defer tx.Rollback()
 	input, err := s.load(tx, tenant, year, consumption)
 	if err != nil {
-		return input, AnnualStatementRunResult{}, err
+		return input, AnnualStatementRunResult{}, annualStatementUnitDataBlock(err)
 	}
 	return evaluateAnnualStatementRun(input)
 }
@@ -54,7 +54,7 @@ func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, 
 	defer tx.Rollback()
 	input, err := s.load(tx, tenant, year, nil)
 	if err != nil {
-		return AnnualStatementRun{}, err
+		return AnnualStatementRun{}, annualStatementUnitDataBlock(err)
 	}
 	input, result, err := evaluateAnnualStatementRun(input)
 	if err != nil {
@@ -143,10 +143,10 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		}
 		return rows.Err()
 	}
-	err = read(`SELECT key,name,allocatable,allocation_key,updated_at,updated_by FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY key`, func(rows *sql.Rows) error {
+	err = read(`SELECT key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY key`, func(rows *sql.Rows) error {
 		var item AnnualStatementCostType
 		var updated string
-		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &updated, &item.UpdatedBy); err != nil {
+		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &item.VATRatePercent, &updated, &item.UpdatedBy); err != nil {
 			return err
 		}
 		at, err := time.Parse(time.RFC3339Nano, updated)
@@ -160,9 +160,9 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
-	err = read(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, func(rows *sql.Rows) error {
+	err = read(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, func(rows *sql.Rows) error {
 		var item AnnualStatementPeriodUnitBasis
-		if err := rows.Scan(&item.UnitID, &item.MiteigentumsanteilPPM, &item.UsableAreaM2Hundredths, &item.UsableAreaRecorded, &item.Persons, &item.PersonsRecorded); err != nil {
+		if err := rows.Scan(&item.UnitID, &item.MiteigentumsanteilPPM, &item.UsableAreaM2Hundredths, &item.UsableAreaRecorded, &item.Persons, &item.PersonsRecorded, &item.VacantFrom, &item.VacantTo); err != nil {
 			return err
 		}
 		input.Structure.UnitBases = append(input.Structure.UnitBases, item)
@@ -178,7 +178,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		}
 		var unit Unit
 		if err := json.Unmarshal([]byte(raw), &unit); err != nil {
-			return err
+			return unitDataErr(tenant, id, "decode", err)
 		}
 		if unit.ID != id {
 			return fmt.Errorf("annual statement unit identity mismatch")
@@ -201,6 +201,17 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
+	err = read(`SELECT id, period_year, kind, entry_date, amount_cents, document_id, note, created_at, created_by FROM annual_statement_reserve_entries WHERE tenant_id=$1 AND period_year=$2 ORDER BY entry_date, id`, func(rows *sql.Rows) error {
+		entry, err := scanAnnualStatementReserveEntry(rows)
+		if err != nil {
+			return err
+		}
+		input.Reserve = append(input.Reserve, entry)
+		return nil
+	}, tenant.ID, year)
+	if err != nil {
+		return input, err
+	}
 	err = read(`SELECT period_year,unit_id,amount_cents,updated_at,updated_by FROM annual_statement_prepayments WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, func(rows *sql.Rows) error {
 		item, _, err := getAnnualStatementPrepaymentQuery(rows)
 		if err != nil {
@@ -218,6 +229,8 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	}
 	err = read(`SELECT id,data FROM documents WHERE tenant_id=$1 AND id IN (
 		SELECT document_id FROM annual_statement_receipts WHERE tenant_id=$1 AND period_year=$2
+		UNION
+		SELECT document_id FROM annual_statement_reserve_entries WHERE tenant_id=$1 AND period_year=$2 AND document_id <> ''
 	) ORDER BY id`, func(rows *sql.Rows) error {
 		var id, raw string
 		if err := rows.Scan(&id, &raw); err != nil {

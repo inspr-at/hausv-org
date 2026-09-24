@@ -6,7 +6,7 @@
       "invoice_date": "2025-02-01",
       "key": "versicherung",
       "name": "Gebäudeversicherung",
-      "supplier": "Musterstadt Versicherung"
+      "supplier": "Musterstädter Versicherung"
     },
     {
       "allocation_key": "flaeche",
@@ -14,7 +14,7 @@
       "invoice_date": "2025-06-30",
       "key": "reinigung",
       "name": "Hausreinigung",
-      "supplier": "Musterstadt Reinigung"
+      "supplier": "Reinigung Holzer"
     },
     {
       "allocation_key": "personen",
@@ -22,7 +22,7 @@
       "invoice_date": "2025-12-15",
       "key": "abfall",
       "name": "Abfallentsorgung",
-      "supplier": "Stadtservice Musterstadt"
+      "supplier": "Entsorgung Musterstadt"
     },
     {
       "allocation_key": "verbrauch",
@@ -32,7 +32,7 @@
       "key": "heizung",
       "name": "Heizung",
       "operating_amount_cents": 90000,
-      "supplier": "Wärme Musterstadt"
+      "supplier": "Stadtwerke Musterstadt"
     }
   ],
   "ends_on": "2025-12-31",

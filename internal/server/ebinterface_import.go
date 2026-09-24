@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -169,18 +170,28 @@ func (a *app) storeEBInterfaceImport(w http.ResponseWriter, r *http.Request, ac 
 		a.redirectEBInterfaceImport(w, r, "", "changed")
 		return
 	}
-	created, err := storeEBInterfaceInvoiceDocument(a.documentStore, ac.tenantRef, verified.Invoice, ac.email, verified.RawXML, time.Now())
+	var created documentRecord
+	var already bool
+	if a.tenantDB != nil {
+		item, filename := ebInterfaceDocumentMetadata(verified.Invoice, ac.email)
+		created, already, err = store.NewImportLedger(a.tenantDB).ImportDocument(r.Context(), ac.tenantRef, store.ImportKey{
+			Format: string(integrations.FormatEBInterface), SourceVersion: verified.SourceVersion, AppliedBy: ac.email,
+		}, verified.FileDigest, a.documentStore, item, filename, verified.RawXML)
+	} else {
+		created, err = storeEBInterfaceInvoiceDocument(a.documentStore, ac.tenantRef, verified.Invoice, ac.email, verified.RawXML, time.Now())
+	}
 	if err != nil {
 		logError("ebInterface document storage failed", err, "tenant", ac.tenant.Slug)
 		a.redirectEBInterfaceImport(w, r, token, "error")
 		return
 	}
-
-	ledgerErr := a.recordEBInterfaceImportLedger(ac.tenantRef, ac.email, verified)
-	auditErr := a.appendEBInterfaceImportAudit(ac, verified, created)
 	delete(a.ebInterfaceImportPreviews, token)
-	if ledgerErr != nil || auditErr != nil {
-		logError("ebInterface import record failed", fmt.Errorf("ledger: %v; audit: %v", ledgerErr, auditErr), "tenant", ac.tenant.Slug, "document_id", created.ID)
+	if already {
+		a.redirectEBInterfaceImport(w, r, "", "already")
+		return
+	}
+	if err := a.appendEBInterfaceImportAudit(ac, verified, created); err != nil {
+		logError("committed ebInterface import audit failed", err, "tenant", ac.tenant.Slug, "document_id", created.ID)
 		a.redirectEBInterfaceImport(w, r, "", "recorded")
 		return
 	}
@@ -272,64 +283,18 @@ func ebInterfaceImportTargetID(fileDigest string) string {
 	return string(integrations.FormatEBInterface) + ":" + strings.TrimSpace(fileDigest)
 }
 
-// ebInterfaceImportAlreadyStored is the dedup read on the TENANT lane; see
-// paymentImportAlreadyApplied for why the read keys on tenant_id while the
-// constraint keys on tenant_slug, and what happens to the one row where the two
-// disagree.
+// Pending invoices are recoverable, not already stored. SQL replay authority
+// lives in the store ledger, including when the separate JSON audit sink failed.
 func (a *app) ebInterfaceImportAlreadyStored(tenant store.TenantRef, fileDigest string) bool {
-	fileDigest = strings.TrimSpace(fileDigest)
-	if a != nil && a.tenantDB != nil && tenant.Valid() && fileDigest != "" {
-		var exists bool
-		err := a.tenantDB.For(tenant).QueryRow(
-			`SELECT EXISTS(
-				SELECT 1 FROM integration_imports
-				WHERE tenant_id = $1 AND format = $2 AND file_digest = $3
-			)`,
-			tenant.ID, string(integrations.FormatEBInterface), fileDigest,
-		).Scan(&exists)
-		if err == nil && exists {
-			return true
-		}
+	if a != nil && a.tenantDB != nil {
+		complete, err := store.NewImportLedger(a.tenantDB).Completed(context.Background(), tenant,
+			store.ImportKey{Format: string(integrations.FormatEBInterface)}, fileDigest)
 		if err != nil {
 			logError("ebInterface import ledger lookup failed", err, "tenant", tenant.Slug)
 		}
+		return complete
 	}
-	return a != nil && a.auditStore != nil &&
-		a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, ebInterfaceImportTargetID(fileDigest))
-}
-
-// recordEBInterfaceImportLedger writes the ledger row on the MAINTENANCE lane
-// under store.HealOrphanReason, for the reason spelled out on the camt.053
-// ledger: the natural conflict key can land on a row the previous release left
-// without a tenant_id, and only the maintenance lane can reach that row.
-func (a *app) recordEBInterfaceImportLedger(tenant store.TenantRef, actorEmail string, preview ebInterfaceImportPreview) error {
-	if a == nil || a.tenantDB == nil {
-		return nil
-	}
-	if !tenant.Valid() {
-		return fmt.Errorf("ebInterface import ledger: tenant reference is not usable")
-	}
-	// DO NOTHING on everything EXCEPT tenant_id, for the reason spelled out on
-	// the camt.053 ledger: the first application's timestamp and actor must
-	// survive a re-upload, but a row left without an identity is a row the
-	// tenant_id lookup above can never find, so the ledger would keep storing
-	// the same invoice for ever.
-	_, err := a.tenantDB.Unscoped(store.HealOrphanReason).Exec(
-		`INSERT INTO integration_imports(
-			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
-			assigned, changed, unclear, rejected
-		) VALUES($1, $2, $3, $4, $5, $6, $7, 1, 1, 0, 0)
-		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
-		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
-		tenant.ID,
-		tenant.Slug,
-		string(integrations.FormatEBInterface),
-		strings.TrimSpace(preview.FileDigest),
-		strings.TrimSpace(preview.SourceVersion),
-		time.Now().UTC().Format(time.RFC3339),
-		normalizeEmail(actorEmail),
-	)
-	return err
+	return a != nil && a.auditStore != nil && a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, ebInterfaceImportTargetID(fileDigest))
 }
 
 func (a *app) appendEBInterfaceImportAudit(ac authCtx, preview ebInterfaceImportPreview, created documentRecord) error {

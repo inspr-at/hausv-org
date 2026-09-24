@@ -20,12 +20,18 @@ var ErrNotFound = errors.New("statement document not found")
 
 type CostRow struct {
 	Name, Total, Key, Share, Amount string
+	Net, Rate, VAT, Gross           string
 	Measurements                    []string
 }
 type Document struct {
 	UnitID, PartyID, UnitLabel string
-	Header, Address, Basis     []string
+	Sender, Address, Basis     []string
+	Info                       []InfoField
+	Reference, Timing          string
 	Costs                      []CostRow
+	ShowVAT                    bool
+	VATSummary                 []string
+	Reserve                    []string
 	Total, Prepaid, Balance    string
 	Excluded                   []string
 	Contact                    string
@@ -33,6 +39,7 @@ type Document struct {
 	PaymentTerms               []string
 	Proposals                  []string
 	Inspection                 []string
+	InspectionBasis            string
 	Receipts                   []string
 	Title                      string
 }
@@ -71,27 +78,11 @@ func Documents(run store.AnnualStatementRun, unitID, partyID string) ([]Document
 }
 
 func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, party store.AnnualStatementRunParty) Document {
-	p := run.Input.Presentation
-	org := p.Organisation
-	if org == "" {
-		org = "Hausverwaltung: Angabe fehlt"
-	}
-	d := Document{UnitID: unit.UnitID, PartyID: party.ID, UnitLabel: unit.Label,
-		Header: []string{org, p.EstateName, p.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), fmt.Sprintf("Lauf %s · Revision %d", run.ID, run.Revision), "Erstellt: " + timestamp(run.CreatedAt)},
-		Total:  money(unit.AllocatedCents), Prepaid: money(unit.PrepaidCents), Contact: strings.Join(nonempty(p.ContactName, p.ContactEmail, p.ContactPhone, p.ContactAddress), " · ")}
-	if run.Input.Structure.Legal.Regime != "" {
-		d.Header = append(d.Header, run.Input.Structure.Legal.Basis())
-	}
-	if run.Approval != nil {
-		role := "Verwaltung"
-		if run.Approval.Role == store.RoleAdmin {
-			role = "Administration"
-		}
-		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
-	}
-	if d.Contact == "" {
-		d.Contact = "Kontakt der Verwaltung fehlt"
-	}
+	unit, vacancyNote := annualStatementPartyUnit(run, unit, party)
+	d := letterDocument(run, unit.Label)
+	d.UnitID, d.PartyID = unit.UnitID, party.ID
+	d.Total, d.Prepaid = money(unit.AllocatedCents), money(unit.PrepaidCents)
+	d.Timing = balanceTiming(run, unit)
 	role := "Wohnungseigentümer"
 	if party.Renter {
 		role = "Mietpartei"
@@ -99,16 +90,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			role = "Wohnungseigentümer und Mietpartei"
 		}
 	}
-	d.Address = append(d.Address, role)
-	if party.Name != "" {
-		d.Address = append(d.Address, party.Name)
-	}
-	d.Address = append(d.Address, party.ID)
-	if strings.TrimSpace(party.Address) == "" {
-		d.Address = append(d.Address, "Anschrift fehlt")
-	} else {
-		d.Address = append(d.Address, party.Address)
-	}
+	d.Address = nonempty(role, party.Name, party.Address)
 	d.Basis = []string{"Einheit: " + unit.Label}
 	for _, basis := range run.Input.Structure.UnitBases {
 		if basis.UnitID != unit.UnitID {
@@ -120,6 +102,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		}
 		if basis.PersonsRecorded {
 			d.Basis = append(d.Basis, fmt.Sprintf("Personen: %d", basis.Persons))
+		}
+		if vacancyNote != "" && basis.UnitID == unit.UnitID {
+			d.Basis = append(d.Basis, vacancyNote)
 		}
 	}
 	switch {
@@ -161,7 +146,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 				if i > 0 {
 					label = "Grenzmessung Ende"
 				}
-				row.Measurements = append(row.Measurements, label+": "+timestamp(item.MeasuredAt)+" · "+measurement(item.ValueMicros, item.MeasurementUnit), "Quelle: "+item.SourceKind+" / "+item.SourceID)
+				row.Measurements = append(row.Measurements, label+": "+timestamp(item.MeasuredAt)+" · "+measurement(item.ValueMicros, item.MeasurementUnit), "Quelle: "+item.SourceKind)
 			}
 			if len(evidence) != 2 {
 				row.Measurements = append(row.Measurements, "Grenzmessungen im gespeicherten Lauf unvollständig")
@@ -172,9 +157,25 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			// A two-pool split has no single allocation share. Consumption and
 			// area shares are explained separately in the measurement appendix.
 			row.Share = "im Anhang"
-			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
+			prepaid := run.Input.Structure.Legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]
+			if vacancyNote != "" && party.Owner && !party.Renter {
+				prepaid = 0 // The occupied party keeps the recorded prepayments.
+			}
+			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost, prepaid)...)
+		}
+		if run.Input.Structure.Legal.ShowVAT {
+			row.Net = money(cost.NetCents)
+			row.Rate = fmt.Sprintf("%d %%", cost.VATRatePercent)
+			row.VAT = money(cost.VATCents)
+			row.Gross = money(cost.AmountCents)
+			d.ShowVAT = true
 		}
 		d.Costs = append(d.Costs, row)
+	}
+	if d.ShowVAT {
+		for _, group := range unit.VAT {
+			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
+		}
 	}
 	for _, cost := range run.Input.Structure.CostTypes {
 		if !cost.Allocatable {
@@ -184,10 +185,71 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
+	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
+}
+
+// annualStatementPartyUnit gives the landlord the vacant-day slice and the
+// tenant the occupied remainder. A party who is both sees both slices.
+func annualStatementPartyUnit(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, party store.AnnualStatementRunParty) (store.AnnualStatementRunUnit, string) {
+	var line *store.AnnualStatementVacancyLine
+	for i := range run.Result.Vacancy {
+		if run.Result.Vacancy[i].UnitID == unit.UnitID {
+			line = &run.Result.Vacancy[i]
+			break
+		}
+	}
+	if line == nil {
+		return unit, ""
+	}
+	note := fmt.Sprintf("%s: %s–%s (%d von %d Tagen)", store.AnnualStatementVacancyLabel, date(line.From), date(line.To), line.VacantDays, line.PeriodDays)
+	if party.Owner && !party.Renter {
+		owner := unit
+		owner.Costs = append([]store.AnnualStatementRunCost(nil), line.Costs...)
+		owner.VAT = line.VAT
+		owner.AllocatedCents = line.AmountCents
+		owner.PrepaidCents = 0
+		owner.BalanceCents = line.AmountCents
+		return owner, note
+	}
+	if party.Owner && party.Renter {
+		combined := unit
+		combined.Costs = append([]store.AnnualStatementRunCost(nil), unit.Costs...)
+		for _, vacant := range line.Costs {
+			for i := range combined.Costs {
+				if combined.Costs[i].CostTypeKey == vacant.CostTypeKey {
+					combined.Costs[i].AmountCents += vacant.AmountCents
+					combined.Costs[i].NetCents += vacant.NetCents
+					combined.Costs[i].VATCents += vacant.VATCents
+					break
+				}
+			}
+		}
+		combined.VAT = append([]store.AnnualStatementVATGroup(nil), unit.VAT...)
+		for _, vacant := range line.VAT {
+			found := false
+			for i := range combined.VAT {
+				if combined.VAT[i].RatePercent == vacant.RatePercent {
+					combined.VAT[i].NetCents += vacant.NetCents
+					combined.VAT[i].VATCents += vacant.VATCents
+					combined.VAT[i].GrossCents += vacant.GrossCents
+					found = true
+					break
+				}
+			}
+			if !found {
+				combined.VAT = append(combined.VAT, vacant)
+			}
+		}
+		sort.Slice(combined.VAT, func(i, j int) bool { return combined.VAT[i].RatePercent < combined.VAT[j].RatePercent })
+		combined.AllocatedCents += line.AmountCents
+		combined.BalanceCents = combined.AllocatedCents - combined.PrepaidCents
+		return combined, note
+	}
+	return unit, ""
 }
 
 func Render(run store.AnnualStatementRun, unitID, partyID string) ([]byte, error) {
@@ -199,144 +261,20 @@ func Render(run store.AnnualStatementRun, unitID, partyID string) ([]byte, error
 	for _, d := range documents {
 		pages = append(pages, d.Pages()...)
 	}
-	return pdf.Pages(pages, pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
-}
-
-func (d Document) Pages() []pdf.Page {
-	lines := func(text string, style pdf.Style) []pdf.Line {
-		var out []pdf.Line
-		for _, line := range pdf.WrapText(text, 50) {
-			out = append(out, pdf.Line{Text: line, Style: style})
-		}
-		return out
-	}
-	title := d.Title
-	if title == "" {
-		title = "Jahresabrechnung"
-	}
-	header := []pdf.Line{{Text: title, Style: pdf.Heading}, {}}
-	for _, text := range d.Header {
-		header = append(header, lines(text, pdf.Body)...)
-	}
-	identity := "Einheit: " + d.UnitLabel
-	if d.PartyID != "" {
-		identity += " · Partei: " + d.PartyID
-	}
-	header = append(header, lines(identity, pdf.Body)...)
-	header = append(header, pdf.Line{})
-	var blocks [][]pdf.Line
-	for _, text := range append(append([]string(nil), d.Address...), d.Basis...) {
-		blocks = append(blocks, lines(text, pdf.Body))
-	}
-	blocks = append(blocks, []pdf.Line{{}})
-	widths := []int{25, -18, 15, -11, -22}
-	tableHeader := pdf.Columns([]string{"Kostenart", "Gesamtkosten Liegenschaft", "Verteiler-\nschlüssel", "Anteil", "Betrag Einheit"}, widths)
-	for i, row := range d.Costs {
-		rowLines := pdf.Columns([]string{row.Name, row.Total, row.Key, row.Share, row.Amount}, widths)
-		if i == 0 {
-			rowLines = append(append([]pdf.Line(nil), tableHeader...), rowLines...)
-		}
-		blocks = append(blocks, rowLines)
-	}
-	summary := []pdf.Line{{}}
-	summary = append(summary, lines("Summe: "+d.Total, pdf.Strong)...)
-	if d.Prepaid != "" {
-		summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
-	}
-	if d.Balance != "" {
-		summary = append(summary, lines(d.Balance, pdf.Strong)...)
-	}
-	blocks = append(blocks, summary)
-	for _, text := range d.PaymentTerms {
-		blocks = append(blocks, lines(text, pdf.Body))
-	}
-	for _, text := range d.Proposals {
-		blocks = append(blocks, lines(text, pdf.Body))
-	}
-	for _, row := range d.Costs {
-		if len(row.Measurements) > 0 {
-			blocks = append(blocks, []pdf.Line{{}}, lines(row.Name+" · Messnachweis", pdf.Strong))
-			for _, text := range row.Measurements {
-				blocks = append(blocks, lines(text, pdf.Body))
-			}
-		}
-	}
-	if len(d.Excluded) > 0 {
-		blocks = append(blocks, []pdf.Line{{}}, lines("Hinweis: Nicht umlagefähige Kosten", pdf.Strong))
-		for _, text := range d.Excluded {
-			blocks = append(blocks, lines(text, pdf.Body))
-		}
-	}
-	if len(d.Inspection) > 0 {
-		blocks = append(blocks, []pdf.Line{{}}, lines("Einsicht in die Belege", pdf.Strong))
-		for _, text := range d.Inspection {
-			blocks = append(blocks, lines(text, pdf.Body))
-		}
-	}
-	if len(d.Receipts) > 0 {
-		blocks = append(blocks, []pdf.Line{{}}, lines("Belegverzeichnis", pdf.Strong))
-		for _, text := range d.Receipts {
-			blocks = append(blocks, lines(text, pdf.Body))
-		}
-	}
-	contactLines := pdf.WrapText("Verwaltung: "+d.Contact, 62)
-	if len(contactLines) > 3 {
-		blocks = append(blocks, []pdf.Line{{}}, lines("Kontakt der Verwaltung", pdf.Strong), lines(d.Contact, pdf.Body))
-		contactLines = append(contactLines[:2], "Weitere Kontaktdaten im Kontaktabschnitt.")
-	}
-	notice := DraftNotice
-	if d.ApprovalNotice != "" {
-		notice = d.ApprovalNotice
-	}
-	footer := append([]string{notice}, contactLines...)
-	const maxLines = 43
-	// Very long supplied addresses remain visible on continuation pages instead
-	// of overflowing a fixed header. Only the title is then repeated.
-	if len(header) > 16 {
-		blocks = append([][]pdf.Line{header[2:]}, blocks...)
-		header = header[:2]
-	}
-	current := append([]pdf.Line(nil), header...)
-	var pages []pdf.Page
-	flush := func() {
-		pages = append(pages, pdf.Page{Lines: current, Footer: append([]string(nil), footer...)})
-		current = append([]pdf.Line(nil), header...)
-	}
-	for _, block := range blocks {
-		isTable := len(block) > 0 && block[0].Style == pdf.Table
-		startsTable := isTable && block[0].Text == tableHeader[0].Text
-		if len(current)+len(block) > maxLines && len(current) > len(header) {
-			flush()
-			if isTable && !startsTable {
-				current = append(current, tableHeader...)
-			}
-		}
-		for len(block) > 0 {
-			n := min(len(block), maxLines-len(current))
-			current = append(current, block[:n]...)
-			block = block[n:]
-			if len(block) > 0 {
-				flush()
-				if isTable {
-					current = append(current, tableHeader...)
-				}
-			}
-		}
-	}
-	if len(current) > len(header) {
-		flush()
-	}
-	for i := range pages {
-		pages[i].Footer = append(pages[i].Footer, fmt.Sprintf("Einheit %s · Seite %d / %d", d.UnitLabel, i+1, len(pages)))
-	}
-	return pages
+	return pdf.Pages(pages, statementPalette), nil
 }
 
 func nonempty(values ...string) []string {
 	var out []string
 	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			out = append(out, value)
+		var lines []string
+		for _, line := range strings.Split(value, "\n") {
+			if line = strings.TrimSpace(line); line != "" {
+				lines = append(lines, line)
+			}
+		}
+		if len(lines) > 0 {
+			out = append(out, strings.Join(lines, "\n"))
 		}
 	}
 	return out

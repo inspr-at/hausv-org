@@ -360,7 +360,8 @@ async function assertPortalChromeKit() {
     if (route.action && !result.actionTexts.some((text) => text.includes(route.action))) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion „${route.action}“ fehlt`);
     }
-    if (result.filledActions.length || result.borderlessActions.length || result.wrappedActions) {
+    // HAUSV-765: a header may carry exactly ONE filled main action; all others stay outline/ghost.
+    if (result.filledActions.length > 1 || result.borderlessActions.length || result.wrappedActions) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
     }
     if (!result.sidebarMap || result.sidebarAddressCount !== 0 || result.headerAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
@@ -940,7 +941,7 @@ async function ensureResponsiveAnnouncement() {
     await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
     const form = page.locator('#announcement-create form');
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente.');
+    await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente. Er ist bewusst länger als die Vorschau, damit das Aufklappen, das Einklappen und die Fokusrückgabe weiterhin geprüft werden (HAUSV-662).');
     await form.getByRole('button', { name: 'Aushang veröffentlichen' }).click();
     await page.waitForURL(/\/app\/announcements/);
   }
@@ -1127,6 +1128,41 @@ async function assertPublicLanding(viewport) {
       path: join(process.env.HV_QA_SCREENSHOT_DIR, `landing-${viewport.name.toLowerCase()}.png`),
       fullPage: true,
     });
+  }
+  if (viewport.name === 'Desktop') {
+    const cardRows = await page.locator('.product-path').evaluateAll((cards) => cards.map((card) => {
+      const box = (selector) => {
+        const element = card.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return rect ? { top: rect.top, height: rect.height, center: rect.top + rect.height / 2 } : null;
+      };
+      return {
+        name: card.querySelector('h3')?.textContent?.trim() || 'Unbenannte Produktkarte',
+        head: box('.product-path-head'),
+        headCopy: box('.product-path-head > div'),
+        description: box(':scope > p'),
+        capabilities: box('.product-capabilities'),
+        price: box('.product-path-price'),
+        action: box('.product-path-start'),
+        icon: box('.product-path-icon'),
+      };
+    }));
+    for (const row of ['head', 'description', 'capabilities', 'price', 'action']) {
+      const missing = cardRows.filter((card) => !card[row]).map((card) => card.name);
+      if (missing.length) {
+        fail(`Öffentliche Startseite Desktop: Produktkarten-Zeile „${row}“ fehlt bei ${missing.join(', ')}`);
+      }
+      const tops = new Set(cardRows.map((card) => card[row].top.toFixed(2)));
+      const heights = new Set(cardRows.map((card) => card[row].height.toFixed(2)));
+      if (tops.size !== 1 || heights.size !== 1) {
+        const positions = cardRows.map((card) => `${card.name}: ${card[row].top.toFixed(2)}px / ${card[row].height.toFixed(2)}px`).join(', ');
+        fail(`Öffentliche Startseite Desktop: Produktkarten-Zeile „${row}“ ist nicht ausgerichtet (${positions})`);
+      }
+    }
+    const uncentered = cardRows.filter((card) => !card.icon || !card.headCopy || Math.abs(card.icon.center - card.headCopy.center) > 0.5);
+    if (uncentered.length) {
+      fail(`Öffentliche Startseite Desktop: Produkt-Icons sind nicht mittig zum Titelblock (${uncentered.map((card) => card.name).join(', ')})`);
+    }
   }
   // HAUSV-668: every feature card carries the same hairline, and its image
   // fills the media box to that hairline — no card ground leaking in a corner.
@@ -1394,7 +1430,7 @@ async function seedManagedContent() {
   await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
   const announcement = page.locator('#announcement-create form');
   await announcement.locator('input[name="title"]').fill('QA Hausinformation zur Trinkwasserwartung');
-  await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang.');
+  await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang. Der Text ist bewusst länger als die Vorschau, damit Lesen, Einklappen und Ausklappen weiterhin über die native Aufklappfläche geprüft werden (HAUSV-662).');
   await announcement.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/announcements/);
 
@@ -1536,7 +1572,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
     { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: '.announcement-legend' },
     { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside > details.guide' },
     { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside > details.aside-panel', guide: '.contacts-aside > details.aside-panel' },
-    { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.file-details' },
+    { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: 'details.document-more' },
     { name: 'abstimmungen', path: '/app/abstimmungen', email: 'owner@example.com', details: '.vote-details' },
     { name: 'verlauf', path: '/app/audit', email: 'resident@example.com', details: '.filter-panel', guide: '.help-disclosure' },
   ];
@@ -1645,10 +1681,14 @@ async function assertResidentContentResponsiveMatrix(sizes = [
         await page.evaluate(() => window.scrollTo(0, Math.min(500, document.documentElement.scrollHeight - window.innerHeight)));
         const sticky = await page.locator('[data-context-bar]').evaluate((node) => {
           const box = node.getBoundingClientRect();
-          return { top: box.top, bottom: box.bottom, height: box.height };
+          const declared = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--context-bar-h'));
+          return { top: box.top, bottom: box.bottom, height: box.height, declared, activeView: Boolean(node.querySelector('.context-view')) };
         });
-        // The unified phone header reserves three accessible rows: account, property, view.
-        if (Math.abs(sticky.top) > 1 || Math.abs(sticky.height - 148) > 1 || sticky.bottom > 149) {
+        // The unified phone header keeps its declared height while scrolling. HAUSV-765: it has
+        // three rows (account, property, view) only while a role/support view is active (148px);
+        // otherwise the view chooser shares the account row and the header is shorter.
+        const maxHeight = sticky.activeView ? 148 : 112;
+        if (Math.abs(sticky.top) > 1 || Math.abs(sticky.height - sticky.declared) > 1 || sticky.height > maxHeight + 1 || sticky.bottom > maxHeight + 1) {
           fail(`Mobile Navigation überdeckt beim Scrollen zu viel Inhalt (${JSON.stringify(sticky)})`);
         }
         await page.evaluate(() => window.scrollTo(0, 0));
@@ -1789,7 +1829,7 @@ async function assertResidentContentClickFlows() {
     { path: '/app/announcements', details: '.announcement-body' },
     { path: '/app/events', details: '.event-details' },
     { path: '/app/kontakte', details: '.contacts-aside > details.aside-panel' },
-    { path: '/app/dokumente', details: '.file-details' },
+    { path: '/app/dokumente', details: 'details.document-more' },
     { path: '/app/audit', details: '.help-disclosure' },
   ]) {
     const response = await noJSPage.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });

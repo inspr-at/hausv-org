@@ -12,6 +12,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestEBInterfacePortalPreviewStoreProtectionAndIdempotency(t *testing.T) {
@@ -207,7 +210,7 @@ func TestEBInterfaceImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	digestBytes := sha256.Sum256(data)
 	digest := hex.EncodeToString(digestBytes[:])
 	preview := ebInterfaceImportPreview{FileDigest: digest, SourceVersion: "6.0"}
-	if err := a.recordEBInterfaceImportLedger(refs["demo"], "manager@example.com", preview); err != nil {
+	if err := recordTestImportLedger(a, refs["demo"], string(integrations.FormatEBInterface), preview.FileDigest, preview.SourceVersion, store.ImportCounts{Assigned: 1, Changed: 1}); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
 	if !a.ebInterfaceImportAlreadyStored(refs["demo"], digest) {
@@ -216,7 +219,7 @@ func TestEBInterfaceImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	if a.ebInterfaceImportAlreadyStored(refs["other-house"], digest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordEBInterfaceImportLedger(refs["demo"], "manager@example.com", preview); err != nil {
+	if err := recordTestImportLedger(a, refs["demo"], string(integrations.FormatEBInterface), preview.FileDigest, preview.SourceVersion, store.ImportCounts{Assigned: 1, Changed: 1}); err != nil {
 		t.Fatalf("repeat ledger: %v", err)
 	}
 	var rows int

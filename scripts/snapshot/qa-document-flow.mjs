@@ -243,13 +243,13 @@ async function run() {
     buffer: pngV1,
   });
   if (!(await publicRow.getByText('Alle Bewohner', { exact: true }).count())) fail('Freigabe „Alle Bewohner“ fehlt');
-  const publicPreviewPath = await publicRow.getByRole('button', { name: 'Vorschau' }).getAttribute('data-lightbox-src');
-  const publicDownloadPath = await publicRow.getByRole('link', { name: 'Herunterladen' }).getAttribute('href');
+  const publicPreviewPath = await publicRow.locator('a.document-title').getAttribute('data-lightbox-src');
+  const publicDownloadPath = await publicRow.getByRole('link', { name: 'Herunterladen' }).first().getAttribute('href');
   if (!publicPreviewPath || !publicDownloadPath) fail('Vorschau- oder Downloadpfad fehlt');
 
   await manager.setViewportSize(sizes[1]);
   const previewResponse = manager.waitForResponse((response) => new URL(response.url()).pathname === publicPreviewPath);
-  await publicRow.getByRole('button', { name: 'Vorschau' }).click();
+  await publicRow.locator('a.document-title').click();
   if ((await previewResponse).status() !== 200) fail('Bildvorschau antwortet nicht mit 200');
   await manager.locator('.attachment-lightbox.open').waitFor({ state: 'visible' });
   await screenshot(manager, 'image-preview-390', false);
@@ -266,8 +266,8 @@ async function run() {
     filename: ownerFilenameV1,
     buffer: pngV1,
   });
-  const ownerPreviewPathV1 = await ownerRow.getByRole('button', { name: 'Vorschau' }).getAttribute('data-lightbox-src');
-  const ownerDownloadPathV1 = await ownerRow.getByRole('link', { name: 'Herunterladen' }).getAttribute('href');
+  const ownerPreviewPathV1 = await ownerRow.locator('a.document-title').getAttribute('data-lightbox-src');
+  const ownerDownloadPathV1 = await ownerRow.getByRole('link', { name: 'Herunterladen' }).first().getAttribute('href');
   if (!ownerPreviewPathV1 || !ownerDownloadPathV1) fail('Eigentümer-Dokument hat keine Dateiaktionen');
 
   const residentContext = await newContext();
@@ -289,12 +289,12 @@ async function run() {
 
   await manager.goto(`${baseURL}/app/dokumente`, { waitUntil: 'networkidle' });
   ownerRow = documentRow(manager, ownerTitle);
-  const adminTools = ownerRow.locator('.admin-tools');
-  const adminSummary = adminTools.locator(':scope > summary');
-  await adminSummary.focus();
-  await adminSummary.press('Enter');
-  if (!(await adminTools.evaluate((node) => node.open))) fail('Dokumentverwaltung öffnet nicht per Tastatur');
-  await adminTools.getByRole('button', { name: 'Neue Version hochladen' }).click();
+  const more = ownerRow.locator('.document-more');
+  const moreSummary = more.locator(':scope > summary');
+  await moreSummary.focus();
+  await moreSummary.press('Enter');
+  if (!(await more.evaluate((node) => node.open))) fail('Mehr öffnet nicht per Tastatur');
+  await more.getByRole('button', { name: 'Neue Version hochladen' }).click();
   const replaceDialog = manager.locator('dialog[open][id^="document-replace-"]');
   await replaceDialog.locator('input[name="document"]').setInputFiles({ name: ownerFilenameV2, mimeType: 'image/png', buffer: pngV2 });
   await Promise.all([
@@ -303,8 +303,8 @@ async function run() {
   ]);
   ownerRow = documentRow(manager, ownerTitle);
   if (!(await ownerRow.getByText('Version 2', { exact: true }).count())) fail('Neue Dokumentversion fehlt');
+  await ownerRow.locator('.document-more > summary').click();
   const versionHistory = ownerRow.locator('.versions');
-  await versionHistory.locator(':scope > summary').click();
   if (!(await versionHistory.getByText(/Version 1/).count()) || !(await versionHistory.getByText(ownerFilenameV1, { exact: false }).count())) {
     fail('Frühere Fassung fehlt im Versionsverlauf');
   }
@@ -364,7 +364,7 @@ async function run() {
   const invoiceRow = manager.locator('.document-row').filter({ hasText: 'RE-2026-0006' }).first();
   await invoiceRow.waitFor({ state: 'visible' });
   if (!(await invoiceRow.getByText('Nur Verwaltung', { exact: true }).count())) fail('E-Rechnung ist nicht verwaltungsintern');
-  const invoiceDownloadPath = await invoiceRow.getByRole('link', { name: 'Herunterladen' }).getAttribute('href');
+  const invoiceDownloadPath = await invoiceRow.getByRole('link', { name: 'Herunterladen' }).first().getAttribute('href');
   if (!invoiceDownloadPath) fail('E-Rechnung hat keinen Downloadpfad');
   await downloadFrom(invoiceRow, 'ebinterface-re20260006.xml', invoiceXML);
 

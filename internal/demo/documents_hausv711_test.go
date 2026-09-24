@@ -33,7 +33,13 @@ func TestDemoDocumentsReseedRestoresFilesWithoutDuplicates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(fixtures) != len(houses)*6 {
+	documented := 0
+	for _, house := range houses {
+		if house.Slug != "musterstrasse-12" {
+			documented++
+		}
+	}
+	if len(fixtures) != documented*6 || len(houses) != documented+1 {
 		t.Fatalf("documents=%d houses=%d", len(fixtures), len(houses))
 	}
 	for _, reset := range []bool{false, false, true} {
@@ -81,6 +87,12 @@ func TestDemoDocumentsReseedRestoresFilesWithoutDuplicates(t *testing.T) {
 						t.Fatal("PDF digest changed")
 					}
 				}
+			}
+			if house.Slug == "musterstrasse-12" {
+				if public != 0 || board != 0 {
+					t.Fatalf("%s: public=%d board=%d", house.Slug, public, board)
+				}
+				continue
 			}
 			if public != 5 || board != 1 {
 				t.Fatalf("%s: public=%d board=%d", house.Slug, public, board)

@@ -187,6 +187,16 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	after := before
+	if r.FormValue("valorisation_present") == "1" {
+		after.Valorisation = store.ValorisationSettings{WirksamwerdenMode: r.FormValue("valorisation_mode"), UnreviewedClausePolicy: r.FormValue("valorisation_review"), FourEyes: r.FormValue("valorisation_four_eyes") == "1", LetterSenderText: strings.TrimSpace(r.FormValue("valorisation_sender"))}.Normalized()
+	}
+	if r.Form.Has("contact_address") {
+		after.ContactAddress = strings.TrimSpace(r.FormValue("contact_address"))
+		if len([]rune(after.ContactAddress)) > 500 {
+			http.Error(w, "Die Anschrift darf höchstens 500 Zeichen enthalten.", http.StatusBadRequest)
+			return
+		}
+	}
 	after.TrustLevels = map[string]string{}
 	for _, category := range store.IntakeCategories() {
 		level := r.FormValue("trust_" + category.Key)
@@ -255,6 +265,9 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	summary := settingsDiff(before, after) + organisationSummary
+	if before.ContactAddress != after.ContactAddress {
+		summary += "; Verwaltungsanschrift aktualisiert"
+	}
 	aiChanged := before.AIProvider != after.AIProvider || before.AIBaseURL != after.AIBaseURL || before.AIModel != after.AIModel
 	originBefore, originAfter := "", ""
 	if aiChanged {
@@ -299,12 +312,14 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		logError("organisation members could not be read", membersErr, "organisation", organisation.Key)
 	}
 	data := web.VerwaltungSettingsData{
+		ValorisationMode: settings.Valorisation.WirksamwerdenMode, ValorisationReviewPolicy: settings.Valorisation.UnreviewedClausePolicy, ValorisationFourEyes: settings.Valorisation.FourEyes, ValorisationSender: settings.Valorisation.LetterSenderText,
 		OrganisationName: organisation.Name, OrganisationHouses: len(organisation.Houses),
 		MembersAvailable: a.organisationMemberRepo != nil,
 		MailConfigured:   mailStatus.Configured, MailMailbox: mailStatus.Mailbox, MailInterval: mailStatus.Interval.String(),
 		MailLastRun: mailLastRun, MailLastSuccess: mailLastSuccess, MailLastError: mailStatus.LastError, MailTotal: mailStatus.Total,
 		ContactName: organisation.ContactName, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone,
-		Threshold: int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
+		ContactAddress: settings.ContactAddress,
+		Threshold:      int(settings.AutoThreshold*100 + 0.5), AutoEnabled: settings.AutoEnabled,
 		ProviderLabel: config.Label, AIHost: config.Host, AIModel: config.Model, AITimeout: config.Timeout,
 		AIProvider: config.Provider, AIConfigured: config.Configured, AIBaseURLOverride: settings.AIBaseURL, AIModelOverride: settings.AIModel,
 		Approved: settings.Counters.Approved, Edited: settings.Counters.Edited, Rejected: settings.Counters.Rejected,

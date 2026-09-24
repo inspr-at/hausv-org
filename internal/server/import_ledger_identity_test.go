@@ -15,91 +15,42 @@ import (
 	storepkg "github.com/inspr-at/hausv-org/internal/store"
 )
 
-// TestImportLedgerHealsRowsLeftWithoutAnIdentity is the one tenant-scoped upsert
-// that could not heal, reproduced.
-//
-// integration_imports is written with ON CONFLICT ... DO NOTHING, because the
-// ledger records when a file was FIRST applied and a re-upload must not rewrite
-// that. Its dedup read, however, was switched onto tenant_id. A ledger row
-// written by the previous release carries a slug and no identity, so:
-//
-//	the read cannot see it            -> the file counts as never imported
-//	the write conflicts and does nothing -> the row never gets its identity
-//
-// which is not a transient gap but a permanent one: every re-upload of that file
-// is applied again, and the boot-time backfill is the only thing that could ever
-// repair it. Every other tenant-scoped upsert in the product heals the row it
-// lands on; this one had to as well, without touching the columns DO NOTHING is
-// there to protect.
-//
-// The ledger now runs on the lane seam: the read on For(tenant), the write on
-// Unscoped(store.HealOrphanReason). On PostgreSQL that is the difference between
-// the heal working and the heal being refused — the orphan is unreachable from
-// the tenant lane under migration 0003 — so this test runs on whichever engine
-// dbtest selects: SQLite by default, and the real policy when
-// HAUSV_STORE_TEST_POSTGRES is set. TestImportLedgerHealRequiresTheMaintenanceLane
-// below is the PostgreSQL-only half that shows the tenant lane cannot do it.
-//
-// Where it is blind: it drives the two ledger functions directly rather than a
-// full upload through the HTTP handler, so it proves the SQL heals and says
-// nothing about the surrounding import flow (TestCAMT053ImportLedgerIsDurableAndTenantBound
-// and the eb-interface equivalent cover that).
-func TestImportLedgerHealsRowsLeftWithoutAnIdentity(t *testing.T) {
-	digest := strings.Repeat("d", 64)
+// SQLite can still contain pre-identity rows. They are already-imported
+// evidence, not a reason to replay effects or cross onto a maintenance lane.
+func TestImportLedgerPreservesLegacyCompletion(t *testing.T) {
+	for _, format := range []string{string(integrations.FormatCAMT053), string(integrations.FormatEBInterface)} {
+		t.Run(format, func(t *testing.T) {
+			a, database, refs := ledgerTestApp(t, "demo")
+			if dbtest.RollbackWindowClosed(t, database) {
+				return
+			}
+			digest := strings.Repeat("d", 64)
+			seedLegacyLedgerRow(t, database, "demo", format, digest)
+			ledger := storepkg.NewImportLedger(a.tenantDB)
+			key := storepkg.ImportKey{Format: format}
+			complete, err := ledger.Completed(t.Context(), refs["demo"], key, digest)
+			if err != nil || complete {
+				t.Fatalf("unbackfilled row should be invisible: %v, %v", complete, err)
+			}
+			already, err := ledger.Apply(t.Context(), refs["demo"], key, digest, func(*storepkg.ImportTx) error {
+				t.Fatal("legacy file was replayed")
+				return nil
+			})
+			if err != nil || !already {
+				t.Fatalf("legacy replay = %v, %v", already, err)
+			}
+			assertLedgerAppliedBy(t, database, digest, "old@example.com")
+		})
+	}
+}
 
-	t.Run("camt053", func(t *testing.T) {
-		a, database, refs := ledgerTestApp(t, "demo")
-		demo := refs["demo"]
-		// On PostgreSQL the row this reproduces cannot exist since migration
-		// 0006 made tenant_id NOT NULL; the helper proves that refusal, and
-		// with it there is nothing left here to assert on that engine. On
-		// SQLite — production, and the open rollback window — it proves the
-		// row IS accepted and carries on.
-		if dbtest.RollbackWindowClosed(t, database) {
-			return
-		}
-		seedLegacyLedgerRow(t, database, "demo", string(integrations.FormatCAMT053), digest)
-
-		if a.paymentImportAlreadyApplied(demo, digest) {
-			t.Fatal("fixture does not reproduce the state: the legacy row is invisible to the tenant_id read")
-		}
-		preview := camtImportPreview{FileDigest: digest, SourceVersion: "2019/camt.053.001.08"}
-		if err := a.recordPaymentImportLedger(demo, "manager@example.com", preview,
-			unitPaymentImportReport{Assigned: 1}); err != nil {
-			t.Fatalf("record ledger: %v", err)
-		}
-
-		assertLedgerRowOwned(t, database, string(integrations.FormatCAMT053), digest, demo.ID)
-		if !a.paymentImportAlreadyApplied(demo, digest) {
-			t.Error("the ledger still cannot see its own row: every re-upload of this file is applied again")
-		}
-		// And the columns DO NOTHING protects are untouched: the ledger says when
-		// the file was FIRST applied.
-		assertLedgerAppliedBy(t, database, digest, "old@example.com")
-	})
-
-	t.Run("ebinterface", func(t *testing.T) {
-		a, database, refs := ledgerTestApp(t, "demo")
-		demo := refs["demo"]
-		if dbtest.RollbackWindowClosed(t, database) {
-			return
-		}
-		seedLegacyLedgerRow(t, database, "demo", string(integrations.FormatEBInterface), digest)
-
-		if a.ebInterfaceImportAlreadyStored(demo, digest) {
-			t.Fatal("fixture does not reproduce the state: the legacy row is invisible to the tenant_id read")
-		}
-		preview := ebInterfaceImportPreview{FileDigest: digest, SourceVersion: "ebInterface 6.1"}
-		if err := a.recordEBInterfaceImportLedger(demo, "manager@example.com", preview); err != nil {
-			t.Fatalf("record ledger: %v", err)
-		}
-
-		assertLedgerRowOwned(t, database, string(integrations.FormatEBInterface), digest, demo.ID)
-		if !a.ebInterfaceImportAlreadyStored(demo, digest) {
-			t.Error("the ledger still cannot see its own row: every re-upload of this file is stored again")
-		}
-		assertLedgerAppliedBy(t, database, digest, "old@example.com")
-	})
+// Fixture setup now goes through the same store transaction as production;
+// there is deliberately no handler-owned SQL ledger recorder.
+func recordTestImportLedger(a *app, tenant storepkg.TenantRef, format, digest, version string, counts storepkg.ImportCounts) error {
+	_, err := storepkg.NewImportLedger(a.tenantDB).Apply(context.Background(), tenant, storepkg.ImportKey{
+		Format: format, SourceVersion: version, AppliedBy: "manager@example.com",
+	}, digest, func(tx *storepkg.ImportTx) error { tx.Counts = counts; return nil })
+	return err
 }
 
 // TestImportLedgerOrphanCannotExistOnPostgres is what became of the test that

@@ -26,7 +26,7 @@ func (a *app) parking(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	}
 	profile := a.profileForTenant(email, tenant.Slug)
 	if !ac.can(capabilityManageParking) && !ac.can(capabilityPlatformAdmin) && !profile.HasPermission(permissionParking) {
-		http.NotFound(w, r)
+		http.Error(w, "Dieser Bereich ist für diesen Zugang nicht freigegeben.", http.StatusForbidden)
 		return
 	}
 	isAdmin := ac.can(capabilityPlatformAdmin)

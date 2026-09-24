@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/pdf"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -45,7 +46,7 @@ func TestDocumentStoredFiguresPartiesAndMeasurementEvidence(t *testing.T) {
 	if docs[1].Total != d.Total || docs[1].Balance != d.Balance || docs[1].Address[1] == d.Address[1] {
 		t.Fatal("party figures/address mismatch")
 	}
-	if docs[2].Balance != "Nachzahlung 100,00 €" || !strings.Contains(strings.Join(docs[2].Address, " "), "Anschrift fehlt") {
+	if docs[2].Balance != "Nachzahlung 100,00 €" || strings.Join(docs[2].Address, " · ") != "Wohnungseigentümer · Zoë Groß" {
 		t.Fatal(docs[2])
 	}
 	run.Result.Units[0].BalanceCents = 0
@@ -102,15 +103,22 @@ func TestLongDocumentPaginationDoesNotDropRowsOrFooter(t *testing.T) {
 	if len(pages) < 3 {
 		t.Fatal("no pagination")
 	}
+	var costText string
 	for _, page := range pages {
-		if len(page.Lines) > 43 || len(page.Footer) < 3 || page.Footer[0] != DraftNotice {
+		if !page.Positioned || len(page.Footer) < 3 || page.Footer[0] != DraftNotice {
 			t.Fatalf("bad page: %+v", page)
 		}
 		for _, line := range page.Lines {
-			if len([]rune(line.Text)) > 91 {
+			if line.X < left || line.X+pdf.TextWidth(line.Text, line.Style, line.Size) > left+measure+.01 || line.Y < bottom || line.Y+line.Size > 834 {
 				t.Fatalf("line overflow: %s", line.Text)
 			}
+			if line.X == left+5 {
+				costText += line.Text
+			}
 		}
+	}
+	if strings.Count(costText, row.Name) != 30 {
+		t.Fatal("pagination lost cost text")
 	}
 }
 

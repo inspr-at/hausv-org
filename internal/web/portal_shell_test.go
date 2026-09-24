@@ -81,6 +81,9 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"EnergyDataPage", EnergyDataPage(EnergyDataPageData{Portal: portal}), "data-templ-legacy", nil},
 		{"EbInterfaceImportPage", EbInterfaceImportPage(EbInterfaceImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
 		{"PaymentImportPage", PaymentImportPage(PaymentImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
+		{"ValorisationPage", ValorisationPage(ValorisationPageData{Portal: portal}), "data-templ-settings", nil},
+		{"LeasePage", LeasePage(LeasePageData{Portal: portal, UnitID: "top-1", UnitLabel: "Top 1"}), "data-templ-settings", []string{"lease-staffel.js"}},
+		{"LeaseImportPage", LeaseImportPage(LeaseImportPageData{Portal: portal}), "data-templ-settings", nil},
 	}
 
 	assertPageTableCoversTemplPages(t, pages)
@@ -259,11 +262,11 @@ func TestPrimaryNavigationLandingsUseSharedChromeKit(t *testing.T) {
 			if page.action != "" && !strings.Contains(header, page.action) {
 				t.Errorf("header action %q is missing", page.action)
 			}
-			// Header actions stay ghost buttons on every landing (portal chrome
-			// rule, enforced by qa-main-flows as well); primary weight belongs to
-			// the dialog or form the action opens.
-			if got := strings.Count(header, `class="button primary"`); got != 0 {
-				t.Errorf("primary header actions = %d, want 0", got)
+			// A header carries at most ONE filled main action (HAUSV-765); every
+			// other header action stays an outline or ghost button (portal chrome
+			// rule, enforced by qa-main-flows and qa-navigation as well).
+			if got := strings.Count(header, `class="button primary"`); got > 1 {
+				t.Errorf("primary header actions = %d, want at most 1", got)
 			}
 
 			if !strings.Contains(html, `class="context-role">Verwaltung</span>`) || !strings.Contains(html, `data-context-account`) {

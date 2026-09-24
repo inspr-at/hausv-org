@@ -88,23 +88,38 @@ Vorzeichen, einschließlich `-0,50`, werden abgelehnt.
 
 ## Zeitanteile, Leerstand und Parteien
 
-Es gibt keine zeitabhängigen Basen, Eigentums-/Mietzeiträume oder Tagesanteile.
-Auch in einem Schaltjahr wird ein Betrag nicht automatisch mit 365/366 Tagen
-gewichtet. Ein unterjähriger Personen-, Eigentümer- oder Mieterwechsel wird
-derzeit nicht anteilig berechnet.
+Außer dem ausdrücklich hinterlegten Leerstand gibt es keine zeitabhängigen
+Basen oder Eigentums-/Mietzeiträume. Ein unterjähriger Personen-, Eigentümer-
+oder Mieterwechsel wird derzeit nicht anteilig berechnet.
 
-Leerstand ist kein eigener Abrechnungstatbestand. Die Einheit bleibt in der
-Verteilung: Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben
-null Personenkosten, null gemessener Verbrauch ergibt null Verbrauchskosten.
+Ohne hinterlegten Leerstandszeitraum bleibt die Einheit in der Verteilung:
+Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben null
+Personenkosten, null gemessener Verbrauch ergibt null Verbrauchskosten.
 Fehlende Parteien verschieben keine Kosten auf andere Einheiten. Ein Lauf ist
 dann berechenbar, aber ein vollständiges PDF-Paket/Archiv benötigt mindestens
 eine gespeicherte Partei je Einheit.
 
-Ergebnisse und Akonto gehören zur **Einheit**, nicht zu einer einzelnen Person.
-Jede gespeicherte Eigentümer-/Mietpartei erhält eine adressierte Kopie des
-vollständigen Einheitenergebnisses. Es gibt weder eine Aufteilung zwischen
-Miteigentümern noch eine gesonderte Eigentümer-/Mieter-Kostenauswahl. Deshalb
-dürfen die Summen aller Parteien-PDFs nicht als Haussumme addiert werden.
+Ein Leerstand je Einheit ist ein inklusiver Zeitraum (`vacant_from`/`vacant_to`)
+in der Periodenstruktur. Bei `mrg_voll` und `mrg_teil` behält die Einheit ihren
+Anteil. Der auf die leeren Tage entfallende Betrag — tageweise, inklusive
+Schaltjahr — wird dem Eigentümer als Zeile „Leerstand – Eigentümeranteil“
+berechnet und nicht auf die anderen Einheiten umgelegt. Die Haussumme bleibt
+100 %. Die Beträge der nicht leeren Einheiten sind dieselben wie ohne
+Leerstand; der Restcent des Tagesanteils bleibt bei der Einheit. Bei WEG und
+Ausnahme ändert der Zeitraum das Ergebnis nicht, weil dort der Eigentümer
+ohnehin die Partei ist beziehungsweise der Vertrag gilt. Gespeicherte Läufe
+ohne Leerstandsdaten wiederholen sich unverändert; die Berechnungsversion
+bleibt ohne Umsatzsteuerausweis 2, weil sich der Algorithmus für diese Eingaben
+nicht ändert.
+
+Ohne Leerstandsanteil erhält jede gespeicherte Eigentümer-/Mietpartei eine
+adressierte Kopie des vollständigen Einheitenergebnisses. Bei MRG-Leerstand
+erhält die reine Eigentümerpartei den Leerstandsanteil ohne Akonto; die Mietpartei
+behält den bewohnten Rest und die erfassten Akontos, auch im HeizKG-Nachweis.
+Eine Partei mit beiden Rollen erhält die zusammengeführten Kostenarten und
+jedes Heizkosten-Akonto genau einmal. Miteigentümer werden nicht untereinander
+aufgeteilt. Deshalb dürfen die Summen aller Parteien-PDFs nicht als Haussumme
+addiert werden.
 
 ## Verbrauchsnachweise
 
@@ -144,6 +159,30 @@ Mit demselben Renderer erzeugt derselbe Lauf auch nach JSON-Roundtrip identische
 Bytes. Neu erstellte Läufe enthalten neue ID/Revision/Zeit; ihre PDFs sind daher
 trotz gleicher Zahlen nicht bytegleich. Der Snapshot speichert keine
 Originaldatei-Bytes, keinen Hash der Belegoriginale und keinen Rendererstand.
+
+Der A4-Briefkopf trennt Verwaltung, Empfängerfenster und Abrechnungsdaten.
+Optionale Absender- und Empfängerangaben werden bei Leerwerten ohne Platzhalter
+oder Leerzeilen ausgelassen. Die Verwaltungsanschrift wird unter
+`/app/verwaltung/einstellungen#hausverwaltung` gepflegt und migrationsfrei im
+bestehenden organisationsbezogenen JSON-Datensatz `org_settings.data` gespeichert.
+Neue Läufe bevorzugen diese Anschrift; bestehende Liegenschaftskontaktdaten bleiben
+der Rückfallwert. Vor Freigabe weist die Seite auf eine fehlende Briefkopfanschrift
+hin. Ein gespeicherter Lauf behält seinen Stand: Nach einer Ergänzung muss ein
+neuer Lauf berechnet werden. Der Demobriefkopf verwendet den vollen Firmennamen,
+Musterstraße 12, 8010 Graz und +43 316 555 100.
+Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
+geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
+Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter
+„Hinweise“. Messnachweise und Belegverzeichnis nutzen dieselben Seitenränder;
+Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufkennung und Revision
+stehen nur als kleine Fußreferenz, Partei-E-Mail-Adressen nicht im Briefkopf.
+Standard-PDF-Schriftmetriken bestimmen Zeilenumbrüche und rechtsbündige Beträge
+in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
+
+Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
+öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
+Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
+Mehrere Parteien behalten je eine zugeordnete PDF-Zeile und 44-px-Bedienflächen.
 
 Das Archiv legt je Partei ein PDF sowie zuletzt das Gesamtpaket ab. IDs sind
 aus Lauf/Revision/Einheit/Partei abgeleitet; Wiederholungen ergänzen ein partielles
@@ -195,7 +234,8 @@ sind noch nicht modelliert. Teilanwendung und Ausnahme verweisen auf den Vertrag
 
 Ort, Zeitraum/Öffnungszeiten und Kontakt werden pro Periode gespeichert und im
 Lauf eingefroren. Der PDF-Anhang führt Rechnungsdatum, bestätigten Lieferanten,
-Kostenart, Betrag und Original-Dokumentkennung auf. Fehlende Altangaben werden
+Kostenart und Betrag mit einer fortlaufenden Belegnummer auf. Interne
+Dokumentkennungen erscheinen nicht im Kundendokument. Fehlende Altangaben werden
 sichtbar benannt. MRG Vollanwendung bietet zusätzlich ein druckbares Aushang-PDF
 mit Haussummen und Einsichtshinweis ohne Namen oder Salden einzelner Parteien.
 
@@ -233,9 +273,76 @@ manuelle Vorausschau; fehlende Werte heißen „Noch festzulegen“. Das Gültig
 ist pro Periode wählbar; ohne Vorgabe gilt im PDF der erste Tag des Monats nach
 der Freigabe (im Entwurf nach Erstellung).
 
+## Rücklage (WEG)
+
+Nur bei Regime `weg`. Buchungen liegen in `annual_statement_reserve_entries`
+und sind nur einfügbar; eine Korrektur ist eine weitere Buchung. Arten:
+`opening`, `contribution`, `withdrawal`, `interest`, `closing_check`.
+Entnahmen verweisen auf ein Dokument. Der Endstand ist
+
+`Anfangsstand + Zuführungen − Entnahmen + Zinsen`
+
+in Cent, ohne Gleitkomma. `closing_check` geht nicht in die Formel ein; weicht
+die Summe der Kontrollbuchungen ab, entsteht ein Hinweis.
+
+Der Anteil je Einheit verwendet die bestehende Nutzwert-Basis und die
+Centverteilung nach größtem Rest. Die Summe der Anteile ist der Endstand.
+Historische Läufe ohne Buchungs-Snapshot (`reserve` fehlt in der Eingabe)
+rechnen die Kosten unverändert und ohne Rücklage nach. Die Berechnungsversion
+bleibt ohne Umsatzsteuerausweis `2`, mit Umsatzsteuerausweis gilt `3`.
+Der Rücklageblock steht im Parteienbrief nach Kostentabelle und Einheitsbasis,
+vor den Hinweisen, auf demselben gemessenen Satzspiegel wie der übrige Brief.
+
+Die Mindestprüfung warnt nur. Ab 2026 gilt 1,12 €/m²/Monat Nutzfläche
+(WEG 2002 § 31; 0,90 × 128,1 / 102,6 = 1,1237, angesetzt mit 1,12; Quelle WKO/ÖVI).
+Fläche ist die Summe der erfassten Nutzflächen der Periode in Hundertstel m².
+Ein Rest von 0,50 Cent wird abgerundet. Zuführungen unter
+`Monatsminimum × Monate der Periode` erzeugen den Hinweis, der Schwellenwert
+selbst nicht. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+
 Im Folgejahr füllt der jüngste freigegebene Vorjahreslauf die leeren Akontofelder
 mit zwölf Monatsbeträgen vor. Es bleibt ausdrücklich ein ungespeicherter
 Vorschlag, bis die Verwaltung die tatsächlichen Zahlungen bestätigt; vorhandene
 Zahlungseinträge bleiben erhalten. Beim Klonen einer Periode werden geleistete
 Heizkosten-Akontos, manuelle Monatsvorgaben, Gültig-ab-Datum und Einsichtszeitraum
 geleert; Regime, Flächen, Ort und Kontakt bleiben als Vorlage erhalten.
+
+## Umsatzsteuer je Kostenart
+
+Belege speichern den Bruttobetrag der Rechnung. Die Periode schaltet
+„Umsatzsteuer ausweisen“ standardmäßig aus; dann bleiben Verteilung, Saldo und
+PDF unverändert und der Lauf bleibt bei Berechnungsversion 2. Version 1 und 2
+werden ohne Steueraufteilung wiederholt.
+
+Ist die Anzeige an, trägt jede Kostenart der Periode 0, 10 oder 20 %. Heizung
+und Warmwasser beginnen mit 20 %, alle übrigen mit 10 %. Der Bruttoanteil der
+Einheit bleibt die bisherige Centverteilung. Pro Steuersatz wird die Umsatzsteuer
+einmal aus der Haus-Bruttosumme dieser Gruppe kaufmännisch gerundet
+(10 % = Brutto × 10/110, 20 % = Brutto × 20/120, 0 % = 0). Die Cent gehen nach
+größtem Rest auf die bewohnten und leerstehenden Einheitsanteile und innerhalb
+dieser Anteile auf die Kostenarten. Der Eigentümeranteil bei Leerstand bleibt
+Teil der Haus-Steuersumme; Parteienbrief und Aushang enthalten auch seine
+Netto- und Steuerbeträge.
+Netto ist Brutto minus Umsatzsteuer, daher stimmt jede Zeile, jede Gruppe und
+die Gesamtsumme auf den Cent. Solche Läufe speichern Berechnungsversion 3.
+Das PDF zeigt dann Netto, USt-Satz, USt und Brutto sowie die Summen je Satz.
+
+## Bedienung der Jahresabrechnung
+
+Berechenbare Perioden zeigen „Grundlagen und Belege prüfen oder bearbeiten“
+zunächst geschlossen, auch ohne gespeicherten Lauf. Blockierende Angaben öffnen
+die Vorbereitung; der erste zuordenbare Blocker wird angesprungen und markiert.
+Die Hinweisliste verlinkt weitere betroffene Abschnitte. Rückmeldungen zu
+Änderungen bleiben sichtbar. HeizKG-Flächen und geleistete Komponenten-Akontos
+haben getrennte Aufklappbereiche; ihre Werte werden weiterhin zusammen mit der
+Rechtsgrundlage gespeichert.
+
+Partei-PDFs öffnen im selben Browser-Tab (`Content-Disposition: inline`).
+„Herunterladen“ verwendet dieselbe Route mit `download=1` und liefert dieselben
+PDF-Daten als Attachment. Die Schritte lauten Freigabe → Dokumentenarchiv →
+E-Mail-Versand; unter Dokumente erscheinen die Abrechnungen nach dem Archivieren.
+Gesperrte Aktionen zeigen den Grund direkt daneben.
+
+Das PDF übersetzt die gespeicherte Vorschlagsbasis in Eigentümersprache:
+„vereinbarte monatliche Vorauszahlung“ bzw. „Vorauszahlung auf Basis des Vorjahres“.
+Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.

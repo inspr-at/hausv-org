@@ -4,6 +4,7 @@ import "strconv"
 import "net/url"
 
 type AnnualStatementRunView struct {
+ ManagementAddressMissing bool
  Approved bool
  ApprovedAt string
  ApproveAction string
@@ -11,6 +12,8 @@ type AnnualStatementRunView struct {
 	Year            int
 	Ready           bool
 	Issues          []string
+	IssueTargets []string
+	BlockingSection string
 	Message         string
 	MessageOK       bool
 	ID              string
@@ -20,6 +23,7 @@ type AnnualStatementRunView struct {
 	Total           string
 	Excluded        string
 	Units           []AnnualStatementRunUnitView
+	Vacancy         []AnnualStatementRunUnitView
 	History         []AnnualStatementRunLinkView
 	AllPDFURL       string
 	ArchiveAction   string
@@ -134,7 +138,7 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			}
 			.annual-units th,
 			.annual-units td {
-				padding: var(--space-2);
+				padding: 6px var(--space-2);
 				text-align: left;
 				vertical-align: top;
 			}
@@ -176,6 +180,25 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				text-underline-offset: 3px;
 				white-space: nowrap;
 			}
+			.annual-cost-row[hidden] { display: none; }
+			.annual-details-toggle:not([hidden]) {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				min-height: 44px;
+				min-width: 44px;
+				padding: 0 6px;
+				border: 0;
+				background: transparent;
+				color: var(--gold-ink);
+				font: inherit;
+				cursor: pointer;
+			}
+			.annual-details-toggle[aria-expanded="true"] .disclosure-chevron svg { transform: rotate(180deg); }
+			body[data-authenticated-app] .annual-details-toggle .disclosure-chevron { position: static; transform: none; flex: none; }
+			.annual-details-toggle:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 2px; }
+			.annual-details-cell { width: 84px; }
+			.annual-costs summary[hidden] { display: none; }
 			.annual-costs summary {
 				cursor: pointer;
 				color: var(--gold-ink);
@@ -310,6 +333,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				background: var(--panel-soft);
 				color: var(--muted);
 			}
+            .annual-run-panel .annual-lifecycle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);padding:0;margin:var(--space-4) 0;list-style:none}
+            .annual-run-panel .annual-lifecycle li{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2);min-width:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm)}
+            .annual-run-panel .annual-lifecycle form{margin:0;max-width:100%}
+            .annual-run-panel .annual-lifecycle .button{white-space:normal}
+            .annual-run-panel .annual-lifecycle .button:disabled{opacity:.62;cursor:not-allowed;border-color:var(--line);background:var(--panel-soft);color:var(--muted)}
+            .annual-run-panel .annual-pdf .annual-download{color:var(--muted);font-size:12px}
+            @media(max-width:1050px){.annual-run-panel .annual-lifecycle{grid-template-columns:1fr}}
 		</style>
 		<header class="workspace-head">
 			<div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>
@@ -320,13 +350,24 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			}
 		</header>
 		@SettingsFlash(data.Message, data.MessageOK)
+		if !data.Approved && data.ManagementAddressMissing {
+			<p class="muted" data-management-address-warning>Die Anschrift der Hausverwaltung fehlt — sie erscheint sonst nicht im Briefkopf. <a href="/app/verwaltung/einstellungen#hausverwaltung">In den Verwaltungseinstellungen ergänzen.</a>
+				if data.ID != "" {
+					<span> Danach einen neuen Abrechnungslauf berechnen, damit die Anschrift übernommen wird.</span>
+				}
+			</p>
+		}
 		<p>Der Lauf speichert Kostenanteile, Akontos und Salden gemeinsam mit den verwendeten Grundlagen. Er ist eine rechnerische Arbeitsfassung auf Ihren Einstellungen; eine rechtliche Prüfung nach WEG/MRG ist damit nicht verbunden.</p>
 		if len(data.Issues)>0 {
 			<div class="notice" role="status">
 				<strong>Bitte vor der Berechnung ergänzen:</strong>
 				<ul>
-					for _,issue:=range data.Issues {
-						<li>{ issue }</li>
+					for i,issue:=range data.Issues {
+						<li>if i < len(data.IssueTargets) && data.IssueTargets[i] != "" {
+<a href={ templ.SafeURL("#" + data.IssueTargets[i]) }>{ issue }</a>
+} else {
+{ issue }
+}</li>
 					}
 				</ul>
 			</div>
@@ -360,33 +401,53 @@ if data.Approved {
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
 					<div class="annual-actions">
-						<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+						<a class="button ghost" href={ templ.SafeURL(annualPDFDownloadURL(data.AllPDFURL)) } download>Alle Dokumente (PDF)</a>
  if data.AushangURL != "" {
- <a class="button ghost" href={ templ.SafeURL(data.AushangURL) } download>Aushang (PDF)</a>
+ <a class="button ghost" href={ templ.SafeURL(annualPDFDownloadURL(data.AushangURL)) } download>Aushang (PDF)</a>
  }
-						if data.ApproveAction != "" {
- <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
- }
- if data.ArchivedAt != "" {
-							<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
-							<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
-						} else if data.Approved && data.ArchiveAction != "" {
-							<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
-						}
 					</div>
-					if data.Approved && data.ArchivedAt == "" && data.ArchiveAction != "" {
-						<p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
-					}
 				} else {
 					<p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
 				}
-				if data.SendAction != "" {
-					<header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
-					<p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
-					<form method="post" action={ templ.SafeURL(data.SendAction) }><button class="button" type="submit" disabled?={ data.SendIssue != "" }>Per E-Mail senden</button></form>
-					if data.SendIssue != "" {
-						<p class="notice">{ data.SendIssue }</p>
-					}
+                <ol class="annual-lifecycle" aria-label="Abrechnung freigeben, ablegen und versenden">
+                    <li><strong>1 · Freigabe</strong>
+                        if data.Approved {
+                            <p class="mini">Freigegeben am { data.ApprovedAt }</p>
+                        } else if data.ApproveAction != "" {
+                            <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
+                        } else {
+                            <button class="button ghost" type="button" disabled>Abrechnung freigeben</button>
+                            <p class="mini">Zuerst Parteien zuordnen.</p>
+                        }
+                    </li>
+                    <li><strong>2 · Dokumentenarchiv</strong>
+                        if data.ArchivedAt != "" {
+                            <p class="mini" role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
+                            <a href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
+                        } else if data.Approved && data.ArchiveAction != "" {
+                            <form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+                        } else {
+                            <button class="button ghost" type="button" disabled aria-describedby="annual-archive-issue">Im Archiv ablegen</button>
+                            <p class="mini" id="annual-archive-issue">Zuerst den Abrechnungslauf freigeben.</p>
+                        }
+                    </li>
+                    if data.SendAction != "" {
+                        <li><strong>3 · E-Mail-Versand</strong>
+                            <form method="post" action={ templ.SafeURL(data.SendAction) }><button class={ "button", templ.KV("ghost", data.SendIssue != "") } type="submit" disabled?={ data.SendIssue != "" } aria-describedby="annual-send-issue">Per E-Mail senden</button></form>
+                            <p class="mini" id="annual-send-issue">
+if data.SendIssue != "" {
+{ data.SendIssue }
+} else {
+{ data.MailMode }
+}
+</p>
+                        </li>
+                    }
+                </ol>
+                <p class="mini">Nach „Im Archiv ablegen“ finden Sie die Abrechnungen unter Dokumente. Sichtbar nur für die Verwaltung.</p>
+                if data.SendAction != "" {
+                    <header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
+                    <p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
 					if data.DeliverySummary != "" {
 						<p role="status">{ data.DeliverySummary }</p>
 					}
@@ -405,9 +466,9 @@ if data.Approved {
 				}
 				<table class="annual-units" role="table">
 					<caption>Ergebnis je Einheit</caption>
-					<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Einheit</th><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col" class="annual-money">Kostenanteil</th><th role="columnheader" scope="col" class="annual-money">Akonto</th><th role="columnheader" scope="col" class="annual-money">Saldo</th><th role="columnheader" scope="col">PDF / Archiv</th></tr></thead>
+					<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Einheit</th><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col" class="annual-money">Kostenanteil</th><th role="columnheader" scope="col" class="annual-money">Akonto</th><th role="columnheader" scope="col" class="annual-money">Saldo</th><th role="columnheader" scope="col">PDF / Archiv</th><th role="columnheader" scope="col"><span class="sr-only">Kostenarten</span></th></tr></thead>
 					<tbody role="rowgroup">
-						for _,unit:=range data.Units {
+						for unitIndex,unit:=range data.Units {
 							<tr class="annual-unit-row" role="row">
 								<th scope="row" role="rowheader"><span class="annual-unit-value">{ unit.Label }</span></th>
 								<td role="cell" class="annual-parties" data-label="Partei">
@@ -421,17 +482,24 @@ if data.Approved {
 								<td role="cell" class="annual-documents" data-label="PDF / Archiv">
 									for _, document := range unit.PDFs {
 										<div class="annual-pdf">
-											<a href={ templ.SafeURL(document.URL) } aria-label={ "PDF für " + document.Label + " · " + unit.Label } download>PDF</a>
+											<a href={ templ.SafeURL(document.URL) } aria-label={ "PDF für " + document.Label + " · " + unit.Label }>PDF</a>
+<a class="annual-download" href={ templ.SafeURL(annualPDFDownloadURL(document.URL)) } aria-label={ "Herunterladen für " + document.Label + " · " + unit.Label } download>Herunterladen</a>
 											if document.ArchiveURL != "" {
 												<a href={ templ.SafeURL(document.ArchiveURL) } aria-label={ "Archiv für " + document.Label + " · " + unit.Label }>Archiv</a>
 											}
 										</div>
 									}
 								</td>
+								<td role="cell" class="annual-details-cell" data-label="Kostenarten">
+									<button type="button" class="annual-details-toggle" aria-label={ "Details · " + unit.Label } aria-expanded="false" aria-controls={ "annual-costs-" + strconv.Itoa(unitIndex) } hidden>
+										Details
+										@DisclosureChevron()
+									</button>
+								</td>
 							</tr>
 							<tr class="annual-cost-row" role="row">
-								<td role="cell" colspan="6">
-									<details class="annual-costs">
+								<td role="cell" colspan="7">
+									<details class="annual-costs" id={ "annual-costs-" + strconv.Itoa(unitIndex) }>
 										<summary>Kostenarten und Anteile<span class="sr-only"> · { unit.Label }</span>
 											@DisclosureChevron()
 										</summary>
@@ -447,10 +515,31 @@ if data.Approved {
 								</td>
 							</tr>
 						}
+						for _, line := range data.Vacancy {
+							<tr class="annual-unit-row" role="row" data-vacancy-owner>
+								<th scope="row" role="rowheader"><span class="annual-unit-value">Leerstand – Eigentümeranteil</span></th>
+								<td role="cell" class="annual-parties" data-label="Partei"><span class="annual-party"><span class="annual-party-name">{ line.Label }</span></span></td>
+								<td role="cell" class="annual-money" data-label="Kostenanteil"><span class="annual-unit-value">{ line.Allocated }</span></td>
+								<td role="cell" class="annual-money" data-label="Akonto"><span class="annual-unit-value">{ line.Prepaid }</span></td>
+								<td role="cell" class="annual-money" data-label="Saldo"><strong class="annual-unit-value">{ line.Balance }</strong></td>
+								<td role="cell" class="annual-documents" data-label="PDF / Archiv"></td>
+								<td role="cell" class="annual-details-cell" data-label="Kostenarten"></td>
+							</tr>
+						}
 					</tbody>
 				</table>
 			</article>
 		}
 	</section>
 	}
+}
+
+// Keep an explicit attachment URL for secondary downloads and shared links.
+func annualPDFDownloadURL(raw string) string {
+    target, err := url.Parse(raw)
+    if err != nil { return raw }
+    query := target.Query()
+    query.Set("download", "1")
+    target.RawQuery = query.Encode()
+    return target.String()
 }

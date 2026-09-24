@@ -48,7 +48,7 @@ templ EventsStyles() {
 		.events-main .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-panel)}
 		.events-main .agenda-panel{padding:var(--space-5)}
 		.events-main .section-head{display:flex;align-items:start;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-4)}
-		.events-main .kicker{color:var(--gold-ink);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+		.events-main .kicker{color:var(--gold-ink);font-size:11px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
 		.events-main .section-head h2{margin-top:var(--space-1);font-size:26px}
 		.events-main .section-head p{margin-top:var(--space-2);color:var(--muted);font-size:12px}
 		.events-main .count{color:var(--muted);font-size:11px;white-space:nowrap}
@@ -63,17 +63,17 @@ templ EventsStyles() {
 		.events-main .date-badge{width:60px;height:60px;display:grid;place-content:center;border-radius:var(--radius-sm);background:var(--leaf);color:var(--panel);text-align:center}
 		.events-main .event-card.past .date-badge{background:var(--muted)}
 		.events-main .date-badge strong{font-family:var(--font-serif);font-size:24px;line-height:.85}
-		.events-main .date-badge span{margin-top:6px;font-size:9px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+		.events-main .date-badge span{margin-top:6px;font-size:11px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
 		.events-main .event-copy{min-width:0;display:flex;flex-direction:column;gap:var(--space-2)}
 		.events-main .event-card-head{display:flex;align-items:start;gap:var(--space-3);flex-wrap:wrap}
 		.events-main .event-title-group{display:flex;flex-direction:column;gap:var(--space-1);flex:1;min-width:0}
-		.events-main .next-label{display:inline-block;color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
+		.events-main .next-label{display:inline-block;color:var(--gold);font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
 		.events-main .event-card-head h3{font-size:19px;line-height:1.3}
-		.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:10px;font-weight:700;white-space:nowrap}
+		.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:700;white-space:nowrap}
 		.events-main .event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}
 		.events-main .event-meta>span{white-space:nowrap}
-		.events-main .event-details{margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
-		.events-main .event-details>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}
+		.events-main :is(.section-head,.event-copy,.aside-panel) :is(h2,h3,p){margin-bottom:0}.events-main .event-details{margin-top:var(--space-1);border:0;border-top:1px solid var(--line);border-radius:0;background:transparent}
+		.events-main .event-details>summary{min-height:44px;display:flex;align-items:center;padding:0;cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}
 		.events-main .event-details-body{display:grid;gap:var(--space-3);padding:0 var(--space-3) var(--space-3);border-top:1px solid var(--line)}
 		.events-main .entry-body{padding-top:var(--space-3);font-size:13px;line-height:1.55;white-space:normal}
 		.events-main .event-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}
@@ -88,16 +88,16 @@ templ EventsStyles() {
 		.events-main .aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}
 		.events-main .aside-panel h2{margin-top:var(--space-1);font-size:17px}
 		.events-main .aside-panel>p{color:var(--muted);font-size:11px;line-height:1.5}
-		.events-main .aside-panel .button{min-height:38px;font-size:12px}
-		.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:10px;line-height:1.4}
+		
+		.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:11px;line-height:1.4}
 		.events-main .guide>summary{cursor:pointer;list-style:none}
 		.events-main .guide>summary::-webkit-details-marker{display:none}
-		.events-main .guide .kicker{font-size:9px}
+		.events-main .guide .kicker{font-size:11px}
 		.events-main .guide h2{font-size:14px}
 		.events-main .legend{display:grid;gap:var(--space-2);margin:0;padding:var(--space-3) 0 0;list-style:none;border-top:1px solid var(--line)}
 		.events-main .legend li{display:grid;gap:var(--space-1)}
-		.events-main .legend li .tag{font-size:9px}
-		.events-main .legend li>span:last-child{color:var(--muted);font-size:10px;line-height:1.4}
+		.events-main .legend li .tag{font-size:11px}
+		.events-main .legend li>span:last-child{color:var(--muted);font-size:11px;line-height:1.4}
 		.events-main .attachment-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--space-2)}
 		.events-main .attachment-item{position:relative;min-width:0}
 		.events-main .attachment-open{width:100%;min-height:100%;display:grid;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px;background:var(--panel);color:var(--ink);text-align:left}
@@ -150,7 +150,7 @@ templ EventsStyles() {
 		.event-dialog .button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 		@media(max-width:520px){.event-dialog .dialog-head,.event-dialog .dialog-body,.event-dialog .dialog-footer{padding:var(--space-4)}.event-dialog .dialog-head h2{font-size:24px}.event-dialog .dialog-footer .button{flex:1 1 auto}}
 		@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
-		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}
+		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}
 		.events-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}
 		.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}.event-search{display:flex;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--panel)}
 		.event-search input{min-width:0;width:100%;border:0;padding:8px 16px;background:transparent;color:var(--ink);font-size:14px}
@@ -185,7 +185,7 @@ templ EventsContent(data EventsPageData) {
 
 templ EventHeaderAction(data EventsPageData) {
 	if data.CanManageEvents {
-		<button class="button" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Termin erstellen</button>
+		<button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Termin erstellen</button>
 	}
 }
 
@@ -231,7 +231,7 @@ templ EventsBody(data EventsPageData) {
 		</div>
 		<aside class="events-aside" aria-label="Hinweise zu Terminen">
 					if data.CalendarFeedURL != "" {
-						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button primary" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
+						<section class="panel aside-panel" aria-labelledby="events-feed-title"><div><span class="kicker">Eigener Kalender</span><h2 id="events-feed-title">Einmal abonnieren</h2></div><p>Neue und geänderte Termine der Liegenschaft erscheinen danach automatisch in Ihrem Kalender – ohne weiteres Zutun.</p><a class="button" href={ templ.SafeURL(data.CalendarFeedURL) }>Kalender abonnieren</a><p class="feed-note">Der Link ist persönlich. Bitte nicht weitergeben.</p></section>
 					}
 					<details class="panel aside-panel guide" aria-labelledby="events-legend-title"><summary><span class="kicker">Was hier erscheint</span><h2 id="events-legend-title">Termine in der Liegenschaft</h2>
 						@DisclosureChevron()
@@ -282,7 +282,9 @@ templ EventCard(event view.HouseEventView) {
 			if event.IsNext {
 				<span class="next-label">Als Nächstes</span>
 			}
-			<h3>{ event.Title }</h3></div><span class="event-category">{ event.Category }</span>
+			<h3>{ event.Title }</h3></div>if event.Category != "" && event.Category != "Termin" {
+				<span class="event-category">{ event.Category }</span>
+			}
 			if event.Status != "" && event.Status != "Geplant" {
 				<span class="tag">{ event.Status }</span>
 			}

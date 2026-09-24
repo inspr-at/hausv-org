@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -40,6 +41,7 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		managedEmptyMessage = "Die Hausverwaltung hat für diese Liegenschaft noch keine allgemeinen Kontakte hinterlegt. Verwaltung, Notdienst und Hausmeister trägt die Verwaltung ein."
 	}
 	managedEmpty := emptyState(managedEmptyTitle, managedEmptyMessage)
+	occupancies, occupancyNotice := a.unitOccupanciesForPage(ac.tenantRef)
 	contactMsg, contactOK := contactMessage(r.URL.Query().Get("contact"))
 	groups := groupManagedContactsByKind(activeManagedContacts)
 	templGroups := make([]web.ContactKindGroup, 0, len(groups))
@@ -65,10 +67,23 @@ func (a *app) contacts(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		BoardContacts:                boardContacts,
 		ResidentContacts:             residentContacts,
 		CanViewUnitOccupancies:       canViewUnitOccupancies,
-		UnitOccupancies:              a.unitOccupancies(ac.tenantRef),
+		UnitOccupancies:              occupancies,
+		UnitDataNotice:               occupancyNotice,
 		ContactKindOptions:           contactKindOptionsForServiceProviderAccess("", a.serviceAccessEnabled),
 		ManagedEmpty:                 managedEmpty,
 	})
+}
+
+func (a *app) unitOccupanciesForPage(tenant store.TenantRef) ([]web.UnitOccupancy, string) {
+	occupancies, err := a.unitOccupancies(tenant)
+	if err == nil {
+		return occupancies, ""
+	}
+	var dataErr *store.UnitDataError
+	if !errors.As(err, &dataErr) {
+		logError("unit occupancy list failed", err, "house", tenant.Slug)
+	}
+	return nil, unitDataUnreadableNotice
 }
 
 func (a *app) contactsPortalContext(ac authCtx) web.PortalPageData {
