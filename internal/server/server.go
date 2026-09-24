@@ -1220,6 +1220,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
+	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/approve", a.action(a.approveAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/archive", a.action(a.archiveAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/send", a.action(a.sendAnnualStatementRun))
 	mux.HandleFunc("GET /app/settings/annual-statement/runs/{runID}/pdf", a.page(a.downloadAnnualStatementPDF))

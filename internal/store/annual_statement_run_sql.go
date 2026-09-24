@@ -84,19 +84,22 @@ func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, 
 	return run, nil
 }
 func (s *SQLAnnualStatementRunStore) listAnnualStatementRuns(tenant TenantRef, year int) ([]AnnualStatementRun, error) {
-	rows, err := s.db.For(tenant).Query(`SELECT data FROM annual_statement_runs WHERE tenant_id=$1 AND period_year=$2 ORDER BY revision DESC`, tenant.ID, year)
+	rows, err := s.db.For(tenant).Query(`SELECT r.data, COALESCE(a.data,'null') FROM annual_statement_runs r LEFT JOIN annual_statement_run_approvals a ON a.tenant_id=r.tenant_id AND a.run_id=r.id WHERE r.tenant_id=$1 AND r.period_year=$2 ORDER BY r.revision DESC`, tenant.ID, year)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	out := []AnnualStatementRun{}
 	for rows.Next() {
-		var raw string
-		if err := rows.Scan(&raw); err != nil {
+		var raw, approval string
+		if err := rows.Scan(&raw, &approval); err != nil {
 			return nil, err
 		}
 		var run AnnualStatementRun
 		if err := json.Unmarshal([]byte(raw), &run); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(approval), &run.Approval); err != nil {
 			return nil, err
 		}
 		out = append(out, run)
@@ -261,8 +264,8 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 }
 
 func (s *SQLAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, id string) (AnnualStatementRun, bool, error) {
-	var raw string
-	err := s.db.For(tenant).QueryRow(`SELECT data FROM annual_statement_runs WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&raw)
+	var raw, approval string
+	err := s.db.For(tenant).QueryRow(`SELECT r.data, COALESCE(a.data,'null') FROM annual_statement_runs r LEFT JOIN annual_statement_run_approvals a ON a.tenant_id=r.tenant_id AND a.run_id=r.id WHERE r.tenant_id=$1 AND r.id=$2`, tenant.ID, id).Scan(&raw, &approval)
 	if errors.Is(err, sql.ErrNoRows) {
 		return AnnualStatementRun{}, false, nil
 	}
@@ -273,5 +276,46 @@ func (s *SQLAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, id 
 	if err := json.Unmarshal([]byte(raw), &run); err != nil {
 		return run, false, err
 	}
+	if err := json.Unmarshal([]byte(approval), &run.Approval); err != nil {
+		return run, false, err
+	}
 	return run, true, nil
+}
+
+func (s *SQLAnnualStatementRunStore) approveAnnualStatementRun(tenant TenantRef, id, actor, role string, now time.Time) (AnnualStatementRun, bool, error) {
+	run, found, err := s.getAnnualStatementRun(tenant, id)
+	if err != nil {
+		return run, false, err
+	}
+	if !found {
+		return run, false, fmt.Errorf("annual statement run not found")
+	}
+	if run.Approval != nil {
+		return run, false, nil
+	}
+	approval, err := newAnnualStatementApproval(run, actor, role, now)
+	if err != nil {
+		return run, false, err
+	}
+	docs, ok := BindDocumentRepository(s.documents, tenant)
+	if !ok {
+		return run, false, fmt.Errorf("documents unavailable")
+	}
+	if err := annualStatementApprovalArchiveCheck(run, docs); err != nil {
+		return run, false, err
+	}
+	raw, err := json.Marshal(approval)
+	if err != nil {
+		return run, false, err
+	}
+	result, err := s.db.For(tenant).Exec(`INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES($1,$2,$3,$4) ON CONFLICT(tenant_id,run_id) DO NOTHING`, tenant.ID, tenant.Slug, id, string(raw))
+	if err != nil {
+		return run, false, err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return run, false, err
+	}
+	run, _, err = s.getAnnualStatementRun(tenant, id)
+	return run, count > 0, err
 }

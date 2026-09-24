@@ -13,19 +13,27 @@ import (
 	"time"
 )
 
+type AnnualStatementRunApproval struct {
+	ApprovedAt time.Time `json:"approved_at"`
+	ApprovedBy string    `json:"approved_by"`
+	Role       string    `json:"role"`
+}
+
 type AnnualStatementRun struct {
-	ID                 string                   `json:"id"`
-	PeriodYear         int                      `json:"period_year"`
-	Revision           int                      `json:"revision"`
-	CalculationVersion int                      `json:"calculation_version"`
-	CreatedAt          time.Time                `json:"created_at"`
-	CreatedBy          string                   `json:"created_by"`
-	InputHash          string                   `json:"input_hash"`
-	Input              AnnualStatementRunInput  `json:"input"`
-	Result             AnnualStatementRunResult `json:"result"`
+	Approval           *AnnualStatementRunApproval `json:"approval,omitempty"`
+	ID                 string                      `json:"id"`
+	PeriodYear         int                         `json:"period_year"`
+	Revision           int                         `json:"revision"`
+	CalculationVersion int                         `json:"calculation_version"`
+	CreatedAt          time.Time                   `json:"created_at"`
+	CreatedBy          string                      `json:"created_by"`
+	InputHash          string                      `json:"input_hash"`
+	Input              AnnualStatementRunInput     `json:"input"`
+	Result             AnnualStatementRunResult    `json:"result"`
 }
 
 type AnnualStatementRunRepository interface {
+	Approve(id, actor, role string, now time.Time) (AnnualStatementRun, bool, error)
 	// Preview reuses page-loaded vectors when supplied; nil loads current reports.
 	Preview(year int, consumption map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error)
 	Create(year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error)
@@ -35,6 +43,7 @@ type AnnualStatementRunRepository interface {
 
 type AnnualStatementRunStorage interface{ annualStatementRunStorage() }
 type annualStatementRunBackend interface {
+	approveAnnualStatementRun(TenantRef, string, string, string, time.Time) (AnnualStatementRun, bool, error)
 	previewAnnualStatementRun(TenantRef, int, map[string]AnnualStatementConsumptionVector) (AnnualStatementRunInput, AnnualStatementRunResult, error)
 	createAnnualStatementRun(TenantRef, int, string, time.Time, ...AnnualStatementRunPresentation) (AnnualStatementRun, error)
 	listAnnualStatementRuns(TenantRef, int) ([]AnnualStatementRun, error)
@@ -277,4 +286,48 @@ func (s *MemoryAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, 
 		}
 	}
 	return AnnualStatementRun{}, false, nil
+}
+
+func (r *boundAnnualStatementRunRepository) Approve(id, actor, role string, now time.Time) (AnnualStatementRun, bool, error) {
+	return r.storage.approveAnnualStatementRun(r.tenant, id, actor, role, now)
+}
+func (s *MemoryAnnualStatementRunStore) approveAnnualStatementRun(tenant TenantRef, id, actor, role string, now time.Time) (AnnualStatementRun, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, run := range s.runs[tenant.ID] {
+		if run.ID != id {
+			continue
+		}
+		if run.Approval != nil {
+			return copyAnnualStatementRun(run), false, nil
+		}
+		approval, err := newAnnualStatementApproval(run, actor, role, now)
+		if err != nil {
+			return AnnualStatementRun{}, false, err
+		}
+		if docs, ok := BindDocumentRepository(s.sources.Documents, tenant); ok {
+			if err := annualStatementApprovalArchiveCheck(run, docs); err != nil {
+				return AnnualStatementRun{}, false, err
+			}
+		}
+		run.Approval = approval
+		s.runs[tenant.ID][i] = copyAnnualStatementRun(run)
+		return run, true, nil
+	}
+	return AnnualStatementRun{}, false, fmt.Errorf("annual statement run not found")
+}
+func newAnnualStatementApproval(run AnnualStatementRun, actor, role string, now time.Time) (*AnnualStatementRunApproval, error) {
+	actor = strings.ToLower(strings.TrimSpace(actor))
+	if actor == "" || (role != RoleManager && role != RoleAdmin) || now.IsZero() || now.Before(run.CreatedAt) {
+		return nil, fmt.Errorf("invalid annual statement approval")
+	}
+	return &AnnualStatementRunApproval{now.UTC(), actor, role}, nil
+}
+func annualStatementApprovalArchiveCheck(run AnnualStatementRun, docs DocumentRepository) error {
+	for _, doc := range docs.List() {
+		if doc.AnnualStatementArchive != nil && doc.AnnualStatementArchive.RunID == run.ID {
+			return fmt.Errorf("archived draft requires a new revision")
+		}
+	}
+	return nil
 }

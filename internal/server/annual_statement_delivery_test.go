@@ -137,7 +137,7 @@ func TestMusterstadt2025DeliveryThroughRoutes(t *testing.T) {
 			t.Fatal(err)
 		}
 		text, err := io.ReadAll(body)
-		if err != nil || !bytes.Contains(text, []byte("Entwurf zur Prüfung — keine Rechtsauskunft nach WEG/MRG")) || !bytes.Contains(text, []byte("Hausverwaltung Musterstadt")) {
+		if err != nil || !bytes.Contains(text, []byte("Freigegebene Jahresabrechnung")) || !bytes.Contains(text, []byte("Hausverwaltung Musterstadt")) {
 			t.Fatal(string(text), err)
 		}
 		attachment, err := reader.NextPart()

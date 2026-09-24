@@ -80,6 +80,10 @@ func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 		http.NotFound(w, r)
 		return
 	}
+	if run.Approval == nil {
+		http.Error(w, "Zuerst den Abrechnungslauf freigeben.", http.StatusConflict)
+		return
+	}
 	selection, err := statementpdf.Documents(run, "", "")
 	if err != nil {
 		http.Error(w, "Für das Archiv fehlen gespeicherte Parteien. Bitte die Parteien zuordnen und einen neuen Lauf berechnen.", http.StatusConflict)
@@ -134,6 +138,9 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		}
 	}
 	switch status {
+	case "approved":
+		out.Message = "Abrechnungslauf freigegeben. Die PDFs sind jetzt endgültig."
+		out.MessageOK = true
 	case "archived":
 		out.Message = "Alle PDFs dieses Laufs sind unveränderlich im Archiv abgelegt."
 		out.MessageOK = true
@@ -164,6 +171,12 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		}
 		if _, err := statementpdf.Documents(run, "", ""); err == nil {
 			out.AllPDFURL = annualStatementPDFURL(run.ID, "", "")
+		}
+		out.Approved = run.Approval != nil
+		if run.Approval != nil {
+			out.ApprovedAt = run.Approval.ApprovedAt.Format("02.01.2006")
+		} else {
+			out.ApproveAction = "/app/settings/annual-statement/runs/" + url.PathEscape(run.ID) + "/approve"
 		}
 		out.ID = run.ID
 		out.Revision = run.Revision
@@ -275,4 +288,37 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 	default:
 		return "Eine Abrechnungsgrundlage ist ungeklärt. Der Lauf bleibt gesperrt."
 	}
+}
+
+func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actor, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if ac.repositories.annualStatementRuns == nil {
+		http.Error(w, "Abrechnungslauf derzeit nicht verfügbar.", 503)
+		return
+	}
+	run, found, err := ac.repositories.annualStatementRuns.Get(r.PathValue("runID"))
+	if err != nil {
+		http.Error(w, "Abrechnungslauf konnte nicht gelesen werden.", 500)
+		return
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if _, err := statementpdf.Documents(run, "", ""); err != nil {
+		http.Error(w, "Bitte zuerst alle Parteien zuordnen und einen neuen Lauf berechnen.", 409)
+		return
+	}
+	run, changed, err := ac.repositories.annualStatementRuns.Approve(run.ID, actor, role, time.Now())
+	if err != nil {
+		http.Error(w, "Freigabe nicht möglich. Bereits archivierte Entwürfe benötigen einen neuen Lauf.", 409)
+		return
+	}
+	if changed {
+		a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualRunApprove, TargetType: "annual_statement_run", TargetID: run.ID, Summary: "Abrechnungslauf freigegeben", Details: map[string]string{"revision": strconv.Itoa(run.Revision), "input_hash": run.InputHash}})
+	}
+	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status=approved#abrechnungsergebnis", http.StatusSeeOther)
 }

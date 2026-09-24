@@ -2,8 +2,12 @@
 
 Technische Spezifikation zu HAUSV-767, Berechnungsversion `1`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
-Die PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft nach
-WEG/MRG“.
+Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
+nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
+vom unveränderlichen Lauf. Freigegebene PDFs tragen Datum und Rolle statt
+„Entwurf“. Archiv und Versand verlangen die Freigabe. Bereits archivierte
+Altentwürfe benötigen einen neuen Lauf; ihre Dateien bleiben unverändert.
+Die Freigabe wird als `annual-statement.run.approve` protokolliert.
 
 ## Ablauf und Eingaben
 

@@ -94,7 +94,15 @@ func createArchiveDemoRun(t *testing.T, a *app, repos requestRepositories) store
 	if err != nil || len(runs) == 0 {
 		t.Fatal("missing run", err)
 	}
-	return runs[0]
+	w = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs/"+runs[0].ID+"/approve", nil)
+	if w.Code != http.StatusSeeOther {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	run, _, err := repos.annualStatementRuns.Get(runs[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return run
 }
 
 func replaceArchiveDemoDocument(t *testing.T, a *app, id string) *httptest.ResponseRecorder {

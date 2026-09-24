@@ -29,6 +29,7 @@ type Document struct {
 	Total, Prepaid, Balance    string
 	Excluded                   []string
 	Contact                    string
+	ApprovalNotice             string
 }
 
 // Documents selects only identities recorded in this run. Empty selectors mean
@@ -73,6 +74,13 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d := Document{UnitID: unit.UnitID, PartyID: party.ID, UnitLabel: unit.Label,
 		Header: []string{org, p.EstateName, p.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), fmt.Sprintf("Lauf %s · Revision %d", run.ID, run.Revision), "Erstellt: " + timestamp(run.CreatedAt)},
 		Total:  money(unit.AllocatedCents), Prepaid: money(unit.PrepaidCents), Contact: strings.Join(nonempty(p.ContactName, p.ContactEmail, p.ContactPhone, p.ContactAddress), " · ")}
+	if run.Approval != nil {
+		role := "Verwaltung"
+		if run.Approval.Role == store.RoleAdmin {
+			role = "Administration"
+		}
+		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
+	}
 	if d.Contact == "" {
 		d.Contact = "Kontakt der Verwaltung fehlt"
 	}
@@ -228,7 +236,11 @@ func (d Document) Pages() []pdf.Page {
 		blocks = append(blocks, []pdf.Line{{}}, lines("Kontakt der Verwaltung", pdf.Strong), lines(d.Contact, pdf.Body))
 		contactLines = append(contactLines[:2], "Weitere Kontaktdaten im Kontaktabschnitt.")
 	}
-	footer := append([]string{DraftNotice}, contactLines...)
+	notice := DraftNotice
+	if d.ApprovalNotice != "" {
+		notice = d.ApprovalNotice
+	}
+	footer := append([]string{notice}, contactLines...)
 	const maxLines = 43
 	// Very long supplied addresses remain visible on continuation pages instead
 	// of overflowing a fixed header. Only the title is then repeated.
