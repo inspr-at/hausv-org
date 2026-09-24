@@ -104,6 +104,29 @@ go run ./cmd/hausv-org
 
 `.env.local` is ignored by Git. Do not commit credentials or production configuration.
 
+Migration filenames and contents are immutable after release. At startup the
+runner records and verifies SHA-256 checksums of the exact embedded SQL bytes.
+Historical rows without checksums are trusted once and backfilled, with one log
+message; this cannot detect edits made before that first backfill. Later content
+mismatches stop startup and name the affected file. Restore its original content
+and put schema changes in a new migration.
+
+PostgreSQL startup holds the database-local session advisory lock
+`0x48415553564d4947` (ASCII `HAUSVMIG`) from ledger bootstrap through the final
+migration. Each file and its checksum still commit together in their own
+transaction. Lock waits respect the startup context and statement timeout.
+SQLite legacy tools/tests retain the single-process migration assumption: do not
+start concurrent migrators against one file.
+
+The runner bootstraps a nullable `schema_migrations.checksum` column before
+numbered migrations, so no migration number is consumed. Older binaries can
+still write the filename-only ledger after rollback; their new rows are
+backfilled on the next upgraded start. Checksums do not roll back application
+schema changes, and older binaries do not participate in the new advisory lock;
+stop them before upgrading. Numbering tests allow only the exact historical
+SQLite `0039` and PostgreSQL `0012` pairs. Subsequent paired migrations keep their
+ordered filename suffixes in step across engines.
+
 ### Fixture development loop
 
 For click-through development with a fresh, deterministic local fixture (and
