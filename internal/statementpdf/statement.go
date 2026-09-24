@@ -31,6 +31,7 @@ type Document struct {
 	Contact                    string
 	ApprovalNotice             string
 	PaymentTerms               []string
+	Proposals                  []string
 	Inspection                 []string
 	Receipts                   []string
 	Title                      string
@@ -181,6 +182,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
 	d.PaymentTerms = paymentTerms(run, unit)
+	d.Proposals = proposalLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
 }
@@ -235,6 +237,9 @@ func (d Document) Pages() []pdf.Page {
 	summary = append(summary, lines(d.Balance, pdf.Strong)...)
 	blocks = append(blocks, summary)
 	for _, text := range d.PaymentTerms {
+		blocks = append(blocks, lines(text, pdf.Body))
+	}
+	for _, text := range d.Proposals {
 		blocks = append(blocks, lines(text, pdf.Body))
 	}
 	for _, row := range d.Costs {

@@ -8,6 +8,8 @@ import (
 
 // Legal settings are period-scoped and copied into every immutable run.
 type AnnualStatementLegalSettings struct {
+	MonthlyProposals          map[string]map[string]int64 `json:"monthly_proposals_cents,omitempty"`
+	NextPrepaymentOn          string                      `json:"next_prepayment_on,omitempty"`
 	HeatingPrepayments        map[string]map[string]int64 `json:"heating_prepayments_cents,omitempty"`
 	HeatingConsumptionPercent int                         `json:"heating_consumption_percent"`
 	HeatableAreas             map[string]int              `json:"heatable_areas_m2_hundredths,omitempty"`
@@ -33,6 +35,18 @@ func (s AnnualStatementLegalSettings) Validate() error {
 	for id, area := range s.HeatableAreas {
 		if NormalizeUnitID(id) != id || area < 0 || area > 9999999 {
 			return fmt.Errorf("invalid heatable area")
+		}
+	}
+	if s.NextPrepaymentOn != "" {
+		if _, err := time.Parse("2006-01-02", s.NextPrepaymentOn); err != nil {
+			return fmt.Errorf("invalid prepayment start")
+		}
+	}
+	for _, components := range s.MonthlyProposals {
+		for _, cents := range components {
+			if cents < 0 || cents > 9223372036854775807/12 {
+				return fmt.Errorf("invalid monthly proposal")
+			}
 		}
 	}
 	return nil

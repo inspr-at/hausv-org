@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -211,7 +212,9 @@ func (s *MemoryAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(t
 	if s.structures[tenant.ID] == nil {
 		s.structures[tenant.ID] = map[int]AnnualStatementPeriodStructure{}
 	}
-	s.structures[tenant.ID][period.Year] = cloneAnnualStatementPeriodStructure(source)
+	next := cloneAnnualStatementPeriodStructure(source)
+	next.Legal = annualStatementFollowupLegal(next.Legal)
+	s.structures[tenant.ID][period.Year] = next
 	return period, true, nil
 }
 
@@ -459,7 +462,15 @@ func (s *SQLAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(tena
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$2 AND period_year=$3`, period.Year, tenant.ID, sourceYear); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
-	if _, err := tx.Exec(`UPDATE annual_statement_periods SET legal_settings=(SELECT legal_settings FROM annual_statement_periods WHERE tenant_id=$1 AND year=$2) WHERE tenant_id=$1 AND year=$3`, tenant.ID, sourceYear, period.Year); err != nil {
+	legal, err := loadAnnualStatementLegal(tx, tenant, sourceYear)
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	raw, err := json.Marshal(annualStatementFollowupLegal(legal))
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	if _, err := tx.Exec(`UPDATE annual_statement_periods SET legal_settings=$1 WHERE tenant_id=$2 AND year=$3`, string(raw), tenant.ID, period.Year); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -813,3 +824,12 @@ func sortAnnualStatementPeriods(periods []AnnualStatementPeriod) {
 
 var _ AnnualStatementPeriodStorage = (*MemoryAnnualStatementPeriodStore)(nil)
 var _ AnnualStatementPeriodStorage = (*SQLAnnualStatementPeriodStore)(nil)
+
+func annualStatementFollowupLegal(legal AnnualStatementLegalSettings) AnnualStatementLegalSettings {
+	legal = cloneAnnualStatementLegal(legal)
+	legal.HeatingPrepayments = nil
+	legal.MonthlyProposals = nil
+	legal.NextPrepaymentOn = ""
+	legal.InspectionPeriod = ""
+	return legal
+}

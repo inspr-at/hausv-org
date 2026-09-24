@@ -180,6 +180,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	for _, item := range settlement {
 		allocatedByUnit[item.UnitID] = item.AllocatedCents
 	}
+	prefill := annualStatementPrepaymentPrefill(ac.repositories.annualStatementRuns, selectedYear)
 	prepaymentViews := make([]web.AnnualStatementPrepaymentView, 0, len(units))
 	for _, unit := range units {
 		item, recorded := prepayments[unit.ID]
@@ -192,6 +193,10 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		if recorded {
 			view.AmountValue = formatAnnualStatementReceiptAmountValue(item.AmountCents)
 			view.Paid = formatAnnualStatementMoney(item.AmountCents)
+		}
+		if amount, ok := prefill[unit.ID]; ok && !recorded {
+			view.AmountValue = formatAnnualStatementReceiptAmountValue(amount)
+			view.Prefilled = true
 		}
 		prepaymentViews = append(prepaymentViews, view)
 	}

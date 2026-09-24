@@ -220,3 +220,20 @@ Geleistetes Heizungs-/Warmwasser-Akonto wird je Einheit ausdrücklich erfasst;
 die Komponentensumme darf das Gesamtakonto nicht überschreiten. PDFs weisen
 Energie-/sonstige Kosten, Flächen, Verbrauch, Verhältnis, Einheitenergebnis,
 Komponenten-Akonto und -Saldo sowie die sechsmonatige Einwendungsfrist aus.
+
+## Neue monatliche Vorauszahlungen
+
+Version 2 speichert je Einheit und Kostenart einen Monatsvorschlag im Ergebnis.
+MRG Vollanwendung verwendet die Jahreskosten / 12 (Cent, kaufmännisch gerundet),
+mit Hinweis bei einer manuellen Vorgabe über 110 % dieser Basis. HeizKG verwendet
+zwingend den Vorperiodenanteil / 12. WEG und vertragliche Regime benötigen eine
+manuelle Vorausschau; fehlende Werte heißen „Noch festzulegen“. Das Gültig-ab-Datum
+ist pro Periode wählbar; ohne Vorgabe gilt im PDF der erste Tag des Monats nach
+der Freigabe (im Entwurf nach Erstellung).
+
+Im Folgejahr füllt der jüngste freigegebene Vorjahreslauf die leeren Akontofelder
+mit zwölf Monatsbeträgen vor. Es bleibt ausdrücklich ein ungespeicherter
+Vorschlag, bis die Verwaltung die tatsächlichen Zahlungen bestätigt; vorhandene
+Zahlungseinträge bleiben erhalten. Beim Klonen einer Periode werden geleistete
+Heizkosten-Akontos, manuelle Monatsvorgaben, Gültig-ab-Datum und Einsichtszeitraum
+geleert; Regime, Flächen, Ort und Kontakt bleiben als Vorlage erhalten.

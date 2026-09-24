@@ -66,9 +66,10 @@ type AnnualStatementRunUnit struct {
 }
 
 type AnnualStatementRunResult struct {
-	TotalCents    int64                    `json:"total_cents"`
-	ExcludedCents int64                    `json:"excluded_cents"`
-	Units         []AnnualStatementRunUnit `json:"units"`
+	Proposals     []AnnualStatementPrepaymentProposal `json:"proposals,omitempty"`
+	TotalCents    int64                               `json:"total_cents"`
+	ExcludedCents int64                               `json:"excluded_cents"`
+	Units         []AnnualStatementRunUnit            `json:"units"`
 }
 
 // CalculateAnnualStatementRun never returns partial monetary results.
@@ -262,6 +263,9 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 	}
 	for i := range result.Units {
 		result.Units[i].BalanceCents = result.Units[i].AllocatedCents - result.Units[i].PrepaidCents
+	}
+	if heatingSplit {
+		result.Proposals = AnnualStatementPrepaymentProposals(input, result)
 	}
 	return result, nil
 }

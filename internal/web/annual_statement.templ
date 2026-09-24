@@ -127,6 +127,7 @@ type AnnualStatementReceiptSuggestionView struct {
 }
 
 type AnnualStatementPrepaymentView struct {
+ Prefilled bool
 	UnitID        string
 	UnitLabel     string
 	AmountValue   string
@@ -240,6 +241,19 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  }
 
  }
+ </fieldset>
+ <fieldset><legend>Neue monatliche Vorauszahlungen</legend>
+ <label>Gültig ab<input type="date" name="next_prepayment_on" value={ data.Legal.NextPrepaymentOn }/></label>
+ <p>MRG Vollanwendung: Vorjahreskosten / 12; über +10 % erscheint ein Hinweis. WEG: manuelle Vorausschau. HeizKG: Vorperiodenanteil / 12.</p>
+ <details><summary>Monatsbeträge je Einheit und Kostenart erfassen</summary>
+ for _,unit:=range data.Units {
+ for _,cost:=range data.CostTypes {
+ if cost.Allocatable && !(data.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.Key)) {
+ <label>{ unit.Label } · { cost.Name } (Euro)<input name={ "monthly_proposal_"+cost.Key+"_"+unit.ID } value={ annualMonthlyProposal(data.Legal,unit.ID,cost.Key) } inputmode="decimal"/></label>
+ }
+ }
+ }
+ </details>
  </fieldset>
  <fieldset><legend>Einsicht in die Belege</legend>
  <label>Ort<input name="inspection_place" value={ data.Legal.InspectionPlace } maxlength="300"/></label>
@@ -389,7 +403,10 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			if data.HasPeriods && data.HasUnits {
 				<div class="unit-list">
 					for _, item := range data.Prepayments {
-						<form class="inline-details" method="post" action="/app/settings/annual-statement/prepayments"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><input type="hidden" name="unit_id" value={ item.UnitID }/><header class="subhead"><div><strong>{ item.UnitLabel }</strong><p>Akonto-Gesamtbetrag im Abrechnungsjahr { annualStatementYear(data.Year) }</p></div></header><div class="form-grid"><label>Akonto <small>Euro, Gesamtbetrag</small><input name="amount" value={ item.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 1200,00" required/></label><label>Vorausgezahlt<span class="readonly"><strong>{ item.Paid }</strong></span></label><label>Zugeteilt<span class="readonly">
+						<form class="inline-details" method="post" action="/app/settings/annual-statement/prepayments"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><input type="hidden" name="unit_id" value={ item.UnitID }/><header class="subhead"><div><strong>{ item.UnitLabel }</strong><p>Akonto-Gesamtbetrag im Abrechnungsjahr { annualStatementYear(data.Year) }</p></div></header><div class="form-grid">if item.Prefilled {
+ <p>Vorschlag aus der freigegebenen Vorjahresabrechnung (12 Monatsbeträge). Tatsächlich geleistete Zahlungen prüfen und erst dann speichern.</p>
+ }
+ <label>Akonto <small>Euro, Gesamtbetrag</small><input name="amount" value={ item.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 1200,00" required/></label><label>Vorausgezahlt<span class="readonly"><strong>{ item.Paid }</strong></span></label><label>Zugeteilt<span class="readonly">
 							if data.SettlementReady {
 								<strong>{ item.Allocated }</strong>
 							} else {
@@ -496,6 +513,12 @@ func annualHeatableArea(legal store.AnnualStatementLegalSettings, id string) str
 
 func annualHeatingPrepayment(legal store.AnnualStatementLegalSettings,id,key string) string {
  value,ok:=legal.HeatingPrepayments[id][key]
+ if !ok { return "" }
+ return fmt.Sprintf("%d,%02d",value/100,value%100)
+}
+
+func annualMonthlyProposal(legal store.AnnualStatementLegalSettings,id,key string) string {
+ value,ok:=legal.MonthlyProposals[id][key]
  if !ok { return "" }
  return fmt.Sprintf("%d,%02d",value/100,value%100)
 }

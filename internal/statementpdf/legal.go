@@ -119,3 +119,29 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}
 }
+
+func proposalLines(run store.AnnualStatementRun, unitID string) []string {
+	if len(run.Result.Proposals) == 0 {
+		return nil
+	}
+	effective := run.Input.Structure.Legal.NextPrepaymentOn
+	if effective == "" {
+		at := statementDate(run)
+		effective = time.Date(at.Year(), at.Month()+1, 1, 0, 0, 0, 0, at.Location()).Format("2006-01-02")
+	}
+	lines := []string{"Neue monatliche Vorauszahlung ab " + date(effective) + ":"}
+	for _, p := range run.Result.Proposals {
+		if p.UnitID != unitID {
+			continue
+		}
+		amount := money(p.MonthlyCents)
+		if p.Missing {
+			amount = "Noch festzulegen"
+		}
+		lines = append(lines, p.Name+": "+amount+" · "+p.Basis)
+		if p.AboveTenPercent {
+			lines = append(lines, "Hinweis: Der Vorschlag liegt mehr als 10 % über den Vorjahreskosten / 12. Bitte prüfen (§ 21 Abs. 3 MRG).")
+		}
+	}
+	return lines
+}
