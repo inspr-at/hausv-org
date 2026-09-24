@@ -1,0 +1,62 @@
+package web
+
+import "strconv"
+
+templ EnergyRecommendationDialog(data EnergyPageData) {
+	<dialog id="energy-recommendation-dialog" class="dialog energy-recommendation-dialog" aria-labelledby="energy-recommendation-dialog-title">
+		<header class="dialog-head"><div><div class="kicker">Nächster Schritt</div><h2 id="energy-recommendation-dialog-title">Empfehlung</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">&times;</button></header>
+		<div class="dialog-body">
+			<section class="energy-nextstep" id="naechster-schritt">
+				<div class="energy-recommendation-summary"><span class="energy-nextstep-icon" aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-binoculars"></span></span><div class="energy-nextstep-copy">
+					if data.Recommendation.ID == "observe" {
+						<h3>{ data.ObservationProgress.Title }</h3>
+						<div class="energy-next-progress-row"><div class="energy-next-progress" role="progressbar" aria-label="Beobachtungsfortschritt" aria-valuemin="0" aria-valuemax={ strconv.Itoa(data.ObservationProgress.Target) } aria-valuenow={ strconv.Itoa(data.ObservationProgress.Completed) } aria-valuetext={ data.ObservationProgress.Label }><span style={ "width:" + strconv.Itoa(data.ObservationProgress.Percent) + "%" }></span></div><small>{ data.ObservationProgress.Label }</small></div>
+					} else {
+						<h3>{ data.Recommendation.Title }</h3>
+					}
+					<div class="energy-next-status"><span aria-hidden="true"><span class="energy-ui-icon energy-ui-icon-check"></span></span>{ data.Recommendation.Effort } · keine Steuerung</div><details class="energy-next-why" data-energy-disclosure="recommendation"><summary aria-controls="energy-next-explanation">Warum?
+						@DisclosureChevronMasked()
+					</summary><div id="energy-next-explanation"><p>{ data.Recommendation.Reason }</p><div class="energy-next-meta"><span>{ data.Recommendation.Benefit }</span><span>Aufwand: { data.Recommendation.Effort }</span><span>{ data.Recommendation.ImpactRange }</span></div></div></details>
+				</div></div>
+				if !data.RecommendationDeferred && !data.RecommendationDismissed {
+					<div class="energy-recommendation-actions">
+						if data.RecommendationURL != "" && data.Recommendation.ID != "simulate" {
+							<a class="button primary" href={ templ.SafeURL(data.RecommendationURL) }>Diesen Schritt öffnen</a>
+						}
+						if data.RecommendationURL == "" {
+							<span class="energy-observation-running"><span aria-hidden="true">●</span>Beobachtung läuft</span>
+						}
+						<form method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button quiet" type="submit" name="status" value="deferred">Später</button></form>
+					</div>
+					<details class="dialog-optional energy-measure-control"><summary>Weitere Optionen
+						@DisclosureChevronMasked()
+					</summary><div class="energy-next-menu"><form class="energy-measure-form" method="post" action="/app/energie/measure">
+						<h3>Als Hausaufgabe übernehmen</h3><p>Was darf in die Aufgabe?</p><p>Es entsteht ein normales Anliegen – keine Bestellung und keine Preiszusage.</p>
+						<label><input type="checkbox" name="share" value="inventory"/><span>Anlageninventar beilegen</span></label><label><input type="checkbox" name="share" value="measurements"/><span>Zusammengefasste Messwerte beilegen</span></label><label><input type="checkbox" name="share" value="contact"/><span>Kontaktdaten beilegen</span></label>
+						<input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button primary" type="submit">Hausaufgabe anlegen</button>
+					</form><form class="energy-dismiss-form" method="post" action="/app/energie/recommendation"><input type="hidden" name="recommendation_id" value={ data.Recommendation.ID }/><button class="button quiet" type="submit" name="status" value="dismissed">Nicht für uns</button></form></div></details>
+				}
+			</section>
+			if data.HasScenarios {
+				<section class="energy-recommendation-scenarios" id="szenarien">
+					<header><h3>Was-wäre-wenn</h3><p>Direkt im Dialog simulieren – ohne Sprung auf der Seite.</p></header>
+					for _, scenario := range data.Scenarios {
+						<article class="energy-scenario"><div class="energy-scenario-copy"><strong>{ scenario.Title }</strong><p>{ scenario.EffectBand } · Unsicherheit: { scenario.Uncertainty }</p><p class="energy-scenario-assumptions">{ scenario.Assumptions }</p>
+							if scenario.BaselineNote != "" {
+								<p class="energy-scenario-assumptions">{ scenario.BaselineNote }</p>
+							}
+						</div><div class="energy-scenario-result"><span>Spitze im Modell</span><strong>{ scenario.PeakBand }</strong>
+							if scenario.HasBilledBand {
+								<span class="energy-scenario-billed">davon verrechnet <b>{ scenario.BilledBand }</b></span>
+							}
+						</div></article>
+						if scenario.FloorNote != "" {
+							<p class="energy-scenario-floor"><span aria-hidden="true">!</span>{ scenario.FloorNote }</p>
+						}
+					}
+					<p class="energy-scenario-caveat">Die Bandbreite tritt nur ein, wenn sich die genannten Verbraucher tatsächlich verschieben lassen und nicht ohnehin gleichzeitig laufen. HAUSV rechnet sie bewusst nicht in Euro um: dafür ist der Entwurf zu unsicher und die Messbasis zu jung.</p>
+				</section>
+			}
+		</div>
+	</dialog>
+}
