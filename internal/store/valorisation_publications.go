@@ -67,5 +67,5 @@ func annualEvidence(v indexation.AnnualValue) ValorisationIndex {
 	if v.Preliminary {
 		status = "preliminary"
 	}
-	return ValorisationIndex{Series: string(v.Series), Period: fmt.Sprint(v.Year), Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
+	return ValorisationIndex{Series: string(v.Series), Period: fmt.Sprint(v.Year), Used: true, Value: v.Value.String(), Status: status, PublishedOn: date, Source: v.Source, PublicationSource: source}
 }

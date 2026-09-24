@@ -33,11 +33,15 @@ func (s ValorisationSettings) Normalized() ValorisationSettings {
 	return s
 }
 
-type ValorisationIndex struct{ Series, Period, Value, Status, PublishedOn, Source, PublicationSource string }
+type ValorisationIndex struct {
+	Series, Period, Value, Status, PublishedOn, Source, PublicationSource string
+	Used                                                                  bool
+}
 type ValorisationInput struct {
 	EffectiveOn                           string
 	Settings                              ValorisationSettings
 	Leases                                []Lease
+	UnitLabels                            map[string]string
 	Prior                                 map[string]ValorisationItem
 	Organisation, House, Address, Contact string
 }
@@ -53,6 +57,7 @@ type ValorisationRun struct {
 }
 type ValorisationItem struct {
 	ID, LeaseID, ClauseID, UnitID                          string
+	UnitLabel                                              string
 	Group, Outcome, Reason                                 string
 	Exceptions, Explanation                                []string
 	Lease                                                  Lease
@@ -64,6 +69,7 @@ type ValorisationItem struct {
 	CapAnchor                                              indexation.Month
 	CapStartCents                                          int64
 	Contract                                               indexation.Evaluation
+	CalculationSteps                                       []indexation.ExplanationStep
 	Ceiling                                                indexation.Ceiling
 	Decision                                               indexation.LimitedAdjustment
 	TimingInput                                            indexation.TimingInput
@@ -123,6 +129,7 @@ func PreviewValorisation(input ValorisationInput, snapshot indexation.Snapshot, 
 	evidence := map[string]ValorisationIndex{}
 	for _, lease := range input.Leases {
 		item := evaluateValorisationLease(lease, input, snapshot, effective, now)
+		item.UnitLabel = input.UnitLabels[lease.UnitID]
 		run.Items = append(run.Items, item)
 		for _, v := range item.Indices {
 			evidence[v.Series+"/"+v.Period] = v
@@ -201,8 +208,15 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	if !clause.TwoWay && lease.TenantIsConsumer {
 		item.exception("one_way_clause_risk")
 	}
-	if item.OldCents <= 0 {
-		item.exception("index_missing")
+	if item.OldCents <= 0 && lease.UseKind == UseKindGarage && (clause.ID == "" || clause.ClauseType == ClauseNone) && len(item.Exceptions) == 1 && item.Exceptions[0] == "no_clause" {
+		item.Exceptions = nil
+		item.Group = "unchanged"
+		item.Reason = "Nur Stellplatzentgelt; kein Hauptmietzins zur Anpassung."
+		item.Explanation = []string{item.Reason}
+		return finishValorisationItem(item)
+	}
+	if item.OldCents <= 0 && len(item.Exceptions) == 0 {
+		item.exception("clause_invalid")
 	}
 	if len(item.Exceptions) > 0 {
 		return finishValorisationItem(item)
@@ -247,7 +261,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		}
 		item.CapCents = item.Ceiling.AmountCents
 		for _, step := range item.Ceiling.Years {
-			item.Explanation = append(item.Explanation, fmt.Sprintf("%d: Jahresmittel %s / %s; Änderung %s %%; nach 3-%%-/Halbregel und Sonderdeckel %s %%; %d/12 Monate; Kurve exakt %s Cent.", step.Year, step.CurrentAverage.String(), step.PreviousAverage.String(), step.RawRatePercent, step.LimitedRatePercent, step.FullMonths, step.ExactAmountCents))
+			item.Explanation = append(item.Explanation, fmt.Sprintf("%d: Jahresmittel %s → %s; Änderung %s; nach Begrenzung %s; %d von 12 Monaten berücksichtigt. Deckelkurve: %s (gerundet angezeigt).", step.Year, ValorisationNumber(step.PreviousAverage.String(), 1), ValorisationNumber(step.CurrentAverage.String(), 1), ValorisationPercent(step.RawRatePercent, 5), ValorisationPercent(step.LimitedRatePercent, 5), step.FullMonths, ValorisationExactMoney(step.ExactAmountCents)))
 		}
 	}
 	var contract indexation.Evaluation
@@ -277,7 +291,9 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			item.exception("index_missing")
 			return finishValorisationItem(item)
 		}
-		item.Indices = append(item.Indices, indexEvidence(base))
+		evidence := indexEvidence(base)
+		evidence.Used = true
+		item.Indices = append(item.Indices, evidence)
 		if base.Preliminary {
 			item.exception("index_preliminary")
 		}
@@ -365,12 +381,15 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				item.exception(code)
 				return finishValorisationItem(item)
 			}
+			item.CalculationSteps = append(item.CalculationSteps, result.Explanation...)
 			for _, step := range result.Explanation {
 				if v, ok, _ := snapshot.Data.Lookup(core.Series, step.Month); ok {
-					item.Indices = append(item.Indices, indexEvidence(v))
+					evidence := indexEvidence(v)
+					evidence.Used = step.Code == "base_final" || step.Code == "threshold_crossed" || (!result.Crossed && !contract.Crossed && step.Month == result.EvaluatedThrough)
+					item.Indices = append(item.Indices, evidence)
 				}
 				if step.Code == "threshold_crossed" {
-					item.Explanation = append(item.Explanation, fmt.Sprintf("%s: Index %s, Basis %s; Änderung %s %%; Schwelle %s; Vertragskurve exakt %s Cent.", step.Month, step.Index.String(), step.Base.String(), step.Change.String(), step.Threshold.String(), step.ExactAmountCents))
+					item.Explanation = append(item.Explanation, valorisationContractExplanation(step, clause))
 				}
 			}
 			if result.PendingMonth != "" {
@@ -385,7 +404,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			if !result.Crossed {
 				if !contract.Crossed {
 					contract = result
-					item.Reason = fmt.Sprintf("Schwelle %s %s nicht erreicht: %s %%.", clause.ThresholdValue, clause.ThresholdKind, result.ChangePercent.String())
+					item.Reason = fmt.Sprintf("Schwelle %s %s nicht erreicht: %s.", ValorisationNumber(clause.ThresholdValue, 2), ValorisationThresholdUnit(clause.ThresholdKind), ValorisationPercent(result.ChangePercent.String(), 2))
 				}
 				if periodic {
 					continue
@@ -551,13 +570,15 @@ func valorisationCoreClause(c IndexClause, amount int64) (indexation.Clause, err
 	return out, err
 }
 func finishValorisationItem(i ValorisationItem) ValorisationItem {
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	indices := []ValorisationIndex{}
 	for _, index := range i.Indices {
 		key := index.Series + "/" + index.Period
-		if !seen[key] {
+		if pos, ok := seen[key]; ok {
+			indices[pos].Used = indices[pos].Used || index.Used
+		} else {
+			seen[key] = len(indices)
 			indices = append(indices, index)
-			seen[key] = true
 		}
 	}
 	i.Indices = indices

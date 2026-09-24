@@ -196,18 +196,18 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	}
 	vr, _ := BindValorisationRepository(lanes, NewSQLDocumentStore(lanes, fileDir), tenant)
 	actor := ValorisationActor{Email: "a@example.com", Manage: true, Approve: true}
-	run, err := vr.Create(ValorisationInput{EffectiveOn: "2026-04-01"}, "org", actor, now)
+	valorisationRun, err := vr.Create(ValorisationInput{EffectiveOn: "2026-04-01"}, "org", actor, now)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, err = vr.Approve(run.ID, actor, DefaultValorisationSettings(), now, func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) {
+	valorisationRun, err = vr.Approve(valorisationRun.ID, actor, DefaultValorisationSettings(), now, func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) {
 		return []byte("%PDF-1.4 seed"), nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	vd, _ := BindValorisationDeliveryRepository(NewSQLValorisationDeliveryStore(lanes), tenant)
-	if _, _, err := vd.Attempt(context.Background(), ValorisationDelivery{RunID: run.ID, Revision: run.Revision, PartyID: "a@example.com", UnitID: "u1", DocumentID: run.Items[0].LetterDocumentID, SHA256: run.Items[0].LetterSHA256, Recipient: "a@example.com", Actor: actor.Email}, func(context.Context) error { return nil }); err != nil {
+	if _, _, err := vd.Attempt(context.Background(), ValorisationDelivery{RunID: valorisationRun.ID, Revision: valorisationRun.Revision, PartyID: "a@example.com", UnitID: "u1", DocumentID: valorisationRun.Items[0].LetterDocumentID, SHA256: valorisationRun.Items[0].LetterSHA256, Recipient: "a@example.com", Actor: actor.Email}, func(context.Context) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)

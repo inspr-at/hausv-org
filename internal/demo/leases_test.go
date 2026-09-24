@@ -88,7 +88,16 @@ func TestDemoValorisationDraft(t *testing.T) {
 		t.Fatal("demo run", run.Status, len(run.Items))
 	}
 	codes := map[string]bool{}
+	groups := map[string]int{}
 	for _, item := range run.Items {
+		groups[item.Group]++
+		t.Logf("%s: %s (%s), %d", item.Label(), item.Group, item.Reason, item.NewCents)
+		if item.LeaseID == "lease-top-7" && (item.Group != "ready" || item.MieWeG) {
+			t.Fatal("commercial lease must be ready outside MieWeG", item)
+		}
+		if item.LeaseID == "lease-top-1" && item.Label() != "Top 1 · Eva Huber" {
+			t.Fatal("frozen unit/tenant label", item.Label())
+		}
 		for _, code := range item.Exceptions {
 			codes[code] = true
 		}
@@ -99,8 +108,16 @@ func TestDemoValorisationDraft(t *testing.T) {
 			t.Fatal("E2", item)
 		}
 	}
-	if len(codes) < 3 {
-		t.Fatal("exceptions", codes)
+	if groups["ready"] != 6 || groups["unchanged"] != 2 || groups["exception"] != 4 {
+		t.Fatalf("demo mix: %+v", groups)
+	}
+	for _, code := range []string{"no_clause", "clause_unreviewed", "one_way_clause_risk", "clause_invalid"} {
+		if !codes[code] {
+			t.Fatalf("missing intended exception %s", code)
+		}
+	}
+	if len(codes) != 4 {
+		t.Fatal("unexpected exception", codes)
 	}
 	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {
 		t.Fatal("reseed", err)

@@ -371,3 +371,52 @@ func TestValorisationConcurrentRevisionsPrescribeOnce(t *testing.T) {
 		t.Fatal("duplicate prescriptions", len(lease.Components), err)
 	}
 }
+
+func TestValorisationParkingWithoutHMZHasNoMissingIndex(t *testing.T) {
+	l := valorisationFixture()
+	l.UseKind, l.MRGScope, l.TenantIsConsumer = UseKindGarage, MRGAusnahme, false
+	l.Components[0].Kind = ComponentStellplatz
+	l.Clauses[0].ClauseType = ClauseNone
+	item := previewTest(t, l, "2026-04-01")
+	if item.Group != "unchanged" || len(item.Exceptions) != 0 || item.Reason != "Nur Stellplatzentgelt; kein Hauptmietzins zur Anpassung." {
+		t.Fatalf("parking charge is outside the HMZ run, not missing index data: %+v", item)
+	}
+}
+
+func TestValorisationHumanEvidencePreservesExactAudit(t *testing.T) {
+	item := previewTest(t, valorisationFixture(), "2026-04-01")
+	text := strings.Join(item.Explanation, "\n")
+	for _, want := range []string{"+3,55412 %", "123,8", "Schwelle 5 % überschritten: +5,02 %", "1.050,16 €"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %s in %s", want, text)
+		}
+	}
+	for _, raw := range []string{"Kurve exakt", "percent", "3500/1203", "123.8"} {
+		if strings.Contains(text, raw) {
+			t.Fatalf("raw calculation notation in explanation: %s", text)
+		}
+	}
+	if len(item.CalculationSteps) == 0 || !strings.Contains(item.Ceiling.Years[0].ExactAmountCents, "/") {
+		t.Fatal("exact evidence lost")
+	}
+	used := map[string]bool{}
+	for _, value := range item.UsedIndices() {
+		used[value.Period] = true
+		if value.PublishedOn == "" || value.Status != "final" {
+			t.Fatal(value)
+		}
+	}
+	if len(used) != 5 || !used["2024-09"] || !used["2025-12"] || !used["2023"] || !used["2024"] || !used["2025"] {
+		t.Fatal("used observations", used)
+	}
+	if len(item.Indices) <= len(used) {
+		t.Fatal("full observation series lost")
+	}
+	l := valorisationFixture()
+	l.UseKind, l.MRGScope = UseKindGeschaeft, MRGAusnahme
+	l.Clauses[0].ThresholdValue = "10"
+	unchanged := previewTest(t, l, "2026-04-01")
+	if unchanged.Group != "unchanged" || !strings.Contains(unchanged.Reason, "Schwelle 10 % nicht erreicht: +4,37 %") {
+		t.Fatal(unchanged.Reason)
+	}
+}

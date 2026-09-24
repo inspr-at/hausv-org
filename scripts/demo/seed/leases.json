@@ -159,11 +159,11 @@
     "series": "vpi2020",
     "base_period": "2025-01",
     "base_value": "126.4",
-    "threshold": "3",
+    "threshold": "2.5",
     "threshold_kind": "percent",
     "review_status": "ok",
     "tenant_is_consumer": false,
-    "clause_text": "Der Geschäftsmietzins ist nach VPI 2020 wertgesichert. Basis Jänner 2025, Schwelle 3 Prozent.",
+    "clause_text": "Der Geschäftsmietzins ist nach VPI 2020 wertgesichert. Basis Jänner 2025, Schwelle 2,5 Prozent.",
     "notes": "Geschäftsraummiete, kein MieWeG."
   },
   {
@@ -183,11 +183,15 @@
     "vat_bp": 1000,
     "clause_type": "vpi_periodic",
     "series": "vpi2020",
-    "base_period": "2017-04",
-    "base_value": "98.1",
+    "base_period": "2025-01",
+    "base_value": "126.4",
     "periodic_month": 4,
     "review_status": "ok",
-    "clause_text": "Der Hauptmietzins wird jedes Jahr im April an den VPI 2020 angepasst."
+    "clause_text": "Der Hauptmietzins wird jedes Jahr im April an den VPI 2020 des vorangegangenen Jänners angepasst. Letzte Anpassungsbasis: Jänner 2025.",
+    "last_month": "2025-01",
+    "last_value": "126.4",
+    "hmz_after": "760.00",
+    "reference_month_offset": -3
   },
   {
     "id": "lease-top-9",
@@ -222,13 +226,13 @@
     "bk_cents": 12000,
     "vat_bp": 1000,
     "clause_type": "vpi_threshold",
-    "series": "vpi2015",
-    "base_period": "2016-11",
-    "base_value": "101.0",
-    "threshold": "5",
+    "series": "vpi2020",
+    "base_period": "2024-09",
+    "base_value": "123.6",
+    "threshold": "6",
     "threshold_kind": "points",
-    "review_status": "doubtful",
-    "clause_text": "Wertsicherung nach einem älteren Index. Die Formulierung ist noch nicht abschließend beurteilt."
+    "review_status": "ok",
+    "clause_text": "Wertsicherung nach VPI 2020, Basis September 2024, Schwelle 6 Indexpunkte, volle Veränderung in beide Richtungen."
   },
   {
     "id": "lease-top-11",
@@ -248,7 +252,10 @@
     "clause_type": "mieweg_model",
     "series": "vpi2020",
     "review_status": "ok",
-    "clause_text": "Der Hauptmietzins ist wertgesichert gemäß § 1 Abs 2 und 3 MieWeG."
+    "clause_text": "Der Hauptmietzins ist wertgesichert gemäß § 1 Abs 2 und 3 MieWeG.",
+    "last_month": "2025-01",
+    "last_value": "126.4",
+    "hmz_after": "820.00"
   },
   {
     "id": "lease-top-12",

@@ -48,6 +48,14 @@ func (r *ValorisationRepository) previewTx(tx *sql.Tx, input ValorisationInput, 
 		return ValorisationRun{}, err
 	}
 	input.Leases = leases
+	units, err := readStoredUnits(tx, r.tenant)
+	if err != nil {
+		return ValorisationRun{}, err
+	}
+	input.UnitLabels = map[string]string{}
+	for _, unit := range units {
+		input.UnitLabels[unit.id] = unit.unit.Label
+	}
 	input.Prior = map[string]ValorisationItem{}
 	for _, lease := range leases {
 		for _, clause := range lease.Clauses {
@@ -359,7 +367,7 @@ func (r *ValorisationRepository) archiveTx(tx *sql.Tx, run ValorisationRun, item
 	if err != nil {
 		return DocumentRecord{}, err
 	}
-	doc := DocumentRecord{TenantSlug: r.tenant.Slug, Title: "Wertsicherung · " + item.UnitID + " · " + run.EffectiveOn, UnitID: item.UnitID, UploadedBy: actor.Email, ValorisationArchive: &ValorisationArchiveMetadata{RunID: run.ID, ItemID: item.ID, LetterDate: now.Format(time.DateOnly), CollectableFrom: item.CollectableFrom}}
+	doc := DocumentRecord{TenantSlug: r.tenant.Slug, Title: "Wertsicherung · " + item.Label() + " · " + run.EffectiveOn, UnitID: item.UnitID, UploadedBy: actor.Email, ValorisationArchive: &ValorisationArchiveMetadata{RunID: run.ID, ItemID: item.ID, LetterDate: now.Format(time.DateOnly), CollectableFrom: item.CollectableFrom}}
 	doc, err = prepareArchiveRecord(doc, "wertsicherung-"+item.ID+".pdf", "application/pdf", data, now)
 	if err != nil {
 		return doc, err

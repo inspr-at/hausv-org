@@ -15,37 +15,38 @@ import (
 )
 
 type seedLease struct {
-	ID            string `json:"id"`
-	Unit          string `json:"unit"`
-	TenantName    string `json:"tenant_name"`
-	TenantEmail   string `json:"tenant_email"`
-	TenantAddress string `json:"tenant_address"`
-	ConcludedOn   string `json:"concluded_on"`
-	StartsOn      string `json:"starts_on"`
-	EndsOn        string `json:"ends_on"`
-	UseKind       string `json:"use_kind"`
-	MRGScope      string `json:"mrg_scope"`
-	RentRegime    string `json:"rent_regime"`
-	HMZCents      int64  `json:"hmz_cents"`
-	BKCents       int64  `json:"bk_cents"`
-	HeatCents     int64  `json:"heat_cents"`
-	VATBP         int    `json:"vat_bp"`
-	ClauseType    string `json:"clause_type"`
-	Series        string `json:"series"`
-	BasePeriod    string `json:"base_period"`
-	BaseValue     string `json:"base_value"`
-	Threshold     string `json:"threshold"`
-	ThresholdKind string `json:"threshold_kind"`
-	Inclusive     bool   `json:"threshold_inclusive"`
-	TwoWay        *bool  `json:"two_way"`
-	Review        string `json:"review_status"`
-	ClauseText    string `json:"clause_text"`
-	LastMonth     string `json:"last_month"`
-	LastValue     string `json:"last_value"`
-	HMZAfter      string `json:"hmz_after"`
-	Consumer      *bool  `json:"tenant_is_consumer"`
-	PeriodicMonth int    `json:"periodic_month"`
-	Notes         string `json:"notes"`
+	ID                   string `json:"id"`
+	Unit                 string `json:"unit"`
+	TenantName           string `json:"tenant_name"`
+	TenantEmail          string `json:"tenant_email"`
+	TenantAddress        string `json:"tenant_address"`
+	ConcludedOn          string `json:"concluded_on"`
+	StartsOn             string `json:"starts_on"`
+	EndsOn               string `json:"ends_on"`
+	UseKind              string `json:"use_kind"`
+	MRGScope             string `json:"mrg_scope"`
+	RentRegime           string `json:"rent_regime"`
+	HMZCents             int64  `json:"hmz_cents"`
+	BKCents              int64  `json:"bk_cents"`
+	HeatCents            int64  `json:"heat_cents"`
+	VATBP                int    `json:"vat_bp"`
+	ClauseType           string `json:"clause_type"`
+	Series               string `json:"series"`
+	BasePeriod           string `json:"base_period"`
+	BaseValue            string `json:"base_value"`
+	Threshold            string `json:"threshold"`
+	ThresholdKind        string `json:"threshold_kind"`
+	Inclusive            bool   `json:"threshold_inclusive"`
+	TwoWay               *bool  `json:"two_way"`
+	Review               string `json:"review_status"`
+	ClauseText           string `json:"clause_text"`
+	LastMonth            string `json:"last_month"`
+	LastValue            string `json:"last_value"`
+	HMZAfter             string `json:"hmz_after"`
+	Consumer             *bool  `json:"tenant_is_consumer"`
+	PeriodicMonth        int    `json:"periodic_month"`
+	ReferenceMonthOffset *int   `json:"reference_month_offset"`
+	Notes                string `json:"notes"`
 }
 
 func seedLeases(ctx context.Context, database *sql.DB, identities map[string]store.TenantIdentity, dir string) error {
@@ -129,7 +130,7 @@ func (item seedLease) lease() store.Lease {
 	clause := store.IndexClause{
 		ID: item.ID + "-clause", ClauseType: item.ClauseType, Series: item.Series, BasePeriod: item.BasePeriod, BaseValue: item.BaseValue,
 		ThresholdKind: item.ThresholdKind, ThresholdValue: item.Threshold, ThresholdInclusive: item.Inclusive,
-		FullChangeOnTrigger: true, TwoWay: twoWay, PeriodicMonth: item.PeriodicMonth, ClauseText: item.ClauseText,
+		FullChangeOnTrigger: true, TwoWay: twoWay, PeriodicMonth: item.PeriodicMonth, ReferenceMonthOffset: item.ReferenceMonthOffset, ClauseText: item.ClauseText,
 		ReviewStatus: item.Review, ValidFrom: item.StartsOn,
 	}
 	if item.LastMonth != "" {
