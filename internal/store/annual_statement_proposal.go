@@ -39,7 +39,7 @@ func AnnualStatementPrepaymentProposals(input AnnualStatementRunInput, result An
 			if proposal.MonthlyCents < 0 {
 				proposal.Missing = true
 			}
-			if legal.Regime == "mrg_voll" && !heating {
+			if legal.Regime == "mrg_voll" && !heating && found {
 				annual := new(big.Int).Mul(big.NewInt(proposal.MonthlyCents), big.NewInt(1200))
 				limit := new(big.Int).Mul(big.NewInt(cost.AmountCents), big.NewInt(110))
 				proposal.AboveTenPercent = annual.Cmp(limit) > 0

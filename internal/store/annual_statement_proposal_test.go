@@ -39,3 +39,12 @@ func TestAnnualPrepaymentProposalByRegime(t *testing.T) {
 		t.Fatal(proposals)
 	}
 }
+
+func TestAutomaticMRGProposalDoesNotWarnOnCentRounding(t *testing.T) {
+	input := AnnualStatementRunInput{Structure: AnnualStatementPeriodStructure{Legal: AnnualStatementLegalSettings{Regime: "mrg_voll"}}}
+	result := AnnualStatementRunResult{Units: []AnnualStatementRunUnit{{UnitID: "a", Costs: []AnnualStatementRunCost{{CostTypeKey: "water", AmountCents: 6}}}}}
+	got := AnnualStatementPrepaymentProposals(input, result)
+	if got[0].MonthlyCents != 1 || got[0].AboveTenPercent {
+		t.Fatal(got)
+	}
+}

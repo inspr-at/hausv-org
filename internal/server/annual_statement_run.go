@@ -215,7 +215,12 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		for _, unit := range store.AnnualStatementRunDisplayOrder(run) {
 			row := web.AnnualStatementRunUnitView{Label: unit.Label, Allocated: formatAnnualStatementMoney(unit.AllocatedCents), Prepaid: formatAnnualStatementMoney(unit.PrepaidCents), Balance: formatAnnualStatementBalance(-unit.BalanceCents)}
 			for _, cost := range unit.Costs {
-				row.Costs = append(row.Costs, web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)})
+				costView := web.AnnualStatementRunCostView{Name: cost.Name, Key: annualStatementAllocationKeyLabel(cost.AllocationKey), Share: formatAnnualStatementShare(cost.SharePPM, true), Amount: formatAnnualStatementMoney(cost.AmountCents)}
+				if run.CalculationVersion >= 2 && run.Input.Structure.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.CostTypeKey) {
+					costView.Key = "HeizKG"
+					costView.Share = "siehe PDF"
+				}
+				row.Costs = append(row.Costs, costView)
 			}
 			for _, party := range run.Input.Parties {
 				if party.UnitID == unit.UnitID {
@@ -298,6 +303,8 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		return cost + ": Vollständige, vergleichbare Periodenmessungen für alle Einheiten fehlen. Es wird kein Verbrauch geschätzt."
 	case "measurement-rule":
 		return cost + ": Keine bekannte Messregel hinterlegt. Bitte die Zuordnung klären."
+	case "calculation-version":
+		return "Die gespeicherte Berechnungsversion wird nicht unterstützt."
 	case "overflow":
 		return "Die Beträge oder Verteilerbasen sind zu groß für eine sichere Berechnung. Bitte die Eingaben prüfen."
 	default:
@@ -336,7 +343,11 @@ func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 	}
 	run, changed, err := ac.repositories.annualStatementRuns.Approve(run.ID, actor, role, time.Now())
 	if err != nil {
-		http.Error(w, "Freigabe nicht möglich. Bereits archivierte Entwürfe benötigen einen neuen Lauf.", 409)
+		if errors.Is(err, store.ErrAnnualStatementArchivedDraft) {
+			http.Error(w, "Bereits archivierte Entwürfe benötigen einen neuen Lauf.", http.StatusConflict)
+		} else {
+			http.Error(w, "Die Freigabe konnte nicht gespeichert werden. Bitte erneut versuchen.", http.StatusInternalServerError)
+		}
 		return
 	}
 	if changed {

@@ -30,3 +30,18 @@ func TestReceiptInspectionAppendix(t *testing.T) {
 		}
 	}
 }
+
+func TestAushangOnlyAllocatableHouseTotals(t *testing.T) {
+	run := fixture()
+	run.Input.Structure.Legal.Regime = "mrg_voll"
+	raw, err := RenderAushang(run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"Partei:", "Geleistete Akontozahlung:", "reserve", "50,00", "owner@example.com"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("notice contains %s", forbidden)
+		}
+	}
+}

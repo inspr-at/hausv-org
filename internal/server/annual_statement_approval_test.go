@@ -29,6 +29,19 @@ func TestAnnualApprovalLifecycle(t *testing.T) {
 			t.Fatal(w.Code, w.Body.String())
 		}
 	}
+
+	structure, _ := repos.annualStatementPeriods.Structure(2025)
+	changedLegal := structure.Legal
+	changedLegal.Regime = "mrg_voll"
+	if err := repos.annualStatementPeriods.SaveLegal(2025, changedLegal); err != nil {
+		t.Fatal(err)
+	}
+	if response := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route+"/approve", nil); response.Code != http.StatusConflict {
+		t.Fatal("stale legal snapshot approved", response.Code)
+	}
+	if err := repos.annualStatementPeriods.SaveLegal(2025, structure.Legal); err != nil {
+		t.Fatal(err)
+	}
 	w = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route+"/approve", nil)
 	if w.Code != http.StatusSeeOther {
 		t.Fatal(w.Code, w.Body.String())
@@ -47,5 +60,12 @@ func TestAnnualApprovalLifecycle(t *testing.T) {
 	pdf := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, route+"/pdf", nil)
 	if pdf.Code != 200 || strings.Contains(pdf.Body.String(), "Entwurf") || !strings.Contains(pdf.Body.String(), "Freigegeben:") {
 		t.Fatal("final PDF", pdf.Code)
+	}
+	if err := repos.annualStatementPeriods.SaveLegal(2025, changedLegal); err != nil {
+		t.Fatal(err)
+	}
+	frozen := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, route+"/pdf", nil)
+	if frozen.Body.String() != pdf.Body.String() {
+		t.Fatal("approved PDF changed with legal settings")
 	}
 }

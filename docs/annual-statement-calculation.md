@@ -220,6 +220,8 @@ Geleistetes Heizungs-/Warmwasser-Akonto wird je Einheit ausdrücklich erfasst;
 die Komponentensumme darf das Gesamtakonto nicht überschreiten. PDFs weisen
 Energie-/sonstige Kosten, Flächen, Verbrauch, Verhältnis, Einheitenergebnis,
 Komponenten-Akonto und -Saldo sowie die sechsmonatige Einwendungsfrist aus.
+Die Summenzeile zeigt bei HeizKG keinen einzelnen Prozentsatz: Verbrauch und
+Fläche sind getrennte Schlüssel und im PDF-Messnachweis erläutert.
 
 ## Neue monatliche Vorauszahlungen
 

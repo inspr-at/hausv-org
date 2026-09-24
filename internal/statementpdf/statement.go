@@ -1,4 +1,4 @@
-// Package statementpdf renders working drafts from immutable statement runs.
+// Package statementpdf renders drafts and approved immutable statement runs.
 package statementpdf
 
 import (
@@ -169,6 +169,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		}
 		if run.CalculationVersion >= 2 && run.Input.Structure.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.CostTypeKey) {
 			row.Key = "HeizKG"
+			// A two-pool split has no single allocation share. Consumption and
+			// area shares are explained separately in the measurement appendix.
+			row.Share = "im Anhang"
 			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
 		}
 		d.Costs = append(d.Costs, row)
@@ -215,7 +218,11 @@ func (d Document) Pages() []pdf.Page {
 	for _, text := range d.Header {
 		header = append(header, lines(text, pdf.Body)...)
 	}
-	header = append(header, lines("Einheit: "+d.UnitLabel+" · Partei: "+d.PartyID, pdf.Body)...)
+	identity := "Einheit: " + d.UnitLabel
+	if d.PartyID != "" {
+		identity += " · Partei: " + d.PartyID
+	}
+	header = append(header, lines(identity, pdf.Body)...)
 	header = append(header, pdf.Line{})
 	var blocks [][]pdf.Line
 	for _, text := range append(append([]string(nil), d.Address...), d.Basis...) {
@@ -233,8 +240,12 @@ func (d Document) Pages() []pdf.Page {
 	}
 	summary := []pdf.Line{{}}
 	summary = append(summary, lines("Summe: "+d.Total, pdf.Strong)...)
-	summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
-	summary = append(summary, lines(d.Balance, pdf.Strong)...)
+	if d.Prepaid != "" {
+		summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
+	}
+	if d.Balance != "" {
+		summary = append(summary, lines(d.Balance, pdf.Strong)...)
+	}
 	blocks = append(blocks, summary)
 	for _, text := range d.PaymentTerms {
 		blocks = append(blocks, lines(text, pdf.Body))

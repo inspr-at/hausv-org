@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	_ "time/tzdata"
 )
 
 func statementDate(run store.AnnualStatementRun) time.Time {
@@ -84,7 +85,13 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 	}
 	d := Document{Title: "Jahresabrechnung · Aushang", UnitLabel: "Liegenschaft", Header: []string{run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), run.Input.Structure.Legal.Basis()}, Contact: run.Input.Structure.Legal.InspectionContact, Total: money(run.Result.TotalCents)}
 	d.Inspection, _ = inspectionAppendix(run)
+	if d.Contact == "" {
+		d.Contact = "Kontakt der Verwaltung fehlt"
+	}
 	for _, cost := range run.Input.Structure.CostTypes {
+		if !cost.Allocatable {
+			continue
+		}
 		var total int64
 		for _, receipt := range run.Input.Receipts {
 			if receipt.CostTypeKey == cost.Key {
@@ -94,7 +101,11 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 		d.Basis = append(d.Basis, cost.Name+": "+money(total))
 	}
 	if run.Approval != nil {
-		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + run.Approval.Role
+		role := "Verwaltung"
+		if run.Approval.Role == store.RoleAdmin {
+			role = "Administration"
+		}
+		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
 	}
 	return pdf.Pages(d.Pages(), pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
 }

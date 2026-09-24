@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var ErrAnnualStatementArchivedDraft = errors.New("archived draft requires a new revision")
+
 type AnnualStatementRunApproval struct {
 	ApprovedAt time.Time `json:"approved_at"`
 	ApprovedBy string    `json:"approved_by"`
@@ -326,7 +328,7 @@ func newAnnualStatementApproval(run AnnualStatementRun, actor, role string, now 
 func annualStatementApprovalArchiveCheck(run AnnualStatementRun, docs DocumentRepository) error {
 	for _, doc := range docs.List() {
 		if doc.AnnualStatementArchive != nil && doc.AnnualStatementArchive.RunID == run.ID {
-			return fmt.Errorf("archived draft requires a new revision")
+			return ErrAnnualStatementArchivedDraft
 		}
 	}
 	return nil
