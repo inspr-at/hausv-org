@@ -127,7 +127,7 @@
 .legacy-route .issue-estimate .mini { margin: 0; }
 .legacy-route .issue-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 .legacy-route .issue-actions form { margin: 0; }
-.legacy-route .issue-actions label { display: grid; gap: 5px; min-width: 150px; color: var(--gold-ink); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.legacy-route .issue-actions label { display: grid; gap: 5px; min-width: 150px; color: var(--gold-ink); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .legacy-route .issue-actions label.note { flex: 1 1 280px; }
 .legacy-route .issue-actions input, .legacy-route .issue-actions select { width: 100%; border: 1px solid #e2dac9; border-radius: var(--radius-xs); min-height: 38px; padding: 8px 10px; color: var(--ink); background: #fffefb; font: inherit; font-size: 13px; }
 .legacy-route .issue-actions button { min-height: 38px; border: 1px solid var(--ink); border-radius: var(--radius-xs); padding: 8px 12px; background: var(--ink); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
@@ -223,7 +223,7 @@
 .legacy-route .parking-month-essential { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .legacy-route .parking-month-essential > div { display: grid; gap: 3px; padding: 14px; border-left: 1px solid var(--line); }
 .legacy-route .parking-month-essential > div:first-child { border-left: 0; }
-.legacy-route .parking-month-essential dt { color: var(--soft); font-size: 10.5px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.legacy-route .parking-month-essential dt { color: var(--soft); font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
 .legacy-route .parking-month-essential dd { margin: 0; font-size: 17px; font-weight: 850; }
 .legacy-route .parking-month-payment { display: grid; gap: 10px; }
 .legacy-route .parking-month-payment .pay-row { align-items: center; }
@@ -239,7 +239,7 @@
 .legacy-route .parking-hour-row > summary strong { font-variant-numeric: tabular-nums; }
 .legacy-route .parking-hour-details { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; border-top: 1px solid var(--line); padding: 10px 12px; }
 .legacy-route .parking-hour-details div { display: grid; gap: 2px; }
-.legacy-route .parking-hour-details dt { color: var(--soft); font-size: 10px; font-weight: 850; text-transform: uppercase; }
+.legacy-route .parking-hour-details dt { color: var(--soft); font-size: 11px; font-weight: 850; text-transform: uppercase; }
 .legacy-route .parking-hour-details dd { margin: 0; font-size: 12.5px; font-weight: 750; }
 .legacy-route .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .legacy-route table { width: 100%; border-collapse: collapse; min-width: 980px; }
@@ -266,10 +266,10 @@
 .legacy-route .energy-mode-copy { gap: 1px; }
 .legacy-route .energy-mode-copy strong { font-size: 15px; white-space: nowrap; }
 .legacy-route .energy-mode-strip.active .energy-mode-copy strong { font-size: 13.5px; line-height: 1.1; white-space: normal; }
-.legacy-route .energy-mode-copy span { font-size: 10.5px; line-height: 1.2; }
+.legacy-route .energy-mode-copy span { font-size: 11px; line-height: 1.2; }
 .legacy-route .energy-mode-control, .legacy-route .energy-mode-strip > form { grid-column: 3; min-width: 0; justify-self: end; }
 .legacy-route .energy-mode-action { width: min(132px,34vw); min-height: 44px; padding: 4px 6px; font-size: 11px; line-height: 1.15; white-space: normal; }
-.legacy-route .energy-mode-capability { width: min(132px,34vw); font-size: 10px; line-height: 1.15; }
+.legacy-route .energy-mode-capability { width: min(132px,34vw); font-size: 11px; line-height: 1.15; }
 .legacy-route .energy-mode-popover { position: fixed; right: 12px; top: calc(var(--mobile-nav-height) + 60px); width: calc(100vw - 24px); max-height: calc(100dvh - var(--mobile-nav-height) - 72px); margin: 0; }
 .legacy-route .energy-lifecycle, .legacy-route .energy-data-inventory { grid-template-columns: 1fr; }
 .legacy-route .energy-lifecycle-step + .energy-lifecycle-step, .legacy-route .energy-data-inventory div + div { border-top: 1px solid var(--line); border-left: 0; }
@@ -312,7 +312,7 @@
 }
 @media (max-width: 350px) {
 .legacy-route .parking-month-essential > div { padding-inline: 6px; }
-.legacy-route .parking-month-essential dt { font-size: 9px; letter-spacing: 0; }
+.legacy-route .parking-month-essential dt { font-size: 11px; letter-spacing: 0; }
 }
 .legacy-route .pk-set { display: grid; gap: 22px; max-width: 920px; }
 .legacy-route .pk-set .panel { display: grid; gap: 16px; }
@@ -489,7 +489,7 @@
 .legacy-route .module-core-icon svg, .legacy-route .module-option-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .legacy-route .module-core-copy strong, .legacy-route .module-option-copy strong { display: block; font-family: var(--font-serif); font-size: 18px; }
 .legacy-route .module-core-copy span, .legacy-route .module-option-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-.legacy-route .module-fixed { border-radius: 999px; padding: 5px 9px; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 10px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.legacy-route .module-fixed { border-radius: 999px; padding: 5px 9px; background: rgba(47,107,74,.1); color: var(--leaf); font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
 .legacy-route .module-form { display: grid; gap: 14px; }
 .legacy-route .module-form-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; }
 .legacy-route .module-form-head p { max-width: 620px; color: var(--muted); font-size: 13px; line-height: 1.45; }

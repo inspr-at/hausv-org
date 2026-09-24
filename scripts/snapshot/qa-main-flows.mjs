@@ -360,7 +360,8 @@ async function assertPortalChromeKit() {
     if (route.action && !result.actionTexts.some((text) => text.includes(route.action))) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion „${route.action}“ fehlt`);
     }
-    if (result.filledActions.length || result.borderlessActions.length || result.wrappedActions) {
+    // HAUSV-765: a header may carry exactly ONE filled main action; all others stay outline/ghost.
+    if (result.filledActions.length > 1 || result.borderlessActions.length || result.wrappedActions) {
       fail(`Portal-Chrome ${route.path}: Header-Aktion ist gefüllt oder bricht um (${JSON.stringify(result)})`);
     }
     if (!result.sidebarMap || result.sidebarAddressCount !== 0 || result.headerAddressCount !== 1 || !result.sidebarAccountRole.includes('Admin')) {
@@ -1680,10 +1681,14 @@ async function assertResidentContentResponsiveMatrix(sizes = [
         await page.evaluate(() => window.scrollTo(0, Math.min(500, document.documentElement.scrollHeight - window.innerHeight)));
         const sticky = await page.locator('[data-context-bar]').evaluate((node) => {
           const box = node.getBoundingClientRect();
-          return { top: box.top, bottom: box.bottom, height: box.height };
+          const declared = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--context-bar-h'));
+          return { top: box.top, bottom: box.bottom, height: box.height, declared, activeView: Boolean(node.querySelector('.context-view')) };
         });
-        // The unified phone header reserves three accessible rows: account, property, view.
-        if (Math.abs(sticky.top) > 1 || Math.abs(sticky.height - 148) > 1 || sticky.bottom > 149) {
+        // The unified phone header keeps its declared height while scrolling. HAUSV-765: it has
+        // three rows (account, property, view) only while a role/support view is active (148px);
+        // otherwise the view chooser shares the account row and the header is shorter.
+        const maxHeight = sticky.activeView ? 148 : 112;
+        if (Math.abs(sticky.top) > 1 || Math.abs(sticky.height - sticky.declared) > 1 || sticky.height > maxHeight + 1 || sticky.bottom > maxHeight + 1) {
           fail(`Mobile Navigation überdeckt beim Scrollen zu viel Inhalt (${JSON.stringify(sticky)})`);
         }
         await page.evaluate(() => window.scrollTo(0, 0));
