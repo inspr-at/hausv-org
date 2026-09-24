@@ -235,6 +235,7 @@ templ AnnualStatementHeaderAction() {
 
 templ AnnualStatementBody(data AnnualStatementPageData) {
 	<div data-templ-annual-statement>
+		<p><a href="/app/hilfe#recht-weg">Warum?</a> · Rechtliche Grundlagen der Abrechnung</p>
 		@AnnualStatementRunPanel(data.Run) {
 			@AnnualStatementPreparation(data)
 		}

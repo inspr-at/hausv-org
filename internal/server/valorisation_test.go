@@ -22,7 +22,7 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 	if page.Code != 200 {
 		t.Fatalf("page %d %s", page.Code, page.Body.String())
 	}
-	for _, want := range []string{"Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026"} {
+	for _, want := range []string{`href="/` + archiveDemoTenant + `/app/hilfe#recht-wirksamwerden"`, "Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("missing %s", want)
 		}
@@ -37,7 +37,7 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 	for _, role := range []string{roleOwner, roleResident, roleServiceProvider, roleBeirat} {
 		actor := strings.ToLower(role) + "@example.com"
 		a.profiles[actor] = userProfile{Email: actor, Role: role, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
-		for _, request := range []struct{ method, path string }{{"GET", path}, {"POST", path + "/runs"}, {"POST", path + "/runs/" + run.ID + "/approve"}, {"POST", path + "/runs/" + run.ID + "/send"}, {"GET", path + "/runs/" + run.ID + "/items/" + run.Items[0].ID + "/pdf"}} {
+		for _, request := range []struct{ method, path string }{{"GET", path}, {"POST", path + "/runs"}, {"POST", path + "/runs/" + run.ID + "/approve"}, {"POST", path + "/runs/" + run.ID + "/send"}, {"POST", path + "/runs/" + run.ID + "/deliveries/test/receipt"}, {"GET", path + "/runs/" + run.ID + "/items/" + run.Items[0].ID + "/pdf"}} {
 			denied := archiveDemoRequest(t, a, actor, request.method, request.path, url.Values{"effective_on": {"2026-04-01"}})
 			if denied.Code != 403 {
 				t.Fatalf("%s %s %s = %d", role, request.method, request.path, denied.Code)

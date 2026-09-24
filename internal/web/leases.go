@@ -29,6 +29,7 @@ type LeasePageData struct {
 type LeaseValorisationView struct{ URL, PDFURL, Date, Amount, Due, Status string }
 
 type LeaseDetail struct {
+	TimingMode                           string
 	Valorisation                         []LeaseValorisationView
 	ID, Status, Kind, Use, MRG, Regime   string
 	Concluded, Starts, Ends, Zinstermin  string
@@ -64,6 +65,7 @@ type LeaseStaffelRow struct {
 }
 
 type LeaseForm struct {
+	TimingMode                                                     string
 	Staffel                                                        []LeaseStaffelRow
 	ID, Concluded, Starts, Ends, Notes                             string
 	PartyName, PartyEmail, PartyAddress, PartyFrom, PartyTo        string

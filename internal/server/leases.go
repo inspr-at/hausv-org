@@ -51,6 +51,18 @@ func (a *app) unitLeasePage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	if has {
 		page.Lease = leaseDetail(current)
+		if current.UsesValorisationTimingMode() && current.WirksamwerdenMode == "" {
+			settings := store.DefaultValorisationSettings()
+			if a.orgSettings != nil {
+				org, err := a.orgSettings(ac.tenant.Organisation).Get(r.Context())
+				if err != nil {
+					a.valorisationError(w, err)
+					return
+				}
+				settings = org.Valorisation.Normalized()
+			}
+			page.Lease.TimingMode += " · " + store.ValorisationTimingLabel(settings.WirksamwerdenMode)
+		}
 		if runs, ok := a.valorisationRepo(ac); ok {
 			list, err := runs.List()
 			if err != nil {
@@ -348,7 +360,8 @@ func currentHauptmiete(leases []store.Lease) (store.Lease, bool) {
 func leaseFromForm(r *http.Request, unitID, actor string) (store.Lease, store.LeaseParty, store.RentComponent, store.IndexClause, bool, error) {
 	value := r.FormValue
 	lease := store.Lease{
-		ID: value("lease_id"), UnitID: unitID, Status: store.LeaseStatusActive,
+		WirksamwerdenMode: value("wirksamwerden_mode"),
+		ID:                value("lease_id"), UnitID: unitID, Status: store.LeaseStatusActive,
 		ConcludedOn: value("concluded_on"), StartsOn: value("starts_on"), EndsOn: value("ends_on"),
 		LeaseKind: value("lease_kind"), UseKind: value("use_kind"), MRGScope: value("mrg_scope"), RentRegime: value("rent_regime"),
 		PriceRestrictedSet: value("price_restricted_set") == "1", PriceRestricted: checked(r, "price_restricted"),
@@ -453,7 +466,8 @@ func leaseDetails(leases []store.Lease) []web.LeaseDetail {
 func leaseDetail(lease store.Lease) web.LeaseDetail {
 	class := store.ClassifyLease(lease)
 	detail := web.LeaseDetail{
-		ID: lease.ID, Status: leaseStatusLabel(lease.Status), Kind: leaseKindLabel(lease.LeaseKind),
+		TimingMode: store.ValorisationTimingLabel(lease.WirksamwerdenMode),
+		ID:         lease.ID, Status: leaseStatusLabel(lease.Status), Kind: leaseKindLabel(lease.LeaseKind),
 		Use: useKindLabel(lease.UseKind), MRG: mrgLabel(lease.MRGScope), Regime: regimeLabel(lease.RentRegime),
 		Concluded: web.LeaseDate(lease.ConcludedOn), Starts: web.LeaseDate(lease.StartsOn), Ends: leaseEndLabel(lease.EndsOn),
 		Zinstermin: strconv.Itoa(lease.ZinsterminDay) + ". des Monats", Notes: lease.Notes,
@@ -536,6 +550,7 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 	if !has {
 		return form
 	}
+	form.TimingMode = lease.WirksamwerdenMode
 	form.ID = lease.ID
 	form.Concluded = lease.ConcludedOn
 	form.Starts = lease.StartsOn
