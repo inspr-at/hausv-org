@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -36,11 +37,13 @@ type AnnualStatementPeriodUnitBasis struct {
 // template for one period. Receipts, prepayments and settlement results never
 // enter this value and therefore cannot be carried into a follow-up year.
 type AnnualStatementPeriodStructure struct {
+	Legal     AnnualStatementLegalSettings     `json:"legal"`
 	CostTypes []AnnualStatementCostType        `json:"cost_types"`
 	UnitBases []AnnualStatementPeriodUnitBasis `json:"unit_bases"`
 }
 
 type AnnualStatementPeriodRepository interface {
+	SaveLegal(year int, settings AnnualStatementLegalSettings) error
 	Create(period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	CloneStructure(sourceYear int, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	EnsureStructure(year int, costTypes []AnnualStatementCostType, units []Unit, updatedBy string) error
@@ -57,6 +60,7 @@ type AnnualStatementPeriodStorage interface {
 }
 
 type annualStatementPeriodBackend interface {
+	saveAnnualStatementLegal(TenantRef, int, AnnualStatementLegalSettings) error
 	createAnnualStatementPeriod(tenant TenantRef, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	cloneAnnualStatementPeriodStructure(tenant TenantRef, sourceYear int, period AnnualStatementPeriod) (AnnualStatementPeriod, bool, error)
 	ensureAnnualStatementPeriodStructure(tenant TenantRef, year int, costTypes []AnnualStatementCostType, units []Unit, updatedBy string) error
@@ -208,7 +212,9 @@ func (s *MemoryAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(t
 	if s.structures[tenant.ID] == nil {
 		s.structures[tenant.ID] = map[int]AnnualStatementPeriodStructure{}
 	}
-	s.structures[tenant.ID][period.Year] = cloneAnnualStatementPeriodStructure(source)
+	next := cloneAnnualStatementPeriodStructure(source)
+	next.Legal = annualStatementFollowupLegal(next.Legal)
+	s.structures[tenant.ID][period.Year] = next
 	return period, true, nil
 }
 
@@ -378,6 +384,11 @@ func (s *SQLAnnualStatementPeriodStore) ensureAnnualStatementPeriodStructure(ten
 
 func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant TenantRef, year int) (AnnualStatementPeriodStructure, bool) {
 	structure := AnnualStatementPeriodStructure{}
+	legal, err := loadAnnualStatementLegal(s.db.For(tenant), tenant, year)
+	if err != nil {
+		return structure, false
+	}
+	structure.Legal = legal
 	rows, err := s.db.For(tenant).Query(`SELECT key,name,allocatable,allocation_key,updated_at,updated_by
 		FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY name,key`, tenant.ID, year)
 	if err != nil {
@@ -449,6 +460,17 @@ func (s *SQLAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(tena
 		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
 		SELECT tenant_id,tenant_slug,$1,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$2 AND period_year=$3`, period.Year, tenant.ID, sourceYear); err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	legal, err := loadAnnualStatementLegal(tx, tenant, sourceYear)
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	raw, err := json.Marshal(annualStatementFollowupLegal(legal))
+	if err != nil {
+		return AnnualStatementPeriod{}, false, err
+	}
+	if _, err := tx.Exec(`UPDATE annual_statement_periods SET legal_settings=$1 WHERE tenant_id=$2 AND year=$3`, string(raw), tenant.ID, period.Year); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -700,7 +722,7 @@ func normalizeAnnualStatementPeriodStructure(costTypes []AnnualStatementCostType
 	if len(costTypes) == 0 || updatedBy == "" {
 		return AnnualStatementPeriodStructure{}, fmt.Errorf("annual statement period structure requires cost types and actor")
 	}
-	structure := AnnualStatementPeriodStructure{CostTypes: make([]AnnualStatementCostType, 0, len(costTypes))}
+	structure := AnnualStatementPeriodStructure{Legal: DefaultAnnualStatementLegalSettings(), CostTypes: make([]AnnualStatementCostType, 0, len(costTypes))}
 	for _, costType := range costTypes {
 		costType = normalizeAnnualStatementCostType(costType)
 		if costType.UpdatedBy == "" {
@@ -739,7 +761,7 @@ func annualStatementCompatibilityStructure(period AnnualStatementPeriod) AnnualS
 		costTypes[index].UpdatedAt = period.UpdatedAt
 	}
 	sortAnnualStatementCostTypes(costTypes)
-	return AnnualStatementPeriodStructure{CostTypes: costTypes}
+	return AnnualStatementPeriodStructure{Legal: DefaultAnnualStatementLegalSettings(), CostTypes: costTypes}
 }
 
 func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBasis) ([]AnnualStatementPeriodUnitBasis, error) {
@@ -766,6 +788,7 @@ func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBa
 
 func cloneAnnualStatementPeriodStructure(structure AnnualStatementPeriodStructure) AnnualStatementPeriodStructure {
 	return AnnualStatementPeriodStructure{
+		Legal:     cloneAnnualStatementLegal(structure.Legal),
 		CostTypes: append([]AnnualStatementCostType(nil), structure.CostTypes...),
 		UnitBases: append([]AnnualStatementPeriodUnitBasis(nil), structure.UnitBases...),
 	}
@@ -801,3 +824,12 @@ func sortAnnualStatementPeriods(periods []AnnualStatementPeriod) {
 
 var _ AnnualStatementPeriodStorage = (*MemoryAnnualStatementPeriodStore)(nil)
 var _ AnnualStatementPeriodStorage = (*SQLAnnualStatementPeriodStore)(nil)
+
+func annualStatementFollowupLegal(legal AnnualStatementLegalSettings) AnnualStatementLegalSettings {
+	legal = cloneAnnualStatementLegal(legal)
+	legal.HeatingPrepayments = nil
+	legal.MonthlyProposals = nil
+	legal.NextPrepaymentOn = ""
+	legal.InspectionPeriod = ""
+	return legal
+}

@@ -1,4 +1,4 @@
-// Package statementpdf renders working drafts from immutable statement runs.
+// Package statementpdf renders drafts and approved immutable statement runs.
 package statementpdf
 
 import (
@@ -29,6 +29,12 @@ type Document struct {
 	Total, Prepaid, Balance    string
 	Excluded                   []string
 	Contact                    string
+	ApprovalNotice             string
+	PaymentTerms               []string
+	Proposals                  []string
+	Inspection                 []string
+	Receipts                   []string
+	Title                      string
 }
 
 // Documents selects only identities recorded in this run. Empty selectors mean
@@ -73,6 +79,16 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d := Document{UnitID: unit.UnitID, PartyID: party.ID, UnitLabel: unit.Label,
 		Header: []string{org, p.EstateName, p.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), fmt.Sprintf("Lauf %s · Revision %d", run.ID, run.Revision), "Erstellt: " + timestamp(run.CreatedAt)},
 		Total:  money(unit.AllocatedCents), Prepaid: money(unit.PrepaidCents), Contact: strings.Join(nonempty(p.ContactName, p.ContactEmail, p.ContactPhone, p.ContactAddress), " · ")}
+	if run.Input.Structure.Legal.Regime != "" {
+		d.Header = append(d.Header, run.Input.Structure.Legal.Basis())
+	}
+	if run.Approval != nil {
+		role := "Verwaltung"
+		if run.Approval.Role == store.RoleAdmin {
+			role = "Administration"
+		}
+		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
+	}
 	if d.Contact == "" {
 		d.Contact = "Kontakt der Verwaltung fehlt"
 	}
@@ -151,6 +167,13 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 				row.Measurements = append(row.Measurements, "Grenzmessungen im gespeicherten Lauf unvollständig")
 			}
 		}
+		if run.CalculationVersion >= 2 && run.Input.Structure.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.CostTypeKey) {
+			row.Key = "HeizKG"
+			// A two-pool split has no single allocation share. Consumption and
+			// area shares are explained separately in the measurement appendix.
+			row.Share = "im Anhang"
+			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
+		}
 		d.Costs = append(d.Costs, row)
 	}
 	for _, cost := range run.Input.Structure.CostTypes {
@@ -161,6 +184,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
+	d.PaymentTerms = paymentTerms(run, unit)
+	d.Proposals = proposalLines(run, unit.UnitID)
+	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
 }
 
@@ -184,11 +210,19 @@ func (d Document) Pages() []pdf.Page {
 		}
 		return out
 	}
-	header := []pdf.Line{{Text: "Jahresabrechnung", Style: pdf.Heading}, {}}
+	title := d.Title
+	if title == "" {
+		title = "Jahresabrechnung"
+	}
+	header := []pdf.Line{{Text: title, Style: pdf.Heading}, {}}
 	for _, text := range d.Header {
 		header = append(header, lines(text, pdf.Body)...)
 	}
-	header = append(header, lines("Einheit: "+d.UnitLabel+" · Partei: "+d.PartyID, pdf.Body)...)
+	identity := "Einheit: " + d.UnitLabel
+	if d.PartyID != "" {
+		identity += " · Partei: " + d.PartyID
+	}
+	header = append(header, lines(identity, pdf.Body)...)
 	header = append(header, pdf.Line{})
 	var blocks [][]pdf.Line
 	for _, text := range append(append([]string(nil), d.Address...), d.Basis...) {
@@ -206,9 +240,19 @@ func (d Document) Pages() []pdf.Page {
 	}
 	summary := []pdf.Line{{}}
 	summary = append(summary, lines("Summe: "+d.Total, pdf.Strong)...)
-	summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
-	summary = append(summary, lines(d.Balance, pdf.Strong)...)
+	if d.Prepaid != "" {
+		summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
+	}
+	if d.Balance != "" {
+		summary = append(summary, lines(d.Balance, pdf.Strong)...)
+	}
 	blocks = append(blocks, summary)
+	for _, text := range d.PaymentTerms {
+		blocks = append(blocks, lines(text, pdf.Body))
+	}
+	for _, text := range d.Proposals {
+		blocks = append(blocks, lines(text, pdf.Body))
+	}
 	for _, row := range d.Costs {
 		if len(row.Measurements) > 0 {
 			blocks = append(blocks, []pdf.Line{{}}, lines(row.Name+" · Messnachweis", pdf.Strong))
@@ -223,12 +267,28 @@ func (d Document) Pages() []pdf.Page {
 			blocks = append(blocks, lines(text, pdf.Body))
 		}
 	}
+	if len(d.Inspection) > 0 {
+		blocks = append(blocks, []pdf.Line{{}}, lines("Einsicht in die Belege", pdf.Strong))
+		for _, text := range d.Inspection {
+			blocks = append(blocks, lines(text, pdf.Body))
+		}
+	}
+	if len(d.Receipts) > 0 {
+		blocks = append(blocks, []pdf.Line{{}}, lines("Belegverzeichnis", pdf.Strong))
+		for _, text := range d.Receipts {
+			blocks = append(blocks, lines(text, pdf.Body))
+		}
+	}
 	contactLines := pdf.WrapText("Verwaltung: "+d.Contact, 62)
 	if len(contactLines) > 3 {
 		blocks = append(blocks, []pdf.Line{{}}, lines("Kontakt der Verwaltung", pdf.Strong), lines(d.Contact, pdf.Body))
 		contactLines = append(contactLines[:2], "Weitere Kontaktdaten im Kontaktabschnitt.")
 	}
-	footer := append([]string{DraftNotice}, contactLines...)
+	notice := DraftNotice
+	if d.ApprovalNotice != "" {
+		notice = d.ApprovalNotice
+	}
+	footer := append([]string{notice}, contactLines...)
 	const maxLines = 43
 	// Very long supplied addresses remain visible on continuation pages instead
 	// of overflowing a fixed header. Only the title is then repeated.

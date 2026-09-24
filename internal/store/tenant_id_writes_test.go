@@ -223,8 +223,12 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		t.Fatalf("annual statement receipt: %v", err)
 	}
 	runs, _ := BindAnnualStatementRunRepository(NewSQLAnnualStatementRunStore(lanes, NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs"))), tenant)
-	if _, err := runs.Create(2026, "a@example.com", now); err != nil {
+	run, err := runs.Create(2026, "a@example.com", now)
+	if err != nil {
 		t.Fatalf("annual statement run: %v", err)
+	}
+	if _, _, err := runs.Approve(run.ID, "a@example.com", RoleManager, now); err != nil {
+		t.Fatal(err)
 	}
 	deliveries, _ := BindAnnualStatementDeliveryRepository(NewSQLAnnualStatementDeliveryStore(lanes), tenant)
 	if _, _, err := deliveries.Attempt(t.Context(), AnnualStatementDelivery{RunID: "identity-run", Revision: 1, PartyID: "a@example.com", UnitID: "u1", DocumentID: receiptDocument.ID, SHA256: "fixture", Recipient: "a@example.com", Actor: "a@example.com"}, func(context.Context) error { return nil }); err != nil {

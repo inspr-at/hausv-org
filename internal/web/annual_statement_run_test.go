@@ -81,7 +81,7 @@ func TestAnnualStatementRunPanelPDFLinks(t *testing.T) {
 }
 
 func TestAnnualStatementRunArchiveActionAndStatus(t *testing.T) {
-	data := AnnualStatementRunView{ID: "run-1", AllPDFURL: "/pdf", ArchiveAction: "/app/settings/annual-statement/runs/run-1/archive", ArchiveURL: "/app/dokumente?q=Abrechnung"}
+	data := AnnualStatementRunView{Approved: true, ID: "run-1", AllPDFURL: "/pdf", ArchiveAction: "/app/settings/annual-statement/runs/run-1/archive", ArchiveURL: "/app/dokumente?q=Abrechnung"}
 	var body bytes.Buffer
 	if err := AnnualStatementRunPanel(data).Render(context.Background(), &body); err != nil {
 		t.Fatal(err)

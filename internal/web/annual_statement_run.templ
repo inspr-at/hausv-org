@@ -4,6 +4,10 @@ import "strconv"
 import "net/url"
 
 type AnnualStatementRunView struct {
+ Approved bool
+ ApprovedAt string
+ ApproveAction string
+ AushangURL string
 	Year            int
 	Ready           bool
 	Issues          []string
@@ -342,7 +346,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 		}
 		if data.ID!="" {
 			<article data-annual-statement-run={ data.ID }>
-				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
+				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p></div>
+if data.Approved {
+ <span class="scope personal">Freigegeben am { data.ApprovedAt }</span>
+} else {
+ <span class="scope management">Gespeicherte Arbeitsfassung</span>
+}
+</header>
 				<details class="annual-run-details">
 					<summary>Details zum Abrechnungslauf</summary>
 					<p>Kennung: <code>{ data.ID }</code></p>
@@ -351,14 +361,20 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				if data.AllPDFURL != "" {
 					<div class="annual-actions">
 						<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
-						if data.ArchivedAt != "" {
+ if data.AushangURL != "" {
+ <a class="button ghost" href={ templ.SafeURL(data.AushangURL) } download>Aushang (PDF)</a>
+ }
+						if data.ApproveAction != "" {
+ <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
+ }
+ if data.ArchivedAt != "" {
 							<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
 							<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
-						} else if data.ArchiveAction != "" {
+						} else if data.Approved && data.ArchiveAction != "" {
 							<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
 						}
 					</div>
-					if data.ArchivedAt == "" && data.ArchiveAction != "" {
+					if data.Approved && data.ArchivedAt == "" && data.ArchiveAction != "" {
 						<p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
 					}
 				} else {
