@@ -6605,6 +6605,11 @@ func storeEBInterfaceInvoiceDocument(storage documentStorage, tenant store.Tenan
 	if !ok {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
+	item, filename := ebInterfaceDocumentMetadata(invoice, uploadedBy)
+	return documents.CreateGenerated(item, filename, "application/xml", data, now)
+}
+
+func ebInterfaceDocumentMetadata(invoice integrations.Invoice, uploadedBy string) (documentRecord, string) {
 	title := "E-Rechnung"
 	if strings.TrimSpace(invoice.InvoiceNumber) != "" {
 		title += " " + strings.TrimSpace(invoice.InvoiceNumber)
@@ -6613,13 +6618,13 @@ func storeEBInterfaceInvoiceDocument(storage documentStorage, tenant store.Tenan
 		title += " - " + strings.TrimSpace(invoice.IssuerName)
 	}
 	filenameToken := integrations.SanitizeFilenameToken(firstNonEmpty(invoice.InvoiceNumber, invoice.ExternalID, "rechnung"))
-	return documents.CreateGenerated(documentRecord{
+	return documentRecord{
 		TenantSlug: invoice.TenantSlug,
 		Title:      title,
 		Category:   documentCategoryBilling,
 		Visibility: documentVisibilityManagerOnly,
 		UploadedBy: uploadedBy,
-	}, "ebinterface-"+filenameToken+".xml", "application/xml", data, now)
+	}, "ebinterface-" + filenameToken + ".xml"
 }
 
 func filterDocuments(items []documentRecord, query string) []documentRecord {

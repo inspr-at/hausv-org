@@ -10,8 +10,6 @@ internal/energy/storage.go	(*SQLStore).UpsertMapping	const:store.HealOrphanReaso
 internal/energy/storage.go	(*SQLStore).UpsertMeasure	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/energy/storage.go	(*SQLStore).adoptUnownedProfile	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/energy/storage.go	(*SQLStore).registry	const:tenantRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
-internal/server/camt_import.go	(*app).recordPaymentImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/server/ebinterface_import.go	(*app).recordEBInterfaceImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/activity_sql.go	(*SQLActivityStore).Get	literal	login_activity has no tenant_id: read on sign-in, before a tenant is chosen
 internal/store/activity_sql.go	(*SQLActivityStore).ImportActivity	literal	boot import replay into login_activity, runs before the first request
 internal/store/activity_sql.go	(*SQLActivityStore).Touch	literal	login_activity has no tenant_id: one row per person, shared by every house
