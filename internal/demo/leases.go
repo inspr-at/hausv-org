@@ -110,6 +110,27 @@ func seedLeases(ctx context.Context, database *sql.DB, identities map[string]sto
 			if err := store.ReplaceLeaseGraph(tx, identity.Ref(), item.lease()); err != nil {
 				return fmt.Errorf("demo lease %s: %w", item.ID, err)
 			}
+			if slug == "janusbergweg-123" && (item.ID == "lease-top-1" || item.ID == "lease-top-2" || item.ID == "lease-top-3") {
+				var raw string
+				if err := tx.QueryRow(`SELECT data FROM units WHERE tenant_id=$1 AND id=$2`, identity.ID, store.NormalizeUnitID(item.Unit)).Scan(&raw); err != nil {
+					return err
+				}
+				var unit store.Unit
+				if err := json.Unmarshal([]byte(raw), &unit); err != nil {
+					return err
+				}
+				if len(unit.OwnerEmails) == 0 {
+					return fmt.Errorf("demo rental management: owner missing for %s", item.Unit)
+				}
+				m := store.RentalManagement{UnitID: store.NormalizeUnitID(item.Unit), OwnerEmail: unit.OwnerEmails[0], Active: true, HeatingMonthlyConfirmed: true, Passable: map[string]bool{"abfall": true, "reinigung": true, "versicherung": false}, ContractCosts: map[string][]string{item.ID: {"abfall", "reinigung", "versicherung"}}, UpdatedBy: "musterstadt", UpdatedAt: time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC)}
+				data, err := json.Marshal(m)
+				if err != nil {
+					return err
+				}
+				if _, err := tx.Exec(`INSERT INTO rental_management(tenant_id,tenant_slug,unit_id,data) VALUES($1,$2,$3,$4) ON CONFLICT(tenant_id,unit_id) DO NOTHING`, identity.ID, slug, m.UnitID, string(data)); err != nil {
+					return err
+				}
+			}
 		}
 		input := valorisationDraftInput(slug)
 		if err := store.SeedValorisationDraft(tx, identity.Ref(), input, "musterstadt", time.Date(2026, 4, 1, 9, 0, 0, 0, time.UTC)); err != nil {

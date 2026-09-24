@@ -1,0 +1,141 @@
+package web
+
+type TenantStatementPanelData struct {
+	Enabled                     bool
+	RunID, Message, StatementOn string
+	Units                       []TenantStatementUnitView
+	Statements                  []TenantStatementView
+}
+type TenantStatementOption struct {
+	Key, Label string
+	Selected   bool
+}
+type TenantStatementLeaseView struct {
+	ID, Label string
+	Contract  bool
+	Costs     []TenantStatementOption
+}
+type TenantStatementUnitView struct {
+	ID, Label, OwnerEmail           string
+	Active, HeatingMonthlyConfirmed bool
+	Owners, Costs                   []TenantStatementOption
+	Leases                          []TenantStatementLeaseView
+}
+type TenantStatementAccountView struct {
+	ID, Names, Balance string
+}
+type TenantStatementView struct {
+	ID, Label, Owner, SourcePassed, SourceRetained, SendIssue string
+	Approved, Archived                             bool
+	Accounts                                       []TenantStatementAccountView
+	Deliveries                                     []AnnualStatementDeliveryView
+}
+
+templ TenantStatementPanel(data TenantStatementPanelData) {
+	if data.Enabled {
+		<section class="panel workspace" id="mieterabrechnungen">
+<style>
+ #mieterabrechnungen { scroll-margin-top: 150px; margin-top:var(--space-5); }
+ #mieterabrechnungen details { border-bottom:1px solid var(--line); padding-block:var(--space-2); }
+ #mieterabrechnungen summary { min-height:44px; align-content:center; }
+ #mieterabrechnungen form { margin-block:var(--space-3); }
+ #mieterabrechnungen label:has(input[type="checkbox"]) { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; line-height:1.4; }
+ #mieterabrechnungen input[type="checkbox"] { flex:0 0 18px; width:18px; height:18px; min-height:18px; margin:0; }
+ #mieterabrechnungen fieldset { min-width:0; border:1px solid var(--line); border-radius:var(--radius-sm); padding:var(--space-3); }
+ #mieterabrechnungen article { border-top:1px solid var(--line); padding-top:var(--space-4); overflow-wrap:anywhere; }
+ #mieterabrechnungen .annual-actions { gap:var(--space-3); }
+</style>
+			<div class="subhead"><div><h2>Mieterabrechnungen</h2><p>Optionale Mietverwaltung für vermietetes Wohnungseigentum. Grundlage ist dieser freigegebene WEG-Lauf.</p></div></div>
+			if data.Message != "" {
+				<p role="status">{ data.Message }</p>
+			}
+			for _,unit := range data.Units {
+				<details class="annual-run-details" >
+					<summary>{ unit.Label } · { tenantManagementLabel(unit.Active) }</summary>
+					<form method="post" action={ templ.SafeURL("/app/settings/annual-statement/runs/" + data.RunID + "/rental-management") }>
+						<input type="hidden" name="unit_id" value={ unit.ID }/>
+						<label><input type="checkbox" name="active" value="1" checked?={ unit.Active }/> Mietverwaltung aktiv</label>
+						<label><input type="checkbox" name="heating_monthly" value="1" checked?={ unit.HeatingMonthlyConfirmed }/> HeizKG: Keine Zwischenablesung; gleiche Monatsanteile bei Abnehmerwechsel</label>
+						<label>
+							Im Namen und auf Rechnung von
+							<select name="owner_email" required>
+								<option value="">Eigentümer wählen</option>
+								for _,o := range unit.Owners {
+									<option value={ o.Key } selected?={ o.Selected }>{ o.Label }</option>
+								}
+							</select>
+						</label>
+						<p>MRG-Vollanwendung: Kostenarten an Mieter überwälzbar. Besondere Voraussetzungen bei Versicherung, Verwaltung und Gemeinschaftsanlagen prüfen; Rücklage bleibt ausgeschlossen.</p>
+						<div class="annual-actions">
+							for _,cost := range unit.Costs {
+								<label><input type="checkbox" name="passable" value={ cost.Key } checked?={ cost.Selected }/>{ cost.Label }</label>
+							}
+						</div>
+						for _,lease := range unit.Leases {
+							<p>{ lease.Label }</p>
+							if lease.Contract {
+								<fieldset>
+									<legend>Vereinbarter Kostenkatalog dieses Mietvertrags</legend>
+									<div class="annual-actions">
+										for _,cost := range lease.Costs {
+											<label><input type="checkbox" name={ "contract_" + lease.ID } value={ cost.Key } checked?={ cost.Selected }/>{ cost.Label }</label>
+										}
+									</div>
+								</fieldset>
+							}
+						}
+						<button class="button" type="submit">Mietverwaltung speichern</button>
+					</form>
+					if unit.Active {
+						<form method="post" action={ templ.SafeURL("/app/settings/annual-statement/runs/" + data.RunID + "/tenant-statements") } class="annual-actions">
+							<input type="hidden" name="unit_id" value={ unit.ID }/>
+							<label>Abrechnungsdatum <input type="date" name="statement_on" value={ data.StatementOn } required/></label>
+							<label>Vertragliche Fälligkeit (Teilanwendung/Ausnahme) <input type="date" name="contract_due_on"/></label>
+							<button class="button" type="submit">Mieterabrechnung erstellen</button>
+						</form>
+					}
+				</details>
+			}
+			for _,s := range data.Statements {
+				<article class="annual-run-details">
+					<h3>{ s.Label }</h3>
+					<p>Im Namen und auf Rechnung von { s.Owner }</p>
+					<p>WEG-Anteil: überwälzbar { s.SourcePassed } · beim Eigentümer { s.SourceRetained }</p>
+					for _,account := range s.Accounts {
+						<p>{ account.Names } · Saldo { account.Balance } · <a href={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/pdf?account=" + account.ID) } target="_blank">PDF-Vorschau</a></p>
+					}
+					<div class="annual-actions">
+						<a class="button" href={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/pdf") } target="_blank">Eigentümerkopie ansehen</a>
+						if !s.Approved {
+							<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/approve") }><button class="button" type="submit">Mieterabrechnung freigeben</button></form>
+						} else {
+							<span>Freigegeben</span>
+							if !s.Archived {
+								<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/archive") }><button class="button" type="submit">Mieterabrechnung archivieren</button></form>
+							} else {
+								<span>Archiviert</span>
+								if s.SendIssue == "" {
+ <form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/send") }><button class="button" type="submit">An Mietparteien und Eigentümer senden</button></form>
+} else {
+ <p>{ s.SendIssue }</p>
+}
+							}
+						}
+					</div>
+					for _,d := range s.Deliveries {
+						<p>
+							{ d.Recipient } · { d.Status } · { d.Time } { d.Error }
+						</p>
+					}
+				</article>
+			}
+		</section>
+	}
+}
+
+func tenantManagementLabel(active bool) string {
+	if active {
+		return "Mietverwaltung aktiv"
+	}
+	return "Mietverwaltung einrichten"
+}

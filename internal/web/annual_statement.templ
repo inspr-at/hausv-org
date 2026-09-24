@@ -205,6 +205,7 @@ type AnnualStatementPageData struct {
 	ReserveMsg             string
 	ReserveOK              bool
 	Run AnnualStatementRunView
+	TenantStatements TenantStatementPanelData
 	SettlementReady        bool
 }
 
@@ -238,6 +239,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 		@AnnualStatementRunPanel(data.Run) {
 			@AnnualStatementPreparation(data)
 		}
+		@TenantStatementPanel(data.TenantStatements)
 	</div>
 }
 

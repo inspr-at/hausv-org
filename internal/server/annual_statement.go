@@ -245,8 +245,9 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0, UnitDataNotice: unitNotice,
 		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
-		Run:         runView,
-		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
+		Run:              runView,
+		TenantStatements: a.tenantStatementPanel(ac, runView.ID, r.URL.Query().Get("tenant-message")),
+		Prepayments:      prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
 		ShowReserve: showReserve, Reserve: reserveView, ReserveMsg: reserveMsg, ReserveOK: reserveOK,
 	}))
 }

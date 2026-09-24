@@ -346,3 +346,55 @@ Gesperrte Aktionen zeigen den Grund direkt daneben.
 Das PDF übersetzt die gespeicherte Vorschlagsbasis in Eigentümersprache:
 „vereinbarte monatliche Vorauszahlung“ bzw. „Vorauszahlung auf Basis des Vorjahres“.
 Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.
+
+## Optionale Mieterabrechnung aus WEG-Läufen (HAUSV-798)
+
+Ein freigegebener WEG-Lauf zeigt für Einheiten mit Hauptmietverträgen den
+Bereich „Mieterabrechnungen“. „Mietverwaltung aktiv“ bindet die Einheit an
+einen hinterlegten Eigentümer. Der Kostenartenfilter für MRG-Vollanwendung
+beginnt mit eindeutigen §-21-Positionen; Versicherungen, Verwaltungshonorar
+und Gemeinschaftsanlagen müssen wegen zusätzlicher Voraussetzungen ausdrücklich
+geprüft werden. Teilanwendung und Ausnahme verwenden einen eigenen vereinbarten
+Kostenkatalog je Mietvertrag und eine ausdrücklich eingegebene Vertragsfälligkeit.
+Die Rücklage wird auch bei eingeschaltetem Filter niemals überwälzt.
+
+`rental_management` speichert das Mandat. `tenant_statements` speichert den
+WEG-Lauf, seine Freigabe, Mandat, Mietverträge, zeitlich gültige Parteien und
+Rechenergebnis zusammen in einer unveränderlichen Momentaufnahme. Die Ableitung
+liest diese Grundlagen in einer mandantengebundenen serialisierbaren Transaktion.
+`tenant_statement_approvals` enthält die unveränderliche gesonderte Freigabe.
+SQLite-Migration 0065 und PostgreSQL-Migration 0038 führen die Tabellen ein;
+PostgreSQL erzwingt RLS. `dbmove` übernimmt Tabellen und Freigaben gemeinsam.
+
+MRG-Jahrespauschalen werden mit der Partei am übernächsten Zinstermin abgerechnet.
+Gültigkeitsintervalle der Verträge und Parteien sind am Ende exklusiv. Bei Leerstand
+am Fälligkeitstag verbleiben BK-Kosten und Jahresakonto beim Eigentümer.
+Heizkosten stammen aus dem freigegebenen HeizKG-Einheitsanteil und werden nach
+gleichen Monatsanteilen auf die gültigen Mietparteien verteilt; Teilmonate folgen
+den tatsächlichen Tagen des jeweiligen Monats. Größte Reste erhalten einzelne
+Cent. Dafür muss die Verwaltung bestätigen, dass keine Zwischenermittlung vorliegt.
+Vorhandene Zwischenablesungen sowie vertragliche Mieterwechsel außerhalb der
+MRG-Vollanwendung benötigen eine gesonderte Abrechnung; v1 erfindet dafür keine
+Vertragsregel. Es werden Kalenderjahre unterstützt.
+
+BK- und Heiz-Akontos kommen aus den datierten Mietzinsbestandteilen, einschließlich
+deren hinterlegter Umsatzsteuer. Es handelt sich um vertragliche Akontos, nicht um
+einen Zahlungsabgleich mit dem Bankkonto. Fehlende Beträge gelten nicht als Null.
+Bei USt-Option muss der WEG-Lauf Netto und Steuer ausweisen. Aus dessen Nettoanteil
+entstehen 10 % für Wohnungs-BK bzw. 20 % für Geschäft, Garage und Heizkosten;
+ohne Option bleibt der Bruttoaufwand ohne gesonderten Steuerausweis. Der Abgleich
+`SourcePassedCents + SourceRetainedCents = WEG-Einheitsanteil` bleibt unabhängig
+von einem abweichenden Steuersatz des Mietvertrags erhalten.
+
+Vorschau, gesonderte Freigabe, Archivierung und Versand laufen über die neuen
+mandantengebundenen `/app/settings/tenant-statements/{statementID}/…`-Routen.
+Archiv und Versand verwenden die bestehenden Dokumente, Prüfsummen und
+Versandreservierungen. Jede zeitlich abgegrenzte Mietpartei erhält nur ihren
+Abrechnungsteil; der Eigentümer bekommt eine Gesamtkopie. Erfolgreiche Empfänger
+werden bei Wiederholung übersprungen. Zugriff benötigt die Mietvertrags- und
+Gebäudeverwaltungsberechtigung. Für Vertrags- oder Filteränderungen wird ein neuer
+Entwurf erstellt; bereits freigegebene Dokumente ändern sich nicht.
+
+Rechtsgrundlagen: [§ 21 MRG](https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002531&Paragraf=21),
+[§ 23 HeizKG](https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10007277&Paragraf=23),
+[BMF zur Umsatzsteuer bei Vermietung](https://www.bmf.gv.at/themen/steuern/immobilien-grundstuecke/vermietung-verpachtung/vermietung-und-verpachtung-in-der-umsatzsteuer.html).
