@@ -68,7 +68,7 @@ func TestDemoContentSurvivesReseed(t *testing.T) {
 		}
 		for email, role := range map[string]string{"vera.verwalter@musterstadt.example": store.OrganisationRoleAdmin, "paul.verwalter@musterstadt.example": store.OrganisationRoleClerk} {
 			member, found, err := members.Get(t.Context(), email)
-			if err != nil || !found || member.Role != role || len(member.Granted) != 13 || member.Granted["musterstrasse-12"] == "" {
+			if err != nil || !found || member.Role != role || len(member.Granted) != 13 || len(member.Undo) != 13 || member.Granted["musterstrasse-12"] == "" {
 				t.Fatalf("member: %+v %v", member, err)
 			}
 		}

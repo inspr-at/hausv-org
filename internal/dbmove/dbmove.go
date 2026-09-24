@@ -86,6 +86,7 @@ var TableOrder = []string{
 	"organisations",
 	"organisation_houses",
 	"organisation_members",
+	"organisation_membership_audit",
 	"org_settings",
 	// HAUSV-699: configurable rights, keyed by org_key like org_settings.
 	"organisation_capability_overrides",

@@ -59,9 +59,16 @@ type seedOrg struct {
 }
 
 type seedMember struct {
-	Email   string            `json:"email"`
-	Role    string            `json:"role"`
-	Granted map[string]string `json:"granted"`
+	Email    string                           `json:"email"`
+	Role     string                           `json:"role"`
+	Previous map[string]*seedMemberMembership `json:"previous_memberships"`
+}
+
+type seedMemberMembership struct {
+	Role           string   `json:"role"`
+	Permissions    []string `json:"permissions"`
+	Status         string   `json:"status"`
+	DirectoryOptIn *bool    `json:"directory_opt_in"`
 }
 
 type seedAssignee struct {
@@ -205,8 +212,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		return SeedResult{}, err
 	}
 	// The organisation's own contact data (shown in the sidebar and in
-	// resident replies) come from the fixture too; the houses stay as they are.
-	if org.ContactName != "" || org.ContactEmail != "" || org.ContactPhone != "" {
+	// resident replies) come from the fixture too. Include fixture houses so a
+	// standalone demo-seed has the same stored topology as an application boot.
+	if org.ContactName != "" || org.ContactEmail != "" || org.ContactPhone != "" || len(org.Members) > 0 {
 		orgRepo := store.BindOrganisationRepository(database, org.Key)
 		current, found, err := orgRepo.Get(ctx)
 		if err != nil {
@@ -216,17 +224,17 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 			current = store.Organisation{Key: org.Key, Name: org.Name}
 		}
 		current.ContactName, current.ContactEmail, current.ContactPhone = org.ContactName, org.ContactEmail, org.ContactPhone
+		for _, house := range houses {
+			if house.Organisation == org.Key {
+				current.Houses = append(current.Houses, house.Slug)
+			}
+		}
 		if err := orgRepo.Save(ctx, current); err != nil {
 			return SeedResult{}, err
 		}
 	}
-	memberRepo := store.BindOrganisationMemberRepository(database, org.Key)
-	for _, member := range org.Members {
-		// Preserve the house roles already supplied by persons.json in the
-		// grant record, so removing a demo employee restores those roles.
-		if err := memberRepo.Save(ctx, store.OrganisationMember{Email: member.Email, Role: member.Role, Granted: member.Granted}); err != nil {
-			return SeedResult{}, fmt.Errorf("seed member %s: %w", member.Email, err)
-		}
+	if err := seedOrganisationMembers(ctx, database, dir, org, houses, identities); err != nil {
+		return SeedResult{}, err
 	}
 
 	templateRepo := store.BindTextbausteinRepository(database, org.Key)

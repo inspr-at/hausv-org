@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/inspr-at/hausv-org/internal/db"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
@@ -14,7 +15,31 @@ import (
 func memberTestApp(t *testing.T, email string) *app {
 	t.Helper()
 	a := organisationTestApp(t, email)
-	database := dbtest.Open(t)
+	database, cfg := dbtest.OpenWithConfig(t)
+	scoped, err := db.NewScoped(cfg, database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { scoped.Close() })
+	a.tenantDB = store.NewTenantDB(scoped)
+	a.identityStore = store.NewSQLIdentityStore(a.tenantDB)
+	for _, profile := range a.inviteStore.List() {
+		if _, err := a.identityStore.Add(profile); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a.inviteStore = a.identityStore
+	configured := []store.TenantIdentity{}
+	for slug := range a.tenants {
+		configured = append(configured, store.TenantIdentity{Slug: slug, Name: slug})
+	}
+	if _, err := store.EnsureTenantIdentities(t.Context(), database, configured); err != nil {
+		t.Fatal(err)
+	}
+
+	a.organisationRepo = func(orgKey string) store.OrganisationRepository {
+		return store.BindOrganisationRepository(database, orgKey)
+	}
 	a.organisationMemberRepo = func(orgKey string) store.OrganisationMemberRepository {
 		return store.BindOrganisationMemberRepository(database, orgKey)
 	}
