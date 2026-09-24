@@ -392,6 +392,9 @@ func seedFull(t *testing.T) *source {
 			`{"id":"run-2026-1","period_year":2026,"revision":1,"calculation_version":1,"created_at":"2026-09-06T10:00:00Z","created_by":"verwalter@example.com","input_hash":"seed","input":{},"result":{}}`); err != nil {
 			t.Fatalf("%s annual statement run: %v", slug, err)
 		}
+		if _, err := src.db.Exec(`INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES(?,?,?,?)`, tenant.ID, slug, "run-2026-1", `{"approved_at":"2026-09-07T10:00:00Z","approved_by":"verwalter@example.com","role":"manager"}`); err != nil {
+			t.Fatal(err)
+		}
 		if _, err := src.db.Exec(`INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, tenant.ID, slug, "delivery-1", "run-2026-1", 1, "owner@example.com", "top-1", receiptDocument.ID, "seed-hash", "owner@example.com", now.UTC().Format(time.RFC3339Nano), "sent", "", "verwalter@example.com", 1); err != nil {
 			t.Fatalf("%s annual statement delivery: %v", slug, err)
 		}

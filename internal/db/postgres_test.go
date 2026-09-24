@@ -25,7 +25,7 @@ const (
 )
 
 var expectedTenantTables = []string{
-	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_deliveries", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
+	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_deliveries", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_run_approvals", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
@@ -346,6 +346,9 @@ func tenantTables(t *testing.T, database *sql.DB) []string {
 // Delivery rows have required addressing and outcome fields rather than empty
 // defaults. Use a valid row so the generic probe exercises RLS, not NOT NULL.
 func tenantTableSmokeInsert(table string) string {
+	if table == "annual_statement_run_approvals" {
+		return `INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES($1,'rls-fixture','run','{"ApprovedBy":"manager@example.test","Role":"Verwalter","ApprovedAt":"2026-09-24T10:00:00Z"}')`
+	}
 	if table == "annual_statement_deliveries" {
 		return `INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES($1,'rls-fixture','delivery','run',1,'party@example.test','top-1','document','hash','party@example.test','2026-09-06T18:00:00Z','sent','','manager@example.test',1)`
 	}

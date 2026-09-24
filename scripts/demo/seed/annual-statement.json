@@ -5,29 +5,274 @@
       "amount_cents": 480000,
       "invoice_date": "2025-02-01",
       "key": "versicherung",
-      "name": "Gebäudeversicherung"
+      "name": "Gebäudeversicherung",
+      "supplier": "Musterstadt Versicherung"
     },
     {
       "allocation_key": "flaeche",
       "amount_cents": 360000,
       "invoice_date": "2025-06-30",
       "key": "reinigung",
-      "name": "Hausreinigung"
+      "name": "Hausreinigung",
+      "supplier": "Musterstadt Reinigung"
     },
     {
       "allocation_key": "personen",
       "amount_cents": 240000,
       "invoice_date": "2025-12-15",
       "key": "abfall",
-      "name": "Abfallentsorgung"
+      "name": "Abfallentsorgung",
+      "supplier": "Stadtservice Musterstadt"
+    },
+    {
+      "allocation_key": "verbrauch",
+      "amount_cents": 900000,
+      "heating_category": "energie",
+      "invoice_date": "2025-12-31",
+      "key": "heizung",
+      "name": "Heizung",
+      "operating_amount_cents": 90000,
+      "supplier": "Wärme Musterstadt"
     }
   ],
   "ends_on": "2025-12-31",
   "house": "janusbergweg-123",
+  "legal": {
+    "monthly_proposals_cents": {
+      "stellplatz-1": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "stellplatz-2": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "stellplatz-3": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "stellplatz-4": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "stellplatz-5": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "stellplatz-6": {
+        "abfall": 0,
+        "reinigung": 350,
+        "versicherung": 1700
+      },
+      "top-1": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-10": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-11": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-12": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-13": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-14": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-15": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-16": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-17": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-18": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-2": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-3": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-4": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-5": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-6": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-7": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-8": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      },
+      "top-9": {
+        "abfall": 700,
+        "reinigung": 1500,
+        "versicherung": 1700
+      }
+    },
+    "next_prepayment_on": "2026-11-01",
+    "heating_prepayments_cents": {
+      "stellplatz-1": {
+        "heizung": 0
+      },
+      "stellplatz-2": {
+        "heizung": 0
+      },
+      "stellplatz-3": {
+        "heizung": 0
+      },
+      "stellplatz-4": {
+        "heizung": 0
+      },
+      "stellplatz-5": {
+        "heizung": 0
+      },
+      "stellplatz-6": {
+        "heizung": 0
+      },
+      "top-1": {
+        "heizung": 25000
+      },
+      "top-10": {
+        "heizung": 25000
+      },
+      "top-11": {
+        "heizung": 25000
+      },
+      "top-12": {
+        "heizung": 25000
+      },
+      "top-13": {
+        "heizung": 25000
+      },
+      "top-14": {
+        "heizung": 25000
+      },
+      "top-15": {
+        "heizung": 25000
+      },
+      "top-16": {
+        "heizung": 25000
+      },
+      "top-17": {
+        "heizung": 25000
+      },
+      "top-18": {
+        "heizung": 25000
+      },
+      "top-2": {
+        "heizung": 25000
+      },
+      "top-3": {
+        "heizung": 25000
+      },
+      "top-4": {
+        "heizung": 25000
+      },
+      "top-5": {
+        "heizung": 25000
+      },
+      "top-6": {
+        "heizung": 25000
+      },
+      "top-7": {
+        "heizung": 25000
+      },
+      "top-8": {
+        "heizung": 25000
+      },
+      "top-9": {
+        "heizung": 25000
+      }
+    },
+    "heating_consumption_percent": 70,
+    "heatable_areas_m2_hundredths": {
+      "stellplatz-1": 0,
+      "stellplatz-2": 0,
+      "stellplatz-3": 0,
+      "stellplatz-4": 0,
+      "stellplatz-5": 0,
+      "stellplatz-6": 0,
+      "top-1": 5500,
+      "top-10": 7500,
+      "top-11": 5500,
+      "top-12": 6000,
+      "top-13": 6500,
+      "top-14": 7000,
+      "top-15": 7500,
+      "top-16": 5500,
+      "top-17": 6000,
+      "top-18": 6500,
+      "top-2": 6000,
+      "top-3": 6500,
+      "top-4": 7000,
+      "top-5": 7500,
+      "top-6": 5500,
+      "top-7": 6000,
+      "top-8": 6500,
+      "top-9": 7000
+    },
+    "inspection_place": "Hausverwaltung Musterstadt, Janusbergweg 123, 8010 Graz",
+    "inspection_period": "Nach Terminvereinbarung, Montag bis Freitag 9–12 Uhr",
+    "inspection_contact": "vera.verwalter@musterstadt.example",
+    "regime": "weg",
+    "heizkg_applies": true
+  },
   "recorded_at": "2026-01-15T09:00:00Z",
   "starts_on": "2025-01-01",
   "unit_bases": [
     {
+      "heating_consumption_kwh": 3500,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -35,6 +280,7 @@
       "usable_area_m2_hundredths": 5500
     },
     {
+      "heating_consumption_kwh": 3900,
       "miteigentumsanteil_ppm": 41667,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -42,6 +288,7 @@
       "usable_area_m2_hundredths": 6000
     },
     {
+      "heating_consumption_kwh": 4300,
       "miteigentumsanteil_ppm": 41667,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -49,6 +296,7 @@
       "usable_area_m2_hundredths": 6500
     },
     {
+      "heating_consumption_kwh": 4700,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -56,6 +304,7 @@
       "usable_area_m2_hundredths": 7000
     },
     {
+      "heating_consumption_kwh": 5100,
       "miteigentumsanteil_ppm": 41667,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -63,6 +312,7 @@
       "usable_area_m2_hundredths": 7500
     },
     {
+      "heating_consumption_kwh": 5500,
       "miteigentumsanteil_ppm": 41667,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -70,6 +320,7 @@
       "usable_area_m2_hundredths": 5500
     },
     {
+      "heating_consumption_kwh": 3500,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -77,6 +328,7 @@
       "usable_area_m2_hundredths": 6000
     },
     {
+      "heating_consumption_kwh": 3900,
       "miteigentumsanteil_ppm": 41667,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -84,6 +336,7 @@
       "usable_area_m2_hundredths": 6500
     },
     {
+      "heating_consumption_kwh": 4300,
       "miteigentumsanteil_ppm": 41667,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -91,6 +344,7 @@
       "usable_area_m2_hundredths": 7000
     },
     {
+      "heating_consumption_kwh": 4700,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -98,6 +352,7 @@
       "usable_area_m2_hundredths": 7500
     },
     {
+      "heating_consumption_kwh": 5100,
       "miteigentumsanteil_ppm": 41667,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -105,6 +360,7 @@
       "usable_area_m2_hundredths": 5500
     },
     {
+      "heating_consumption_kwh": 5500,
       "miteigentumsanteil_ppm": 41667,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -112,6 +368,7 @@
       "usable_area_m2_hundredths": 6000
     },
     {
+      "heating_consumption_kwh": 3500,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -119,6 +376,7 @@
       "usable_area_m2_hundredths": 6500
     },
     {
+      "heating_consumption_kwh": 3900,
       "miteigentumsanteil_ppm": 41667,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -126,6 +384,7 @@
       "usable_area_m2_hundredths": 7000
     },
     {
+      "heating_consumption_kwh": 4300,
       "miteigentumsanteil_ppm": 41667,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -133,6 +392,7 @@
       "usable_area_m2_hundredths": 7500
     },
     {
+      "heating_consumption_kwh": 4700,
       "miteigentumsanteil_ppm": 41667,
       "persons": 1,
       "prepaid_cents": 60000,
@@ -140,6 +400,7 @@
       "usable_area_m2_hundredths": 5500
     },
     {
+      "heating_consumption_kwh": 5100,
       "miteigentumsanteil_ppm": 41666,
       "persons": 2,
       "prepaid_cents": 60000,
@@ -147,6 +408,7 @@
       "usable_area_m2_hundredths": 6000
     },
     {
+      "heating_consumption_kwh": 5500,
       "miteigentumsanteil_ppm": 41666,
       "persons": 3,
       "prepaid_cents": 60000,
@@ -154,6 +416,7 @@
       "usable_area_m2_hundredths": 6500
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,
@@ -161,6 +424,7 @@
       "usable_area_m2_hundredths": 1200
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,
@@ -168,6 +432,7 @@
       "usable_area_m2_hundredths": 1200
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,
@@ -175,6 +440,7 @@
       "usable_area_m2_hundredths": 1200
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,
@@ -182,6 +448,7 @@
       "usable_area_m2_hundredths": 1200
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,
@@ -189,6 +456,7 @@
       "usable_area_m2_hundredths": 1200
     },
     {
+      "heating_consumption_kwh": 0,
       "miteigentumsanteil_ppm": 41666,
       "persons": 0,
       "prepaid_cents": 20000,

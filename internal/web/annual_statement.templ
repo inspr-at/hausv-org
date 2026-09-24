@@ -1,6 +1,9 @@
 package web
 
+import "github.com/inspr-at/hausv-org/internal/store"
+
 import "strconv"
+import "fmt"
 
 type AnnualStatementPeriodView struct {
 	Year      int
@@ -102,6 +105,8 @@ type AnnualStatementReceiptDocumentView struct {
 }
 
 type AnnualStatementReceiptView struct {
+ Supplier string
+ HeatingCategory string
 	ID            string
 	DocumentTitle string
 	Amount        string
@@ -122,6 +127,7 @@ type AnnualStatementReceiptSuggestionView struct {
 }
 
 type AnnualStatementPrepaymentView struct {
+ Prefilled bool
 	UnitID        string
 	UnitLabel     string
 	AmountValue   string
@@ -132,6 +138,7 @@ type AnnualStatementPrepaymentView struct {
 }
 
 type AnnualStatementPageData struct {
+ Legal store.AnnualStatementLegalSettings
 	Portal        PortalPageData
 	EstateName    string
 	EstateAddress string
@@ -212,6 +219,52 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span>
 			@DisclosureChevron()
 		</summary>
+ if data.StructureYear > 0 {
+ <section class="panel workspace" id="rechtsgrundlage">
+ <header class="workspace-head"><div><h2>Rechtsgrundlage</h2><p>Gilt für diese Liegenschaft und Periode. Nach Änderungen einen neuen Lauf berechnen; freigegebene Läufe bleiben erhalten.</p></div></header>
+ <form method="post" action="/app/settings/annual-statement/legal">
+ <input type="hidden" name="year" value={ annualStatementYear(data.StructureYear) }/>
+ <label>Abrechnungsregime<select name="regime">
+ <option value="weg" selected?={ data.Legal.Regime == "weg" }>WEG</option>
+ <option value="mrg_voll" selected?={ data.Legal.Regime == "mrg_voll" }>MRG Vollanwendung</option>
+ <option value="mrg_teil" selected?={ data.Legal.Regime == "mrg_teil" }>MRG Teilanwendung</option>
+ <option value="ausnahme" selected?={ data.Legal.Regime == "ausnahme" }>MRG Ausnahme</option>
+ </select></label>
+ <label><input type="checkbox" name="heizkg_applies" checked?={ data.Legal.HeizKGApplies }/> HeizKG anwendbar</label>
+ <fieldset><legend>HeizKG-Verteilung</legend>
+ <label>Verbrauchsanteil der Energiekosten (%)<input type="number" name="heating_consumption_percent" min="55" max="85" value={ strconv.Itoa(data.Legal.HeatingConsumptionPercent) } required/></label>
+ <p>55–85 %, üblicher Ausgangswert 70 %. Der Rest der Energiekosten und sämtliche sonstigen Betriebskosten folgen der versorgbaren Nutzfläche.</p>
+ for _, unit := range data.Units {
+ <label>{ unit.Label } · versorgbare Nutzfläche (m²)<input name={ "heatable_area_"+unit.ID } value={ annualHeatableArea(data.Legal,unit.ID) } inputmode="decimal"/></label>
+ for _, key := range []string{"heizung", "warmwasser"} {
+ <label>{ unit.Label } · { key } · geleistetes Akonto (Euro)<input name={ "heating_prepayment_"+key+"_"+unit.ID } value={ annualHeatingPrepayment(data.Legal,unit.ID,key) } inputmode="decimal"/></label>
+ }
+
+ }
+ </fieldset>
+ <fieldset><legend>Neue monatliche Vorauszahlungen</legend>
+ <label>Gültig ab<input type="date" name="next_prepayment_on" value={ data.Legal.NextPrepaymentOn }/></label>
+ <p>MRG Vollanwendung: Vorjahreskosten / 12; über +10 % erscheint ein Hinweis. WEG: manuelle Vorausschau. HeizKG: Vorperiodenanteil / 12.</p>
+ <details><summary>Monatsbeträge je Einheit und Kostenart erfassen</summary>
+ for _,unit:=range data.Units {
+ for _,cost:=range data.CostTypes {
+ if cost.Allocatable && !(data.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.Key)) {
+ <label>{ unit.Label } · { cost.Name } (Euro)<input name={ "monthly_proposal_"+cost.Key+"_"+unit.ID } value={ annualMonthlyProposal(data.Legal,unit.ID,cost.Key) } inputmode="decimal"/></label>
+ }
+ }
+ }
+ </details>
+ </fieldset>
+ <fieldset><legend>Einsicht in die Belege</legend>
+ <label>Ort<input name="inspection_place" value={ data.Legal.InspectionPlace } maxlength="300"/></label>
+ <label>Zeitraum und Öffnungszeiten<input name="inspection_period" value={ data.Legal.InspectionPeriod } maxlength="300"/></label>
+ <label>Kontakt<input name="inspection_contact" value={ data.Legal.InspectionContact } maxlength="300"/></label>
+ </fieldset>
+ <div class="form-actions"><button class="button primary" type="submit">Rechtsgrundlage speichern</button></div>
+ </form>
+ </section>
+ }
+
 		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
@@ -227,7 +280,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			if data.Followup.Available {
 				<article class="inline-details"><header class="subhead"><div><h3>Folgejahr { annualStatementYear(data.Followup.Year) } vorbereiten</h3><p>{ data.Followup.DateRange }</p></div><span class="scope management">Vorlage</span></header>
 					<p>Der Kostenartenkatalog, seine Verteilerschlüssel und Verteilerbasen werden als unabhängig bearbeitbare Vorlage übernommen. Einheiten und Parteien bleiben zentral gepflegt. Belege, Beträge, Vorauszahlungen und Abrechnungsergebnisse werden nicht kopiert.</p>
-					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach § 34 Abs. 1 WEG aus dem gespeicherten Periodenende mit sechs Monaten berechnet. Das ist eine Arbeitserinnerung und keine Rechtsberatung; Vereinbarungen und Einzelfall bitte prüfen.</p>
+					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach der gewählten Rechtsgrundlage: { data.Legal.Basis() }. Vereinbarungen und Einzelfall bitte prüfen.</p>
 					<form method="post" action="/app/settings/annual-statement/periods/next"><input type="hidden" name="source_year" value={ annualStatementYear(data.Followup.SourceYear) }/><button class="button primary" type="submit">Folgejahr als Vorlage anlegen</button></form>
 				</article>
 			}
@@ -350,7 +403,10 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			if data.HasPeriods && data.HasUnits {
 				<div class="unit-list">
 					for _, item := range data.Prepayments {
-						<form class="inline-details" method="post" action="/app/settings/annual-statement/prepayments"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><input type="hidden" name="unit_id" value={ item.UnitID }/><header class="subhead"><div><strong>{ item.UnitLabel }</strong><p>Akonto-Gesamtbetrag im Abrechnungsjahr { annualStatementYear(data.Year) }</p></div></header><div class="form-grid"><label>Akonto <small>Euro, Gesamtbetrag</small><input name="amount" value={ item.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 1200,00" required/></label><label>Vorausgezahlt<span class="readonly"><strong>{ item.Paid }</strong></span></label><label>Zugeteilt<span class="readonly">
+						<form class="inline-details" method="post" action="/app/settings/annual-statement/prepayments"><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><input type="hidden" name="unit_id" value={ item.UnitID }/><header class="subhead"><div><strong>{ item.UnitLabel }</strong><p>Akonto-Gesamtbetrag im Abrechnungsjahr { annualStatementYear(data.Year) }</p></div></header><div class="form-grid">if item.Prefilled {
+ <p>Vorschlag aus der freigegebenen Vorjahresabrechnung (12 Monatsbeträge). Tatsächlich geleistete Zahlungen prüfen und erst dann speichern.</p>
+ }
+ <label>Akonto <small>Euro, Gesamtbetrag</small><input name="amount" value={ item.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 1200,00" required/></label><label>Vorausgezahlt<span class="readonly"><strong>{ item.Paid }</strong></span></label><label>Zugeteilt<span class="readonly">
 							if data.SettlementReady {
 								<strong>{ item.Allocated }</strong>
 							} else {
@@ -408,14 +464,20 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 					for _, costType := range data.CostTypes {
 						<option value={ costType.Key }>{ costType.Name }</option>
 					}
-				</select></label><label>Betrag <small>Euro, zwei Dezimalstellen</small><input name="amount" inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 128,40" required/></label><label>Rechnungsdatum<input type="date" name="invoice_date" required/></label></div><div class="form-actions"><button class="button primary" type="submit">Beleg speichern</button></div></fieldset></form>
+				</select></label><label>Betrag <small>Euro, zwei Dezimalstellen</small><input name="amount" inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" placeholder="z. B. 128,40" required/></label><label>Rechnungsdatum<input type="date" name="invoice_date" required/></label><label>Lieferant<input name="supplier" maxlength="300"/></label>
+ <label>Heizkostenbeleg<select name="heating_category"><option value="">Nicht zugeordnet</option><option value="energie">Energie</option><option value="sonstige_betriebskosten">Sonstige Betriebskosten</option></select></label></div><div class="form-actions"><button class="button primary" type="submit">Beleg speichern</button></div></fieldset></form>
 			} else {
 				<p class="notice">Legen Sie zuerst eine Abrechnungsperiode und eine Kostenart an.</p>
 			}
 			if data.HasReceipts {
 				<header class="subhead"><div><h3>Belege im Abrechnungsjahr { annualStatementYear(data.Year) }</h3><p>Beträge können korrigiert werden, ohne die Originaldatei zu ersetzen.</p></div></header><div class="cost-type-list">
 					for _, receipt := range data.Receipts {
-						<article class="cost-type-card"><label>Dokument<span class="readonly"><strong>{ receipt.DocumentTitle }</strong></span></label><label>Betrag<span class="readonly"><strong>{ receipt.Amount }</strong></span></label><label>Rechnungsdatum<span class="readonly">{ receipt.InvoiceDate }</span></label><label>Kostenart<span class="readonly">{ receipt.CostTypeName }</span></label><form method="post" action="/app/settings/annual-statement/receipts/update-amount"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><label>Betrag korrigieren <small>Euro</small><input name="amount" value={ receipt.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" required/></label><button class="button ghost" type="submit">Betrag korrigieren</button></form><form method="post" action="/app/settings/annual-statement/receipts/delete"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button ghost" type="submit">Zuordnung entfernen</button><small>Die Originaldatei bleibt in Dokumente.</small></form></article>
+						<article class="cost-type-card"><label>Dokument<span class="readonly"><strong>{ receipt.DocumentTitle }</strong></span></label><label>Betrag<span class="readonly"><strong>{ receipt.Amount }</strong></span></label><label>Rechnungsdatum<span class="readonly">{ receipt.InvoiceDate }</span></label><label>Kostenart<span class="readonly">{ receipt.CostTypeName }</span></label><form method="post" action="/app/settings/annual-statement/receipts/update-amount"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><label>Betrag korrigieren <small>Euro</small><input name="amount" value={ receipt.AmountValue } inputmode="decimal" pattern="[0-9]+([.,][0-9]{2})" required/></label><button class="button ghost" type="submit">Betrag korrigieren</button></form><form method="post" action="/app/settings/annual-statement/receipts/metadata">
+ <input type="hidden" name="id" value={ receipt.ID }/>
+ <label>Lieferant<input name="supplier" value={ receipt.Supplier } maxlength="300"/></label>
+ <label>Heizkostenbeleg<select name="heating_category"><option value="">Nicht zugeordnet</option><option value="energie" selected?={ receipt.HeatingCategory == "energie" }>Energie</option><option value="sonstige_betriebskosten" selected?={ receipt.HeatingCategory == "sonstige_betriebskosten" }>Sonstige Betriebskosten</option></select></label>
+ <button class="button ghost" type="submit">Belegangaben speichern</button>
+ </form><form method="post" action="/app/settings/annual-statement/receipts/delete"><input type="hidden" name="id" value={ receipt.ID }/><input type="hidden" name="year" value={ annualStatementYear(data.Year) }/><button class="button ghost" type="submit">Zuordnung entfernen</button><small>Die Originaldatei bleibt in Dokumente.</small></form></article>
 					}
 				</div>
 			} else {
@@ -442,3 +504,21 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 }
 
 func annualStatementYear(year int) string { return strconv.Itoa(year) }
+
+func annualHeatableArea(legal store.AnnualStatementLegalSettings, id string) string {
+ area,ok:=legal.HeatableAreas[id]
+ if !ok { return "" }
+ return strconv.Itoa(area/100)+","+fmt.Sprintf("%02d",area%100)
+}
+
+func annualHeatingPrepayment(legal store.AnnualStatementLegalSettings,id,key string) string {
+ value,ok:=legal.HeatingPrepayments[id][key]
+ if !ok { return "" }
+ return fmt.Sprintf("%d,%02d",value/100,value%100)
+}
+
+func annualMonthlyProposal(legal store.AnnualStatementLegalSettings,id,key string) string {
+ value,ok:=legal.MonthlyProposals[id][key]
+ if !ok { return "" }
+ return fmt.Sprintf("%d,%02d",value/100,value%100)
+}

@@ -1,5 +1,5 @@
 // HAUSV-662: real stored annual-statement results in the isolated demo fixture.
-// Run with HV_CAPTURE=qa-annual-costs.mjs scripts/snapshot/run.sh WORKTREE <out>.
+// Coordinator: node qa-annual-costs.mjs http://localhost:8313 <out>, demo fixture.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -30,15 +30,17 @@ try {
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
-  assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['428,04 €', '600,00 €', 'Guthaben 171,96 €']);
+  assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
   assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'Fixture covers multiple parties');
   const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
   })));
   const details = page.locator('.annual-costs').first();
+  const costToggle = unitRows.first().getByRole('button', { name: 'Details · Top 1', exact: true });
   const labels = ['Kostenart', 'Verteilerschlüssel', 'Anteil', 'Betrag'];
   const expected = [
     ['Abfallentsorgung', 'Personen', '2,78 %', '66,67 €'],
+    ['Heizung', 'HeizKG', 'siehe PDF', '443,65 €'],
     ['Hausreinigung', 'Nutzfläche', '4,48 %', '161,37 €'],
     ['Gebäudeversicherung', 'Nutzwert', '4,17 %', '200,00 €'],
   ];
@@ -69,6 +71,14 @@ try {
           if (Math.abs(name.getBoundingClientRect().top - documents[i].getBoundingClientRect().top) > 1) issues.push('Party/document rows differ');
           if (documents[i].querySelector('a').getBoundingClientRect().height < 44) issues.push('PDF touch target shrunk');
         });
+        const toggle = row.querySelector('.annual-details-toggle').getBoundingClientRect();
+        if (toggle.height < 44 || toggle.width < 44) issues.push('Details touch target shrunk');
+        if (width === 1440 && names.length === 1) {
+          const height = row.getBoundingClientRect().height;
+          if (height < 54 || height > 60) issues.push(`Collapsed unit row is ${height}px; expected about 56px`);
+          if (Math.abs(toggle.top - documents[0].getBoundingClientRect().top) > 1) issues.push('Details not inline with PDF');
+        }
+        if (row.nextElementSibling.getBoundingClientRect().height !== 0) issues.push('Collapsed costs leave a separate row');
         if (row.querySelectorAll('.annual-money').length !== 3) issues.push('Unit totals duplicated');
         if (width > 1050 && names.length) {
           const center = textCenter(names[0].querySelector('.annual-party-name'));
@@ -90,10 +100,14 @@ try {
     await unitRows.first().evaluate(node => node.scrollIntoView({ block: 'center' }));
     await page.screenshot({ path: `${out}/units-${width}.png` });
     assert.equal(await details.getAttribute('open'), null, 'Costs initially collapsed');
-    await details.locator('summary').focus();
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(await costToggle.getAttribute('aria-controls'), await details.getAttribute('id'));
+    assert.equal(await details.isVisible(), false, 'Collapsed cost row takes no space');
+    await costToggle.focus();
     await page.keyboard.press('Enter');
     const table = details.getByRole('table', { name: 'Kostenarten und Anteile · Top 1', exact: true });
     await table.waitFor({ state: 'visible' });
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'true');
     assert.deepEqual(await table.locator('thead th').allTextContents(), labels);
     const rows = table.locator('tbody tr');
     assert.equal(await rows.count(), expected.length);
@@ -129,9 +143,10 @@ try {
     await details.scrollIntoViewIfNeeded();
     await details.screenshot({ path: `${out}/costs-${width}.png` });
     report.push({ width, rows: expected.length, headings: labels, valuesUnchanged: true, layout: 'passed', unitAlignment: 'passed', runDetailsKeyboard: 'passed' });
-    await details.locator('summary').focus();
+    await costToggle.focus();
     await page.keyboard.press('Enter');
     assert.equal(await table.isVisible(), false, 'Keyboard closes cost details');
+    assert.equal(await costToggle.getAttribute('aria-expanded'), 'false');
     console.log(`Annual costs ${width}px passed`);
   }
   assert.deepEqual(errors, [], 'Browser JavaScript errors');

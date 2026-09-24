@@ -55,11 +55,19 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		}
 		originals[doc.ID] = raw
 	}
-	// Three original receipts plus six portal documents (HAUSV-711).
-	if len(originals) != 9 {
+	// Five original receipts plus six portal documents (HAUSV-711).
+	if len(originals) != 11 {
 		t.Fatalf("original count=%d", len(originals))
 	}
-	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt", EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: "Vera Verwalter", ContactEmail: "vera.verwalter@musterstadt.example"}
+	organisation, found, err := store.BindOrganisationRepository(database, "musterstadt").Get(ctx)
+	if err != nil || !found {
+		t.Fatal("demo organisation missing", err)
+	}
+	settings, err := store.BindOrgSettingsRepository(database, "musterstadt").Get(ctx)
+	if err != nil || settings.ContactAddress != "Musterstraße 12, 8010 Graz" || organisation.Name != "Hausverwaltung Musterstadt GmbH" || organisation.ContactPhone != "+43 316 555 100" {
+		t.Fatal("incomplete demo letterhead", err)
+	}
+	presentation := store.AnnualStatementRunPresentation{Organisation: organisation.Name, EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: organisation.ContactName, ContactAddress: settings.ContactAddress, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone}
 	run, err := repo.Create(2025, "vera.verwalter@musterstadt.example", time.Date(2026, 1, 20, 9, 0, 0, 0, time.UTC), presentation)
 	if err != nil {
 		t.Fatal(err)
@@ -68,8 +76,11 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if err != nil || !found {
 		t.Fatal("load run", err)
 	}
-	if len(loaded.Result.Units) != 24 || len(loaded.Input.Receipts) != 3 || len(loaded.Input.Prepayments) != 24 || loaded.Result.TotalCents != 1080000 || loaded.Input.Period.StartsOn != "2025-01-01" || loaded.Input.Period.EndsOn != "2025-12-31" {
+	if len(loaded.Result.Units) != 24 || len(loaded.Input.Receipts) != 5 || len(loaded.Input.Prepayments) != 24 || loaded.Result.TotalCents != 2070000 || loaded.Input.Period.StartsOn != "2025-01-01" || loaded.Input.Period.EndsOn != "2025-12-31" {
 		t.Fatalf("incomplete fixture: %+v", loaded)
+	}
+	if !loaded.Input.Structure.Legal.HeizKGApplies || loaded.Input.Structure.Legal.HeatingConsumptionPercent != 70 || len(loaded.Result.Proposals) != 96 {
+		t.Fatal("missing legal demo inputs")
 	}
 	ppm := 0
 	keys := map[string]bool{}
@@ -82,7 +93,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	for _, cost := range loaded.Input.Structure.CostTypes {
 		keys[cost.AllocationKey] = true
 	}
-	if ppm != 1000000 || !keys[store.AllocationKeyNutzwert] || !keys[store.AllocationKeyFlaeche] || !keys[store.AllocationKeyPersonen] || keys[store.AllocationKeyVerbrauch] {
+	if ppm != 1000000 || !keys[store.AllocationKeyNutzwert] || !keys[store.AllocationKeyFlaeche] || !keys[store.AllocationKeyPersonen] || !keys[store.AllocationKeyVerbrauch] {
 		t.Fatal("invalid bases/keys", ppm, keys)
 	}
 	renderedUnits := map[string]bool{}
@@ -103,6 +114,11 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		raw, err := statementpdf.Render(loaded, party.UnitID, party.ID)
 		if err != nil || !bytes.HasPrefix(raw, []byte("%PDF-")) {
 			t.Fatal("party PDF", err)
+		}
+		for _, placeholder := range []string{"fehlt", "TODO", "Noch nicht hinterlegt", "Noch festzulegen"} {
+			if bytes.Contains(raw, []byte(placeholder)) {
+				t.Fatalf("complete demo PDF contains %q", placeholder)
+			}
 		}
 		renderedUnits[party.UnitID] = true
 		pdfs[party.UnitID+"/"+party.ID] = raw
@@ -136,7 +152,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 			t.Fatal("original changed", err)
 		}
 	}
-	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 3, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 3, "annual_statement_prepayments": 24, "annual_statement_runs": 1} {
+	for table, want := range map[string]int{"annual_statement_periods": 1, "annual_statement_period_cost_types": 4, "annual_statement_period_unit_bases": 24, "annual_statement_receipts": 5, "annual_statement_prepayments": 24, "annual_statement_runs": 1} {
 		var count int
 		if err := database.QueryRow(`SELECT count(*) FROM `+table+` WHERE tenant_id=$1`, tenant.ID).Scan(&count); err != nil || count != want {
 			t.Fatalf("%s=%d want=%d err=%v", table, count, want, err)
@@ -153,6 +169,45 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if out := os.Getenv("HAUSV_DEMO_PDF_TEST_OUTPUT"); out != "" {
 		if err := os.WriteFile(out, all, 0600); err != nil {
 			t.Fatal(err)
+		}
+	}
+	if dir := os.Getenv("HAUSV_ANNUAL_LEGAL_QA_DIR"); dir != "" {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		for _, party := range loaded.Input.Parties {
+			if party.UnitID != "top-1" {
+				continue
+			}
+			draft, err := statementpdf.Render(loaded, party.UnitID, party.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "draft.pdf"), draft, 0600); err != nil {
+				t.Fatal(err)
+			}
+			loaded.Approval = &store.AnnualStatementRunApproval{ApprovedAt: time.Date(2026, 9, 24, 10, 0, 0, 0, time.UTC), ApprovedBy: "vera.verwalter@musterstadt.example", Role: store.RoleManager}
+			final, err := statementpdf.Render(loaded, party.UnitID, party.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "final.pdf"), final, 0600); err != nil {
+				t.Fatal(err)
+			}
+			loaded.Input.Structure.Legal.Regime = "mrg_voll"
+			notice, err := statementpdf.RenderAushang(loaded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "aushang.pdf"), notice, 0600); err != nil {
+				t.Fatal(err)
+			}
+			break
+		}
+		for _, u := range loaded.Result.Units {
+			if u.UnitID == "top-1" {
+				t.Logf("Top 1: %+v", u)
+			}
 		}
 	}
 	t.Logf("2025: %d units, %d party PDFs, %d originals, total %d cents", len(renderedUnits), len(pdfs), len(originals), loaded.Result.TotalCents)

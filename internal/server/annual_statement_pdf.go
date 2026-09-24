@@ -36,7 +36,16 @@ func (a *app) downloadAnnualStatementPDF(w http.ResponseWriter, r *http.Request,
 		http.NotFound(w, r)
 		return
 	}
-	data, err := statementpdf.Render(run, unit, party)
+	var data []byte
+	if query.Get("aushang") == "1" {
+		if unit != "" || party != "" {
+			http.NotFound(w, r)
+			return
+		}
+		data, err = statementpdf.RenderAushang(run)
+	} else {
+		data, err = statementpdf.Render(run, unit, party)
+	}
 	if errors.Is(err, statementpdf.ErrNotFound) {
 		http.NotFound(w, r)
 		return

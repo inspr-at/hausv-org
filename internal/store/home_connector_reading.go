@@ -96,19 +96,18 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 	if slug == "" {
 		return fmt.Errorf("home connector reading: slug required")
 	}
-	unscoped := s.db.Unscoped(HealOrphanReason)
-	tx, err := unscoped.Begin()
+	// Readings arrive from a paired connector, so the house is activated and the
+	// identity exists. The lookup stays on the registry; the write is the lane.
+	registry := s.db.Unscoped(slugRegistryReason)
+	tenant, err := tenantRefFor(registry, slug)
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	// Readings arrive from a paired connector, so the house is activated and the
-	// identity exists. Resolving it here keeps the table free of rows the tenant
-	// query layer cannot account for.
-	tenantID, err := ensureTenantID(tx, slug)
-	if err != nil {
-		return err
-	}
 	for _, reading := range readings {
 		_, err = tx.Exec(`INSERT INTO home_connector_readings
 			(tenant_id,slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at)
@@ -117,7 +116,7 @@ func (s *SQLHomeConnectorReadingStore) Upsert(slug string, readings []HomeConnec
 			display_name=excluded.display_name,unit=excluded.unit,device_class=excluded.device_class,
 			state_class=excluded.state_class,last_updated=excluded.last_updated,received_at=excluded.received_at,
 			tenant_id=coalesce(home_connector_readings.tenant_id,excluded.tenant_id)`,
-			tenantID, slug, strings.ToLower(strings.TrimSpace(reading.EntityID)), reading.State, reading.DisplayName,
+			tenant.ID, slug, strings.ToLower(strings.TrimSpace(reading.EntityID)), reading.State, reading.DisplayName,
 			reading.Unit, reading.DeviceClass, reading.StateClass,
 			homeReservationTimestamp(reading.LastUpdated.UTC()), homeReservationTimestamp(receivedAt.UTC()))
 		if err != nil {
@@ -131,9 +130,9 @@ func (s *SQLHomeConnectorReadingStore) List(slug string) ([]HomeConnectorReading
 	if s == nil || s.db == nil {
 		return nil, fmt.Errorf("home connector reading store unavailable")
 	}
-	unscoped := s.db.Unscoped("the home connector reading list path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
-	rows, err := unscoped.Query(`SELECT slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at
-		FROM home_connector_readings WHERE slug=$1 ORDER BY entity_id`, textutil.Slug(slug))
+	slug = textutil.Slug(slug)
+	rows, err := s.db.For(existingTenantRef(s.db, slug)).Query(`SELECT slug,entity_id,state,display_name,unit,device_class,state_class,last_updated,received_at
+		FROM home_connector_readings WHERE slug=$1 ORDER BY entity_id`, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +156,7 @@ func (s *SQLHomeConnectorReadingStore) Clear(slug string) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("home connector reading store unavailable")
 	}
-	unscoped := s.db.Unscoped("the home connector reading clear path is addressed by slug, not by a TenantRef, so there is no tenant reference to scope to")
-	_, err := unscoped.Exec(`DELETE FROM home_connector_readings WHERE slug=$1`, textutil.Slug(slug))
+	slug = textutil.Slug(slug)
+	_, err := s.db.For(existingTenantRef(s.db, slug)).Exec(`DELETE FROM home_connector_readings WHERE slug=$1`, slug)
 	return err
 }

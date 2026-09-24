@@ -38,6 +38,10 @@ func (a *app) sendAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac 
 		http.NotFound(w, r)
 		return
 	}
+	if run.Approval == nil {
+		http.Error(w, "Zuerst den Abrechnungslauf freigeben.", http.StatusConflict)
+		return
+	}
 	archived := annualStatementArchiveDocuments(repos.documents, run)
 	if !annualStatementArchiveComplete(run, archived) {
 		http.Error(w, "Zuerst im Archiv ablegen", http.StatusConflict)
@@ -153,7 +157,7 @@ func annualStatementMailText(run store.AnnualStatementRun, party store.AnnualSta
 	if party.Name != "" {
 		greeting = "Guten Tag " + party.Name + ","
 	}
-	lines := []string{greeting, "", fmt.Sprintf("anbei erhalten Sie die archivierte Jahresabrechnung %d für %s in der Liegenschaft %s (Lauf %d).", run.PeriodYear, label, estate, run.Revision), "", "Entwurf zur Prüfung — keine Rechtsauskunft nach WEG/MRG", "", "Bei Fragen wenden Sie sich bitte an Ihre Verwaltung.", "", "Freundliche Grüße", firstNonEmpty(presentation.Organisation, presentation.ContactName, "Ihre Verwaltung")}
+	lines := []string{greeting, "", fmt.Sprintf("anbei erhalten Sie die archivierte Jahresabrechnung %d für %s in der Liegenschaft %s (Lauf %d).", run.PeriodYear, label, estate, run.Revision), "", "Freigegebene Jahresabrechnung", "", "Bei Fragen wenden Sie sich bitte an Ihre Verwaltung.", "", "Freundliche Grüße", firstNonEmpty(presentation.Organisation, presentation.ContactName, "Ihre Verwaltung")}
 	for _, contact := range []string{presentation.ContactName, presentation.ContactAddress, presentation.ContactEmail, presentation.ContactPhone} {
 		if contact != "" {
 			lines = append(lines, contact)
@@ -184,6 +188,8 @@ func (a *app) annualStatementDeliveryView(view web.AnnualStatementRunView, repos
 		view.MailMode = mode.Mode()
 	}
 	switch {
+	case !view.Approved:
+		view.SendIssue = "Zuerst den Abrechnungslauf freigeben"
 	case view.ArchivedAt == "":
 		view.SendIssue = "Zuerst im Archiv ablegen"
 	case a.mailer == nil || !a.mailer.Configured():

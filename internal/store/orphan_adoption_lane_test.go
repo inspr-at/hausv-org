@@ -182,6 +182,16 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 	"issues":  {allowed: []laneClass{laneFor}, why: randomIDReason},
 	"parking": {allowed: []laneClass{laneFor}, why: "PRIMARY KEY is tenant_slug and tenant_id is NOT NULL from the first parking migration; there is no orphan generation, so For(tenant) is the live write lane."},
 
+	"announcement_reads":       {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"home_connectors":          {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"home_connector_readings":  {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"home_profiles":            {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"energy_assets":            {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"energy_entity_mappings":   {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"energy_intervals":         {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"energy_maintenance_plans": {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"energy_measures":          {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+
 	"home_portals": {allowed: []laneClass{laneUnscopedOther}, why: "Activate is the moment the tenant identity is MINTED: there is no TenantRef " +
 		"before it runs, so its transaction is on the maintenance lane for a structural reason that outlives the flip. The upsert still " +
 		"coalesces tenant_id, so an orphan portal row is adopted — on the one lane that can reach it."},
@@ -189,16 +199,13 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 		"inside three transactions that are cross-tenant by nature and stay so after the flip: home-portal Activate (no TenantRef exists yet) " +
 		"and the whole-profile writes (a UserProfile spans every house and the same transaction touches persons, which has no tenant_id). " +
 		"All of them are on the maintenance lane, so the orphan is reachable; none of them will revert to For(tenant)."},
-
-	// internal/energy has no entry, and that is the point of its absence: its
-	// seven coalescing upserts on six tables (home_profiles, energy_assets,
-	// energy_entity_mappings, energy_intervals, energy_maintenance_plans,
-	// energy_measures) all conflict on natural keys, all run on
-	// Unscoped(store.HealOrphanReason), and are held to it by enumeration —
-	// exactly like the store's own. Until the package moved onto lanes the six
-	// sat here under a "raw pool" exemption that was designed to go stale the
-	// day they did; it did, this test said so, and the entries came out.
 }
+
+// notNullTenantReason is why the ordinary writes HAUSV-779 moved back onto
+// For(tenant) no longer need the heal lane. Migration 0006 made tenant_id NOT
+// NULL on these tables, so the orphan the heal was introduced to reach cannot
+// exist. coalesce(tenant_id) stays in the SQL so an owned row is not re-pointed.
+const notNullTenantReason = "migration 0006 made tenant_id NOT NULL, so the orphan HealOrphanReason was introduced to reach cannot exist; the upsert is on For(tenant)"
 
 // upsertLane is one lane an upsert was traced to, with where the decision was
 // made so a failure names the function to change.

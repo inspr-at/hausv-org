@@ -24,6 +24,7 @@ type VerwaltungSettingsData struct {
 	MailTotal int
 	OrganisationHouses int
 	ContactName string
+	ContactAddress string
 	ContactEmail string
 	ContactPhone string
 	Threshold int
@@ -83,8 +84,9 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			<p class="settings-card" role="status">{ data.Flash }</p>
 		}
 		<form class="settings-form" method="post">
-			<section class="settings-card"><h2>Hausverwaltung</h2><p>Name und Kontakt dieser Verwaltung. Sie erscheinen in der Seitenleiste und in Antworten an Bewohner.</p>
+			<section class="settings-card" id="hausverwaltung"><h2>Hausverwaltung</h2><p>Name und Kontakt dieser Verwaltung. Sie erscheinen in der Seitenleiste, im Briefkopf neuer Abrechnungsläufe und in Antworten an Bewohner.</p>
 				<div class="ai-fields"><label>Name<input type="text" name="organisation_name" value={ data.OrganisationName } required/></label><label>Ansprechperson<input type="text" name="contact_name" value={ data.ContactName } placeholder="optional"/></label></div>
+				<div class="ai-fields"><label>Anschrift<input id="organisation-contact-address" type="text" name="contact_address" value={ data.ContactAddress } maxlength="500" autocomplete="street-address"/></label></div>
 				<div class="ai-fields"><label>E-Mail<input type="email" name="contact_email" value={ data.ContactEmail } placeholder="optional"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.ContactPhone } placeholder="optional"/></label></div>
 				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Liegenschaft.</p>
 			</section>
