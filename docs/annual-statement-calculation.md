@@ -145,6 +145,21 @@ Bytes. Neu erstellte Läufe enthalten neue ID/Revision/Zeit; ihre PDFs sind dahe
 trotz gleicher Zahlen nicht bytegleich. Der Snapshot speichert keine
 Originaldatei-Bytes, keinen Hash der Belegoriginale und keinen Rendererstand.
 
+Der A4-Briefkopf trennt Verwaltung, Empfängerfenster und Abrechnungsdaten.
+Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
+geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
+Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter
+„Hinweise“. Messnachweise und Belegverzeichnis nutzen dieselben Seitenränder;
+Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufkennung und Revision
+stehen nur als kleine Fußreferenz, Partei-E-Mail-Adressen nicht im Briefkopf.
+Standard-PDF-Schriftmetriken bestimmen Zeilenumbrüche und rechtsbündige Beträge
+in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
+
+Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
+öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
+Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
+Mehrere Parteien behalten je eine zugeordnete PDF-Zeile und 44-px-Bedienflächen.
+
 Das Archiv legt je Partei ein PDF sowie zuletzt das Gesamtpaket ab. IDs sind
 aus Lauf/Revision/Einheit/Partei abgeleitet; Wiederholungen ergänzen ein partielles
 Archiv, ohne bereits abgelegte Dateien zu ersetzen. Archivdateien tragen Größe
@@ -195,7 +210,8 @@ sind noch nicht modelliert. Teilanwendung und Ausnahme verweisen auf den Vertrag
 
 Ort, Zeitraum/Öffnungszeiten und Kontakt werden pro Periode gespeichert und im
 Lauf eingefroren. Der PDF-Anhang führt Rechnungsdatum, bestätigten Lieferanten,
-Kostenart, Betrag und Original-Dokumentkennung auf. Fehlende Altangaben werden
+Kostenart und Betrag mit einer fortlaufenden Belegnummer auf. Interne
+Dokumentkennungen erscheinen nicht im Kundendokument. Fehlende Altangaben werden
 sichtbar benannt. MRG Vollanwendung bietet zusätzlich ein druckbares Aushang-PDF
 mit Haussummen und Einsichtshinweis ohne Namen oder Salden einzelner Parteien.
 

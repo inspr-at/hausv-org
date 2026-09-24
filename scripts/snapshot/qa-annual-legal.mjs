@@ -1,4 +1,4 @@
-// HAUSV-767 round 2. Coordinator runs against the isolated w-ja demo rig.
+// HAUSV-767 round 3. Coordinator runs against the isolated w-ja demo rig.
 // Usage: node qa-annual-legal.mjs http://localhost:8313 <artifact-dir>
 import assert from 'node:assert/strict';
 import { mkdir, writeFile, access } from 'node:fs/promises';
@@ -65,6 +65,17 @@ try {
   }
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
+    const row = run.locator('.annual-unit-row').first();
+    const toggle = row.getByRole('button', { name: 'Details · Top 1', exact: true });
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+    const box = await toggle.boundingBox();
+    assert(box.height >= 44 && box.width >= 44);
+    if (width === 1440) assert((await row.boundingBox()).height <= 60, 'Collapsed unit row stays near 56px');
+    await toggle.focus();
+    await page.keyboard.press('Space');
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+    await page.keyboard.press('Space');
+    assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
     await run.scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${out}/approved-${width}.png` });
     await prepare();

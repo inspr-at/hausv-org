@@ -128,7 +128,7 @@ func TestAnnualStatementRunCompactRowsKeepPartyDocuments(t *testing.T) {
 	if err := AnnualStatementRunPanel(data).Render(t.Context(), &body); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`<table class="annual-units" role="table">`, `<th role="columnheader" scope="col">Partei</th>`, `<details class="annual-costs">`, `<table class="annual-cost-table" role="table" aria-label="Kostenarten und Anteile · Top 1">`, `<th role="columnheader" scope="col">Verteilerschlüssel</th>`, `data-label="Kostenart">Wasser</th>`, `data-label="Anteil"`, `data-label="Betrag"`, `PDF für Anna &lt;Groß&gt; · Top 1`, `Archiv für Anna &lt;Groß&gt; · Top 1`, `Wasser`, `12,00 €`} {
+	for _, want := range []string{`<table class="annual-units" role="table">`, `<th role="columnheader" scope="col">Partei</th>`, `<details class="annual-costs" id="annual-costs-0">`, `aria-expanded="false" aria-controls="annual-costs-0"`, `hidden>Details`, `<table class="annual-cost-table" role="table" aria-label="Kostenarten und Anteile · Top 1">`, `<th role="columnheader" scope="col">Verteilerschlüssel</th>`, `data-label="Kostenart">Wasser</th>`, `data-label="Anteil"`, `data-label="Betrag"`, `PDF für Anna &lt;Groß&gt; · Top 1`, `Archiv für Anna &lt;Groß&gt; · Top 1`, `Wasser`, `12,00 €`} {
 		if !strings.Contains(body.String(), want) {
 			t.Errorf("missing %q", want)
 		}
@@ -140,6 +140,9 @@ func TestAnnualStatementRunCompactRowsKeepPartyDocuments(t *testing.T) {
 	}
 	if strings.Contains(body.String(), `class="readonly"`) || strings.Contains(body.String(), `<details class="annual-costs" open`) {
 		t.Fatal("result must be compact and collapsed")
+	}
+	if strings.Contains(body.String(), "@DisclosureChevron") || strings.Count(body.String(), `class="disclosure-chevron"`) != 2 {
+		t.Fatal("both inline trigger and fallback must render the shared icon")
 	}
 }
 
