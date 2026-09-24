@@ -44,7 +44,7 @@ func TestAnnualStatementManagerFlowAndRoleGate(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("manager page status = %d", page.Code)
 	}
-	for _, want := range []string{"Jahresabrechnung vorbereiten", "Liegenschaft", "Kostenartenkatalog", "Grundsteuer", "Müllabfuhr", "Hausbetreuung", "Gebäudeversicherung", "Gartenpflege", "Umlagefähig", "Nicht umlagefähig", "Einheiten und Parteien", "Wohnungseigentümer", "Mietverhältnis", "Abrechnungsjahr", "WEG Portal", "Top 1", "old-owner@example.com"} {
+	for _, want := range []string{`href="/demo/app/hilfe#recht-weg"`, "Jahresabrechnung vorbereiten", "Liegenschaft", "Kostenartenkatalog", "Grundsteuer", "Müllabfuhr", "Hausbetreuung", "Gebäudeversicherung", "Gartenpflege", "Umlagefähig", "Nicht umlagefähig", "Einheiten und Parteien", "Wohnungseigentümer", "Mietverhältnis", "Abrechnungsjahr", "WEG Portal", "Top 1", "old-owner@example.com"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("annual statement page missing %q", want)
 		}

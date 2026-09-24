@@ -64,8 +64,8 @@ func (s *SQLLeaseStore) updateLease(tenant TenantRef, lease Lease) (Lease, error
 	if err := ensureNoHauptmieteOverlap(tx, tenant, normalized, normalized.ID); err != nil {
 		return Lease{}, err
 	}
-	if _, err := tx.Exec(`UPDATE leases SET unit_id=$1,status=$2,concluded_on=$3,starts_on=$4,ends_on=$5,lease_kind=$6,use_kind=$7,mrg_scope=$8,rent_regime=$9,price_restricted=$10,max_hmz_cents=$11,landlord_is_business=$12,tenant_is_consumer=$13,zinstermin_day=$14,vat_opted=$15,notes=$16,updated_at=$17,updated_by=$18 WHERE tenant_id=$19 AND id=$20`,
-		normalized.UnitID, normalized.Status, normalized.ConcludedOn, normalized.StartsOn, nullString(normalized.EndsOn), normalized.LeaseKind, normalized.UseKind, normalized.MRGScope, normalized.RentRegime, normalized.PriceRestricted, nullInt64(normalized.MaxHMZCents), normalized.LandlordIsBusiness, normalized.TenantIsConsumer, normalized.ZinsterminDay, normalized.VATOpted, normalized.Notes, normalized.UpdatedAt.UTC().Format(time.RFC3339Nano), normalized.UpdatedBy, tenant.ID, normalized.ID); err != nil {
+	if _, err := tx.Exec(`UPDATE leases SET unit_id=$1,status=$2,concluded_on=$3,starts_on=$4,ends_on=$5,lease_kind=$6,use_kind=$7,mrg_scope=$8,rent_regime=$9,price_restricted=$10,max_hmz_cents=$11,landlord_is_business=$12,tenant_is_consumer=$13,zinstermin_day=$14,vat_opted=$15,notes=$16,updated_at=$17,updated_by=$18,wirksamwerden_mode=$21 WHERE tenant_id=$19 AND id=$20`,
+		normalized.UnitID, normalized.Status, normalized.ConcludedOn, normalized.StartsOn, nullString(normalized.EndsOn), normalized.LeaseKind, normalized.UseKind, normalized.MRGScope, normalized.RentRegime, normalized.PriceRestricted, nullInt64(normalized.MaxHMZCents), normalized.LandlordIsBusiness, normalized.TenantIsConsumer, normalized.ZinsterminDay, normalized.VATOpted, normalized.Notes, normalized.UpdatedAt.UTC().Format(time.RFC3339Nano), normalized.UpdatedBy, tenant.ID, normalized.ID, normalized.WirksamwerdenMode); err != nil {
 		return Lease{}, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -364,8 +364,8 @@ func ensureNoHauptmieteOverlap(tx *sql.Tx, tenant TenantRef, lease Lease, ignore
 }
 
 func insertLeaseGraph(tx *sql.Tx, tenant TenantRef, lease Lease) error {
-	if _, err := tx.Exec(`INSERT INTO leases(id,tenant_slug,tenant_id,unit_id,status,concluded_on,starts_on,ends_on,lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,max_hmz_cents,landlord_is_business,tenant_is_consumer,zinstermin_day,vat_opted,notes,updated_at,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
-		lease.ID, tenant.Slug, tenant.ID, lease.UnitID, lease.Status, lease.ConcludedOn, lease.StartsOn, nullString(lease.EndsOn), lease.LeaseKind, lease.UseKind, lease.MRGScope, lease.RentRegime, lease.PriceRestricted, nullInt64(lease.MaxHMZCents), lease.LandlordIsBusiness, lease.TenantIsConsumer, lease.ZinsterminDay, lease.VATOpted, lease.Notes, stamp(lease.UpdatedAt), lease.UpdatedBy); err != nil {
+	if _, err := tx.Exec(`INSERT INTO leases(id,tenant_slug,tenant_id,unit_id,status,concluded_on,starts_on,ends_on,lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,max_hmz_cents,landlord_is_business,tenant_is_consumer,zinstermin_day,vat_opted,notes,updated_at,updated_by,wirksamwerden_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+		lease.ID, tenant.Slug, tenant.ID, lease.UnitID, lease.Status, lease.ConcludedOn, lease.StartsOn, nullString(lease.EndsOn), lease.LeaseKind, lease.UseKind, lease.MRGScope, lease.RentRegime, lease.PriceRestricted, nullInt64(lease.MaxHMZCents), lease.LandlordIsBusiness, lease.TenantIsConsumer, lease.ZinsterminDay, lease.VATOpted, lease.Notes, stamp(lease.UpdatedAt), lease.UpdatedBy, lease.WirksamwerdenMode); err != nil {
 		return err
 	}
 	for _, party := range lease.Parties {
@@ -496,7 +496,7 @@ func loadLeaseTx(tx *sql.Tx, tenant TenantRef, id string) (Lease, bool, error) {
 }
 
 func loadLeasesTx(tx *sql.Tx, tenant TenantRef, unitID string) ([]Lease, error) {
-	query := `SELECT id,unit_id,status,concluded_on,starts_on,COALESCE(ends_on,''),lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,max_hmz_cents,landlord_is_business,tenant_is_consumer,zinstermin_day,vat_opted,notes,updated_at,updated_by FROM leases WHERE tenant_id=$1`
+	query := `SELECT id,unit_id,status,concluded_on,starts_on,COALESCE(ends_on,''),lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,max_hmz_cents,landlord_is_business,tenant_is_consumer,zinstermin_day,vat_opted,notes,updated_at,updated_by,wirksamwerden_mode FROM leases WHERE tenant_id=$1`
 	args := []any{tenant.ID}
 	if unitID != "" {
 		query += ` AND unit_id=$2`
@@ -513,7 +513,7 @@ func loadLeasesTx(tx *sql.Tx, tenant TenantRef, unitID string) ([]Lease, error) 
 		var lease Lease
 		var maxHMZ sql.NullInt64
 		var updated string
-		if err := rows.Scan(&lease.ID, &lease.UnitID, &lease.Status, &lease.ConcludedOn, &lease.StartsOn, &lease.EndsOn, &lease.LeaseKind, &lease.UseKind, &lease.MRGScope, &lease.RentRegime, &lease.PriceRestricted, &maxHMZ, &lease.LandlordIsBusiness, &lease.TenantIsConsumer, &lease.ZinsterminDay, &lease.VATOpted, &lease.Notes, &updated, &lease.UpdatedBy); err != nil {
+		if err := rows.Scan(&lease.ID, &lease.UnitID, &lease.Status, &lease.ConcludedOn, &lease.StartsOn, &lease.EndsOn, &lease.LeaseKind, &lease.UseKind, &lease.MRGScope, &lease.RentRegime, &lease.PriceRestricted, &maxHMZ, &lease.LandlordIsBusiness, &lease.TenantIsConsumer, &lease.ZinsterminDay, &lease.VATOpted, &lease.Notes, &updated, &lease.UpdatedBy, &lease.WirksamwerdenMode); err != nil {
 			return nil, err
 		}
 		if maxHMZ.Valid {

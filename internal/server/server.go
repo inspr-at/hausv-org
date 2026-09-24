@@ -1153,6 +1153,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/valorisation/runs", a.authedAction(capabilityManageLeases, a.createValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/approve", a.authedAction(capabilityManageLeases, a.approveValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/send", a.authedAction(capabilityManageLeases, a.sendValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/deliveries/{deliveryID}/receipt", a.authedAction(capabilityManageLeases, a.recordValorisationReceipt))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/cancel", a.authedAction(capabilityManageLeases, a.cancelValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/items/{itemID}", a.authedAction(capabilityManageLeases, a.valorisationItemAction))
 	mux.HandleFunc("GET /app/settings/valorisation/runs/{runID}/items/{itemID}/pdf", a.authed(capabilityManageLeases, a.valorisationPDF))

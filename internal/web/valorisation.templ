@@ -592,6 +592,7 @@ templ ValorisationBody(data ValorisationPageData) {
 			}
 		</style>
 		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", URL: "/app/settings"}, PortalSectionTitle("Wertsicherung"), PortalSectionLede("Vertragliche Anpassung prüfen, freigeben und verständigen."), ValorisationNewAction(valorisationNewIsPrimary(data)))
+		<p class="vr-note"><a href="/app/hilfe#recht-wirksamwerden">Warum?</a> · Rechtliche Grundlagen zum Wirksamwerden</p>
 		if data.Organisation {
 			@ValorisationIndexRefresh(data)
 		}
@@ -764,7 +765,25 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						}
 						if item.WirksamOn != "" {
 							<p class="vr-note">
-								Wirksam: { LeaseDate(item.WirksamOn) } · Einhebbar: { LeaseDate(item.CollectableFrom) }
+								if !item.TimingInput.ContractSchedule {
+									Indexmonat: { LeaseMonthName(string(item.TimingInput.TriggerMonth)) }<br/>
+									Endgültige Veröffentlichung: { item.TimingInput.FinalPublishedOn.Format("02.01.2006") }<br/>
+								}
+								Wirksamwerden (angenommen): { LeaseDate(item.WirksamOn) } · { store.ValorisationTimingLabel(string(item.Timing.Mode)) }
+								if item.Lease.UsesValorisationTimingMode() {
+									if item.Lease.WirksamwerdenMode == "" {
+											<span> · Organisationsstandard</span>
+										} else {
+											<span> · Vertragsauswahl</span>
+										}
+								}
+								<br/>Erster zahlbarer Zinstermin (bei angenommenem Zugang): { LeaseDate(item.CollectableFrom) }
+								if !item.TimingInput.NoticeIssuedOn.IsZero() {
+									<br/>Schreibendatum bei Freigabe: { item.TimingInput.NoticeIssuedOn.Format("02.01.2006") }
+									<br/>Zugang (bei Freigabe angenommen): { item.TimingInput.NoticeReceivedOn.Format("02.01.2006") }
+								} else {
+										<br/>Versand und Zugang: noch nicht erfolgt; Zinstermin bei rechtzeitigem Zugang.
+									}
 							</p>
 						}
 						<h4>Wie kommt dieser Betrag zustande?</h4>
@@ -828,6 +847,20 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 									<td class="num">{ fmt.Sprint(delivery.Attempt) }</td>
 									<td>
 										<span class={ "vr-chip", "is-" + delivery.Status }>{ valorisationDeliveryStatus(delivery.Status) }</span>
+										if delivery.Status == "sent" {
+											<p>Versand: { delivery.SentAt.Format("02.01.2006 15:04") } UTC</p>
+											if delivery.ReceivedOn != "" {
+												<p>Zugang: { LeaseDate(delivery.ReceivedOn) } · Erster zahlbarer Zinstermin: { LeaseDate(delivery.ReceiptDueOn) }</p>
+											} else {
+												<p>Zugang nicht bestätigt</p>
+											}
+											if view.Run.Status == "approved" || view.Run.Status == "sent" {
+												<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/deliveries/" + delivery.ID + "/receipt") }>
+													<label>Zugang des Schreibens<input type="date" name="received_on" value={ delivery.ReceivedOn } required/></label>
+													<button class="button" type="submit">Zugang speichern</button>
+												</form>
+											}
+										}
 										if delivery.Error!="" {
 											<p>{ delivery.Error }</p>
 										}
