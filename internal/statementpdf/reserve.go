@@ -3,7 +3,6 @@ package statementpdf
 import (
 	"fmt"
 
-	"github.com/inspr-at/hausv-org/internal/pdf"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -45,21 +44,4 @@ func reserveShare(reserve *store.AnnualStatementReserveResult, unitID string) (i
 		}
 	}
 	return 0, false
-}
-
-// ReserveBlocks lays the Rücklage lines out as their own block.
-// HAUSV-780: the statement layout calls this in one place.
-func ReserveBlocks(lines []string) [][]pdf.Line {
-	if len(lines) == 0 {
-		return nil
-	}
-	blocks := [][]pdf.Line{{}, {{Text: "Rücklage", Style: pdf.Strong}}}
-	for _, text := range lines {
-		var wrapped []pdf.Line
-		for _, line := range pdf.WrapText(text, 50) {
-			wrapped = append(wrapped, pdf.Line{Text: line, Style: pdf.Body})
-		}
-		blocks = append(blocks, wrapped)
-	}
-	return blocks
 }

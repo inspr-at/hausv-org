@@ -83,6 +83,12 @@ func (d Document) Pages() []pdf.Page {
 		l.y -= 5
 		l.paragraph(strings.Join(d.Basis, " · "), pdf.Body, 8.5, 11)
 	}
+	if len(d.Reserve) > 0 {
+		l.section("Rücklage")
+		for _, text := range d.Reserve {
+			l.paragraph(text, pdf.Body, 9.5, 13)
+		}
+	}
 	var objections []string
 	for _, row := range d.Costs {
 		for _, text := range row.Measurements {
