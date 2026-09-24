@@ -16,7 +16,7 @@ func TestIssueBoardWideLayoutAndAccessibleMoves(t *testing.T) {
 	for _, want := range []string{
 		`.portal-section-landing.issue-board-main{--portal-content-width:100%}`,
 		`grid-template-columns:repeat(5,minmax(0,1fr))`,
-		`.issue-board-main :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:32px}`,
+		`body[data-authenticated-app] .issue-board-main:is(.portal-section-landing) :is(.portal-section-header,.portal-section-context,.portal-section-content){padding-inline:32px}`,
 		`--context-bar-h:72px`, `/assets/issue-board.js?v=board-test`,
 		`draggable="true" data-board-card data-issue-status="Neu"`,
 		`data-board-status="Angenommen"`, `data-board-status="Termin vereinbart"`,

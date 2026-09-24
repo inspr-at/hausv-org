@@ -42,6 +42,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/dbmove"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -208,6 +209,22 @@ func seedFull(t *testing.T) *source {
 	ctx := context.Background()
 	now := time.Date(2026, 8, 17, 9, 30, 0, 123456789, time.UTC)
 
+	// Exercise both the global tables and a deferred, forward revision pointer.
+	snapshot, err := indexation.LoadSnapshot()
+	must(t, "index snapshot", err)
+	var indexSource indexation.SnapshotSource
+	for _, source := range snapshot.Manifest.Sources {
+		if source.Series == indexation.VPI2020 {
+			indexSource = source
+		}
+	}
+	for _, label := range []string{"Sep.26 (vorl.)", "Sep.26"} {
+		fetched, err := indexation.ParseOGDRelease([]byte("C-VPIZR-0;C-VPICOICOP18_5-0;F-VPIMZBM\nVPIZR-202609;VPICOICOP18-0;133,2\n"), []byte("code;name\nVPIZR-202609;"+label+"\n"), indexSource, time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC))
+		must(t, "index parse", err)
+		_, err = store.NewIndexReferenceStore(src.lanes).Apply(ctx, fetched, "system:dbmove-fixture")
+		must(t, "index import", err)
+	}
+
 	identities, err := store.EnsureTenantIdentities(ctx, src.db, qaTenants)
 	must(t, "tenants", err)
 	src.tenants = identities
@@ -346,6 +363,9 @@ func seedFull(t *testing.T) *source {
 				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
 				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
 				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2024-09", ContractBaseValue: "123.6", CapValue: "1000.00", CapAnchorPeriod: "2024-09"},
+			}, {
+				ClauseType: store.ClauseStaffel, ValidFrom: "2027-01-01", TwoWay: true, ReviewStatus: store.ReviewOK,
+				StaffelSteps: []indexation.StaffelStep{{EffectiveOn: "2028-04-01", Percent: "2.5"}},
 			}},
 		}); err != nil {
 			t.Fatalf("%s lease: %v", slug, err)

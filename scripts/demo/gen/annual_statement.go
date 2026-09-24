@@ -6,10 +6,10 @@ import "github.com/inspr-at/hausv-org/internal/store"
 // covers all 18 flats and 6 parking spaces; every base is explicit.
 func buildAnnualStatement(home house) any {
 	costs := []map[string]any{
-		{"key": "versicherung", "name": "Gebäudeversicherung", "allocation_key": store.AllocationKeyNutzwert, "amount_cents": 480000, "invoice_date": "2025-02-01", "supplier": "Musterstadt Versicherung"},
-		{"key": "reinigung", "name": "Hausreinigung", "allocation_key": store.AllocationKeyFlaeche, "amount_cents": 360000, "invoice_date": "2025-06-30", "supplier": "Musterstadt Reinigung"},
-		{"key": "abfall", "name": "Abfallentsorgung", "allocation_key": store.AllocationKeyPersonen, "amount_cents": 240000, "invoice_date": "2025-12-15", "supplier": "Stadtservice Musterstadt"},
-		{"key": "heizung", "name": "Heizung", "allocation_key": store.AllocationKeyVerbrauch, "amount_cents": 900000, "operating_amount_cents": 90000, "invoice_date": "2025-12-31", "supplier": "Wärme Musterstadt", "heating_category": "energie"},
+		{"key": "versicherung", "name": "Gebäudeversicherung", "allocation_key": store.AllocationKeyNutzwert, "amount_cents": 480000, "invoice_date": "2025-02-01", "supplier": "Musterstädter Versicherung"},
+		{"key": "reinigung", "name": "Hausreinigung", "allocation_key": store.AllocationKeyFlaeche, "amount_cents": 360000, "invoice_date": "2025-06-30", "supplier": "Reinigung Holzer"},
+		{"key": "abfall", "name": "Abfallentsorgung", "allocation_key": store.AllocationKeyPersonen, "amount_cents": 240000, "invoice_date": "2025-12-15", "supplier": "Entsorgung Musterstadt"},
+		{"key": "heizung", "name": "Heizung", "allocation_key": store.AllocationKeyVerbrauch, "amount_cents": 900000, "operating_amount_cents": 90000, "invoice_date": "2025-12-31", "supplier": "Stadtwerke Musterstadt", "heating_category": "energie"},
 	}
 	bases := []map[string]any{}
 	legal := store.DefaultAnnualStatementLegalSettings()

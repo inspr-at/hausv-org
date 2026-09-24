@@ -4,6 +4,7 @@ import "github.com/inspr-at/hausv-org/internal/store"
 
 import "strconv"
 import "fmt"
+import "strings"
 
 type AnnualStatementPeriodView struct {
 	Year      int
@@ -241,8 +242,8 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 }
 
 templ AnnualStatementPreparation(data AnnualStatementPageData) {
-		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}</style>
-		<details class="annual-preparation" open?={ data.Run.ID == "" || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.ReserveMsg != "" || data.HasReceiptSuggestion }>
+		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}.annual-preparation :is(.annual-blocker,:target){outline:2px solid var(--gold);outline-offset:4px;scroll-margin-top:100px}.annual-preparation :is(#heizflaechen,#heizakontos)>summary{cursor:pointer;min-height:44px;padding:var(--space-3) 0;font-weight:600}</style>
+		<details class="annual-preparation" open?={ !data.Run.Ready || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.ReserveMsg != "" || data.HasReceiptSuggestion } data-annual-blocking-section={ data.Run.BlockingSection }>
 		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span>
 			@DisclosureChevron()
 		</summary>
@@ -264,13 +265,19 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <fieldset><legend>HeizKG-Verteilung</legend>
  <label>Verbrauchsanteil der Energiekosten (%)<input type="number" name="heating_consumption_percent" min="55" max="85" value={ strconv.Itoa(data.Legal.HeatingConsumptionPercent) } required/></label>
  <p>55–85 %, üblicher Ausgangswert 70 %. Der Rest der Energiekosten und sämtliche sonstigen Betriebskosten folgen der versorgbaren Nutzfläche.</p>
+ <details id="heizflaechen"><summary>Versorgbare Nutzflächen je Einheit erfassen</summary>
  for _, unit := range data.Units {
  <label>{ unit.Label } · versorgbare Nutzfläche (m²)<input name={ "heatable_area_"+unit.ID } value={ annualHeatableArea(data.Legal,unit.ID) } inputmode="decimal"/></label>
+ }
+ </details>
+ <details id="heizakontos"><summary>Geleistete Heizungs- und Warmwasserakontos je Einheit erfassen</summary>
+ for _, unit := range data.Units {
  for _, key := range []string{"heizung", "warmwasser"} {
  <label>{ unit.Label } · { key } · geleistetes Akonto (Euro)<input name={ "heating_prepayment_"+key+"_"+unit.ID } value={ annualHeatingPrepayment(data.Legal,unit.ID,key) } inputmode="decimal"/></label>
  }
 
  }
+ </details>
  </fieldset>
  <fieldset><legend>Neue monatliche Vorauszahlungen</legend>
  <label>Gültig ab<input type="date" name="next_prepayment_on" value={ data.Legal.NextPrepaymentOn }/></label>
@@ -299,9 +306,17 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  [data-annual-reserve] .reserve-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:var(--space-3);margin:var(--space-4) 0}
  [data-annual-reserve] .reserve-summary div{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);min-width:0}
  [data-annual-reserve] .reserve-summary span{display:block;color:var(--muted);font-size:12px}
- [data-annual-reserve] .reserve-list{display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-4)}
- [data-annual-reserve] .reserve-entry{display:grid;grid-template-columns:7rem 8rem 1fr;gap:var(--space-2);align-items:baseline}
- @media(max-width:640px){[data-annual-reserve] .reserve-entry{grid-template-columns:1fr}}
+ [data-annual-reserve] .reserve-summary strong{display:block;margin-top:2px;font-variant-numeric:tabular-nums}
+ [data-annual-reserve] .reserve-list{display:flex;flex-direction:column;margin-bottom:var(--space-4);border-bottom:1px solid var(--line);font-size:13px}
+ [data-annual-reserve] .reserve-entry{display:grid;grid-template-columns:6.5rem 9rem 8rem minmax(0,1fr);gap:var(--space-4);align-items:baseline;padding:9px 0;border-top:1px solid var(--line)}
+ [data-annual-reserve] .reserve-entry>*{min-width:0;overflow-wrap:anywhere}
+ [data-annual-reserve] .reserve-entry>span:first-child{color:var(--muted);font-variant-numeric:tabular-nums}
+ [data-annual-reserve] .reserve-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+ [data-annual-reserve] .reserve-note{color:var(--muted)}
+ [data-annual-reserve] .reserve-entry>strong{font-weight:600}
+ [data-annual-reserve]{container-type:inline-size}
+ [data-annual-reserve] .form-grid :is(input,select){font-size:14px;font-weight:500}
+ @container (max-width:640px){[data-annual-reserve] .reserve-entry{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"kind amount" "date date" "note note";gap:2px var(--space-3)}[data-annual-reserve] .reserve-entry>strong{grid-area:kind}[data-annual-reserve] .reserve-amount{grid-area:amount}[data-annual-reserve] .reserve-entry>span:first-child{grid-area:date;font-size:12px}[data-annual-reserve] .reserve-note{grid-area:note;font-size:12px}[data-annual-reserve] .reserve-note:empty{display:none}}
  </style>
  <header class="workspace-head"><div><h2>Rücklage</h2><p>Buchungen dieser WEG-Periode. Korrekturen sind weitere Buchungen; gespeicherte Zeilen bleiben stehen.</p></div></header>
  @SettingsFlash(data.ReserveMsg, data.ReserveOK)
@@ -318,7 +333,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  if len(data.Reserve.Entries) > 0 {
  <div class="reserve-list">
  for _, entry := range data.Reserve.Entries {
- <article class="reserve-entry"><span>{ entry.Date }</span><strong>{ entry.Kind }</strong><span>{ entry.Amount }{ entry.Note }{ entry.Document }</span></article>
+ <article class="reserve-entry"><span>{ entry.Date }</span><strong>{ entry.Kind }</strong><span class="reserve-amount">{ entry.Amount }</span><span class="reserve-note">{ annualReserveNote(entry.Note + entry.Document) }</span></article>
  }
  </div>
  }
@@ -368,7 +383,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class="scope management">{ strconv.Itoa(data.CostTypeCount) } Kostenarten</span></header>
+		<section class="panel workspace" id="kostenarten"><header class="workspace-head"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class="scope management">{ strconv.Itoa(data.CostTypeCount) } Kostenarten</span></header>
 			@SettingsFlash(data.CostTypeMsg, data.CostTypeOK)
 			<div class="metrics"><span><strong>{ strconv.Itoa(data.AllocatableCostTypeCount) }</strong><small>umlagefähig</small></span><span><strong>{ strconv.Itoa(data.CostTypeCount - data.AllocatableCostTypeCount) }</strong><small>nicht umlagefähig</small></span></div>
 			<p class="notice">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p>
@@ -407,7 +422,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			} else if data.HasUnits {
 				<form method="post" action="/app/settings/annual-statement/allocation-bases"><input type="hidden" name="period_year" value={ annualStatementYear(data.StructureYear) }/><header class="subhead"><div><h3>Verteilerbasis je Einheit</h3><p>Leer bedeutet „nicht hinterlegt“ und blockiert den Schlüssel. 0 ist ein gültiger Wert mit Anteil 0 %, etwa 0 Personen oder 0 m² für einen Stellplatz.</p></div></header><div class="unit-list">
 					for _, basis := range data.Allocation.Bases {
-						<div class="allocation-row"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label><label>Leerstand von<input type="date" name="vacant_from" value={ basis.VacantFrom }/></label><label>Leerstand bis<input type="date" name="vacant_to" value={ basis.VacantTo }/></label></div>
+						<div class="allocation-row allocation-row-basis"><input type="hidden" name="unit_id" value={ basis.ID }/><label>Einheit<span class="readonly"><strong>{ basis.Label }</strong></span></label><label>Nutzwert (Miteigentumsanteil)<span class="readonly">{ basis.Share }</span></label><label>Nutzfläche <small>m²</small><input name="usable_area_m2" value={ basis.UsableArea } inputmode="decimal" pattern="[0-9]{0,5}([.,][0-9]{0,2})?" placeholder="z. B. 72,50"/></label><label>Personen<input type="number" name="persons" value={ basis.Persons } min="0" max="10000" step="1" inputmode="numeric"/></label><label>Leerstand von<input type="date" name="vacant_from" value={ basis.VacantFrom }/></label><label>Leerstand bis<input type="date" name="vacant_to" value={ basis.VacantTo }/></label></div>
 					}
 				</div><div class="form-actions"><button class="button primary" type="submit">Verteilerbasis speichern</button></div></form>
 			} else {
@@ -537,7 +552,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Belege</h2><p>Originaldokumente mit Betrag, Rechnungsdatum, Kostenart und Abrechnungsperiode verknüpfen.</p></div><span class="scope management">Verwaltung</span></header>
+		<section class="panel workspace" id="belege"><header class="workspace-head"><div><h2>Belege</h2><p>Originaldokumente mit Betrag, Rechnungsdatum, Kostenart und Abrechnungsperiode verknüpfen.</p></div><span class="scope management">Verwaltung</span></header>
 			<p class="notice">Ein Beleg verwendet das Original aus Dokumente. Beim Entfernen der Zuordnung bleibt die Originaldatei in Dokumente erhalten.</p>
 			if data.HasPeriods && len(data.CostTypes) > 0 {
 				<form method="post" action="/app/settings/annual-statement/receipts" enctype="multipart/form-data"><fieldset><legend>Beleg erfassen</legend><div class="form-grid"><label>Vorhandenes Dokument<select name="document_id"><option value="">Dokument auswählen</option>
@@ -569,7 +584,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
+		<section class="panel workspace" id="parteien"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
 			@SettingsFlash(data.ImportMsg, data.ImportOK)
 			if data.UnitDataNotice != "" {
 				<p class="notice" role="status">{ data.UnitDataNotice }</p>
@@ -607,4 +622,10 @@ func annualMonthlyProposal(legal store.AnnualStatementLegalSettings,id,key strin
  value,ok:=legal.MonthlyProposals[id][key]
  if !ok { return "" }
  return fmt.Sprintf("%d,%02d",value/100,value%100)
+}
+
+// annualReserveNote drops the list separator the view puts in front of the
+// note and document, because the ledger shows them in a column of their own.
+func annualReserveNote(text string) string {
+	return strings.TrimPrefix(text, " · ")
 }

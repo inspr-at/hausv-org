@@ -16,119 +16,119 @@
         "label": "Top 2",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "hedwig.beirat@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 3",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "clara.berger@musterstadt.example",
         "tenant_email": "matthias.mieter@musterstadt.example"
       },
       {
         "label": "Top 4",
         "floor": "EG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "jonas.meier@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 5",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": ""
+        "owner_email": "jonas.meier@musterstadt.example",
+        "tenant_email": "mia.berger@musterstadt.example"
       },
       {
         "label": "Top 6",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "anna.gruber@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 7",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "nina.hofer@musterstadt.example",
         "tenant_email": "sophie.bewohner@musterstadt.example"
       },
       {
         "label": "Top 8",
         "floor": "2. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "felix.wagner@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 9",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": ""
+        "owner_email": "felix.wagner@musterstadt.example",
+        "tenant_email": "omar.kostic@musterstadt.example"
       },
       {
         "label": "Top 10",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "laura.schmid@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 11",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "sara.klein@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 12",
         "floor": "3. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "thomas.berger@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 13",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "thomas.berger@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 14",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": ""
+        "owner_email": "julia.maier@musterstadt.example",
+        "tenant_email": "ines.winkler@musterstadt.example"
       },
       {
         "label": "Top 15",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "stefan.huber@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 16",
         "floor": "4. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": ""
+        "owner_email": "maria.lang@musterstadt.example",
+        "tenant_email": "farid.aslan@musterstadt.example"
       },
       {
         "label": "Top 17",
         "floor": "5. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "maria.lang@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Top 18",
         "floor": "5. OG",
         "unit_type": "Wohnung",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "lena.pichler@musterstadt.example",
         "tenant_email": ""
       },
       {
@@ -142,36 +142,36 @@
         "label": "Stellplatz 2",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": "matthias.mieter@musterstadt.example"
+        "owner_email": "hedwig.beirat@musterstadt.example",
+        "tenant_email": ""
       },
       {
         "label": "Stellplatz 3",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": "sophie.bewohner@musterstadt.example"
+        "owner_email": "clara.berger@musterstadt.example",
+        "tenant_email": ""
       },
       {
         "label": "Stellplatz 4",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
+        "owner_email": "lena.pichler@musterstadt.example",
         "tenant_email": ""
       },
       {
         "label": "Stellplatz 5",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": "matthias.mieter@musterstadt.example"
+        "owner_email": "nina.hofer@musterstadt.example",
+        "tenant_email": ""
       },
       {
         "label": "Stellplatz 6",
         "floor": "Garage",
         "unit_type": "Stellplatz",
-        "owner_email": "alina.eigentuemer@musterstadt.example",
-        "tenant_email": "sophie.bewohner@musterstadt.example"
+        "owner_email": "sara.klein@musterstadt.example",
+        "tenant_email": ""
       }
     ],
     "contacts": [
@@ -2418,6 +2418,91 @@
         "unit_type": "Stellplatz",
         "owner_email": "florian.zechner@example.example",
         "tenant_email": ""
+      }
+    ]
+  },
+  {
+    "slug": "musterstrasse-12",
+    "name": "Musterstraße 12 · Zinshaus",
+    "address": "Musterstraße 12, 8010 Graz",
+    "organisation": "musterstadt",
+    "units": [
+      {
+        "label": "Geschäft",
+        "floor": "EG",
+        "unit_type": "Geschäft",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "mode.musterstadt@musterstadt.example"
+      },
+      {
+        "label": "Top 1",
+        "floor": "1. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "elias.berger@musterstadt.example"
+      },
+      {
+        "label": "Top 2",
+        "floor": "1. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "lena.krainer@musterstadt.example"
+      },
+      {
+        "label": "Top 3",
+        "floor": "2. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "markus.fellner@musterstadt.example"
+      },
+      {
+        "label": "Top 4",
+        "floor": "2. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "sara.holzer@musterstadt.example"
+      },
+      {
+        "label": "Top 5",
+        "floor": "3. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "tim.oswald@musterstadt.example"
+      },
+      {
+        "label": "Top 6",
+        "floor": "3. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Top 7",
+        "floor": "4. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "nora.binder@musterstadt.example"
+      },
+      {
+        "label": "Top 8",
+        "floor": "4. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "julian.eder@musterstadt.example"
+      },
+      {
+        "label": "Top 9",
+        "floor": "5. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "amira.celik@musterstadt.example"
+      },
+      {
+        "label": "Top 10",
+        "floor": "5. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "paul.reiter.m12@musterstadt.example"
       }
     ]
   }

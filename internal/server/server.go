@@ -794,7 +794,12 @@ type app struct {
 	// tenantDB is the scoped seam: the object every SQL store asks for a database
 	// handle, and the only way those stores can reach the database at all. The
 	// app keeps it because stores are constructed from it at boot.
-	tenantDB *store.TenantDB
+	tenantDB            *store.TenantDB
+	indexRefreshEnabled bool
+	indexRefreshBusy    atomic.Bool
+	indexRefreshClient  interface {
+		Do(*http.Request) (*http.Response, error)
+	}
 	// scopedDB owns the lane pools tenantDB hands out. The app holds it purely to
 	// close them on shutdown: TenantDB deliberately has no Close, because its
 	// method set is what stops a store from reaching the database unscoped.
@@ -1144,6 +1149,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
 	mux.HandleFunc("GET /app/settings/valorisation", a.authed(capabilityManageLeases, a.valorisationPage))
 	mux.HandleFunc("GET /app/verwaltung/wertsicherung", a.authed(capabilityManageLeases, a.valorisationPage))
+	mux.HandleFunc("POST /app/verwaltung/wertsicherung/refresh", a.authedAction(capabilityManageLeases, a.refreshIndices))
 	mux.HandleFunc("POST /app/settings/valorisation/runs", a.authedAction(capabilityManageLeases, a.createValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/approve", a.authedAction(capabilityManageLeases, a.approveValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/send", a.authedAction(capabilityManageLeases, a.sendValorisation))
@@ -1947,6 +1953,7 @@ func newApp() (*app, error) {
 		templates:                 tmpl,
 		pool:                      database,
 		tenantDB:                  tenantDB,
+		indexRefreshEnabled:       strings.EqualFold(env("INDEX_REFRESH_ENABLED", "false"), "true"),
 		scopedDB:                  scoped,
 		dataDir:                   filepath.Dir(dbPath),
 		announcementStore:         annBackend,
@@ -2048,7 +2055,10 @@ func newApp() (*app, error) {
 	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
 		return store.BindTextbausteinRepository(database, orgKey)
 	}
-	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
+	// HAUSV-795: the public demo host gates this on demo login. A local demo
+	// fixture (LOCAL_DEV_LOGIN plus DEMO_SEED_DIR) gets the same "Demodaten
+	// initialisieren" action so the settings reset recreates the seeded houses.
+	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); seedDir != "" && (a.demoLogin || localDevLogin) {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
 			options := demo.SeedOptions{Reset: true, DiscardAnnualStatements: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
 			if units, ok := a.unitStore.(store.UnitSink); ok {

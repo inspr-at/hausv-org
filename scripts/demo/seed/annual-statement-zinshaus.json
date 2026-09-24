@@ -1,0 +1,290 @@
+{
+  "address": "Musterstraße 12, 8010 Graz",
+  "built_year": 1905,
+  "cost_types": [
+    {
+      "allocation_key": "nutzwert",
+      "amount_cents": 186000,
+      "invoice_date": "2025-03-15",
+      "key": "wasser",
+      "name": "Wasser und Abwasser",
+      "supplier": "Wasserwerk Musterstadt"
+    },
+    {
+      "allocation_key": "personen",
+      "amount_cents": 132000,
+      "invoice_date": "2025-11-30",
+      "key": "muell",
+      "name": "Müllabfuhr",
+      "supplier": "Entsorgung Musterstadt"
+    },
+    {
+      "allocation_key": "nutzwert",
+      "amount_cents": 248000,
+      "invoice_date": "2025-02-01",
+      "key": "versicherung",
+      "name": "Gebäudeversicherung",
+      "supplier": "Musterstädter Versicherung"
+    },
+    {
+      "allocation_key": "flaeche",
+      "amount_cents": 420000,
+      "invoice_date": "2025-12-20",
+      "key": "hausbetreuung",
+      "name": "Hausbetreuung",
+      "supplier": "Hausbetreuung Lindner"
+    },
+    {
+      "allocation_key": "nutzwert",
+      "amount_cents": 237600,
+      "invoice_date": "2025-12-31",
+      "key": "verwaltungshonorar",
+      "name": "Verwaltungshonorar",
+      "supplier": "Hausverwaltung Musterstadt"
+    },
+    {
+      "allocation_key": "verbrauch",
+      "amount_cents": 640000,
+      "heating_category": "energie",
+      "invoice_date": "2025-12-31",
+      "key": "heizung",
+      "name": "Heizung",
+      "operating_amount_cents": 96000,
+      "supplier": "Wärmeversorgung Musterstadt"
+    }
+  ],
+  "ends_on": "2025-12-31",
+  "house": "musterstrasse-12",
+  "legal": {
+    "monthly_proposals_cents": {
+      "geschäft": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-1": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-10": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-2": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-3": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-4": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-5": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-6": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-7": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-8": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      },
+      "top-9": {
+        "hausbetreuung": 2800,
+        "muell": 900,
+        "versicherung": 1600,
+        "verwaltungshonorar": 1800,
+        "wasser": 1400
+      }
+    },
+    "next_prepayment_on": "2026-07-01",
+    "heating_prepayments_cents": {
+      "geschäft": {
+        "heizung": 18000
+      },
+      "top-1": {
+        "heizung": 18000
+      },
+      "top-10": {
+        "heizung": 18000
+      },
+      "top-2": {
+        "heizung": 18000
+      },
+      "top-3": {
+        "heizung": 18000
+      },
+      "top-4": {
+        "heizung": 18000
+      },
+      "top-5": {
+        "heizung": 18000
+      },
+      "top-6": {
+        "heizung": 18000
+      },
+      "top-7": {
+        "heizung": 18000
+      },
+      "top-8": {
+        "heizung": 18000
+      },
+      "top-9": {
+        "heizung": 18000
+      }
+    },
+    "heating_consumption_percent": 65,
+    "heatable_areas_m2_hundredths": {
+      "geschäft": 11200,
+      "top-1": 7850,
+      "top-10": 5210,
+      "top-2": 6420,
+      "top-3": 9100,
+      "top-4": 5680,
+      "top-5": 7340,
+      "top-6": 4960,
+      "top-7": 10240,
+      "top-8": 6150,
+      "top-9": 8730
+    },
+    "inspection_place": "Hausverwaltung Musterstadt, Musterstraße 12, 8010 Graz",
+    "inspection_period": "Nach Terminvereinbarung, Montag bis Freitag 9–12 Uhr",
+    "inspection_contact": "vera.verwalter@musterstadt.example",
+    "regime": "mrg_voll",
+    "heizkg_applies": true,
+    "show_vat": true
+  },
+  "recorded_at": "2026-01-15T09:00:00Z",
+  "starts_on": "2025-01-01",
+  "unit_bases": [
+    {
+      "heating_consumption_kwh": 6400,
+      "miteigentumsanteil_ppm": 135135,
+      "persons": 0,
+      "prepaid_cents": 84000,
+      "unit_id": "geschäft",
+      "usable_area_m2_hundredths": 11200
+    },
+    {
+      "heating_consumption_kwh": 5100,
+      "miteigentumsanteil_ppm": 94715,
+      "persons": 2,
+      "prepaid_cents": 84000,
+      "unit_id": "top-1",
+      "usable_area_m2_hundredths": 7850
+    },
+    {
+      "heating_consumption_kwh": 4300,
+      "miteigentumsanteil_ppm": 77461,
+      "persons": 1,
+      "prepaid_cents": 84000,
+      "unit_id": "top-2",
+      "usable_area_m2_hundredths": 6420
+    },
+    {
+      "heating_consumption_kwh": 7200,
+      "miteigentumsanteil_ppm": 109797,
+      "persons": 3,
+      "prepaid_cents": 84000,
+      "unit_id": "top-3",
+      "usable_area_m2_hundredths": 9100
+    },
+    {
+      "heating_consumption_kwh": 3900,
+      "miteigentumsanteil_ppm": 68533,
+      "persons": 1,
+      "prepaid_cents": 84000,
+      "unit_id": "top-4",
+      "usable_area_m2_hundredths": 5680
+    },
+    {
+      "heating_consumption_kwh": 4800,
+      "miteigentumsanteil_ppm": 88562,
+      "persons": 2,
+      "prepaid_cents": 84000,
+      "unit_id": "top-5",
+      "usable_area_m2_hundredths": 7340
+    },
+    {
+      "heating_consumption_kwh": 2100,
+      "miteigentumsanteil_ppm": 59846,
+      "persons": 0,
+      "prepaid_cents": 42000,
+      "unit_id": "top-6",
+      "usable_area_m2_hundredths": 4960,
+      "vacant_from": "2025-03-01",
+      "vacant_to": "2025-08-31"
+    },
+    {
+      "heating_consumption_kwh": 8100,
+      "miteigentumsanteil_ppm": 123552,
+      "persons": 3,
+      "prepaid_cents": 84000,
+      "unit_id": "top-7",
+      "usable_area_m2_hundredths": 10240
+    },
+    {
+      "heating_consumption_kwh": 4500,
+      "miteigentumsanteil_ppm": 74204,
+      "persons": 2,
+      "prepaid_cents": 84000,
+      "unit_id": "top-8",
+      "usable_area_m2_hundredths": 6150
+    },
+    {
+      "heating_consumption_kwh": 6100,
+      "miteigentumsanteil_ppm": 105333,
+      "persons": 2,
+      "prepaid_cents": 84000,
+      "unit_id": "top-9",
+      "usable_area_m2_hundredths": 8730
+    },
+    {
+      "heating_consumption_kwh": 3600,
+      "miteigentumsanteil_ppm": 62862,
+      "persons": 1,
+      "prepaid_cents": 84000,
+      "unit_id": "top-10",
+      "usable_area_m2_hundredths": 5210
+    }
+  ],
+  "year": 2025
+}

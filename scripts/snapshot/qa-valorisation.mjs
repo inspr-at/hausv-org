@@ -66,6 +66,19 @@ try {
   const manager = await login('vera.verwalter@musterstadt.example');
   const page = await manager.newPage();
   const route = `${baseURL}/app/settings/valorisation`;
+  // Runtime reference-data controls: use the same signed-in admin session.
+  // Fetching is covered with injected fixture clients in Go; this oracle never
+  // contacts the live OGD service.
+  await page.goto(`${baseURL}/app/verwaltung/wertsicherung`, { waitUntil: 'networkidle' });
+  const indexCard = page.locator('[aria-labelledby="index-refresh-title"]');
+  if (!(await indexCard.getByRole('button', { name: 'VPI aktualisieren', exact: true }).isVisible())) fail('VPI-Adminaktion fehlt');
+  if (!(await indexCard.innerText()).includes('Datenquelle: Statistik Austria, CC BY 4.0')) fail('VPI-Datenquelle fehlt');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (overflow > 1) fail(`VPI ${width}px: Überlauf ${overflow}px`);
+    if (artifactDir) await indexCard.screenshot({ path: `${artifactDir}/index-refresh-${width}.png` });
+  }
   await page.setViewportSize({ width: 1440, height: 900 });
   let response = await page.goto(`${route}?new=1&preview=1&effective_on=2026-04-01&house=janusbergweg-123`, { waitUntil: 'networkidle' });
   if (response?.status() !== 200) fail(`Vorschau HTTP ${response?.status()}`);
@@ -75,6 +88,12 @@ try {
   }
   if (await preview.locator('[data-group="ready"] > .vr-item').count() < 6) fail('Weniger als sechs bereite Verträge');
   const top1 = preview.locator('[data-lease-id="lease-top-1"]');
+  const staffel = preview.locator('[data-group="ready"] > [data-lease-id="lease-top-9"]');
+  if (await staffel.count() !== 1) fail('Top 9: Staffelmietzins ist nicht bereit');
+  await staffel.locator(':scope > summary').click();
+  for (const value of ['Staffelmietzins laut Vertrag', '1.150,00', '1.081,54', '68,46']) {
+    if (!(await staffel.innerText()).includes(value)) fail(`Staffelvorschau: ${value} fehlt`);
+  }
   await top1.locator(':scope > summary').click();
   const used = top1.getByRole('table', { name: 'Verwendete Indexwerte', exact: true });
   if (await used.locator('tbody tr').count() !== 5) fail('E1: erwartete Basis, Auslöser und drei Jahresmittel fehlen');
@@ -124,12 +143,32 @@ try {
   const pdf = await manager.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
   if (pdf.status() !== 200 || !(await pdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-'))) fail('Archiv-PDF fehlt');
   await shot(page, 'valorisation-approved-390');
+  // Structured schedule editing must survive a save, without interpreting prose.
+  await page.goto(`${baseURL}/app/settings/building/units/top-9/lease?bearbeiten=1`, { waitUntil: 'networkidle' });
+  const editor = page.locator('[data-staffel-editor]');
+  const rows = editor.locator('[data-staffel-row]');
+  if (!(await editor.isVisible()) || await rows.count() !== 2) fail('Staffel-Editor fehlt');
+  await editor.getByRole('button', { name: 'Stufe hinzufügen' }).click();
+  if (await rows.count() !== 3) fail('Staffelstufe nicht ergänzt');
+  await rows.last().getByRole('button', { name: 'Stufe entfernen' }).click();
+  await rows.nth(1).locator('[name="staffel_value"]').fill('2,5');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await shot(page, `staffel-editor-${width}`);
+    if (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) > 1) fail(`Staffel-Editor: Überlauf bei ${width}px`);
+  }
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+  await page.waitForLoadState('networkidle');
+  if (!(await page.locator('body').innerText()).includes('2,5 % auf den vorigen Vertragsbetrag')) fail('Staffelstufe wurde nicht gespeichert');
+  await shot(page, 'staffel-summary-390');
   await manager.close();
   const owner = await login('alina.eigentuemer@musterstadt.example');
   const ownerPage = await owner.newPage();
   response = await ownerPage.goto(route, { waitUntil: 'networkidle' });
   if (response?.status() !== 403) fail(`Eigentümer HTTP ${response?.status()}, erwartet 403`);
   await shot(ownerPage, 'valorisation-owner-denied');
+  const deniedRefresh = await owner.request.post(`${baseURL}/app/verwaltung/wertsicherung/refresh`, { headers: { Origin: baseURL, Referer: `${baseURL}/app/verwaltung/wertsicherung` }, maxRedirects: 0 });
+  if (deniedRefresh.status() !== 403) fail(`VPI Eigentümer POST ${deniedRefresh.status()}, erwartet 403`);
   await owner.close();
   process.stdout.write('qa-valorisation ok\n');
 } finally {

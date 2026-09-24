@@ -2064,8 +2064,8 @@ func TestProfileSettingsPersistOverlayWithoutAuthzEscalation(t *testing.T) {
 	if !profile.DirectoryOptIn {
 		t.Fatalf("profile directory opt-in not applied: %+v", profile)
 	}
-	if parking := authedRequest(t, a, "resident@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
-		t.Fatalf("parking status = %d, want 404 without parking permission", parking.Code)
+	if parking := authedRequest(t, a, "resident@example.com", "/demo/app/parking"); parking.Code != http.StatusForbidden {
+		t.Fatalf("parking status = %d, want 403 without parking permission", parking.Code)
 	}
 
 	settings := authedRequest(t, a, "resident@example.com", "/demo/app/settings")
@@ -2496,8 +2496,8 @@ func TestEditInviteCanRevokeParkingPermission(t *testing.T) {
 		t.Fatalf("stored invite = %+v ok=%v, want parking revoked", profile, ok)
 	}
 	parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking")
-	if parking.Code != http.StatusNotFound {
-		t.Fatalf("parking status = %d, want 404 after parking revoke", parking.Code)
+	if parking.Code != http.StatusForbidden {
+		t.Fatalf("parking status = %d, want 403 after parking revoke", parking.Code)
 	}
 }
 
@@ -2547,8 +2547,8 @@ func TestParkingAccessPageGrantsAndRevokesInvitePermission(t *testing.T) {
 	if !ok || profile.HasPermission(permissionParking) {
 		t.Fatalf("stored profile after revoke = %+v ok=%v", profile, ok)
 	}
-	if parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
-		t.Fatalf("parking status after revoke = %d, want 404", parking.Code)
+	if parking := authedRequest(t, a, "parker@example.com", "/demo/app/parking"); parking.Code != http.StatusForbidden {
+		t.Fatalf("parking status after revoke = %d, want 403", parking.Code)
 	}
 	events := a.auditStore.List(auditFilter{TenantSlug: "demo", Action: auditActionInviteUpdate, Query: "parker", Limit: 10})
 	if len(events) != 2 || events[0].Summary != "Parkplatz-Zugriff geändert" {
@@ -2677,8 +2677,8 @@ func TestParkingAccessPageKeepsEnvUsersReadOnly(t *testing.T) {
 	if a.profiles["env-parker@example.com"].HasPermission(permissionParking) {
 		t.Fatal("env profile must not be mutated by parking access page")
 	}
-	if parking := authedRequest(t, a, "env-parker@example.com", "/demo/app/parking"); parking.Code != http.StatusNotFound {
-		t.Fatalf("env parking status = %d, want 404", parking.Code)
+	if parking := authedRequest(t, a, "env-parker@example.com", "/demo/app/parking"); parking.Code != http.StatusForbidden {
+		t.Fatalf("env parking status = %d, want 403", parking.Code)
 	}
 }
 

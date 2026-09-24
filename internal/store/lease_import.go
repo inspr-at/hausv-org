@@ -31,6 +31,7 @@ type LeaseImportDraft struct {
 	ThresholdInclusive                           bool
 	LastMonth, LastValue, HMZAfter               string
 	ClauseText                                   string
+	Staffel                                      string
 }
 
 type LeaseImportRow struct {
@@ -102,6 +103,7 @@ func ParseLeaseCSV(raw []byte) ([]LeaseImportDraft, error) {
 			BaseValue: cell(row, "basis_wert"), Threshold: cell(row, "schwelle"), ThresholdKind: cell(row, "schwelle_art"),
 			LastMonth: cell(row, "letzte_valorisierung_monat"), LastValue: cell(row, "letzte_valorisierung_wert"),
 			HMZAfter: cell(row, "hmz_nach_letzter_valorisierung"), ClauseText: cell(row, "klausel_text"),
+			Staffel: cell(row, "staffel"),
 		}
 		var err error
 		if draft.HMZCents, err = parseEuroCents(cell(row, "hmz_netto"), true); err != nil {
@@ -326,6 +328,15 @@ func leaseFromDraft(draft LeaseImportDraft, unitID string) (Lease, LeaseImportRo
 		ClauseType: normalizeClauseType(draft.ClauseType), Series: draft.Series, BasePeriod: draft.BasePeriod, BaseValue: draft.BaseValue,
 		ThresholdKind: draft.ThresholdKind, ThresholdValue: draft.Threshold, ThresholdInclusive: draft.ThresholdInclusive,
 		FullChangeOnTrigger: true, TwoWay: true, ClauseText: draft.ClauseText, ReviewStatus: ReviewUnreviewed, ValidFrom: draft.StartsOn,
+	}
+	if clause.ClauseType == ClauseStaffel {
+		var err error
+		clause.StaffelSteps, err = ParseStaffel(draft.Staffel)
+		if err != nil {
+			row.Errors = append(row.Errors, "invalid_staffel")
+		}
+	} else if draft.Staffel != "" {
+		row.Errors = append(row.Errors, "invalid_staffel")
 	}
 	if clause.ClauseType != ClauseNone || clause.ClauseText != "" || clause.BaseValue != "" {
 		if draft.LastMonth != "" || draft.LastValue != "" || draft.HMZAfter != "" {

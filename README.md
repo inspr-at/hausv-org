@@ -30,6 +30,35 @@ tenant. Updates acquire a database write lock before reading that record, includ
 its first creation, so concurrent writers preserve each other's changes. Failed
 updates roll back the entire transaction.
 
+## VPI reference updates
+
+The organisation's Wertsicherung page (`/app/verwaltung/wertsicherung`) offers
+**VPI aktualisieren** to administrators. It fetches the official CSVs pinned in
+`internal/indexation/data/manifest.json` and their period labels, with a 30-second
+source timeout and a 32 MiB limit per file. The import log records content hashes,
+new/revised periods and conflicts. Only explicit final period labels permit final
+values; unknown labels fail the import. No network access is needed to calculate.
+
+Set `INDEX_REFRESH_ENABLED=true` to enable the daily background refresh (default:
+`false`). The first fetch starts asynchronously after 1–30 minutes; later checks
+run every 24 hours plus up to 30 minutes of jitter. Failed sources are retried on
+the next check. Manual checks remain available when scheduling is disabled.
+
+Runtime observations take precedence over the embedded offline snapshot.
+Preliminary revisions append a new observation and link the old one; changes to
+final values are flagged for review and keep the previous value active. Final
+conflicts show **Indexwert prüfen** as an advisory before approval; recalculation
+does not silently accept the disputed number. Runs affected by an accepted
+revision show **Neu berechnen empfohlen** and require a new draft before approval.
+Approved amounts, input snapshots and letters remain unchanged. Beyond the pinned
+publication calendar, the first verified retrieval of final status is used as a
+conservative earliest publication date. Global reference tables have no tenant
+RLS; PostgreSQL guards writes with the declared maintenance lane. They are
+included in `migrate-data`, with deferred revision pointers for full transfers.
+
+Datenquelle: Statistik Austria, CC BY 4.0. The importer selects total indices,
+normalizes periods and decimals and adds the official preliminary/final status.
+
 ## Scope
 
 HAUSV is a communication, administration and energy management portal. Annual-statement calculations are working drafts based on the period’s configured cost types, allocation keys, unit bases, confirmed receipts and recorded prepayments. Each successful run saves all unit balances and its input snapshot; missing keys, receipts, original files, prepayments or required measurements block the entire run. Earlier runs remain unchanged when inputs are corrected. Each run keeps only the checked consumption vector and the two boundary facts per unit; interior readings are checked for resets in one streaming scan and are not copied into every run. These calculations do not constitute a legal assessment under Austrian WEG/MRG.
@@ -41,6 +70,22 @@ Stored runs offer German PDF working drafts per unit and owner/tenant party at `
 Heating and hot-water evidence comes from confirmed consumer-energy mappings of heat pumps and hot-water appliances to a home’s unit. The connector and direct Home Assistant sampler preserve cumulative counters with their original timestamps, converting Wh/kWh/MWh exactly to micro-kWh. Calculations require exact start and end boundaries of the period in Europe/Vienna, one unambiguous source per unit and no counter reset; missing boundaries are never estimated. These are measured appliance-energy shares, not an inferred statutory heating allocation rule.
 
 HAUSV does not replace property accounting software or issue bookkeeping records, dunning notices or payment orders. Structured data can be exchanged with existing systems such as BMD.
+
+Lease clauses support structured Staffelmietzins schedules: dated new net principal
+rent amounts or percentage increases on the preceding contractual amount. The
+optional lease-import column `staffel` uses
+`"2026-04-01:1050,00;2027-04-01:2%"` with `klausel_typ=staffel`.
+Dates must be unique, ascending and after clause commencement; the original HMZ
+at commencement remains the schedule's base. The complete CSV cell must be quoted.
+Clause prose is never parsed. Covered leases use the independent MieWeG ceiling
+and April timing; uncapped contractual values and capped/deferred differences stay
+in the run snapshot. Fixed schedules require no monthly index publication.
+Schedules with pre-2026 steps require a reviewed prior cap anchor and rent before
+a further covered adjustment; missing history is held for review. Manual HMZ
+changes outside the stored schedule or after an approved run also require anchor
+review before the next covered adjustment.
+Steps with a separately agreed non-inflation reason require individual review;
+this schedule type applies the cap to every covered increase.
 
 ## Development
 

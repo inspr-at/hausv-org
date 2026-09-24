@@ -322,5 +322,32 @@
     "ends_at": "2026-09-14T18:00:00+02:00",
     "location": "Hauseingang",
     "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Kaiserfeldgasse 19. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
+  },
+  {
+    "id": "ev-037",
+    "house": "musterstrasse-12",
+    "title": "Eigentümerversammlung",
+    "starts_at": "2026-09-07T09:00:00+02:00",
+    "ends_at": "2026-09-07T11:00:00+02:00",
+    "location": "Gemeinschaftsraum",
+    "description": "Wir besprechen die laufende Instandhaltung, die Jahresabrechnung und die nächsten Schritte für Musterstraße 12 · Zinshaus. Bitte bringen Sie Ihre Fragen und gegebenenfalls eine schriftliche Vollmacht mit. Treffpunkt ist der Gemeinschaftsraum; die Verwaltung führt das Protokoll."
+  },
+  {
+    "id": "ev-038",
+    "house": "musterstrasse-12",
+    "title": "Liftwartung",
+    "starts_at": "2026-09-11T13:00:00+02:00",
+    "ends_at": "2026-09-11T15:00:00+02:00",
+    "location": "Stiegenhaus",
+    "description": "Der Lift in Musterstraße 12 · Zinshaus wird während des angegebenen Zeitfensters geprüft und ist zeitweise außer Betrieb. Bitte nutzen Sie das Stiegenhaus und planen Sie Lieferungen außerhalb der Wartung. Bei Fragen zum Zugang hilft Paul Sommer aus der Verwaltung."
+  },
+  {
+    "id": "ev-039",
+    "house": "musterstrasse-12",
+    "title": "Begehung der Allgemeinflächen",
+    "starts_at": "2026-09-15T17:00:00+02:00",
+    "ends_at": "2026-09-15T18:00:00+02:00",
+    "location": "Hauseingang",
+    "description": "Gemeinsam mit der Hausbetreuung prüfen wir Beleuchtung, Fluchtwege, Fahrradraum und Außenanlagen von Musterstraße 12 · Zinshaus. Treffpunkt ist der Hauseingang. Hinweise zu Schäden können vorab als Anliegen gemeldet oder direkt bei der Begehung gezeigt werden."
   }
 ]

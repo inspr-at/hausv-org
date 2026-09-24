@@ -62,6 +62,68 @@ func TestJanusbergwegLeaseFixture(t *testing.T) {
 	}
 }
 
+func TestZinshausDemoLeasesAndValorisation(t *testing.T) {
+	database, config := dbtest.OpenWithConfig(t)
+	options := SeedOptions{DocumentDir: t.TempDir(), Reset: true}
+	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {
+		t.Fatal(err)
+	}
+	scoped, err := db.NewScoped(config, database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer scoped.Close()
+	identities, err := store.EnsureTenantIdentities(t.Context(), database, []store.TenantIdentity{{Slug: "musterstrasse-12"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lanes := store.NewTenantDB(scoped)
+	ref := identities["musterstrasse-12"].Ref()
+	repo, ok := store.BindLeaseRepository(store.NewSQLLeaseStore(lanes), ref)
+	if !ok {
+		t.Fatal("bind")
+	}
+	leases, err := repo.List()
+	if err != nil || len(leases) != 10 {
+		t.Fatalf("leases = %d, %v", len(leases), err)
+	}
+	byID := map[string]store.Lease{}
+	for _, lease := range leases {
+		byID[lease.ID] = lease
+	}
+	shop := byID["m12-lease-geschaeft"]
+	if shop.UseKind != store.UseKindGeschaeft || shop.Clauses[0].ThresholdValue != "3" || store.ClassifyLease(shop).MieWeG {
+		t.Fatalf("shop = %+v", shop)
+	}
+	restricted := store.ClassifyLease(byID["m12-lease-top-1"])
+	free := store.ClassifyLease(byID["m12-lease-top-7"])
+	if !restricted.MieWeG || !restricted.SpecialCap || !free.MieWeG || free.SpecialCap || byID["m12-lease-top-8"].Clauses[0].ClauseType != store.ClauseStaffel {
+		t.Fatal("cap mix drifted")
+	}
+	if byID["m12-lease-top-3"].RentRegime != store.RentRegimeAngemessen || byID["m12-lease-top-10"].RentRegime != store.RentRegimeKategorie {
+		t.Fatal("rent regimes drifted")
+	}
+	runsRepo, _ := store.BindValorisationRepository(lanes, store.NewSQLDocumentStore(lanes, options.DocumentDir), ref)
+	runs, err := runsRepo.List()
+	if err != nil || len(runs) != 1 || runs[0].Status != "draft" || runs[0].EffectiveOn != "2026-04-01" || len(runs[0].Items) != 10 {
+		t.Fatalf("draft %+v %v", runs, err)
+	}
+	groups := map[string]int{}
+	for _, item := range runs[0].Items {
+		groups[item.Group]++
+	}
+	if groups["ready"] != 7 || groups["unchanged"] != 1 || groups["exception"] != 2 {
+		t.Fatalf("preview groups %+v", groups)
+	}
+	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {
+		t.Fatal("reseed", err)
+	}
+	runs, err = runsRepo.List()
+	if err != nil || len(runs) != 1 || runs[0].Status != "draft" {
+		t.Fatal("reset draft", len(runs), err)
+	}
+}
+
 func TestDemoValorisationDraft(t *testing.T) {
 	database, config := dbtest.OpenWithConfig(t)
 	options := SeedOptions{DocumentDir: t.TempDir(), Reset: true}
@@ -107,16 +169,20 @@ func TestDemoValorisationDraft(t *testing.T) {
 		if item.LeaseID == "lease-top-2" && item.NewCents != 101735 {
 			t.Fatal("E2", item)
 		}
+		// 105000 * (1 + (3 + ((128.2/123.8-1)*100-3)/2)/100*11/12), half-down.
+		if item.LeaseID == "lease-top-9" && (item.Group != "ready" || !item.MieWeG || item.ContractCents != 115000 || item.NewCents != 108154 || item.Decision.CappedCents != 6846) {
+			t.Fatal("Staffel with MieWeG cap", item)
+		}
 	}
-	if groups["ready"] != 6 || groups["unchanged"] != 2 || groups["exception"] != 4 {
+	if groups["ready"] != 7 || groups["unchanged"] != 2 || groups["exception"] != 3 {
 		t.Fatalf("demo mix: %+v", groups)
 	}
-	for _, code := range []string{"no_clause", "clause_unreviewed", "one_way_clause_risk", "clause_invalid"} {
+	for _, code := range []string{"no_clause", "clause_unreviewed", "one_way_clause_risk"} {
 		if !codes[code] {
 			t.Fatalf("missing intended exception %s", code)
 		}
 	}
-	if len(codes) != 4 {
+	if len(codes) != 3 {
 		t.Fatal("unexpected exception", codes)
 	}
 	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {

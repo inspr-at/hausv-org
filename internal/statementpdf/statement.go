@@ -197,8 +197,8 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
-	d.PaymentTerms = paymentTerms(run, unit)
 	d.Reserve = ReserveLines(run, unit.UnitID)
+	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
 	if datedParty && !partyShare.SettlementRecipient {
 		d.Reserve, d.Proposals = nil, nil

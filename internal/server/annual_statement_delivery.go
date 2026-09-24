@@ -183,7 +183,7 @@ func (a *app) annualStatementDeliveryView(view web.AnnualStatementRunView, repos
 		}
 	}
 	view.SendAction = "/app/settings/annual-statement/runs/" + url.PathEscape(view.ID) + "/send"
-	view.MailMode = "E-Mail-Versand über SMTP"
+	view.MailMode = "Versand per E-Mail an die hinterlegten Adressen"
 	if mode, ok := a.mailer.(interface{ Mode() string }); ok {
 		view.MailMode = mode.Mode()
 	}

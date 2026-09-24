@@ -187,7 +187,14 @@ func proposalLines(run store.AnnualStatementRun, unitID string) []string {
 		if p.Missing {
 			amount = "Noch festzulegen"
 		}
-		lines = append(lines, p.Name+": "+amount+" · "+p.Basis)
+		basis := p.Basis
+		switch basis {
+		case "Manuelle Vorausschau / Vereinbarung":
+			basis = "vereinbarte monatliche Vorauszahlung"
+		case "Vorperiode / 12":
+			basis = "Vorauszahlung auf Basis des Vorjahres"
+		}
+		lines = append(lines, p.Name+": "+amount+" · "+basis)
 		if p.AboveTenPercent {
 			lines = append(lines, "Hinweis: Der Vorschlag liegt mehr als 10 % über den Vorjahreskosten / 12. Bitte prüfen (§ 21 Abs. 3 MRG).")
 		}

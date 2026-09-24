@@ -39,6 +39,7 @@ type LeaseDetail struct {
 	Components                           []LeaseMoneyView
 	MonthlyNet, MonthlyVAT, MonthlyGross string
 	HasMonthly                           bool
+	ShowOrigin                           bool
 	HasClause                            bool
 	Clause                               LeaseClauseView
 	Anchor                               string
@@ -54,9 +55,16 @@ type LeaseMoneyView struct {
 
 type LeaseClauseView struct {
 	Type, Series, Base, Threshold, Text, Review, ReviewClass, Line, Note string
+	Staffel                                                              []string
+}
+
+type LeaseStaffelRow struct {
+	Date, Value string
+	Percent     bool
 }
 
 type LeaseForm struct {
+	Staffel                                                        []LeaseStaffelRow
 	ID, Concluded, Starts, Ends, Notes                             string
 	PartyName, PartyEmail, PartyAddress, PartyFrom, PartyTo        string
 	ComponentNet, ComponentFrom                                    string
