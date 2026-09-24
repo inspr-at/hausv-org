@@ -282,3 +282,6 @@ body[data-authenticated-app] .portal-section-header-action .button.ghost{min-hei
 /* Phone "Alle … anzeigen" disclosures: the chevron sits beside its label. */
 body[data-authenticated-app] .more-data>summary:has(>.disclosure-chevron){display:flex;align-items:center;justify-content:center;gap:var(--space-2);padding-inline-end:0}
 body[data-authenticated-app] .more-data>summary>.disclosure-chevron{position:static;transform:none}
+/* The energy cockpit is full-bleed by design (its flow diagram needs the room):
+   the shared page inset and content top padding do not apply there. */
+body[data-authenticated-app] .energy-main .portal-section-content{padding:0}
