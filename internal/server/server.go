@@ -2048,7 +2048,10 @@ func newApp() (*app, error) {
 	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
 		return store.BindTextbausteinRepository(database, orgKey)
 	}
-	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
+	// HAUSV-795: the public demo host gates this on demo login. A local demo
+	// fixture (LOCAL_DEV_LOGIN plus DEMO_SEED_DIR) gets the same "Demodaten
+	// initialisieren" action so the settings reset recreates the seeded houses.
+	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); seedDir != "" && (a.demoLogin || localDevLogin) {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
 			options := demo.SeedOptions{Reset: true, DiscardAnnualStatements: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
 			if units, ok := a.unitStore.(store.UnitSink); ok {
