@@ -2,6 +2,24 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924130443.0.0] - 2026-09-24
+
+### Neu
+
+- Jahresabrechnung nach österreichischem Recht: Rechtsgrundlage je Abrechnungsperiode (WEG, MRG-Vollanwendung, MRG-Teilanwendung, Ausnahme) mit passenden Fristen und Zahlungshinweisen.
+- Heizkosten werden gemäß Heizkostenabrechnungsgesetz nach Verbrauch und Fläche aufgeteilt; der Verbrauchsanteil ist je Liegenschaft zwischen 55 und 85 % einstellbar.
+- Freigegebene Jahresabrechnungen erscheinen als Endfassung im Briefformat mit Kurzfassung, übersichtlicher Kostentabelle, Hinweisen zur Belegeinsicht und Vorschlag für die neue monatliche Vorauszahlung.
+- Mietverträge je Einheit mit Parteien, Mietzinsbestandteilen und Wertsicherungsklausel; Übernahme per Tabellenimport mit Prüflauf.
+- Grundlage für die Wertsicherung: offizielle Verbraucherpreisindizes von Statistik Austria sowie Richtwerte und Kategoriebeträge.
+
+### Verbessert
+
+- Ruhigeres, einheitliches Erscheinungsbild: klare Schriftgrößen, einheitliche Schaltflächen und Abstände in allen Bereichen.
+- Hausüberblick, Dokumente und Aushänge sind kompakter und schneller erfassbar.
+- Die Anschrift der Hausverwaltung wird in den Einstellungen gepflegt und erscheint im Briefkopf.
+- Posteingang und Verwaltungsbereich arbeiten schneller und noch strenger getrennt je Organisation.
+- Stabilität und Datensicherheit verbessert.
+
 ## [260924082155.0.0] - 2026-09-24
 
 ### Verbessert
