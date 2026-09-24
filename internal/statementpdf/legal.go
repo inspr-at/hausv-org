@@ -141,7 +141,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		totalArea += legal.HeatableAreas[u.ID]
 	}
 	areaText := func(a int) string { return view.FormatDecimal(float64(a)/100, 2) + " m²" }
-	return []string{
+	lines := []string{
 		"Heizkostenabrechnung nach § 18 HeizKG",
 		"Energiekosten gesamt: " + money(energy) + "; sonstige Betriebskosten: " + money(other),
 		fmt.Sprintf("Energieaufteilung: %d %% Verbrauch / %d %% versorgbare Nutzfläche", legal.HeatingConsumptionPercent, 100-legal.HeatingConsumptionPercent),
@@ -152,6 +152,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Geleistetes Akonto dieser Heizkostenart: " + money(prepaid) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-prepaid),
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}
+	return append(lines, heatingInformation(run, unit.UnitID, cost.CostTypeKey)...)
 }
 
 func proposalLines(run store.AnnualStatementRun, unitID string) []string {

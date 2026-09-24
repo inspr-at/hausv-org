@@ -106,7 +106,9 @@ func (a *app) saveAnnualStatementHeatingInformation(w http.ResponseWriter, r *ht
 		}
 	}
 	rows := r.Form["purchase_row"]
-	if len(rows) > 100 {
+	// The form appends one empty row for the next purchase. Validate caps the
+	// actual purchases at 100 after that empty row has been discarded.
+	if len(rows) > 101 {
 		http.Error(w, "Zu viele Energiebezüge.", 400)
 		return
 	}

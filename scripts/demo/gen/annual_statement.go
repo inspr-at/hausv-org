@@ -1,6 +1,9 @@
 package main
 
-import "github.com/inspr-at/hausv-org/internal/store"
+import (
+	"github.com/inspr-at/hausv-org/internal/store"
+	"sort"
+)
 
 // Synthetic demonstration inputs, not a legal allocation rule. The PPM sum
 // covers all 18 flats and 6 parking spaces; every base is explicit.
@@ -10,6 +13,7 @@ func buildAnnualStatement(home house) any {
 		{"key": "reinigung", "name": "Hausreinigung", "allocation_key": store.AllocationKeyFlaeche, "amount_cents": 360000, "invoice_date": "2025-06-30", "supplier": "Reinigung Holzer"},
 		{"key": "abfall", "name": "Abfallentsorgung", "allocation_key": store.AllocationKeyPersonen, "amount_cents": 240000, "invoice_date": "2025-12-15", "supplier": "Entsorgung Musterstadt"},
 		{"key": "heizung", "name": "Heizung", "allocation_key": store.AllocationKeyVerbrauch, "amount_cents": 900000, "operating_amount_cents": 90000, "invoice_date": "2025-12-31", "supplier": "Stadtwerke Musterstadt", "heating_category": "energie"},
+		{"key": "lift", "name": "Lift", "allocation_key": store.AllocationKeyAgreed, "amount_cents": 180000, "invoice_date": "2025-12-01", "supplier": "Aufzüge Musterstadt"},
 	}
 	bases := []map[string]any{}
 	legal := store.DefaultAnnualStatementLegalSettings()
@@ -21,6 +25,35 @@ func buildAnnualStatement(home house) any {
 	legal.HeatableAreas = map[string]int{}
 	legal.HeatingPrepayments = map[string]map[string]int64{}
 	legal.MonthlyProposals = map[string]map[string]int64{}
+	legal.HeatingInformation = &store.AnnualStatementHeatingInformation{
+		Purchases:               []store.AnnualStatementEnergyPurchase{{CostTypeKey: "heizung", Supplier: "Stadtwerke Musterstadt", Carrier: "Fernwärme", QuantityMicros: 100_000_000_000, Unit: "kWh", PriceMicros: 90000, PriceNote: "01.01.–31.12.2025; tatsächlicher Bruttopreis zum Ablesestichtag 31.12.2025"}},
+		DistrictHeatingOver20MW: true,
+		TaxesNote:               "Bruttopreis inklusive 20 % Umsatzsteuer; netto 0,075 EUR/kWh. Keine weiteren Abgaben oder Zolltarife verrechnet.",
+		FuelMix:                 "Demodaten: 80 % Biomasse, 20 % Erdgas laut Jahresinformation 2025 der Stadtwerke Musterstadt.",
+		Emissions:               "Demodaten: 12.000 t CO2-Äquivalente/Jahr für die Versorgungsanlage, Lieferanteninformation 2025.",
+		MeteringCostsNote:       "Ablesung und Abrechnung 300,00 EUR, im Beleg über sonstige Betriebskosten enthalten.",
+		OperatingCostsNote:      "Wartung 600,00 EUR; Ablesung und Abrechnung 300,00 EUR; insgesamt 900,00 EUR.",
+		RemoteMeters:            "yes",
+		MonthlyInformation:      "Monatliche Bereitstellung während der Heizperiode durch die Stadtwerke Musterstadt; Kontakt über Hausverwaltung Musterstadt, +43 316 555 100.",
+		ComplaintContact:        "Hausverwaltung Musterstadt GmbH, Musterstraße 12, 8010 Graz; +43 316 555 100.",
+	}
+	lift := map[string]int{}
+	var eligible []string
+	for _, unit := range home.Units {
+		id := store.NormalizeUnitID(unit.Label)
+		lift[id] = 0
+		if unit.UnitType == "Wohnung" && unit.Floor != "EG" {
+			eligible = append(eligible, id)
+		}
+	}
+	sort.Strings(eligible)
+	for i, id := range eligible {
+		lift[id] = 1_000_000 / len(eligible)
+		if i < 1_000_000%len(eligible) {
+			lift[id]++
+		}
+	}
+	legal.AgreedShares = map[string]map[string]int{"lift": lift}
 	for i, unit := range home.Units {
 		ppm := 1_000_000 / len(home.Units)
 		if i < 1_000_000%len(home.Units) {
@@ -41,6 +74,7 @@ func buildAnnualStatement(home house) any {
 		if unit.UnitType == "Stellplatz" {
 			legal.MonthlyProposals[id] = map[string]int64{"versicherung": 1700, "reinigung": 350, "abfall": 0}
 		}
+		legal.MonthlyProposals[id]["lift"] = (180000*int64(lift[id]) + 6_000_000) / 12_000_000
 		bases = append(bases, map[string]any{"unit_id": store.NormalizeUnitID(unit.Label), "miteigentumsanteil_ppm": ppm, "usable_area_m2_hundredths": area, "persons": persons, "prepaid_cents": prepaid, "heating_consumption_kwh": kwh})
 	}
 	return map[string]any{"legal": legal, "house": home.Slug, "year": 2025, "starts_on": "2025-01-01", "ends_on": "2025-12-31", "recorded_at": "2026-01-15T09:00:00Z", "cost_types": costs, "unit_bases": bases}

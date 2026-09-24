@@ -116,7 +116,7 @@ func loadStatementFixtureFile(dir, name string, houses []seedHouse, documentDir 
 			return nil, fmt.Errorf("invalid demo cost type %s", cost.Key)
 		}
 		costKeys[cost.Key] = true
-		if cost.AllocationKey != store.AllocationKeyNutzwert && cost.AllocationKey != store.AllocationKeyFlaeche && cost.AllocationKey != store.AllocationKeyPersonen && cost.AllocationKey != store.AllocationKeyVerbrauch {
+		if !store.ValidAllocationKey(cost.AllocationKey) {
 			return nil, fmt.Errorf("unsupported demo allocation key %s", cost.AllocationKey)
 		}
 		if _, err := time.Parse("2006-01-02", cost.InvoiceDate); err != nil {
