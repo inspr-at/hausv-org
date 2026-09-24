@@ -29,6 +29,19 @@ templ leasePrimaryAction(data LeasePageData) {
 	}
 }
 
+// leaseValorisationChip tones the run status the lease history shows (German labels).
+func leaseValorisationChip(status string) string {
+	switch status {
+	case "Freigegeben", "Versandt":
+		return "is-ok"
+	case "Entwurf":
+		return "is-doubt"
+	case "Storniert":
+		return "is-bad"
+	}
+	return ""
+}
+
 func leaseEditURL(data LeasePageData) string {
 	return "/app/settings/building/units/" + data.UnitID + "/lease?bearbeiten=1"
 }
@@ -165,18 +178,22 @@ templ LeaseTimeline(lease LeaseDetail) {
 		if len(lease.Valorisation) == 0 {
 			<p>Noch keine Wertsicherung.</p>
 		} else {
-			<ul class="lease-history">
+			<ul class="lease-valorisation">
 				for _, item := range lease.Valorisation {
-					<li><a href={ templ.SafeURL(item.URL) }>{ item.Date } · { item.Status }</a> · { item.Amount } · einhebbar { item.Due }
+					<li>
+						<a class="lease-valorisation-date" href={ templ.SafeURL(item.URL) }>Stichtag { item.Date }</a>
+						<span class={ "lease-chip", leaseValorisationChip(item.Status) }>{ item.Status }</span>
+						<span class="lease-valorisation-amount">{ item.Amount }</span>
+						<span class="lease-valorisation-due">einhebbar { item.Due }</span>
 						if item.PDFURL != "" {
-							<a href={ templ.SafeURL(item.PDFURL) }>Anpassungsschreiben PDF</a>
+							<a class="lease-valorisation-pdf" href={ templ.SafeURL(item.PDFURL) }>Anpassungsschreiben PDF</a>
 						}
 					</li>
 				}
 			</ul>
 		}
 		if lease.Anchor != "" {
-			<p>{ lease.Anchor }</p>
+			<p class="lease-notes">{ lease.Anchor }</p>
 		}
 	</section>
 }
@@ -316,7 +333,22 @@ templ leaseStyles() {
 		.lease-page .lease-stack{display:grid;gap:var(--space-4);min-width:0}
 		.lease-page .lease-back{color:var(--muted);font-size:13px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
 		.lease-page .lease-card{min-width:0;display:grid;gap:var(--space-4);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);box-shadow:var(--shadow-panel)}
-		.lease-page .lease-card h2{font-size:22px}
+		.lease-page .lease-card h2{margin:0;font-size:22px}
+		.lease-page .lease-card>h2:not(:first-child){margin-top:var(--space-2);padding-top:var(--space-5);border-top:1px solid var(--line)}
+		.lease-page .lease-card p{margin:0}
+		.lease-page .lease-card>p{font-size:14px;line-height:1.5}
+		.lease-page .lease-field{color:var(--muted);font-size:12px;font-weight:700}
+		.lease-page .lease-field :is(input,select,textarea){color:var(--ink);font-size:14px;font-weight:500}
+		.lease-page .lease-field textarea{min-height:104px;line-height:1.5}
+		.lease-page legend{font-size:18px;font-weight:600}
+		.lease-page .lease-valorisation{display:grid;margin:0;padding:0;list-style:none;font-size:13px}
+		.lease-page .lease-valorisation li{display:grid;grid-template-columns:minmax(8rem,max-content) auto minmax(7rem,1fr) auto auto;align-items:center;gap:var(--space-2) var(--space-4);min-height:44px;padding:var(--space-2) 0;border-top:1px solid var(--line)}
+		.lease-page .lease-valorisation li:last-child{border-bottom:1px solid var(--line)}
+		.lease-page .lease-valorisation a{color:var(--ink);font-weight:650;text-decoration:underline;text-underline-offset:3px}
+		.lease-page .lease-valorisation .lease-chip{justify-self:start}
+		.lease-page .lease-valorisation-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+		.lease-page .lease-valorisation-due{color:var(--muted);white-space:nowrap}
+		.lease-page .lease-valorisation a.lease-valorisation-pdf{color:var(--gold-ink)}
 		.lease-page .lease-card p,.lease-page .lease-card li{overflow-wrap:anywhere}
 		.lease-page .lease-parties{display:grid;gap:var(--space-3);margin:0;padding:0;list-style:none}
 		.lease-page .lease-parties li{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--space-2)}
@@ -329,11 +361,14 @@ templ leaseStyles() {
 		.lease-page .lease-table-wrap{min-width:0;max-width:100%;overflow-x:auto}
 		.lease-page .lease-rent{width:100%;border-collapse:collapse}
 		.lease-page .lease-rent th,.lease-page .lease-rent td{padding:10px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:13px}
-		.lease-page .lease-rent thead th{border-top:0;color:var(--muted);font-size:11px;font-weight:750}
+		.lease-page .lease-rent thead th{border-top:0;color:var(--muted);font-size:11px;font-weight:750;white-space:nowrap}
+		.lease-page .lease-rent th:first-child,.lease-page .lease-rent td:first-child{padding-left:0}
+		.lease-page .lease-rent th:last-child,.lease-page .lease-rent td:last-child{padding-right:0}
+		.lease-page .lease-rent td[data-label=Herkunft]{color:var(--muted)}
 		.lease-page .lease-rent .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 		.lease-page .lease-total td{font-weight:750;border-top:2px solid var(--line)}
 		.lease-page .lease-clause-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
-		.lease-page .lease-chip{display:inline-flex;align-items:center;min-height:28px;padding:2px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:12px;font-weight:750}
+		.lease-page .lease-chip{display:inline-flex;align-items:center;min-height:26px;white-space:nowrap;padding:2px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--muted);font-size:12px;font-weight:750}
 		.lease-page .lease-chip.is-ok{background:rgba(47,107,74,.08);color:var(--leaf)}
 		.lease-page .lease-chip.is-doubt{background:rgba(200,153,63,.12);color:var(--gold-ink)}
 		.lease-page .lease-chip.is-bad{background:rgba(140,52,52,.08);color:#8c3434}
@@ -364,19 +399,20 @@ templ leaseStyles() {
 			.lease-page .lease-rent td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:650;text-align:left}
 			.lease-page .lease-rent .num{text-align:right;white-space:nowrap}
 			.lease-page .lease-total td:empty{display:none}
+			.lease-page .lease-rent td[data-label=Bestandteil]{order:-1;padding-bottom:6px;color:var(--ink);font-size:14px;font-weight:750;text-align:left}
+			.lease-page .lease-rent td[data-label=Bestandteil]::before{content:none}
+			.lease-page .lease-rent tr{display:flex;flex-direction:column}
+			.lease-page .lease-valorisation li{grid-template-columns:minmax(0,1fr) auto;gap:4px var(--space-3)}
+			.lease-page .lease-valorisation .lease-chip{justify-self:end}
+			.lease-page .lease-valorisation-due{white-space:normal}
+			.lease-page .lease-valorisation-amount{text-align:left}
+			.lease-page .lease-valorisation-pdf{grid-column:1/-1}
 		}
 		@media(max-width:760px){
 			.lease-page .lease-grid{grid-template-columns:minmax(0,1fr)}
 			.lease-page .lease-span{grid-column:auto}
 			.lease-page .lease-actions{display:grid}
 			.lease-page .lease-actions .button,.lease-page .lease-danger,.lease-page .lease-quiet{width:100%;text-align:center}
-			.lease-page .lease-rent thead{display:none}
-			.lease-page .lease-rent,.lease-page .lease-rent tbody,.lease-page .lease-rent tr,.lease-page .lease-rent td{display:block;width:100%}
-			.lease-page .lease-rent tr{padding:var(--space-3) 0;border-top:1px solid var(--line)}
-			.lease-page .lease-rent td{display:flex;justify-content:space-between;gap:var(--space-3);padding:4px 0;border:0;text-align:right}
-			.lease-page .lease-rent td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:650;text-align:left}
-			.lease-page .lease-rent .num{text-align:right}
-			.lease-page .lease-total td:empty{display:none}
 		}
 	</style>
 }
