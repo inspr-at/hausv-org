@@ -88,10 +88,20 @@ templ rechteContent(data RechteData) {
 		}
 		.rights-switch small {
 			display: block;
-			margin: -10px 0 6px 28px;
+			margin: -8px 0 4px 28px;
 			color: var(--muted);
 			font-size: 11px;
 			line-height: 1.4;
+		}
+		.rechte-actions > .rights-caption {
+			flex: 1 1 100%;
+			margin: 8px 0 -4px;
+			color: var(--muted);
+			font-size: 11px;
+			line-height: 1.4;
+		}
+		.rechte-actions > .rights-caption:first-child {
+			margin-top: 0;
 		}
 		.rights-switch button,
 		.rights-reset button {
@@ -209,6 +219,9 @@ templ rechteContent(data RechteData) {
 		}
 		.rechte-table th:first-child {
 			width: 19%;
+		}
+		.rechte-table tbody td {
+			vertical-align: top;
 		}
 		.rechte-table th:nth-child(2) {
 			width: 34%;
@@ -390,7 +403,11 @@ Nur zur Ansicht</span>
 									<td data-family={ family.Key } data-area={ area.Key }>
 										<div class="rechte-actions">
 											if data.Editable {
-												for _,grant:= range rechteActionOptions(family.Key,area.Key) {
+												{{ options := rechteActionOptions(family.Key, area.Key) }}
+												for index, grant := range options {
+													if caption := rechteGrantCaption(data, family.Key, grant); index == 0 || caption != rechteGrantCaption(data, family.Key, options[index-1]) {
+														<small class="rights-caption">{ caption }</small>
+													}
 													@RechteSwitch(data, family.Key, area.Key, grant)
 												}
 											} else if len(cell.Grants) > 0 {
@@ -480,21 +497,13 @@ templ RechteSwitch(data RechteData, family, area string, grant authz.MatrixGrant
 	if grant.Capability=="" {
 		<div class="rights-switch">
 			<label><input type="checkbox" checked?={ grant.Note!="unavailable" } disabled/><span>{ string(grant.Action) }</span></label>
-			<small>
-				if grant.Note=="unavailable" {
-					Keine eigenständige Aktion in diesem Bereich.
-				} else {
-					Durch Zuordnung oder Produktregel festgelegt.
-				}
-			</small>
 		</div>
 	} else if authz.LockedFor(family, grant.Capability) {
-		<div class="rights-switch"><label><input type="checkbox" checked?={ data.allowed(family,grant.Capability) } disabled/><span>{ string(grant.Action) }</span></label><small>{ lockNote(family, grant.Capability) }</small></div>
+		<div class="rights-switch"><label><input type="checkbox" checked?={ data.allowed(family,grant.Capability) } disabled/><span>{ string(grant.Action) }</span></label></div>
 	} else {
 		<form class="rights-switch" method="post" action="/app/verwaltung/rechte" data-rights-switch data-rights-family={ family } data-rights-capability={ string(grant.Capability) }>
 			<input type="hidden" name="operation" value="set"/><input type="hidden" name="family" value={ family }/><input type="hidden" name="area" value={ area }/><input type="hidden" name="capability" value={ string(grant.Capability) }/>
 			<label><input type="checkbox" name="allowed" value="1" checked?={ data.allowed(family,grant.Capability) } aria-label={ family + " · " + area + " · " + string(grant.Action) }/><span>{ string(grant.Action) }</span></label>
-			<small>{ authz.CapabilityLabel(grant.Capability) }</small>
 			if data.changed(family,grant.Capability) {
 				<small class="rights-changed">Abweichend vom Standard</small>
 			}
