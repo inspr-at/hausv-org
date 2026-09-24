@@ -225,6 +225,17 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	if err != nil {
 		return AnnualStatementRun{}, err
 	}
+	// Own the complete snapshot before canonicalising slices and nested maps.
+	// Sorting must neither mutate source data nor leave aliases in a run.
+	raw, err := json.Marshal(input)
+	if err != nil {
+		return AnnualStatementRun{}, err
+	}
+	var snapshot AnnualStatementRunInput
+	if err := json.Unmarshal(raw, &snapshot); err != nil {
+		return AnnualStatementRun{}, err
+	}
+	input = snapshot
 	sort.Slice(input.Parties, func(i, j int) bool {
 		if input.Parties[i].UnitID != input.Parties[j].UnitID {
 			return input.Parties[i].UnitID < input.Parties[j].UnitID
@@ -239,7 +250,11 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	sort.Slice(input.Prepayments, func(i, j int) bool { return input.Prepayments[i].UnitID < input.Prepayments[j].UnitID })
 	sort.Slice(input.Documents, func(i, j int) bool { return input.Documents[i].ID < input.Documents[j].ID })
 	sort.Slice(input.Evidence, func(i, j int) bool { return input.Evidence[i].SourceKey < input.Evidence[j].SourceKey })
-	raw, err := json.Marshal(input)
+	for key, vector := range input.Consumption {
+		sort.Slice(vector.Units, func(i, j int) bool { return vector.Units[i].UnitID < vector.Units[j].UnitID })
+		input.Consumption[key] = vector
+	}
+	raw, err = json.Marshal(input)
 	if err != nil {
 		return AnnualStatementRun{}, err
 	}
