@@ -777,7 +777,7 @@ func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBa
 
 func cloneAnnualStatementPeriodStructure(structure AnnualStatementPeriodStructure) AnnualStatementPeriodStructure {
 	return AnnualStatementPeriodStructure{
-		Legal:     structure.Legal,
+		Legal:     cloneAnnualStatementLegal(structure.Legal),
 		CostTypes: append([]AnnualStatementCostType(nil), structure.CostTypes...),
 		UnitBases: append([]AnnualStatementPeriodUnitBasis(nil), structure.UnitBases...),
 	}

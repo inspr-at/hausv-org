@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const AnnualStatementCalculationVersion = 1
+const AnnualStatementCalculationVersion = 2
 
 // AnnualStatementRunInput is an immutable copy of the facts used by a run.
 // Documents contains only originals verified as readable by the repository.
@@ -73,6 +73,22 @@ type AnnualStatementRunResult struct {
 
 // CalculateAnnualStatementRun never returns partial monetary results.
 func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
+	return calculateAnnualStatementRun(input, true)
+}
+
+// Replay dispatches by the stored algorithm version; version 1 retains its
+// original single-key heating allocation even when current settings differ.
+func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
+	switch run.CalculationVersion {
+	case 1:
+		return calculateAnnualStatementRun(run.Input, false)
+	case 2:
+		return calculateAnnualStatementRun(run.Input, true)
+	default:
+		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: "calculation-version"}}
+	}
+}
+func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit bool) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
 	var issues []AnnualStatementRunIssue
 	issue := func(code, cost, unit string) { issues = append(issues, AnnualStatementRunIssue{code, cost, unit}) }
 	if validateAnnualStatementPeriod(input.Period) != nil {
@@ -231,6 +247,14 @@ func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatement
 		}
 		shares := sharesByCost[cost.Key]
 		cents := annualStatementRunCents(shares, totals[cost.Key])
+		if heatingSplit && input.Structure.Legal.HeizKGApplies && IsAnnualHeatingCost(cost.Key) {
+			var code string
+			cents, code = annualStatementHeatingCents(input, cost, units, shares)
+			if code != "" {
+				return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: code, CostTypeKey: cost.Key}}
+			}
+		}
+
 		for i, share := range shares {
 			result.Units[i].Costs = append(result.Units[i].Costs, AnnualStatementRunCost{cost.Key, cost.Name, cost.AllocationKey, share.SharePPM, cents[i]})
 			result.Units[i].AllocatedCents += cents[i]

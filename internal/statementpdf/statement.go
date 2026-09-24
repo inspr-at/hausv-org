@@ -166,6 +166,10 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 				row.Measurements = append(row.Measurements, "Grenzmessungen im gespeicherten Lauf unvollständig")
 			}
 		}
+		if run.CalculationVersion >= 2 && run.Input.Structure.Legal.HeizKGApplies && store.IsAnnualHeatingCost(cost.CostTypeKey) {
+			row.Key = "HeizKG"
+			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
+		}
 		d.Costs = append(d.Costs, row)
 	}
 	for _, cost := range run.Input.Structure.CostTypes {

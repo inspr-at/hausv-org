@@ -1,6 +1,6 @@
 # Jahresabrechnung: implementierte Berechnung
 
-Technische Spezifikation zu HAUSV-767, Berechnungsversion `1`. Sie beschreibt
+Technische Spezifikation zu HAUSV-767, Berechnungsversion `2`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
@@ -119,8 +119,8 @@ Alle Einheiten müssen dieselbe unterstützte Maßeinheit verwenden.
 Der validierte Vektor ist die Berechnungsgrundlage. Nur die zwei Grenzmessungen
 je Einheit werden als Belege zusätzlich im Lauf gespeichert; Zwischenmessungen
 bleiben im Messwertspeicher. Ein Replay rekonstruiert daher keinen Vektor allein
-aus den Grenzen. Heizungs-/Warmwasserkosten haben technisch einen einzelnen
-Schlüssel; eine Grundkosten-/Verbrauchskosten-Mischung ist nicht modelliert.
+aus den Grenzen. Bei aktivem HeizKG verwendet Version 2 die unten beschriebene Mischverteilung.
+Version 1 bleibt für historische Wiederholungen unverändert.
 
 ## Snapshot, PDF, Archiv und Versand
 
@@ -198,3 +198,25 @@ Lauf eingefroren. Der PDF-Anhang führt Rechnungsdatum, bestätigten Lieferanten
 Kostenart, Betrag und Original-Dokumentkennung auf. Fehlende Altangaben werden
 sichtbar benannt. MRG Vollanwendung bietet zusätzlich ein druckbares Aushang-PDF
 mit Haussummen und Einsichtshinweis ohne Namen oder Salden einzelner Parteien.
+
+## HeizKG-Verteilung ab Berechnungsversion 2
+
+Heizung und Warmwasser bleiben getrennte Kostenarten. Bei aktivem HeizKG
+müssen beide den Schlüssel `verbrauch` verwenden. Jeder zugehörige Beleg ist
+`energie` oder `sonstige_betriebskosten`. Pro Haus/Periode werden der
+Verbrauchsanteil (55–85 %, Vorgabe 70 %) und die versorgbare Nutzfläche jeder
+Einheit explizit gespeichert. Nicht versorgte Einheiten erhalten ausdrücklich
+0 m²; fehlende Fläche, ungültiger Anteil oder fehlende Belegart sperren den Lauf.
+
+Der Energiepool wird auf Hausebene mit dem Verbrauchsprozentsatz multipliziert
+und kaufmännisch auf Cent gerundet. Der exakte Rest plus alle sonstigen
+Betriebskosten bildet den Flächenpool. Jeder Pool wird mit den bisherigen
+PPM-/Restcent-Regeln verteilt. Beide Pools zusammen ergeben centgenau die
+Belegsumme. Die Geldvorschau verwendet für HeizKG denselben Laufrechner.
+`ReplayAnnualStatementRun` dispatcht anhand der gespeicherten Version:
+Version 1 behält ihre ursprüngliche Verteilung mit einem einzelnen Schlüssel.
+
+Geleistetes Heizungs-/Warmwasser-Akonto wird je Einheit ausdrücklich erfasst;
+die Komponentensumme darf das Gesamtakonto nicht überschreiten. PDFs weisen
+Energie-/sonstige Kosten, Flächen, Verbrauch, Verhältnis, Einheitenergebnis,
+Komponenten-Akonto und -Saldo sowie die sechsmonatige Einwendungsfrist aus.

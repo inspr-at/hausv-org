@@ -127,7 +127,7 @@ func (a *app) createAnnualStatementReceipt(w http.ResponseWriter, r *http.Reques
 	receipt := store.AnnualStatementReceipt{
 		DocumentID: strings.TrimSpace(r.FormValue("document_id")), PeriodYear: periodYear,
 		CostTypeKey: strings.TrimSpace(r.FormValue("cost_type_key")), AmountCents: amountCents,
-		InvoiceDate: strings.TrimSpace(r.FormValue("invoice_date")), CreatedBy: actorEmail, Supplier: r.FormValue("supplier"),
+		InvoiceDate: strings.TrimSpace(r.FormValue("invoice_date")), CreatedBy: actorEmail, Supplier: r.FormValue("supplier"), HeatingCategory: r.FormValue("heating_category"),
 	}
 	var files []*multipart.FileHeader
 	if r.MultipartForm != nil {
@@ -404,4 +404,22 @@ func annualStatementReceiptMessage(status string) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+func (a *app) saveAnnualStatementReceiptMetadata(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	tenant, actor, role, _, ok := a.buildingSettingsContext(w, ac)
+	if !ok {
+		return
+	}
+	if r.ParseForm() != nil || ac.repositories.annualStatementReceipts == nil {
+		http.Error(w, "Ungültige Eingabe.", 400)
+		return
+	}
+	receipt, err := ac.repositories.annualStatementReceipts.UpdateMetadata(r.FormValue("id"), r.FormValue("supplier"), r.FormValue("heating_category"), actor)
+	if err != nil {
+		http.Error(w, "Belegangaben konnten nicht gespeichert werden.", 400)
+		return
+	}
+	a.recordAnnualStatementReceiptAudit(tenant, actor, role, auditActionAnnualReceiptAmount, "Belegangaben gespeichert", receipt)
+	http.Redirect(w, r, annualStatementReceiptRedirect(receipt.PeriodYear, "saved"), http.StatusSeeOther)
 }

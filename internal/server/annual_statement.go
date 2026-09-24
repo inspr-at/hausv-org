@@ -150,7 +150,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 				invoiceDate = parsed.Format("02.01.2006")
 			}
 			receiptViews = append(receiptViews, web.AnnualStatementReceiptView{
-				ID: receipt.ID, DocumentTitle: documentTitle,
+				ID: receipt.ID, DocumentTitle: documentTitle, Supplier: receipt.Supplier, HeatingCategory: receipt.HeatingCategory,
 				Amount: formatAnnualStatementReceiptAmount(receipt.AmountCents), AmountValue: formatAnnualStatementReceiptAmountValue(receipt.AmountCents),
 				InvoiceDate: invoiceDate, CostTypeName: costTypeNames[receipt.CostTypeKey],
 			})
@@ -166,6 +166,16 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units, consumption.Vectors)
+	if legal.HeizKGApplies && ac.repositories.annualStatementRuns != nil {
+		_, result, err := ac.repositories.annualStatementRuns.Preview(selectedYear, consumption.Vectors)
+		settlement = nil
+		settlementReady = err == nil
+		if err == nil {
+			for _, u := range result.Units {
+				settlement = append(settlement, store.AnnualStatementSettlementUnit{UnitID: u.UnitID, AllocatedCents: u.AllocatedCents})
+			}
+		}
+	}
 	allocatedByUnit := map[string]int64{}
 	for _, item := range settlement {
 		allocatedByUnit[item.UnitID] = item.AllocatedCents

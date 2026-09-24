@@ -261,6 +261,17 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		}
 	}
 	switch issue.Code {
+	case "heating-prepayment":
+		return "HeizKG: Geleistetes Akonto je Einheit und Heizkostenart ergänzen. Die Summe darf das Gesamtakonto nicht überschreiten."
+	case "heating-share":
+		return "HeizKG: Verbrauchsanteil muss zwischen 55 und 85 % liegen."
+	case "heating-area":
+		return "HeizKG: Versorgbare Nutzfläche fehlt oder ergibt keine positive Gesamtsumme."
+	case "heating-category":
+		return "HeizKG: Belege bitte als Energie oder sonstige Betriebskosten zuordnen."
+	case "heating-key":
+		return "HeizKG: Für Heizung und Warmwasser den Schlüssel Verbrauch wählen. Der Flächenanteil wird automatisch ergänzt."
+
 	case "period":
 		return "Abrechnungsperiode fehlt oder ist ungültig. Bitte eine gespeicherte Periode wählen."
 	case "units":

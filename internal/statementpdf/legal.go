@@ -1,8 +1,10 @@
 package statementpdf
 
 import (
+	"fmt"
 	"github.com/inspr-at/hausv-org/internal/pdf"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/view"
 	"sort"
 	"strings"
 	"time"
@@ -95,4 +97,25 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + run.Approval.Role
 	}
 	return pdf.Pages(d.Pages(), pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
+}
+
+func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost) []string {
+	legal := run.Input.Structure.Legal
+	energy, other, consumed, area := store.AnnualStatementHeatingPools(run.Input, cost.CostTypeKey)
+	var totalArea int
+	for _, u := range run.Input.Units {
+		totalArea += legal.HeatableAreas[u.ID]
+	}
+	areaText := func(a int) string { return view.FormatDecimal(float64(a)/100, 2) + " m²" }
+	return []string{
+		"Heizkostenabrechnung nach § 18 HeizKG",
+		"Energiekosten gesamt: " + money(energy) + "; sonstige Betriebskosten: " + money(other),
+		fmt.Sprintf("Energieaufteilung: %d %% Verbrauch / %d %% versorgbare Nutzfläche", legal.HeatingConsumptionPercent, 100-legal.HeatingConsumptionPercent),
+		"Verbrauchskosten-Pool: " + money(consumed) + "; Flächenkosten-Pool einschließlich sonstiger Betriebskosten: " + money(area),
+		"Versorgbare Nutzfläche Einheit: " + areaText(legal.HeatableAreas[unit.UnitID]) + "; gesamt: " + areaText(totalArea),
+		"Anteil am gemessenen Verbrauch: " + view.FormatDecimal(float64(cost.SharePPM)/10000, 2) + " %; Methode: Zählerdifferenz",
+		"Kostenanteil Einheit: " + money(cost.AmountCents),
+		"Geleistetes Akonto dieser Heizkostenart: " + money(legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]),
+		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
+	}
 }

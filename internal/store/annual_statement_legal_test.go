@@ -1,6 +1,7 @@
 package store
 
 import "testing"
+import "reflect"
 
 func TestAnnualLegalRegimeDeadline(t *testing.T) {
 	period := AnnualStatementPeriod{Year: 2025, StartsOn: "2025-02-01", EndsOn: "2026-01-31"}
@@ -27,19 +28,19 @@ func TestAnnualLegalSettingsPersistenceAndClone(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		settings := AnnualStatementLegalSettings{Regime: "mrg_teil", HeizKGApplies: true}
+		settings := AnnualStatementLegalSettings{Regime: "mrg_teil", HeizKGApplies: true, HeatingConsumptionPercent: 70}
 		if err := repo.SaveLegal(2025, settings); err != nil {
 			t.Fatal(err)
 		}
 		got, ok := repo.Structure(2025)
-		if !ok || got.Legal != settings {
+		if !ok || !reflect.DeepEqual(got.Legal, settings) {
 			t.Fatal(got, ok)
 		}
 		if _, created, err := repo.CloneStructure(2025, AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31", UpdatedBy: "manager@example.com"}); err != nil || !created {
 			t.Fatal(created, err)
 		}
 		next, _ := repo.Structure(2026)
-		if next.Legal != settings {
+		if !reflect.DeepEqual(next.Legal, settings) {
 			t.Fatal(next)
 		}
 		other, _ := BindAnnualStatementPeriodRepository(storage, testTenantRef("other"))

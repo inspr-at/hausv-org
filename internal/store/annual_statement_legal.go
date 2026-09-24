@@ -8,21 +8,32 @@ import (
 
 // Legal settings are period-scoped and copied into every immutable run.
 type AnnualStatementLegalSettings struct {
-	InspectionPlace   string `json:"inspection_place"`
-	InspectionPeriod  string `json:"inspection_period"`
-	InspectionContact string `json:"inspection_contact"`
-	Regime            string `json:"regime"`
-	HeizKGApplies     bool   `json:"heizkg_applies"`
+	HeatingPrepayments        map[string]map[string]int64 `json:"heating_prepayments_cents,omitempty"`
+	HeatingConsumptionPercent int                         `json:"heating_consumption_percent"`
+	HeatableAreas             map[string]int              `json:"heatable_areas_m2_hundredths,omitempty"`
+	InspectionPlace           string                      `json:"inspection_place"`
+	InspectionPeriod          string                      `json:"inspection_period"`
+	InspectionContact         string                      `json:"inspection_contact"`
+	Regime                    string                      `json:"regime"`
+	HeizKGApplies             bool                        `json:"heizkg_applies"`
 }
 
 func DefaultAnnualStatementLegalSettings() AnnualStatementLegalSettings {
-	return AnnualStatementLegalSettings{Regime: "weg"}
+	return AnnualStatementLegalSettings{Regime: "weg", HeatingConsumptionPercent: 70}
 }
 func (s AnnualStatementLegalSettings) Validate() error {
 	switch s.Regime {
 	case "weg", "mrg_voll", "mrg_teil", "ausnahme":
 	default:
 		return fmt.Errorf("invalid legal regime")
+	}
+	if s.HeizKGApplies && (s.HeatingConsumptionPercent < 55 || s.HeatingConsumptionPercent > 85) {
+		return fmt.Errorf("heating consumption share outside 55–85 percent")
+	}
+	for id, area := range s.HeatableAreas {
+		if NormalizeUnitID(id) != id || area < 0 || area > 9999999 {
+			return fmt.Errorf("invalid heatable area")
+		}
 	}
 	return nil
 }
@@ -85,7 +96,7 @@ func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementLegal(tenant Tenan
 	if !found {
 		return fmt.Errorf("annual statement period not found")
 	}
-	structure.Legal = settings
+	structure.Legal = cloneAnnualStatementLegal(settings)
 	s.structures[tenant.ID][year] = structure
 	return nil
 }
@@ -116,5 +127,15 @@ func loadAnnualStatementLegal(q annualStatementRunQueryer, tenant TenantRef, yea
 	if err := json.Unmarshal([]byte(raw), &legal); err != nil {
 		return legal, err
 	}
+	if legal.HeatingConsumptionPercent == 0 {
+		legal.HeatingConsumptionPercent = 70
+	}
 	return legal, legal.Validate()
+}
+
+func cloneAnnualStatementLegal(legal AnnualStatementLegalSettings) AnnualStatementLegalSettings {
+	raw, _ := json.Marshal(legal)
+	var copy AnnualStatementLegalSettings
+	_ = json.Unmarshal(raw, &copy)
+	return copy
 }
