@@ -35,6 +35,7 @@ type Document struct {
 	Inspection                 []string
 	Receipts                   []string
 	Title                      string
+	Reserve                    []string
 }
 
 // Documents selects only identities recorded in this run. Empty selectors mean
@@ -184,6 +185,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
+	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)
@@ -247,6 +249,8 @@ func (d Document) Pages() []pdf.Page {
 		summary = append(summary, lines(d.Balance, pdf.Strong)...)
 	}
 	blocks = append(blocks, summary)
+	// HAUSV-780 call site: Rücklage. Re-attach this single call when the statement layout is replaced.
+	blocks = append(blocks, ReserveBlocks(d.Reserve)...)
 	for _, text := range d.PaymentTerms {
 		blocks = append(blocks, lines(text, pdf.Body))
 	}
