@@ -13,6 +13,14 @@ const context = await browser.newContext({ locale: 'de-AT', timezoneId: 'Europe/
 const page = await context.newPage();
 const route = `${baseURL}/janusbergweg-123/app/settings/annual-statement?year=2025`;
 const pdfText = (data) => data.toString('latin1');
+const calculate = async () => {
+  const run = page.locator('[data-annual-statement-run]');
+  const previousRun = await run.count() ? await run.getAttribute('data-annual-statement-run') : null;
+  await Promise.all([
+    page.waitForURL(url => url.searchParams.get('run-status') === 'created' && url.searchParams.get('run') !== previousRun),
+    page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click(),
+  ]);
+};
 try {
   await page.goto(route);
   if (await page.locator('input[name="email"]').count()) {
@@ -33,7 +41,7 @@ try {
   assert.equal(await rate('heizung').inputValue(), '20');
   assert.equal(await rate('versicherung').inputValue(), '10');
   await page.screenshot({ path: `${out}/vat-off.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
+  await calculate();
   const offHref = await page.locator('.annual-pdf a').first().getAttribute('href');
   const offPDF = await (await context.request.get(new URL(offHref, baseURL).href, { headers: { Connection: 'close' } })).body();
   assert(!pdfText(offPDF).includes('USt-Satz'));
@@ -49,7 +57,7 @@ try {
   });
   assert.equal(await page.locator('input[name="show_vat"]').isChecked(), true);
   await page.screenshot({ path: `${out}/vat-on.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
+  await calculate();
   const onHref = await page.locator('.annual-pdf a').first().getAttribute('href');
   const onPDF = await (await context.request.get(new URL(onHref, baseURL).href, { headers: { Connection: 'close' } })).body();
   const text = pdfText(onPDF);

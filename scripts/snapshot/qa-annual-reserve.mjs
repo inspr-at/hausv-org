@@ -40,7 +40,12 @@ try {
   assert.notEqual(after, before);
   assert.match(await section.innerText(), /Prüfbuchung/);
   assert.match(await section.innerText(), /Endstand/);
-  await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
+  const existingRun = page.locator('[data-annual-statement-run]');
+  const previousRun = await existingRun.count() ? await existingRun.getAttribute('data-annual-statement-run') : null;
+  await Promise.all([
+    page.waitForURL(url => url.searchParams.get('run-status') === 'created' && url.searchParams.get('run') !== previousRun),
+    page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click(),
+  ]);
   const run = page.locator('[data-annual-statement-run]');
   await run.waitFor();
   const pdfURL = await run.locator('.annual-pdf a').first().getAttribute('href');
