@@ -190,7 +190,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
-	err = read(`SELECT id,document_id,period_year,cost_type_key,amount_cents,invoice_date,created_at,created_by,updated_at,updated_by FROM annual_statement_receipts WHERE tenant_id=$1 AND period_year=$2 ORDER BY id`, func(rows *sql.Rows) error {
+	err = read(`SELECT id,document_id,period_year,cost_type_key,amount_cents,invoice_date,created_at,created_by,updated_at,updated_by,supplier FROM annual_statement_receipts WHERE tenant_id=$1 AND period_year=$2 ORDER BY id`, func(rows *sql.Rows) error {
 		item, err := scanAnnualStatementReceipt(rows)
 		if err != nil {
 			return err

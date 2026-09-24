@@ -18,7 +18,7 @@ func (a *app) saveAnnualStatementLegal(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	year, err := strconv.Atoi(r.FormValue("year"))
-	legal := store.AnnualStatementLegalSettings{Regime: r.FormValue("regime"), HeizKGApplies: r.FormValue("heizkg_applies") == "on"}
+	legal := store.AnnualStatementLegalSettings{InspectionPlace: r.FormValue("inspection_place"), InspectionPeriod: r.FormValue("inspection_period"), InspectionContact: r.FormValue("inspection_contact"), Regime: r.FormValue("regime"), HeizKGApplies: r.FormValue("heizkg_applies") == "on"}
 	if err != nil || ac.repositories.annualStatementPeriods.SaveLegal(year, legal) != nil {
 		http.Error(w, "Bitte Rechtsgrundlage und Periode prüfen.", 400)
 		return

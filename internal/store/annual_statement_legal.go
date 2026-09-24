@@ -8,8 +8,11 @@ import (
 
 // Legal settings are period-scoped and copied into every immutable run.
 type AnnualStatementLegalSettings struct {
-	Regime        string `json:"regime"`
-	HeizKGApplies bool   `json:"heizkg_applies"`
+	InspectionPlace   string `json:"inspection_place"`
+	InspectionPeriod  string `json:"inspection_period"`
+	InspectionContact string `json:"inspection_contact"`
+	Regime            string `json:"regime"`
+	HeizKGApplies     bool   `json:"heizkg_applies"`
 }
 
 func DefaultAnnualStatementLegalSettings() AnnualStatementLegalSettings {

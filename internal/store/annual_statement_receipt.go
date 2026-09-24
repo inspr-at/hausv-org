@@ -13,6 +13,7 @@ import (
 // AnnualStatementReceipt links trusted invoice metadata to one original file
 // in Dokumente. Deleting the link deliberately never deletes the document.
 type AnnualStatementReceipt struct {
+	Supplier    string    `json:"supplier"`
 	ID          string    `json:"id"`
 	DocumentID  string    `json:"document_id"`
 	PeriodYear  int       `json:"period_year"`
@@ -212,11 +213,11 @@ func (s *SQLAnnualStatementReceiptStore) createAnnualStatementReceipt(tenant Ten
 	}
 	_, err = tx.Exec(
 		`INSERT INTO annual_statement_receipts(
-		 tenant_id, tenant_slug, id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by)
-		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+		 tenant_id, tenant_slug, id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier)
+		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
 		tenant.ID, tenant.Slug, receipt.ID, receipt.DocumentID, receipt.PeriodYear, receipt.CostTypeKey,
 		receipt.AmountCents, receipt.InvoiceDate, receipt.CreatedAt.Format(time.RFC3339Nano), receipt.CreatedBy,
-		receipt.UpdatedAt.Format(time.RFC3339Nano), receipt.UpdatedBy,
+		receipt.UpdatedAt.Format(time.RFC3339Nano), receipt.UpdatedBy, receipt.Supplier,
 	)
 	if err != nil {
 		return AnnualStatementReceipt{}, err
@@ -253,14 +254,14 @@ func (s *SQLAnnualStatementReceiptStore) updateAnnualStatementReceiptAmount(tena
 
 func (s *SQLAnnualStatementReceiptStore) getAnnualStatementReceipt(tenant TenantRef, id string) (AnnualStatementReceipt, bool) {
 	row := s.db.For(tenant).QueryRow(
-		`SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by
+		`SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier
 		 FROM annual_statement_receipts WHERE tenant_id=$1 AND id=$2`, tenant.ID, strings.TrimSpace(id))
 	receipt, err := scanAnnualStatementReceipt(row)
 	return receipt, err == nil
 }
 
 func (s *SQLAnnualStatementReceiptStore) listAnnualStatementReceipts(tenant TenantRef, periodYear int) []AnnualStatementReceipt {
-	query := `SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by
+	query := `SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier
 	 FROM annual_statement_receipts WHERE tenant_id=$1`
 	args := []any{tenant.ID}
 	if periodYear != 0 {
@@ -301,7 +302,7 @@ func scanAnnualStatementReceipt(scanner annualStatementReceiptScanner) (AnnualSt
 	var createdAt, updatedAt string
 	if err := scanner.Scan(
 		&receipt.ID, &receipt.DocumentID, &receipt.PeriodYear, &receipt.CostTypeKey, &receipt.AmountCents,
-		&receipt.InvoiceDate, &createdAt, &receipt.CreatedBy, &updatedAt, &receipt.UpdatedBy,
+		&receipt.InvoiceDate, &createdAt, &receipt.CreatedBy, &updatedAt, &receipt.UpdatedBy, &receipt.Supplier,
 	); err != nil {
 		return AnnualStatementReceipt{}, err
 	}
@@ -316,6 +317,10 @@ func scanAnnualStatementReceipt(scanner annualStatementReceiptScanner) (AnnualSt
 }
 
 func normalizeAnnualStatementReceipt(receipt AnnualStatementReceipt) (AnnualStatementReceipt, error) {
+	receipt.Supplier = strings.TrimSpace(receipt.Supplier)
+	if len(receipt.Supplier) > 300 {
+		return AnnualStatementReceipt{}, fmt.Errorf("supplier too long")
+	}
 	receipt.ID = strings.TrimSpace(receipt.ID)
 	receipt.DocumentID = strings.TrimSpace(receipt.DocumentID)
 	receipt.CostTypeKey = strings.ToLower(strings.TrimSpace(receipt.CostTypeKey))

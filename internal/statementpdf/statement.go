@@ -31,6 +31,9 @@ type Document struct {
 	Contact                    string
 	ApprovalNotice             string
 	PaymentTerms               []string
+	Inspection                 []string
+	Receipts                   []string
+	Title                      string
 }
 
 // Documents selects only identities recorded in this run. Empty selectors mean
@@ -174,6 +177,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
 	d.PaymentTerms = paymentTerms(run, unit)
+	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
 }
 
@@ -197,7 +201,11 @@ func (d Document) Pages() []pdf.Page {
 		}
 		return out
 	}
-	header := []pdf.Line{{Text: "Jahresabrechnung", Style: pdf.Heading}, {}}
+	title := d.Title
+	if title == "" {
+		title = "Jahresabrechnung"
+	}
+	header := []pdf.Line{{Text: title, Style: pdf.Heading}, {}}
 	for _, text := range d.Header {
 		header = append(header, lines(text, pdf.Body)...)
 	}
@@ -236,6 +244,18 @@ func (d Document) Pages() []pdf.Page {
 	if len(d.Excluded) > 0 {
 		blocks = append(blocks, []pdf.Line{{}}, lines("Hinweis: Nicht umlagefähige Kosten", pdf.Strong))
 		for _, text := range d.Excluded {
+			blocks = append(blocks, lines(text, pdf.Body))
+		}
+	}
+	if len(d.Inspection) > 0 {
+		blocks = append(blocks, []pdf.Line{{}}, lines("Einsicht in die Belege", pdf.Strong))
+		for _, text := range d.Inspection {
+			blocks = append(blocks, lines(text, pdf.Body))
+		}
+	}
+	if len(d.Receipts) > 0 {
+		blocks = append(blocks, []pdf.Line{{}}, lines("Belegverzeichnis", pdf.Strong))
+		for _, text := range d.Receipts {
 			blocks = append(blocks, lines(text, pdf.Body))
 		}
 	}

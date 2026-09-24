@@ -172,6 +172,9 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		}
 		if _, err := statementpdf.Documents(run, "", ""); err == nil {
 			out.AllPDFURL = annualStatementPDFURL(run.ID, "", "")
+			if run.Input.Structure.Legal.Regime == "mrg_voll" {
+				out.AushangURL = out.AllPDFURL + "?aushang=1"
+			}
 		}
 		out.Approved = run.Approval != nil
 		if run.Approval != nil {

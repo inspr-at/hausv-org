@@ -1,7 +1,10 @@
 package statementpdf
 
 import (
+	"github.com/inspr-at/hausv-org/internal/pdf"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -40,4 +43,56 @@ func paymentTerms(run store.AnnualStatementRun, unit store.AnnualStatementRunUni
 		terms = append(terms, "HeizKG-Anteil: Guthaben wird bis "+store.ShiftStatementDate(at, 2).Format("02.01.2006")+" zurückgezahlt; eine Nachzahlung ist bis zu diesem Tag fällig (§ 21 HeizKG).")
 	}
 	return terms
+}
+
+func inspectionAppendix(run store.AnnualStatementRun) ([]string, []string) {
+	legal := run.Input.Structure.Legal
+	if legal.Regime == "" {
+		return nil, nil
+	}
+	fallback := func(value string) string {
+		if strings.TrimSpace(value) == "" {
+			return "Noch nicht hinterlegt"
+		}
+		return value
+	}
+	inspection := []string{"Ort: " + fallback(legal.InspectionPlace), "Zeitraum: " + fallback(legal.InspectionPeriod), "Kontakt: " + fallback(legal.InspectionContact)}
+	receipts := append([]store.AnnualStatementReceipt(nil), run.Input.Receipts...)
+	sort.Slice(receipts, func(i, j int) bool {
+		if receipts[i].InvoiceDate != receipts[j].InvoiceDate {
+			return receipts[i].InvoiceDate < receipts[j].InvoiceDate
+		}
+		return receipts[i].ID < receipts[j].ID
+	})
+	names := map[string]string{}
+	for _, cost := range run.Input.Structure.CostTypes {
+		names[cost.Key] = cost.Name
+	}
+	var appendix []string
+	for _, receipt := range receipts {
+		appendix = append(appendix, date(receipt.InvoiceDate)+" · "+fallback(receipt.Supplier)+" · "+names[receipt.CostTypeKey]+" · "+money(receipt.AmountCents), "Dokument: "+receipt.DocumentID)
+	}
+	return inspection, appendix
+}
+
+// Aushang contains house totals and inspection instructions, never party data.
+func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
+	if run.Input.Structure.Legal.Regime != "mrg_voll" {
+		return nil, ErrNotFound
+	}
+	d := Document{Title: "Jahresabrechnung · Aushang", UnitLabel: "Liegenschaft", Header: []string{run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), run.Input.Structure.Legal.Basis()}, Contact: run.Input.Structure.Legal.InspectionContact, Total: money(run.Result.TotalCents)}
+	d.Inspection, _ = inspectionAppendix(run)
+	for _, cost := range run.Input.Structure.CostTypes {
+		var total int64
+		for _, receipt := range run.Input.Receipts {
+			if receipt.CostTypeKey == cost.Key {
+				total += receipt.AmountCents
+			}
+		}
+		d.Basis = append(d.Basis, cost.Name+": "+money(total))
+	}
+	if run.Approval != nil {
+		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + run.Approval.Role
+	}
+	return pdf.Pages(d.Pages(), pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
 }

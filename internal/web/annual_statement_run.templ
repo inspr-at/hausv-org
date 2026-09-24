@@ -7,6 +7,7 @@ type AnnualStatementRunView struct {
  Approved bool
  ApprovedAt string
  ApproveAction string
+ AushangURL string
 	Year            int
 	Ready           bool
 	Issues          []string
@@ -360,6 +361,9 @@ if data.Approved {
 				if data.AllPDFURL != "" {
 					<div class="annual-actions">
 						<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+ if data.AushangURL != "" {
+ <a class="button ghost" href={ templ.SafeURL(data.AushangURL) } download>Aushang (PDF)</a>
+ }
 						if data.ApproveAction != "" {
  <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
  }

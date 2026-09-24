@@ -127,7 +127,7 @@ func (a *app) createAnnualStatementReceipt(w http.ResponseWriter, r *http.Reques
 	receipt := store.AnnualStatementReceipt{
 		DocumentID: strings.TrimSpace(r.FormValue("document_id")), PeriodYear: periodYear,
 		CostTypeKey: strings.TrimSpace(r.FormValue("cost_type_key")), AmountCents: amountCents,
-		InvoiceDate: strings.TrimSpace(r.FormValue("invoice_date")), CreatedBy: actorEmail,
+		InvoiceDate: strings.TrimSpace(r.FormValue("invoice_date")), CreatedBy: actorEmail, Supplier: r.FormValue("supplier"),
 	}
 	var files []*multipart.FileHeader
 	if r.MultipartForm != nil {

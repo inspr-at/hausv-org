@@ -190,3 +190,11 @@ zwei Monaten. Monatsenden werden auf den letzten Tag des Zielmonats begrenzt.
 MRG Vollanwendung: übernächster monatlicher Zinstermin; die aktuelle Umsetzung
 nimmt den 5. an und weist diese Annahme aus. Abweichende vertragliche Zinstermine
 sind noch nicht modelliert. Teilanwendung und Ausnahme verweisen auf den Vertrag.
+
+## Belegeinsicht und Aushang
+
+Ort, Zeitraum/Öffnungszeiten und Kontakt werden pro Periode gespeichert und im
+Lauf eingefroren. Der PDF-Anhang führt Rechnungsdatum, bestätigten Lieferanten,
+Kostenart, Betrag und Original-Dokumentkennung auf. Fehlende Altangaben werden
+sichtbar benannt. MRG Vollanwendung bietet zusätzlich ein druckbares Aushang-PDF
+mit Haussummen und Einsichtshinweis ohne Namen oder Salden einzelner Parteien.
