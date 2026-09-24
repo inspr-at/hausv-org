@@ -108,6 +108,9 @@ var TableOrder = []string{
 	"annual_statement_runs",
 	"annual_statement_run_approvals",
 	"annual_statement_deliveries",
+	"rental_management",
+	"tenant_statements",
+	"tenant_statement_approvals",
 	"unit_payment_status",
 	"contacts",
 	"announcement_reads",
@@ -507,12 +510,18 @@ func Move(ctx context.Context, source *sql.DB, lane db.Handle, opts Options) (*R
 			return report, fmt.Errorf("%w: %s (pass --force to wipe every governed table first; the mover never merges)", ErrTargetNotEmpty, describeCounts(report.TargetRowsBefore))
 		}
 		fmt.Fprintf(out, "--force: wiping %d governed tables inside the load transaction\n", len(tables))
+		if _, err := tx.ExecContext(ctx, `TRUNCATE TABLE tenant_statement_approvals,tenant_statements`); err != nil {
+			return report, fmt.Errorf("dbmove: wipe tenant statements: %w", err)
+		}
 		// These immutable snapshots have foreign keys between the four tables;
 		// an explicit full-target replacement truncates the group together.
 		if _, err := tx.ExecContext(ctx, `TRUNCATE TABLE valorisation_events,valorisation_deliveries,valorisation_items,valorisation_runs`); err != nil {
 			return report, fmt.Errorf("dbmove: wipe valorisation: %w", err)
 		}
 		for i := len(tables) - 1; i >= 0; i-- {
+			if tables[i].name == "tenant_statements" || tables[i].name == "tenant_statement_approvals" {
+				continue // Truncated together above because approvals reference snapshots.
+			}
 			wipe := `DELETE FROM ` + quoteIdent(tables[i].name)
 			if tables[i].name == "annual_statement_runs" || tables[i].name == "annual_statement_run_approvals" {
 				// Row-level changes are forbidden for immutable runs. Only this

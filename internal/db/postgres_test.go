@@ -29,7 +29,7 @@ var expectedTenantTables = []string{
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
-	"house_memberships", "index_clauses", "integration_imports", "issues", "lease_parties", "leases", "parking", "rent_components", "unit_payment_status", "units", "valorisation_deliveries", "valorisation_events", "valorisation_items", "valorisation_runs", "valorisation_state",
+	"house_memberships", "index_clauses", "integration_imports", "issues", "lease_parties", "leases", "parking", "rent_components", "rental_management", "tenant_statement_approvals", "tenant_statements", "unit_payment_status", "units", "valorisation_deliveries", "valorisation_events", "valorisation_items", "valorisation_runs", "valorisation_state",
 }
 
 func TestOpenConfigDefaultsToSQLite(t *testing.T) {
@@ -363,6 +363,12 @@ func tenantTableSmokeInsert(table string) string {
 	// parent lease/clause, so a tenant_id-only smoke row would test NOT NULL
 	// and the FK instead of the RLS policy this fixture owns.
 	switch table {
+	case "rental_management":
+		return `INSERT INTO rental_management(tenant_id,tenant_slug,unit_id,data) VALUES($1,'rls-fixture','top-1','{}')`
+	case "tenant_statements":
+		return `INSERT INTO tenant_statements(tenant_id,tenant_slug,id,run_id,unit_id,data) VALUES($1,'rls-fixture','statement','run','top-1','{}')`
+	case "tenant_statement_approvals":
+		return `INSERT INTO tenant_statement_approvals(tenant_id,tenant_slug,statement_id,data) VALUES($1,'rls-fixture','statement','{}')`
 	case "valorisation_runs":
 		return `INSERT INTO valorisation_runs(tenant_id,tenant_slug,id,org_key,effective_on,revision,status,inputs_sha256,index_snapshot,data,created_by,created_at) VALUES($1,'rls-fixture','run','org','2026-04-01',1,'draft','hash','{}','{}','manager@example.test','2026-04-01T00:00:00Z')`
 	case "valorisation_items":
@@ -416,7 +422,7 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	}
 	// Parents before children: the lease and its clause exist before the rows
 	// that reference them, whatever order the catalog lists the tables in.
-	for _, table := range []string{"leases", "index_clauses", "valorisation_runs"} {
+	for _, table := range []string{"leases", "index_clauses", "valorisation_runs", "tenant_statements"} {
 		if _, err := tx.Exec(tenantTableSmokeInsert(table), tenantA); err != nil {
 			t.Fatalf("seed prerequisite %s: %v", table, err)
 		}
@@ -424,7 +430,7 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	for _, table := range tables {
 		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" ||
 			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" ||
-			table == "leases" || table == "index_clauses" || table == "valorisation_runs" {
+			table == "leases" || table == "index_clauses" || table == "valorisation_runs" || table == "tenant_statements" {
 			continue
 		}
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {

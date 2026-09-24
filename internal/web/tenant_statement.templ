@@ -1,0 +1,282 @@
+package web
+
+type TenantStatementPanelData struct {
+	Enabled                     bool
+	RunID, Message, StatementOn string
+	Units                       []TenantStatementUnitView
+	Statements                  []TenantStatementView
+}
+type TenantStatementOption struct {
+	Key, Label string
+	Selected   bool
+}
+type TenantStatementLeaseView struct {
+	ID, Label, Scope string
+	Contract         bool
+	Costs            []TenantStatementOption
+}
+type TenantStatementUnitView struct {
+	ID, Label, OwnerEmail, OwnerName string
+	Active, HeatingMonthlyConfirmed  bool
+	Owners, Costs                    []TenantStatementOption
+	Leases                           []TenantStatementLeaseView
+}
+
+// Result is "Guthaben", "Nachzahlung" or "Ausgeglichen"; Amount is unsigned.
+type TenantStatementAccountView struct {
+	ID, Names, Result, Amount string
+}
+type TenantStatementView struct {
+	ID, Label, Date, Owner, SourcePassed, SourceRetained, SendIssue string
+	Approved, Archived                                              bool
+	Accounts                                                        []TenantStatementAccountView
+	Deliveries                                                      []AnnualStatementDeliveryView
+}
+
+templ TenantStatementPanel(data TenantStatementPanelData) {
+	if data.Enabled {
+		<section class="panel workspace" id="mieterabrechnungen">
+			<style>
+ #mieterabrechnungen { scroll-margin-top:150px; margin-top:var(--space-5); min-width:0; }
+ #mieterabrechnungen .subhead > div { min-width:0; overflow-wrap:anywhere; }
+ #mieterabrechnungen .ts-notice { margin-block:var(--space-3); padding:var(--space-3) var(--space-4); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:var(--radius-sm); background:var(--panel-soft); font-size:13px; }
+ #mieterabrechnungen .ts-hint { margin:0; color:var(--muted); font-size:12px; line-height:1.45; }
+ #mieterabrechnungen .ts-units { margin-top:var(--space-3); border-top:1px solid var(--line); }
+ #mieterabrechnungen .ts-unit { border-bottom:1px solid var(--line); min-width:0; }
+ #mieterabrechnungen .ts-unit > summary { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-1) var(--space-3); min-height:52px; padding-block:var(--space-2); cursor:pointer; }
+ #mieterabrechnungen .ts-unit-name { font-weight:700; color:var(--ink); min-width:4.5rem; }
+ #mieterabrechnungen .ts-unit-owner { color:var(--muted); font-size:12px; min-width:0; overflow-wrap:anywhere; }
+ #mieterabrechnungen .ts-unit-body { display:grid; gap:var(--space-4); padding:var(--space-2) 0 var(--space-5); min-width:0; }
+ #mieterabrechnungen .ts-chip { display:inline-flex; align-items:center; min-height:24px; padding:2px 10px; border:1px solid var(--line); border-radius:var(--radius-pill); background:var(--panel-soft); color:var(--muted); font-size:11px; font-weight:700; white-space:nowrap; }
+ #mieterabrechnungen .ts-chip.ok { border-color:var(--leaf); color:var(--leaf); background:transparent; }
+ #mieterabrechnungen .ts-chip.gold { border-color:var(--gold); color:var(--gold-ink); background:transparent; }
+ #mieterabrechnungen .ts-chip.warn { border-color:var(--ink); color:var(--ink); background:transparent; }
+ #mieterabrechnungen form { margin:0; display:grid; gap:var(--space-4); min-width:0; }
+ #mieterabrechnungen fieldset { min-width:0; margin:0; border:1px solid var(--line); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4) var(--space-4); display:grid; gap:var(--space-2); }
+ #mieterabrechnungen legend { padding-inline:var(--space-1); font-family:inherit; font-size:12px; font-weight:700; color:var(--gold-ink); letter-spacing:.02em; }
+ #mieterabrechnungen legend .ts-chip { margin-left:var(--space-2); vertical-align:middle; }
+ #mieterabrechnungen .ts-checks { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(14rem,100%),1fr)); gap:0 var(--space-4); }
+ #mieterabrechnungen label.ts-check { display:flex; align-items:center; gap:10px; min-height:44px; font-size:13px; font-weight:400; color:var(--ink); line-height:1.35; text-transform:none; letter-spacing:normal; cursor:pointer; }
+ #mieterabrechnungen .ts-check input { flex:0 0 18px; width:18px; height:18px; min-height:18px; margin:0; }
+ #mieterabrechnungen .ts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(16rem,100%),1fr)); gap:var(--space-3) var(--space-4); align-items:start; }
+ #mieterabrechnungen .ts-field { display:grid; gap:6px; min-width:0; font-size:12px; font-weight:700; color:var(--muted); }
+ #mieterabrechnungen .ts-field :is(select,input) { width:100%; min-width:0; min-height:44px; font-weight:400; }
+ #mieterabrechnungen .ts-actions { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-3); }
+ #mieterabrechnungen .ts-actions form { display:contents; }
+ #mieterabrechnungen .ts-actions .button { min-height:44px; white-space:normal; text-align:center; }
+ #mieterabrechnungen .ts-derive { padding-top:var(--space-4); border-top:1px dashed var(--line); }
+ #mieterabrechnungen .ts-statements { display:grid; gap:var(--space-4); margin-top:var(--space-5); }
+ #mieterabrechnungen .ts-statement { border:1px solid var(--line); border-radius:var(--radius-sm); padding:var(--space-4); display:grid; gap:var(--space-3); min-width:0; overflow-wrap:anywhere; }
+ #mieterabrechnungen .ts-statement-head { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-2) var(--space-3); }
+ #mieterabrechnungen .ts-statement-head h3 { margin:0; font-size:18px; }
+ #mieterabrechnungen .ts-statement-head time { color:var(--muted); font-size:13px; }
+ #mieterabrechnungen .ts-statement-head .ts-chip { margin-left:auto; }
+ #mieterabrechnungen .ts-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(12rem,100%),1fr)); gap:var(--space-2) var(--space-4); margin:0; }
+ #mieterabrechnungen .ts-facts div { min-width:0; }
+ #mieterabrechnungen .ts-facts dt { color:var(--muted); font-size:11px; }
+ #mieterabrechnungen .ts-facts dd { margin:2px 0 0; font-size:14px; font-variant-numeric:tabular-nums; }
+ #mieterabrechnungen .ts-table { width:100%; border-collapse:collapse; font-size:13px; }
+ #mieterabrechnungen .ts-table th { text-align:left; color:var(--muted); font-size:11px; font-weight:700; padding:var(--space-2) var(--space-2) var(--space-2) 0; border-bottom:1px solid var(--line); }
+ #mieterabrechnungen .ts-table td { padding:var(--space-2) var(--space-2) var(--space-2) 0; border-bottom:1px solid var(--line); vertical-align:middle; min-width:0; }
+ #mieterabrechnungen .ts-table .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+ #mieterabrechnungen .ts-table .ts-result { display:block; color:var(--muted); font-size:11px; }
+ #mieterabrechnungen .ts-table a { display:inline-flex; align-items:center; min-height:44px; color:var(--gold-ink); text-decoration:underline; text-underline-offset:3px; }
+ #mieterabrechnungen .ts-table td:last-child, #mieterabrechnungen .ts-table th:last-child { padding-right:0; text-align:right; }
+ @media (max-width:560px) {
+  #mieterabrechnungen .ts-unit-owner { flex-basis:100%; order:3; }
+  #mieterabrechnungen .ts-actions > *, #mieterabrechnungen .ts-actions form > * { flex:1 1 100%; }
+  #mieterabrechnungen .ts-statement-head .ts-chip { margin-left:0; }
+  #mieterabrechnungen .ts-table thead { display:none; }
+  #mieterabrechnungen .ts-table tr { display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:var(--space-3); border-bottom:1px solid var(--line); padding-block:var(--space-2); }
+  #mieterabrechnungen .ts-table td { border:0; padding:0; }
+  #mieterabrechnungen .ts-table td:first-child { grid-column:1 / -1; font-weight:700; }
+  #mieterabrechnungen .ts-table td.num { text-align:left; }
+ }
+</style>
+			<div class="subhead"><div><h2>Mieterabrechnungen</h2><p>Optionale Mietverwaltung für vermietetes Wohnungseigentum. Grundlage ist dieser freigegebene WEG-Lauf.</p></div></div>
+			if data.Message != "" {
+				<p class="ts-notice" role="status">{ data.Message }</p>
+			}
+			<div class="ts-units">
+				for _,unit := range data.Units {
+					<details class="ts-unit">
+						<summary>
+							<span class="ts-unit-name">{ unit.Label }</span>
+							if unit.Active {
+								<span class="ts-chip ok">Mietverwaltung aktiv</span>
+								if unit.OwnerName != "" {
+									<span class="ts-unit-owner">Im Namen von { unit.OwnerName }</span>
+								}
+							} else {
+								<span class="ts-chip">Nicht eingerichtet</span>
+							}
+							@DisclosureChevron()
+						</summary>
+						<div class="ts-unit-body">
+							<form method="post" action={ templ.SafeURL("/app/settings/annual-statement/runs/" + data.RunID + "/rental-management") }>
+								<input type="hidden" name="unit_id" value={ unit.ID }/>
+								<fieldset>
+									<legend>Mandat</legend>
+									<label class="ts-check"><input type="checkbox" name="active" value="1" checked?={ unit.Active }/> Mietverwaltung aktiv</label>
+									<div class="ts-grid">
+										<label class="ts-field">
+											Im Namen und auf Rechnung von
+											<select name="owner_email" required>
+												<option value="">Eigentümer wählen</option>
+												for _,o := range unit.Owners {
+													<option value={ o.Key } selected?={ o.Selected }>{ o.Label }</option>
+												}
+											</select>
+										</label>
+									</div>
+									<label class="ts-check"><input type="checkbox" name="heating_monthly" value="1" checked?={ unit.HeatingMonthlyConfirmed }/> Heizkosten: keine Zwischenablesung, gleiche Monatsanteile bei Mieterwechsel (§ 23 HeizKG)</label>
+								</fieldset>
+								<fieldset>
+									<legend>Überwälzbare Kostenarten · MRG-Vollanwendung</legend>
+									<p class="ts-hint">Bei Versicherung, Verwaltung und Gemeinschaftsanlagen besondere Voraussetzungen prüfen. Die Rücklage bleibt immer ausgeschlossen.</p>
+									<div class="ts-checks">
+										for _,cost := range unit.Costs {
+											<label class="ts-check"><input type="checkbox" name="passable" value={ cost.Key } checked?={ cost.Selected }/> { cost.Label }</label>
+										}
+									</div>
+								</fieldset>
+								for _,lease := range unit.Leases {
+									<fieldset>
+										<legend>Mietvertrag · { lease.Label }<span class="ts-chip">{ lease.Scope }</span></legend>
+										if lease.Contract {
+											<p class="ts-hint">Vereinbarter Kostenkatalog dieses Mietvertrags</p>
+											<div class="ts-checks">
+												for _,cost := range lease.Costs {
+													<label class="ts-check"><input type="checkbox" name={ "contract_" + lease.ID } value={ cost.Key } checked?={ cost.Selected }/> { cost.Label }</label>
+												}
+											</div>
+										} else {
+											<p class="ts-hint">Es gelten die überwälzbaren Kostenarten oben.</p>
+										}
+									</fieldset>
+								}
+								<div class="ts-actions">
+									if unit.Active {
+										<button class="button ghost" type="submit">Mietverwaltung speichern</button>
+									} else {
+										<button class="button primary" type="submit">Mietverwaltung speichern</button>
+									}
+								</div>
+							</form>
+							if unit.Active {
+								<form method="post" action={ templ.SafeURL("/app/settings/annual-statement/runs/" + data.RunID + "/tenant-statements") } class="ts-derive">
+									<input type="hidden" name="unit_id" value={ unit.ID }/>
+									<div class="ts-grid">
+										<label class="ts-field">Abrechnungsdatum <input type="date" name="statement_on" value={ data.StatementOn } required/></label>
+										if tenantUnitHasContract(unit) {
+											<label class="ts-field">Vertragliche Fälligkeit (Teilanwendung/Ausnahme) <input type="date" name="contract_due_on"/></label>
+										}
+									</div>
+									<div class="ts-actions"><button class="button primary" type="submit">Mieterabrechnung erstellen</button></div>
+								</form>
+							}
+						</div>
+					</details>
+				}
+			</div>
+			if len(data.Statements) > 0 {
+				<div class="ts-statements">
+					for _,s := range data.Statements {
+						<article class="ts-statement">
+							<div class="ts-statement-head">
+								<h3>{ s.Label }</h3>
+								<time>{ s.Date }</time>
+								@tenantStatementChip(s)
+							</div>
+							<dl class="ts-facts">
+								<div><dt>Im Namen und auf Rechnung von</dt><dd>{ s.Owner }</dd></div>
+								<div><dt>WEG-Anteil überwälzbar</dt><dd>{ s.SourcePassed }</dd></div>
+								<div><dt>WEG-Anteil beim Eigentümer</dt><dd>{ s.SourceRetained }</dd></div>
+							</dl>
+							if len(s.Accounts) > 0 {
+								<table class="ts-table">
+									<thead><tr><th scope="col">Mietpartei</th><th scope="col" class="num">Ergebnis</th><th scope="col">Abrechnung</th></tr></thead>
+									<tbody>
+										for _,account := range s.Accounts {
+											<tr>
+												<td>{ account.Names }</td>
+												<td class="num"><span class="ts-result">{ account.Result }</span>{ account.Amount }</td>
+												<td><a href={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/pdf?account=" + account.ID) } target="_blank">PDF-Vorschau</a></td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							}
+							<div class="ts-actions">
+								if !s.Approved {
+									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/approve") }><button class="button primary" type="submit">Mieterabrechnung freigeben</button></form>
+								} else if !s.Archived {
+									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/archive") }><button class="button primary" type="submit">Mieterabrechnung archivieren</button></form>
+								} else if s.SendIssue == "" {
+									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/send") }><button class={ "button", templ.KV("primary", !tenantStatementDelivered(s)), templ.KV("ghost", tenantStatementDelivered(s)) } type="submit">An Mietparteien und Eigentümer senden</button></form>
+								}
+								<a class="button ghost" href={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/pdf") } target="_blank">Eigentümerkopie ansehen</a>
+							</div>
+							if s.Archived && s.SendIssue != "" {
+								<p class="ts-hint">{ s.SendIssue }</p>
+							}
+							if len(s.Deliveries) > 0 {
+								<table class="ts-table">
+									<thead><tr><th scope="col">Empfänger</th><th scope="col">Zeit</th><th scope="col">Status</th></tr></thead>
+									<tbody>
+										for _,d := range s.Deliveries {
+											<tr>
+												<td>{ d.Recipient }</td>
+												<td>{ d.Time }</td>
+												<td>
+													<span class={ "ts-chip", templ.KV("ok", d.Status == "Gesendet"), templ.KV("warn", d.Status == "Fehlgeschlagen") }>{ d.Status }</span>
+													if d.Error != "" {
+														<span class="ts-result">{ d.Error }</span>
+													}
+												</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							}
+						</article>
+					}
+				</div>
+			}
+		</section>
+	}
+}
+
+templ tenantStatementChip(s TenantStatementView) {
+	switch {
+		case !s.Approved:
+			<span class="ts-chip gold">Entwurf</span>
+		case !s.Archived:
+			<span class="ts-chip">Freigegeben</span>
+		default:
+			<span class="ts-chip ok">Archiviert</span>
+	}
+}
+
+func tenantUnitHasContract(unit TenantStatementUnitView) bool {
+	for _, l := range unit.Leases {
+		if l.Contract {
+			return true
+		}
+	}
+	return false
+}
+
+// tenantStatementDelivered reports a completed send; a retry then only skips
+// recipients, so it is no longer the view's primary action.
+func tenantStatementDelivered(s TenantStatementView) bool {
+	if len(s.Deliveries) == 0 {
+		return false
+	}
+	for _, d := range s.Deliveries {
+		if d.Status != "Gesendet" {
+			return false
+		}
+	}
+	return true
+}
