@@ -53,7 +53,6 @@ type (
 	announcementView        = view.AnnouncementView
 	attachmentGroup         = view.AttachmentGroup
 	attachmentView          = view.AttachmentView
-	auditDetailView         = view.AuditDetailView
 	auditEventView          = view.AuditEventView
 	auditFilterChipView     = view.AuditFilterChipView
 	auditStatsView          = view.AuditStatsView
@@ -93,11 +92,8 @@ var announcementViewFrom = view.AnnouncementViewFrom
 var attachmentViewFromRecord = view.AttachmentViewFromRecord
 var auditActionLabel = view.AuditActionLabel
 var auditActionTone = view.AuditActionTone
-var auditDetailLabel = view.AuditDetailLabel
 var auditEventViewFrom = view.AuditEventViewFrom
-var auditTargetLabel = view.AuditTargetLabel
 var auditTargetTypeLabel = view.AuditTargetTypeLabel
-var auditToneLabel = view.AuditToneLabel
 var authMethodsLabel = view.AuthMethodsLabel
 var ballotWeightingLabel = view.BallotWeightingLabel
 var ballotWinnerLabel = view.BallotWinnerLabel
@@ -111,16 +107,12 @@ var documentUnitLabel = view.DocumentUnitLabel
 var documentUnitOptions = view.DocumentUnitOptions
 var documentVersionLabel = view.DocumentVersionLabel
 var documentViewFrom = view.DocumentViewFrom
-var documentVisibilityClass = view.DocumentVisibilityClass
 var documentVisibilityLabel = view.DocumentVisibilityLabel
 var documentVisibilityOptions = view.DocumentVisibilityOptions
 var emptyState = view.EmptyState
-var eventCategoryClass = view.EventCategoryClass
 var eventViewFrom = view.EventViewFrom
 var formatBallotReminder = view.FormatBallotReminder
 var formatBallotResultWeight = view.FormatBallotResultWeight
-var formatBallotSharePercent = view.FormatBallotSharePercent
-var formatBallotShareWeight = view.FormatBallotShareWeight
 var formatBallotWeight = view.FormatBallotWeight
 var formatBillableUnitWeight = view.FormatBillableUnitWeight
 var formatBytes = view.FormatBytes
@@ -135,7 +127,6 @@ var formatKWh = view.FormatKWh
 var formatLocalDate = view.FormatLocalDate
 var formatLocalDateTime = view.FormatLocalDateTime
 var formatLocalDateTimeInput = view.FormatLocalDateTimeInput
-var formatLocalShortDateTime = view.FormatLocalShortDateTime
 var formatLocalTime = view.FormatLocalTime
 var formatMiteigentumsanteil = view.FormatMiteigentumsanteil
 var formatMonthLabel = view.FormatMonthLabel
@@ -146,7 +137,6 @@ var formatPreciseEUR = view.FormatPreciseEUR
 var formatPreciseEURPerKWh = view.FormatPreciseEURPerKWh
 var formatPreciseKWh = view.FormatPreciseKWh
 var issueBoardFilterOptions = view.IssueBoardFilterOptions
-var issueFilterOptions = view.IssueFilterOptions
 var issueLocationLabel = view.IssueLocationLabel
 var issueSelectOptions = view.IssueSelectOptions
 var issueStatusClass = view.IssueStatusClass
@@ -161,9 +151,7 @@ var roleClass = view.RoleClass
 var tenantBrandIconOptions = view.TenantBrandIconOptions
 var togglePaidLabel = view.TogglePaidLabel
 var unitBillableLabel = view.UnitBillableLabel
-var unitCountLabel = view.UnitCountLabel
 var unitPaymentRelationLabel = view.UnitPaymentRelationLabel
-var unitPaymentStatusClass = view.UnitPaymentStatusClass
 var unitPaymentStatusLabel = view.UnitPaymentStatusLabel
 var unitPaymentStatusOptions = view.UnitPaymentStatusOptions
 var unitPaymentStatusViewFromUnit = view.UnitPaymentStatusViewFromUnit
@@ -178,7 +166,6 @@ var permissionLabelList = view.PermissionLabelList
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var documentCanPreview = view.DocumentCanPreview
-var documentFileKind = view.DocumentFileKind
 var selectedDocumentSort = view.SelectedDocumentSort
 
 // ── extracted to view ──────────────────────────────────────────────
@@ -188,21 +175,16 @@ var documentCategories = view.DocumentCategories
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var notificationEventCatalog = view.NotificationEventCatalog
-var unitPaymentStatusDetail = view.UnitPaymentStatusDetail
 
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var eventTimeRange = view.EventTimeRange
 var germanDateLong = view.GermanDateLong
-var germanMonthShort = view.GermanMonthShort
-var issueCategories = view.IssueCategories
 var issuePriorities = view.IssuePriorities
 var issueStatuses = view.IssueStatuses
 
 // ── extracted to view ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var announcementUnread = view.AnnouncementUnread
-var plainTextHTML = view.PlainTextHTML
 var sameLocalDate = view.SameLocalDate
 
 // ── extracted to auth ──────────────────────────────────────────────
