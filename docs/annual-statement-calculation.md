@@ -286,7 +286,9 @@ Der Anteil je Einheit verwendet die bestehende Nutzwert-Basis und die
 Centverteilung nach größtem Rest. Die Summe der Anteile ist der Endstand.
 Historische Läufe ohne Buchungs-Snapshot (`reserve` fehlt in der Eingabe)
 rechnen die Kosten unverändert und ohne Rücklage nach. Die Berechnungsversion
-bleibt `2`.
+bleibt ohne Umsatzsteuerausweis `2`, mit Umsatzsteuerausweis gilt `3`.
+Der Rücklageblock steht im Parteienbrief nach Kostentabelle und Einheitsbasis,
+vor den Hinweisen, auf demselben gemessenen Satzspiegel wie der übrige Brief.
 
 Die Mindestprüfung warnt nur. Ab 2026 gilt 1,12 €/m²/Monat Nutzfläche
 (WEG 2002 § 31; 0,90 × 128,1 / 102,6 = 1,1237, angesetzt mit 1,12; Quelle WKO/ÖVI).
@@ -314,7 +316,10 @@ und Warmwasser beginnen mit 20 %, alle übrigen mit 10 %. Der Bruttoanteil der
 Einheit bleibt die bisherige Centverteilung. Pro Steuersatz wird die Umsatzsteuer
 einmal aus der Haus-Bruttosumme dieser Gruppe kaufmännisch gerundet
 (10 % = Brutto × 10/110, 20 % = Brutto × 20/120, 0 % = 0). Die Cent gehen nach
-größtem Rest auf die Einheiten und innerhalb der Einheit auf die Kostenarten.
+größtem Rest auf die bewohnten und leerstehenden Einheitsanteile und innerhalb
+dieser Anteile auf die Kostenarten. Der Eigentümeranteil bei Leerstand bleibt
+Teil der Haus-Steuersumme; Parteienbrief und Aushang enthalten auch seine
+Netto- und Steuerbeträge.
 Netto ist Brutto minus Umsatzsteuer, daher stimmt jede Zeile, jede Gruppe und
 die Gesamtsumme auf den Cent. Solche Läufe speichern Berechnungsversion 3.
 Das PDF zeigt dann Netto, USt-Satz, USt und Brutto sowie die Summen je Satz.

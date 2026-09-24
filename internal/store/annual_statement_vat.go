@@ -90,8 +90,20 @@ func distributeLargestRemainder(amount int64, weights []int64) []int64 {
 
 // applyAnnualStatementVAT splits each unit's gross by rate group. The group
 // VAT is rounded once on the house gross, then largest-remainder assigns it
-// to units and to cost lines so every sum matches the gross to the cent.
+// to occupied and vacant unit shares and their cost lines so every sum matches
+// the gross to the cent. Vacancy is already split before this step.
 func applyAnnualStatementVAT(result *AnnualStatementRunResult, input AnnualStatementRunInput) string {
+	type allocation struct {
+		costs  []AnnualStatementRunCost
+		groups *[]AnnualStatementVATGroup
+	}
+	allocations := make([]allocation, 0, len(result.Units)+len(result.Vacancy))
+	for i := range result.Units {
+		allocations = append(allocations, allocation{result.Units[i].Costs, &result.Units[i].VAT})
+	}
+	for i := range result.Vacancy {
+		allocations = append(allocations, allocation{result.Vacancy[i].Costs, &result.Vacancy[i].VAT})
+	}
 	rateOf := map[string]int{}
 	for _, cost := range input.Structure.CostTypes {
 		if !ValidAnnualStatementVATPercent(cost.VATRatePercent) {
@@ -110,10 +122,10 @@ func applyAnnualStatementVAT(result *AnnualStatementRunResult, input AnnualState
 	}
 	sort.Ints(rates)
 	for _, rate := range rates {
-		weights := make([]int64, len(result.Units))
+		weights := make([]int64, len(allocations))
 		var houseGross int64
-		for ui := range result.Units {
-			for _, line := range result.Units[ui].Costs {
+		for ui, allocation := range allocations {
+			for _, line := range allocation.costs {
 				if rateOf[line.CostTypeKey] != rate {
 					continue
 				}
@@ -126,10 +138,10 @@ func applyAnnualStatementVAT(result *AnnualStatementRunResult, input AnnualState
 		result.VATGroups = append(result.VATGroups, AnnualStatementVATGroup{
 			RatePercent: rate, NetCents: houseGross - groupVAT, VATCents: groupVAT, GrossCents: houseGross,
 		})
-		for ui := range result.Units {
+		for ui, allocation := range allocations {
 			var indexes []int
 			var lineWeights []int64
-			for i, line := range result.Units[ui].Costs {
+			for i, line := range allocation.costs {
 				if rateOf[line.CostTypeKey] != rate {
 					continue
 				}
@@ -142,14 +154,14 @@ func applyAnnualStatementVAT(result *AnnualStatementRunResult, input AnnualState
 			lineVATs := distributeLargestRemainder(unitVATs[ui], lineWeights)
 			var unitNet, unitGross int64
 			for j, idx := range indexes {
-				line := &result.Units[ui].Costs[idx]
+				line := &allocation.costs[idx]
 				line.VATRatePercent = rate
 				line.VATCents = lineVATs[j]
 				line.NetCents = line.AmountCents - line.VATCents
 				unitNet += line.NetCents
 				unitGross += line.AmountCents
 			}
-			result.Units[ui].VAT = append(result.Units[ui].VAT, AnnualStatementVATGroup{
+			*allocation.groups = append(*allocation.groups, AnnualStatementVATGroup{
 				RatePercent: rate, NetCents: unitNet, VATCents: unitVATs[ui], GrossCents: unitGross,
 			})
 		}

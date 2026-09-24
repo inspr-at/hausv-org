@@ -76,14 +76,15 @@ type AnnualStatementRunUnit struct {
 // days. It is not an extra allocation: the cents are the vacant-day slice of
 // the share the unit already kept.
 type AnnualStatementVacancyLine struct {
-	UnitID      string                   `json:"unit_id"`
-	Label       string                   `json:"label"`
-	From        string                   `json:"from"`
-	To          string                   `json:"to"`
-	VacantDays  int                      `json:"vacant_days"`
-	PeriodDays  int                      `json:"period_days"`
-	Costs       []AnnualStatementRunCost `json:"costs"`
-	AmountCents int64                    `json:"amount_cents"`
+	UnitID      string                    `json:"unit_id"`
+	Label       string                    `json:"label"`
+	From        string                    `json:"from"`
+	To          string                    `json:"to"`
+	VacantDays  int                       `json:"vacant_days"`
+	PeriodDays  int                       `json:"period_days"`
+	Costs       []AnnualStatementRunCost  `json:"costs"`
+	VAT         []AnnualStatementVATGroup `json:"vat,omitempty"`
+	AmountCents int64                     `json:"amount_cents"`
 }
 
 type AnnualStatementRunResult struct {

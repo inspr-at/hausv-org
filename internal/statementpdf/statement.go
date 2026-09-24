@@ -205,6 +205,7 @@ func annualStatementPartyUnit(run store.AnnualStatementRun, unit store.AnnualSta
 	if party.Owner && !party.Renter {
 		owner := unit
 		owner.Costs = append([]store.AnnualStatementRunCost(nil), line.Costs...)
+		owner.VAT = line.VAT
 		owner.AllocatedCents = line.AmountCents
 		owner.PrepaidCents = 0
 		owner.BalanceCents = line.AmountCents
@@ -213,6 +214,23 @@ func annualStatementPartyUnit(run store.AnnualStatementRun, unit store.AnnualSta
 	if party.Owner && party.Renter {
 		combined := unit
 		combined.Costs = append(append([]store.AnnualStatementRunCost(nil), unit.Costs...), line.Costs...)
+		combined.VAT = append([]store.AnnualStatementVATGroup(nil), unit.VAT...)
+		for _, vacant := range line.VAT {
+			found := false
+			for i := range combined.VAT {
+				if combined.VAT[i].RatePercent == vacant.RatePercent {
+					combined.VAT[i].NetCents += vacant.NetCents
+					combined.VAT[i].VATCents += vacant.VATCents
+					combined.VAT[i].GrossCents += vacant.GrossCents
+					found = true
+					break
+				}
+			}
+			if !found {
+				combined.VAT = append(combined.VAT, vacant)
+			}
+		}
+		sort.Slice(combined.VAT, func(i, j int) bool { return combined.VAT[i].RatePercent < combined.VAT[j].RatePercent })
 		combined.AllocatedCents += line.AmountCents
 		combined.BalanceCents = combined.AllocatedCents - combined.PrepaidCents
 		return combined, note

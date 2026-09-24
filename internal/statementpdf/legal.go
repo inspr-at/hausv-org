@@ -111,6 +111,15 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 					rate = line.VATRatePercent
 				}
 			}
+			for _, vacancy := range run.Result.Vacancy {
+				for _, line := range vacancy.Costs {
+					if line.CostTypeKey == cost.Key {
+						net += line.NetCents
+						vat += line.VATCents
+						rate = line.VATRatePercent
+					}
+				}
+			}
 			row.Net, row.Rate, row.VAT, row.Gross = money(net), fmt.Sprintf("%d %%", rate), money(vat), money(total)
 			d.ShowVAT = true
 		}
