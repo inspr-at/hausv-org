@@ -1128,6 +1128,41 @@ async function assertPublicLanding(viewport) {
       fullPage: true,
     });
   }
+  if (viewport.name === 'Desktop') {
+    const cardRows = await page.locator('.product-path').evaluateAll((cards) => cards.map((card) => {
+      const box = (selector) => {
+        const element = card.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return rect ? { top: rect.top, height: rect.height, center: rect.top + rect.height / 2 } : null;
+      };
+      return {
+        name: card.querySelector('h3')?.textContent?.trim() || 'Unbenannte Produktkarte',
+        head: box('.product-path-head'),
+        headCopy: box('.product-path-head > div'),
+        description: box(':scope > p'),
+        capabilities: box('.product-capabilities'),
+        price: box('.product-path-price'),
+        action: box('.product-path-start'),
+        icon: box('.product-path-icon'),
+      };
+    }));
+    for (const row of ['head', 'description', 'capabilities', 'price', 'action']) {
+      const missing = cardRows.filter((card) => !card[row]).map((card) => card.name);
+      if (missing.length) {
+        fail(`Öffentliche Startseite Desktop: Produktkarten-Zeile „${row}“ fehlt bei ${missing.join(', ')}`);
+      }
+      const tops = new Set(cardRows.map((card) => card[row].top.toFixed(2)));
+      const heights = new Set(cardRows.map((card) => card[row].height.toFixed(2)));
+      if (tops.size !== 1 || heights.size !== 1) {
+        const positions = cardRows.map((card) => `${card.name}: ${card[row].top.toFixed(2)}px / ${card[row].height.toFixed(2)}px`).join(', ');
+        fail(`Öffentliche Startseite Desktop: Produktkarten-Zeile „${row}“ ist nicht ausgerichtet (${positions})`);
+      }
+    }
+    const uncentered = cardRows.filter((card) => !card.icon || !card.headCopy || Math.abs(card.icon.center - card.headCopy.center) > 0.5);
+    if (uncentered.length) {
+      fail(`Öffentliche Startseite Desktop: Produkt-Icons sind nicht mittig zum Titelblock (${uncentered.map((card) => card.name).join(', ')})`);
+    }
+  }
   // HAUSV-668: every feature card carries the same hairline, and its image
   // fills the media box to that hairline — no card ground leaking in a corner.
   const featureCards = await page.$$eval('.feature-card', (cards) => cards.map((card) => {
