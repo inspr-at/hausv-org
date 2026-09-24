@@ -10,7 +10,6 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"sort"
 	"strings"
 
 	_ "modernc.org/sqlite"
@@ -50,65 +49,10 @@ func openSQLite(path string) (*sql.DB, error) {
 	return sqlDB, nil
 }
 
-// migrate applies embedded migrations/*.sql in lexical order inside a
-// transaction each, recording applied files in schema_migrations. A file is
-// applied at most once; a failing migration rolls back and aborts (a broken
-// schema must not boot silently).
+// migrate retains SQLite's single-process startup contract. SQLite is used by
+// offline legacy tools and tests, not a shared product server; callers must not
+// migrate the same file concurrently. No separate filesystem lock is required
+// within that contract (the SQL transactions still protect each file's writes).
 func migrate(sqlDB *sql.DB) error {
-	if _, err := sqlDB.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
-		version    TEXT PRIMARY KEY,
-		applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-	)`); err != nil {
-		return fmt.Errorf("db: ensure schema_migrations: %w", err)
-	}
-
-	entries, err := migrationsFS.ReadDir("migrations")
-	if err != nil {
-		return fmt.Errorf("db: read migrations: %w", err)
-	}
-	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		name := e.Name()
-		// Skip dotfiles: macOS tar (bsdtar) injects AppleDouble "._name" sidecars
-		// into the build context, which go:embed would otherwise pick up as junk
-		// migrations. Belt to COPYFILE_DISABLE=1's suspenders on the deploy side.
-		if e.IsDir() || strings.HasPrefix(name, ".") || !strings.HasSuffix(name, ".sql") {
-			continue
-		}
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
-		var applied int
-		if err := sqlDB.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", name).Scan(&applied); err != nil {
-			return fmt.Errorf("db: check migration %s: %w", name, err)
-		}
-		if applied > 0 {
-			continue
-		}
-		raw, err := migrationsFS.ReadFile("migrations/" + name)
-		if err != nil {
-			return fmt.Errorf("db: read migration %s: %w", name, err)
-		}
-		tx, err := sqlDB.Begin()
-		if err != nil {
-			return fmt.Errorf("db: begin migration %s: %w", name, err)
-		}
-		// Execute the whole file in one Exec: modernc.org/sqlite runs every
-		// statement, and SQLite itself handles comments (including ";" inside a
-		// comment) — naive ";"-splitting would break on those.
-		if _, err := tx.Exec(string(raw)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: migration %s failed: %w", name, err)
-		}
-		if _, err := tx.Exec("INSERT INTO schema_migrations(version) VALUES(?)", name); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: record migration %s: %w", name, err)
-		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("db: commit migration %s: %w", name, err)
-		}
-	}
-	return nil
+	return migrateFiles(context.Background(), sqlDB, BackendSQLite, migrationsFS, "migrations")
 }
