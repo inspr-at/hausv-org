@@ -33,6 +33,7 @@ type Document struct {
 	VATSummary                 []string
 	Total, Prepaid, Balance    string
 	Excluded                   []string
+	Reserve                    []string
 	Contact                    string
 	ApprovalNotice             string
 	PaymentTerms               []string
@@ -180,6 +181,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
+	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)

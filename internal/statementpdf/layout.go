@@ -79,6 +79,13 @@ func (d Document) Pages() []pdf.Page {
 	l.newPage(true)
 	l.summary()
 	l.costTable()
+	if len(d.Reserve) > 0 {
+		l.section("Rücklage")
+		for _, text := range d.Reserve {
+			l.paragraph(text, pdf.Body, 9, leading)
+			l.y -= 3
+		}
+	}
 	if len(d.Basis) > 0 {
 		l.y -= 5
 		l.paragraph(strings.Join(d.Basis, " · "), pdf.Body, 8.5, 11)
