@@ -190,12 +190,9 @@ var sameLocalDate = view.SameLocalDate
 // ── extracted to auth ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	loginToken     = auth.LoginToken
-	oidcFlow       = auth.OidcFlow
 	oidcFlowStore  = auth.OidcFlowStore
 	oidcLogin      = auth.OidcLogin
 	oidcUserClaims = auth.OidcUserClaims
-	session        = auth.Session
 	sessionStore   = auth.SessionStore
 	tokenStore     = auth.TokenStore
 )
@@ -204,7 +201,6 @@ var newOIDCLogin = auth.NewOIDCLogin
 var newSessionStore = auth.NewSessionStore
 var pkceChallenge = auth.PkceChallenge
 var randomToken = auth.RandomToken
-var safeInternalRedirectPath = auth.SafeInternalRedirectPath
 
 // ── extracted to mail ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -234,7 +230,6 @@ var parseOrganisations = config.ParseOrganisations
 var parseTenants = config.ParseTenants
 var parseUserProfiles = config.ParseUserProfiles
 var sessionSecret = config.SessionSecret
-var trimEnvQuotes = config.TrimEnvQuotes
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
@@ -262,11 +257,9 @@ func newHomeAssistantConfig() homeAssistantConfig {
 
 type haState = homeassistant.EntityState
 type haStatistic = homeassistant.Statistic
-type haHistoryState = homeassistant.HistoryState
 
 var (
 	samplesFromStatistics = homeassistant.SamplesFromStatistics
-	samplesFromHistory    = homeassistant.SamplesFromHistory
 	parseHAFloat          = homeassistant.ParseFloat
 )
 
