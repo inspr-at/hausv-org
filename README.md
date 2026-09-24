@@ -30,6 +30,35 @@ tenant. Updates acquire a database write lock before reading that record, includ
 its first creation, so concurrent writers preserve each other's changes. Failed
 updates roll back the entire transaction.
 
+## VPI reference updates
+
+The organisation's Wertsicherung page (`/app/verwaltung/wertsicherung`) offers
+**VPI aktualisieren** to administrators. It fetches the official CSVs pinned in
+`internal/indexation/data/manifest.json` and their period labels, with a 30-second
+source timeout and a 32 MiB limit per file. The import log records content hashes,
+new/revised periods and conflicts. Only explicit final period labels permit final
+values; unknown labels fail the import. No network access is needed to calculate.
+
+Set `INDEX_REFRESH_ENABLED=true` to enable the daily background refresh (default:
+`false`). The first fetch starts asynchronously after 1–30 minutes; later checks
+run every 24 hours plus up to 30 minutes of jitter. Failed sources are retried on
+the next check. Manual checks remain available when scheduling is disabled.
+
+Runtime observations take precedence over the embedded offline snapshot.
+Preliminary revisions append a new observation and link the old one; changes to
+final values are flagged for review and keep the previous value active. Final
+conflicts show **Indexwert prüfen** as an advisory before approval; recalculation
+does not silently accept the disputed number. Runs affected by an accepted
+revision show **Neu berechnen empfohlen** and require a new draft before approval.
+Approved amounts, input snapshots and letters remain unchanged. Beyond the pinned
+publication calendar, the first verified retrieval of final status is used as a
+conservative earliest publication date. Global reference tables have no tenant
+RLS; PostgreSQL guards writes with the declared maintenance lane. They are
+included in `migrate-data`, with deferred revision pointers for full transfers.
+
+Datenquelle: Statistik Austria, CC BY 4.0. The importer selects total indices,
+normalizes periods and decimals and adds the official preliminary/final status.
+
 ## Scope
 
 HAUSV is a communication, administration and energy management portal. Annual-statement calculations are working drafts based on the period’s configured cost types, allocation keys, unit bases, confirmed receipts and recorded prepayments. Each successful run saves all unit balances and its input snapshot; missing keys, receipts, original files, prepayments or required measurements block the entire run. Earlier runs remain unchanged when inputs are corrected. Each run keeps only the checked consumption vector and the two boundary facts per unit; interior readings are checked for resets in one streaming scan and are not copied into every run. These calculations do not constitute a legal assessment under Austrian WEG/MRG.

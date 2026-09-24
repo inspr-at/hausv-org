@@ -34,6 +34,7 @@ func (s ValorisationSettings) Normalized() ValorisationSettings {
 }
 
 type ValorisationIndex struct {
+	RevisionID                                                            string
 	Series, Period, Value, Status, PublishedOn, Source, PublicationSource string
 	Used                                                                  bool
 }
@@ -46,6 +47,8 @@ type ValorisationInput struct {
 	Organisation, House, Address, Contact string
 }
 type ValorisationRun struct {
+	IndexRevised                                              bool // Derived warning; the frozen run and approved amounts never change.
+	IndexDisputed                                             bool // Advisory: a final value was disputed but deliberately retained.
 	ID, TenantSlug, OrgKey, EffectiveOn, Status, InputsSHA256 string
 	Revision                                                  int
 	CreatedBy, ApprovedBy, CancelReason, CancelledBy          string
@@ -337,7 +340,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		contract = indexation.Evaluation{Crossed: item.CapCents != item.OldCents, OldAmountCents: item.OldCents, NewAmountCents: item.CapCents, ExactAmountCents: item.Ceiling.ExactAmountCents}
 		contractualOn = item.Ceiling.EffectiveOn
 		trigger = indexation.Month(fmt.Sprintf("%d-12", effective.Year()-1))
-		published, _, _ = finalIndexPublication(trigger)
+		published, _, _ = snapshotIndexPublication(snapshot, indexation.VPI2020, trigger)
 	} else {
 		core, err := valorisationCoreClause(clause, item.OldCents)
 		if hasPrior {
@@ -375,7 +378,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			if v.Series != core.Series || v.Month <= core.BaseMonth {
 				continue
 			}
-			pub, _, ok := finalIndexPublication(v.Month)
+			pub, _, ok := indexValuePublication(v)
 			if !ok {
 				continue
 			}
@@ -406,7 +409,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				if on.After(effective) || ref <= core.BaseMonth {
 					continue
 				}
-				pub, _, ok := finalIndexPublication(ref)
+				pub, _, ok := snapshotIndexPublication(snapshot, core.Series, ref)
 				if !ok || pub.After(on) || pub.After(now) {
 					item.exception("index_missing")
 					return finishValorisationItem(item)
@@ -476,7 +479,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			contract = result
 			core = result.NextClause
 			trigger = result.TriggerMonth
-			published, _, _ = finalIndexPublication(trigger)
+			published, _, _ = snapshotIndexPublication(snapshot, indexation.Series(strings.ToUpper(clause.Series)), trigger)
 			if published.IsZero() {
 				item.exception("index_missing")
 				return finishValorisationItem(item)
@@ -498,7 +501,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			contract.NewAmountCents = core.AmountCents
 			contract.ExactAmountCents = core.ExactAmountCents
 			trigger = core.BaseMonth
-			published, _, _ = finalIndexPublication(trigger)
+			published, _, _ = snapshotIndexPublication(snapshot, indexation.Series(strings.ToUpper(clause.Series)), trigger)
 			contractualOn = effective
 		}
 	}

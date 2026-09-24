@@ -72,6 +72,8 @@ var TableOrder = []string{
 	"tenant",
 	"persons",
 	"app_meta",
+	"index_imports",
+	"index_values",
 	"login_activity",
 	"profile_overlays",
 	"notification_prefs",

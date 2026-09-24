@@ -66,6 +66,19 @@ try {
   const manager = await login('vera.verwalter@musterstadt.example');
   const page = await manager.newPage();
   const route = `${baseURL}/app/settings/valorisation`;
+  // Runtime reference-data controls: use the same signed-in admin session.
+  // Fetching is covered with injected fixture clients in Go; this oracle never
+  // contacts the live OGD service.
+  await page.goto(`${baseURL}/app/verwaltung/wertsicherung`, { waitUntil: 'networkidle' });
+  const indexCard = page.locator('[aria-labelledby="index-refresh-title"]');
+  if (!(await indexCard.getByRole('button', { name: 'VPI aktualisieren', exact: true }).isVisible())) fail('VPI-Adminaktion fehlt');
+  if (!(await indexCard.innerText()).includes('Datenquelle: Statistik Austria, CC BY 4.0')) fail('VPI-Datenquelle fehlt');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (overflow > 1) fail(`VPI ${width}px: Überlauf ${overflow}px`);
+    if (artifactDir) await indexCard.screenshot({ path: `${artifactDir}/index-refresh-${width}.png` });
+  }
   await page.setViewportSize({ width: 1440, height: 900 });
   let response = await page.goto(`${route}?new=1&preview=1&effective_on=2026-04-01&house=janusbergweg-123`, { waitUntil: 'networkidle' });
   if (response?.status() !== 200) fail(`Vorschau HTTP ${response?.status()}`);
@@ -154,6 +167,8 @@ try {
   response = await ownerPage.goto(route, { waitUntil: 'networkidle' });
   if (response?.status() !== 403) fail(`Eigentümer HTTP ${response?.status()}, erwartet 403`);
   await shot(ownerPage, 'valorisation-owner-denied');
+  const deniedRefresh = await owner.request.post(`${baseURL}/app/verwaltung/wertsicherung/refresh`, { headers: { Origin: baseURL, Referer: `${baseURL}/app/verwaltung/wertsicherung` }, maxRedirects: 0 });
+  if (deniedRefresh.status() !== 403) fail(`VPI Eigentümer POST ${deniedRefresh.status()}, erwartet 403`);
   await owner.close();
   process.stdout.write('qa-valorisation ok\n');
 } finally {

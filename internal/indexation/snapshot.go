@@ -94,7 +94,7 @@ func LoadSnapshot() (Snapshot, error) {
 			if err != nil || year < 1 {
 				return s, fmt.Errorf("invalid snapshot year")
 			}
-			s.Annual = append(s.Annual, AnnualValue{series, year, value, preliminary, sources[series], s.Manifest.RetrievedAt})
+			s.Annual = append(s.Annual, AnnualValue{Series: series, Year: year, Value: value, Preliminary: preliminary, Source: sources[series], FetchedAt: s.Manifest.RetrievedAt})
 		} else {
 			values = append(values, IndexValue{Series: series, Month: Month(period), Value: value, Preliminary: preliminary, Source: sources[series], FetchedAt: s.Manifest.RetrievedAt})
 		}
