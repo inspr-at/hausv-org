@@ -3,7 +3,7 @@ package web
 import "strconv"
 
 templ LeasePage(data LeasePageData) {
-	@SettingsFrame(data.Portal, "Mietvertrag", []string{}, LeasePageContent(data))
+	@SettingsFrame(data.Portal, "Mietvertrag", []string{"lease-staffel.js"}, LeasePageContent(data))
 }
 
 templ LeasePageContent(data LeasePageData) {
@@ -162,6 +162,13 @@ templ LeaseTimeline(lease LeaseDetail) {
 			if lease.Clause.Threshold != "" {
 				<p>Schwelle { lease.Clause.Threshold }</p>
 			}
+			if len(lease.Clause.Staffel) > 0 {
+				<ul class="lease-history">
+					for _, line := range lease.Clause.Staffel {
+						<li>{ line }</li>
+					}
+				</ul>
+			}
 			if lease.Clause.Text != "" {
 				<blockquote>{ lease.Clause.Text }</blockquote>
 			}
@@ -274,14 +281,14 @@ templ LeaseFormSection(data LeasePageData) {
 							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 						}
 					</select></label>
-					<label class="lease-field">Indexreihe<select name="series">
+					<label class="lease-field" data-clause-index>Indexreihe<select name="series">
 						for _, option := range data.Form.SeriesOptions {
 							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 						}
 					</select></label>
-					<label class="lease-field">Basismonat<input type="month" name="base_period" value={ data.Form.BasePeriod }/></label>
-					<label class="lease-field">Basiswert<input name="base_value" value={ data.Form.BaseValue } inputmode="decimal" placeholder="123,6"/></label>
-					<label class="lease-field">Schwelle<span class="lease-suffix"><input name="threshold" value={ data.Form.Threshold } inputmode="decimal"/><select name="threshold_kind">
+					<label class="lease-field" data-clause-index>Basismonat<input type="month" name="base_period" value={ data.Form.BasePeriod }/></label>
+					<label class="lease-field" data-clause-index>Basiswert<input name="base_value" value={ data.Form.BaseValue } inputmode="decimal" placeholder="123,6"/></label>
+					<label class="lease-field" data-clause-index>Schwelle<span class="lease-suffix"><input name="threshold" value={ data.Form.Threshold } inputmode="decimal"/><select name="threshold_kind">
 						for _, option := range data.Form.ThresholdKinds {
 							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 						}
@@ -294,8 +301,22 @@ templ LeaseFormSection(data LeasePageData) {
 					<label class="lease-field lease-span">Wortlaut<textarea name="clause_text" maxlength="4000">{ data.Form.ClauseText }</textarea></label>
 					<label class="lease-field lease-span">Notiz<textarea name="notes" maxlength="2000">{ data.Form.Notes }</textarea></label>
 				</div>
+				<div data-staffel-editor>
+					<p>Staffelmietzins laut Vertrag: je Stufe den neuen Hauptmietzins netto oder die Erhöhung in Prozent angeben. Prozentstufen beziehen sich auf den vorigen Vertragsbetrag. MieWeG-Begrenzungen werden im Lauf berücksichtigt.</p>
+					<div data-staffel-rows class="lease-stack">
+						if len(data.Form.Staffel) == 0 {
+							@leaseStaffelRow(LeaseStaffelRow{})
+						} else {
+							for _, row := range data.Form.Staffel {
+								@leaseStaffelRow(row)
+							}
+						}
+					</div>
+					<template data-staffel-template>@leaseStaffelRow(LeaseStaffelRow{})</template>
+					<button type="button" class="button" data-staffel-add>Stufe hinzufügen</button>
+				</div>
 				<div class="lease-toggles">
-					<label class="lease-toggle"><span>Schwelle inklusive</span><span class="switch"><input type="checkbox" name="threshold_inclusive" checked?={ data.Form.Inclusive }/><i></i></span></label>
+					<label class="lease-toggle" data-clause-index><span>Schwelle inklusive</span><span class="switch"><input type="checkbox" name="threshold_inclusive" checked?={ data.Form.Inclusive }/><i></i></span></label>
 					<label class="lease-toggle"><span>Auch Senkung</span><span class="switch"><input type="checkbox" name="two_way" checked?={ data.Form.TwoWay }/><i></i></span></label>
 				</div>
 			</fieldset>
@@ -305,6 +326,15 @@ templ LeaseFormSection(data LeasePageData) {
 			<p class="lease-end"><a href={ templ.SafeURL(leaseEndURL(data)) }>Vertrag beenden</a></p>
 		}
 	</section>
+}
+
+templ leaseStaffelRow(row LeaseStaffelRow) {
+	<div class="lease-grid" data-staffel-row>
+		<label class="lease-field">Wirksam ab<input type="date" name="staffel_date" value={ row.Date }/></label>
+		<label class="lease-field">Art der Stufe<select name="staffel_kind"><option value="amount" selected?={ !row.Percent }>Neuer HMZ netto (€)</option><option value="percent" selected?={ row.Percent }>Erhöhung (%)</option></select></label>
+		<label class="lease-field">Betrag oder Prozentsatz<input name="staffel_value" inputmode="decimal" value={ row.Value }/></label>
+		<button type="button" class="button" data-staffel-remove>Stufe entfernen</button>
+	</div>
 }
 
 templ LeaseEndConfirm(data LeasePageData) {
@@ -348,6 +378,9 @@ templ leaseStyles() {
 		.lease-page blockquote{margin:0;padding-left:var(--space-3);border-left:2px solid var(--line);color:var(--muted);font-size:13px}
 		.lease-page form{display:grid;gap:var(--space-4)}
 		.lease-page fieldset{min-width:0}
+		.lease-page [data-staffel-editor]:not([hidden]){display:grid;gap:var(--space-3)}
+		.lease-page [data-staffel-row]{border-top:1px solid var(--line);padding-top:var(--space-3)}
+		.lease-page [data-clause-index][hidden]{display:none}
 		.lease-page .lease-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
 		.lease-page .lease-span{grid-column:1/-1}
 		.lease-page .lease-field{min-width:0}
@@ -414,7 +447,8 @@ templ LeaseImportBody(data LeaseImportPageData) {
 	@leaseStyles()
 	<section class="lease-card">
 		@SettingsFlash(data.Message, data.OK)
-		<p>Spalten: einheit, mieter_name, mieter_email, mieter_adresse, vertragsabschluss, beginn, ende, nutzung, mrg, regime, hmz_netto, bk_akonto, heiz_akonto, ust_satz, klausel_typ, index, basis_monat, basis_wert, schwelle, schwelle_art, schwelle_inkl, letzte_valorisierung_monat, letzte_valorisierung_wert, hmz_nach_letzter_valorisierung, klausel_text.</p>
+		<p>Spalten: einheit, mieter_name, mieter_email, mieter_adresse, vertragsabschluss, beginn, ende, nutzung, mrg, regime, hmz_netto, bk_akonto, heiz_akonto, ust_satz, klausel_typ, index, basis_monat, basis_wert, schwelle, schwelle_art, schwelle_inkl, letzte_valorisierung_monat, letzte_valorisierung_wert, hmz_nach_letzter_valorisierung, klausel_text, staffel.</p>
+		<p>Für klausel_typ „staffel“: Stufen aufsteigend als <code>2026-04-01:1050,00;2027-04-01:2%</code>. Beträge sind neue HMZ netto, Prozentwerte Erhöhungen auf den vorigen Vertragsbetrag. Die gesamte Zelle in Anführungszeichen setzen. Der Wortlaut wird nicht ausgewertet.</p>
 		<form method="post" action="/app/settings/building/leases/import" enctype="multipart/form-data">
 			<label class="lease-field">CSV-Datei<input type="file" name="leases_file" accept=".csv,text/csv" required/></label>
 			<footer class="lease-actions"><button class="button" type="submit">Prüfen</button><button class="button primary" type="submit" name="commit" value="1">Übernehmen</button></footer>

@@ -142,6 +142,14 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		}
 	}
 	l.heading("Vertragliche Grundlage")
+	if item.Clause.ClauseType == store.ClauseStaffel {
+		l.paragraph("Staffelmietzins laut Vertrag", pdf.Strong)
+		for _, line := range item.Explanation {
+			if strings.HasPrefix(line, "Staffelmietzins laut Vertrag") || strings.HasPrefix(line, "MieWeG begrenzt die Staffel") {
+				l.paragraph(line, pdf.Body)
+			}
+		}
+	}
 	l.paragraph(item.Clause.ClauseText, pdf.Body)
 	if item.Clause.BasePeriod != "" {
 		l.paragraph(fmt.Sprintf("%s · Basis %s = %s · Schwelle %s %s", strings.ToUpper(item.Clause.Series), item.Clause.BasePeriod, strings.ReplaceAll(item.Clause.BaseValue, ".", ","), store.ValorisationNumber(item.Clause.ThresholdValue, 2), thresholdKind(item.Clause.ThresholdKind)), pdf.Body)
