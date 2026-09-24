@@ -1124,6 +1124,8 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/metadata", a.action(a.saveAnnualStatementReceiptMetadata))
 	mux.HandleFunc("POST /app/settings/annual-statement/legal", a.action(a.saveAnnualStatementLegal))
+	mux.HandleFunc("POST /app/settings/annual-statement/agreed-shares", a.action(a.saveAnnualStatementAgreedShares))
+	mux.HandleFunc("POST /app/settings/annual-statement/heating-information", a.action(a.saveAnnualStatementHeatingInformation))
 	mux.HandleFunc("POST /app/settings/annual-statement/reserve", a.action(a.saveAnnualStatementReserve))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/approve", a.action(a.approveAnnualStatementRun))

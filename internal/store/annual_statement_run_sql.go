@@ -248,6 +248,24 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
+	// Freeze the prior year's comparison in the same transaction as this run.
+	var previous []AnnualStatementRun
+	err = read(`SELECT data FROM annual_statement_runs WHERE tenant_id=$1 AND period_year=$2 ORDER BY revision DESC`, func(rows *sql.Rows) error {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return err
+		}
+		var run AnnualStatementRun
+		if err := json.Unmarshal([]byte(raw), &run); err != nil {
+			return err
+		}
+		previous = append(previous, run)
+		return nil
+	}, tenant.ID, year-1)
+	if err != nil {
+		return input, err
+	}
+	input.PreviousHeating = previousHeatingSnapshot(input.Period, previous)
 	// Only a preview can reuse vectors loaded for the page. Create passes nil
 	// so every report is read within the serializable transaction below.
 	if vectors != nil {

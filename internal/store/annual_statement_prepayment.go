@@ -270,6 +270,14 @@ type AnnualStatementSettlementUnit struct {
 }
 
 func AnnualStatementSettlementPreview(costTypes []AnnualStatementCostType, receipts []AnnualStatementReceipt, units []Unit, consumption ...map[string]AnnualStatementConsumptionVector) ([]AnnualStatementSettlementUnit, bool) {
+	return annualStatementSettlementPreview(costTypes, receipts, units, nil, consumption...)
+}
+
+func AnnualStatementSettlementPreviewWithAgreed(costTypes []AnnualStatementCostType, receipts []AnnualStatementReceipt, units []Unit, consumption map[string]AnnualStatementConsumptionVector, agreed map[string]map[string]int) ([]AnnualStatementSettlementUnit, bool) {
+	return annualStatementSettlementPreview(costTypes, receipts, units, agreed, consumption)
+}
+
+func annualStatementSettlementPreview(costTypes []AnnualStatementCostType, receipts []AnnualStatementReceipt, units []Unit, agreed map[string]map[string]int, consumption ...map[string]AnnualStatementConsumptionVector) ([]AnnualStatementSettlementUnit, bool) {
 	if len(units) == 0 || len(AnnualStatementCostTypesWithoutKey(costTypes)) > 0 {
 		return nil, false
 	}
@@ -299,7 +307,7 @@ func AnnualStatementSettlementPreview(costTypes []AnnualStatementCostType, recei
 		out[index] = AnnualStatementSettlementUnit{UnitID: unit.ID, Label: unit.Label}
 		indexByUnit[unit.ID] = index
 	}
-	for _, preview := range AnnualStatementAllocationPreviews(costTypes, units) {
+	for _, preview := range AnnualStatementAllocationPreviews(costTypes, units, agreed) {
 		if preview.Key != AllocationKeyVerbrauch && (preview.Blocked || (preview.Key == AllocationKeyNutzwert && preview.BasisTotal != MiteigentumsanteilTotalPPM)) {
 			return nil, false
 		}

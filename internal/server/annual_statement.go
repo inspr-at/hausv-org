@@ -115,7 +115,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		})
 	}
 	consumption := annualStatementConsumption(ac.repositories.annualConsumption, selectedPeriod, units, costTypes)
-	allocation := annualStatementAllocationView(costTypes, units, consumption, periodBases)
+	allocation := annualStatementAllocationView(costTypes, units, consumption, periodBases, legal.AgreedShares)
 	basesMsg, basesOK := annualStatementBasesMessage(r.URL.Query().Get("bases"))
 	periodMsg, periodOK := annualStatementPeriodMessage(r.URL.Query().Get("period"))
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
@@ -167,7 +167,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			prepayments[item.UnitID] = item
 		}
 	}
-	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units, consumption.Vectors)
+	settlement, settlementReady := store.AnnualStatementSettlementPreviewWithAgreed(costTypes, selectedReceipts, units, consumption.Vectors, legal.AgreedShares)
 	if legal.HeizKGApplies && ac.repositories.annualStatementRuns != nil {
 		_, result, err := ac.repositories.annualStatementRuns.Preview(selectedYear, consumption.Vectors)
 		settlement = nil
@@ -617,6 +617,8 @@ func parseAnnualStatementVacancy(from, to string) (string, string, bool) {
 
 func annualStatementAllocationKeyLabel(key string) string {
 	switch key {
+	case store.AllocationKeyAgreed:
+		return "Vereinbarte Anteile"
 	case store.AllocationKeyNutzwert:
 		return "Nutzwert"
 	case store.AllocationKeyFlaeche:
@@ -663,7 +665,7 @@ func annualStatementUnitsWithPeriodBases(units []store.Unit, bases []store.Annua
 	return out
 }
 
-func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit, consumptionData annualStatementConsumptionData, bases []store.AnnualStatementPeriodUnitBasis) web.AnnualStatementAllocationView {
+func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit, consumptionData annualStatementConsumptionData, bases []store.AnnualStatementPeriodUnitBasis, agreed ...map[string]map[string]int) web.AnnualStatementAllocationView {
 	names := map[string]string{}
 	for _, costType := range costTypes {
 		names[costType.Key] = costType.Name
@@ -686,7 +688,7 @@ func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, un
 		keylessNames = append(keylessNames, names[key])
 	}
 	out.KeylessCostTypes = strings.Join(keylessNames, ", ")
-	for _, preview := range store.AnnualStatementAllocationPreviews(costTypes, units) {
+	for _, preview := range store.AnnualStatementAllocationPreviews(costTypes, units, agreed...) {
 		if preview.Key == store.AllocationKeyVerbrauch {
 			continue
 		}
@@ -745,6 +747,8 @@ func formatAnnualStatementBasis(key string, basis int, mapped bool) string {
 		return formatMiteigentumsanteil(basis)
 	case store.AllocationKeyFlaeche:
 		return formatAnnualStatementArea(basis, true) + " m²"
+	case store.AllocationKeyAgreed:
+		return strconv.Itoa(basis) + " PPM"
 	case store.AllocationKeyPersonen:
 		return strconv.Itoa(basis)
 	default:

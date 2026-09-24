@@ -299,6 +299,10 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <div class="form-actions"><button class="button primary" type="submit">Rechtsgrundlage speichern</button></div>
  </form>
  </section>
+ @AnnualStatementAgreedShares(data)
+ if data.Legal.HeizKGApplies {
+ @AnnualStatementHeatingInformation(data, annualHeatingInfo(data.Legal))
+ }
  if data.ShowReserve {
  <section class="panel workspace" id="ruecklage" data-annual-reserve>
  <style>

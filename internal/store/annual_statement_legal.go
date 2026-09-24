@@ -8,16 +8,18 @@ import (
 
 // Legal settings are period-scoped and copied into every immutable run.
 type AnnualStatementLegalSettings struct {
-	MonthlyProposals          map[string]map[string]int64 `json:"monthly_proposals_cents,omitempty"`
-	NextPrepaymentOn          string                      `json:"next_prepayment_on,omitempty"`
-	HeatingPrepayments        map[string]map[string]int64 `json:"heating_prepayments_cents,omitempty"`
-	HeatingConsumptionPercent int                         `json:"heating_consumption_percent"`
-	HeatableAreas             map[string]int              `json:"heatable_areas_m2_hundredths,omitempty"`
-	InspectionPlace           string                      `json:"inspection_place"`
-	InspectionPeriod          string                      `json:"inspection_period"`
-	InspectionContact         string                      `json:"inspection_contact"`
-	Regime                    string                      `json:"regime"`
-	HeizKGApplies             bool                        `json:"heizkg_applies"`
+	AgreedShares              map[string]map[string]int          `json:"agreed_shares_ppm,omitempty"`
+	HeatingInformation        *AnnualStatementHeatingInformation `json:"heating_information,omitempty"`
+	MonthlyProposals          map[string]map[string]int64        `json:"monthly_proposals_cents,omitempty"`
+	NextPrepaymentOn          string                             `json:"next_prepayment_on,omitempty"`
+	HeatingPrepayments        map[string]map[string]int64        `json:"heating_prepayments_cents,omitempty"`
+	HeatingConsumptionPercent int                                `json:"heating_consumption_percent"`
+	HeatableAreas             map[string]int                     `json:"heatable_areas_m2_hundredths,omitempty"`
+	InspectionPlace           string                             `json:"inspection_place"`
+	InspectionPeriod          string                             `json:"inspection_period"`
+	InspectionContact         string                             `json:"inspection_contact"`
+	Regime                    string                             `json:"regime"`
+	HeizKGApplies             bool                               `json:"heizkg_applies"`
 	// ShowVAT prints net, rate and VAT. Off leaves the gross statement unchanged.
 	ShowVAT bool `json:"show_vat,omitempty"`
 }
@@ -26,6 +28,16 @@ func DefaultAnnualStatementLegalSettings() AnnualStatementLegalSettings {
 	return AnnualStatementLegalSettings{Regime: "weg", HeatingConsumptionPercent: 70}
 }
 func (s AnnualStatementLegalSettings) Validate() error {
+	for cost, shares := range s.AgreedShares {
+		if !annualStatementCostTypeKeyPattern.MatchString(cost) || !validAgreedShareTotal(shares) {
+			return fmt.Errorf("agreed shares must total 1000000 ppm")
+		}
+	}
+	if s.HeatingInformation != nil {
+		if err := s.HeatingInformation.Validate(); err != nil {
+			return err
+		}
+	}
 	switch s.Regime {
 	case "weg", "mrg_voll", "mrg_teil", "ausnahme":
 	default:
