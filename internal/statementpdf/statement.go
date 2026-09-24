@@ -74,6 +74,7 @@ func Documents(run store.AnnualStatementRun, unitID, partyID string) ([]Document
 }
 
 func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, party store.AnnualStatementRunParty) Document {
+	unit, vacancyNote := annualStatementPartyUnit(run, unit, party)
 	d := letterDocument(run, unit.Label)
 	d.UnitID, d.PartyID = unit.UnitID, party.ID
 	d.Total, d.Prepaid = money(unit.AllocatedCents), money(unit.PrepaidCents)
@@ -97,6 +98,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		}
 		if basis.PersonsRecorded {
 			d.Basis = append(d.Basis, fmt.Sprintf("Personen: %d", basis.Persons))
+		}
+		if vacancyNote != "" && basis.UnitID == unit.UnitID {
+			d.Basis = append(d.Basis, vacancyNote)
 		}
 	}
 	switch {
@@ -165,6 +169,38 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d.Proposals = proposalLines(run, unit.UnitID)
 	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
+}
+
+// annualStatementPartyUnit gives the landlord the vacant-day slice and the
+// tenant the occupied remainder. A party who is both sees both slices.
+func annualStatementPartyUnit(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, party store.AnnualStatementRunParty) (store.AnnualStatementRunUnit, string) {
+	var line *store.AnnualStatementVacancyLine
+	for i := range run.Result.Vacancy {
+		if run.Result.Vacancy[i].UnitID == unit.UnitID {
+			line = &run.Result.Vacancy[i]
+			break
+		}
+	}
+	if line == nil {
+		return unit, ""
+	}
+	note := fmt.Sprintf("%s: %s–%s (%d von %d Tagen)", store.AnnualStatementVacancyLabel, date(line.From), date(line.To), line.VacantDays, line.PeriodDays)
+	if party.Owner && !party.Renter {
+		owner := unit
+		owner.Costs = append([]store.AnnualStatementRunCost(nil), line.Costs...)
+		owner.AllocatedCents = line.AmountCents
+		owner.PrepaidCents = 0
+		owner.BalanceCents = line.AmountCents
+		return owner, note
+	}
+	if party.Owner && party.Renter {
+		combined := unit
+		combined.Costs = append(append([]store.AnnualStatementRunCost(nil), unit.Costs...), line.Costs...)
+		combined.AllocatedCents += line.AmountCents
+		combined.BalanceCents = combined.AllocatedCents - combined.PrepaidCents
+		return combined, note
+	}
+	return unit, ""
 }
 
 func Render(run store.AnnualStatementRun, unitID, partyID string) ([]byte, error) {

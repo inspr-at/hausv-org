@@ -21,6 +21,7 @@ type AnnualStatementRunView struct {
 	Total           string
 	Excluded        string
 	Units           []AnnualStatementRunUnitView
+	Vacancy         []AnnualStatementRunUnitView
 	History         []AnnualStatementRunLinkView
 	AllPDFURL       string
 	ArchiveAction   string
@@ -478,6 +479,17 @@ if data.Approved {
 										</table>
 									</details>
 								</td>
+							</tr>
+						}
+						for _, line := range data.Vacancy {
+							<tr class="annual-unit-row" role="row" data-vacancy-owner>
+								<th scope="row" role="rowheader"><span class="annual-unit-value">Leerstand – Eigentümeranteil</span></th>
+								<td role="cell" class="annual-parties" data-label="Partei"><span class="annual-party"><span class="annual-party-name">{ line.Label }</span></span></td>
+								<td role="cell" class="annual-money" data-label="Kostenanteil"><span class="annual-unit-value">{ line.Allocated }</span></td>
+								<td role="cell" class="annual-money" data-label="Akonto"><span class="annual-unit-value">{ line.Prepaid }</span></td>
+								<td role="cell" class="annual-money" data-label="Saldo"><strong class="annual-unit-value">{ line.Balance }</strong></td>
+								<td role="cell" class="annual-documents" data-label="PDF / Archiv"></td>
+								<td role="cell" class="annual-details-cell" data-label="Kostenarten"></td>
 							</tr>
 						}
 					</tbody>

@@ -72,6 +72,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	}
 	units := ac.repositories.units.List()
 	structureYear := 0
+	var periodBases []store.AnnualStatementPeriodUnitBasis
 	legal := store.DefaultAnnualStatementLegalSettings()
 	if selectedPeriodFound {
 		structureYear = selectedYear
@@ -82,6 +83,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 		legal = structure.Legal
+		periodBases = structure.UnitBases
 		for i := range periodViews {
 			if periodViews[i].Selected {
 				periodViews[i].Deadline = annualLegalDeadline(selectedPeriod, legal)
@@ -113,7 +115,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		})
 	}
 	consumption := annualStatementConsumption(ac.repositories.annualConsumption, selectedPeriod, units, costTypes)
-	allocation := annualStatementAllocationView(costTypes, units, consumption)
+	allocation := annualStatementAllocationView(costTypes, units, consumption, periodBases)
 	basesMsg, basesOK := annualStatementBasesMessage(r.URL.Query().Get("bases"))
 	periodMsg, periodOK := annualStatementPeriodMessage(r.URL.Query().Get("period"))
 	importMsg, importOK := annualStatementImportMessage(r.URL.Query().Get("import"), r.URL.Query().Get("count"))
@@ -439,6 +441,8 @@ func (a *app) saveAnnualStatementAllocationBases(w http.ResponseWriter, r *http.
 			basis.UsableAreaRecorded = update.UsableAreaRecorded
 			basis.Persons = update.Persons
 			basis.PersonsRecorded = update.PersonsRecorded
+			basis.VacantFrom = update.VacantFrom
+			basis.VacantTo = update.VacantTo
 			bases = append(bases, basis)
 		}
 		err = ac.repositories.annualStatementPeriods.SaveStructureUnitBases(periodYear, bases)
@@ -477,7 +481,15 @@ func annualStatementStructureRedirect(year int, key, status, fragment string) st
 
 func annualStatementBasisUpdatesFromForm(values url.Values) ([]store.UnitAllocationBasisUpdate, bool) {
 	unitIDs, areas, persons := values["unit_id"], values["usable_area_m2"], values["persons"]
+	vacantFrom, vacantTo := values["vacant_from"], values["vacant_to"]
 	if len(unitIDs) == 0 || len(areas) != len(unitIDs) || len(persons) != len(unitIDs) {
+		return nil, false
+	}
+	if len(vacantFrom) == 0 && len(vacantTo) == 0 {
+		vacantFrom = make([]string, len(unitIDs))
+		vacantTo = make([]string, len(unitIDs))
+	}
+	if len(vacantFrom) != len(unitIDs) || len(vacantTo) != len(unitIDs) {
 		return nil, false
 	}
 	updates := make([]store.UnitAllocationBasisUpdate, 0, len(unitIDs))
@@ -490,11 +502,13 @@ func annualStatementBasisUpdatesFromForm(values url.Values) ([]store.UnitAllocat
 		seen[unitID] = struct{}{}
 		area, areaRecorded, areaOK := parseAnnualStatementArea(areas[index])
 		count, countRecorded, countOK := parseAnnualStatementCount(persons[index])
-		if !areaOK || !countOK {
+		from, to, vacancyOK := parseAnnualStatementVacancy(vacantFrom[index], vacantTo[index])
+		if !areaOK || !countOK || !vacancyOK {
 			return nil, false
 		}
 		updates = append(updates, store.UnitAllocationBasisUpdate{
 			UnitID: unitID, UsableAreaM2Hundredths: area, UsableAreaRecorded: areaRecorded, Persons: count, PersonsRecorded: countRecorded,
+			VacantFrom: from, VacantTo: to,
 		})
 	}
 	return updates, true
@@ -560,6 +574,11 @@ func parseAnnualStatementCount(raw string) (count int, recorded bool, ok bool) {
 	return count, true, true
 }
 
+func parseAnnualStatementVacancy(from, to string) (string, string, bool) {
+	from, to, err := store.NormalizeAnnualStatementVacancy(from, to)
+	return from, to, err == nil
+}
+
 func annualStatementAllocationKeyLabel(key string) string {
 	switch key {
 	case store.AllocationKeyNutzwert:
@@ -608,16 +627,22 @@ func annualStatementUnitsWithPeriodBases(units []store.Unit, bases []store.Annua
 	return out
 }
 
-func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit, consumptionData annualStatementConsumptionData) web.AnnualStatementAllocationView {
+func annualStatementAllocationView(costTypes []store.AnnualStatementCostType, units []store.Unit, consumptionData annualStatementConsumptionData, bases []store.AnnualStatementPeriodUnitBasis) web.AnnualStatementAllocationView {
 	names := map[string]string{}
 	for _, costType := range costTypes {
 		names[costType.Key] = costType.Name
 	}
+	vacancy := map[string]store.AnnualStatementPeriodUnitBasis{}
+	for _, basis := range bases {
+		vacancy[normalizeUnitID(basis.UnitID)] = basis
+	}
 	out := web.AnnualStatementAllocationView{KeyOptions: annualStatementAllocationKeyOptions()}
 	for _, unit := range units {
+		basis := vacancy[normalizeUnitID(unit.ID)]
 		out.Bases = append(out.Bases, web.AnnualStatementUnitBasisView{
 			ID: unit.ID, Label: unit.Label, Share: formatMiteigentumsanteil(unit.MiteigentumsanteilPPM),
 			UsableArea: formatAnnualStatementArea(unit.UsableAreaM2Hundredths, unit.UsableAreaRecorded), Persons: formatAnnualStatementCount(unit.Persons, unit.PersonsRecorded),
+			VacantFrom: basis.VacantFrom, VacantTo: basis.VacantTo,
 		})
 	}
 	keylessNames := []string{}

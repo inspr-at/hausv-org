@@ -65,8 +65,23 @@ type AnnualStatementRunUnit struct {
 	BalanceCents int64 `json:"balance_cents"`
 }
 
+// AnnualStatementVacancyLine is the landlord's bill for one unit's vacant
+// days. It is not an extra allocation: the cents are the vacant-day slice of
+// the share the unit already kept.
+type AnnualStatementVacancyLine struct {
+	UnitID      string                   `json:"unit_id"`
+	Label       string                   `json:"label"`
+	From        string                   `json:"from"`
+	To          string                   `json:"to"`
+	VacantDays  int                      `json:"vacant_days"`
+	PeriodDays  int                      `json:"period_days"`
+	Costs       []AnnualStatementRunCost `json:"costs"`
+	AmountCents int64                    `json:"amount_cents"`
+}
+
 type AnnualStatementRunResult struct {
 	Proposals     []AnnualStatementPrepaymentProposal `json:"proposals,omitempty"`
+	Vacancy       []AnnualStatementVacancyLine        `json:"vacancy,omitempty"`
 	TotalCents    int64                               `json:"total_cents"`
 	ExcludedCents int64                               `json:"excluded_cents"`
 	Units         []AnnualStatementRunUnit            `json:"units"`
@@ -261,6 +276,7 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 			result.Units[i].AllocatedCents += cents[i]
 		}
 	}
+	applyAnnualStatementVacancy(&result, input)
 	for i := range result.Units {
 		result.Units[i].BalanceCents = result.Units[i].AllocatedCents - result.Units[i].PrepaidCents
 	}
