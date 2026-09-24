@@ -229,8 +229,23 @@
         "house": "janusbergweg-123",
         "role": "Eigentümer",
         "units": [
-          "Top 3",
           "Stellplatz 3"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/3\n8010 Graz",
+    "email": "daniel.leitner@musterstadt.example",
+    "name": "Daniel Leitner",
+    "title": "",
+    "phone": "+43 664 410 20 13",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 3"
         ]
       }
     ]
@@ -1107,6 +1122,14 @@
         ]
       }
     ]
+  },
+  {
+    "address": "Musterstraße 12/2\n8010 Graz",
+    "email": "theresa.aichner@musterstadt.example",
+    "name": "Theresa Aichner",
+    "title": "",
+    "phone": "",
+    "memberships": null
   },
   {
     "address": "Musterstraße 12/Geschäft\n8010 Graz",

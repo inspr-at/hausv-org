@@ -46,10 +46,13 @@ func TestAnnualStatementPDFDownloadPermissionsSnapshotAndNoWrites(t *testing.T) 
 		t.Fatal(created.Code)
 	}
 	runs, _ := repos.annualStatementRuns.List(2025)
-	if len(runs) != 1 || len(runs[0].Input.Parties) != 4 || runs[0].Input.Presentation.EstateName == "" {
+	if len(runs) != 1 || len(runs[0].Input.Parties) != 3 || runs[0].Input.Presentation.EstateName == "" {
 		t.Fatalf("missing snapshot: %+v", runs)
 	}
 	run := runs[0]
+	if response := authedRequest(t, a, manager, "/demo"+annualStatementPDFURL(run.ID, "a", "tenant@example.com")); response.Code != http.StatusNotFound {
+		t.Fatal("WEG tenant received a PDF", response.Code)
+	}
 	route := "/demo" + annualStatementPDFURL(run.ID, "a", "owner@example.com")
 	before := authedRequest(t, a, manager, route)
 	if before.Code != 200 || before.Header().Get("Content-Type") != "application/pdf" || !bytes.HasPrefix(before.Body.Bytes(), []byte("%PDF-")) {
@@ -104,14 +107,17 @@ func TestAnnualStatementPDFDownloadPermissionsSnapshotAndNoWrites(t *testing.T) 
 		t.Fatal("source edit changed stored PDF")
 	}
 	all := authedRequest(t, a, manager, "/demo"+annualStatementPDFURL(run.ID, "", ""))
-	if all.Code != 200 || !bytes.Contains(all.Body.Bytes(), []byte("/Count 4")) {
+	if all.Code != 200 || !bytes.Contains(all.Body.Bytes(), []byte("/Count 3")) {
 		t.Fatal("bulk PDF missing party pages", all.Code)
 	}
 	if !reflect.DeepEqual(saved, state()) {
 		t.Fatal("GET wrote data or audit")
 	}
 	page := authedRequest(t, a, manager, "/demo/app/settings/annual-statement?year=2025&run="+run.ID)
-	for _, want := range []string{"Alle Dokumente (PDF)", "PDF für Anna Eigentümer", "PDF für coowner@example.com", "PDF für tenant@example.com"} {
+	if strings.Contains(page.Body.String(), "PDF für tenant@example.com") {
+		t.Fatal("WEG tenant has a run link")
+	}
+	for _, want := range []string{"Alle Dokumente (PDF)", "PDF für Anna Eigentümer", "PDF für coowner@example.com"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("missing link %s", want)
 		}

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -182,56 +181,7 @@ func verifyPostgresRole(ctx context.Context, database *sql.DB) error {
 }
 
 func migratePostgres(ctx context.Context, database *sql.DB) error {
-	if _, err := database.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
-		version text PRIMARY KEY,
-		applied_at timestamptz NOT NULL DEFAULT now()
-	)`); err != nil {
-		return fmt.Errorf("db: ensure postgres schema_migrations: %w", err)
-	}
-	entries, err := postgresMigrationsFS.ReadDir("postgres/migrations")
-	if err != nil {
-		return fmt.Errorf("db: read postgres migrations: %w", err)
-	}
-	names := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		name := entry.Name()
-		if !entry.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".sql") {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-	for _, name := range names {
-		tx, err := database.BeginTx(ctx, nil)
-		if err != nil {
-			return fmt.Errorf("db: begin postgres migration %s: %w", name, err)
-		}
-		var applied bool
-		if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, name).Scan(&applied); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: check postgres migration %s: %w", name, err)
-		}
-		if applied {
-			tx.Rollback()
-			continue
-		}
-		raw, err := postgresMigrationsFS.ReadFile("postgres/migrations/" + name)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: read postgres migration %s: %w", name, err)
-		}
-		if _, err := tx.ExecContext(ctx, string(raw)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: postgres migration %s failed: %w", name, err)
-		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations(version) VALUES($1)`, name); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("db: record postgres migration %s: %w", name, err)
-		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("db: commit postgres migration %s: %w", name, err)
-		}
-	}
-	return nil
+	return migrateFiles(ctx, database, BackendPostgres, postgresMigrationsFS, "postgres/migrations")
 }
 
 // BeginTenantTx starts a transaction and sets its RLS tenant scope with SET

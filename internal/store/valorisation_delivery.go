@@ -3,10 +3,12 @@ package store
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/jackc/pgx/v5/pgconn"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
@@ -31,12 +33,14 @@ type ValorisationDelivery struct {
 	Revision                                       int
 	PartyID, UnitID, DocumentID, SHA256, Recipient string
 	SentAt                                         time.Time
+	ReceivedOn, ReceiptDueOn                       string
 	Status, Error, Actor                           string
 	Attempt                                        int
 }
 
 type ValorisationDeliveryRepository interface {
 	List(runID string) ([]ValorisationDelivery, error)
+	RecordReceipt(runID, deliveryID, receivedOn string, actor ValorisationActor, now time.Time) error
 	// Attempt serializes delivery of a party/unit and skips any previous success.
 	// send must return an error safe to display to the Verwaltung.
 	Attempt(ctx context.Context, item ValorisationDelivery, send func(context.Context) error) (ValorisationDelivery, bool, error)
@@ -62,7 +66,7 @@ func BindValorisationDeliveryRepository(storage *SQLValorisationDeliveryStore, t
 }
 
 func (r *boundValorisationDeliveryRepository) List(runID string) ([]ValorisationDelivery, error) {
-	rows, err := r.storage.db.For(r.tenant).Query(`SELECT id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt FROM valorisation_deliveries WHERE tenant_id=$1 AND run_id=$2 ORDER BY attempt,id`, r.tenant.ID, runID)
+	rows, err := r.storage.db.For(r.tenant).Query(`SELECT id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt,received_on,receipt_due_on FROM valorisation_deliveries WHERE tenant_id=$1 AND run_id=$2 ORDER BY attempt,id`, r.tenant.ID, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +75,7 @@ func (r *boundValorisationDeliveryRepository) List(runID string) ([]Valorisation
 	for rows.Next() {
 		var item ValorisationDelivery
 		var at string
-		if err := rows.Scan(&item.ID, &item.RunID, &item.Revision, &item.PartyID, &item.UnitID, &item.DocumentID, &item.SHA256, &item.Recipient, &at, &item.Status, &item.Error, &item.Actor, &item.Attempt); err != nil {
+		if err := rows.Scan(&item.ID, &item.RunID, &item.Revision, &item.PartyID, &item.UnitID, &item.DocumentID, &item.SHA256, &item.Recipient, &at, &item.Status, &item.Error, &item.Actor, &item.Attempt, &item.ReceivedOn, &item.ReceiptDueOn); err != nil {
 			return nil, err
 		}
 		item.SentAt, err = time.Parse(time.RFC3339Nano, at)
@@ -244,4 +248,75 @@ func (r *boundValorisationDeliveryRepository) record(ctx context.Context, handle
 		return item, err
 	}
 	return item, nil
+}
+
+// RecordReceipt preserves the original calculation and records the evidenced
+// receipt and resulting payment date per recipient. A late receipt may defer
+// payment; it cannot make a premature letter valid.
+func (r *boundValorisationDeliveryRepository) RecordReceipt(runID, deliveryID, receivedOn string, actor ValorisationActor, now time.Time) error {
+	if !actor.Manage || actor.Email == "" {
+		return ErrValorisationDenied
+	}
+	location, err := time.LoadLocation("Europe/Vienna")
+	if err != nil {
+		return err
+	}
+	received, err := time.Parse(time.DateOnly, receivedOn)
+	if err != nil || receivedOn > now.In(location).Format(time.DateOnly) {
+		return fmt.Errorf("Gültiges Zugangsdatum bis heute erforderlich")
+	}
+	tx, err := r.storage.db.For(r.tenant).Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var raw, sent string
+	err = tx.QueryRow(`SELECT doc.data,d.sent_at FROM valorisation_deliveries d JOIN documents doc ON doc.tenant_id=d.tenant_id AND doc.id=d.document_id JOIN valorisation_runs r ON r.tenant_id=d.tenant_id AND r.id=d.run_id WHERE d.tenant_id=$1 AND d.run_id=$2 AND d.id=$3 AND d.status='sent' AND r.status IN ('approved','sent')`, r.tenant.ID, runID, deliveryID).Scan(&raw, &sent)
+	if err != nil {
+		return err
+	}
+	var doc DocumentRecord
+	if err = json.Unmarshal([]byte(raw), &doc); err != nil {
+		return err
+	}
+	if doc.ValorisationArchive == nil {
+		return fmt.Errorf("Archiviertes Schreiben fehlt")
+	}
+	repo := ValorisationRepository{tenant: r.tenant}
+	run, err := repo.getTx(tx, runID)
+	if err != nil {
+		return err
+	}
+	var item *ValorisationItem
+	for idx := range run.Items {
+		if run.Items[idx].ID == doc.ValorisationArchive.ItemID {
+			item = &run.Items[idx]
+			break
+		}
+	}
+	if item == nil {
+		return fmt.Errorf("Berechnung zum Schreiben fehlt")
+	}
+	issued, err := time.Parse(time.RFC3339Nano, sent)
+	if err != nil {
+		return err
+	}
+	issued = issued.In(location)
+	in := item.TimingInput
+	in.NoticeIssuedOn, in.NoticeReceivedOn = issued, received
+	if receivedOn < issued.Format(time.DateOnly) {
+		return fmt.Errorf("Zugang darf nicht vor dem Versand liegen")
+	}
+	timing, err := indexation.Timing(in)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`UPDATE valorisation_deliveries SET received_on=$1,receipt_due_on=$2 WHERE tenant_id=$3 AND run_id=$4 AND id=$5 AND status='sent'`, receivedOn, timing.DueOn.Format(time.DateOnly), r.tenant.ID, runID, deliveryID)
+	if err != nil {
+		return err
+	}
+	if err = repo.event(tx, ValorisationRun{ID: runID}, "letter.receipt", actor.Email, now, map[string]string{"delivery_id": deliveryID, "received_on": receivedOn, "due_on": timing.DueOn.Format(time.DateOnly)}); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

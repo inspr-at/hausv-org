@@ -183,6 +183,10 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
+		templ_7745c5c3_Err = LegalHelp().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<section class=\"panel help-faq\" aria-labelledby=\"help-faq-title\"><h2 id=\"help-faq-title\">Häufige Fragen</h2><details><summary>Wie funktioniert die Anmeldung per E-Mail-Code?")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -232,7 +236,7 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(contact.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 98, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 99, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -250,7 +254,7 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 					var templ_7745c5c3_Var4 templ.SafeURL
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("mailto:" + contact.Email))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 100, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 101, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -263,7 +267,7 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(contact.Email)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 100, Col: 81}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 101, Col: 81}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -282,7 +286,7 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 					var templ_7745c5c3_Var6 templ.SafeURL
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("tel:" + contact.Phone))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 103, Col: 60}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 104, Col: 60}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -295,7 +299,7 @@ func GeneralHelpBody(data HelpPageData) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(contact.Phone)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 103, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/help_general.templ`, Line: 104, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {

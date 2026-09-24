@@ -190,6 +190,7 @@ templ LeaseTimeline(lease LeaseDetail) {
 			}
 		}
 		<h2>Wertsicherung</h2>
+		<p>Wirksamwerden: { lease.TimingMode }. Gilt für Indexerhöhungen bei Hauptmiete in MRG-Vollanwendung außerhalb des MieWeG. <a href="/app/hilfe#recht-wirksamwerden">Warum?</a></p>
 		if len(lease.Valorisation) == 0 {
 			<p>Noch keine Wertsicherung.</p>
 		} else {
@@ -247,6 +248,12 @@ templ LeaseFormSection(data LeasePageData) {
 							<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
 						}
 					</select></label>
+					<label class="lease-field lease-span">Wirksamwerden<select name="wirksamwerden_mode">
+						<option value="" selected?={ data.Form.TimingMode == "" }>Standard der Hausverwaltung</option>
+						<option value="wko" selected?={ data.Form.TimingMode == "wko" }>vorsichtig (WKO)</option>
+						<option value="oevi" selected?={ data.Form.TimingMode == "oevi" }>ab endgültiger Verlautbarung (ÖVI)</option>
+						<option value="contract" selected?={ data.Form.TimingMode == "contract" }>vertraglicher Stichtag</option>
+					</select><small>Nur für Indexerhöhungen bei Hauptmiete in MRG-Vollanwendung außerhalb des MieWeG. Der vertragliche Stichtag liegt frühestens beim Wirksamwerden nach dem Organisationsstandard. <a href="/app/hilfe#recht-wirksamwerden">Warum?</a></small></label>
 					<label class="lease-field">Zinstermin<input type="number" name="zinstermin_day" min="1" max="28" value={ data.Form.Zinstermin }/></label>
 				</div>
 				<div class="lease-toggles">

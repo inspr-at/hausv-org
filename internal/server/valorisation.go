@@ -381,7 +381,7 @@ func (a *app) valorisationError(w http.ResponseWriter, err error) {
 		http.Error(w, "Keine Berechtigung.", 403)
 		return
 	}
-	for _, prefix := range []string{"Vier-Augen", "Ausnahmen", "Schreiben vor", "Keine freigabefähige", "Manuelle Entscheidung", "Begründung", "Lauf geändert", "index_revised"} {
+	for _, prefix := range []string{"Vier-Augen", "Ausnahmen", "Schreiben vor", "Schreiben und Freigabe gesperrt", "Schreiben gesperrt", "Gültiges Zugangsdatum", "Zugang darf", "Keine freigabefähige", "Manuelle Entscheidung", "Begründung", "Lauf geändert", "index_revised"} {
 		if strings.HasPrefix(err.Error(), prefix) {
 			message = err.Error()
 		}
@@ -394,4 +394,17 @@ func (a *app) auditValorisation(ac authCtx, run store.ValorisationRun, action, s
 	}
 	details["inputs_sha256"] = run.InputsSHA256
 	a.recordAudit(store.AuditEvent{TenantSlug: ac.tenant.Slug, ActorEmail: ac.email, ActorRole: ac.role, Action: action, TargetType: "valorisation_run", TargetID: run.ID, Summary: summary, Details: details})
+}
+
+func (a *app) recordValorisationReceipt(w http.ResponseWriter, r *http.Request, ac authCtx) {
+	repo, ok := store.BindValorisationDeliveryRepository(store.NewSQLValorisationDeliveryStore(a.tenantDB), ac.tenantRef)
+	if !ok {
+		http.Error(w, "Wertsicherung nicht verfügbar.", 503)
+		return
+	}
+	if err := repo.RecordReceipt(r.PathValue("runID"), r.PathValue("deliveryID"), r.FormValue("received_on"), valorisationActor(ac), time.Now()); err != nil {
+		a.valorisationError(w, err)
+		return
+	}
+	redirectValorisation(w, r, r.PathValue("runID"))
 }

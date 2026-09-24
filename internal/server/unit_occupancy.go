@@ -36,6 +36,8 @@ func (a *app) unitOccupancy(tenantSlug, unitLabel string) web.UnitOccupancy {
 		occupancy.UnitType = unitTypeLabel(unit.UnitType)
 		occupancy.Owners = a.occupancyPeople(tenantSlug, unit.OwnerEmails)
 		occupancy.Renters = a.occupancyPeople(tenantSlug, unit.RenterEmails)
+		addOccupancyPartyDates(occupancy.Owners, unit)
+		addOccupancyPartyDates(occupancy.Renters, unit)
 		return occupancy
 	}
 	return occupancy

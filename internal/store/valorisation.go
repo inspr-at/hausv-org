@@ -21,11 +21,15 @@ type ValorisationSettings struct {
 }
 
 func DefaultValorisationSettings() ValorisationSettings {
-	return ValorisationSettings{WirksamwerdenMode: "cautious", UnreviewedClausePolicy: "block"}
+	return ValorisationSettings{WirksamwerdenMode: "wko", UnreviewedClausePolicy: "block"}
 }
 func (s ValorisationSettings) Normalized() ValorisationSettings {
-	if s.WirksamwerdenMode != "contractual" {
-		s.WirksamwerdenMode = "cautious"
+	switch s.WirksamwerdenMode {
+	case "contractual":
+		s.WirksamwerdenMode = "contract"
+	case "wko", "oevi", "contract":
+	default:
+		s.WirksamwerdenMode = "wko"
 	}
 	if s.UnreviewedClausePolicy != "warn" {
 		s.UnreviewedClausePolicy = "block"
@@ -383,7 +387,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				continue
 			}
 			on := pub
-			if !item.MieWeG && lease.MRGScope == MRGVoll && input.Settings.WirksamwerdenMode == "cautious" {
+			if lease.UsesValorisationTimingMode() && lease.valorisationLegalMode(input.Settings) == indexation.CautiousTiming {
 				on = time.Date(pub.Year(), pub.Month()+2, 1, 0, 0, 0, 0, time.UTC)
 			}
 			if !on.After(effective) && !pub.After(now) && v.Month > cutoff {
@@ -487,6 +491,11 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			contractualOn = time.Date(published.Year(), published.Month()+1, 1, 0, 0, 0, 0, time.UTC)
 			if periodic {
 				contractualOn = periodicOn
+			} else if lease.UsesValorisationTimingMode() {
+				contractualOn = published
+				if lease.valorisationTimingMode(input.Settings) == indexation.ContractualTiming {
+					contractualOn = effective
+				}
 			}
 			if contractualOn.Year() < 2026 && (clause.State == nil || clause.State.LastEffectiveOn < contractualOn.Format(time.DateOnly)) {
 				item.exception("missed_pre2026")
@@ -554,14 +563,17 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	if item.MieWeG && item.NewCents > item.OldCents {
 		mode = indexation.MieWeGTiming
 	} else if item.RequiresMRGNotice && clause.ClauseType != ClauseStaffel {
-		mode = indexation.TimingMode(input.Settings.WirksamwerdenMode)
+		mode = lease.valorisationTimingMode(input.Settings)
 	}
-	item.TimingInput = indexation.TimingInput{TriggerMonth: trigger, FinalPublishedOn: published, Mode: mode, ContractualEffectiveOn: contractualOn, StatutoryEffectiveOn: item.Decision.EffectiveOn, RequiresMRGNotice: item.RequiresMRGNotice, DueDay: lease.ZinsterminDay}
+	item.TimingInput = indexation.TimingInput{TriggerMonth: trigger, FinalPublishedOn: published, Mode: mode, LegalFloorMode: lease.valorisationLegalMode(input.Settings), ContractualEffectiveOn: contractualOn, StatutoryEffectiveOn: item.Decision.EffectiveOn, RequiresMRGNotice: item.RequiresMRGNotice, DueDay: lease.ZinsterminDay}
+	if clause.ClauseType == ClauseVPIPeriodic {
+		item.TimingInput.NotBefore = contractualOn
+	}
 	item.TimingInput.ContractSchedule = clause.ClauseType == ClauseStaffel
 	if item.TimingInput.ContractSchedule && item.MieWeG && item.Decision.PermittedCents > item.OldCents {
 		item.TimingInput.Mode = indexation.MieWeGTiming
 	}
-	if mode == indexation.ContractualTiming && !item.MieWeG && clause.ClauseType != ClauseStaffel {
+	if mode == indexation.ContractualTiming && !item.MieWeG && clause.ClauseType == ClauseVPIThreshold {
 		item.TimingInput.ContractualEffectiveOn = effective
 	}
 	item.Timing, err = indexation.Timing(item.TimingInput)
@@ -676,8 +688,11 @@ func ValorisationVAT(net int64, bp int) int64 {
 	return n.Int64()
 }
 func ValorisationLetterTiming(item ValorisationItem, at time.Time) (ValorisationItem, error) {
-	if item.WirksamOn == "" || at.Format(time.DateOnly) < item.WirksamOn {
-		return item, fmt.Errorf("Schreiben vor Wirksamkeit unzulässig")
+	if item.WirksamOn == "" || at.IsZero() {
+		return item, fmt.Errorf("Schreiben gesperrt: Wirksamwerden und Versanddatum müssen feststehen")
+	}
+	if at.Format(time.DateOnly) < item.WirksamOn {
+		return item, fmt.Errorf("Schreiben und Freigabe gesperrt: Versanddatum liegt vor dem angenommenen Wirksamwerden am %s (%s)", mustDate(item.WirksamOn).Format("02.01.2006"), ValorisationTimingLabel(string(item.TimingInput.Mode)))
 	}
 	in := item.TimingInput
 	in.NoticeIssuedOn = at
@@ -686,6 +701,43 @@ func ValorisationLetterTiming(item ValorisationItem, at time.Time) (Valorisation
 	if err != nil {
 		return item, err
 	}
+	item.TimingInput = in
 	item.Timing = timing
 	return finishValorisationItem(item), nil
+}
+
+// UsesValorisationTimingMode excludes MieWeG, subleases and partial/excluded MRG.
+func (l Lease) UsesValorisationTimingMode() bool {
+	return l.LeaseKind == LeaseKindHauptmiete && l.MRGScope == MRGVoll && !ClassifyLease(l).MieWeG
+}
+func (l Lease) valorisationTimingMode(s ValorisationSettings) indexation.TimingMode {
+	mode := s.Normalized().WirksamwerdenMode
+	if l.UsesValorisationTimingMode() && l.WirksamwerdenMode != "" {
+		mode = l.WirksamwerdenMode
+	}
+	return indexation.TimingMode(mode)
+}
+func (l Lease) valorisationLegalMode(s ValorisationSettings) indexation.TimingMode {
+	mode := l.valorisationTimingMode(s)
+	if mode == indexation.ContractualTiming {
+		mode = indexation.TimingMode(s.Normalized().WirksamwerdenMode)
+	}
+	if mode == indexation.OEVITiming {
+		return mode
+	}
+	return indexation.CautiousTiming
+}
+func ValorisationTimingLabel(mode string) string {
+	switch mode {
+	case "wko", "cautious":
+		return "vorsichtig (WKO)"
+	case "oevi":
+		return "ab endgültiger Verlautbarung (ÖVI)"
+	case "contract", "contractual":
+		return "vertraglicher Stichtag"
+	case "mieweg":
+		return "MieWeG · 1. April"
+	default:
+		return "Standard der Hausverwaltung"
+	}
 }

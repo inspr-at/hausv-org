@@ -1,0 +1,66 @@
+package web
+
+templ LegalHelp() {
+	<section class="panel help-card" id="rechtliche-grundlagen" aria-labelledby="help-legal-title">
+		<h2 id="help-legal-title">Rechtliche Grundlagen und Entscheidungen</h2>
+		<p>Hier erläutern wir die Annahmen hinter Wertsicherung und Jahresabrechnung. Stand und Quellenabruf: 24.09.2026. <strong>Keine Rechtsberatung.</strong> Die konkrete Vertragsklausel und besondere Vereinbarungen müssen gesondert geprüft werden.</p>
+	</section>
+	<section class="panel help-card" id="recht-wirksamwerden" aria-labelledby="help-timing-title">
+		<h2 id="help-timing-title">Wirksamwerden bei Geschäftsraum (MRG-Vollanwendung)</h2>
+		<p>HAUSV wartet standardmäßig bis zum übernächsten Monatsersten nach der endgültigen VPI-Veröffentlichung. Das ist die vorsichtige WKO-Lesart einer offenen Rechtsfrage. Sie gilt für Indexerhöhungen bei Hauptmieten in Vollanwendung außerhalb des MieWeG.</p>
+		<details><summary>Warum gibt es zwei Lesarten?
+			@DisclosureChevron()
+		</summary>
+			<p>Das 3. MILG strich mit 31.12.2023 in § 16 Abs. 9 MRG den Verweis auf die frühere Zeitdefinition. Für vertragliche Geschäftsraummieten blieb dadurch offen, wann eine Indexänderung wirksam wird. Das 5. MILG hat diese Frage nicht ausdrücklich geklärt.</p>
+			<p>Die WKO empfiehlt, weiterhin den übernächsten Monatsersten abzuwarten. Der ÖVI und Bitterl vertreten eine Wirksamkeit bereits ab endgültiger Verlautbarung. HAUSV setzt diese zweite Lesart am Veröffentlichungstag an. Eine gerichtliche Klärung genau dieser Lücke wurde in der Recherche nicht gefunden; keine der beiden Lesarten wird hier als gesicherte Rechtsprechung dargestellt.</p>
+			<p>Beispiel: Aprilindex endgültig veröffentlicht am 17. Juni 2026. WKO: Wirksamwerden am 1. August, erste Zahlung am 5. September. ÖVI: angenommenes Wirksamwerden am 17. Juni, bei rechtzeitigem Zugang und passendem Vertrag erste Zahlung am 5. Juli. Der Julitermin ist eine Ableitung der ÖVI-Lesart.</p>
+		</details>
+		<details><summary>Warum sperrt HAUSV ein verfrühtes Schreiben?
+			@DisclosureChevron()
+		</summary>
+			<p>§ 16 Abs. 9 MRG verlangt ein Schreiben nach Wirksamwerden und Zugang spätestens 14 Tage vor dem Zinstermin. Ein verfrühtes Begehren entfaltet keine Wirkung; ein späterer Zahlungstermin im Brief oder eine Mahnung behebt das nicht. Ein neues, rechtzeitiges Begehren ist nötig. Eine erstmalige rückwirkende Nachforderung ist in dieser Fallgruppe unzulässig.</p>
+			<p>OGH 5 Ob 127/25z und 1 Ob 2/26i bestätigen die Folgen verfrühter Begehren, entscheiden aber nicht die Geschäftsraum-Lücke seit dem 3. MILG. Zu frühes Vorgehen kann Erhöhungen und Rückzahlungen betreffen; vorsichtiges Warten kostet möglicherweise frühere Erhöhungsmonate. Deshalb wählt HAUSV den WKO-Standard.</p>
+		</details>
+		<details><summary>Wie ändere ich die Annahme?
+			@DisclosureChevron()
+		</summary>
+			<p>In den <a href="/app/verwaltung/einstellungen">Einstellungen der Hausverwaltung</a> unter „Wertsicherung“ wählen Sie „vorsichtig (WKO)“, „ab endgültiger Verlautbarung (ÖVI)“ oder „vertraglicher Stichtag“. Im Mietvertrag unter „Bearbeiten“ können Sie davon abweichen. „Standard der Hausverwaltung“ übernimmt die Organisationsvorgabe.</p>
+			<p>Der vertragliche Stichtag liegt niemals vor dem Wirksamwerden nach der Organisationsvorgabe und niemals vor der endgültigen Veröffentlichung. Steht auch die Organisation auf „vertraglicher Stichtag“, verwendet HAUSV WKO als Untergrenze. Bei Schwellenklauseln ist der gewählte Laufstichtag der vertraglich zu prüfende Termin; bei periodischen Klauseln gilt der hinterlegte Anpassungsmonat. Vorläufige Indexwerte werden nicht freigegeben.</p>
+			<p>Indexmonat, endgültige Veröffentlichung, angenommenes Wirksamwerden samt Modus und erster zahlbarer Zinstermin werden getrennt festgehalten. Das Schreiben darf frühestens am Wirksamkeitstag erstellt werden. Der beim Erstellen angenommene Zugang ist kein Zustellnachweis; den tatsächlichen Zugang tragen Sie im Versandverlauf beim jeweiligen Empfänger ein. HAUSV weist dort den daraus folgenden Zinstermin aus. Wohnungsmieten im MieWeG, Teilanwendung, Vollausnahme, Untermiete und feste Staffeltermine übernehmen diese Moduswahl nicht.</p>
+		</details>
+		<ul class="help-list" aria-label="Quellen zum Wirksamwerden">
+			<li>Quellen · abgerufen 24.09.2026: <a href="https://www.ris.bka.gv.at/eli/bgbl/1981/520/P16/NOR40273694">RIS · § 16 MRG</a> · <a href="https://www.ris.bka.gv.at/Dokumente/BgblAuth/BGBLA_2023_I_176/BGBLA_2023_I_176.html">3. MILG</a></li>
+			<li><a href="https://www.ris.bka.gv.at/Dokumente/Justiz/JJT_20251218_OGH0002_0050OB00127_25Z0000_000/JJT_20251218_OGH0002_0050OB00127_25Z0000_000.html">OGH 5 Ob 127/25z</a> · <a href="https://www.ogh.gv.at/entscheidungen/entscheidungen-ogh/wertsicherungsklausel-im-mietvertrag/">OGH 1 Ob 2/26i</a> · <a href="https://www.ris.bka.gv.at/Dokumente/Justiz/JJT_20071016_OGH0002_0050OB00210_07D0000_000/JJT_20071016_OGH0002_0050OB00210_07D0000_000.html">OGH 5 Ob 210/07d · Rückwirkung</a></li>
+			<li><a href="https://www.wko.at/wirtschaftsrecht/wertsicherung-miet-und-pachtvertraege">WKO · Wertsicherung</a> · <a href="https://www.ovi.at/aktuelles/detailansicht/mietpreisbremse-3-milg-im-nationalrat-beschlossen">ÖVI · 3. MILG</a> · <a href="https://www.ovi.at/fileadmin/user_upload/Mitglieder_Login/OEVI_News/2025/Valorisierung_Richtwert.pdf">ÖVI · Infoblatt 2025</a> · <a href="https://linda.lindeverlag.at/Dokument/547710/?wherefrom=Magazine">Bitterl · immo aktuell 1/2025, S. 18 (Volltext kostenpflichtig)</a></li>
+		</ul>
+	</section>
+	<section class="panel help-card" id="recht-weg" aria-labelledby="help-weg-title">
+		<h2 id="help-weg-title">WEG-Abrechnung nur an Eigentümer</h2>
+		<p>Die WEG-Jahresabrechnung der Hausverwaltung richtet sich an die Wohnungseigentümer. Mieter einer vermieteten Eigentumswohnung erhalten ihre mietvertragliche Abrechnung vom Vermieter; sie bekommen dadurch nicht automatisch die WEG-Abrechnung.</p>
+		<details><summary>Was ist bei vermietetem Wohnungseigentum und Heizkosten zu beachten?
+			@DisclosureChevron()
+		</summary>
+			<p>Die Abrechnung nach § 34 WEG ist die Grundlage für eine gesonderte Abrechnung des Eigentümers an seinen Mieter. WEG-Aufwendungen sind nicht gleich überwälzbare Betriebskosten: insbesondere die Rücklage darf nicht einfach weiterverrechnet werden. Mietverwaltung ist eine gesonderte Leistung.</p>
+			<p>§ 2 Z 4 HeizKG unterscheidet Abnehmer nach ihrem Nutzungsrecht, darunter Wohnungseigentümer. Mieter von Eigentumswohnungen sind nicht allein wegen ihres Mietvertrags automatisch Abnehmer nach dieser Definition. § 24b HeizKG stellt sie jedoch bei einem Vertrag mit dem Abgeber oder einer Vereinbarung über die Versorgungskosten mit dem Eigentümer gleich. Solche HeizKG-Rechte und gesonderten Abrechnungspflichten sind zusätzlich zu prüfen; die WEG-Empfängerauswahl hebt sie nicht auf.</p>
+			<p>Bei Eigentümerwechseln gelten für den Abrechnungssaldo § 34 Abs. 4 WEG und bei Heizkosten gegebenenfalls die Regeln zum Abnehmerwechsel in § 23 HeizKG. Mieterwechsel im Zinshaus gehören zur MRG-Abrechnung.</p>
+		</details>
+		<ul class="help-list" aria-label="Quellen zur WEG-Abrechnung">
+			<li>Quellen · abgerufen 24.09.2026: <a href="https://www.ris.bka.gv.at/eli/bgbl/i/2002/70/P34/NOR40240621">RIS · § 34 WEG</a> · <a href="https://www.ris.bka.gv.at/eli/bgbl/1992/827/P2/NOR40234261">RIS · § 2 HeizKG</a> · <a href="https://www.jusline.at/gesetz/heizkg/paragraf/23">§ 23 HeizKG</a> · <a href="https://ris.bka.gv.at/Dokument.wxe?Abfrage=Justiz&amp;Dokumentnummer=JJT_20250923_OGH0002_0050OB00062_25S0000_000&amp;ShowPrintPreview=True">OGH 5 Ob 62/25s · § 24b HeizKG</a></li>
+			<li><a href="https://ooe.arbeiterkammer.at/beratung/wohnen/wohnungseigentum/Hausverwaltung-_Vermoegen-_Ruecklagen-_Abrechnung_.html">AK Oberösterreich · Hausverwaltung und Abrechnung</a> · <a href="https://noe.arbeiterkammer.at/beratung/konsumentenschutz/wohnen/eigentum/Betriebskosten-Eigentum.html">AK Niederösterreich · Betriebskosten im Eigentum</a></li>
+		</ul>
+	</section>
+	<section class="panel help-card" id="recht-mieweg" aria-labelledby="help-mieweg-title">
+		<h2 id="help-mieweg-title">MieWeG: die Grundlagen</h2>
+		<p>Seit 2026 begrenzt das MieWeG Wertsicherungen bei Wohnungsmieten in MRG-Voll- und Teilanwendung. Eine wirksame vertragliche Wertsicherung bleibt Voraussetzung. Erhöhungen sind grundsätzlich einmal jährlich zum 1. April möglich, erstmals im Folgejahr des Vertragsabschlusses.</p>
+		<details><summary>Wie funktionieren die 3-%-Regel und die Sonderdeckel?
+			@DisclosureChevron()
+		</summary>
+			<p>Maßgeblich ist die Veränderung der Jahresdurchschnittswerte des VPI 2020. Bis 3 % wird sie voll berücksichtigt; der darüberliegende Teil zählt zur Hälfte. Bei 4 % Inflation ergibt das 3,5 %. Beim ersten Anpassungsjahr werden nur die vollen Monate nach Vertragsabschluss anteilig berücksichtigt.</p>
+			<p>Für preisgeregelte Wohnungsmieten gilt zusätzlich: Die Veränderung für 2025 wird mit höchstens 1 % angesetzt (Anpassung 2026), jene für 2026 mit höchstens 2 % (Anpassung 2027). Vertrag und gesetzliche Obergrenze werden getrennt gerechnet; der niedrigere zulässige Betrag entscheidet. Günstigere vertragliche Senkungen bleiben möglich.</p>
+			<p>Der 1. April ist nicht automatisch der erste Zahlungstermin. Bei Hauptmieten in Vollanwendung bleibt § 16 Abs. 9 MRG mit dem rechtzeitigen Schreiben maßgeblich. Geschäftsräume fallen nicht unter die zwingende Wohnungsregel; eine freiwillige vertragliche Bezugnahme auf das MieWeG-Modell muss gesondert geprüft werden.</p>
+		</details>
+		<ul class="help-list" aria-label="Quellen zum MieWeG">
+			<li>Quellen · abgerufen 24.09.2026: <a href="https://www.ris.bka.gv.at/Dokumente/BgblAuth/BGBLA_2025_I_114/BGBLA_2025_I_114.html">RIS · 5. MILG und MieWeG, §§ 1–2</a> · <a href="https://www.wko.at/oe/immowebinar/neuerungen-im-mietrecht-seit-jaenner-2026.pdf">WKO · Neuerungen seit Jänner 2026</a></li>
+		</ul>
+	</section>
+}

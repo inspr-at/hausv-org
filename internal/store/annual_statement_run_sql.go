@@ -44,6 +44,7 @@ func (s *SQLAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantRef,
 	if err != nil {
 		return input, AnnualStatementRunResult{}, annualStatementUnitDataBlock(err)
 	}
+	annualPartyStatementDate(&input, time.Now())
 	return evaluateAnnualStatementRun(input)
 }
 func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error) {
@@ -56,6 +57,7 @@ func (s *SQLAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, 
 	if err != nil {
 		return AnnualStatementRun{}, annualStatementUnitDataBlock(err)
 	}
+	annualPartyStatementDate(&input, now)
 	input, result, err := evaluateAnnualStatementRun(input)
 	if err != nil {
 		return AnnualStatementRun{}, err
@@ -171,20 +173,23 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
-	err = read(`SELECT id,data FROM units WHERE tenant_id=$1 ORDER BY id`, func(rows *sql.Rows) error {
-		var id, raw string
-		if err := rows.Scan(&id, &raw); err != nil {
+	err = read(`SELECT id,data,party_validity FROM units WHERE tenant_id=$1 ORDER BY id`, func(rows *sql.Rows) error {
+		var id, raw, validity string
+		if err := rows.Scan(&id, &raw, &validity); err != nil {
 			return err
 		}
 		var unit Unit
 		if err := json.Unmarshal([]byte(raw), &unit); err != nil {
 			return unitDataErr(tenant, id, "decode", err)
 		}
+		if err := decodeUnitValidity(&unit, validity); err != nil {
+			return unitDataErr(tenant, id, "dates", err)
+		}
 		if unit.ID != id {
 			return fmt.Errorf("annual statement unit identity mismatch")
 		}
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{ID: unit.ID, Label: unit.Label, UnitType: NormalizeUnitType(unit.UnitType)})
-		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
+		input.Parties = append(input.Parties, annualStatementRunParties(unit, input.Structure.Legal.Regime)...)
 		return nil
 	}, tenant.ID)
 	if err != nil {
@@ -250,7 +255,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	}
 	// Only a preview can reuse vectors loaded for the page. Create passes nil
 	// so every report is read within the serializable transaction below.
-	if vectors != nil {
+	if vectors != nil && !hasDatedAnnualParties(input) {
 		input.Consumption = vectors
 		return input, nil
 	}
@@ -276,6 +281,22 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		}
 		input.Consumption[cost.Key] = report.Vector
 		input.Evidence = append(input.Evidence, report.BoundaryEvidence...)
+		for id, dates := range annualPartyReadingDates(input) {
+			for _, date := range dates {
+				err := read(`SELECT source_key,unit_id,cost_type_key,source_kind,source_id,measured_at_ns,value_micros,measurement_unit,received_at_ns FROM annual_statement_consumption_evidence WHERE tenant_id=$1 AND cost_type_key=$2 AND unit_id=$3 AND measured_at_ns=$4 ORDER BY source_key`, func(rows *sql.Rows) error {
+					reading, err := scanAnnualStatementConsumption(rows)
+					if err != nil {
+						return err
+					}
+					input.PartyEvidence = append(input.PartyEvidence, reading)
+					return nil
+				}, tenant.ID, cost.Key, id, date.UnixNano())
+				if err != nil {
+					return input, err
+				}
+			}
+		}
+
 	}
 	return input, nil
 }

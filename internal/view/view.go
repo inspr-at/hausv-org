@@ -350,7 +350,10 @@ type UnitPaymentStatusView struct {
 	StatusOptions []SelectOption
 }
 
+type UnitPartyDateView struct{ Email, From, To string }
+
 type BuildingUnitView struct {
+	PartyDates         []UnitPartyDateView
 	ID                 string
 	Label              string
 	HomeDisplayName    string

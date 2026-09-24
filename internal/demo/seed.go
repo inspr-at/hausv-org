@@ -59,9 +59,16 @@ type seedOrg struct {
 }
 
 type seedMember struct {
-	Email   string            `json:"email"`
-	Role    string            `json:"role"`
-	Granted map[string]string `json:"granted"`
+	Email    string                           `json:"email"`
+	Role     string                           `json:"role"`
+	Previous map[string]*seedMemberMembership `json:"previous_memberships"`
+}
+
+type seedMemberMembership struct {
+	Role           string   `json:"role"`
+	Permissions    []string `json:"permissions"`
+	Status         string   `json:"status"`
+	DirectoryOptIn *bool    `json:"directory_opt_in"`
 }
 
 type seedAssignee struct {
@@ -81,13 +88,15 @@ type seedHouse struct {
 }
 
 type seedUnit struct {
-	StatementBasis *seedStatementBasis      `json:"-"`
-	PartyContacts  []store.UnitPartyContact `json:"-"`
-	Label          string                   `json:"label"`
-	Floor          string                   `json:"floor"`
-	UnitType       string                   `json:"unit_type"`
-	OwnerEmail     string                   `json:"owner_email"`
-	TenantEmail    string                   `json:"tenant_email"`
+	PreviousOwnerEmail  string                   `json:"-"`
+	PreviousTenantEmail string                   `json:"-"`
+	StatementBasis      *seedStatementBasis      `json:"-"`
+	PartyContacts       []store.UnitPartyContact `json:"-"`
+	Label               string                   `json:"label"`
+	Floor               string                   `json:"floor"`
+	UnitType            string                   `json:"unit_type"`
+	OwnerEmail          string                   `json:"owner_email"`
+	TenantEmail         string                   `json:"tenant_email"`
 }
 
 type seedIntake struct {
@@ -203,8 +212,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 		return SeedResult{}, err
 	}
 	// The organisation's own contact data (shown in the sidebar and in
-	// resident replies) come from the fixture too; the houses stay as they are.
-	if org.ContactName != "" || org.ContactEmail != "" || org.ContactPhone != "" {
+	// resident replies) come from the fixture too. Include fixture houses so a
+	// standalone demo-seed has the same stored topology as an application boot.
+	if org.ContactName != "" || org.ContactEmail != "" || org.ContactPhone != "" || len(org.Members) > 0 {
 		orgRepo := store.BindOrganisationRepository(database, org.Key)
 		current, found, err := orgRepo.Get(ctx)
 		if err != nil {
@@ -214,17 +224,17 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 			current = store.Organisation{Key: org.Key, Name: org.Name}
 		}
 		current.ContactName, current.ContactEmail, current.ContactPhone = org.ContactName, org.ContactEmail, org.ContactPhone
+		for _, house := range houses {
+			if house.Organisation == org.Key {
+				current.Houses = append(current.Houses, house.Slug)
+			}
+		}
 		if err := orgRepo.Save(ctx, current); err != nil {
 			return SeedResult{}, err
 		}
 	}
-	memberRepo := store.BindOrganisationMemberRepository(database, org.Key)
-	for _, member := range org.Members {
-		// Preserve the house roles already supplied by persons.json in the
-		// grant record, so removing a demo employee restores those roles.
-		if err := memberRepo.Save(ctx, store.OrganisationMember{Email: member.Email, Role: member.Role, Granted: member.Granted}); err != nil {
-			return SeedResult{}, fmt.Errorf("seed member %s: %w", member.Email, err)
-		}
+	if err := seedOrganisationMembers(ctx, database, dir, org, houses, identities); err != nil {
+		return SeedResult{}, err
 	}
 
 	templateRepo := store.BindTextbausteinRepository(database, org.Key)
@@ -480,8 +490,14 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 		if raw.OwnerEmail != "" {
 			unit.OwnerEmails = []string{raw.OwnerEmail}
 		}
+		if raw.PreviousOwnerEmail != "" {
+			unit.OwnerEmails = append(unit.OwnerEmails, raw.PreviousOwnerEmail)
+		}
 		if raw.TenantEmail != "" {
 			unit.RenterEmails = []string{raw.TenantEmail}
+			if raw.PreviousTenantEmail != "" {
+				unit.RenterEmails = append(unit.RenterEmails, raw.PreviousTenantEmail)
+			}
 		}
 		units = append(units, unit)
 	}
@@ -489,6 +505,23 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 }
 
 func upsertJSON(ctx context.Context, tx *sql.Tx, table string, tenant store.TenantIdentity, id string, value any) error {
+	if unit, ok := value.(store.Unit); ok && table == "units" {
+		data, validity, err := store.EncodeUnitWithValidity(unit)
+		if err != nil {
+			return err
+		}
+		result, err := tx.ExecContext(ctx, `UPDATE units SET tenant_id=$1,data=$4,party_validity=$5 WHERE tenant_slug=$2 AND id=$3`, tenant.ID, tenant.Slug, id, data, validity)
+		if err != nil {
+			return err
+		}
+		updated, err := result.RowsAffected()
+		if err != nil || updated > 0 {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `INSERT INTO units(tenant_id,tenant_slug,id,data,party_validity) VALUES($1,$2,$3,$4,$5)`, tenant.ID, tenant.Slug, id, data, validity)
+		return err
+	}
+
 	blob, err := json.Marshal(value)
 	if err != nil {
 		return err

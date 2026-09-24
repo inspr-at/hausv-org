@@ -1153,6 +1153,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/valorisation/runs", a.authedAction(capabilityManageLeases, a.createValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/approve", a.authedAction(capabilityManageLeases, a.approveValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/send", a.authedAction(capabilityManageLeases, a.sendValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/deliveries/{deliveryID}/receipt", a.authedAction(capabilityManageLeases, a.recordValorisationReceipt))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/cancel", a.authedAction(capabilityManageLeases, a.cancelValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/items/{itemID}", a.authedAction(capabilityManageLeases, a.valorisationItemAction))
 	mux.HandleFunc("GET /app/settings/valorisation/runs/{runID}/items/{itemID}/pdf", a.authed(capabilityManageLeases, a.valorisationPDF))
@@ -4437,6 +4438,10 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			}
 		}
 	}
+	if err := applyUnitPartyDates(&item, r.Form); err != nil {
+		http.Redirect(w, r, "/app/settings/building?section=units&unit=invalid"+dialogTarget, http.StatusSeeOther)
+		return
+	}
 	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
 	// whole-slice overwrite (HAUSV-145).
 	duplicate, err := ac.repositories.units.UpsertUnit(origID, item)
@@ -4787,6 +4792,7 @@ func buildingUnitViews(units []unit) []buildingUnitView {
 			BillableLabel:      unitBillableLabel(item.BillableWeightPPM),
 			Share:              formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
 			ShareValue:         strconv.Itoa(item.MiteigentumsanteilPPM),
+			PartyDates:         unitPartyDateViews(item),
 			OwnerEmails:        strings.Join(item.OwnerEmails, ", "),
 			RenterEmails:       strings.Join(item.RenterEmails, ", "),
 			OwnerSummary:       unitAssignmentSummary(item.OwnerEmails),

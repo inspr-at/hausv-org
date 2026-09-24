@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -56,7 +57,10 @@ func (s *SQLIdentityStore) profileFromPerson(p Person) UserProfile {
 	profile.TenantMemberships = map[string]TenantMembership{}
 	for _, m := range memberships {
 		profile.Tenants = append(profile.Tenants, m.TenantSlug)
-		profile.TenantMemberships[m.TenantSlug] = TenantMembership{Role: m.Role, Permissions: m.Permissions, DirectoryOptIn: m.DirectoryOptIn}
+		// SQL stores an explicit permission set for every house. A nil slice in
+		// the flat profile means "inherit the first house", which would turn a
+		// name edit into a permission grant in other houses on the next write.
+		profile.TenantMemberships[m.TenantSlug] = TenantMembership{Role: m.Role, Permissions: append([]string{}, m.Permissions...), DirectoryOptIn: m.DirectoryOptIn}
 	}
 	// Top-level role/permissions/status act as the default for houses without an
 	// explicit entry; the first membership supplies them.
@@ -150,6 +154,21 @@ func (s *SQLIdentityStore) writeProfileTx(tx *sql.Tx, profile UserProfile, at ti
 		if m, ok := profile.TenantMemberships[tenant]; ok {
 			directoryOptIn = m.DirectoryOptIn
 		}
+		// A global name/auth-method edit rewrites this flat profile too. Keep
+		// provenance where its house privileges did not change; the explicit
+		// SetMembership path still clears it even for a same-role manual grant.
+		origin := ""
+		tenantID, err := ensureTenantID(tx, tenant)
+		if err != nil {
+			return err
+		}
+		existing, existingOrigin, err := loadOrganisationHouse(context.Background(), tx, person.ID, tenantID, "")
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if err == nil && existing.Role == NormalizeRole(resolved.Role) && encodeStringList(existing.Permissions) == encodeStringList(NormalizePermissions(resolved.Permissions)) {
+			origin = existingOrigin
+		}
 		if _, err := s.setMembershipTx(tx, HouseMembership{
 			PersonID:       person.ID,
 			TenantSlug:     tenant,
@@ -159,6 +178,11 @@ func (s *SQLIdentityStore) writeProfileTx(tx *sql.Tx, profile UserProfile, at ti
 			DirectoryOptIn: directoryOptIn,
 		}, at); err != nil {
 			return err
+		}
+		if origin != "" {
+			if _, err := tx.Exec(`UPDATE house_memberships SET grant_origin=$1 WHERE person_id=$2 AND tenant_id=$3`, origin, person.ID, tenantID); err != nil {
+				return err
+			}
 		}
 	}
 	// Detach houses the profile no longer names — inside the same transaction, so
@@ -315,6 +339,11 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 	}
 	defer tx.Rollback()
 	var personID, rawPermissions string
+	// The person row is the shared lock with organisation membership changes;
+	// lock before reading permissions so concurrent mutations cannot lose bits.
+	if _, err := tx.Exec(`UPDATE persons SET id=id WHERE email=$1`, email); err != nil {
+		return UserProfile{}, false, err
+	}
 	if err := tx.QueryRow(
 		`SELECT p.id, m.permissions
 		   FROM persons p
@@ -329,7 +358,7 @@ func (s *SQLIdentityStore) MutateTenantPermissions(email string, tenantSlug stri
 	}
 	permissions := NormalizePermissions(fn(decodeStringList(rawPermissions)))
 	if _, err := tx.Exec(
-		`UPDATE house_memberships SET permissions=$1, updated_at=$2 WHERE person_id=$3 AND tenant_id=$4`,
+		`UPDATE house_memberships SET permissions=$1, updated_at=$2, grant_origin='' WHERE person_id=$3 AND tenant_id=$4`,
 		encodeStringList(permissions), identityTime(time.Now()), personID, tenantID,
 	); err != nil {
 		return UserProfile{}, false, err
@@ -384,9 +413,14 @@ func (s *SQLIdentityStore) SetTenantDirectoryOptIn(email string, tenantSlug stri
 	if !had {
 		return false, nil
 	}
-	existing.DirectoryOptIn = &optIn
-	if _, err := s.SetMembership(existing, time.Now()); err != nil {
+	// Directory visibility is not a manual privilege grant. Update only this
+	// preference so it neither severs organisation provenance nor writes stale
+	// role/permissions read before a concurrent organisation change.
+	ref := TenantRef{ID: existing.TenantID, Slug: existing.TenantSlug}
+	result, err := s.db.For(ref).Exec(`UPDATE house_memberships SET directory_opt_in=$1,updated_at=$2 WHERE person_id=$3 AND tenant_id=$4`, optIn, identityTime(time.Now()), person.ID, existing.TenantID)
+	if err != nil {
 		return false, err
 	}
-	return true, nil
+	n, err := result.RowsAffected()
+	return n > 0, err
 }

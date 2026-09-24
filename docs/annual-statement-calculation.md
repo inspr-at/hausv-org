@@ -1,6 +1,6 @@
 # Jahresabrechnung: implementierte Berechnung
 
-Technische Spezifikation zu HAUSV-767, Berechnungsversion `2`. Sie beschreibt
+Technische Spezifikation zu HAUSV-767/794, Berechnungsversionen `2`, `3` und `4`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
@@ -88,9 +88,70 @@ Vorzeichen, einschließlich `-0,50`, werden abgelehnt.
 
 ## Zeitanteile, Leerstand und Parteien
 
-Außer dem ausdrücklich hinterlegten Leerstand gibt es keine zeitabhängigen
-Basen oder Eigentums-/Mietzeiträume. Ein unterjähriger Personen-, Eigentümer-
-oder Mieterwechsel wird derzeit nicht anteilig berechnet.
+Parteien können inklusive Gültigkeitsdaten (`valid_from` / `valid_to`) tragen.
+Leere Grenzen sind unbefristet. Pro E-Mail und Einheit wird ein zusammenhängender
+Zeitraum geführt, gemeinsam für ihre Eigentümer-/Mieterrollen. Die Einheitenmaske
+pflegt die Grenzen; frühere Parteien bleiben für die Abrechnung in der Zuordnung.
+Aktuelle Einheitenmitgliedschaften berücksichtigen die Gültigkeit. Die additive
+Spalte `units.party_validity` enthält die Grenzen als JSON und übernimmt die
+bestehende Tenant-Isolation/RLS von `units`; dbmove kopiert sie unverändert.
+Es gibt keine neue Tenant-Tabelle. Zeitabhängige Nutzflächen-/Personenbasen sind
+weiterhin nicht modelliert.
+
+Neue WEG-Läufe übernehmen ausschließlich Eigentümer in ihre Empfängerliste;
+Mieter/Bewohner erhalten daraus weder Partei-PDF noch Archiv- oder Versandauftrag.
+Die Mieterabrechnung durch den jeweiligen Vermieter ist nicht Teil dieses WEG-Laufs.
+Dies gilt auch ohne Parteienwechsel. Bereits gespeicherte Empfängerlisten bleiben
+unverändert. Nur datierte abrechnungsberechtigte Parteien lösen **Version 4** aus;
+Datumsgrenzen reiner WEG-Mieter beeinflussen weder Version noch Heizkostenanteile.
+Auf den betroffenen Einheiten verdrängt die Fälligkeitsregel den früheren Leerstands-
+Tagesanteil. MRG Vollanwendung ordnet sämtliche gewöhnlichen Kosten und Akontos
+der Mietpartei am übernächsten Zinstermin zu (Annahme: jeweils 5.). Fehlt dort
+eine Mietpartei, erhält die Eigentümerpartei den ganzen Betriebskostensaldo.
+WEG ordnet ihn dem Eigentümer am Fälligkeitstag zu (Abrechnungsdatum + zwei
+Kalendermonate, § 34 Abs. 4 WEG). MRG Teilanwendung/Ausnahme verwenden hierfür
+die ausdrücklich erfasste vertragliche Fälligkeit, ohne § 21 MRG zu unterstellen.
+Fehlende oder mehrdeutige Empfänger sperren den Lauf; überlappende gemeinsame
+Parteien werden nicht nach erfundenen Eigentumsquoten aufgeteilt.
+
+Das Abrechnungsdatum ist bei Version 4 im Snapshot als Wiener Erstellungsdatum
+festgehalten. Eine spätere Freigabe verändert weder Stichtag noch Empfänger.
+Bei einem anderen Rechnungsdatum muss ein neuer Lauf erstellt werden.
+Versionen 1–3 bleiben im Replay und in ihren PDF-Zuordnungen unverändert.
+Die Kostenberechnung von Einheiten ohne datierte Empfänger bleibt unverändert.
+
+Bei WEG wird jeder HeizKG-Zeitraum der Eigentümerpartei zugeordnet; bei MRG
+der Mietpartei, ersatzweise der Eigentümerpartei. Die Verbrauchskosten verwenden
+Zwischenablesungen an den Wechselgrenzen, soweit eine vollständige Messkette vorliegt; ohne Zwischenablesung werden
+alle Heizkosten nach gleichen Monatsanteilen verteilt (§ 23 HeizKG). Die
+Flächenkosten und das erfasste Einheiten-Heizkostenakonto folgen Monatsanteilen.
+Dies setzt gleichmäßige monatliche Akontos voraus; individuelle Zahlungsverläufe
+je Partei werden noch nicht erfasst. Ein Teilmonat zählt als Anteil seiner
+Kalendertage an diesem Monat (Februar und Juli bleiben gleich gewichtete Monate).
+Lücken gehen an eine gültige Eigentümerpartei; unklare Überlappungen sperren.
+Zwischenmessungen werden aus dem vorhandenen Messwertspeicher übernommen;
+Grenznachweise und genau die relevanten Zwischenablesungen sind im Snapshot.
+Eine nur teilweise erfasste Messkette oder eine Abweichung vom Jahresverbrauch
+sperrt den Lauf, statt eine vorhandene Messung durch eine Schätzung zu ersetzen.
+
+Geld und Umsatzsteuer werden centgenau nach größtem Rest verteilt, bei Gleichstand
+nach Partei-ID. Parteisummen entsprechen den betroffenen Einheitenbeträgen,
+Akontos und Salden. Die PDF zeigt ausschließlich den gespeicherten Partei-Anteil
+mit einem erläuternden Satz; in datierten Partei-Abrechnungen werden Kostenzeilen
+und USt-Gruppen mit 0,00 Euro weggelassen. Nur der Fälligkeitsempfänger erhält die Rücklageninformation und
+künftige Einheiten-Akontovorschläge. Der Lauf zeigt beide Parteien mit Zeitraum
+und individuellem Saldo. Das WEG-Demo Janusbergweg 123, Top 3 wechselt am
+01.07.2025 von Clara Berger zu Daniel Leitner; der Mieter Matthias Dorn bleibt unverändert und erhält keine
+WEG-Abrechnung. Im MRG-Zinshaus Musterstraße 12, Top 2 wechselt zum selben Datum
+die Mietpartei von Theresa Aichner zu Lena Krainer. Offene Zeitgrenzen erscheinen
+als „bis 30.06.2025“ beziehungsweise „ab 01.07.2025“.
+
+Quellen für die im Auftrag festgelegte WEG-Verwalterabrechnung:
+[WEG § 34 Abs. 1 und 4](https://ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Anlage=&Artikel=&FassungVom=2026-05-31&Gesetzesnummer=20001921&Paragraf=34&Uebergangsrecht=),
+[HeizKG § 2 Z 4 lit. c](https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&Dokumentnummer=NOR40234261)
+und [HeizKG § 23](https://ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Anlage=&Artikel=&FassungVom=2026-06-08&Gesetzesnummer=10007277&Paragraf=23&Uebergangsrecht=).
+Gesonderte Versorgungsverträge bzw. Gleichstellungen nach § 24b HeizKG werden
+hier nicht modelliert; diese Regel beschreibt die WEG-Verwalterabrechnung.
 
 Ohne hinterlegten Leerstandszeitraum bleibt die Einheit in der Verteilung:
 Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben null
@@ -112,8 +173,10 @@ ohne Leerstandsdaten wiederholen sich unverändert; die Berechnungsversion
 bleibt ohne Umsatzsteuerausweis 2, weil sich der Algorithmus für diese Eingaben
 nicht ändert.
 
-Ohne Leerstandsanteil erhält jede gespeicherte Eigentümer-/Mietpartei eine
-adressierte Kopie des vollständigen Einheitenergebnisses. Bei MRG-Leerstand
+In neuen WEG-Läufen ohne datierte Eigentümer erhält jede gespeicherte
+Eigentümerpartei eine adressierte Kopie des vollständigen Einheitenergebnisses.
+Bei anderen Regimen ohne datierte Parteien und ohne Leerstandsanteil erhält jede
+gespeicherte Eigentümer-/Mietpartei eine solche Kopie. Bei MRG-Leerstand
 erhält die reine Eigentümerpartei den Leerstandsanteil ohne Akonto; die Mietpartei
 behält den bewohnten Rest und die erfassten Akontos, auch im HeizKG-Nachweis.
 Eine Partei mit beiden Rollen erhält die zusammengeführten Kostenarten und

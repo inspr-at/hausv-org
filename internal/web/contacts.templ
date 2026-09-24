@@ -14,6 +14,7 @@ type Person struct {
 	Email string
 	Name  string
 	Title string
+	Validity string
 }
 
 type UnitOccupancy struct {
@@ -352,7 +353,7 @@ templ ContactsAside(data ContactsPageData) {
 
 func contactsHaveQuick(data ContactsPageData) bool { return len(data.ManagerContacts)+len(data.EmergencyContacts)+len(data.BoardContacts) > 0 }
 func contactsHaveAny(data ContactsPageData) bool { return contactsHaveQuick(data) || data.CanViewUnitOccupancies || len(data.ManagedContacts)+len(data.ResidentContacts)+len(data.InactiveContacts) > 0 }
-func occupancyPeopleText(people []Person, empty string) string { if len(people) == 0 { return empty }; names := make([]string, 0, len(people)); for _, person := range people { names = append(names, person.Name) }; return strings.Join(names, ", ") }
+func occupancyPeopleText(people []Person, empty string) string { if len(people) == 0 { return empty }; names := make([]string, 0, len(people)); for _, person := range people { name := person.Name; if person.Validity != "" { name += " (" + person.Validity + ")" }; names = append(names, name) }; return strings.Join(names, ", ") }
 func contactsIssuesURL(canManage bool) string { if canManage { return "/app/anliegen/board" }; return "/app/anliegen" }
 func contactRoleLabel(item view.ContactCardView) string { if item.Role == "Verwaltung" { return "Hausverwaltung" }; return item.Role }
 func contactShowsDescription(item view.ManagedContactView) bool { return item.Description != "" && item.Description != item.Notes }

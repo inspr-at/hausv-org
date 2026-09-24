@@ -8,6 +8,7 @@ import (
 
 // Legal settings are period-scoped and copied into every immutable run.
 type AnnualStatementLegalSettings struct {
+	PartyDueOn                string                      `json:"party_due_on,omitempty"`
 	MonthlyProposals          map[string]map[string]int64 `json:"monthly_proposals_cents,omitempty"`
 	NextPrepaymentOn          string                      `json:"next_prepayment_on,omitempty"`
 	HeatingPrepayments        map[string]map[string]int64 `json:"heating_prepayments_cents,omitempty"`
@@ -26,6 +27,11 @@ func DefaultAnnualStatementLegalSettings() AnnualStatementLegalSettings {
 	return AnnualStatementLegalSettings{Regime: "weg", HeatingConsumptionPercent: 70}
 }
 func (s AnnualStatementLegalSettings) Validate() error {
+	if s.PartyDueOn != "" {
+		if _, err := time.Parse("2006-01-02", s.PartyDueOn); err != nil {
+			return fmt.Errorf("invalid contractual due date")
+		}
+	}
 	switch s.Regime {
 	case "weg", "mrg_voll", "mrg_teil", "ausnahme":
 	default:

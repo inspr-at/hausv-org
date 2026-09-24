@@ -1,0 +1,275 @@
+package web
+
+import (
+	"strings"
+)
+
+templ PortalHomeLanding(data PortalPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data,
+			PageLabel: data.Address,
+			Class: portalHomeLandingClass(data),
+			Hero: true,
+			Identity: PortalSectionIdentityData{Label: "Hausüberblick · " + data.HouseName},
+		},
+		PortalHeroGreeting(data),
+		nil,
+		PortalHomeHeaderAction(data),
+		nil,
+		nil,
+		PortalHomeBody(data),
+	)
+}
+
+func portalHomeLandingClass(data PortalPageData) string {
+	if data.Dense {
+		return "portal-home-landing dense-main"
+	}
+	return "portal-home-landing calm-main"
+}
+
+templ PortalHeroGreeting(data PortalPageData) {
+	<div class="greeting">
+		if portalShellData(data).IsVerwaltung {
+			<h1>{ data.HouseName }</h1>
+		} else {
+			<h1>Hallo { data.GreetingName }.</h1>
+		}
+		<p>{ portalHomeDateLine(data) }</p>
+	</div>
+}
+
+func portalHomeDateLine(data PortalPageData) string {
+	if strings.TrimSpace(data.Address) == "" {
+		return data.Today
+	}
+	return data.Address + " · " + data.Today
+}
+
+templ PortalHomeHeaderAction(data PortalPageData) {
+	<div class="top-actions">
+		<div class="metrics" aria-label="Kennzahlen">
+			if data.Modules.Issues {
+				<a class="metric" href={ templ.SafeURL(portalIssuesURL(data)) }><strong>{ len(data.Issues) }</strong><span>offene Anliegen</span></a>
+			}
+			if data.Modules.Events {
+				<a class="metric" href="/app/events"><strong>{ len(data.Events) }</strong><span>Termine</span></a>
+			}
+			if data.Modules.Announcements {
+				<a class="metric" href="/app/announcements"><strong>{ data.UnreadAnnouncements }</strong><span>neue Beiträge</span></a>
+			}
+		</div>
+		if data.Modules.Issues && data.CanCreateResidentIssue {
+			<a class="button primary" href="/app/anliegen?new=1#issue-new">Anliegen melden</a>
+		}
+	</div>
+}
+
+templ PortalHomeBody(data PortalPageData) {
+	<div class="portal-home-desktop">
+		if data.Dense {
+			@PortalDense(data)
+		} else {
+			@PortalCalm(data)
+		}
+	</div>
+	@PortalMobile(data)
+}
+
+templ PortalDense(data PortalPageData) {
+	<div class="dense-home-body">
+		<section class="working-grid" aria-label="Arbeitsüberblick">
+			if data.Modules.Issues {
+				@DenseIssues(data)
+			}
+			<div class="side-stack">
+				if data.Modules.Events {
+					@DenseEvents(data)
+				}
+				if data.Modules.Announcements {
+					@DenseAnnouncements(data)
+				}
+			</div>
+		</section>
+		if data.HasEnergy {
+			<section class="home-strip" aria-labelledby="home-title"><h2 id="home-title">{ data.Energy.HomeName }</h2><p>{ data.Energy.Message }</p><a href={ templ.SafeURL(data.Energy.ActionURL) }>{ data.Energy.ActionLabel } →</a></section>
+		}
+		@PortalUtilities(data)
+	</div>
+}
+
+// denseIssueRows is how many Anliegen the dense overview shows as whole rows;
+// the card links to the full list instead of scrolling or clipping a half row.
+const denseIssueRows = 8
+
+templ DenseIssues(data PortalPageData) {
+	<section class="card issues-card" aria-labelledby="issues-title"><header class="card-head"><h2 id="issues-title">Anliegen</h2><span class="count-label">{ len(data.Issues) } offen</span>
+		if len(data.Issues) <= denseIssueRows {
+			<a class="all-link" href={ templ.SafeURL(portalIssuesURL(data)) }>Alle anzeigen</a>
+		}
+		</header>
+		if len(data.Issues) == 0 {
+			<p class="empty">Nichts offen.</p>
+		}
+		if len(data.Issues) > 0 {
+			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Alter</th><th>Zuständig</th></tr></thead><tbody>
+				for index, issue := range data.Issues {
+					if index < denseIssueRows {
+					<tr data-href={ issue.DetailURL }><td><span class="status"><span class={ "dot", templ.KV("gold", issue.StatusLabel == "Neu"), templ.KV("green", issue.StatusLabel == "In Arbeit") }></span><span class="status-label">{ issue.StatusLabel }</span></span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a><span class="subject-place">{ issue.Location }</span></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
+					}
+				}
+			</tbody></table>
+			if len(data.Issues) > denseIssueRows {
+				<a class="card-foot-link" href={ templ.SafeURL(portalIssuesURL(data)) }>Alle { len(data.Issues) } Anliegen anzeigen →</a>
+			}
+		}
+	</section>
+}
+
+templ DenseEvents(data PortalPageData) {
+	<section class="card agenda-card"><header class="card-head"><h2>Nächste Termine</h2><span class="count-label">{ len(data.Events) }</span></header>
+		if len(data.Events) == 0 {
+			<p class="empty">Kein Termin eingetragen.</p>
+		}
+		if len(data.Events) > 0 {
+			<ol class="agenda">
+				for _, event := range data.Events {
+					<li><a href="/app/events"><time class="date-chip"><strong>{ event.DateBadgeDay }</strong><span>{ event.DateBadgeMonth }</span></time><span class="item-copy"><strong>{ event.Title }</strong><span>{ event.TimeRange }
+						if event.HasLocation {
+							<span> · { event.Location }</span>
+						}
+					</span></span></a></li>
+				}
+			</ol>
+		}
+	</section>
+}
+
+templ DenseAnnouncements(data PortalPageData) {
+	<section class="card board-card"><header class="card-head"><h2>Am Aushang</h2><span class="count-label">{ data.UnreadAnnouncements } neu</span></header>
+		if len(data.Announcements) == 0 {
+			<p class="empty">Der Aushang ist leer.</p>
+		}
+		if len(data.Announcements) > 0 {
+			<ul class="board-list">
+				for _, item := range data.Announcements {
+					<li><a href="/app/announcements"><span class={ "dot", templ.KV("gold", item.Unread) }></span><span class="item-copy"><strong>{ item.Title }</strong><span>{ item.Category } · { item.PublishedAt }</span></span></a></li>
+				}
+			</ul>
+		}
+	</section>
+}
+
+templ PortalCalm(data PortalPageData) {
+	<div class="calm-column">
+		<h2 class="answer">{ calmAnswer(data) }</h2>
+		<section class="disclosures" aria-label="Was Sie betrifft">
+			if data.Modules.Issues {
+				@CalmIssues(data)
+			}
+			if data.Modules.Events || data.Modules.Announcements {
+				<div class="calm-updates">
+					if data.Modules.Events {
+						@CalmEvents(data)
+					}
+					if data.Modules.Announcements {
+						@CalmAnnouncements(data)
+					}
+				</div>
+			}
+		</section>
+		if data.HasEnergy {
+			<p class="quiet-home">{ data.Energy.Message } <a href={ templ.SafeURL(data.Energy.ActionURL) }>{ data.Energy.ActionLabel }</a></p>
+		}
+		@PortalUtilities(data)
+	</div>
+}
+
+templ CalmIssues(data PortalPageData) {
+	<details class="module calm-issues" open><summary><span class="dot gold" aria-hidden="true"></span><h3>Anliegen</h3><span class="summary-count">{ len(data.Issues) } offen</span>
+		@DisclosureChevron()
+	</summary><div class="module-body"><ol class="rows">
+		for index, issue := range data.Issues {
+			if index < 3 {
+				<li class="row"><a href={ templ.SafeURL(issue.DetailURL) }><strong>{ issue.Title }</strong><span class="issue-location">{ issue.Location }</span><time>{ issue.CreatedAt }</time></a></li>
+			}
+		}
+	</ol>
+	if len(data.Issues) > 3 {
+		<details class="more"><summary>Alle { len(data.Issues) } Anliegen anzeigen
+			@DisclosureChevron()
+		</summary><ol class="rows" start="4">
+			for index, issue := range data.Issues {
+				if index >= 3 {
+					<li class="row"><a href={ templ.SafeURL(issue.DetailURL) }><strong>{ issue.Title }</strong><span class="issue-location">{ issue.Location }</span><time>{ issue.CreatedAt }</time></a></li>
+				}
+			}
+		</ol></details>
+	}
+	if len(data.Issues) == 0 {
+		<p class="empty">Nichts offen.</p>
+	}
+	</div></details>
+}
+
+templ CalmEvents(data PortalPageData) {
+	<details class="module events" open?={ len(data.Events) > 0 }><summary><span class="dot green" aria-hidden="true"></span><h3>Termine</h3><span class="summary-count">{ len(data.Events) } Termine</span>
+		@DisclosureChevron()
+	</summary><div class="module-body"><ol class="rows">
+		for _, event := range data.Events {
+			<li class="row"><a href="/app/events"><time><strong>{ event.DateBadgeDay }</strong><small>{ event.DateBadgeMonth }</small></time><strong>{ event.Title }</strong><span>{ event.TimeRange }
+				if event.HasLocation {
+					<span> · { event.Location }</span>
+				}
+			</span></a></li>
+		}
+	</ol>
+	if len(data.Events) == 0 {
+		<p class="empty">Kein Termin eingetragen.</p>
+	}
+	</div></details>
+}
+
+templ CalmAnnouncements(data PortalPageData) {
+	<details class="module announcements" open?={ data.UnreadAnnouncements > 0 }><summary><span class="dot" aria-hidden="true"></span><h3>Aushang</h3><span class="summary-count">{ data.UnreadAnnouncements } neue Beiträge</span>
+		@DisclosureChevron()
+	</summary><div class="module-body"><ul class="rows">
+		for _, item := range data.Announcements {
+			<li class="row"><a href="/app/announcements"><span class={ "dot", templ.KV("gold", item.Unread) } aria-label={ templ.KV("ungelesen", item.Unread) }></span><strong>{ item.Title }</strong><span>{ item.Category } · { item.PublishedAt }</span></a></li>
+		}
+	</ul>
+	if len(data.Announcements) == 0 {
+		<p class="empty">Der Aushang ist leer.</p>
+	}
+	</div></details>
+}
+
+templ PortalUtilities(data PortalPageData) {
+	<nav class="utility-links" aria-label="Weitere Bereiche">
+		for _, area := range data.Areas {
+			<a href={ templ.SafeURL(area.URL) }>{ area.Label }</a>
+		}
+		if data.Modules.Help {
+			<a href="/app/hilfe">Hilfe</a>
+		}
+	</nav>
+}
+
+func portalIssuesURL(data PortalPageData) string {
+	if data.CanManageIssues {
+		return "/app/anliegen/board"
+	}
+	return "/app/anliegen"
+}
+
+func calmAnswer(data PortalPageData) string {
+	count := 0
+	if data.Modules.Issues && len(data.Issues) > 0 { count++ }
+	if data.Modules.Events && len(data.Events) > 0 { count++ }
+	if data.Modules.Announcements && data.UnreadAnnouncements > 0 { count++ }
+	if count == 0 { return "Heute wartet nichts auf Sie." }
+	if count == 1 { return "Eine Sache wartet auf Sie." }
+	if count == 2 { return "Zwei Dinge warten auf Sie." }
+	return "Drei Dinge warten auf Sie."
+}

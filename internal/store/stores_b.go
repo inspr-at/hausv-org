@@ -1097,6 +1097,11 @@ func (s *UnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdat
 	if tenantSlug == "" {
 		return false, nil
 	}
+	for _, update := range updates {
+		if err := ValidateUnitPartyContacts(update.Contacts); err != nil {
+			return false, err
+		}
+	}
 	normalized := normalizeUnitPartyUpdates(updates)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1258,6 +1263,9 @@ func (s *UnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembersh
 			continue
 		}
 		relation := ""
+		if !UnitPartyActive(item, email, time.Now()) {
+			continue
+		}
 		if EmailListContains(item.OwnerEmails, email) {
 			relation = RoleOwner
 		} else if EmailListContains(item.RenterEmails, email) {
@@ -1288,7 +1296,7 @@ func (s *UnitStore) membersForUnit(tenant TenantRef, unitID string) UnitMembers 
 	for _, item := range s.data.Units {
 		if textutil.Slug(item.TenantSlug) == tenantSlug && textutil.Slug(item.ID) == unitID {
 			item = CopyUnit(item)
-			return UnitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
+			return activeUnitMembers(item)
 		}
 	}
 	return UnitMembers{}

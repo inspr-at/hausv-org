@@ -347,7 +347,7 @@ func seedFull(t *testing.T) *source {
 
 		units, _ := store.BindUnitRepository(store.NewSQLUnitStore(src.lanes), tenant)
 		must(t, slug+" units", units.SetUnits([]store.Unit{
-			{ID: "top-1", Label: "Top 1", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"resident@example.com"}},
+			{ID: "top-1", Label: "Top 1", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"resident@example.com"}, PartyContacts: []store.UnitPartyContact{{Email: "resident@example.com", ValidFrom: "2025-07-01", ValidTo: "2027-06-30"}}},
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))
@@ -603,6 +603,12 @@ func seedFull(t *testing.T) *source {
 		Email: "sachbearbeiter@example.com", Role: store.OrganisationRoleClerk,
 		Granted: map[string]string{"demo": "bewohner", "haus-a": ""}, CreatedAt: now,
 	}))
+	// Exercise the new provenance, full undo JSON and durable audit through the
+	// actual transaction; dbmove must retain them byte-for-byte on both engines.
+	membershipService, err := store.NewOrganisationMembershipService(store.BindOrganisationMemberRepository(src.db, orgKey), src.identity)
+	must(t, "membership service", err)
+	_, err = membershipService.Add(ctx, "resident@example.com", store.OrganisationRoleClerk, store.AuditEvent{ActorEmail: "admin@example.com"})
+	must(t, "transactional membership", err)
 	must(t, "intake mail seen", store.BindIntakeMailSeenRepository(src.db, orgKey).Record(ctx, "<seed-mail@example.com>", "in-0001"))
 	must(t, "org settings", store.BindOrgSettingsRepository(src.db, orgKey).Save(ctx, store.OrgSettings{
 		Organisation: orgKey, Name: "Hausverwaltung Musterstadt", TrustLevels: map[string]string{"beleg": "auto", "reparatur": "propose"},

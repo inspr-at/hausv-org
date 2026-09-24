@@ -246,8 +246,8 @@ func assertUnitMemberships(t *testing.T, houses []house, persons []person) {
 			alinaUnits++
 		}
 	}
-	if len(owners) != 14 {
-		t.Errorf("distinct owners = %d, want 14", len(owners))
+	if len(owners) != 15 {
+		t.Errorf("distinct current owners = %d, want 15", len(owners))
 	}
 	if alinaUnits != 2 {
 		t.Errorf("Alina owns %d units, want Top 1 and one more", alinaUnits)

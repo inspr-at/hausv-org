@@ -24,6 +24,7 @@ type CostRow struct {
 	Measurements                    []string
 }
 type Document struct {
+	PartySplit                 bool
 	UnitID, PartyID, UnitLabel string
 	Sender, Address, Basis     []string
 	Info                       []InfoField
@@ -79,8 +80,13 @@ func Documents(run store.AnnualStatementRun, unitID, partyID string) ([]Document
 
 func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, party store.AnnualStatementRunParty) Document {
 	unit, vacancyNote := annualStatementPartyUnit(run, unit, party)
+	partyShare, datedParty := store.AnnualStatementPartyAllocation(run, unit.UnitID, party.ID)
+	if datedParty {
+		unit, vacancyNote = partyShare.Unit, partyShare.Note
+	}
 	d := letterDocument(run, unit.Label)
 	d.UnitID, d.PartyID = unit.UnitID, party.ID
+	d.PartySplit = datedParty
 	d.Total, d.Prepaid = money(unit.AllocatedCents), money(unit.PrepaidCents)
 	d.Timing = balanceTiming(run, unit)
 	role := "Wohnungseigentümer"
@@ -120,7 +126,13 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		totals[receipt.CostTypeKey] += receipt.AmountCents
 	}
 	for _, cost := range unit.Costs {
+		if datedParty && cost.AmountCents == 0 {
+			continue
+		}
 		row := CostRow{Name: cost.Name, Total: money(totals[cost.CostTypeKey]), Key: allocationKey(cost.AllocationKey), Share: view.FormatDecimal(float64((cost.SharePPM+50)/100)/100, 2) + " %", Amount: money(cost.AmountCents)}
+		if datedParty {
+			row.Share = "siehe Hinweis"
+		}
 		if cost.AllocationKey == store.AllocationKeyVerbrauch {
 			vector := run.Input.Consumption[cost.CostTypeKey]
 			total := new(big.Int)
@@ -158,10 +170,13 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			// area shares are explained separately in the measurement appendix.
 			row.Share = "im Anhang"
 			prepaid := run.Input.Structure.Legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]
-			if vacancyNote != "" && party.Owner && !party.Renter {
+			if !datedParty && vacancyNote != "" && party.Owner && !party.Renter {
 				prepaid = 0 // The occupied party keeps the recorded prepayments.
 			}
-			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost, prepaid)...)
+			if datedParty {
+				prepaid = partyShare.HeatingPrepayments[cost.CostTypeKey]
+			}
+			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost, prepaid, datedParty)...)
 		}
 		if run.Input.Structure.Legal.ShowVAT {
 			row.Net = money(cost.NetCents)
@@ -174,6 +189,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	}
 	if d.ShowVAT {
 		for _, group := range unit.VAT {
+			if datedParty && group.GrossCents == 0 {
+				continue
+			}
 			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
 		}
 	}
@@ -188,6 +206,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
+	if datedParty && !partyShare.SettlementRecipient {
+		d.Reserve, d.Proposals = nil, nil
+	}
 	d.Inspection, d.Receipts = inspectionAppendix(run)
 	return d
 }
