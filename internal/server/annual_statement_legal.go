@@ -20,7 +20,7 @@ func (a *app) saveAnnualStatementLegal(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	year, err := strconv.Atoi(r.FormValue("year"))
-	legal := store.AnnualStatementLegalSettings{InspectionPlace: r.FormValue("inspection_place"), InspectionPeriod: r.FormValue("inspection_period"), InspectionContact: r.FormValue("inspection_contact"), Regime: r.FormValue("regime"), HeizKGApplies: r.FormValue("heizkg_applies") == "on"}
+	legal := store.AnnualStatementLegalSettings{InspectionPlace: r.FormValue("inspection_place"), InspectionPeriod: r.FormValue("inspection_period"), InspectionContact: r.FormValue("inspection_contact"), Regime: r.FormValue("regime"), HeizKGApplies: r.FormValue("heizkg_applies") == "on", ShowVAT: r.FormValue("show_vat") == "on"}
 	legal.HeatingConsumptionPercent = 70
 	if raw := r.FormValue("heating_consumption_percent"); raw != "" {
 		n, e := strconv.Atoi(raw)

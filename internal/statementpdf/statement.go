@@ -20,6 +20,7 @@ var ErrNotFound = errors.New("statement document not found")
 
 type CostRow struct {
 	Name, Total, Key, Share, Amount string
+	Net, Rate, VAT, Gross           string
 	Measurements                    []string
 }
 type Document struct {
@@ -28,6 +29,8 @@ type Document struct {
 	Info                       []InfoField
 	Reference, Timing          string
 	Costs                      []CostRow
+	ShowVAT                    bool
+	VATSummary                 []string
 	Total, Prepaid, Balance    string
 	Excluded                   []string
 	Contact                    string
@@ -155,7 +158,19 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			row.Share = "im Anhang"
 			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
 		}
+		if run.Input.Structure.Legal.ShowVAT {
+			row.Net = money(cost.NetCents)
+			row.Rate = fmt.Sprintf("%d %%", cost.VATRatePercent)
+			row.VAT = money(cost.VATCents)
+			row.Gross = money(cost.AmountCents)
+			d.ShowVAT = true
+		}
 		d.Costs = append(d.Costs, row)
+	}
+	if d.ShowVAT {
+		for _, group := range unit.VAT {
+			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
+		}
 	}
 	for _, cost := range run.Input.Structure.CostTypes {
 		if !cost.Allocatable {

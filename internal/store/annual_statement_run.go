@@ -292,7 +292,11 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 		return AnnualStatementRun{}, err
 	}
 	hash := sha256.Sum256(raw)
-	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: AnnualStatementCalculationVersion, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
+	version := AnnualStatementCalculationVersion
+	if input.Structure.Legal.ShowVAT {
+		version = AnnualStatementCalculationVersionVAT
+	}
+	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: version, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
 }
 func copyAnnualStatementRun(run AnnualStatementRun) AnnualStatementRun {
 	raw, _ := json.Marshal(run)

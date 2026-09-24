@@ -301,3 +301,20 @@ Vorschlag, bis die Verwaltung die tatsächlichen Zahlungen bestätigt; vorhanden
 Zahlungseinträge bleiben erhalten. Beim Klonen einer Periode werden geleistete
 Heizkosten-Akontos, manuelle Monatsvorgaben, Gültig-ab-Datum und Einsichtszeitraum
 geleert; Regime, Flächen, Ort und Kontakt bleiben als Vorlage erhalten.
+
+## Umsatzsteuer je Kostenart
+
+Belege speichern den Bruttobetrag der Rechnung. Die Periode schaltet
+„Umsatzsteuer ausweisen“ standardmäßig aus; dann bleiben Verteilung, Saldo und
+PDF unverändert und der Lauf bleibt bei Berechnungsversion 2. Version 1 und 2
+werden ohne Steueraufteilung wiederholt.
+
+Ist die Anzeige an, trägt jede Kostenart der Periode 0, 10 oder 20 %. Heizung
+und Warmwasser beginnen mit 20 %, alle übrigen mit 10 %. Der Bruttoanteil der
+Einheit bleibt die bisherige Centverteilung. Pro Steuersatz wird die Umsatzsteuer
+einmal aus der Haus-Bruttosumme dieser Gruppe kaufmännisch gerundet
+(10 % = Brutto × 10/110, 20 % = Brutto × 20/120, 0 % = 0). Die Cent gehen nach
+größtem Rest auf die Einheiten und innerhalb der Einheit auf die Kostenarten.
+Netto ist Brutto minus Umsatzsteuer, daher stimmt jede Zeile, jede Gruppe und
+die Gesamtsumme auf den Cent. Solche Läufe speichern Berechnungsversion 3.
+Das PDF zeigt dann Netto, USt-Satz, USt und Brutto sowie die Summen je Satz.

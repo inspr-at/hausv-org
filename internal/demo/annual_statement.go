@@ -187,10 +187,11 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 		if _, err := tx.ExecContext(ctx, `UPDATE annual_statement_cost_types SET tenant_id=$1,name=$4,allocatable=$5,allocation_key=$6,updated_at=$7,updated_by=$8 WHERE tenant_slug=$2 AND key=$3`, identity.ID, identity.Slug, cost.Key, cost.Name, true, cost.AllocationKey, at, actor); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_period_cost_types(tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(tenant_slug,period_year,key) DO NOTHING`, identity.ID, identity.Slug, year, cost.Key, cost.Name, true, cost.AllocationKey, at, actor); err != nil {
+		vatRate := store.DefaultAnnualStatementVATPercent(cost.Key)
+		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_period_cost_types(tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(tenant_slug,period_year,key) DO NOTHING`, identity.ID, identity.Slug, year, cost.Key, cost.Name, true, cost.AllocationKey, vatRate, at, actor); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE annual_statement_period_cost_types SET tenant_id=$1,name=$5,allocatable=$6,allocation_key=$7,updated_at=$8,updated_by=$9 WHERE tenant_slug=$2 AND period_year=$3 AND key=$4`, identity.ID, identity.Slug, year, cost.Key, cost.Name, true, cost.AllocationKey, at, actor); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE annual_statement_period_cost_types SET tenant_id=$1,name=$5,allocatable=$6,allocation_key=$7,vat_rate_percent=$8,updated_at=$9,updated_by=$10 WHERE tenant_slug=$2 AND period_year=$3 AND key=$4`, identity.ID, identity.Slug, year, cost.Key, cost.Name, true, cost.AllocationKey, vatRate, at, actor); err != nil {
 			return err
 		}
 		for receiptIndex, amount := range []int64{cost.AmountCents, cost.OperatingAmountCents} {
