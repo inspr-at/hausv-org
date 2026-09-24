@@ -170,12 +170,13 @@ const randomIDReason = "the conflict target is (tenant_slug, id) and id is minte
 // they are allowed on and the reason. Keyed by table because the property is a
 // property of the key shape, not of the function that writes it.
 var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
-	"announcements": {allowed: []laneClass{laneFor}, why: randomIDReason},
-	"attachments":   {allowed: []laneClass{laneFor}, why: randomIDReason},
-	"ballots":       {allowed: []laneClass{laneFor}, why: randomIDReason},
-	"contacts":      {allowed: []laneClass{laneFor}, why: randomIDReason},
-	"documents":     {allowed: []laneClass{laneFor}, why: randomIDReason},
-	"events":        {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"rental_management": {allowed: []laneClass{laneFor}, why: "HAUSV-798 creates tenant_id NOT NULL from the first migration and includes it in the conflict key; an orphan cannot exist or collide."},
+	"announcements":     {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"attachments":       {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"ballots":           {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"contacts":          {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"documents":         {allowed: []laneClass{laneFor}, why: randomIDReason},
+	"events":            {allowed: []laneClass{laneFor}, why: randomIDReason},
 	"handovers": {allowed: []laneClass{laneFor, laneUnscopedOther}, why: randomIDReason + " ConfirmByToken additionally " +
 		"rewrites the handover from its confirmation link, which names a token and no tenant, so that one write is on the maintenance " +
 		"lane for a structural reason: the orphan is reachable there, and the lane will not revert to For(tenant)."},
