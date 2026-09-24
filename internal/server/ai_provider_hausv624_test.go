@@ -75,8 +75,11 @@ func TestHausv624TriageForUsesBootProviderWithoutOverrides(t *testing.T) {
 func TestHausv624TriageForRefreshesChangedConfiguration(t *testing.T) {
 	a, _, repo := newInboxTestApp(t, roleAdmin)
 	settings := store.DefaultOrgSettings("musterstadt")
+	// HAUSV-772: http://local.example is a public name and is no longer a legal
+	// organisation destination. The fixture stays a permitted local name so
+	// this test still covers cache refresh.
 	settings.AIProvider = "local"
-	settings.AIBaseURL = "http://local.example/v1"
+	settings.AIBaseURL = "http://studio.local/v1"
 	settings.AIModel = "first-model"
 	if err := repo.Save(t.Context(), settings); err != nil {
 		t.Fatal(err)
@@ -94,29 +97,37 @@ func TestHausv624TriageForRefreshesChangedConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.triageFor(t.Context(), "musterstadt")
-	if got, want := strings.Join(calls, ","), "http://local.example/v1|first-model,http://local.example/v1|second-model"; got != want {
+	if got, want := strings.Join(calls, ","), "http://studio.local/v1|first-model,http://studio.local/v1|second-model"; got != want {
 		t.Fatalf("factory calls = %q, want %q", got, want)
 	}
 }
 
-func TestHausv624TriageForFallsBackAfterFactoryError(t *testing.T) {
+// HAUSV-772 replaces the previous fallback. A construction error must not
+// switch the organisation onto the environment provider.
+func TestHausv624TriageForFailsClosedAfterFactoryError(t *testing.T) {
 	a, _, repo := newInboxTestApp(t, roleAdmin)
 	boot := hausv624Suggester{label: "Boot"}
 	a.triage = boot
 	settings := store.DefaultOrgSettings("musterstadt")
 	settings.AIProvider = "local"
-	settings.AIBaseURL = "http://local.example/v1"
+	settings.AIBaseURL = "http://10.0.0.8/v1"
 	settings.AIModel = "broken-model"
 	if err := repo.Save(t.Context(), settings); err != nil {
 		t.Fatal(err)
 	}
+	calls := 0
 	useHausv624Factory(t, func(func(string) string) (ai.TriageSuggester, error) {
+		calls++
 		return nil, errors.New("unavailable")
 	})
 
 	got, label := a.triageFor(t.Context(), "musterstadt")
-	if got != boot || label != "Boot" {
-		t.Fatalf("fallback = %#v, %q", got, label)
+	if got != nil || label != aiUnavailableLabel {
+		t.Fatalf("fail closed = %#v, %q; boot was %T", got, label, boot)
+	}
+	got, label = a.triageFor(t.Context(), "musterstadt")
+	if got != nil || label != aiUnavailableLabel || calls != 1 {
+		t.Fatalf("cached failure = %#v, %q; factory calls = %d", got, label, calls)
 	}
 }
 
