@@ -1394,7 +1394,7 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 			Priority:              priority,
 			AssigneeEmail:         item.AssigneeEmail,
 			HasAssignee:           item.AssigneeEmail != "",
-			Location:              issueLocationLabel(item.LocationType, item.LocationDetail),
+			Location:              issueLocationForActor(canManage, item.LocationType, item.LocationDetail),
 			LocationType:          item.LocationType,
 			LocationDetail:        item.LocationDetail,
 			CreatedAt:             formatLocalDateTime(item.CreatedAt),
@@ -1424,6 +1424,13 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 		})
 	}
 	return views
+}
+
+func issueLocationForActor(management bool, locationType, detail string) string {
+	if management {
+		return view.IssueLocationLabelForManagement(locationType, detail)
+	}
+	return issueLocationLabel(locationType, detail)
 }
 
 func issueNextStep(status string, canManage bool) string {

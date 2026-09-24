@@ -231,6 +231,37 @@ async function captureViewport(viewport) {
   }
   const productHref = await page.locator('.landing-hero .landing-button.primary').getAttribute('href');
   if (productHref !== '#produkte') throw new Error(`Landing ${viewport.name}: primary product action is not ready`);
+  if (viewport.width > 1100) {
+    const cardRows = await page.locator('.product-path').evaluateAll((cards) => cards.map((card) => {
+      const box = (selector) => {
+        const element = card.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return rect ? { top: rect.top, height: rect.height, center: rect.top + rect.height / 2 } : null;
+      };
+      return {
+        name: card.querySelector('h3')?.textContent?.trim() || 'Unbenannte Produktkarte',
+        head: box('.product-path-head'),
+        headCopy: box('.product-path-head > div'),
+        description: box(':scope > p'),
+        capabilities: box('.product-capabilities'),
+        price: box('.product-path-price'),
+        action: box('.product-path-start'),
+        icon: box('.product-path-icon'),
+      };
+    }));
+    for (const row of ['head', 'description', 'capabilities', 'price', 'action']) {
+      const missing = cardRows.filter((card) => !card[row]).map((card) => card.name);
+      if (missing.length) throw new Error(`Landing ${viewport.name}: Produktkarten-Zeile „${row}“ fehlt bei ${missing.join(', ')}`);
+      const tops = new Set(cardRows.map((card) => card[row].top.toFixed(2)));
+      const heights = new Set(cardRows.map((card) => card[row].height.toFixed(2)));
+      if (tops.size !== 1 || heights.size !== 1) {
+        const positions = cardRows.map((card) => `${card.name}: ${card[row].top.toFixed(2)}px / ${card[row].height.toFixed(2)}px`).join(', ');
+        throw new Error(`Landing ${viewport.name}: Produktkarten-Zeile „${row}“ ist nicht ausgerichtet (${positions})`);
+      }
+    }
+    const uncentered = cardRows.filter((card) => !card.icon || !card.headCopy || Math.abs(card.icon.center - card.headCopy.center) > 0.5);
+    if (uncentered.length) throw new Error(`Landing ${viewport.name}: Produkt-Icons sind nicht mittig zum Titelblock (${uncentered.map((card) => card.name).join(', ')})`);
+  }
   const sourceLink = page.locator('#free .product-path-start');
   if (await sourceLink.getAttribute('href') !== 'https://github.com/inspr-at/hausv-org' ||
       await sourceLink.getAttribute('target') ||
