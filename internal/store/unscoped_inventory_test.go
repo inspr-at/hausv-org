@@ -20,7 +20,7 @@ import (
 // the reason string is not read by anything at runtime.
 //
 // So the cross-tenant surface is written down here, whole, as a golden file:
-// 73 declared cross-tenant call sites, each with the reason its author typed.
+// 71 declared cross-tenant call sites, each with the reason its author typed.
 // HAUSV-779 removed the orphan-heal calls on energy writes, announcement
 // reads, and connector read/revoke/list/clear; the registry lookup, token
 // lookup, bootstrap replay and retention sweep stay. The value is in the diff.

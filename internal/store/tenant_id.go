@@ -169,9 +169,9 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 // then made tenant_id NOT NULL. The energy upserts, announcement_reads,
 // home_connectors and home_connector_readings have gone back to For(tenant).
 // What still names this constant is owned elsewhere and stays until those
-// packages retire it: units (HAUSV-774), unit_payment_status and the import
-// ledger (financial imports), and house_memberships.SetMembership (organisation
-// membership). The eight tenant-bound tables that key on a random id minted by the
+// packages retire it: unit_payment_status and the import ledger (financial
+// imports), and house_memberships.SetMembership (organisation membership).
+// Unit writes already went back to For(tenant) in HAUSV-774. The eight tenant-bound tables that key on a random id minted by the
 // store or its caller (announcements, attachments, ballots, contacts, documents,
 // events, handovers, issues) stay on the tenant lane: a new row cannot collide
 // with a legacy one, and an edit addresses a row the same lane just read. The
@@ -190,9 +190,9 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 // constant goes back to For(tenant). Until then, removing this is what re-opens
 // HAUSV-145's "wrote a row it cannot see".
 //
-// Exported because the import ledger in internal/server and the six energy
-// upserts in internal/energy name their lane with the same words; the golden
-// inventory records all of them.
+// Exported because the import ledger in internal/server still names its lane
+// with these words; the golden inventory records that. The energy upserts
+// have gone back to For(tenant).
 const HealOrphanReason = "adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL"
 
 // tenantIDQuerier is the subset of *sql.DB and *sql.Tx the resolver needs, so
