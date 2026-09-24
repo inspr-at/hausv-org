@@ -271,6 +271,8 @@ type UnitAllocationBasisUpdate struct {
 	UsableAreaRecorded     bool
 	Persons                int
 	PersonsRecorded        bool
+	VacantFrom             string
+	VacantTo               string
 }
 
 // CarryAllocationBases copies the statement bases from an existing unit onto

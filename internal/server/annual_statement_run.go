@@ -235,6 +235,11 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 			}
 			out.Units = append(out.Units, row)
 		}
+		for _, line := range run.Result.Vacancy {
+			out.Vacancy = append(out.Vacancy, web.AnnualStatementRunUnitView{
+				Label: line.Label, Allocated: formatAnnualStatementMoney(line.AmountCents), Prepaid: formatAnnualStatementMoney(0), Balance: formatAnnualStatementBalance(-line.AmountCents),
+			})
+		}
 	}
 	return out
 }

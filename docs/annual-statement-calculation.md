@@ -93,12 +93,24 @@ Auch in einem Schaltjahr wird ein Betrag nicht automatisch mit 365/366 Tagen
 gewichtet. Ein unterjähriger Personen-, Eigentümer- oder Mieterwechsel wird
 derzeit nicht anteilig berechnet.
 
-Leerstand ist kein eigener Abrechnungstatbestand. Die Einheit bleibt in der
-Verteilung: Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben
-null Personenkosten, null gemessener Verbrauch ergibt null Verbrauchskosten.
+Ohne hinterlegten Leerstandszeitraum bleibt die Einheit in der Verteilung:
+Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben null
+Personenkosten, null gemessener Verbrauch ergibt null Verbrauchskosten.
 Fehlende Parteien verschieben keine Kosten auf andere Einheiten. Ein Lauf ist
 dann berechenbar, aber ein vollständiges PDF-Paket/Archiv benötigt mindestens
 eine gespeicherte Partei je Einheit.
+
+Ein Leerstand je Einheit ist ein inklusiver Zeitraum (`vacant_from`/`vacant_to`)
+in der Periodenstruktur. Bei `mrg_voll` und `mrg_teil` behält die Einheit ihren
+Anteil. Der auf die leeren Tage entfallende Betrag — tageweise, inklusive
+Schaltjahr — wird dem Eigentümer als Zeile „Leerstand – Eigentümeranteil“
+berechnet und nicht auf die anderen Einheiten umgelegt. Die Haussumme bleibt
+100 %. Die Beträge der nicht leeren Einheiten sind dieselben wie ohne
+Leerstand; der Restcent des Tagesanteils bleibt bei der Einheit. Bei WEG und
+Ausnahme ändert der Zeitraum das Ergebnis nicht, weil dort der Eigentümer
+ohnehin die Partei ist beziehungsweise der Vertrag gilt. Gespeicherte Läufe
+ohne Leerstandsdaten wiederholen sich unverändert; die Berechnungsversion
+bleibt 2, weil sich der Algorithmus für diese Eingaben nicht ändert.
 
 Ergebnisse und Akonto gehören zur **Einheit**, nicht zu einer einzelnen Person.
 Jede gespeicherte Eigentümer-/Mietpartei erhält eine adressierte Kopie des

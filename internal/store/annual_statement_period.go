@@ -31,6 +31,11 @@ type AnnualStatementPeriodUnitBasis struct {
 	UsableAreaRecorded     bool   `json:"usable_area_recorded"`
 	Persons                int    `json:"persons"`
 	PersonsRecorded        bool   `json:"persons_recorded"`
+	// VacantFrom and VacantTo are inclusive civil dates (YYYY-MM-DD). Both
+	// empty means the unit is not flagged vacant. MRG regimes bill that
+	// overlap to the landlord; WEG and Ausnahme ignore the range.
+	VacantFrom string `json:"vacant_from,omitempty"`
+	VacantTo   string `json:"vacant_to,omitempty"`
 }
 
 // AnnualStatementPeriodStructure is the non-monetary, independently editable
@@ -407,7 +412,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 	if err := rows.Close(); err != nil || len(structure.CostTypes) == 0 {
 		return AnnualStatementPeriodStructure{}, false
 	}
-	basisRows, err := s.db.For(tenant).Query(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
+	basisRows, err := s.db.For(tenant).Query(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, tenant.ID, year)
 	if err != nil {
 		return AnnualStatementPeriodStructure{}, false
@@ -415,7 +420,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 	defer basisRows.Close()
 	for basisRows.Next() {
 		var basis AnnualStatementPeriodUnitBasis
-		if err := basisRows.Scan(&basis.UnitID, &basis.MiteigentumsanteilPPM, &basis.UsableAreaM2Hundredths, &basis.UsableAreaRecorded, &basis.Persons, &basis.PersonsRecorded); err != nil {
+		if err := basisRows.Scan(&basis.UnitID, &basis.MiteigentumsanteilPPM, &basis.UsableAreaM2Hundredths, &basis.UsableAreaRecorded, &basis.Persons, &basis.PersonsRecorded, &basis.VacantFrom, &basis.VacantTo); err != nil {
 			return AnnualStatementPeriodStructure{}, false
 		}
 		structure.UnitBases = append(structure.UnitBases, basis)
@@ -457,8 +462,8 @@ func (s *SQLAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(tena
 		return AnnualStatementPeriod{}, false, err
 	}
 	if _, err := tx.Exec(`INSERT INTO annual_statement_period_unit_bases(
-		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
-		SELECT tenant_id,tenant_slug,$1,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
+		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to)
+		SELECT tenant_id,tenant_slug,$1,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$2 AND period_year=$3`, period.Year, tenant.ID, sourceYear); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
@@ -711,9 +716,9 @@ func insertAnnualStatementPeriodCostTypes(exec annualStatementPeriodExecer, tena
 
 func insertAnnualStatementPeriodUnitBasis(exec annualStatementPeriodExecer, tenant TenantRef, year int, basis AnnualStatementPeriodUnitBasis) error {
 	_, err := exec.Exec(`INSERT INTO annual_statement_period_unit_bases(
-		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, year, basis.UnitID, basis.MiteigentumsanteilPPM,
-		basis.UsableAreaM2Hundredths, basis.UsableAreaRecorded, basis.Persons, basis.PersonsRecorded)
+		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, tenant.ID, tenant.Slug, year, basis.UnitID, basis.MiteigentumsanteilPPM,
+		basis.UsableAreaM2Hundredths, basis.UsableAreaRecorded, basis.Persons, basis.PersonsRecorded, basis.VacantFrom, basis.VacantTo)
 	return err
 }
 
@@ -779,6 +784,11 @@ func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBa
 		}
 		if !basis.PersonsRecorded {
 			basis.Persons = 0
+		}
+		var err error
+		basis.VacantFrom, basis.VacantTo, err = NormalizeAnnualStatementVacancy(basis.VacantFrom, basis.VacantTo)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, basis)
 	}

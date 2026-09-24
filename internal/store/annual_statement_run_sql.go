@@ -160,9 +160,9 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
-	err = read(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, func(rows *sql.Rows) error {
+	err = read(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, func(rows *sql.Rows) error {
 		var item AnnualStatementPeriodUnitBasis
-		if err := rows.Scan(&item.UnitID, &item.MiteigentumsanteilPPM, &item.UsableAreaM2Hundredths, &item.UsableAreaRecorded, &item.Persons, &item.PersonsRecorded); err != nil {
+		if err := rows.Scan(&item.UnitID, &item.MiteigentumsanteilPPM, &item.UsableAreaM2Hundredths, &item.UsableAreaRecorded, &item.Persons, &item.PersonsRecorded, &item.VacantFrom, &item.VacantTo); err != nil {
 			return err
 		}
 		input.Structure.UnitBases = append(input.Structure.UnitBases, item)
