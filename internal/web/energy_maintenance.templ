@@ -1,0 +1,108 @@
+package web
+
+import "strconv"
+
+templ EnergyMaintenanceSection(data EnergyPageData) {
+	<section class="energy-card energy-card-quiet" id="wartung">
+		<header class="energy-card-head"><div><h2>Wartung, ohne daran denken zu müssen</h2><p>Fälligkeit, Kontakt, Unterlage und Nachweis bleiben an der Anlage.</p></div><a href="/app/events">Termine</a></header>
+		switch data.MaintenanceStatus {
+			case "saved":
+				<div class="message success">Wartungsplan gespeichert.</div>
+			case "completed":
+				<div class="message success">Erledigt. Der nächste Termin wurde automatisch vorgemerkt.</div>
+			case "invalid":
+				<div class="message error">Bitte Anlage, Intervall und Fälligkeit prüfen.</div>
+		}
+		if data.HasMaintenance {
+			<div class="energy-maintenance-list">
+				for _, plan := range data.Maintenance {
+					<details class="energy-maintenance-row">
+						<summary class="energy-maintenance-summary"><span><strong>{ plan.Title }</strong><small>{ energyMaintenanceMeta(plan) }</small></span><span class={ "energy-status-" + plan.Tone }>{ plan.DueLabel }</span>
+							@DisclosureChevronMasked()
+						</summary>
+						<div class="energy-maintenance-body">
+							if plan.ContactName != "" || plan.DocumentTitle != "" || plan.IssueTitle != "" {
+								<nav class="energy-related-links" aria-label="Wartungsnachweise">
+									if plan.ContactName != "" {
+										<a href="/app/kontakte">{ plan.ContactName }</a>
+									}
+									if plan.DocumentTitle != "" {
+										<a href={ templ.SafeURL("/app/dokumente/" + plan.DocumentID + "/preview") }>{ plan.DocumentTitle }</a>
+									}
+									if plan.IssueTitle != "" {
+										<a href={ templ.SafeURL("/app/anliegen/" + plan.IssueID) }>{ plan.IssueTitle }</a>
+									}
+								</nav>
+							}
+							if plan.EvidenceNote != "" {
+								<p class="muted">{ plan.EvidenceNote }</p>
+							}
+							if data.CanManageEnergy {
+								<form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+									<input type="hidden" name="id" value={ plan.ID }/><input type="hidden" name="asset_id" value={ plan.AssetID }/><input type="hidden" name="active" value="true"/>
+									<label>Titel<input name="title" value={ plan.Title } maxlength="140" required/></label><label>Intervall in Monaten<input type="number" name="interval_months" min="1" max="120" value={ strconv.Itoa(plan.IntervalMonths) } required/></label>
+									<label>Nächste Fälligkeit<input type="date" name="next_due" value={ plan.NextDueValue } required/></label>
+									<label>Fachkontakt<select name="contact_id"><option value="">Noch offen</option>
+										for _, option := range data.ContactOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.ContactID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label>Unterlage<select name="document_id"><option value="">Keine verknüpft</option>
+										for _, option := range data.DocumentOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.DocumentID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label>Aufgabe / Nachweis<select name="issue_id"><option value="">Keine verknüpft</option>
+										for _, option := range data.IssueOptions {
+											<option value={ option.Value } selected?={ option.Value == plan.IssueID }>{ option.Label }</option>
+										}
+									</select></label>
+									<label class="wide">Hinweis<input name="evidence_note" value={ plan.EvidenceNote } maxlength="500" placeholder="Was ist beim nächsten Mal wichtig?"/></label>
+									<div class="actions"><button class="button" type="submit">Plan speichern</button></div>
+								</form>
+								<form class="energy-inline-form" method="post" action="/app/energie/maintenance/complete">
+									<input type="hidden" name="id" value={ plan.ID }/>
+									<label>Erledigt am<input type="date" name="completed_at" required/></label><label>Nachweis-Aufgabe<select name="issue_id"><option value="">Keine</option>
+										for _, option := range data.IssueOptions {
+											<option value={ option.Value }>{ option.Label }</option>
+										}
+									</select></label>
+									<label class="wide">Was wurde gemacht?<input name="evidence_note" maxlength="500" placeholder="Kurz und nachvollziehbar"/></label>
+									<div class="actions"><button class="button primary" type="submit">Als erledigt eintragen</button></div>
+								</form>
+							}
+						</div>
+					</details>
+				}
+			</div>
+		} else {
+			<p class="muted">Noch kein wiederkehrender Wartungspunkt hinterlegt.</p>
+		}
+		if data.CanManageEnergy && data.HasAssets {
+			<details class="energy-compact-create"><summary>Wartung an einer Anlage vormerken
+				@DisclosureChevronMasked()
+			</summary><form class="energy-inline-form" method="post" action="/app/energie/maintenance">
+				<input type="hidden" name="active" value="true"/>
+				<label>Anlage<select name="asset_id" required>
+					for _, asset := range data.Assets {
+						<option value={ asset.ID }>{ asset.Name }</option>
+					}
+				</select></label>
+				<label>Titel<input name="title" maxlength="140" placeholder="z. B. Wärmepumpe warten" required/></label>
+				<label>Alle wie viele Monate?<input type="number" name="interval_months" min="1" max="120" value="12" required/></label>
+				<label>Erstmals fällig<input type="date" name="next_due" required/></label>
+				<label>Fachkontakt<select name="contact_id"><option value="">Später wählen</option>
+					for _, option := range data.ContactOptions {
+						<option value={ option.Value }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Unterlage<select name="document_id"><option value="">Später verknüpfen</option>
+					for _, option := range data.DocumentOptions {
+						<option value={ option.Value }>{ option.Label }</option>
+					}
+				</select></label>
+				<div class="actions"><button class="button primary" type="submit">Wartung vormerken</button></div>
+			</form></details>
+		}
+	</section>
+}

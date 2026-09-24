@@ -1,0 +1,51 @@
+package web
+
+templ EnergyConsumerDialog(data EnergyPageData) {
+	<dialog id="energy-consumer-dialog" class="dialog energy-consumer-dialog" aria-labelledby="energy-consumer-dialog-title">
+		<form method="post" action="/app/energie/verbraucher">
+			<input type="hidden" name="asset_id" value=""/>
+			<input type="hidden" name="node_type" value="consumer"/>
+			<input type="hidden" name="measurements_present" value="1"/>
+			<input type="hidden" name="icon" value="plug" data-consumer-icon-value/>
+			<header class="dialog-head"><div class="energy-consumer-dialog-heading"><h2 id="energy-consumer-dialog-title" data-consumer-dialog-title>Verbraucher bearbeiten</h2><p data-consumer-dialog-context>Name, Priorität, Symbol und Messwerte direkt anpassen.</p></div><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen"><span class="energy-ui-icon energy-ui-icon-x" aria-hidden="true"></span></button></header>
+			<div class="dialog-body">
+				<div class="energy-consumer-primary">
+					<label class="energy-consumer-field"><span>Name</span><input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="z. B. Sauna"/></label>
+					<label class="energy-consumer-field" data-consumer-priority-field><span>Priorität</span><select name="priority" aria-label="Priorität"></select></label>
+				</div>
+				<div class="energy-consumer-display-fields">
+					<label class="energy-consumer-field energy-consumer-color"><span>Farbe</span><input type="color" name="color" value="#3e704c" aria-label="Farbe der Entität"/></label>
+					<label class="energy-consumer-field"><span>Beschriftung zweite Kennzahl</span><input type="text" name="secondary_label" maxlength="60" autocomplete="off" placeholder="z. B. Energie heute"/></label>
+					<label class="energy-consumer-field" data-consumer-stale-field><span>Als veraltet markieren nach</span><input type="number" name="stale_after_minutes" min="1" max="1440" step="1" inputmode="numeric" placeholder="Standard: 10 Minuten"/><small>Leer verwendet den Standardwert.</small></label>
+				</div>
+				<section class="energy-icon-picker" aria-labelledby="energy-icon-picker-title">
+					<div class="energy-icon-picker-head"><div><strong id="energy-icon-picker-title">Symbol auswählen</strong><small>Symbole aus der lokal eingebundenen Lucide-Library.</small></div><label class="energy-icon-search"><span class="energy-ui-icon energy-ui-icon-search" aria-hidden="true"></span><span class="sr-only">Symbole durchsuchen</span><input type="search" data-consumer-icon-search placeholder="Symbol suchen"/></label></div>
+					<div class="energy-icon-options energy-icon-presets" data-consumer-icon-presets>
+						for _, option := range data.ConsumerIconOptions {
+							<label class="energy-icon-choice" data-consumer-icon-choice={ option.Label + " " + option.Value }><input type="radio" name="icon_choice" value={ option.Value } checked?={ option.Value == "plug" }/><span class={ "energy-ui-icon", "energy-ui-icon-" + option.Value } aria-hidden="true"></span><span>{ option.Label }</span></label>
+						}
+					</div>
+					<div class="energy-icon-options energy-icon-search-results" data-consumer-icon-results hidden></div>
+					<p class="energy-icon-result-note" data-consumer-icon-result-note hidden></p>
+				</section>
+				<section class="energy-consumer-measurements" aria-labelledby="energy-consumer-measurements-title">
+					<div class="energy-consumer-measurements-head"><div><strong id="energy-consumer-measurements-title">Messwerte</strong><small>Optional pro Verbraucher – Quelle ist Home Assistant und bleibt nur lesend.</small></div><span class="pill">HA</span></div>
+					<div class="energy-consumer-measurement-fields" data-consumer-measurement-fields></div>
+					<p class="energy-consumer-measurement-status" data-consumer-measurement-status>Home-Assistant-Entities werden beim Öffnen geladen.</p>
+				</section>
+				<details class="energy-consumer-recommendations" data-consumer-recommendations><summary>Technische Angaben für Empfehlungen
+					@DisclosureChevronMasked()
+				</summary><div class="energy-consumer-recommendation-fields">
+					<label class="energy-consumer-field"><span>Kategorie</span><select name="kind">
+						for _, option := range data.ConsumerKindOptions {
+							<option value={ option.Value }>{ option.Label }</option>
+						}
+					</select></label>
+					<label class="energy-consumer-field"><span>Leistung in kW</span><input type="text" name="rated_power_kw" inputmode="decimal" placeholder="z. B. 8,0"/></label>
+					<label class="energy-consumer-field"><span>Flexibilität</span><select name="flexibility"><option value="unknown">noch offen</option><option value="shift">zeitlich verschiebbar</option><option value="throttle">kurz begrenzbar</option><option value="fixed">fest</option></select></label>
+				</div></details>
+			</div>
+			<footer class="dialog-footer"><button class="button quiet energy-consumer-delete" type="button" data-consumer-delete hidden>Verbraucher löschen</button><span class="energy-consumer-delete-confirm" data-consumer-delete-confirm hidden><span>Wirklich löschen?</span><button class="button quiet" type="button" data-consumer-delete-cancel>Nein</button><button class="button" type="submit" formaction="/app/energie/verbraucher/entfernen" formnovalidate>Ja, löschen</button></span><button class="button" type="button" data-close-dialog>Abbrechen</button><button class="button primary" type="submit" data-consumer-submit>Änderungen speichern</button></footer>
+		</form>
+	</dialog>
+}

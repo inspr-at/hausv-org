@@ -1,0 +1,28 @@
+package web
+
+templ EnergyDataQuality(data EnergyPageData) {
+	<div class="energy-pair">
+		<section class="energy-card">
+			<header class="energy-card-head"><div><h2>Datenlage</h2><p>Keine scheinpräzisen Aussagen bei Lücken oder alten Werten.</p></div></header>
+			<div class="energy-quality"><span aria-hidden="true">{ energyQualityMark(data.Quality.Status == "measured") }</span><div><strong>{ data.Quality.Label }</strong><p>{ data.Quality.Effect }</p></div><small>{ data.Quality.NextAction }</small></div>
+			<div class="energy-coverage" aria-label="Messabdeckung"><div class="energy-coverage-head"><strong>Messabdeckung</strong><span>{ data.CoverageSummary }</span></div><div class="energy-coverage-list">
+				for _, item := range data.Coverage {
+					<div class="energy-coverage-row" title={ item.Detail }><strong>{ item.Label }</strong><span class={ "energy-coverage-state", item.Tone }>{ energyCoverageMark(item.Tone == "good") } { item.Status }</span></div>
+				}
+			</div></div>
+		</section>
+	</div>
+}
+func energyQualityMark(good bool) string {
+	if good {
+		return "✓"
+	}
+	return "!"
+}
+
+func energyCoverageMark(good bool) string {
+	if good {
+		return "✓"
+	}
+	return "•"
+}
