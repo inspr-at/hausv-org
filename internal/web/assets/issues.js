@@ -287,6 +287,8 @@
     // down to the wizard.
     var location = new URL(window.location.href);
     if (location.searchParams.get("new") === "1" || location.hash === "#issue-new") {
+      // The fragment never reaches the server, so a #issue-new entry opens here.
+      if (panel && panel.tagName === "DETAILS") panel.open = true;
       setHistory(initial, "replace");
     } else {
       window.history.replaceState(historyState(form, initial), "", window.location.href);
