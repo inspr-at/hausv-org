@@ -324,8 +324,10 @@ Die fünf Briefvarianten verwenden `internal/pdf` und österreichisches Geldform
 MieWeG Voll-/Teilanwendung, vertragliche Vollanwendung/Ausnahme und Verminderung.
 Nach Freigabe entfällt „Entwurf“. Haupt-/Untermiete, mehrere Empfänger, unveränderte
 weitere Mietbestandteile, zwei Kurven, USt und Einhebungstermin sind sichtbar.
-Die gemeinsame Briefkopfgestaltung mit `statementpdf` wird nach dem parallelen
-Layoutreview konsolidiert; die PDF-Zeichen- und Messprimitiven sind gemeinsam.
+Beide Brieftypen verwenden `pdf.Letterhead` für Absender, Fensteranschrift und
+Infoblock. Überlange Angaben laufen in einen gesonderten Abschnitt weiter.
+Deutsche Dezimalzahlen und Geldbeträge sind reine Darstellung; exakte Brüche
+bleiben in den gespeicherten Berechnungsschritten und Kurven erhalten.
 
 Hausroute: `/app/settings/valorisation`; Organisationsroute:
 `/app/verwaltung/wertsicherung`. Mutationen liegen unter
@@ -333,7 +335,21 @@ Hausroute: `/app/settings/valorisation`; Organisationsroute:
 und `/items/{itemID}`. Das PDF liegt unter `/items/{itemID}/pdf`.
 Mietvertragsseiten zeigen die zugehörige Laufhistorie. Der Demoreset erzeugt
 für Janusbergweg 123 einen April-2026-Entwurf mit zwölf Verträgen, E1 1.040,28 €,
-E2 1.017,35 €, mehreren Ausnahmetypen und einer vertraglichen Gewerbeanpassung.
+E2 1.017,35 €, sechs bereiten Anpassungen (einschließlich Gewerbe außerhalb
+MieWeG), zwei unveränderten Verträgen und genau vier Ausnahmen: keine Klausel,
+ungeprüfte Klausel, einseitige Verbraucherklausel und nicht abbildbare Staffel.
+Top 8 besitzt den geprüften Jänner-Referenzmonat und einen importierten
+Kurvenstand von 2025; Top 11 ebenfalls einen dokumentierten Deckelanker von
+2025. Eine Garage ohne HMZ bleibt mit ausdrücklichem Grund unverändert, statt
+fälschlich einen fehlenden Index zu melden.
+
+Die Zeilen und Briefe nennen die eingefrorene Einheitenbezeichnung und den
+Hauptmieter. Freigegebene Schreiben sind direkt aus der eingeklappten Zeile
+erreichbar. Die erste Indextabelle zeigt Basis, Auslöser und benötigte
+Jahresmittel; die vollständige geprüfte Monatsreihe liegt unter „Alle Indexwerte
+anzeigen“. Manuelle Entscheidungen und Storno verlangen weiterhin eine
+Begründung, ihre Formulare werden erst nach Öffnen des jeweiligen Bereichs
+sichtbar. Die technische Prüfsumme liegt in einem eigenen Detailbereich.
 
 Browserprüfung gegen ein frisches Demo-Rig (verändert ausschließlich lokale
 Demodaten): `node scripts/snapshot/qa-valorisation.mjs http://localhost:8309

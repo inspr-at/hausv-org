@@ -57,6 +57,7 @@ async function login(email) {
 
 async function shot(page, name) {
   if (!artifactDir) return;
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${artifactDir}/${name}.png`, fullPage: true });
   process.stdout.write(`  screenshot ${artifactDir}/${name}.png\n`);
 }
@@ -72,11 +73,19 @@ try {
   for (const group of ['ready', 'unchanged', 'exception']) {
     if (await preview.locator(`[data-group="${group}"]`).count() !== 1) fail(`Gruppe ${group} fehlt`);
   }
-  await preview.locator("details").evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
+  if (await preview.locator('[data-group="ready"] > .vr-item').count() < 6) fail('Weniger als sechs bereite Verträge');
+  const top1 = preview.locator('[data-lease-id="lease-top-1"]');
+  await top1.locator(':scope > summary').click();
+  const used = top1.getByRole('table', { name: 'Verwendete Indexwerte', exact: true });
+  if (await used.locator('tbody tr').count() !== 5) fail('E1: erwartete Basis, Auslöser und drei Jahresmittel fehlen');
+  if (await top1.getByRole('table', { name: 'Geprüfte Monatsreihe und Jahresmittel' }).isVisible()) fail('Volle Indexreihe ist nicht eingeklappt');
+  await top1.locator('summary').filter({ hasText: 'Alle Indexwerte anzeigen' }).click();
+  if (await top1.getByRole('table', { name: 'Geprüfte Monatsreihe und Jahresmittel' }).locator('tbody tr').count() <= 5) fail('Volle Indexreihe fehlt');
   const body = await preview.innerText();
-  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026']) {
+  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026', 'Top 1 · Eva Huber', 'Schwelle 5 % überschritten: +5,02 %', '+3,55412 %']) {
     if (!body.includes(value)) fail(`Vorschau: ${value} fehlt`);
   }
+  if (/\btop-\d|\d+\/\d+ %|\d+\.\d+ %|percent|Kurve exakt/.test(body)) fail('Technische Zahlen oder IDs in der Vorschau');
   // The seeded April draft is reviewable even when the system clock is later.
   await page.goto(route, { waitUntil: 'networkidle' });
   const first = page.locator('article[data-run-id]').first();
@@ -84,16 +93,17 @@ try {
   if (!runID) fail('Demo-Lauf fehlt');
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    await first.locator('details').first().evaluate(node => { node.open = true; });
+    await first.locator('.vr-item').first().evaluate(node => { node.open = true; });
     await shot(page, `valorisation-${width}`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) fail(`${width}px: Überlauf ${overflow}px`);
   }
-  const itemIDs = await first.locator('[data-group="exception"] details').evaluateAll(nodes => nodes.map(node => node.id.slice(5)));
+  const itemIDs = await first.locator('[data-group="exception"] > .vr-item').evaluateAll(nodes => nodes.map(node => node.id.slice(5)));
   for (const itemID of itemIDs) {
     const detail = page.locator(`#item-${itemID}`);
     await detail.evaluate(node => { node.open = true; });
-    await detail.locator('input[name="reason"]').fill('Browserprüfung: gesonderte Vertragsprüfung');
+    await detail.locator('.vr-manual > summary').click();
+    await detail.getByLabel('Begründung für Ausschluss').fill('Browserprüfung: gesonderte Vertragsprüfung');
     await detail.getByRole('button', { name: 'Ausschließen', exact: true }).click();
     await page.waitForLoadState('networkidle');
   }
@@ -101,7 +111,14 @@ try {
   await page.waitForLoadState('networkidle');
   const approved = page.locator(`#run-${runID}`);
   if (!(await approved.innerText()).includes('Freigegeben')) fail('Lauf nicht freigegeben');
-  const pdfLink = approved.getByRole('link', { name: 'Anpassungsschreiben PDF' }).first();
+  await approved.locator('.vr-item').evaluateAll(nodes => nodes.forEach(node => { node.open = false; }));
+  const pdfLink = approved.getByRole('link', { name: 'Schreiben (PDF)', exact: true }).first();
+  if (!(await pdfLink.isVisible())) fail('Schreiben ist bei eingeklappter Zeile nicht erreichbar');
+  if (await approved.locator('input[name="reason"]').isVisible()) fail('Stornogrund wird ohne Bestätigungsschritt angezeigt');
+  await approved.locator('.vr-cancel > summary').click();
+  const cancelReason = approved.getByLabel('Stornogrund');
+  if (!(await cancelReason.isVisible()) || !(await cancelReason.evaluate(node => node.required && node.validity.valueMissing))) fail('Stornierung benötigt keinen sichtbaren Pflichtgrund');
+  await approved.locator('.vr-cancel > summary').click();
   const href = await pdfLink.getAttribute('href');
   if (!href) fail('PDF-Link fehlt');
   const pdf = await manager.request.get(new URL(href, baseURL).href);

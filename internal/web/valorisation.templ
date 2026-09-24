@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"github.com/inspr-at/hausv-org/internal/store"
+	"sort"
 )
 
 type ValorisationPageData struct {
@@ -38,6 +39,11 @@ func ValorisationGroups(run store.ValorisationRun) []ValorisationGroupView {
 				groups[j].Items = append(groups[j].Items, item)
 			}
 		}
+	}
+	for j := range groups {
+		sort.SliceStable(groups[j].Items, func(a, b int) bool {
+			return store.UnitLess(store.Unit{Label: groups[j].Items[a].UnitLabel, ID: groups[j].Items[a].UnitID}, store.Unit{Label: groups[j].Items[b].UnitLabel, ID: groups[j].Items[b].UnitID})
+		})
 	}
 	return groups
 }
@@ -138,11 +144,89 @@ templ ValorisationBody(data ValorisationPageData) {
 			}
 			.valorisation-page summary {
 				cursor: pointer;
-				display: flex;
-				flex-wrap: wrap;
-				gap: 12px;
-				justify-content: space-between;
+				text-align: left;
 			}
+			.valorisation-page .portal-section-header {
+				width: 100%;
+				text-align: left;
+				margin: 0;
+				padding-top: 24px;
+			}
+			.valorisation-page .vr-item > summary {
+				display: grid;
+				grid-template-columns: minmax(160px, 1fr) minmax(
+						160px,
+						1.4fr
+					) auto 130px;
+				gap: 16px;
+				align-items: center;
+			}
+			.valorisation-page .vr-item > summary > * {
+				min-width: 0;
+				overflow-wrap: anywhere;
+			}
+			.valorisation-page .vr-item > summary .vr-money {
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+			}
+			.valorisation-page .vr-item > summary::before {
+				content: none;
+			}
+			.valorisation-page .vr-item[open] > summary {
+				margin-bottom: 16px;
+			}
+			.valorisation-page .vr-form-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				align-items: end;
+				gap: 12px;
+				margin-top: 16px;
+				max-width: 640px;
+			}
+			.valorisation-page .vr-form-grid button {
+				justify-self: start;
+			}
+			.valorisation-page .vr-link {
+				border: 0;
+				background: transparent;
+				padding: 12px 0;
+				color: var(--gold-ink);
+				text-decoration: underline;
+				font: inherit;
+				cursor: pointer;
+			}
+			.valorisation-page .vr-danger {
+				color: var(--danger, #9b302b);
+			}
+			.valorisation-page .vr-actions .vr-cancel {
+				border: 0;
+				padding: 0;
+				margin-left: auto;
+			}
+			.valorisation-page .vr-cancel[open] {
+				flex-basis: 100%;
+				margin: 0;
+			}
+			.valorisation-page .vr-letter {
+				text-align: right;
+			}
+			.valorisation-page [data-group] {
+				margin-top: 24px;
+			}
+			.valorisation-page caption {
+				text-align: left;
+				font-weight: 700;
+				padding: 12px 0;
+			}
+			@media (max-width: 1100px) {
+				.valorisation-page .vr-item > summary {
+					grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+				}
+				.valorisation-page .vr-item > summary .vr-money {
+					text-align: left;
+				}
+			}
+
 			.valorisation-page .vr-exception,
 			.valorisation-page .vr-deadline {
 				padding: 12px;
@@ -178,6 +262,16 @@ templ ValorisationBody(data ValorisationPageData) {
 				max-width: 100%;
 			}
 			@media (max-width: 600px) {
+				.valorisation-page .vr-item > summary,
+				.valorisation-page .vr-form-grid {
+					grid-template-columns: minmax(0, 1fr);
+				}
+				.valorisation-page .vr-letter {
+					text-align: left;
+				}
+				.valorisation-page .vr-actions .vr-cancel {
+					margin-left: 0;
+				}
 				.valorisation-page .vr-card {
 					padding: 16px;
 				}
@@ -193,7 +287,7 @@ templ ValorisationBody(data ValorisationPageData) {
 				}
 			}
 		</style>
-		<header><p>Einstellungen · Wertsicherung</p><h1>Wertsicherung</h1><p>Vertragliche Anpassung prüfen, freigeben und verständigen.</p><a class="button primary" href="?new=1">Neuer Lauf</a></header>
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", URL: "/app/settings"}, PortalSectionTitle("Wertsicherung"), PortalSectionLede("Vertragliche Anpassung prüfen, freigeben und verständigen."), ValorisationNewAction())
 		if data.New {
 			<section class="vr-card">
 				<h2>Neuer Lauf</h2>
@@ -230,11 +324,14 @@ templ ValorisationBody(data ValorisationPageData) {
 templ ValorisationRun(view ValorisationRunView, preview bool) {
 	<article class="vr-card" id={ "run-" + view.Run.ID } data-run-id={ view.Run.ID }>
 		<h2>
-			{ view.Run.Input.House } · { LeaseDate(view.Run.EffectiveOn) }
+			{ view.Run.Input.House } · Stichtag { LeaseDate(view.Run.EffectiveOn) }
 		</h2>
-		<p>
+		<p class="pill">
 			{ valorisationStatus(view.Run.Status) } · { fmt.Sprintf("Revision %d",view.Run.Revision) }
 		</p>
+		for _,deadline := range view.Run.NoticeDeadlines() {
+			@ValorisationDeadline(deadline)
+		}
 		if preview {
 			<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button primary" type="submit">Lauf anlegen</button></form>
 		}
@@ -247,16 +344,25 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					</span>
 				</h3>
 				for _,item:=range group.Items {
-					<details id={ "item-" + item.ID } class={ templ.KV("vr-excluded", item.Excluded) } data-lease-id={ item.LeaseID }>
+					<details id={ "item-" + item.ID } class={ "vr-item", templ.KV("vr-excluded", item.Excluded) } data-lease-id={ item.LeaseID }>
 						<summary>
 							<strong>
-								{ item.UnitID }
+								{ item.Label() }
 							</strong>
 							<span>
 								{ item.Reason }
 							</span>
 							<span class="vr-money">
-								{ LeaseMoney(item.OldCents) } → { LeaseMoney(item.NewCents) }
+								if item.OldCents > 0 {
+									{ LeaseMoney(item.OldCents) } → { LeaseMoney(item.NewCents) }
+								} else {
+									Kein Hauptmietzins
+								}
+							</span>
+							<span class="vr-letter">
+								if !preview && item.LetterDocumentID != "" {
+									<a class="button small" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Schreiben (PDF)</a>
+								}
 							</span>
 						</summary>
 						if item.Excluded {
@@ -266,85 +372,81 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						}
 						for _,code:=range item.Exceptions {
 							<p class="vr-exception">
-								<strong>
-									{ code }
-								</strong> · { store.ValorisationExceptionLabels[code] }
+								{ store.ValorisationExceptionLabels[code] }
 							</p>
 						}
 						if item.NoticeDeadline!="" {
-							<p class="vr-deadline">
-								Schreiben bis
-								<strong>
-									{ LeaseDate(item.NoticeDeadline) }
-								</strong> versenden, damit der erhöhte Mietzins ab
-								<strong>
-									{ LeaseDate(item.CollectableFrom) }
-								</strong> fällig wird (§ 16 Abs 9 MRG).
-							</p>
+							@ValorisationDeadline(item)
 						}
 						<p>
 							{ item.Lease.Notes }
 						</p>
 						<p><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
-						<div class="vr-table">
-							<table>
-								<caption>Vertrags- und Deckelkurve</caption><thead><tr><th>Stichtag</th><th>Vertrag</th><th>MieWeG</th><th>Vorgeschrieben</th></tr></thead>
-								<tbody>
-									<tr>
-										<td>
-											{ LeaseDate(view.Run.EffectiveOn) }
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.ContractCents) }
-										</td>
-										<td class="num">
-											if item.MieWeG {
-												{ LeaseMoney(item.CapCents) }
-											} else {
-												entfällt
-											}
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.NewCents) }
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-						<div class="vr-table">
-							<table>
-								<thead><tr><th>Monatlicher HMZ</th><th>Netto</th><th>USt</th><th>Brutto</th></tr></thead>
-								<tbody>
-									<tr>
-										<th>Bisher</th>
-										<td class="num">
-											{ LeaseMoney(item.OldCents) }
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.OldVATCents) }
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.OldGrossCents) }
-										</td>
-									</tr>
-									<tr>
-										<th>Neu</th>
-										<td class="num">
-											{ LeaseMoney(item.NewCents) }
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.NewVATCents) }
-										</td>
-										<td class="num">
-											{ LeaseMoney(item.NewGrossCents) }
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-						<p>
-							Wirksam: { LeaseDate(item.WirksamOn) } · Einhebbar: { LeaseDate(item.CollectableFrom) }
-						</p>
+						if item.ContractCents > 0 {
+							<div class="vr-table">
+								<table>
+									<caption>Vertrags- und Deckelkurve</caption><thead><tr><th>Stichtag</th><th>Vertrag</th><th>MieWeG</th><th>Vorgeschrieben</th></tr></thead>
+									<tbody>
+										<tr>
+											<td>
+												{ LeaseDate(view.Run.EffectiveOn) }
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.ContractCents) }
+											</td>
+											<td class="num">
+												if item.MieWeG {
+													{ LeaseMoney(item.CapCents) }
+												} else {
+													entfällt
+												}
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.NewCents) }
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						}
+						if item.OldCents > 0 {
+							<div class="vr-table">
+								<table>
+									<thead><tr><th>Monatlicher HMZ</th><th>Netto</th><th>USt</th><th>Brutto</th></tr></thead>
+									<tbody>
+										<tr>
+											<th>Bisher</th>
+											<td class="num">
+												{ LeaseMoney(item.OldCents) }
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.OldVATCents) }
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.OldGrossCents) }
+											</td>
+										</tr>
+										<tr>
+											<th>Neu</th>
+											<td class="num">
+												{ LeaseMoney(item.NewCents) }
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.NewVATCents) }
+											</td>
+											<td class="num">
+												{ LeaseMoney(item.NewGrossCents) }
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						}
+						if item.WirksamOn != "" {
+							<p>
+								Wirksam: { LeaseDate(item.WirksamOn) } · Einhebbar: { LeaseDate(item.CollectableFrom) }
+							</p>
+						}
 						<h4>Wie kommt dieser Betrag zustande?</h4>
 						<ol>
 							for _,step:=range item.Explanation {
@@ -353,33 +455,11 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								</li>
 							}
 						</ol>
-						<div class="vr-table">
-							<table>
-								<caption>Indexwerte und Quellen</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
-								<tbody>
-									for _,index:=range item.Indices {
-										<tr>
-											<td>
-												<a href={ templ.SafeURL(index.Source) } rel="noreferrer" target="_blank">
-													{ index.Series } · { index.Period }
-												</a>
-											</td>
-											<td>
-												{ index.Value }
-											</td>
-											<td>
-												{ index.Status }
-											</td>
-											<td>
-												<a href={ templ.SafeURL(index.PublicationSource) } rel="noreferrer" target="_blank">
-													{ LeaseDate(index.PublishedOn) }
-												</a>
-											</td>
-										</tr>
-									}
-								</tbody>
-							</table>
-						</div>
+						@ValorisationIndexTable(item.UsedIndices(), "Verwendete Indexwerte")
+						<details class="vr-index-history">
+							<summary>Alle Indexwerte anzeigen</summary>
+							@ValorisationIndexTable(item.Indices, "Geprüfte Monatsreihe und Jahresmittel")
+						</details>
 						if item.OverrideCents!=nil {
 							<p>
 								Manuelle Entscheidung: { item.OverrideReason } · { item.OverrideBy }
@@ -390,16 +470,26 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								<p><a class="button" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Anpassungsschreiben PDF</a></p>
 							}
 							if view.Run.Status=="draft" {
-								<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID) } class="vr-actions">
-									<label>Begründung<input type="text" name="reason" required maxlength="4000"/></label>
-									<button class="button" type="submit" name="action" value="exclude">Ausschließen</button>
-									if item.ClauseID!="" {
-										<button class="button" type="submit" name="action" value="review">Klausel geprüft · neu berechnen</button>
-									}
+								<details class="vr-manual">
+									<summary>Manuell entscheiden</summary>
+									<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID) } class="vr-form-grid">
+										<label>Begründung für Ausschluss<input type="text" name="reason" required maxlength="4000"/></label>
+										<button class="button" type="submit" name="action" value="exclude">Ausschließen</button>
+									</form>
 									if view.CanApprove && item.Group=="ready" {
-										<label>Manueller Nettobetrag (€)<input type="text" name="amount" inputmode="decimal"/></label><button class="button" type="submit" name="action" value="override">Betrag übernehmen</button>
+										<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID) } class="vr-form-grid">
+											<label>Manueller Nettobetrag (€)<input type="text" name="amount" inputmode="decimal" required/></label>
+											<label>Begründung für Betrag<input type="text" name="reason" required maxlength="4000"/></label>
+											<button class="button" type="submit" name="action" value="override">Betrag übernehmen</button>
+										</form>
 									}
-								</form>
+								</details>
+								if item.ClauseID!="" {
+									<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID) }>
+										<input type="hidden" name="reason" value="Klausel im Wertsicherungslauf geprüft."/>
+										<button class="vr-link" type="submit" name="action" value="review">Klausel geprüft · neu berechnen</button>
+									</form>
+								}
 							}
 						}
 					</details>
@@ -414,7 +504,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						<tbody>
 							for _,delivery:=range view.Deliveries {
 								<tr>
-									<td>{ delivery.UnitID }<br/>{ delivery.Recipient }</td>
+									<td>{ view.Run.DeliveryLabel(delivery.UnitID) }<br/>{ delivery.Recipient }</td>
 									<td>{ fmt.Sprint(delivery.Attempt) }</td>
 									<td>
 										{ valorisationDeliveryStatus(delivery.Status) }
@@ -439,18 +529,52 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/send") }><button class="button primary" type="submit">Schreiben versenden · Fehlversuche erneut versuchen</button></form>
 				}
 				if view.Run.Status!="cancelled" {
-					<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/cancel") }><label>Stornogrund<input name="reason" required maxlength="4000"/></label><button class="button" type="submit">Lauf stornieren</button></form>
+					<details class="vr-cancel">
+						<summary class="vr-danger">Lauf stornieren</summary>
+						<p>Den Lauf wirklich stornieren? Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen.</p>
+						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/cancel") } class="vr-form-grid"><label>Stornogrund<input name="reason" required maxlength="4000"/></label><button class="button danger" type="submit">Stornierung bestätigen</button></form>
+					</details>
 				}
 			</div>
 			if view.Run.Status=="cancelled" {
 				<p>Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
 			}
-			<p class="vr-meta">
-				Erstellt von { view.Run.CreatedBy } · Eingaben SHA-256
-				<code>
-					{ view.Run.InputsSHA256 }
-				</code>
-			</p>
+			<p class="vr-meta">Erstellt von { view.Run.CreatedBy }</p>
+			<details class="vr-meta"><summary>Prüfsumme</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
 		}
 	</article>
+}
+
+templ ValorisationNewAction() {
+	<a class="button primary" href="?new=1">Neuer Lauf</a>
+}
+
+templ ValorisationDeadline(item store.ValorisationItem) {
+	<p class="vr-deadline">Schreiben bis <strong>{ LeaseDate(item.NoticeDeadline) }</strong> versenden, damit der erhöhte Mietzins ab <strong>{ LeaseDate(item.CollectableFrom) }</strong> fällig wird (§ 16 Abs 9 MRG).</p>
+}
+
+templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) {
+	if len(indices)>0 {
+		<div class="vr-table">
+			<table>
+				<caption>{ caption }</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
+				<tbody>
+					for _,index:=range indices {
+						<tr>
+							<td><a href={ templ.SafeURL(index.Source) } rel="noreferrer" target="_blank">{ index.SeriesLabel() } · { index.Period }</a></td>
+							<td>{ store.ValorisationNumber(index.Value, 1) }</td>
+							<td>{ index.StatusLabel() }</td>
+							<td>
+								if index.PublishedOn != "" {
+									<a href={ templ.SafeURL(index.PublicationSource) } rel="noreferrer" target="_blank">{ LeaseDate(index.PublishedOn) }</a>
+								} else {
+									Nachweis fehlt
+								}
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
 }
