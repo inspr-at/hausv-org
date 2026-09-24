@@ -180,3 +180,13 @@ Monate ab Periodenende bei WEG/HeizKG. Bei überlappenden Fristen zählt die fr�
 Teilanwendung/Ausnahme ohne HeizKG verweist auf den Vertrag. Der PDF-Kopf nennt
 Regime und Rechtsgrundlage aus dem Snapshot. Änderungen erfordern eine neue
 Revision; freigegebene Läufe werden niemals umgeschrieben.
+
+## Zahlungsbedingungen
+
+Das Abrechnungsdatum ist das Freigabedatum in Europe/Vienna, im Entwurf das
+Erstellungsdatum. WEG: Guthaben wird auf künftige Vorauszahlungen angerechnet,
+Nachzahlung binnen zwei Kalendermonaten. HeizKG: Guthaben und Nachzahlung binnen
+zwei Monaten. Monatsenden werden auf den letzten Tag des Zielmonats begrenzt.
+MRG Vollanwendung: übernächster monatlicher Zinstermin; die aktuelle Umsetzung
+nimmt den 5. an und weist diese Annahme aus. Abweichende vertragliche Zinstermine
+sind noch nicht modelliert. Teilanwendung und Ausnahme verweisen auf den Vertrag.

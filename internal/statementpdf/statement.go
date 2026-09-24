@@ -30,6 +30,7 @@ type Document struct {
 	Excluded                   []string
 	Contact                    string
 	ApprovalNotice             string
+	PaymentTerms               []string
 }
 
 // Documents selects only identities recorded in this run. Empty selectors mean
@@ -172,6 +173,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	if len(d.Excluded) > 0 {
 		d.Excluded = append(d.Excluded, "Gesamt nicht umlagefähig: "+money(run.Result.ExcludedCents))
 	}
+	d.PaymentTerms = paymentTerms(run, unit)
 	return d
 }
 
@@ -220,6 +222,9 @@ func (d Document) Pages() []pdf.Page {
 	summary = append(summary, lines("Geleistete Akontozahlung: "+d.Prepaid, pdf.Body)...)
 	summary = append(summary, lines(d.Balance, pdf.Strong)...)
 	blocks = append(blocks, summary)
+	for _, text := range d.PaymentTerms {
+		blocks = append(blocks, lines(text, pdf.Body))
+	}
 	for _, row := range d.Costs {
 		if len(row.Measurements) > 0 {
 			blocks = append(blocks, []pdf.Line{{}}, lines(row.Name+" · Messnachweis", pdf.Strong))
