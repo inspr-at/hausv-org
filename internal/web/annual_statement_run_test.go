@@ -35,6 +35,25 @@ func TestAnnualStatementRunPanelBlockedAndHistoricalResults(t *testing.T) {
 	}
 }
 
+func TestAnnualStatementRunIDIsInCollapsedDetails(t *testing.T) {
+	var body bytes.Buffer
+	if err := AnnualStatementRunPanel(AnnualStatementRunView{ID: "run<&>"}).Render(t.Context(), &body); err != nil {
+		t.Fatal(err)
+	}
+	markup := body.String()
+	start := strings.Index(markup, `<details class="annual-run-details">`)
+	if start < 0 {
+		t.Fatal("run details must exist and start collapsed")
+	}
+	end := strings.Index(markup[start:], "</details>")
+	if end < 0 || !strings.Contains(markup[start:start+end], "Kennung: <code>run&lt;&amp;&gt;</code>") {
+		t.Fatal("escaped run ID must remain available inside details")
+	}
+	if strings.Count(markup, "Kennung:") != 1 {
+		t.Fatal("run ID label must appear only in details")
+	}
+}
+
 func TestAnnualStatementRunPanelEscapesHistoryQuery(t *testing.T) {
 	id := "run&year=1999#other?x=1"
 	var body bytes.Buffer

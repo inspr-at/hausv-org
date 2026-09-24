@@ -25,6 +25,16 @@ try {
   assert(await calculate.isEnabled(), 'Seed must provide calculable annual costs');
   await calculate.click();
   await page.locator('[data-annual-statement-run]').waitFor();
+  const run = page.locator('[data-annual-statement-run]');
+  const runID = await run.getAttribute('data-annual-statement-run');
+  const runDetails = run.locator('.annual-run-details');
+  const unitRows = page.locator('.annual-unit-row');
+  assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
+  assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['428,04 €', '600,00 €', 'Guthaben 171,96 €']);
+  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'Fixture covers multiple parties');
+  const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
+    text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
+  })));
   const details = page.locator('.annual-costs').first();
   const labels = ['Kostenart', 'Verteilerschlüssel', 'Anteil', 'Betrag'];
   const expected = [
@@ -34,6 +44,51 @@ try {
   ];
   for (const width of [320, 390, 820, 1050, 1051, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
+    assert.equal(await runDetails.getAttribute('open'), null, 'Run details initially collapsed');
+    assert.equal(await runDetails.locator('code').isVisible(), false, 'Internal ID hidden initially');
+    await runDetails.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await runDetails.locator('code').innerText(), runID, 'Exact ID available as selectable text');
+    assert.equal(await runDetails.locator('code').isVisible(), true);
+    await runDetails.screenshot({ path: `${out}/run-details-${width}.png` });
+    await page.keyboard.press('Enter');
+    assert.equal(await runDetails.locator('code').isVisible(), false, 'Keyboard closes run details');
+    const alignment = await unitRows.evaluateAll((rows, width) => {
+      const issues = [];
+      const textCenter = node => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        return rect.top + rect.height / 2;
+      };
+      for (const row of rows) {
+        const names = [...row.querySelectorAll('.annual-party')];
+        const documents = [...row.querySelectorAll('.annual-pdf')];
+        if (names.length !== documents.length) issues.push('Party/document count differs');
+        names.forEach((name, i) => {
+          if (Math.abs(name.getBoundingClientRect().top - documents[i].getBoundingClientRect().top) > 1) issues.push('Party/document rows differ');
+          if (documents[i].querySelector('a').getBoundingClientRect().height < 44) issues.push('PDF touch target shrunk');
+        });
+        if (row.querySelectorAll('.annual-money').length !== 3) issues.push('Unit totals duplicated');
+        if (width > 1050 && names.length) {
+          const center = textCenter(names[0].querySelector('.annual-party-name'));
+          for (const value of row.querySelectorAll('.annual-unit-value')) {
+            if (Math.abs(textCenter(value) - center) > 1) issues.push('Unit/name/amount text misaligned');
+          }
+        }
+        if (width <= 1050) for (const cell of row.querySelectorAll('td')) {
+          if (getComputedStyle(cell, '::before').content !== JSON.stringify(cell.dataset.label)) issues.push('Unit field label missing');
+        }
+        if (row.scrollWidth > row.clientWidth + 1) issues.push('Unit row overflows');
+      }
+      return issues;
+    }, width);
+    assert.deepEqual(alignment, [], `${width}px party/unit/amount alignment`);
+    assert.deepEqual(await unitRows.evaluateAll(rows => rows.map(row => ({
+      text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
+    }))), originalRows, 'Stored unit amounts and document targets unchanged');
+    await unitRows.first().evaluate(node => node.scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: `${out}/units-${width}.png` });
     assert.equal(await details.getAttribute('open'), null, 'Costs initially collapsed');
     await details.locator('summary').focus();
     await page.keyboard.press('Enter');
@@ -73,7 +128,7 @@ try {
     assert.deepEqual(defects, [], `${width}px layout`);
     await details.scrollIntoViewIfNeeded();
     await details.screenshot({ path: `${out}/costs-${width}.png` });
-    report.push({ width, rows: expected.length, headings: labels, valuesUnchanged: true, layout: 'passed' });
+    report.push({ width, rows: expected.length, headings: labels, valuesUnchanged: true, layout: 'passed', unitAlignment: 'passed', runDetailsKeyboard: 'passed' });
     await details.locator('summary').focus();
     await page.keyboard.press('Enter');
     assert.equal(await table.isVisible(), false, 'Keyboard closes cost details');
