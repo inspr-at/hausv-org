@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,12 @@ func TestLetterVariants(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(out)
+			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1`).MatchString(text) {
+				t.Fatal("technical notation in letter", text)
+			}
+			if !strings.Contains(text, "Top 1 · Eva Huber") {
+				t.Fatal("unit and tenant label missing", text)
+			}
 			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Statistik Austria"} {
 				if !strings.Contains(text, want) {
 					t.Errorf("missing %q", want)

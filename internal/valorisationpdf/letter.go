@@ -3,7 +3,6 @@ package valorisationpdf
 
 import (
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -50,9 +49,8 @@ func Variant(item store.ValorisationItem) string {
 	return "Vertrag · Teilanwendung / Ausnahme"
 }
 
-// The letterhead uses the positioned primitives shared with HAUSV-767. The
-// domain-specific pagination stays here; consolidate letterhead composition
-// with statementpdf once both letter templates have completed visual review.
+// Letterhead geometry is shared with annual statements; calculation tables
+// and their pagination remain specific to this letter.
 type layout struct {
 	pages []pdf.Page
 	y     float64
@@ -68,7 +66,7 @@ func (l *layout) newPage() {
 	l.pages = append(l.pages, pdf.Page{Positioned: true})
 	l.y = 750
 	l.text(62, 790, 9, pdf.Strong, l.run.Input.Organisation)
-	l.text(62, 770, 8, pdf.Body, "Wertsicherung · "+l.item.UnitID+" · "+Date(l.run.EffectiveOn))
+	l.text(62, 770, 8, pdf.Body, "Wertsicherung · "+l.item.Label()+" · "+Date(l.run.EffectiveOn))
 }
 func (l *layout) room(height float64) {
 	if l.y-height < 108 {
@@ -111,28 +109,15 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	if sender == "" {
 		sender = run.Input.Organisation + " · im Auftrag des Vermieters"
 	}
-	y := 790.0
-	for _, line := range pdf.WrapWidth(sender, pdf.Body, 8, 471) {
-		l.text(62, y, 8, pdf.Body, line)
-		y -= 11
+	address := []string{item.Recipients[0].Name, item.Recipients[0].Address}
+	info := []pdf.LetterInfoField{
+		{Label: "Datum", Value: letterDate.Format("02.01.2006")},
+		{Label: "Einheit / Hauptmieter", Value: item.Label()},
+		{Label: "Vertragsabschluss", Value: Date(item.Lease.ConcludedOn)},
+		{Label: "Lauf", Value: fmt.Sprintf("%s / %d", short(run.ID), run.Revision)},
 	}
-	y = 714
-	for _, p := range item.Recipients[:1] {
-		for _, line := range pdf.WrapWidth(p.Name+"\n"+p.Address, pdf.Body, 11, 272) {
-			l.text(62, y, 11, pdf.Body, line)
-			y -= 14
-		}
-	}
-	info := []string{"Datum: " + letterDate.Format("02.01.2006"), "Einheit: " + item.UnitID, "Vertrag: " + Date(item.Lease.ConcludedOn), fmt.Sprintf("Lauf: %s / %d", short(run.ID), run.Revision)}
-	iy := 714.0
-	for _, line := range info {
-		l.text(365, iy, 9, pdf.Body, line)
-		iy -= 15
-	}
-	l.y = min(610, y-24)
-	if l.y < 350 {
-		l.newPage()
-	}
+	var overflow []string
+	l.y, overflow = pdf.Letterhead(&l.pages[0], []string{sender}, address, info)
 	title := "Anpassung des Hauptmietzinses"
 	if item.NewCents < item.OldCents {
 		title = "Verminderung des Hauptmietzinses"
@@ -158,9 +143,11 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	}
 	l.heading("Vertragliche Grundlage")
 	l.paragraph(item.Clause.ClauseText, pdf.Body)
-	l.paragraph(fmt.Sprintf("%s · Basis %s = %s · Schwelle %s %s", strings.ToUpper(item.Clause.Series), item.Clause.BasePeriod, strings.ReplaceAll(item.Clause.BaseValue, ".", ","), item.Clause.ThresholdValue, thresholdKind(item.Clause.ThresholdKind)), pdf.Body)
+	if item.Clause.BasePeriod != "" {
+		l.paragraph(fmt.Sprintf("%s · Basis %s = %s · Schwelle %s %s", strings.ToUpper(item.Clause.Series), item.Clause.BasePeriod, strings.ReplaceAll(item.Clause.BaseValue, ".", ","), store.ValorisationNumber(item.Clause.ThresholdValue, 2), thresholdKind(item.Clause.ThresholdKind)), pdf.Body)
+	}
 	if item.Contract.TriggerMonth != "" {
-		l.paragraph(fmt.Sprintf("Auslösemonat %s: endgültiger Index %s; Änderung %s %%. Vertraglicher Betrag: %s.", item.Contract.TriggerMonth, displayRatio(item.Contract.NewBase.String()), displayRatio(item.Contract.ChangePercent.String()), Money(item.ContractCents)), pdf.Body)
+		l.paragraph(fmt.Sprintf("Auslösemonat %s: endgültiger Index %s; Änderung %s %%. Vertraglicher Betrag: %s.", item.Contract.TriggerMonth, displayRatio(item.Contract.NewBase.String()), store.ValorisationNumber(item.Contract.ChangePercent.String(), 5), Money(item.ContractCents)), pdf.Body)
 	}
 	if item.MieWeG {
 		l.heading("Gesetzliche Vergleichsrechnung (MieWeG)")
@@ -168,10 +155,10 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		if item.SpecialCap {
 			l.paragraph("Sonderdeckel: höchstens 1 % für 2026 und 2 % für 2027, jeweils vor der Aliquotierung.", pdf.Body)
 		}
-		l.row("Jahr · Jahresmittel alt / neu", "Monate / 12", "Kurvenwert")
+		l.row("Jahr · Jahresmittel alt / neu", "Monate / 12", "Kurvenwert (gerundet)")
 		for _, step := range item.Ceiling.Years {
-			l.row(fmt.Sprintf("%d · %s / %s", step.Year, displayRatio(step.PreviousAverage.String()), displayRatio(step.CurrentAverage.String())), fmt.Sprintf("%d / 12", step.FullMonths), exactMoney(step.ExactAmountCents))
-			l.paragraph("Änderung "+displayRatio(step.RawRatePercent)+" %; begrenzt "+displayRatio(step.LimitedRatePercent)+" %.", pdf.Body)
+			l.row(fmt.Sprintf("%d · %s / %s", step.Year, displayRatio(step.PreviousAverage.String()), displayRatio(step.CurrentAverage.String())), fmt.Sprintf("%d / 12", step.FullMonths), store.ValorisationExactMoney(step.ExactAmountCents))
+			l.paragraph("Änderung "+store.ValorisationPercent(step.RawRatePercent, 5)+"; begrenzt "+store.ValorisationPercent(step.LimitedRatePercent, 5)+".", pdf.Body)
 		}
 		l.row("Vertragskurve / gesetzliche Kurve", Money(item.ContractCents), Money(item.CapCents))
 		l.paragraph("Maßgeblich ist der niedrigere Betrag (§ 1 Abs 4 MieWeG). Ein halber Cent wird abgerundet; die Kurven werden ohne Zwischenrundung fortgeführt.", pdf.Body)
@@ -215,8 +202,14 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		l.paragraph("Für Rückfragen: "+run.Input.Contact, pdf.Body)
 	}
 	l.paragraph("Datenquelle: Statistik Austria · data.statistik.gv.at (CC BY 4.0). Berechnung: HAUSV. Datenstand "+run.IndexVersion+".", pdf.Body)
+	if len(overflow) > 0 {
+		l.heading("Ergänzende Adress- und Verwaltungsangaben")
+		for _, line := range overflow {
+			l.paragraph(line, pdf.Body)
+		}
+	}
 	for j := range l.pages {
-		l.pages[j].Footer = []string{fmt.Sprintf("%s · Wertsicherung · %s · Seite %d von %d", run.Input.Organisation, item.UnitID, j+1, len(l.pages)), "Referenz " + short(run.ID) + " · Eingaben SHA-256 " + short(run.InputsSHA256)}
+		l.pages[j].Footer = []string{fmt.Sprintf("%s · Wertsicherung · %s · Seite %d von %d", run.Input.Organisation, item.Label(), j+1, len(l.pages)), "Referenz " + short(run.ID) + " · Eingaben SHA-256 " + short(run.InputsSHA256)}
 	}
 	return pdf.Pages(l.pages, pdf.Palette{Paper: [3]uint8{255, 255, 255}, Ink: [3]uint8{32, 43, 39}, Accent: [3]uint8{97, 118, 107}}), nil
 }
@@ -226,21 +219,7 @@ func short(s string) string {
 	}
 	return s
 }
-func displayRatio(raw string) string {
-	r, ok := new(big.Rat).SetString(raw)
-	if !ok {
-		return raw
-	}
-	return strings.ReplaceAll(strings.TrimRight(strings.TrimRight(r.FloatString(6), "0"), "."), ".", ",")
-}
-func exactMoney(raw string) string {
-	r, ok := new(big.Rat).SetString(raw)
-	if !ok {
-		return raw
-	}
-	r.Quo(r, big.NewRat(100, 1))
-	return strings.ReplaceAll(r.FloatString(4), ".", ",") + " €"
-}
+func displayRatio(raw string) string { return store.ValorisationNumber(raw, 5) }
 func componentLabel(kind string) string {
 	switch kind {
 	case store.ComponentBKAkonto:
