@@ -99,3 +99,20 @@ func TestParkingTemplEmptyStateKeepsItsPermissionGates(t *testing.T) {
 		}
 	}
 }
+
+func TestParkingWithoutPermissionUsesTheForbiddenPage(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "paul@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	response := authedRequest(t, a, "paul@example.com", "/demo/app/parking")
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", response.Code)
+	}
+	body := response.Body.String()
+	for _, want := range []string{"Kein Zugriff", "Fehler 403", "Dieser Bereich ist für diesen Zugang nicht freigegeben."} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("forbidden parking page missing %q", want)
+		}
+	}
+	if strings.Contains(body, "Nicht gefunden") || strings.Contains(body, "Fehler 404") {
+		t.Fatal("parking denial must not be a 404 page")
+	}
+}

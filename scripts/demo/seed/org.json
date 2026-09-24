@@ -31,6 +31,7 @@
         "leonhardstrasse-3": "Admin",
         "mariatroster-strasse-101": "Admin",
         "muenzgrabenstrasse-9": "Admin",
+        "musterstrasse-12": "Admin",
         "petersgasse-7": "Admin",
         "schoergelgasse-25": "Admin",
         "sparbersbachgasse-58": "Admin"
@@ -49,6 +50,7 @@
         "leonhardstrasse-3": "Verwalter",
         "mariatroster-strasse-101": "Verwalter",
         "muenzgrabenstrasse-9": "Verwalter",
+        "musterstrasse-12": "Verwalter",
         "petersgasse-7": "Verwalter",
         "schoergelgasse-25": "Verwalter",
         "sparbersbachgasse-58": "Verwalter"

@@ -456,6 +456,7 @@ const (
 	auditActionAnnualReceiptAmount     = store.AuditActionAnnualReceiptAmount
 	auditActionAnnualReceiptDelete     = store.AuditActionAnnualReceiptDelete
 	auditActionAnnualPrepaymentSave    = store.AuditActionAnnualPrepaymentSave
+	auditActionAnnualReserveAdd        = store.AuditActionAnnualReserveAdd
 	auditActionVoteCast                = store.AuditActionVoteCast
 	auditActionVoteClose               = store.AuditActionVoteClose
 	auditActionVoteCreate              = store.AuditActionVoteCreate
@@ -701,6 +702,7 @@ type app struct {
 	annualStatementPeriods    store.AnnualStatementPeriodStorage
 	annualStatementAkontos    store.AnnualStatementPrepaymentStorage
 	annualStatementReceipts   store.AnnualStatementReceiptStorage
+	annualStatementReserve    store.AnnualStatementReserveStorage
 	annualConsumption         store.AnnualStatementConsumptionStorage
 	annualStatementRuns       store.AnnualStatementRunStorage
 	annualStatementDeliveries *store.SQLAnnualStatementDeliveryStore
@@ -792,7 +794,12 @@ type app struct {
 	// tenantDB is the scoped seam: the object every SQL store asks for a database
 	// handle, and the only way those stores can reach the database at all. The
 	// app keeps it because stores are constructed from it at boot.
-	tenantDB *store.TenantDB
+	tenantDB            *store.TenantDB
+	indexRefreshEnabled bool
+	indexRefreshBusy    atomic.Bool
+	indexRefreshClient  interface {
+		Do(*http.Request) (*http.Response, error)
+	}
 	// scopedDB owns the lane pools tenantDB hands out. The app holds it purely to
 	// close them on shutdown: TenantDB deliberately has no Close, because its
 	// method set is what stops a store from reaching the database unscoped.
@@ -1117,6 +1124,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/metadata", a.action(a.saveAnnualStatementReceiptMetadata))
 	mux.HandleFunc("POST /app/settings/annual-statement/legal", a.action(a.saveAnnualStatementLegal))
+	mux.HandleFunc("POST /app/settings/annual-statement/reserve", a.action(a.saveAnnualStatementReserve))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/approve", a.action(a.approveAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/archive", a.action(a.archiveAnnualStatementRun))
@@ -1139,6 +1147,15 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/building/geocode", a.authedAction(capabilityManageBuilding, a.geocodeBuildingAddress))
 	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
 	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
+	mux.HandleFunc("GET /app/settings/valorisation", a.authed(capabilityManageLeases, a.valorisationPage))
+	mux.HandleFunc("GET /app/verwaltung/wertsicherung", a.authed(capabilityManageLeases, a.valorisationPage))
+	mux.HandleFunc("POST /app/verwaltung/wertsicherung/refresh", a.authedAction(capabilityManageLeases, a.refreshIndices))
+	mux.HandleFunc("POST /app/settings/valorisation/runs", a.authedAction(capabilityManageLeases, a.createValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/approve", a.authedAction(capabilityManageLeases, a.approveValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/send", a.authedAction(capabilityManageLeases, a.sendValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/cancel", a.authedAction(capabilityManageLeases, a.cancelValorisation))
+	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/items/{itemID}", a.authedAction(capabilityManageLeases, a.valorisationItemAction))
+	mux.HandleFunc("GET /app/settings/valorisation/runs/{runID}/items/{itemID}/pdf", a.authed(capabilityManageLeases, a.valorisationPDF))
 	mux.HandleFunc("GET /app/settings/building/units/{unitID}/lease", a.authed(capabilityManageLeases, a.unitLeasePage))
 	mux.HandleFunc("POST /app/settings/building/units/{unitID}/lease", a.authedAction(capabilityManageLeases, a.saveUnitLease))
 	mux.HandleFunc("POST /app/settings/building/units/{unitID}/lease/end", a.authedAction(capabilityManageLeases, a.endUnitLease))
@@ -1190,6 +1207,7 @@ type requestRepositories struct {
 	annualStatementPeriods    store.AnnualStatementPeriodRepository
 	annualStatementAkontos    store.AnnualStatementPrepaymentRepository
 	annualStatementReceipts   store.AnnualStatementReceiptRepository
+	annualStatementReserve    store.AnnualStatementReserveRepository
 	annualConsumption         store.AnnualStatementConsumptionRepository
 	annualStatementRuns       store.AnnualStatementRunRepository
 	annualStatementDeliveries store.AnnualStatementDeliveryRepository
@@ -1240,6 +1258,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.annualStatementReceipts != nil {
 		repositories.annualStatementReceipts, _ = store.BindAnnualStatementReceiptRepository(a.annualStatementReceipts, tenant)
+	}
+	if a.annualStatementReserve != nil {
+		repositories.annualStatementReserve, _ = store.BindAnnualStatementReserveRepository(a.annualStatementReserve, tenant)
 	}
 	if a.announcementReadStore != nil {
 		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant)
@@ -1764,6 +1785,7 @@ func newApp() (*app, error) {
 	sqlAnnualStatementPeriods := store.NewSQLAnnualStatementPeriodStore(tenantDB)
 	sqlAnnualStatementPrepayments := store.NewSQLAnnualStatementPrepaymentStore(tenantDB)
 	sqlAnnualStatementReceipts := store.NewSQLAnnualStatementReceiptStore(tenantDB)
+	sqlAnnualStatementReserve := store.NewSQLAnnualStatementReserveStore(tenantDB)
 	sqlProfileOverlay := newSQLProfileOverlayStore(tenantDB)
 	sqlNotification := newSQLNotificationPrefStore(tenantDB)
 	sqlUnitPayment := newSQLUnitPaymentStatusStore(tenantDB)
@@ -1931,6 +1953,7 @@ func newApp() (*app, error) {
 		templates:                 tmpl,
 		pool:                      database,
 		tenantDB:                  tenantDB,
+		indexRefreshEnabled:       strings.EqualFold(env("INDEX_REFRESH_ENABLED", "false"), "true"),
 		scopedDB:                  scoped,
 		dataDir:                   filepath.Dir(dbPath),
 		announcementStore:         annBackend,
@@ -1949,6 +1972,7 @@ func newApp() (*app, error) {
 		annualStatementPeriods:    annualStatementPeriodBackend,
 		annualStatementAkontos:    annualStatementPrepaymentBackend,
 		annualStatementReceipts:   annualStatementReceiptBackend,
+		annualStatementReserve:    sqlAnnualStatementReserve,
 		annualConsumption:         store.NewSQLAnnualStatementConsumptionStore(tenantDB),
 		annualStatementRuns:       store.NewSQLAnnualStatementRunStore(tenantDB, documentBackend),
 		annualStatementDeliveries: store.NewSQLAnnualStatementDeliveryStore(tenantDB),
@@ -2031,7 +2055,10 @@ func newApp() (*app, error) {
 	a.textbausteine = func(orgKey string) store.TextbausteinRepository {
 		return store.BindTextbausteinRepository(database, orgKey)
 	}
-	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); a.demoLogin && seedDir != "" {
+	// HAUSV-795: the public demo host gates this on demo login. A local demo
+	// fixture (LOCAL_DEV_LOGIN plus DEMO_SEED_DIR) gets the same "Demodaten
+	// initialisieren" action so the settings reset recreates the seeded houses.
+	if seedDir := strings.TrimSpace(os.Getenv("DEMO_SEED_DIR")); seedDir != "" && (a.demoLogin || localDevLogin) {
 		a.demoReset = func(ctx context.Context, anchor time.Time, out io.Writer) (demo.SeedResult, error) {
 			options := demo.SeedOptions{Reset: true, DiscardAnnualStatements: true, Stats: true, Out: out, Anchor: anchor, DocumentDir: documentFileDir}
 			if units, ok := a.unitStore.(store.UnitSink); ok {
@@ -3839,6 +3866,24 @@ func (a *app) settingsHub(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	a.renderSettingsHubTempl(w, r, ac, pageData)
 }
 
+const unitDataUnreadableNotice = "Die Einheitendaten dieser Liegenschaft sind unvollständig lesbar. Bitte wenden Sie sich an den Betreiber."
+
+func unitsForPage(units unitRepository) ([]unit, string) {
+	if units == nil {
+		return nil, ""
+	}
+	listed, err := units.ListChecked()
+	if err == nil {
+		return listed, ""
+	}
+	var dataErr *store.UnitDataError
+	if errors.As(err, &dataErr) {
+		return nil, unitDataUnreadableNotice
+	}
+	logError("unit list failed", err)
+	return nil, unitDataUnreadableNotice
+}
+
 func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, _, _, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
@@ -3849,7 +3894,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 	heroMsg, heroOK := buildingHeroMessage(r.URL.Query().Get("hero"))
 	unitMsg, unitOK := buildingUnitMessage(r.URL.Query().Get("unit"))
 	paymentMsg, paymentOK := unitPaymentStatusMessage(r.URL.Query().Get("payment"))
-	units := ac.repositories.units.List()
+	units, unitNotice := unitsForPage(ac.repositories.units)
 	billableWeight := billableUnitWeight(units)
 	fairUseExceeded := billableWeight > fairUseFreeUnits*unitBillableFullPPM
 	homeProfile, hasHomeProfile, profileErr := a.energyFor(ac).Profile(tenant.Slug)
@@ -3883,6 +3928,7 @@ func (a *app) buildingSettings(w http.ResponseWriter, r *http.Request, ac authCt
 		"HasCustomHero":         a.hasTenantHero(tenant.Slug),
 		"UnitMsg":               unitMsg,
 		"UnitOK":                unitOK,
+		"UnitDataNotice":        unitNotice,
 		"Units":                 a.buildingUnitViewsWithOccupancy(ac.repositories, ac.tenantRef, units),
 		"NewUnitTypeOptions":    unitTypeOptions(unitTypeResidential),
 		"NewUnitPaymentOptions": unitPaymentStatusOptions(""),
@@ -6618,6 +6664,11 @@ func storeEBInterfaceInvoiceDocument(storage documentStorage, tenant store.Tenan
 	if !ok {
 		return documentRecord{}, fmt.Errorf("document store unavailable")
 	}
+	item, filename := ebInterfaceDocumentMetadata(invoice, uploadedBy)
+	return documents.CreateGenerated(item, filename, "application/xml", data, now)
+}
+
+func ebInterfaceDocumentMetadata(invoice integrations.Invoice, uploadedBy string) (documentRecord, string) {
 	title := "E-Rechnung"
 	if strings.TrimSpace(invoice.InvoiceNumber) != "" {
 		title += " " + strings.TrimSpace(invoice.InvoiceNumber)
@@ -6626,13 +6677,13 @@ func storeEBInterfaceInvoiceDocument(storage documentStorage, tenant store.Tenan
 		title += " - " + strings.TrimSpace(invoice.IssuerName)
 	}
 	filenameToken := integrations.SanitizeFilenameToken(firstNonEmpty(invoice.InvoiceNumber, invoice.ExternalID, "rechnung"))
-	return documents.CreateGenerated(documentRecord{
+	return documentRecord{
 		TenantSlug: invoice.TenantSlug,
 		Title:      title,
 		Category:   documentCategoryBilling,
 		Visibility: documentVisibilityManagerOnly,
 		UploadedBy: uploadedBy,
-	}, "ebinterface-"+filenameToken+".xml", "application/xml", data, now)
+	}, "ebinterface-" + filenameToken + ".xml"
 }
 
 func filterDocuments(items []documentRecord, query string) []documentRecord {

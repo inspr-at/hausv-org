@@ -191,6 +191,7 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 	"energy_intervals":         {allowed: []laneClass{laneFor}, why: notNullTenantReason},
 	"energy_maintenance_plans": {allowed: []laneClass{laneFor}, why: notNullTenantReason},
 	"energy_measures":          {allowed: []laneClass{laneFor}, why: notNullTenantReason},
+	"unit_payment_status":      {allowed: []laneClass{laneFor}, why: "PostgreSQL migration 0006 makes tenant_id NOT NULL; SQLite has no RLS and boot backfills legacy rows. HAUSV-783 payment batches and manual writes use the tenant lane."},
 
 	"home_portals": {allowed: []laneClass{laneUnscopedOther}, why: "Activate is the moment the tenant identity is MINTED: there is no TenantRef " +
 		"before it runs, so its transaction is on the maintenance lane for a structural reason that outlives the flip. The upsert still " +

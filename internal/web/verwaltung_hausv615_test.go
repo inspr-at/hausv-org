@@ -72,13 +72,22 @@ func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
 	settings := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment",
 	}))
-	for _, want := range []string{"settings-input-group", "Bilanz seit Start", "Kein KI-Anbieter konfiguriert", `value="environment" checked`, "KI-Anbieter", "KI-Verbindung"} {
+	for _, want := range []string{"settings-input-group", "Bilanz seit Start", "KI-Vorschläge sind in dieser Umgebung nicht eingerichtet", "Leer lassen = Standard der Plattform", `value="environment" checked`, "KI-Anbieter", "KI-Verbindung"} {
 		if !strings.Contains(settings, want) {
 			t.Fatalf("settings render missing %q", want)
 		}
 	}
 	if strings.Index(settings, "Bilanz seit Start") > strings.Index(settings, "KI-Anbieter") {
 		t.Fatal("Bilanz must follow Automatisierung before the AI cards")
+	}
+	configured := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
+		Threshold: 90, AIProvider: "cloud", AIConfigured: true, ProviderLabel: "Cloud (OpenRouter)", AIHost: "openrouter.ai", AIModel: "openai/gpt-test", AITimeout: "45s",
+	}))
+	if strings.Contains(configured, "openai/gpt-test") || strings.Contains(configured, "nicht eingerichtet") {
+		t.Fatal("the reading state must not show a model id or the unconfigured sentence")
+	}
+	if !strings.Contains(configured, "Aktiv:") || !strings.Contains(configured, "Cloud (OpenRouter)") {
+		t.Fatal("configured provider stays visible without the model id")
 	}
 
 	result := renderComponent(t, VerwaltungDemoResetPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungDemoResetData{Done: true}))

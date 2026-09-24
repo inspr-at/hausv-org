@@ -9,6 +9,8 @@ func VerwaltungSettingsPage(shell PortalPageData, data VerwaltungSettingsData) t
 type VerwaltungSettingsCategory struct { Key, Label, Level string }
 
 type VerwaltungSettingsData struct {
+	ValorisationMode, ValorisationReviewPolicy, ValorisationSender string
+	ValorisationFourEyes bool
 	Categories []VerwaltungSettingsCategory
 	OrganisationName string
 	Members []VerwaltungSettingsMember
@@ -74,6 +76,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 @media(max-width:760px){.settings-options,.ai-fields{grid-template-columns:minmax(0,1fr)}.settings-counters{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-card{padding:var(--space-4)}.settings-form>.settings-actions{display:grid}.settings-save{width:100%}.member-add-fields{grid-template-columns:minmax(0,1fr)}.member-table td[data-label]{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);text-align:right}.member-table td[data-label]::before{content:attr(data-label);flex:0 0 auto;color:var(--muted);font-size:10px;font-weight:750;text-transform:uppercase;text-align:left}}
 
 		.demo-init-dialog{width:min(560px,calc(100vw - 32px));padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.demo-init-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.demo-init-dialog form{display:grid;gap:var(--space-4)}.demo-init-dialog p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}@media(max-width:760px){.demo-init-dialog{padding:var(--space-4)}.demo-init-dialog .settings-actions{display:grid}}
+		.settings-card-head{min-width:0;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}.settings-card-head>div{min-width:0;display:grid;gap:var(--space-2)}.ai-fields select{min-width:0;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font:inherit;font-size:13px;font-weight:500}.ai-fields input{min-height:44px;color:var(--ink);font-size:13px;font-weight:500}.settings-check{min-height:44px;display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:13px;font-weight:600}.settings-check input{flex:0 0 auto;width:18px;height:18px;margin:0}
 		.automation-explanation{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}.automation-explanation .settings-options{margin-top:0;grid-template-columns:minmax(0,1fr);gap:16px}.automation-note{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);line-height:1.6}@media(max-width:760px){.automation-explanation{grid-template-columns:minmax(0,1fr);gap:16px}}
 	</style>
 	<section class="verwaltung-settings">
@@ -87,6 +90,13 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				<div class="ai-fields"><label>E-Mail<input type="email" name="contact_email" value={ data.ContactEmail } placeholder="optional"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.ContactPhone } placeholder="optional"/></label></div>
 				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Liegenschaft.</p>
 			</section>
+			<section class="settings-card" id="wertsicherung"><header class="settings-card-head"><div><h2>Wertsicherung</h2><p class="settings-note">Mietzinse der betreuten Liegenschaften prüfen und freigeben.</p></div><a class="button" href="/app/verwaltung/wertsicherung">Wertsicherung öffnen</a></header>
+				<input type="hidden" name="valorisation_present" value="1"/>
+				<div class="ai-fields"><label>Wirksamwerden<select name="valorisation_mode"><option value="cautious" selected?={ data.ValorisationMode != "contractual" }>Vorsichtig: nach endgültiger Veröffentlichung</option><option value="contractual" selected?={ data.ValorisationMode == "contractual" }>Vertraglich vorgesehener Termin</option></select></label><label>Ungeprüfte Klauseln<select name="valorisation_review"><option value="block" selected?={ data.ValorisationReviewPolicy != "warn" }>Freigabe sperren</option><option value="warn" selected?={ data.ValorisationReviewPolicy == "warn" }>Mit Warnung zulassen</option></select></label></div>
+				<div class="ai-fields"><label>Absenderzeile im Anpassungsschreiben<input type="text" name="valorisation_sender" value={ data.ValorisationSender } maxlength="240" placeholder="Leer = Name der Hausverwaltung"/></label></div>
+				<label class="check settings-check"><input type="checkbox" name="valorisation_four_eyes" value="1" checked?={ data.ValorisationFourEyes }/> Vier-Augen-Freigabe: eine andere berechtigte Person muss freigeben</label>
+				<p class="settings-note">Geänderte Regeln gelten für neu berechnete Läufe. Gesetzliche Fristen bleiben verbindlich.</p>
+			</section>
 			<section class="settings-card"><h2>Automatisierung</h2><table class="trust-table"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>
 				for _, category := range data.Categories {
 					<tr><td><strong>{ category.Label }</strong></td><td><div class="trust-choice"><label><input type="radio" name={ "trust_" + category.Key } value="manual" checked?={ category.Level == "manual" }/> Manuell</label><label><input type="radio" name={ "trust_" + category.Key } value="propose" checked?={ category.Level == "propose" }/> Vorschlag</label><label><input type="radio" name={ "trust_" + category.Key } value="auto" checked?={ category.Level == "auto" }/> Automatisch</label></div></td></tr>
@@ -97,13 +107,13 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			<section class="settings-card settings-balance"><h2>Bilanz seit Start</h2><p>„Ohne Änderung freigegeben“ zeigt den Anteil der freigegebenen KI-Vorschläge, deren Text unverändert übernommen wurde.</p><div class="settings-counters"><div><strong>{ fmt.Sprint(data.Approved) }</strong><span>freigegeben</span></div><div><strong>{ fmt.Sprint(data.Edited) }</strong><span>geändert</span></div><div><strong>{ fmt.Sprint(data.Rejected) }</strong><span>verworfen</span></div><div><strong>{ fmt.Sprint(data.Auto) }</strong><span>automatisch</span></div><div><strong>{ fmt.Sprintf("%d %%", data.UnchangedShare) }</strong><span>ohne Änderung freigegeben</span></div></div></section>
 			<section class="settings-card"><h2>KI-Anbieter</h2>
 				if data.AIConfigured {
-					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · { data.AIModel } · Zeitlimit { data.AITimeout }</p>
+					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · Zeitlimit { data.AITimeout }</p>
 				} else {
-					<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein KI-Anbieter konfiguriert</strong></p>
+					<p class="active-provider" data-provider-state="nicht eingerichtet"><strong>KI-Vorschläge sind in dieser Umgebung nicht eingerichtet</strong></p>
 				}
 				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
-				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer = Umgebung"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer = Umgebung"/></label></div>
-				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer = Umgebung.</p>
+				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer lassen = Standard der Plattform"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer lassen = Standard der Plattform"/></label></div>
+				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer lassen = Standard der Plattform.</p>
 			</section>
 			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
 		</form>

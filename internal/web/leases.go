@@ -26,7 +26,10 @@ type LeasePageData struct {
 	CanEnd    bool
 }
 
+type LeaseValorisationView struct{ URL, PDFURL, Date, Amount, Due, Status string }
+
 type LeaseDetail struct {
+	Valorisation                         []LeaseValorisationView
 	ID, Status, Kind, Use, MRG, Regime   string
 	Concluded, Starts, Ends, Zinstermin  string
 	Notes                                string
@@ -36,6 +39,7 @@ type LeaseDetail struct {
 	Components                           []LeaseMoneyView
 	MonthlyNet, MonthlyVAT, MonthlyGross string
 	HasMonthly                           bool
+	ShowOrigin                           bool
 	HasClause                            bool
 	Clause                               LeaseClauseView
 	Anchor                               string
@@ -51,9 +55,16 @@ type LeaseMoneyView struct {
 
 type LeaseClauseView struct {
 	Type, Series, Base, Threshold, Text, Review, ReviewClass, Line, Note string
+	Staffel                                                              []string
+}
+
+type LeaseStaffelRow struct {
+	Date, Value string
+	Percent     bool
 }
 
 type LeaseForm struct {
+	Staffel                                                        []LeaseStaffelRow
 	ID, Concluded, Starts, Ends, Notes                             string
 	PartyName, PartyEmail, PartyAddress, PartyFrom, PartyTo        string
 	ComponentNet, ComponentFrom                                    string

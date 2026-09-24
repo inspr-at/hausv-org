@@ -19,8 +19,9 @@ type OrgCounters struct {
 }
 
 type OrgSettings struct {
-	Organisation string `json:"organisation"`
-	Name         string `json:"name"`
+	Valorisation ValorisationSettings `json:"valorisation"`
+	Organisation string               `json:"organisation"`
+	Name         string               `json:"name"`
 	// ContactAddress lives in the existing organisation-scoped JSON record.
 	ContactAddress string            `json:"contact_address,omitempty"`
 	TrustLevels    map[string]string `json:"trust_levels"`
@@ -56,11 +57,12 @@ func DefaultOrgSettings(orgKey string) OrgSettings {
 	for _, category := range IntakeCategories() {
 		trust[category.Key] = "propose"
 	}
-	return OrgSettings{Organisation: textutil.Slug(orgKey), TrustLevels: trust, AutoThreshold: 0.9}
+	return OrgSettings{Valorisation: DefaultValorisationSettings(), Organisation: textutil.Slug(orgKey), TrustLevels: trust, AutoThreshold: 0.9}
 }
 
 func normalizeOrgSettings(orgKey string, item OrgSettings) (OrgSettings, error) {
 	defaults := DefaultOrgSettings(orgKey)
+	item.Valorisation = item.Valorisation.Normalized()
 	item.Organisation = defaults.Organisation
 	item.Name = strings.TrimSpace(item.Name)
 	item.ContactAddress = strings.TrimSpace(item.ContactAddress)

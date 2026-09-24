@@ -20,7 +20,11 @@ type UnitRepository interface {
 	UpdateAllocationBases(updates []UnitAllocationBasisUpdate) (unknownUnit bool, err error)
 	DeleteUnit(id string) (removed bool, removedUnit Unit, err error)
 	List() []Unit
+	// ListChecked reports a row that could not be read. List stays empty in that
+	// case so money paths remain fail-closed; pages use this variant.
+	ListChecked() ([]Unit, error)
 	UnitCount() int
+	UnitCountChecked() (int, error)
 	BillableUnitWeight() int
 	UnitsForEmail(email string) []UnitMembership
 	MembersForUnit(unitID string) UnitMembers
@@ -49,7 +53,9 @@ type unitBackend interface {
 	updateUnitAllocationBases(tenant TenantRef, updates []UnitAllocationBasisUpdate) (unknownUnit bool, err error)
 	deleteUnit(tenant TenantRef, id string) (removed bool, removedUnit Unit, err error)
 	listTenant(tenant TenantRef) []Unit
+	listTenantChecked(tenant TenantRef) ([]Unit, error)
 	unitCount(tenant TenantRef) int
+	unitCountChecked(tenant TenantRef) (int, error)
 	billableUnitWeight(tenant TenantRef) int
 	unitsForEmail(tenant TenantRef, email string) []UnitMembership
 	membersForUnit(tenant TenantRef, unitID string) UnitMembers
@@ -89,8 +95,16 @@ func (r *boundUnitRepository) List() []Unit {
 	return r.storage.listTenant(r.tenant)
 }
 
+func (r *boundUnitRepository) ListChecked() ([]Unit, error) {
+	return r.storage.listTenantChecked(r.tenant)
+}
+
 func (r *boundUnitRepository) UnitCount() int {
 	return r.storage.unitCount(r.tenant)
+}
+
+func (r *boundUnitRepository) UnitCountChecked() (int, error) {
+	return r.storage.unitCountChecked(r.tenant)
 }
 
 func (r *boundUnitRepository) BillableUnitWeight() int {
@@ -152,7 +166,7 @@ func unitDataErr(tenant TenantRef, unitID, op string, err error) error {
 	wrapped := &UnitDataError{TenantID: tenant.ID, UnitID: unitID, Op: op, Err: err}
 	key := tenant.ID + "\x00" + unitID + "\x00" + op
 	if _, loaded := unitDataSeen.LoadOrStore(key, struct{}{}); !loaded {
-		slog.Error("unit row could not be read", "tenant_id", tenant.ID, "unit_id", unitID, "op", op, "error", err)
+		slog.Error("unit row could not be read", "tenant_id", tenant.ID, "house", tenant.Slug, "unit_id", unitID, "op", op, "error", err)
 	}
 	return wrapped
 }
@@ -462,31 +476,53 @@ func (s *SQLUnitStore) deleteUnit(tenant TenantRef, id string) (bool, Unit, erro
 }
 
 func (s *SQLUnitStore) listTenant(tenant TenantRef) []Unit {
-	if s == nil {
-		return nil
-	}
-	stored, err := readStoredUnits(s.db.For(tenant), tenant)
+	units, err := s.listTenantChecked(tenant)
 	if err != nil {
 		return nil
 	}
-	units := make([]Unit, 0, len(stored))
-	for _, row := range stored {
-		units = append(units, row.unit)
+	return units
+}
+
+func (s *SQLUnitStore) listTenantChecked(tenant TenantRef) ([]Unit, error) {
+	if s == nil {
+		return nil, nil
 	}
-	out := []Unit{}
-	for _, item := range units {
-		out = append(out, CopyUnit(item))
+	stored, err := readStoredUnits(s.db.For(tenant), tenant)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Unit, 0, len(stored))
+	for _, row := range stored {
+		out = append(out, CopyUnit(row.unit))
 	}
 	SortUnits(out)
-	return out
+	return out, nil
 }
 
 func (s *SQLUnitStore) unitCount(tenant TenantRef) int {
-	return len(s.listTenant(tenant))
+	count, err := s.unitCountChecked(tenant)
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
+func (s *SQLUnitStore) unitCountChecked(tenant TenantRef) (int, error) {
+	units, err := s.listTenantChecked(tenant)
+	if err != nil {
+		return 0, err
+	}
+	return len(units), nil
 }
 
 func (s *SQLUnitStore) billableUnitWeight(tenant TenantRef) int {
-	return BillableUnitWeight(s.listTenant(tenant))
+	// Fail closed: an unreadable row is logged once with the house and counts as
+	// no billable weight, never as a partial house.
+	units, err := s.listTenantChecked(tenant)
+	if err != nil {
+		return 0
+	}
+	return BillableUnitWeight(units)
 }
 
 func (s *SQLUnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembership {

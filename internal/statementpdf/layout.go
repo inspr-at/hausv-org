@@ -49,52 +49,11 @@ func (l *letterLayout) newPage(first bool) {
 		l.y -= 22
 		return
 	}
-	// The recipient starts 49 mm below the page edge, within a letter window.
-	l.fixedBlock(l.d.Sender, left, 797, 257, 9, 11, 6)
-	addressBottom := l.fixedBlock(l.d.Address, left, 703, 250, 10, 13, 8)
-	infoY := 796.0
-	for _, field := range l.d.Info {
-		if strings.TrimSpace(field.Value) == "" {
-			continue
-		}
-		if infoY < 612 {
-			l.overflow = append(l.overflow, field.Label+": "+field.Value)
-			continue
-		}
-		l.text(field.Label, pdf.Strong, 7.5, 347, infoY)
-		infoY -= 11
-		for _, line := range pdf.WrapWidth(field.Value, pdf.Body, 8.5, 186) {
-			if infoY < 600 {
-				l.overflow = append(l.overflow, line)
-				continue
-			}
-			l.text(line, pdf.Body, 8.5, 347, infoY)
-			infoY -= 11
-		}
-		infoY -= 6
-	}
-	l.y = min(640, addressBottom-20, infoY-13)
+	l.y, l.overflow = pdf.Letterhead(l.page(), l.d.Sender, l.d.Address, l.d.Info)
 	l.paragraph(l.d.Title, pdf.Heading, 22, 25)
 	l.y -= 6
 }
 
-// Pathological supplied addresses are continued in a labelled section instead
-// of colliding with the recipient window, metadata or footer.
-func (l *letterLayout) fixedBlock(values []string, x, y, width, size, gap float64, maxLines int) float64 {
-	count := 0
-	for _, value := range values {
-		for _, line := range pdf.WrapWidth(value, pdf.Body, size, width) {
-			if count >= maxLines {
-				l.overflow = append(l.overflow, line)
-				continue
-			}
-			l.text(line, pdf.Body, size, x, y)
-			y -= gap
-			count++
-		}
-	}
-	return y
-}
 func (l *letterLayout) ensure(height float64) {
 	if l.y-height < bottom {
 		l.newPage(false)
@@ -123,6 +82,12 @@ func (d Document) Pages() []pdf.Page {
 	if len(d.Basis) > 0 {
 		l.y -= 5
 		l.paragraph(strings.Join(d.Basis, " · "), pdf.Body, 8.5, 11)
+	}
+	if len(d.Reserve) > 0 {
+		l.section("Rücklage")
+		for _, text := range d.Reserve {
+			l.paragraph(text, pdf.Body, 9.5, 13)
+		}
 	}
 	var objections []string
 	for _, row := range d.Costs {
@@ -272,14 +237,17 @@ func (l *letterLayout) costTable() {
 	}
 	widths := []float64{153, 87, 83, 65, 83}
 	headings := []string{"Kostenart", "Gesamtkosten", "Schlüssel", "Anteil", "Betrag"}
-	if l.d.PartyID == "" {
+	if l.d.ShowVAT {
+		widths = []float64{151, 80, 70, 80, 90}
+		headings = []string{"Kostenart", "Netto", "USt-Satz", "USt", "Brutto"}
+	} else if l.d.PartyID == "" {
 		widths, headings = []float64{360, 111}, []string{"Kostenart", "Betrag"}
 	}
 	header := func() {
 		x := left
 		for i, label := range headings {
 			xText := x + 5
-			if i == 1 || i >= 3 {
+			if l.d.ShowVAT && i > 0 || !l.d.ShowVAT && (i == 1 || i >= 3) {
 				xText = x + widths[i] - 5 - pdf.TextWidth(label, pdf.Strong, 9)
 			}
 			l.text(label, pdf.Strong, 9, xText, l.y)
@@ -292,7 +260,9 @@ func (l *letterLayout) costTable() {
 	header()
 	for _, row := range l.d.Costs {
 		cells := []string{row.Name, row.Total, row.Key, row.Share, row.Amount}
-		if l.d.PartyID == "" {
+		if l.d.ShowVAT {
+			cells = []string{row.Name, row.Net, row.Rate, row.VAT, row.Gross}
+		} else if l.d.PartyID == "" {
 			cells = []string{row.Name, row.Amount}
 		}
 		wrapped, count := make([][]string, len(cells)), 1
@@ -314,7 +284,7 @@ func (l *letterLayout) costTable() {
 			for i, lines := range wrapped {
 				if n < len(lines) {
 					xText := x + 5
-					if i == 1 || i >= 3 {
+					if l.d.ShowVAT && i > 0 || !l.d.ShowVAT && (i == 1 || i >= 3) {
 						xText = x + widths[i] - 5 - pdf.TextWidth(lines[n], pdf.Body, 9)
 					}
 					l.text(lines[n], pdf.Body, 9, xText, l.y)
@@ -334,6 +304,11 @@ func (l *letterLayout) costTable() {
 	for _, line := range pdf.WrapWidth(l.d.Total, pdf.Strong, 10, measure-110) {
 		l.text(line, pdf.Strong, 10, left+measure-5-pdf.TextWidth(line, pdf.Strong, 10), l.y)
 		l.y -= 13
+	}
+	for _, line := range l.d.VATSummary {
+		l.ensure(16)
+		l.text(line, pdf.Body, 9, left+5, l.y)
+		l.y -= 14
 	}
 	l.y -= 8
 }

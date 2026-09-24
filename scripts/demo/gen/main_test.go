@@ -37,12 +37,18 @@ func TestCommittedSeed(t *testing.T) {
 	if len(items) < 350 || len(items) > 450 {
 		t.Fatalf("intake count = %d, want 350..450", len(items))
 	}
-	if len(houses) != 12 {
-		t.Fatalf("house count = %d, want 12", len(houses))
+	if len(houses) != 13 {
+		t.Fatalf("house count = %d, want 13", len(houses))
 	}
 	houseSet := map[string]bool{}
 	for index, h := range houses {
 		houseSet[h.Slug] = true
+		if h.Slug == zinshausSlug {
+			if len(h.Units) != 11 {
+				t.Errorf("zinshaus has %d units, want 10 flats and 1 shop", len(h.Units))
+			}
+			continue
+		}
 		if len(h.Units) != houseSpecs[index].count+parkingCount(houseSpecs[index].count) {
 			t.Errorf("house %s has %d units", h.Slug, len(h.Units))
 		}
@@ -153,7 +159,7 @@ func TestGeneratorIsDeterministic(t *testing.T) {
 	if err := generate(out); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json", "annual-statement.json"} {
+	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json", "annual-statement.json", "annual-statement-zinshaus.json", "leases-zinshaus.json"} {
 		got, err := os.ReadFile(filepath.Join(out, name))
 		if err != nil {
 			t.Fatal(err)
@@ -228,6 +234,32 @@ func assertUnitMemberships(t *testing.T, houses []house, persons []person) {
 	}
 	if top1.OwnerEmail != "alina.eigentuemer@musterstadt.example" || top3.TenantEmail != "matthias.mieter@musterstadt.example" {
 		t.Fatalf("top memberships = %#v %#v", top1, top3)
+	}
+	owners := map[string]int{}
+	alinaUnits := 0
+	for _, item := range first.Units {
+		if item.OwnerEmail == "" {
+			t.Errorf("%s has no owner", item.Label)
+		}
+		owners[item.OwnerEmail]++
+		if item.OwnerEmail == "alina.eigentuemer@musterstadt.example" {
+			alinaUnits++
+		}
+	}
+	if len(owners) != 14 {
+		t.Errorf("distinct owners = %d, want 14", len(owners))
+	}
+	if alinaUnits != 2 {
+		t.Errorf("Alina owns %d units, want Top 1 and one more", alinaUnits)
+	}
+	var top7 unit
+	for _, item := range first.Units {
+		if item.Label == "Top 7" {
+			top7 = item
+		}
+	}
+	if top7.TenantEmail != "sophie.bewohner@musterstadt.example" || top7.OwnerEmail == "alina.eigentuemer@musterstadt.example" {
+		t.Errorf("Top 7 parties = %#v", top7)
 	}
 	if parking < 4 || parking > 12 {
 		t.Fatalf("parking spaces = %d", parking)

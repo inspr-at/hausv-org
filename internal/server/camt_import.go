@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -207,26 +208,22 @@ func (a *app) applyPaymentImport(w http.ResponseWriter, r *http.Request, ac auth
 		a.redirectPaymentImport(w, r, preview.Period, "", "changed")
 		return
 	}
-	report, err = a.applyImportedPaymentsToUnitStatuses(
-		ac.repositories.unitPayments,
-		preview.Payments,
-		candidates,
-		actorEmail,
-		role,
-		paymentImportAuditMeta{
-			TargetID:      targetID,
-			SourceVersion: preview.SourceVersion,
-			FileDigest:    preview.FileDigest,
-		},
-	)
+	var already bool
+	if a.tenantDB != nil {
+		report, already, err = a.applyPaymentImportAtomically(r.Context(), ac.tenantRef, preview, candidates, actorEmail, role)
+	} else {
+		report, err = a.applyImportedPaymentsToUnitStatuses(ac.repositories.unitPayments, preview.Payments, candidates, actorEmail, role, paymentImportAuditMeta{
+			TargetID: targetID, SourceVersion: preview.SourceVersion, FileDigest: preview.FileDigest,
+		})
+	}
 	if err != nil {
 		logError("payment import apply failed", err, "tenant", tenant.Slug)
 		a.redirectPaymentImport(w, r, preview.Period, token, "error")
 		return
 	}
-	if err := a.recordPaymentImportLedger(ac.tenantRef, actorEmail, preview, report); err != nil {
-		logError("payment import ledger failed", err, "tenant", tenant.Slug)
-		a.redirectPaymentImport(w, r, preview.Period, token, "error")
+	if already {
+		delete(a.paymentImportPreviews, token)
+		a.redirectPaymentImport(w, r, preview.Period, "", "already")
 		return
 	}
 	delete(a.paymentImportPreviews, token)
@@ -358,83 +355,18 @@ func paymentImportTargetID(fileDigest string) string {
 	return string(integrations.FormatCAMT053) + ":" + strings.TrimSpace(fileDigest)
 }
 
-// paymentImportAlreadyApplied is the dedup read before a file is applied. It
-// runs on the TENANT lane: the ledger is keyed by tenant_id and the caller
-// holds the tenant's reference, so this is an ordinary scoped read.
-//
-// The read filters on tenant_id while the table's uniqueness constraint is
-// (tenant_slug, format, file_digest). The two agree on every row that carries
-// its identity; the one row where they disagree is a legacy row the previous
-// release wrote with a NULL tenant_id, which this read cannot see and which
-// recordPaymentImportLedger adopts on the maintenance lane. Before this ran on
-// a lane it also skipped the read whenever the slug had no identity yet; a
-// TenantRef is only ever handed out for a minted identity, so that branch no
-// longer exists.
+// SQL replay protection comes exclusively from the store ledger. Audit-only
+// deduplication is retained for the legacy JSON fixtures without a tenant DB.
 func (a *app) paymentImportAlreadyApplied(tenant store.TenantRef, fileDigest string) bool {
-	fileDigest = strings.TrimSpace(fileDigest)
-	if a != nil && a.tenantDB != nil && tenant.Valid() && fileDigest != "" {
-		var exists bool
-		err := a.tenantDB.For(tenant).QueryRow(
-			`SELECT EXISTS(
-				SELECT 1 FROM integration_imports
-				WHERE tenant_id = $1 AND format = $2 AND file_digest = $3
-			)`,
-			tenant.ID, string(integrations.FormatCAMT053), fileDigest,
-		).Scan(&exists)
-		if err == nil && exists {
-			return true
-		}
+	if a != nil && a.tenantDB != nil {
+		complete, err := store.NewImportLedger(a.tenantDB).Completed(context.Background(), tenant,
+			store.ImportKey{Format: string(integrations.FormatCAMT053)}, fileDigest)
 		if err != nil {
 			logError("payment import ledger lookup failed", err, "tenant", tenant.Slug)
 		}
+		return complete
 	}
-	targetID := paymentImportTargetID(fileDigest)
-	return a != nil && a.auditStore != nil && a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, targetID)
-}
-
-// recordPaymentImportLedger writes the ledger row. It runs on the MAINTENANCE
-// lane under store.HealOrphanReason, for the same reason its siblings in the
-// store do: the conflict target is a natural key, (tenant_slug, format,
-// file_digest), so this INSERT can land on a row the previous release wrote
-// without a tenant_id, and migration 0003 makes such a row unreachable from
-// every tenant lane — the upsert would be refused outright (SQLSTATE 42501)
-// instead of adopting it. The statement still writes tenant_id=$1 and the
-// caller still holds the tenant, so nothing widens; the lane is what changes.
-// When tenant_id goes NOT NULL this reverts to For(tenant) with the rest.
-func (a *app) recordPaymentImportLedger(tenant store.TenantRef, actorEmail string, preview camtImportPreview, report unitPaymentImportReport) error {
-	if a == nil || a.tenantDB == nil {
-		return nil
-	}
-	if !tenant.Valid() {
-		return fmt.Errorf("payment import ledger: tenant reference is not usable")
-	}
-	// DO NOTHING on everything EXCEPT tenant_id. The ledger records when a file
-	// was FIRST applied, so a re-upload must not rewrite applied_at, applied_by
-	// or the counts — but a row written by the previous release carries no
-	// identity, and the lookup above filters on tenant_id, so leaving it unowned
-	// means the ledger can never see its own row and every re-upload is applied
-	// again. coalesce keeps an owned row untouched, which is also the only shape
-	// PostgreSQL's tenant_id_immutable trigger accepts.
-	_, err := a.tenantDB.Unscoped(store.HealOrphanReason).Exec(
-		`INSERT INTO integration_imports(
-			tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by,
-			assigned, changed, unclear, rejected
-		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		ON CONFLICT(tenant_slug, format, file_digest) DO UPDATE SET
-		  tenant_id=coalesce(integration_imports.tenant_id, excluded.tenant_id)`,
-		tenant.ID,
-		tenant.Slug,
-		string(integrations.FormatCAMT053),
-		strings.TrimSpace(preview.FileDigest),
-		strings.TrimSpace(preview.SourceVersion),
-		time.Now().UTC().Format(time.RFC3339),
-		normalizeEmail(actorEmail),
-		report.Assigned,
-		report.Changed,
-		report.Unclear,
-		report.Rejected+len(preview.ParserErrors),
-	)
-	return err
+	return a != nil && a.auditStore != nil && a.auditStore.HasTarget(tenant.Slug, auditActionIntegrationImport, paymentImportTargetID(fileDigest))
 }
 
 func normalizePaymentImportPeriod(raw string) string {

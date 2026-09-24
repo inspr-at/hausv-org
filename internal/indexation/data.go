@@ -30,6 +30,8 @@ func (s Series) Valid() bool {
 }
 
 type IndexValue struct {
+	RevisionID  string
+	Runtime     bool // Retrieved by the verified runtime importer.
 	Series      Series
 	Month       Month
 	Value       Decimal
@@ -40,6 +42,8 @@ type IndexValue struct {
 }
 
 type AnnualValue struct {
+	RevisionID  string
+	Runtime     bool
 	Series      Series
 	Year        int
 	Value       Decimal

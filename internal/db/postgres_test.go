@@ -25,11 +25,11 @@ const (
 )
 
 var expectedTenantTables = []string{
-	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_deliveries", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_run_approvals", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
+	"announcement_reads", "announcements", "annual_statement_consumption_evidence", "annual_statement_cost_types", "annual_statement_deliveries", "annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_periods", "annual_statement_prepayments", "annual_statement_receipts", "annual_statement_reserve_entries", "annual_statement_run_approvals", "annual_statement_runs", "attachments", "ballots", "contacts", "documents",
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
-	"house_memberships", "index_clauses", "integration_imports", "issues", "lease_parties", "leases", "parking", "rent_components", "unit_payment_status", "units", "valorisation_state",
+	"house_memberships", "index_clauses", "integration_imports", "issues", "lease_parties", "leases", "parking", "rent_components", "unit_payment_status", "units", "valorisation_deliveries", "valorisation_events", "valorisation_items", "valorisation_runs", "valorisation_state",
 }
 
 func TestOpenConfigDefaultsToSQLite(t *testing.T) {
@@ -346,6 +346,9 @@ func tenantTables(t *testing.T, database *sql.DB) []string {
 // Delivery rows have required addressing and outcome fields rather than empty
 // defaults. Use a valid row so the generic probe exercises RLS, not NOT NULL.
 func tenantTableSmokeInsert(table string) string {
+	if table == "integration_imports" {
+		return `INSERT INTO integration_imports(tenant_id,tenant_slug,format,file_digest,applied_at,status,blob_key,document_data) VALUES($1,'rls-fixture','ebinterface','digest','2026-09-24T12:00:00Z','pending','import-fixture.xml','{"id":"import-fixture"}')`
+	}
 	if table == "annual_statement_run_approvals" {
 		return `INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES($1,'rls-fixture','run','{"ApprovedBy":"manager@example.test","Role":"Verwalter","ApprovedAt":"2026-09-24T10:00:00Z"}')`
 	}
@@ -356,6 +359,14 @@ func tenantTableSmokeInsert(table string) string {
 	// parent lease/clause, so a tenant_id-only smoke row would test NOT NULL
 	// and the FK instead of the RLS policy this fixture owns.
 	switch table {
+	case "valorisation_runs":
+		return `INSERT INTO valorisation_runs(tenant_id,tenant_slug,id,org_key,effective_on,revision,status,inputs_sha256,index_snapshot,data,created_by,created_at) VALUES($1,'rls-fixture','run','org','2026-04-01',1,'draft','hash','{}','{}','manager@example.test','2026-04-01T00:00:00Z')`
+	case "valorisation_items":
+		return `INSERT INTO valorisation_items(tenant_id,tenant_slug,id,run_id,lease_id,clause_id,data) VALUES($1,'rls-fixture','item','run','rls-lease','rls-clause','{}')`
+	case "valorisation_deliveries":
+		return `INSERT INTO valorisation_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES($1,'rls-fixture','delivery','run',1,'party@example.test','top-1','document','hash','party@example.test','2026-09-06T18:00:00Z','sent','','manager@example.test',1)`
+	case "valorisation_events":
+		return `INSERT INTO valorisation_events(tenant_id,tenant_slug,id,run_id,action,actor,created_at,data) VALUES($1,'rls-fixture','event','run','created','manager@example.test','2026-04-01T00:00:00Z','{}')`
 	case "leases":
 		return `INSERT INTO leases(tenant_id,id,tenant_slug,unit_id,status,concluded_on,starts_on,lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,landlord_is_business,tenant_is_consumer,vat_opted,updated_at) VALUES($1,'rls-lease','rls-fixture','top-1','active','2018-03-15','2018-04-01','hauptmiete','wohnung','teil','frei',false,true,true,false,'2026-09-24T00:00:00Z')`
 	case "lease_parties":
@@ -363,7 +374,7 @@ func tenantTableSmokeInsert(table string) string {
 	case "rent_components":
 		return `INSERT INTO rent_components(tenant_id,id,lease_id,tenant_slug,kind,net_cents,vat_rate_bp,valid_from,origin,created_at) VALUES($1,'rls-component','rls-lease','rls-fixture','hmz',100000,1000,'2018-04-01','manual','2026-09-24T00:00:00Z')`
 	case "index_clauses":
-		return `INSERT INTO index_clauses(tenant_id,id,lease_id,tenant_slug,clause_type,valid_from) VALUES($1,'rls-clause','rls-lease','rls-fixture','vpi_threshold','2018-04-01')`
+		return `INSERT INTO index_clauses(tenant_id,id,lease_id,tenant_slug,clause_type,valid_from,staffel_steps) VALUES($1,'rls-clause','rls-lease','rls-fixture','staffel','2018-04-01','[{"effective_on":"2026-04-01","net_cents":110000}]')`
 	case "valorisation_state":
 		return `INSERT INTO valorisation_state(tenant_id,clause_id,tenant_slug) VALUES($1,'rls-clause','rls-fixture')`
 	}
@@ -401,7 +412,7 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	}
 	// Parents before children: the lease and its clause exist before the rows
 	// that reference them, whatever order the catalog lists the tables in.
-	for _, table := range []string{"leases", "index_clauses"} {
+	for _, table := range []string{"leases", "index_clauses", "valorisation_runs"} {
 		if _, err := tx.Exec(tenantTableSmokeInsert(table), tenantA); err != nil {
 			t.Fatalf("seed prerequisite %s: %v", table, err)
 		}
@@ -409,7 +420,7 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 	for _, table := range tables {
 		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" ||
 			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" ||
-			table == "leases" || table == "index_clauses" {
+			table == "leases" || table == "index_clauses" || table == "valorisation_runs" {
 			continue
 		}
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {

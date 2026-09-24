@@ -56,8 +56,13 @@ func TestAnnualStatementPDFDownloadPermissionsSnapshotAndNoWrites(t *testing.T) 
 		t.Fatalf("download=%d %s", before.Code, before.Body.String())
 	}
 	kind, params, err := mime.ParseMediaType(before.Header().Get("Content-Disposition"))
-	if err != nil || kind != "attachment" || !strings.HasSuffix(params["filename"], ".pdf") {
+	if err != nil || kind != "inline" || !strings.HasSuffix(params["filename"], ".pdf") {
 		t.Fatal(params, err)
+	}
+	attachment := authedRequest(t, a, manager, route+"&download=1")
+	attachmentKind, attachmentParams, attachmentErr := mime.ParseMediaType(attachment.Header().Get("Content-Disposition"))
+	if attachment.Code != http.StatusOK || attachmentErr != nil || attachmentKind != "attachment" || attachmentParams["filename"] != params["filename"] || !bytes.Equal(before.Body.Bytes(), attachment.Body.Bytes()) {
+		t.Fatal("explicit download must attach the same PDF with the same filename")
 	}
 	for _, c := range params["filename"] {
 		if c > 127 || c == '/' || c == '\\' || c == '\r' || c == '\n' {

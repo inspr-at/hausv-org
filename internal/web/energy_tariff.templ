@@ -1,0 +1,126 @@
+package web
+
+import "strconv"
+
+templ EnergyTariffSection(data EnergyPageData) {
+	<section class="energy-card energy-tariff" id="tarif" aria-labelledby="energy-tariff-title">
+		<header class="energy-card-head">
+			<div class="energy-tariff-heading-copy"><div class="energy-tariff-title-row"><h2 id="energy-tariff-title">Monatsspitze</h2><details class="energy-metric-info energy-tariff-overview-info" name="energy-metric-help" data-energy-help="tariff"><summary aria-label="Monatsspitze und Verrechnung erklären" aria-controls="energy-help-tariff">
+				@DisclosureChevronMasked()
+			</summary><div id="energy-help-tariff"><strong>So setzt sich die Leistung zusammen</strong><p><b>Höchste Viertelstunde:</b> höchste mittlere Bezugsleistung einer abgeschlossenen Viertelstunde dieses Kalendermonats.</p><p><b>Verrechnet:</b> der höchste Wert aus Monatsspitze, 2-kW-Sockel und – falls erfasst – 20 % der vereinbarten Anschlussleistung.</p>
+				if data.Tariff.HasEstimate {
+					if data.Tariff.MinimumReason != "" {
+						<small>{ data.Tariff.MinimumReason }</small>
+					} else {
+						<small>Die gemessene Spitze ist maßgeblich.</small>
+					}
+				}
+				if data.Tariff.Basis != "" {
+					<small>{ data.Tariff.Basis }</small>
+				}
+			</div></details></div><p>{ data.Tariff.MonthLabel }</p></div>
+			<span class="pill" title={ data.Tariff.Status } aria-label={ data.Tariff.Status }>Entwurf</span>
+		</header>
+		if data.TargetChanged {
+			<div class="message success">Ihr persönliches Peak-Ziel wurde gespeichert.</div>
+		}
+		if data.AgreedPowerChanged {
+			<div class="message success">Die vereinbarte Anschlussleistung wurde gespeichert.</div>
+		}
+		if data.Tariff.HasEstimate {
+			<div class="energy-billed" aria-label="Verrechnete Leistung nach dem Entwurf">
+				<div><div class="energy-metric-label"><span>Höchste Viertelstunde</span></div><strong>@EnergyValue(data.Tariff.PeakKW)</strong><progress class="energy-tariff-meter peak" max="100" value={ strconv.Itoa(data.Tariff.PeakMeterPercent) } aria-label={ "Gemessene Spitze relativ zur verrechneten Leistung: " + strconv.Itoa(data.Tariff.PeakMeterPercent) + " Prozent" }></progress>
+					if data.Tariff.HasPeakTime {
+						<small>Ø { data.Tariff.PeakTime }</small>
+					}
+				</div>
+				<div><div class="energy-metric-label"><span>Verrechnet</span></div><strong>@EnergyValue(data.Tariff.BilledKW)</strong><progress class="energy-tariff-meter billed" max="100" value="100" aria-hidden="true"></progress><small>
+					if data.Tariff.MinimumReason != "" {
+						{ data.Tariff.MinimumReason }
+					} else {
+						die gemessene Spitze ist maßgeblich
+					}
+				</small></div>
+			</div>
+			<div class="energy-tariff-cost">
+				<div class="energy-tariff-cost-figure"><div class="energy-metric-label"><span>Leistungsanteil des Netztarifs</span><details class="energy-metric-info" name="energy-metric-help" data-energy-help="annual"><summary aria-label="Jahreswert erklären" aria-controls="energy-help-annual">
+					@DisclosureChevronMasked()
+				</summary><div id="energy-help-annual"><strong>Jahreswert</strong><p>Nur der Leistungsanteil des Netztarifs – nicht die Stromrechnung.</p></div></details></div><p><strong>@EnergyValue(data.Tariff.AnnualPowerEUR)</strong><small>/ Jahr</small></p><small>Modellrechnung</small></div>
+			</div>
+			if data.Tariff.Basis != "" {
+				<p class="energy-tariff-basis" title={ data.Tariff.Basis }><span class="energy-ui-icon energy-ui-icon-clock" aria-hidden="true"></span><span>
+					if data.Tariff.CoverageLabel != "" {
+						{ data.Tariff.CoverageLabel }
+					} else {
+						{ data.Tariff.Basis }
+					}
+				</span></p>
+			}
+		} else {
+			<div class={ "energy-tariff-empty", templ.KV("waiting", data.Tariff.MissingIsWaiting) }>
+				<strong>
+					if data.Tariff.MissingIsWaiting {
+						Noch keine volle Viertelstunde
+					} else {
+						Netzbezug noch nicht zugeordnet
+					}
+				</strong>
+				<p>{ data.Tariff.MissingReason }</p>
+				if !data.Tariff.MissingIsWaiting {
+					<a class="button" href="#messwerte">Netzbezug zuordnen</a>
+				}
+			</div>
+		}
+		switch data.TariffAssessmentStatus {
+			case "saved":
+				<div class="message success">Diese Modellbewertung wurde mit ihrer damaligen Regelversion festgehalten.</div>
+			case "no_data":
+				<div class="message">Für eine historische Bewertung fehlen noch abgeschlossene Viertelstunden.</div>
+		}
+		<details class="energy-tariff-disclosure" data-energy-disclosure="tariff"><summary aria-controls="energy-tariff-details"><span>Mehr erfahren</span>
+			@DisclosureChevronMasked()
+		</summary><div id="energy-tariff-details">
+			<p class="energy-tariff-method">Ab 01.01.2027 bemisst der Netzbetreiber die höchste Viertelstunde jedes Kalendermonats.</p>
+			if data.Tariff.Basis != "" {
+				<p class="energy-tariff-detail-basis"><strong>Grundlage</strong>{ data.Tariff.Basis }</p>
+			}
+			if data.Tariff.HasEstimate {
+				<div class="energy-tariff-cost-copy"><p><strong>Das ist nicht Ihre Stromrechnung.</strong> Der Betrag umfasst ausschließlich den Leistungsanteil des Netztarifs. Arbeitspreis, Energiekosten, Abgaben und Steuern sind darin nicht enthalten.</p><p>Gerechnet mit { data.Tariff.BelowRateEUR } je kW bis { data.Tariff.ThresholdKW } und { data.Tariff.AboveRateEUR } je kW darüber, auf die verrechnete Leistung von { data.Tariff.BilledKW }. Die Sätze stammen aus einem Begutachtungsentwurf und können sich noch ändern.</p></div>
+				if data.Tariff.HasTier {
+					<div class="energy-tariff-tiers"><div><span>Günstigere Stufe</span><strong>{ data.Tariff.BelowKW }</strong><small>{ data.Tariff.BelowRateEUR } je kW und Jahr</small></div><div><span>Höhere Stufe</span><strong>{ data.Tariff.AboveKW }</strong><small>{ data.Tariff.AboveRateEUR } je kW und Jahr</small></div></div>
+				}
+				<ul class="energy-tariff-notes">
+					if data.Tariff.HasTier {
+						<li>{ data.Tariff.TierHint }</li>
+					}
+					<li>Niedertarif-Fenster (SNAP, WiNAP) und Energiegemeinschaften senken den Arbeitspreis, nicht die verrechnete Leistung.</li><li>{ data.Tariff.Disclaimer }</li>
+				</ul>
+			}
+			if data.CanManageEnergy {
+				<details class="energy-tariff-settings">
+					<summary>Ihre Werte für diese Rechnung <span>Peak-Ziel, Anschlussleistung</span>
+						@DisclosureChevronMasked()
+					</summary>
+					<div class="energy-tariff-forms">
+						<form class="energy-target-form" method="post" action="/app/energie/target"><label><span class="onboarding-legend">Persönliches Peak-Ziel in kW</span><input type="text" name="target_peak_kw" inputmode="decimal" value={ data.TargetPeakValue } placeholder="z. B. 8,0" required/></label><small class="muted">Ein Planungsziel, keine technische Anschlussgrenze.</small><button class="button" type="submit">Ziel speichern</button></form>
+						<form class="energy-target-form" method="post" action="/app/energie/anschlussleistung"><label><span class="onboarding-legend">Vereinbarte Anschlussleistung in kW</span><input type="text" name="agreed_power_kw" inputmode="decimal" value={ data.AgreedPowerValue } placeholder="z. B. 14,0"/></label><small class="muted">{ energyAgreedHint(data.Tariff) }</small><button class="button" type="submit">Anschlussleistung speichern</button></form>
+					</div>
+				</details>
+			}
+			<footer class="energy-tariff-foot">
+				<span>Regelprofil { data.Tariff.ID } · Stand { data.Tariff.Version }</span>
+				<a href={ templ.SafeURL(data.Tariff.SourceURL) } target="_blank" rel="noopener noreferrer">Quelle: { data.Tariff.SourceTitle } →</a>
+				if data.CanManageEnergy && data.Tariff.HasEstimate {
+					<form method="post" action="/app/energie/tariff/assessment"><button class="button quiet" type="submit">Diesen Stand festhalten</button></form>
+				}
+			</footer>
+			if data.HasTariffAssessments {
+				<div class="energy-history"><h4>Festgehaltene Bewertungen</h4><div aria-label="Historische Tarifbewertungen">
+					for _, assessment := range data.TariffAssessments {
+						<article class="energy-history-row"><div><strong>{ assessment.Month } · { assessment.Peak }</strong><span>{ assessment.Profile } · { assessment.Quality }</span></div><strong>{ assessment.Annual }</strong><small>{ assessment.Created }</small></article>
+					}
+				</div></div>
+			}
+		</div></details>
+	</section>
+}

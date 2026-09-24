@@ -9,7 +9,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
-type InfoField struct{ Label, Value string }
+type InfoField = pdf.LetterInfoField
 
 var statementPalette = pdf.Palette{Paper: [3]uint8{255, 255, 255}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{170, 146, 93}}
 
@@ -22,16 +22,16 @@ func letterDocument(run store.AnnualStatementRun, unit string) Document {
 		Title:     fmt.Sprintf("Jahresabrechnung %d — %s", run.PeriodYear, unit),
 		Sender:    nonempty(org, address, p.ContactName, strings.Join(nonempty(p.ContactPhone, p.ContactEmail), " · ")),
 		Info: []InfoField{
-			{"Liegenschaft", strings.Join(nonempty(p.EstateName, p.EstateAddress), "\n")},
-			{"Einheit / Top", unit},
-			{"Abrechnungsperiode", date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn)},
-			{"Abrechnungsdatum", statementDate(run).Format("02.01.2006")},
+			{Label: "Liegenschaft", Value: strings.Join(nonempty(p.EstateName, p.EstateAddress), "\n")},
+			{Label: "Einheit / Top", Value: unit},
+			{Label: "Abrechnungsperiode", Value: date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn)},
+			{Label: "Abrechnungsdatum", Value: statementDate(run).Format("02.01.2006")},
 		},
 		Contact:   strings.Join(nonempty(org, p.ContactPhone, p.ContactEmail), " · "),
 		Reference: fmt.Sprintf("Ref. %s · Revision %d · Erstellt: %s", run.ID, run.Revision, timestamp(run.CreatedAt)),
 	}
 	if basis := run.Input.Structure.Legal.Basis(); run.Input.Structure.Legal.Regime != "" {
-		d.Info = append(d.Info, InfoField{"Rechtsgrundlage", basis})
+		d.Info = append(d.Info, InfoField{Label: "Rechtsgrundlage", Value: basis})
 	}
 	// References label the existing inspection instructions; they do not change
 	// the stored place, period or contact (RIS WEG §34, MRG §21, HeizKG §19).

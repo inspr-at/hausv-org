@@ -31,6 +31,11 @@ type AnnualStatementPeriodUnitBasis struct {
 	UsableAreaRecorded     bool   `json:"usable_area_recorded"`
 	Persons                int    `json:"persons"`
 	PersonsRecorded        bool   `json:"persons_recorded"`
+	// VacantFrom and VacantTo are inclusive civil dates (YYYY-MM-DD). Both
+	// empty means the unit is not flagged vacant. MRG regimes bill that
+	// overlap to the landlord; WEG and Ausnahme ignore the range.
+	VacantFrom string `json:"vacant_from,omitempty"`
+	VacantTo   string `json:"vacant_to,omitempty"`
 }
 
 // AnnualStatementPeriodStructure is the non-monetary, independently editable
@@ -223,6 +228,9 @@ func (s *MemoryAnnualStatementPeriodStore) saveAnnualStatementPeriodCostType(ten
 	if err := validateAnnualStatementCostType(costType); err != nil {
 		return AnnualStatementCostType{}, err
 	}
+	if !ValidAnnualStatementVATPercent(costType.VATRatePercent) {
+		return AnnualStatementCostType{}, fmt.Errorf("invalid annual statement vat rate")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	structure, found := s.structures[tenant.ID][year]
@@ -367,10 +375,10 @@ func (s *SQLAnnualStatementPeriodStore) ensureAnnualStatementPeriodStructure(ten
 	}
 	for _, costType := range structure.CostTypes {
 		if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(
-			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 			tenant.ID, tenant.Slug, year, costType.Key, costType.Name, costType.Allocatable, costType.AllocationKey,
-			costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			annualStatementPeriodVATPercent(costType), costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
 			return err
 		}
 	}
@@ -389,7 +397,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 		return structure, false
 	}
 	structure.Legal = legal
-	rows, err := s.db.For(tenant).Query(`SELECT key,name,allocatable,allocation_key,updated_at,updated_by
+	rows, err := s.db.For(tenant).Query(`SELECT key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by
 		FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY name,key`, tenant.ID, year)
 	if err != nil {
 		return structure, false
@@ -397,7 +405,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 	for rows.Next() {
 		var item AnnualStatementCostType
 		var updatedAt string
-		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &updatedAt, &item.UpdatedBy); err != nil {
+		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &item.VATRatePercent, &updatedAt, &item.UpdatedBy); err != nil {
 			rows.Close()
 			return AnnualStatementPeriodStructure{}, false
 		}
@@ -407,7 +415,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 	if err := rows.Close(); err != nil || len(structure.CostTypes) == 0 {
 		return AnnualStatementPeriodStructure{}, false
 	}
-	basisRows, err := s.db.For(tenant).Query(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
+	basisRows, err := s.db.For(tenant).Query(`SELECT unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$1 AND period_year=$2 ORDER BY unit_id`, tenant.ID, year)
 	if err != nil {
 		return AnnualStatementPeriodStructure{}, false
@@ -415,7 +423,7 @@ func (s *SQLAnnualStatementPeriodStore) annualStatementPeriodStructure(tenant Te
 	defer basisRows.Close()
 	for basisRows.Next() {
 		var basis AnnualStatementPeriodUnitBasis
-		if err := basisRows.Scan(&basis.UnitID, &basis.MiteigentumsanteilPPM, &basis.UsableAreaM2Hundredths, &basis.UsableAreaRecorded, &basis.Persons, &basis.PersonsRecorded); err != nil {
+		if err := basisRows.Scan(&basis.UnitID, &basis.MiteigentumsanteilPPM, &basis.UsableAreaM2Hundredths, &basis.UsableAreaRecorded, &basis.Persons, &basis.PersonsRecorded, &basis.VacantFrom, &basis.VacantTo); err != nil {
 			return AnnualStatementPeriodStructure{}, false
 		}
 		structure.UnitBases = append(structure.UnitBases, basis)
@@ -451,14 +459,14 @@ func (s *SQLAnnualStatementPeriodStore) cloneAnnualStatementPeriodStructure(tena
 		return AnnualStatementPeriod{}, false, err
 	}
 	if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(
-		tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
-		SELECT tenant_id,tenant_slug,$1,key,name,allocatable,allocation_key,updated_at,updated_by
+		tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by)
+		SELECT tenant_id,tenant_slug,$1,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by
 		FROM annual_statement_period_cost_types WHERE tenant_id=$2 AND period_year=$3`, period.Year, tenant.ID, sourceYear); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
 	if _, err := tx.Exec(`INSERT INTO annual_statement_period_unit_bases(
-		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
-		SELECT tenant_id,tenant_slug,$1,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded
+		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to)
+		SELECT tenant_id,tenant_slug,$1,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to
 		FROM annual_statement_period_unit_bases WHERE tenant_id=$2 AND period_year=$3`, period.Year, tenant.ID, sourceYear); err != nil {
 		return AnnualStatementPeriod{}, false, err
 	}
@@ -496,10 +504,13 @@ func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriodCostType(tenant
 	if !structureExists {
 		return AnnualStatementCostType{}, fmt.Errorf("annual statement period structure not found")
 	}
+	if !ValidAnnualStatementVATPercent(costType.VATRatePercent) {
+		return AnnualStatementCostType{}, fmt.Errorf("invalid annual statement vat rate")
+	}
 	result, err := tx.Exec(`UPDATE annual_statement_period_cost_types
-		SET name=$1,allocatable=$2,allocation_key=$3,updated_at=$4,updated_by=$5
-		WHERE tenant_id=$6 AND period_year=$7 AND key=$8`, costType.Name, costType.Allocatable, costType.AllocationKey,
-		costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy, tenant.ID, year, costType.Key)
+		SET name=$1,allocatable=$2,allocation_key=$3,vat_rate_percent=$4,updated_at=$5,updated_by=$6
+		WHERE tenant_id=$7 AND period_year=$8 AND key=$9`, costType.Name, costType.Allocatable, costType.AllocationKey,
+		costType.VATRatePercent, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy, tenant.ID, year, costType.Key)
 	if err != nil {
 		return AnnualStatementCostType{}, err
 	}
@@ -509,9 +520,9 @@ func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriodCostType(tenant
 	}
 	if affected == 0 {
 		if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(
-			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, year, costType.Key, costType.Name,
-			costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tenant.ID, tenant.Slug, year, costType.Key, costType.Name,
+			costType.Allocatable, costType.AllocationKey, costType.VATRatePercent, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
 			return AnnualStatementCostType{}, err
 		}
 	}
@@ -658,9 +669,9 @@ func (s *SQLAnnualStatementPeriodStore) saveAnnualStatementPeriodWithStructure(t
 	}
 	for _, costType := range structure.CostTypes {
 		if _, err := tx.Exec(`INSERT INTO annual_statement_period_cost_types(
-			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, period.Year, costType.Key, costType.Name,
-			costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tenant.ID, tenant.Slug, period.Year, costType.Key, costType.Name,
+			costType.Allocatable, costType.AllocationKey, annualStatementPeriodVATPercent(costType), costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
 			return AnnualStatementPeriod{}, err
 		}
 	}
@@ -700,9 +711,9 @@ type annualStatementPeriodExecer interface {
 func insertAnnualStatementPeriodCostTypes(exec annualStatementPeriodExecer, tenant TenantRef, year int, costTypes []AnnualStatementCostType) error {
 	for _, costType := range costTypes {
 		if _, err := exec.Exec(`INSERT INTO annual_statement_period_cost_types(
-			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,updated_at,updated_by)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, year, costType.Key, costType.Name,
-			costType.Allocatable, costType.AllocationKey, costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
+			tenant_id,tenant_slug,period_year,key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tenant.ID, tenant.Slug, year, costType.Key, costType.Name,
+			costType.Allocatable, costType.AllocationKey, annualStatementPeriodVATPercent(costType), costType.UpdatedAt.Format(time.RFC3339Nano), costType.UpdatedBy); err != nil {
 			return err
 		}
 	}
@@ -711,9 +722,9 @@ func insertAnnualStatementPeriodCostTypes(exec annualStatementPeriodExecer, tena
 
 func insertAnnualStatementPeriodUnitBasis(exec annualStatementPeriodExecer, tenant TenantRef, year int, basis AnnualStatementPeriodUnitBasis) error {
 	_, err := exec.Exec(`INSERT INTO annual_statement_period_unit_bases(
-		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, tenant.ID, tenant.Slug, year, basis.UnitID, basis.MiteigentumsanteilPPM,
-		basis.UsableAreaM2Hundredths, basis.UsableAreaRecorded, basis.Persons, basis.PersonsRecorded)
+		tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded,vacant_from,vacant_to)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, tenant.ID, tenant.Slug, year, basis.UnitID, basis.MiteigentumsanteilPPM,
+		basis.UsableAreaM2Hundredths, basis.UsableAreaRecorded, basis.Persons, basis.PersonsRecorded, basis.VacantFrom, basis.VacantTo)
 	return err
 }
 
@@ -731,6 +742,7 @@ func normalizeAnnualStatementPeriodStructure(costTypes []AnnualStatementCostType
 		if err := validateAnnualStatementCostType(costType); err != nil {
 			return AnnualStatementPeriodStructure{}, err
 		}
+		costType.VATRatePercent = annualStatementPeriodVATPercent(costType)
 		structure.CostTypes = append(structure.CostTypes, costType)
 	}
 	sortAnnualStatementCostTypes(structure.CostTypes)
@@ -779,6 +791,11 @@ func normalizeAnnualStatementPeriodUnitBases(bases []AnnualStatementPeriodUnitBa
 		}
 		if !basis.PersonsRecorded {
 			basis.Persons = 0
+		}
+		var err error
+		basis.VacantFrom, basis.VacantTo, err = NormalizeAnnualStatementVacancy(basis.VacantFrom, basis.VacantTo)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, basis)
 	}

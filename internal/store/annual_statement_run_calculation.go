@@ -21,6 +21,9 @@ type AnnualStatementRunInput struct {
 	Documents    []AnnualStatementRunDocument                `json:"documents"`
 	Consumption  map[string]AnnualStatementConsumptionVector `json:"consumption"`
 	Evidence     []AnnualStatementConsumptionEvidence        `json:"evidence"`
+	// Reserve is the period's Rücklage bookings copied into the run.
+	// A nil slice means the run predates the snapshot and replays without it.
+	Reserve []AnnualStatementReserveEntry `json:"reserve,omitempty"`
 }
 
 type AnnualStatementRunUnitIdentity struct {
@@ -48,33 +51,63 @@ type AnnualStatementRunBlockedError struct{ Issues []AnnualStatementRunIssue }
 func (e *AnnualStatementRunBlockedError) Error() string { return "annual statement run blocked" }
 
 type AnnualStatementRunCost struct {
-	CostTypeKey   string `json:"cost_type_key"`
-	Name          string `json:"name"`
-	AllocationKey string `json:"allocation_key"`
-	SharePPM      int    `json:"share_ppm"`
-	AmountCents   int64  `json:"amount_cents"`
+	CostTypeKey    string `json:"cost_type_key"`
+	Name           string `json:"name"`
+	AllocationKey  string `json:"allocation_key"`
+	SharePPM       int    `json:"share_ppm"`
+	AmountCents    int64  `json:"amount_cents"`
+	NetCents       int64  `json:"net_cents,omitempty"`
+	VATCents       int64  `json:"vat_cents,omitempty"`
+	VATRatePercent int    `json:"vat_rate_percent,omitempty"`
 }
 
 type AnnualStatementRunUnit struct {
-	UnitID         string                   `json:"unit_id"`
-	Label          string                   `json:"label"`
-	Costs          []AnnualStatementRunCost `json:"costs"`
-	AllocatedCents int64                    `json:"allocated_cents"`
-	PrepaidCents   int64                    `json:"prepaid_cents"`
+	UnitID         string                    `json:"unit_id"`
+	Label          string                    `json:"label"`
+	Costs          []AnnualStatementRunCost  `json:"costs"`
+	VAT            []AnnualStatementVATGroup `json:"vat,omitempty"`
+	AllocatedCents int64                     `json:"allocated_cents"`
+	PrepaidCents   int64                     `json:"prepaid_cents"`
 	// Positive means an amount due; negative means a credit.
 	BalanceCents int64 `json:"balance_cents"`
 }
 
+// AnnualStatementVacancyLine is the landlord's bill for one unit's vacant
+// days. It is not an extra allocation: the cents are the vacant-day slice of
+// the share the unit already kept.
+type AnnualStatementVacancyLine struct {
+	UnitID      string                    `json:"unit_id"`
+	Label       string                    `json:"label"`
+	From        string                    `json:"from"`
+	To          string                    `json:"to"`
+	VacantDays  int                       `json:"vacant_days"`
+	PeriodDays  int                       `json:"period_days"`
+	Costs       []AnnualStatementRunCost  `json:"costs"`
+	VAT         []AnnualStatementVATGroup `json:"vat,omitempty"`
+	AmountCents int64                     `json:"amount_cents"`
+}
+
 type AnnualStatementRunResult struct {
 	Proposals     []AnnualStatementPrepaymentProposal `json:"proposals,omitempty"`
+	Vacancy       []AnnualStatementVacancyLine        `json:"vacancy,omitempty"`
+	VATGroups     []AnnualStatementVATGroup           `json:"vat_groups,omitempty"`
 	TotalCents    int64                               `json:"total_cents"`
 	ExcludedCents int64                               `json:"excluded_cents"`
 	Units         []AnnualStatementRunUnit            `json:"units"`
+	// Reserve is present only when this run snapshotted WEG Rücklage bookings.
+	Reserve *AnnualStatementReserveResult `json:"reserve,omitempty"`
 }
 
 // CalculateAnnualStatementRun never returns partial monetary results.
 func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
-	return calculateAnnualStatementRun(input, true)
+	result, issues := calculateAnnualStatementRun(input, true)
+	if len(issues) > 0 || !input.Structure.Legal.ShowVAT {
+		return result, issues
+	}
+	if code := applyAnnualStatementVAT(&result, input); code != "" {
+		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: code}}
+	}
+	return result, nil
 }
 
 // Replay dispatches by the stored algorithm version; version 1 retains its
@@ -85,6 +118,15 @@ func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult,
 		return calculateAnnualStatementRun(run.Input, false)
 	case 2:
 		return calculateAnnualStatementRun(run.Input, true)
+	case AnnualStatementCalculationVersionVAT:
+		result, issues := calculateAnnualStatementRun(run.Input, true)
+		if len(issues) > 0 || !run.Input.Structure.Legal.ShowVAT {
+			return result, issues
+		}
+		if code := applyAnnualStatementVAT(&result, run.Input); code != "" {
+			return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: code}}
+		}
+		return result, nil
 	default:
 		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: "calculation-version"}}
 	}
@@ -257,15 +299,24 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 		}
 
 		for i, share := range shares {
-			result.Units[i].Costs = append(result.Units[i].Costs, AnnualStatementRunCost{cost.Key, cost.Name, cost.AllocationKey, share.SharePPM, cents[i]})
+			result.Units[i].Costs = append(result.Units[i].Costs, AnnualStatementRunCost{CostTypeKey: cost.Key, Name: cost.Name, AllocationKey: cost.AllocationKey, SharePPM: share.SharePPM, AmountCents: cents[i]})
 			result.Units[i].AllocatedCents += cents[i]
 		}
 	}
+	applyAnnualStatementVacancy(&result, input)
 	for i := range result.Units {
 		result.Units[i].BalanceCents = result.Units[i].AllocatedCents - result.Units[i].PrepaidCents
 	}
 	if heatingSplit {
 		result.Proposals = AnnualStatementPrepaymentProposals(input, result)
+	}
+	// Rücklage does not change the stored cost algorithm. Historical runs have
+	// a nil booking slice and replay without this snapshot.
+	if input.Structure.Legal.Regime == "weg" && len(input.Reserve) > 0 {
+		reserve, ok := AnnualStatementReserveBalance(input.Reserve, input.Period, units)
+		if ok {
+			result.Reserve = &reserve
+		}
 	}
 	return result, nil
 }

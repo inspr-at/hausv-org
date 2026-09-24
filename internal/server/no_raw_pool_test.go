@@ -118,17 +118,17 @@ func TestServerReachesTheDatabaseOnlyThroughTheTenantSeam(t *testing.T) {
 		}
 	}
 
-	// A source-reading test that walks nothing passes forever. The four ledger
-	// statements are the floor: fewer means the walk stopped seeing calls, not
-	// that the package stopped making them.
+	// File and struct floors keep the source walk honest. HAUSV-783 moved the
+	// final handler statements into store services, so zero is now the required
+	// SQL statement count; any reintroduced statement is an offence.
 	if filesParsed < 30 {
 		t.Fatalf("only %d non-test files parsed in the server package; the walk is broken, not the package empty", filesParsed)
 	}
 	if structsSeen < 30 {
 		t.Fatalf("walk found %d structs; it is not reaching the declarations it claims to check", structsSeen)
 	}
-	if statementsSeen < 4 {
-		t.Fatalf("walk found %d statement calls; the four import-ledger statements alone should be visible to it", statementsSeen)
+	if statementsSeen != 0 {
+		t.Errorf("server owns %d SQL statements; use a store service", statementsSeen)
 	}
 
 	if len(fieldOffences) > 0 {

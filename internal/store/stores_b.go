@@ -55,6 +55,7 @@ const (
 	AuditActionAnnualReceiptAmount  = "annual-statement.receipt.update-amount"
 	AuditActionAnnualReceiptDelete  = "annual-statement.receipt.delete"
 	AuditActionAnnualPrepaymentSave = "annual-statement.prepayment.save"
+	AuditActionAnnualReserveAdd     = "annual-statement.reserve.add"
 	AuditActionAnnualRunApprove     = "annual-statement.run.approve"
 	AuditActionAnnualRunCreate      = "annual-statement.run.create"
 	AuditActionAnnualRunSend        = "annual-statement.send"
@@ -270,6 +271,8 @@ type UnitAllocationBasisUpdate struct {
 	UsableAreaRecorded     bool
 	Persons                int
 	PersonsRecorded        bool
+	VacantFrom             string
+	VacantTo               string
 }
 
 // CarryAllocationBases copies the statement bases from an existing unit onto
@@ -1195,6 +1198,10 @@ func normalizeUnitPartyUpdates(updates []UnitPartyUpdate) map[string]UnitPartyUp
 	return out
 }
 
+func (s *UnitStore) listTenantChecked(tenant TenantRef) ([]Unit, error) {
+	return s.listTenant(tenant), nil
+}
+
 func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
 	tenantSlug := tenant.Slug
 	if s == nil {
@@ -1215,6 +1222,10 @@ func (s *UnitStore) listTenant(tenant TenantRef) []Unit {
 
 func (s *UnitStore) unitCount(tenant TenantRef) int {
 	return len(s.listTenant(tenant))
+}
+
+func (s *UnitStore) unitCountChecked(tenant TenantRef) (int, error) {
+	return s.unitCount(tenant), nil
 }
 
 func (s *UnitStore) billableUnitWeight(tenant TenantRef) int {
@@ -2212,7 +2223,7 @@ func NormalizeAuditAction(raw string) string {
 		AuditActionIssueAIAuto, AuditActionIssueAIRestore, AuditActionIssueAICancel, AuditActionIntakePhoneNote, AuditActionIntakeAssign,
 		AuditActionVerwaltungSettings, AuditActionDemoReset, AuditActionTextbausteinChanged, AuditActionRolePreviewStart, AuditActionRolePreviewEnd,
 		AuditActionAnnualPeriodSave, AuditActionAnnualPartiesImport, AuditActionAnnualCostTypeSave, AuditActionAnnualBasesSave,
-		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualRunCreate, AuditActionAnnualRunApprove, AuditActionAnnualRunArchive, AuditActionAnnualRunSend:
+		AuditActionAnnualReceiptCreate, AuditActionAnnualReceiptAmount, AuditActionAnnualReceiptDelete, AuditActionAnnualPrepaymentSave, AuditActionAnnualReserveAdd, AuditActionAnnualRunCreate, AuditActionAnnualRunApprove, AuditActionAnnualRunArchive, AuditActionAnnualRunSend:
 		return raw
 	default:
 		return ""

@@ -1,0 +1,18 @@
+package web
+
+import "strconv"
+
+templ EnergyRoadmapSection(data EnergyPageData) {
+	<section class="energy-card energy-roadmap-card" id="fahrplan">
+		<header class="energy-card-head"><div><h2>Ihr Energie-Fahrplan</h2><p>Ein klarer Schritt nach dem anderen.</p></div></header>
+		<div class="energy-roadmap">
+			for _, step := range data.Roadmap {
+				<article class={ "energy-roadmap-step", templ.KV("current", step.Current) }><span class="energy-roadmap-number">{ strconv.Itoa(step.Number) }</span><span class="energy-roadmap-state">{ step.State }</span><strong>{ step.Title }</strong><p>{ step.Detail }</p>
+					if step.Action != "" {
+						<a href={ templ.SafeURL(step.URL) }>{ step.Action } →</a>
+					}
+				</article>
+			}
+		</div>
+	</section>
+}

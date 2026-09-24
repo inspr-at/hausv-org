@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
@@ -50,6 +51,25 @@ func (a *app) unitLeasePage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	if has {
 		page.Lease = leaseDetail(current)
+		if runs, ok := a.valorisationRepo(ac); ok {
+			list, err := runs.List()
+			if err != nil {
+				a.valorisationError(w, err)
+				return
+			}
+			for _, run := range list {
+				for _, item := range run.Items {
+					if item.LeaseID != current.ID {
+						continue
+					}
+					entry := web.LeaseValorisationView{URL: "/app/settings/valorisation#item-" + item.ID, Date: web.LeaseDate(run.EffectiveOn), Amount: web.LeaseMoney(item.NewCents), Due: web.LeaseDate(item.CollectableFrom), Status: valorisationHistoryStatus(run.Status)}
+					if item.LetterDocumentID != "" {
+						entry.PDFURL = "/app/settings/valorisation/runs/" + run.ID + "/items/" + item.ID + "/pdf"
+					}
+					page.Lease.Valorisation = append(page.Lease.Valorisation, entry)
+				}
+			}
+		}
 	}
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.LeasePage(page))
 }
@@ -364,6 +384,28 @@ func leaseFromForm(r *http.Request, unitID, actor string) (store.Lease, store.Le
 		FullChangeOnTrigger: true, TwoWay: checked(r, "two_way"), ClauseText: value("clause_text"),
 		ReviewStatus: value("review_status"), ValidFrom: lease.StartsOn,
 	}
+	if clause.ClauseType == store.ClauseStaffel {
+		dates, kinds, values := r.Form["staffel_date"], r.Form["staffel_kind"], r.Form["staffel_value"]
+		if len(dates) == 0 || len(dates) != len(kinds) || len(dates) != len(values) || len(dates) > indexation.MaxStaffelSteps {
+			return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+		}
+		for i, date := range dates {
+			v := strings.TrimSpace(values[i])
+			if kinds[i] == "percent" {
+				v = strings.TrimSpace(strings.TrimSuffix(v, "%")) + "%"
+			} else if kinds[i] != "amount" || strings.Contains(v, "%") {
+				return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+			}
+			step, err := store.ParseStaffelStep(date, v)
+			if err != nil || date <= clause.ValidFrom {
+				return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+			}
+			clause.StaffelSteps = append(clause.StaffelSteps, step)
+		}
+		if err := indexation.ValidateStaffelSteps(clause.StaffelSteps); err != nil {
+			return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
+		}
+	}
 	return lease, party, component, clause, addComponent, nil
 }
 
@@ -413,7 +455,7 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 	detail := web.LeaseDetail{
 		ID: lease.ID, Status: leaseStatusLabel(lease.Status), Kind: leaseKindLabel(lease.LeaseKind),
 		Use: useKindLabel(lease.UseKind), MRG: mrgLabel(lease.MRGScope), Regime: regimeLabel(lease.RentRegime),
-		Concluded: web.LeaseDate(lease.ConcludedOn), Starts: web.LeaseDate(lease.StartsOn), Ends: web.LeaseDate(lease.EndsOn),
+		Concluded: web.LeaseDate(lease.ConcludedOn), Starts: web.LeaseDate(lease.StartsOn), Ends: leaseEndLabel(lease.EndsOn),
 		Zinstermin: strconv.Itoa(lease.ZinsterminDay) + ". des Monats", Notes: lease.Notes,
 		MieWeG: yesNo(class.MieWeG), SpecialCap: yesNo(class.SpecialCap),
 		MieWeGReason: class.MieWeGReason, CapReason: class.CapReason,
@@ -421,7 +463,7 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 	for _, party := range lease.Parties {
 		detail.Parties = append(detail.Parties, web.LeasePartyView{
 			Name: party.Name, Email: party.Email, Address: party.Address, Role: partyRoleLabel(party.Role),
-			From: web.LeaseDate(party.ValidFrom), To: web.LeaseDate(party.ValidTo),
+			From: web.LeaseDate(party.ValidFrom), To: leaseEndLabel(party.ValidTo),
 		})
 	}
 	today := time.Now().UTC().Format("2006-01-02")
@@ -432,8 +474,11 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 		detail.Components = append(detail.Components, web.LeaseMoneyView{
 			Kind: componentKindLabel(component.Kind), From: web.LeaseDate(component.ValidFrom),
 			Net: web.LeaseMoney(component.NetCents), VAT: web.LeaseMoney(gross - component.NetCents),
-			Gross: web.LeaseMoney(gross), Origin: originLabel(component.Origin),
+			Gross: web.LeaseMoney(gross), Origin: readingOrigin(component.Origin),
 		})
+		if readingOrigin(component.Origin) != "" {
+			detail.ShowOrigin = true
+		}
 	}
 	for _, component := range currentMoney {
 		gross := web.LeaseGrossCents(component.NetCents, component.VATRateBP)
@@ -455,6 +500,16 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 			Line:      web.LeaseIndexLine(clause.Series, clause.BasePeriod, clause.BaseValue),
 			Threshold: thresholdLabel(clause), Text: clause.ClauseText,
 			Review: reviewLabel(clause.ReviewStatus), ReviewClass: reviewClass(clause.ReviewStatus), Note: clause.ReviewNote,
+		}
+		if clause.ClauseType == store.ClauseStaffel {
+			detail.Clause.Line, detail.Clause.Threshold = "", ""
+			for _, step := range clause.StaffelSteps {
+				value := "+" + strings.ReplaceAll(step.Percent, ".", ",") + " % auf den vorigen Vertragsbetrag"
+				if step.NetCents != nil {
+					value = web.LeaseMoney(*step.NetCents) + " HMZ netto"
+				}
+				detail.Clause.Staffel = append(detail.Clause.Staffel, "Ab "+web.LeaseDate(step.EffectiveOn)+": "+value)
+			}
 		}
 		if clause.State != nil && clause.State.ContractBasePeriod != "" {
 			detail.Anchor = "Ausgangswert " + strings.ReplaceAll(clause.State.ContractValue, ".", ",") + " €, Index " + web.LeaseMonth(clause.State.ContractBasePeriod) + " = " + strings.ReplaceAll(clause.State.ContractBaseValue, ".", ",") + "."
@@ -517,6 +572,13 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 		form.BaseValue = strings.ReplaceAll(clause.BaseValue, ".", ",")
 		form.Threshold = strings.ReplaceAll(clause.ThresholdValue, ".", ",")
 		form.ClauseText = clause.ClauseText
+		for _, step := range clause.StaffelSteps {
+			row := web.LeaseStaffelRow{Date: step.EffectiveOn, Value: strings.ReplaceAll(step.Percent, ".", ","), Percent: step.Percent != ""}
+			if step.NetCents != nil {
+				row.Value = strings.TrimSuffix(web.LeaseMoney(*step.NetCents), " €")
+			}
+			form.Staffel = append(form.Staffel, row)
+		}
 		form.TwoWay = clause.TwoWay
 		form.Inclusive = clause.ThresholdInclusive
 		form.ClauseTypes = leaseOptions(clause.ClauseType, "mieweg_model", "MieWeG-Modell", "vpi_threshold", "VPI mit Schwelle", "vpi_periodic", "VPI periodisch", "staffel", "Staffel", "none", "Keine")
@@ -553,6 +615,8 @@ func leaseIssueLabels(codes []string) []string {
 			out = append(out, "Einheit ist nicht vorhanden")
 		case "invalid_amount":
 			out = append(out, "Betrag ist ungültig")
+		case "invalid_staffel":
+			out = append(out, "Staffelstufen prüfen: eindeutige aufsteigende Daten und je ein Betrag oder Prozentsatz erforderlich.")
 		case "invalid_lease":
 			out = append(out, "Vertragsdaten sind ungültig")
 		case "overlap":
@@ -674,10 +738,30 @@ func vatLabel(bp int) string {
 }
 
 func originLabel(raw string) string {
+	if strings.HasPrefix(raw, "valorisation_item:") {
+		return "Wertsicherung"
+	}
 	if raw == store.OriginImport {
 		return "Import"
 	}
 	return "manuell"
+}
+
+// readingOrigin hides the internal import mark on the lease reading view.
+// Manual and valorisation origins stay visible. An empty end date reads as
+// an open-ended contract, not as a missing database value.
+func readingOrigin(raw string) string {
+	if raw == store.OriginImport {
+		return ""
+	}
+	return originLabel(raw)
+}
+
+func leaseEndLabel(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return "unbefristet"
+	}
+	return web.LeaseDate(raw)
 }
 
 func clauseTypeLabel(raw string) string {
@@ -789,4 +873,18 @@ func thresholdLabel(clause store.IndexClause) string {
 		return text + ", inklusive"
 	}
 	return text
+}
+
+func valorisationHistoryStatus(status string) string {
+	switch status {
+	case "draft":
+		return "Entwurf"
+	case "approved":
+		return "Freigegeben"
+	case "sent":
+		return "Versandt"
+	case "cancelled":
+		return "Storniert"
+	}
+	return status
 }

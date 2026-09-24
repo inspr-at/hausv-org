@@ -16,6 +16,7 @@ const (
 const TimingSource = "https://www.wko.at/wirtschaftsrecht/wertsicherung-miet-und-pachtvertraege"
 
 type TimingInput struct {
+	ContractSchedule       bool // Fixed dates have no index publication prerequisite.
 	TriggerMonth           Month
 	FinalPublishedOn       time.Time // Actual publication date, not an estimated t+45.
 	Mode                   TimingMode
@@ -42,7 +43,7 @@ type TimingResult struct {
 // never silently moved forward to make an invalid demand appear valid.
 // This helper does not decide MieWeG applicability or apply an April shift.
 func Timing(in TimingInput) (TimingResult, error) {
-	if !in.TriggerMonth.Valid() || in.FinalPublishedOn.IsZero() || monthOf(in.FinalPublishedOn) <= in.TriggerMonth {
+	if !in.ContractSchedule && (!in.TriggerMonth.Valid() || in.FinalPublishedOn.IsZero() || monthOf(in.FinalPublishedOn) <= in.TriggerMonth) {
 		return TimingResult{}, fmt.Errorf("trigger month and subsequent final publication date required")
 	}
 	day := in.DueDay
@@ -53,6 +54,12 @@ func Timing(in TimingInput) (TimingResult, error) {
 		return TimingResult{}, fmt.Errorf("invalid rent due day")
 	}
 	final := civilDate(in.FinalPublishedOn)
+	if in.ContractSchedule {
+		if in.ContractualEffectiveOn.IsZero() || in.Mode == CautiousTiming {
+			return TimingResult{}, fmt.Errorf("fixed schedule requires a contractual date and contractual or MieWeG timing")
+		}
+		final = civilDate(in.ContractualEffectiveOn)
+	}
 	var effective time.Time
 	switch in.Mode {
 	case CautiousTiming:

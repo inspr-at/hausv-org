@@ -2,8 +2,6 @@ cmd/hausv-org/migrate_data.go	runMigrateData	literal	data mover: copies every te
 internal/dbtest/dbtest.go	MaintenanceView	literal	test fixtures and assertions read and write outside every tenant lane
 internal/energy/storage.go	(*SQLStore).PurgeExpired	literal	retention sweep over every tenant's expired energy imports, intervals and assessments: the boot path that calls it has no tenant in scope
 internal/energy/storage.go	(*SQLStore).registry	const:tenantRegistryReason	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
-internal/server/camt_import.go	(*app).recordPaymentImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
-internal/server/ebinterface_import.go	(*app).recordEBInterfaceImportLedger	const:store.HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/activity_sql.go	(*SQLActivityStore).Get	literal	login_activity has no tenant_id: read on sign-in, before a tenant is chosen
 internal/store/activity_sql.go	(*SQLActivityStore).ImportActivity	literal	boot import replay into login_activity, runs before the first request
 internal/store/activity_sql.go	(*SQLActivityStore).Touch	literal	login_activity has no tenant_id: one row per person, shared by every house
@@ -42,6 +40,7 @@ internal/store/identity_sql.go	(*SQLIdentityStore).SetMembership	const:HealOrpha
 internal/store/identity_sql.go	(*SQLIdentityStore).UpsertPerson	literal	persons has no tenant_id: minting or updating an identity is a platform-level act
 internal/store/identity_sql.go	(*SQLIdentityStore).membershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
 internal/store/identity_sql.go	(*SQLIdentityStore).removeMembershipBySlug	literal	slug-to-tenant_id resolution reads the tenant registry, before there is an identity to scope to
+internal/store/index_reference.go	(*IndexReferenceStore).Apply	literal	VPI system importer writes global Statistics Austria reference data and revision audit
 internal/store/issue_sql.go	(*SQLIssueStore).ImportIssues	literal	boot import replay of the JSON issue snapshot: it spans every tenant and runs before the first request
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).Get	literal	notification_prefs has no tenant_id: a person has one mail preference set, not one per house
 internal/store/notification_pref_sql.go	(*SQLNotificationPrefStore).ImportPrefs	literal	boot import replay of the JSON preference snapshot into a table with no tenant_id, before the first request
@@ -66,6 +65,5 @@ internal/store/telegram_sql.go	(*SQLTelegramStore).Offset	literal	telegram_state
 internal/store/telegram_sql.go	(*SQLTelegramStore).SetOffset	literal	telegram_state has no tenant_id: the bot poll offset is one cursor for the whole process
 internal/store/telegram_sql.go	(*SQLTelegramStore).Unlink	literal	telegram_links has no tenant_id: unlinking is a chat-level act, not a house-level one
 internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).ImportStatuses	literal	boot import replay of the JSON payment-status snapshot: it spans every tenant and runs before the first request
-internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).set	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/unit_sql.go	(*SQLUnitStore).ImportUnits	literal	boot import replay of the JSON unit snapshot: it spans every tenant and runs before the first request
 internal/store/vote_sql.go	(*SQLVoteStore).ImportBallots	literal	boot import replay of the JSON ballot snapshot: it spans every tenant and runs before the first request

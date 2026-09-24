@@ -62,7 +62,10 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	if run.ID != "" {
 		target += "&run=" + url.QueryEscape(run.ID)
 	}
-	http.Redirect(w, r, target+"#abrechnungsergebnis", http.StatusSeeOther)
+	if status != "blocked" {
+		target += "#abrechnungsergebnis"
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
 func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -135,6 +138,10 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		if errors.As(err, &blocked) {
 			for _, issue := range blocked.Issues {
 				out.Issues = append(out.Issues, annualStatementRunIssueMessage(issue, input))
+				out.IssueTargets = append(out.IssueTargets, annualStatementRunIssueTarget(issue.Code))
+				if out.BlockingSection == "" {
+					out.BlockingSection = annualStatementRunIssueTarget(issue.Code)
+				}
 			}
 		} else {
 			out.Issues = append(out.Issues, "Die Abrechnungsgrundlagen konnten nicht vollständig gelesen werden. Bitte erneut versuchen.")
@@ -235,6 +242,11 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 			}
 			out.Units = append(out.Units, row)
 		}
+		for _, line := range run.Result.Vacancy {
+			out.Vacancy = append(out.Vacancy, web.AnnualStatementRunUnitView{
+				Label: line.Label, Allocated: formatAnnualStatementMoney(line.AmountCents), Prepaid: formatAnnualStatementMoney(0), Balance: formatAnnualStatementBalance(-line.AmountCents),
+			})
+		}
 	}
 	return out
 }
@@ -251,6 +263,33 @@ func annualStatementArchiveDocuments(repository store.DocumentRepository, run st
 		}
 	}
 	return out
+}
+
+func annualStatementRunIssueTarget(code string) string {
+	switch code {
+	case "heating-area":
+		return "heizflaechen"
+	case "heating-prepayment":
+		return "heizakontos"
+	case "heating-share":
+		return "rechtsgrundlage"
+	case "period":
+		return "perioden"
+	case "units", "unit-data":
+		return "parteien"
+	case "cost-types", "key", "heating-key":
+		return "kostenarten"
+	case "structure", "basis", "nutzwert-total":
+		return "verteilerschluessel"
+	case "missing-receipt", "receipt", "document", "heating-category":
+		return "belege"
+	case "prepayment":
+		return "vorauszahlungen"
+	case "consumption", "measurement-rule":
+		return "verbrauchswerte"
+	default:
+		return ""
+	}
 }
 
 func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input store.AnnualStatementRunInput) string {
@@ -284,6 +323,8 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		return "Abrechnungsperiode fehlt oder ist ungültig. Bitte eine gespeicherte Periode wählen."
 	case "units":
 		return "Die Einheiten sind unvollständig oder nicht eindeutig. Bitte die Einheitenzuordnung prüfen."
+	case "unit-data":
+		return unitDataUnreadableNotice
 	case "structure":
 		return "Die Einheiten und die Verteilerbasis des Abrechnungsjahres stimmen nicht überein. Bitte die Periodenbasis für alle Einheiten speichern."
 	case "cost-types":

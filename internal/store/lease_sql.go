@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -426,8 +427,16 @@ func insertComponent(tx *sql.Tx, tenant TenantRef, component RentComponent) erro
 }
 
 func upsertClause(tx *sql.Tx, tenant TenantRef, clause IndexClause) error {
-	result, err := tx.Exec(`UPDATE index_clauses SET lease_id=$1,component_kind=$2,clause_type=$3,series=$4,base_period=$5,base_value=$6,threshold_kind=$7,threshold_value=$8,threshold_inclusive=$9,full_change_on_trigger=$10,two_way=$11,pct_rounding=$12,periodic_month=$13,reference_month_offset=$14,clause_text=$15,review_status=$16,review_note=$17,valid_from=$18 WHERE tenant_id=$19 AND id=$20`,
-		clause.LeaseID, clause.ComponentKind, clause.ClauseType, clause.Series, clause.BasePeriod, clause.BaseValue, nullString(clause.ThresholdKind), nullString(clause.ThresholdValue), clause.ThresholdInclusive, clause.FullChangeOnTrigger, clause.TwoWay, clause.PctRounding, nullInt(clause.PeriodicMonth), nullOffset(clause.ReferenceMonthOffset), clause.ClauseText, clause.ReviewStatus, clause.ReviewNote, clause.ValidFrom, tenant.ID, clause.ID)
+	steps := "[]"
+	if len(clause.StaffelSteps) > 0 {
+		raw, err := json.Marshal(clause.StaffelSteps)
+		if err != nil {
+			return err
+		}
+		steps = string(raw)
+	}
+	result, err := tx.Exec(`UPDATE index_clauses SET lease_id=$1,component_kind=$2,clause_type=$3,series=$4,base_period=$5,base_value=$6,threshold_kind=$7,threshold_value=$8,threshold_inclusive=$9,full_change_on_trigger=$10,two_way=$11,pct_rounding=$12,periodic_month=$13,reference_month_offset=$14,clause_text=$15,review_status=$16,review_note=$17,valid_from=$18,staffel_steps=$21 WHERE tenant_id=$19 AND id=$20`,
+		clause.LeaseID, clause.ComponentKind, clause.ClauseType, clause.Series, clause.BasePeriod, clause.BaseValue, nullString(clause.ThresholdKind), nullString(clause.ThresholdValue), clause.ThresholdInclusive, clause.FullChangeOnTrigger, clause.TwoWay, clause.PctRounding, nullInt(clause.PeriodicMonth), nullOffset(clause.ReferenceMonthOffset), clause.ClauseText, clause.ReviewStatus, clause.ReviewNote, clause.ValidFrom, tenant.ID, clause.ID, steps)
 	if err != nil {
 		return err
 	}
@@ -436,8 +445,8 @@ func upsertClause(tx *sql.Tx, tenant TenantRef, clause IndexClause) error {
 		return err
 	}
 	if affected == 0 {
-		if _, err := tx.Exec(`INSERT INTO index_clauses(id,lease_id,tenant_slug,tenant_id,component_kind,clause_type,series,base_period,base_value,threshold_kind,threshold_value,threshold_inclusive,full_change_on_trigger,two_way,pct_rounding,periodic_month,reference_month_offset,clause_text,review_status,review_note,valid_from) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
-			clause.ID, clause.LeaseID, tenant.Slug, tenant.ID, clause.ComponentKind, clause.ClauseType, clause.Series, clause.BasePeriod, clause.BaseValue, nullString(clause.ThresholdKind), nullString(clause.ThresholdValue), clause.ThresholdInclusive, clause.FullChangeOnTrigger, clause.TwoWay, clause.PctRounding, nullInt(clause.PeriodicMonth), nullOffset(clause.ReferenceMonthOffset), clause.ClauseText, clause.ReviewStatus, clause.ReviewNote, clause.ValidFrom); err != nil {
+		if _, err := tx.Exec(`INSERT INTO index_clauses(id,lease_id,tenant_slug,tenant_id,component_kind,clause_type,series,base_period,base_value,threshold_kind,threshold_value,threshold_inclusive,full_change_on_trigger,two_way,pct_rounding,periodic_month,reference_month_offset,clause_text,review_status,review_note,valid_from,staffel_steps) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+			clause.ID, clause.LeaseID, tenant.Slug, tenant.ID, clause.ComponentKind, clause.ClauseType, clause.Series, clause.BasePeriod, clause.BaseValue, nullString(clause.ThresholdKind), nullString(clause.ThresholdValue), clause.ThresholdInclusive, clause.FullChangeOnTrigger, clause.TwoWay, clause.PctRounding, nullInt(clause.PeriodicMonth), nullOffset(clause.ReferenceMonthOffset), clause.ClauseText, clause.ReviewStatus, clause.ReviewNote, clause.ValidFrom, steps); err != nil {
 			return err
 		}
 	}
@@ -574,7 +583,7 @@ func loadComponents(tx *sql.Tx, tenant TenantRef) (map[string][]RentComponent, e
 }
 
 func loadClauses(tx *sql.Tx, tenant TenantRef) (map[string][]IndexClause, error) {
-	rows, err := tx.Query(`SELECT id,lease_id,component_kind,clause_type,series,base_period,base_value,COALESCE(threshold_kind,''),COALESCE(threshold_value,''),threshold_inclusive,full_change_on_trigger,two_way,pct_rounding,periodic_month,reference_month_offset,clause_text,review_status,review_note,valid_from FROM index_clauses WHERE tenant_id=$1 ORDER BY valid_from,id`, tenant.ID)
+	rows, err := tx.Query(`SELECT id,lease_id,component_kind,clause_type,series,base_period,base_value,COALESCE(threshold_kind,''),COALESCE(threshold_value,''),threshold_inclusive,full_change_on_trigger,two_way,pct_rounding,periodic_month,reference_month_offset,clause_text,review_status,review_note,valid_from,staffel_steps FROM index_clauses WHERE tenant_id=$1 ORDER BY valid_from,id`, tenant.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -582,9 +591,13 @@ func loadClauses(tx *sql.Tx, tenant TenantRef) (map[string][]IndexClause, error)
 	out := map[string][]IndexClause{}
 	for rows.Next() {
 		var clause IndexClause
+		var steps string
 		var month, offset sql.NullInt64
-		if err := rows.Scan(&clause.ID, &clause.LeaseID, &clause.ComponentKind, &clause.ClauseType, &clause.Series, &clause.BasePeriod, &clause.BaseValue, &clause.ThresholdKind, &clause.ThresholdValue, &clause.ThresholdInclusive, &clause.FullChangeOnTrigger, &clause.TwoWay, &clause.PctRounding, &month, &offset, &clause.ClauseText, &clause.ReviewStatus, &clause.ReviewNote, &clause.ValidFrom); err != nil {
+		if err := rows.Scan(&clause.ID, &clause.LeaseID, &clause.ComponentKind, &clause.ClauseType, &clause.Series, &clause.BasePeriod, &clause.BaseValue, &clause.ThresholdKind, &clause.ThresholdValue, &clause.ThresholdInclusive, &clause.FullChangeOnTrigger, &clause.TwoWay, &clause.PctRounding, &month, &offset, &clause.ClauseText, &clause.ReviewStatus, &clause.ReviewNote, &clause.ValidFrom, &steps); err != nil {
 			return nil, err
+		}
+		if err := json.Unmarshal([]byte(steps), &clause.StaffelSteps); err != nil {
+			return nil, fmt.Errorf("Staffeldaten: %w", err)
 		}
 		if month.Valid {
 			clause.PeriodicMonth = int(month.Int64)

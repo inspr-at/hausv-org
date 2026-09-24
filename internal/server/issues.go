@@ -203,7 +203,11 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 		}
 	}
 	msg, msgOK := issueMessage(r.URL.Query().Get("issue"))
-	openIssueCreate := canCreateIssue && (!msgOK && msg != "" || r.URL.Query().Get("new") == "1" || len(issues) == 0)
+	// A normal visit stays on the house list. The wizard opens for a deliberate
+	// ?new=1 entry, after a failed submit, or when the house itself has no cases.
+	// An empty authored list is not an empty house: managers still see everyone
+	// else's filings above the form.
+	openIssueCreate := canCreateIssue && (!msgOK && msg != "" || r.URL.Query().Get("new") == "1" || totalIssueCount == 0)
 	calendarFeedURL := ""
 	if token, err := a.calendarFeedTokenForActor(ac); err == nil {
 		calendarFeedURL = a.publicBaseURL(r, tenant) + "/calendar/" + url.PathEscape(token) + ".ics"

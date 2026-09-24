@@ -10,6 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 func TestCAMT053PortalPreviewApplyAndIdempotency(t *testing.T) {
@@ -156,7 +159,7 @@ func TestCAMT053ImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	}
 	report := unitPaymentImportReport{Assigned: 2, Changed: 1, Unclear: 1}
 
-	if err := a.recordPaymentImportLedger(refs["demo"], "manager@example.com", preview, report); err != nil {
+	if err := recordTestImportLedger(a, refs["demo"], string(integrations.FormatCAMT053), preview.FileDigest, preview.SourceVersion, store.ImportCounts{Assigned: report.Assigned, Changed: report.Changed, Unclear: report.Unclear}); err != nil {
 		t.Fatalf("record ledger: %v", err)
 	}
 	if !a.paymentImportAlreadyApplied(refs["demo"], preview.FileDigest) {
@@ -165,7 +168,7 @@ func TestCAMT053ImportLedgerIsDurableAndTenantBound(t *testing.T) {
 	if a.paymentImportAlreadyApplied(refs["other-house"], preview.FileDigest) {
 		t.Fatal("digest leaked across tenant boundary")
 	}
-	if err := a.recordPaymentImportLedger(refs["demo"], "manager@example.com", preview, report); err != nil {
+	if err := recordTestImportLedger(a, refs["demo"], string(integrations.FormatCAMT053), preview.FileDigest, preview.SourceVersion, store.ImportCounts{Assigned: report.Assigned, Changed: report.Changed, Unclear: report.Unclear}); err != nil {
 		t.Fatalf("repeat record ledger: %v", err)
 	}
 	var rows int
