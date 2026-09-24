@@ -97,13 +97,13 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 			<section class="settings-card settings-balance"><h2>Bilanz seit Start</h2><p>„Ohne Änderung freigegeben“ zeigt den Anteil der freigegebenen KI-Vorschläge, deren Text unverändert übernommen wurde.</p><div class="settings-counters"><div><strong>{ fmt.Sprint(data.Approved) }</strong><span>freigegeben</span></div><div><strong>{ fmt.Sprint(data.Edited) }</strong><span>geändert</span></div><div><strong>{ fmt.Sprint(data.Rejected) }</strong><span>verworfen</span></div><div><strong>{ fmt.Sprint(data.Auto) }</strong><span>automatisch</span></div><div><strong>{ fmt.Sprintf("%d %%", data.UnchangedShare) }</strong><span>ohne Änderung freigegeben</span></div></div></section>
 			<section class="settings-card"><h2>KI-Anbieter</h2>
 				if data.AIConfigured {
-					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · { data.AIModel } · Zeitlimit { data.AITimeout }</p>
+					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · Zeitlimit { data.AITimeout }</p>
 				} else {
-					<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein KI-Anbieter konfiguriert</strong></p>
+					<p class="active-provider" data-provider-state="nicht eingerichtet"><strong>KI-Vorschläge sind in dieser Umgebung nicht eingerichtet</strong></p>
 				}
 				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
-				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer = Umgebung"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer = Umgebung"/></label></div>
-				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer = Umgebung.</p>
+				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer lassen = Standard der Plattform"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer lassen = Standard der Plattform"/></label></div>
+				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer lassen = Standard der Plattform.</p>
 			</section>
 			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
 		</form>
