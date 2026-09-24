@@ -34,7 +34,6 @@ var writersCoveredElsewhere = map[string]string{
 	"energy_measures":           "internal/energy, TestEveryEnergyWriteRecordsATenantIdentity",
 	"energy_tariff_assessments": "internal/energy, TestEveryEnergyWriteRecordsATenantIdentity",
 	"home_profiles":             "internal/energy owns this table's writer",
-	"integration_imports":       "internal/server's import ledger, TestImportLedgerHealsRowsLeftWithoutAnIdentity",
 }
 
 // TestWritersCoveredElsewhereAreNotWrittenHere is the closure check that makes
@@ -146,6 +145,10 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	tenant := testTenantRef("demo")
 	now := time.Now().UTC()
 	fileDir := t.TempDir()
+
+	if _, err := NewImportLedger(lanes).Apply(t.Context(), tenant, ImportKey{Format: "camt.053", AppliedBy: "a@example.com"}, strings.Repeat("a", 64), func(*ImportTx) error { return nil }); err != nil {
+		t.Fatalf("integration import: %v", err)
+	}
 
 	announcements, _ := BindAnnouncementRepository(NewSQLAnnouncementStore(lanes), tenant)
 	if _, err := announcements.Create(Announcement{Title: "A", Body: "b"}); err != nil {

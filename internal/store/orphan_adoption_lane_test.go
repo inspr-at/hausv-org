@@ -182,6 +182,8 @@ var orphanAdoptionExemptions = map[string]orphanAdoptionExemption{
 	"issues":  {allowed: []laneClass{laneFor}, why: randomIDReason},
 	"parking": {allowed: []laneClass{laneFor}, why: "PRIMARY KEY is tenant_slug and tenant_id is NOT NULL from the first parking migration; there is no orphan generation, so For(tenant) is the live write lane."},
 
+	"unit_payment_status": {allowed: []laneClass{laneFor}, why: "PostgreSQL migration 0006 makes tenant_id NOT NULL; SQLite has no RLS and boot backfills legacy rows. HAUSV-783 payment batches and manual writes use the tenant lane."},
+
 	"home_portals": {allowed: []laneClass{laneUnscopedOther}, why: "Activate is the moment the tenant identity is MINTED: there is no TenantRef " +
 		"before it runs, so its transaction is on the maintenance lane for a structural reason that outlives the flip. The upsert still " +
 		"coalesces tenant_id, so an orphan portal row is adopted — on the one lane that can reach it."},

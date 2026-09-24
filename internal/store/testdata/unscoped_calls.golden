@@ -79,6 +79,5 @@ internal/store/telegram_sql.go	(*SQLTelegramStore).Offset	literal	telegram_state
 internal/store/telegram_sql.go	(*SQLTelegramStore).SetOffset	literal	telegram_state has no tenant_id: the bot poll offset is one cursor for the whole process
 internal/store/telegram_sql.go	(*SQLTelegramStore).Unlink	literal	telegram_links has no tenant_id: unlinking is a chat-level act, not a house-level one
 internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).ImportStatuses	literal	boot import replay of the JSON payment-status snapshot: it spans every tenant and runs before the first request
-internal/store/unit_payment_status_sql.go	(*SQLUnitPaymentStatusStore).set	const:HealOrphanReason	adopts a row the previous release left with a NULL tenant_id, which migration 0003 makes unreachable from every tenant lane; reverts to For(tenant) when tenant_id goes NOT NULL
 internal/store/unit_sql.go	(*SQLUnitStore).ImportUnits	literal	boot import replay of the JSON unit snapshot: it spans every tenant and runs before the first request
 internal/store/vote_sql.go	(*SQLVoteStore).ImportBallots	literal	boot import replay of the JSON ballot snapshot: it spans every tenant and runs before the first request

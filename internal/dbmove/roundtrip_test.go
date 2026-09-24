@@ -421,11 +421,11 @@ func seedFull(t *testing.T) *source {
 		}
 		must(t, slug+" parking", store.NewSQLParkingStore(src.lanes).SetGridFee(slug, 0.19))
 
-		// integration_imports is written by internal/server's import ledger with
-		// this exact statement shape.
-		if _, err := src.lanes.Unscoped(store.HealOrphanReason).Exec(
-			`INSERT INTO integration_imports(tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by, assigned, changed, unclear, rejected)
-			 VALUES($1, $2, 'camt.053', $3, '2019', $4, 'verwalter@example.com', 12, 3, 1, 0)`,
+		// Non-default completion fields prove dbmove preserves pending imports
+		// and their recovery identity, not merely the pre-0060 column set.
+		if _, err := src.lanes.For(tenant).Exec(
+			`INSERT INTO integration_imports(tenant_id, tenant_slug, format, file_digest, source_version, applied_at, applied_by, assigned, changed, unclear, rejected, status, blob_key, document_data)
+			 VALUES($1, $2, 'ebinterface', $3, '6.0', $4, 'verwalter@example.com', 0, 0, 0, 0, 'pending', 'import-fixture.xml', '{"id":"import-fixture","title":"E-Rechnung"}')`,
 			tenant.ID, slug, "sha256:"+slug+"-digest", now.Format(time.RFC3339Nano)); err != nil {
 			t.Fatalf("%s integration import: %v", slug, err)
 		}
