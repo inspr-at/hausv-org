@@ -59,6 +59,21 @@ func valorisationDeliveryStatus(status string) string {
 	}
 	return status
 }
+
+// valorisationNewIsPrimary keeps one filled action per view: "Neuer Lauf" is the
+// primary only while no preview, new-run form or open run carries its own primary.
+func valorisationNewIsPrimary(data ValorisationPageData) bool {
+	if data.New || len(data.Previews) > 0 {
+		return false
+	}
+	for _, run := range data.Runs {
+		if run.Run.Status == "draft" || run.Run.Status == "approved" {
+			return false
+		}
+	}
+	return true
+}
+
 func valorisationStatus(status string) string {
 	switch status {
 	case "draft":
@@ -80,71 +95,36 @@ templ ValorisationPage(data ValorisationPageData) {
 templ ValorisationBody(data ValorisationPageData) {
 	<main class="settings-main valorisation-page">
 		<style>
+			/* HAUSV-765 r3: calm run cards, aligned money, status chips, 44 px targets. */
 			.valorisation-page {
 				display: grid;
-				gap: 24px;
+				gap: var(--space-5);
 				min-width: 0;
 			}
 			.valorisation-page h1,
 			.valorisation-page h2,
 			.valorisation-page h3 {
 				font-family: var(--font-serif);
-				margin: 0 0 12px;
+				font-weight: 600;
+				margin: 0;
 			}
-			.valorisation-page .vr-card {
-				padding: 24px;
-				border: 1px solid var(--line);
-				border-radius: var(--radius-md);
-				background: var(--panel);
-				min-width: 0;
+			.valorisation-page h2 {
+				font-size: 22px;
+				line-height: 1.25;
 			}
-			.valorisation-page .vr-actions {
+			.valorisation-page h3 {
 				display: flex;
-				flex-wrap: wrap;
-				gap: 12px;
 				align-items: center;
-				margin: 16px 0;
+				gap: var(--space-2);
+				font-size: 18px;
 			}
-			.valorisation-page label {
-				display: grid;
-				gap: 6px;
+			.valorisation-page h4 {
+				margin: var(--space-4) 0 var(--space-2);
+				font-size: var(--text-sm);
+				font-weight: 750;
 			}
-			.valorisation-page .vr-check {
-				display: flex;
-				gap: 8px;
-				align-items: center;
-			}
-			.valorisation-page input {
-				max-width: 100%;
-				min-width: 0;
-				padding: 8px;
-			}
-			.valorisation-page .vr-table {
-				overflow: auto;
-			}
-			.valorisation-page table {
-				border-collapse: collapse;
-				width: 100%;
-			}
-			.valorisation-page td,
-			.valorisation-page th {
-				text-align: left;
-				padding: 10px;
-				border-bottom: 1px solid var(--line);
-				vertical-align: top;
-			}
-			.valorisation-page .num {
-				white-space: nowrap;
-				text-align: right;
-				font-variant-numeric: tabular-nums;
-			}
-			.valorisation-page details {
-				border-top: 1px solid var(--line);
-				padding: 14px 0;
-			}
-			.valorisation-page summary {
-				cursor: pointer;
-				text-align: left;
+			.valorisation-page p {
+				margin: 0;
 			}
 			.valorisation-page .portal-section-header {
 				width: 100%;
@@ -152,87 +132,374 @@ templ ValorisationBody(data ValorisationPageData) {
 				margin: 0;
 				padding-top: 24px;
 			}
+			.valorisation-page .vr-item table {
+				max-width: 760px;
+			}
+			.valorisation-page > *,
+			.valorisation-page .vr-card > *,
+			.valorisation-page .vr-history > *,
+			.valorisation-page [data-group] > * {
+				min-width: 0;
+			}
+			.valorisation-page .vr-card {
+				display: grid;
+				gap: var(--space-4);
+				padding: var(--space-5);
+				border: 1px solid var(--line);
+				border-radius: var(--radius-md);
+				background: var(--panel);
+				box-shadow: var(--shadow-panel);
+				min-width: 0;
+			}
+			.valorisation-page .vr-card-head {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-2) var(--space-3);
+			}
+			.valorisation-page .vr-card-head > div {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: var(--space-2);
+			}
+			.valorisation-page .vr-chip {
+				display: inline-flex;
+				align-items: center;
+				min-height: 26px;
+				padding: 2px 10px;
+				border: 1px solid var(--line);
+				border-radius: var(--radius-pill);
+				background: var(--panel-soft);
+				color: var(--muted);
+				font-size: var(--text-xs);
+				font-weight: 750;
+				white-space: nowrap;
+			}
+			.valorisation-page .vr-chip.is-draft,
+			.valorisation-page .vr-chip.is-pending {
+				border-color: rgba(200, 153, 63, 0.45);
+				background: rgba(200, 153, 63, 0.12);
+				color: var(--gold-ink);
+			}
+			.valorisation-page .vr-chip.is-approved,
+			.valorisation-page .vr-chip.is-sent {
+				border-color: rgba(47, 107, 74, 0.3);
+				background: rgba(47, 107, 74, 0.08);
+				color: var(--leaf);
+			}
+			.valorisation-page .vr-chip.is-cancelled,
+			.valorisation-page .vr-chip.is-failed {
+				border-color: rgba(140, 52, 52, 0.3);
+				background: rgba(140, 52, 52, 0.07);
+				color: #8c3434;
+			}
+			.valorisation-page .vr-count {
+				display: inline-grid;
+				place-items: center;
+				min-width: 22px;
+				height: 22px;
+				padding: 0 6px;
+				border-radius: var(--radius-pill);
+				background: var(--panel-soft);
+				border: 1px solid var(--line);
+				color: var(--muted);
+				font-family: var(--font-sans, inherit);
+				font-size: var(--text-2xs);
+				font-weight: 750;
+				font-variant-numeric: tabular-nums;
+			}
+			.valorisation-page .vr-revision {
+				color: var(--muted);
+				font-size: var(--text-xs);
+			}
+			.valorisation-page .vr-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-3);
+				align-items: center;
+				padding-top: var(--space-4);
+				border-top: 1px solid var(--line);
+			}
+			.valorisation-page .vr-actions form {
+				margin: 0;
+			}
+			.valorisation-page label {
+				display: grid;
+				gap: 6px;
+				min-width: 0;
+				color: var(--muted);
+				font-size: var(--text-xs);
+				font-weight: 700;
+			}
+			.valorisation-page
+				:is(input:not([type="checkbox"]):not([type="radio"]), select) {
+				width: 100%;
+				min-width: 0;
+				max-width: 100%;
+				min-height: 44px;
+				padding: 8px 12px;
+				border: 1px solid var(--line);
+				border-radius: var(--radius-xs);
+				background: var(--panel);
+				color: var(--ink);
+				font-size: var(--text-md);
+				font-weight: 500;
+			}
+			.valorisation-page .vr-check {
+				display: flex;
+				gap: var(--space-2);
+				align-items: center;
+				min-height: 44px;
+				color: var(--ink);
+				font-size: var(--text-md);
+				font-weight: 500;
+			}
+			.valorisation-page .vr-new {
+				display: grid;
+				gap: var(--space-4);
+				max-width: 640px;
+			}
+			.valorisation-page .vr-new > label {
+				max-width: 240px;
+			}
+			.valorisation-page fieldset {
+				min-width: 0;
+				margin: 0;
+				padding: var(--space-3) var(--space-4);
+				border: 1px solid var(--line);
+				border-radius: var(--radius-sm);
+			}
+			.valorisation-page legend {
+				padding-inline: var(--space-1);
+				color: var(--muted);
+				font-size: var(--text-xs);
+				font-weight: 700;
+			}
+			.valorisation-page .vr-new button {
+				justify-self: start;
+			}
+			.valorisation-page .vr-table {
+				overflow-x: auto;
+				min-width: 0;
+				margin: var(--space-3) 0;
+			}
+			.valorisation-page table {
+				border-collapse: collapse;
+				width: 100%;
+				font-size: var(--text-sm);
+			}
+			.valorisation-page th,
+			.valorisation-page td {
+				text-align: left;
+				padding: 9px 10px;
+				border-bottom: 1px solid var(--line);
+				vertical-align: top;
+			}
+			.valorisation-page thead th {
+				padding-top: 6px;
+				color: var(--muted);
+				font-size: var(--text-2xs);
+				font-weight: 750;
+				white-space: nowrap;
+			}
+			.valorisation-page tbody th {
+				font-weight: 650;
+			}
+			.valorisation-page th:first-child,
+			.valorisation-page td:first-child {
+				padding-left: 0;
+			}
+			.valorisation-page th:last-child,
+			.valorisation-page td:last-child {
+				padding-right: 0;
+			}
+			.valorisation-page .num {
+				white-space: nowrap;
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+			}
+			.valorisation-page caption {
+				text-align: left;
+				padding: 0 0 var(--space-2);
+				font-size: var(--text-sm);
+				font-weight: 750;
+			}
+			.valorisation-page td p {
+				margin-top: 4px;
+				color: var(--muted);
+				font-size: var(--text-xs);
+			}
+			.valorisation-page details > summary {
+				cursor: pointer;
+				text-align: left;
+			}
+			.valorisation-page [data-group] {
+				display: grid;
+				gap: 0;
+			}
+			.valorisation-page [data-group] > h3 {
+				padding-bottom: var(--space-2);
+			}
+			.valorisation-page .vr-item {
+				border-top: 1px solid var(--line);
+			}
+			.valorisation-page .vr-item:last-child {
+				border-bottom: 1px solid var(--line);
+			}
 			.valorisation-page .vr-item > summary {
 				display: grid;
-				grid-template-columns: minmax(160px, 1fr) minmax(
-						160px,
-						1.4fr
-					) auto 130px;
-				gap: 16px;
+				grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr) 13rem 9rem;
+				grid-template-areas: "label reason money letter";
+				gap: var(--space-2) var(--space-4);
 				align-items: center;
+				min-height: 52px;
+				padding: var(--space-2) 0;
+				list-style: none;
+				font-size: var(--text-md);
+			}
+			.valorisation-page .vr-item > summary::-webkit-details-marker {
+				display: none;
 			}
 			.valorisation-page .vr-item > summary > * {
 				min-width: 0;
 				overflow-wrap: anywhere;
 			}
+			.valorisation-page .vr-item > summary > strong {
+				grid-area: label;
+				display: flex;
+				align-items: baseline;
+				gap: var(--space-2);
+				font-size: var(--text-md);
+			}
+			.valorisation-page .vr-item > summary > strong::before {
+				content: "";
+				flex: 0 0 auto;
+				width: 7px;
+				height: 7px;
+				border-right: 1.6px solid var(--muted);
+				border-bottom: 1.6px solid var(--muted);
+				transform: translateY(-2px) rotate(-45deg);
+				transition: transform 0.15s;
+			}
+			.valorisation-page .vr-item[open] > summary > strong::before {
+				transform: translateY(-3px) rotate(45deg);
+			}
+			.valorisation-page .vr-item > summary > span:nth-of-type(1) {
+				grid-area: reason;
+				color: var(--muted);
+				font-size: var(--text-sm);
+			}
 			.valorisation-page .vr-item > summary .vr-money {
+				grid-area: money;
 				text-align: right;
 				font-variant-numeric: tabular-nums;
+				font-weight: 700;
+				white-space: nowrap;
 			}
-			.valorisation-page .vr-item > summary::before {
-				content: none;
+			.valorisation-page .vr-item > summary .vr-letter {
+				grid-area: letter;
+				text-align: right;
 			}
 			.valorisation-page .vr-item[open] > summary {
-				margin-bottom: 16px;
+				margin-bottom: var(--space-2);
+			}
+			.valorisation-page .vr-item > :not(summary) {
+				margin-left: 15px;
+			}
+			.valorisation-page .vr-item[open] {
+				padding-bottom: var(--space-4);
+			}
+			.valorisation-page .vr-item > p {
+				margin-top: var(--space-2);
+				font-size: var(--text-sm);
+			}
+			.valorisation-page .vr-item ol {
+				margin: 0;
+				padding-left: 1.2rem;
+				color: var(--muted);
+				font-size: var(--text-sm);
+				line-height: 1.55;
+			}
+			.valorisation-page .vr-index-history,
+			.valorisation-page .vr-manual {
+				margin-top: var(--space-2);
+			}
+			.valorisation-page .vr-index-history > summary,
+			.valorisation-page .vr-manual > summary {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
+				color: var(--gold-ink);
+				font-size: var(--text-sm);
+				font-weight: 650;
 			}
 			.valorisation-page .vr-form-grid {
 				display: grid;
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 				align-items: end;
-				gap: 12px;
-				margin-top: 16px;
+				gap: var(--space-3);
+				margin-top: var(--space-3);
 				max-width: 640px;
 			}
 			.valorisation-page .vr-form-grid button {
 				justify-self: start;
+				min-height: 44px;
 			}
 			.valorisation-page .vr-link {
+				min-height: 44px;
 				border: 0;
 				background: transparent;
-				padding: 12px 0;
+				padding: 0;
 				color: var(--gold-ink);
 				text-decoration: underline;
+				text-underline-offset: 3px;
 				font: inherit;
+				font-size: var(--text-sm);
+				font-weight: 650;
 				cursor: pointer;
 			}
 			.valorisation-page .vr-danger {
-				color: var(--danger, #9b302b);
+				color: #8c3434;
 			}
 			.valorisation-page .vr-actions .vr-cancel {
 				border: 0;
 				padding: 0;
 				margin-left: auto;
 			}
+			.valorisation-page .vr-cancel > summary {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
+				font-size: var(--text-sm);
+				font-weight: 650;
+			}
 			.valorisation-page .vr-cancel[open] {
 				flex-basis: 100%;
 				margin: 0;
 			}
-			.valorisation-page .vr-letter {
-				text-align: right;
+			.valorisation-page .vr-cancel[open] > p {
+				margin: var(--space-2) 0;
+				color: var(--muted);
+				font-size: var(--text-sm);
 			}
-			.valorisation-page [data-group] {
-				margin-top: 24px;
-			}
-			.valorisation-page caption {
-				text-align: left;
-				font-weight: 700;
-				padding: 12px 0;
-			}
-			@media (max-width: 1100px) {
-				.valorisation-page .vr-item > summary {
-					grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-				}
-				.valorisation-page .vr-item > summary .vr-money {
-					text-align: left;
-				}
-			}
-
 			.valorisation-page .vr-exception,
 			.valorisation-page .vr-deadline {
-				padding: 12px;
+				padding: var(--space-3) var(--space-4);
+				border: 1px solid var(--line);
+				border-left: 3px solid var(--gold);
+				border-radius: var(--radius-sm);
 				background: var(--panel-soft);
-				border-left: 3px solid var(--accent);
-				margin: 12px 0;
+				font-size: var(--text-sm);
+				line-height: 1.5;
+			}
+			.valorisation-page .vr-exception {
+				border-left-color: #8c3434;
+			}
+			.valorisation-page .vr-item > .vr-exception,
+			.valorisation-page .vr-item > .vr-deadline {
+				margin-top: var(--space-3);
 			}
 			.valorisation-page p,
 			.valorisation-page li,
@@ -241,57 +508,91 @@ templ ValorisationBody(data ValorisationPageData) {
 			}
 			.valorisation-page .vr-meta {
 				color: var(--muted);
-				font-size: 13px;
+				font-size: var(--text-xs);
 			}
-			.valorisation-page .vr-excluded {
-				opacity: 0.65;
+			.valorisation-page details.vr-meta > summary {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
 			}
-			.valorisation-page .vr-cols {
-				display: grid;
-				grid-template-columns: repeat(2, minmax(0, 1fr));
-				gap: 16px;
+			.valorisation-page .vr-note {
+				color: var(--muted);
+				font-size: var(--text-sm);
+			}
+			.valorisation-page .vr-excluded > summary {
+				opacity: 0.6;
 			}
 			.valorisation-page .vr-history {
 				display: grid;
-				gap: 16px;
+				gap: var(--space-4);
 			}
-			.valorisation-page .vr-money {
-				font-weight: 700;
+			.valorisation-page .vr-empty {
+				color: var(--muted);
+				font-size: var(--text-sm);
 			}
 			.valorisation-page button {
 				max-width: 100%;
 			}
+			@media (max-width: 1100px) {
+				.valorisation-page .vr-item > summary {
+					grid-template-columns: minmax(0, 1fr) auto;
+					grid-template-areas: "label money" "reason letter";
+				}
+			}
 			@media (max-width: 600px) {
-				.valorisation-page .vr-item > summary,
+				.valorisation-page .vr-card {
+					padding: var(--space-4);
+				}
+				.valorisation-page .vr-item > summary {
+					grid-template-columns: minmax(0, 1fr);
+					grid-template-areas: "label" "money" "reason" "letter";
+					gap: 4px;
+					padding: var(--space-3) 0;
+				}
+				.valorisation-page .vr-item > summary .vr-money,
+				.valorisation-page .vr-item > summary .vr-letter {
+					text-align: left;
+					padding-left: 15px;
+				}
+				.valorisation-page .vr-item > summary > span:nth-of-type(1) {
+					padding-left: 15px;
+				}
+				.valorisation-page .vr-item > :not(summary) {
+					margin-left: 0;
+				}
 				.valorisation-page .vr-form-grid {
 					grid-template-columns: minmax(0, 1fr);
 				}
-				.valorisation-page .vr-letter {
-					text-align: left;
-				}
-				.valorisation-page .vr-actions .vr-cancel {
-					margin-left: 0;
-				}
-				.valorisation-page .vr-card {
-					padding: 16px;
-				}
-				.valorisation-page .vr-cols {
-					grid-template-columns: 1fr;
+				.valorisation-page .vr-form-grid button {
+					justify-self: stretch;
 				}
 				.valorisation-page .vr-actions {
 					align-items: stretch;
 					flex-direction: column;
 				}
-				.valorisation-page .vr-table {
-					font-size: 13px;
+				.valorisation-page .vr-actions .vr-cancel {
+					margin-left: 0;
+				}
+				.valorisation-page .vr-actions .button {
+					width: 100%;
+				}
+				.valorisation-page table {
+					font-size: var(--text-xs);
+				}
+				.valorisation-page th,
+				.valorisation-page td {
+					padding: 8px 6px;
+				}
+				.valorisation-page thead th {
+					white-space: normal;
 				}
 			}
 		</style>
-		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", URL: "/app/settings"}, PortalSectionTitle("Wertsicherung"), PortalSectionLede("Vertragliche Anpassung prüfen, freigeben und verständigen."), ValorisationNewAction())
+		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", URL: "/app/settings"}, PortalSectionTitle("Wertsicherung"), PortalSectionLede("Vertragliche Anpassung prüfen, freigeben und verständigen."), ValorisationNewAction(valorisationNewIsPrimary(data)))
 		if data.New {
 			<section class="vr-card">
 				<h2>Neuer Lauf</h2>
-				<form method="get">
+				<form method="get" class="vr-new">
 					<input type="hidden" name="new" value="1"/>
 					<label>Wirksamkeitsdatum<input type="date" name="effective_on" value={ data.EffectiveOn } required/></label>
 					<fieldset>
@@ -312,7 +613,7 @@ templ ValorisationBody(data ValorisationPageData) {
 		<section class="vr-history">
 			<h2>Läufe</h2>
 			if len(data.Runs)==0 {
-				<p>Noch kein Lauf. Erstellen Sie eine Vorschau für Ihre Liegenschaft.</p>
+				<p class="vr-empty">Noch kein Lauf. Erstellen Sie eine Vorschau für Ihre Liegenschaft.</p>
 			}
 			for _,run:=range data.Runs {
 				@ValorisationRun(run, false)
@@ -323,12 +624,19 @@ templ ValorisationBody(data ValorisationPageData) {
 
 templ ValorisationRun(view ValorisationRunView, preview bool) {
 	<article class="vr-card" id={ "run-" + view.Run.ID } data-run-id={ view.Run.ID }>
-		<h2>
-			{ view.Run.Input.House } · Stichtag { LeaseDate(view.Run.EffectiveOn) }
-		</h2>
-		<p class="pill">
-			{ valorisationStatus(view.Run.Status) } · { fmt.Sprintf("Revision %d",view.Run.Revision) }
-		</p>
+		<header class="vr-card-head">
+			<h2>
+				{ view.Run.Input.House } · Stichtag { LeaseDate(view.Run.EffectiveOn) }
+			</h2>
+			<div>
+				if preview {
+					<span class="vr-chip">Vorschau</span>
+				} else {
+					<span class={ "vr-chip", "is-" + view.Run.Status }>{ valorisationStatus(view.Run.Status) }</span>
+				}
+				<span class="vr-revision">{ fmt.Sprintf("Revision %d",view.Run.Revision) }</span>
+			</div>
+		</header>
 		for _,deadline := range view.Run.NoticeDeadlines() {
 			@ValorisationDeadline(deadline)
 		}
@@ -339,7 +647,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			<section data-group={ group.Key }>
 				<h3>
 					{ group.Label }
-					<span class="pill">
+					<span class="vr-count">
 						{ fmt.Sprint(len(group.Items)) }
 					</span>
 				</h3>
@@ -378,14 +686,14 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						if item.NoticeDeadline!="" {
 							@ValorisationDeadline(item)
 						}
-						<p>
+						<p class="vr-note">
 							{ item.Lease.Notes }
 						</p>
-						<p><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						<p class="vr-note"><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
 						if item.ContractCents > 0 {
 							<div class="vr-table">
 								<table>
-									<caption>Vertrags- und Deckelkurve</caption><thead><tr><th>Stichtag</th><th>Vertrag</th><th>MieWeG</th><th>Vorgeschrieben</th></tr></thead>
+									<caption>Vertrags- und Deckelkurve</caption><thead><tr><th>Stichtag</th><th class="num">Vertrag</th><th class="num">MieWeG</th><th class="num">Vorgeschrieben</th></tr></thead>
 									<tbody>
 										<tr>
 											<td>
@@ -412,7 +720,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						if item.OldCents > 0 {
 							<div class="vr-table">
 								<table>
-									<thead><tr><th>Monatlicher HMZ</th><th>Netto</th><th>USt</th><th>Brutto</th></tr></thead>
+									<thead><tr><th>Monatlicher HMZ</th><th class="num">Netto</th><th class="num">USt</th><th class="num">Brutto</th></tr></thead>
 									<tbody>
 										<tr>
 											<th>Bisher</th>
@@ -443,7 +751,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 							</div>
 						}
 						if item.WirksamOn != "" {
-							<p>
+							<p class="vr-note">
 								Wirksam: { LeaseDate(item.WirksamOn) } · Einhebbar: { LeaseDate(item.CollectableFrom) }
 							</p>
 						}
@@ -500,14 +808,14 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			if len(view.Deliveries)>0 {
 				<div class="vr-table">
 					<table>
-						<caption>Versandverlauf</caption><thead><tr><th>Einheit / Empfänger</th><th>Versuch</th><th>Status</th></tr></thead>
+						<caption>Versandverlauf</caption><thead><tr><th>Einheit / Empfänger</th><th class="num">Versuch</th><th>Status</th></tr></thead>
 						<tbody>
 							for _,delivery:=range view.Deliveries {
 								<tr>
 									<td>{ view.Run.DeliveryLabel(delivery.UnitID) }<br/>{ delivery.Recipient }</td>
-									<td>{ fmt.Sprint(delivery.Attempt) }</td>
+									<td class="num">{ fmt.Sprint(delivery.Attempt) }</td>
 									<td>
-										{ valorisationDeliveryStatus(delivery.Status) }
+										<span class={ "vr-chip", "is-" + delivery.Status }>{ valorisationDeliveryStatus(delivery.Status) }</span>
 										if delivery.Error!="" {
 											<p>{ delivery.Error }</p>
 										}
@@ -537,7 +845,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 				}
 			</div>
 			if view.Run.Status=="cancelled" {
-				<p>Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
+				<p class="vr-note">Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
 			}
 			<p class="vr-meta">Erstellt von { view.Run.CreatedBy }</p>
 			<details class="vr-meta"><summary>Prüfsumme</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
@@ -545,8 +853,8 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 	</article>
 }
 
-templ ValorisationNewAction() {
-	<a class="button primary" href="?new=1">Neuer Lauf</a>
+templ ValorisationNewAction(primary bool) {
+	<a class={ "button", templ.KV("primary", primary) } href="?new=1">Neuer Lauf</a>
 }
 
 templ ValorisationDeadline(item store.ValorisationItem) {
@@ -557,12 +865,12 @@ templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) 
 	if len(indices)>0 {
 		<div class="vr-table">
 			<table>
-				<caption>{ caption }</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
+				<caption>{ caption }</caption><thead><tr><th>Reihe / Zeitraum</th><th class="num">Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
 				<tbody>
 					for _,index:=range indices {
 						<tr>
 							<td><a href={ templ.SafeURL(index.Source) } rel="noreferrer" target="_blank">{ index.SeriesLabel() } · { index.Period }</a></td>
-							<td>{ store.ValorisationNumber(index.Value, 1) }</td>
+							<td class="num">{ store.ValorisationNumber(index.Value, 1) }</td>
 							<td>{ index.StatusLabel() }</td>
 							<td>
 								if index.PublishedOn != "" {
