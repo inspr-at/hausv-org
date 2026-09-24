@@ -74,12 +74,20 @@ const leaseURL = `${baseURL}/app/settings/building/units/top-1/lease`;
 let response = await page.goto(leaseURL, { waitUntil: 'networkidle' });
 if (!response || response.status() !== 200) fail(`Mietvertrag HTTP ${response?.status()}`);
 const body = await page.locator('body').innerText();
-for (const text of ['MieWeG', 'ja', 'Teilanwendung', '1.000,00', 'VPI mit Schwelle', 'Noch keine Wertsicherung', 'Eva Huber']) {
+for (const text of ['MieWeG', 'ja', 'MRG-Teilanwendung', 'freier Mietzins', '1.000,00', 'VPI 2020', 'Basis September 2024', 'geprüft', 'Monatlich gesamt', 'VPI mit Schwelle', 'Noch keine Wertsicherung', 'Eva Huber', 'Bearbeiten']) {
   if (!body.includes(text)) fail(`Mietvertrag zeigt „${text}“ nicht`);
+}
+if (body.includes('Speichern') || body.includes('Tabelle importieren') || body.includes('vpi2020')) {
+  fail('Die Leseansicht zeigt das Formular oder einen Rohcode');
 }
 await shot(page, 'lease-1440');
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 if (wide > 1) fail(`1440 px überläuft um ${wide} px`);
+
+await page.setViewportSize({ width: 820, height: 900 });
+await shot(page, 'lease-820');
+const mid = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+if (mid > 1) fail(`820 px überläuft um ${mid} px`);
 
 await page.setViewportSize({ width: 390, height: 844 });
 response = await page.goto(leaseURL, { waitUntil: 'networkidle' });
@@ -87,6 +95,20 @@ if (!response || response.status() !== 200) fail(`Mietvertrag mobil HTTP ${respo
 await shot(page, 'lease-390');
 const narrow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 if (narrow > 1) fail(`390 px überläuft um ${narrow} px`);
+
+await page.setViewportSize({ width: 1440, height: 900 });
+response = await page.goto(`${leaseURL}?bearbeiten=1`, { waitUntil: 'networkidle' });
+if (!response || response.status() !== 200) fail(`Bearbeiten HTTP ${response?.status()}`);
+const edit = await page.locator('body').innerText();
+for (const text of ['Speichern', 'Abbrechen', 'Vertrag', 'Partei', 'Neuer Mietzinsbestandteil', 'Klausel', 'VPI 2020']) {
+  if (!edit.includes(text)) fail(`Bearbeiten zeigt „${text}“ nicht`);
+}
+if (edit.includes('Tabelle importieren')) fail('Die Bearbeitung verlinkt den Import');
+await shot(page, 'lease-edit-1440');
+await page.setViewportSize({ width: 390, height: 844 });
+await shot(page, 'lease-edit-390');
+const editNarrow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+if (editNarrow > 1) fail(`Bearbeiten 390 px überläuft um ${editNarrow} px`);
 
 await page.setViewportSize({ width: 1280, height: 800 });
 await page.goto(`${baseURL}/app/settings/building/leases/import`, { waitUntil: 'networkidle' });

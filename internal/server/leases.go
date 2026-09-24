@@ -28,16 +28,25 @@ func (a *app) unitLeasePage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 	}
 	current, has := currentHauptmiete(history)
 	message, messageOK := leaseFlash(r.URL.Query().Get("lease"))
+	canEnd := has && current.Status == store.LeaseStatusActive
+	editing := r.URL.Query().Get("bearbeiten") == "1"
+	ending := canEnd && r.URL.Query().Get("beenden") == "1"
+	if ending {
+		editing = false
+	}
 	page := web.LeasePageData{
 		Portal:    a.settingsPortalContext(ac, "Mietvertrag", "settings"),
 		UnitID:    unit.ID,
 		UnitLabel: unit.Label,
+		Subtitle:  leaseSubtitle(unit.Label, current, has),
+		Editing:   editing,
+		Ending:    ending,
 		HasLease:  has,
 		History:   leaseDetails(history),
 		Form:      leaseForm(current, has),
 		Message:   message,
 		OK:        messageOK,
-		CanEnd:    has && current.Status == store.LeaseStatusActive,
+		CanEnd:    canEnd,
 	}
 	if has {
 		page.Lease = leaseDetail(current)
@@ -247,7 +256,11 @@ func leaseUnitByID(units []store.Unit, raw string) (store.Unit, bool) {
 }
 
 func (a *app) redirectLease(w http.ResponseWriter, r *http.Request, unitID, code string) {
-	http.Redirect(w, r, "/app/settings/building/units/"+unitID+"/lease?lease="+code, http.StatusSeeOther)
+	target := "/app/settings/building/units/" + unitID + "/lease?lease=" + code
+	if code != "saved" && code != "ended" {
+		target += "&bearbeiten=1"
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
 func (a *app) auditLease(ac authCtx, action, id, summary string, details map[string]string) {
@@ -411,19 +424,37 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 			From: web.LeaseDate(party.ValidFrom), To: web.LeaseDate(party.ValidTo),
 		})
 	}
+	today := time.Now().UTC().Format("2006-01-02")
+	currentMoney := currentRentComponents(lease.Components, today)
+	var netSum, vatSum int64
 	for _, component := range lease.Components {
+		gross := web.LeaseGrossCents(component.NetCents, component.VATRateBP)
 		detail.Components = append(detail.Components, web.LeaseMoneyView{
 			Kind: componentKindLabel(component.Kind), From: web.LeaseDate(component.ValidFrom),
-			Net: web.LeaseMoney(component.NetCents), VAT: vatLabel(component.VATRateBP), Origin: originLabel(component.Origin),
+			Net: web.LeaseMoney(component.NetCents), VAT: web.LeaseMoney(gross - component.NetCents),
+			Gross: web.LeaseMoney(gross), Origin: originLabel(component.Origin),
 		})
 	}
-	if len(lease.Clauses) > 0 {
+	for _, component := range currentMoney {
+		gross := web.LeaseGrossCents(component.NetCents, component.VATRateBP)
+		netSum += component.NetCents
+		vatSum += gross - component.NetCents
+	}
+	if len(currentMoney) > 0 {
+		detail.HasMonthly = true
+		detail.MonthlyNet = web.LeaseMoney(netSum)
+		detail.MonthlyVAT = web.LeaseMoney(vatSum)
+		detail.MonthlyGross = web.LeaseMoney(netSum + vatSum)
+	}
+	if len(lease.Clauses) > 0 && lease.Clauses[0].ClauseType != store.ClauseNone {
 		clause := lease.Clauses[0]
 		detail.HasClause = true
 		detail.Clause = web.LeaseClauseView{
-			Type: clauseTypeLabel(clause.ClauseType), Series: clause.Series,
-			Base:      web.LeaseMonth(clause.BasePeriod) + " = " + strings.ReplaceAll(clause.BaseValue, ".", ","),
-			Threshold: thresholdLabel(clause), Text: clause.ClauseText, Review: reviewLabel(clause.ReviewStatus), Note: clause.ReviewNote,
+			Type: clauseTypeLabel(clause.ClauseType), Series: web.LeaseSeriesLabel(clause.Series),
+			Base:      web.LeaseMonthName(clause.BasePeriod) + " = " + strings.ReplaceAll(clause.BaseValue, ".", ","),
+			Line:      web.LeaseIndexLine(clause.Series, clause.BasePeriod, clause.BaseValue),
+			Threshold: thresholdLabel(clause), Text: clause.ClauseText,
+			Review: reviewLabel(clause.ReviewStatus), ReviewClass: reviewClass(clause.ReviewStatus), Note: clause.ReviewNote,
 		}
 		if clause.State != nil && clause.State.ContractBasePeriod != "" {
 			detail.Anchor = "Ausgangswert " + strings.ReplaceAll(clause.State.ContractValue, ".", ",") + " €, Index " + web.LeaseMonth(clause.State.ContractBasePeriod) + " = " + strings.ReplaceAll(clause.State.ContractBaseValue, ".", ",") + "."
@@ -443,8 +474,9 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 		ComponentKinds: leaseOptions(store.ComponentHMZ, "hmz", "Hauptmietzins", "bk_akonto", "BK-Akonto", "heiz_akonto", "Heizungsakonto", "lift", "Lift", "moebel", "Möbel", "stellplatz", "Stellplatz", "sonstiges", "Sonstiges"),
 		VATRates:       leaseOptions("10", "0", "0 %", "10", "10 %", "20", "20 %"),
 		ClauseTypes:    leaseOptions(store.ClauseVPIThreshold, "mieweg_model", "MieWeG-Modell", "vpi_threshold", "VPI mit Schwelle", "vpi_periodic", "VPI periodisch", "staffel", "Staffel", "none", "Keine"),
-		ThresholdKinds: leaseOptions("percent", "percent", "Prozent", "points", "Punkte"),
-		Reviews:        leaseOptions(store.ReviewUnreviewed, "unreviewed", "Ungeprüft", "ok", "In Ordnung", "doubtful", "Zweifelhaft", "invalid", "Unwirksam"),
+		ThresholdKinds: leaseOptions("percent", "percent", "%", "points", "Punkte"),
+		Reviews:        leaseOptions(store.ReviewUnreviewed, "unreviewed", "ungeprüft", "ok", "geprüft", "doubtful", "zweifelhaft", "invalid", "ungültig"),
+		SeriesOptions:  leaseSeriesOptions(""),
 	}
 	if !has {
 		return form
@@ -480,6 +512,7 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 		clause := lease.Clauses[0]
 		form.ClauseID = clause.ID
 		form.Series = clause.Series
+		form.SeriesOptions = leaseSeriesOptions(clause.Series)
 		form.BasePeriod = clause.BasePeriod
 		form.BaseValue = strings.ReplaceAll(clause.BaseValue, ".", ",")
 		form.Threshold = strings.ReplaceAll(clause.ThresholdValue, ".", ",")
@@ -488,7 +521,7 @@ func leaseForm(lease store.Lease, has bool) web.LeaseForm {
 		form.Inclusive = clause.ThresholdInclusive
 		form.ClauseTypes = leaseOptions(clause.ClauseType, "mieweg_model", "MieWeG-Modell", "vpi_threshold", "VPI mit Schwelle", "vpi_periodic", "VPI periodisch", "staffel", "Staffel", "none", "Keine")
 		form.ThresholdKinds = leaseOptions(clause.ThresholdKind, "percent", "Prozent", "points", "Punkte")
-		form.Reviews = leaseOptions(clause.ReviewStatus, "unreviewed", "Ungeprüft", "ok", "In Ordnung", "doubtful", "Zweifelhaft", "invalid", "Unwirksam")
+		form.Reviews = leaseOptions(clause.ReviewStatus, "unreviewed", "ungeprüft", "ok", "geprüft", "doubtful", "zweifelhaft", "invalid", "ungültig")
 	}
 	return form
 }
@@ -576,9 +609,9 @@ func useKindLabel(raw string) string {
 func mrgLabel(raw string) string {
 	switch raw {
 	case store.MRGVoll:
-		return "MRG Vollanwendung"
+		return "MRG-Vollanwendung"
 	case store.MRGTeil:
-		return "MRG Teilanwendung"
+		return "MRG-Teilanwendung"
 	case store.MRGAusnahme:
 		return "MRG-Ausnahme"
 	case store.MRGWGG:
@@ -591,15 +624,15 @@ func mrgLabel(raw string) string {
 func regimeLabel(raw string) string {
 	switch raw {
 	case store.RentRegimeRichtwert:
-		return "Richtwert"
+		return "Richtwertmietzins"
 	case store.RentRegimeKategorie:
-		return "Kategorie"
+		return "Kategoriemietzins"
 	case store.RentRegimeAngemessen:
-		return "angemessen"
+		return "angemessener Mietzins"
 	case store.RentRegimeFrei:
-		return "frei"
+		return "freier Mietzins"
 	default:
-		return "sonstig"
+		return "sonstiger Mietzins"
 	}
 }
 
@@ -665,14 +698,82 @@ func clauseTypeLabel(raw string) string {
 func reviewLabel(raw string) string {
 	switch raw {
 	case store.ReviewOK:
-		return "in Ordnung"
+		return "geprüft"
 	case store.ReviewDoubtful:
 		return "zweifelhaft"
 	case store.ReviewInvalid:
-		return "unwirksam"
+		return "ungültig"
 	default:
 		return "ungeprüft"
 	}
+}
+
+func reviewClass(raw string) string {
+	switch raw {
+	case store.ReviewOK:
+		return "is-ok"
+	case store.ReviewDoubtful:
+		return "is-doubt"
+	case store.ReviewInvalid:
+		return "is-bad"
+	default:
+		return "is-open"
+	}
+}
+
+func leaseSubtitle(unitLabel string, lease store.Lease, has bool) string {
+	if !has {
+		return unitLabel
+	}
+	name := ""
+	for _, party := range lease.Parties {
+		if party.Role == store.PartyHauptmieter || name == "" {
+			name = party.Name
+		}
+		if party.Role == store.PartyHauptmieter {
+			break
+		}
+	}
+	since := web.LeaseDate(lease.StartsOn)
+	if name == "" {
+		return unitLabel + " · seit " + since
+	}
+	return unitLabel + " · " + name + " · seit " + since
+}
+
+func currentRentComponents(items []store.RentComponent, today string) []store.RentComponent {
+	best := map[string]store.RentComponent{}
+	for _, item := range items {
+		if item.ValidFrom > today {
+			continue
+		}
+		prev, ok := best[item.Kind]
+		if !ok || item.ValidFrom >= prev.ValidFrom {
+			best[item.Kind] = item
+		}
+	}
+	out := make([]store.RentComponent, 0, len(best))
+	for _, item := range best {
+		out = append(out, item)
+	}
+	return out
+}
+
+func leaseSeriesOptions(selected string) []view.SelectOption {
+	years := []string{"2025", "2020", "2015", "2010", "2005", "2000", "1996", "1986", "1976", "1966"}
+	out := make([]view.SelectOption, 0, len(years))
+	known := false
+	for _, year := range years {
+		value := "vpi" + year
+		if value == selected {
+			known = true
+		}
+		out = append(out, view.SelectOption{Value: value, Label: "VPI " + year, Selected: value == selected})
+	}
+	if selected != "" && !known {
+		out = append(out, view.SelectOption{Value: selected, Label: web.LeaseSeriesLabel(selected), Selected: true})
+	}
+	return out
 }
 
 func thresholdLabel(clause store.IndexClause) string {

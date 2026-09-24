@@ -2190,7 +2190,7 @@ func BuildingUnits(data BuildingSettingsPageData) templ.Component {
 			templ_7745c5c3_Var89 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class=\"head-actions\"><a class=\"button ghost\" href=\"/app/settings/building/leases/import\">Mietverträge importieren</a><a class=\"button ghost\" href=\"/app/settings/payments/import\">Bankdatei einlesen</a><a class=\"button primary\" href=\"#unit-add\">Einheit hinzufügen</a></div></header><div class=\"metrics\"><span><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<section class=\"panel workspace\"><header class=\"workspace-head\"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class=\"head-actions\"><a class=\"button ghost\" href=\"/app/settings/building/leases/import\">Tabelle importieren</a><a class=\"button ghost\" href=\"/app/settings/payments/import\">Bankdatei einlesen</a><a class=\"button primary\" href=\"#unit-add\">Einheit hinzufügen</a></div></header><div class=\"metrics\"><span><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

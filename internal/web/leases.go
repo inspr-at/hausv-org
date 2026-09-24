@@ -14,6 +14,9 @@ type LeasePageData struct {
 	Portal    PortalPageData
 	UnitID    string
 	UnitLabel string
+	Subtitle  string
+	Editing   bool
+	Ending    bool
 	HasLease  bool
 	Lease     LeaseDetail
 	History   []LeaseDetail
@@ -24,16 +27,18 @@ type LeasePageData struct {
 }
 
 type LeaseDetail struct {
-	ID, Status, Kind, Use, MRG, Regime  string
-	Concluded, Starts, Ends, Zinstermin string
-	Notes                               string
-	MieWeG, SpecialCap                  string
-	MieWeGReason, CapReason             string
-	Parties                             []LeasePartyView
-	Components                          []LeaseMoneyView
-	HasClause                           bool
-	Clause                              LeaseClauseView
-	Anchor                              string
+	ID, Status, Kind, Use, MRG, Regime   string
+	Concluded, Starts, Ends, Zinstermin  string
+	Notes                                string
+	MieWeG, SpecialCap                   string
+	MieWeGReason, CapReason              string
+	Parties                              []LeasePartyView
+	Components                           []LeaseMoneyView
+	MonthlyNet, MonthlyVAT, MonthlyGross string
+	HasMonthly                           bool
+	HasClause                            bool
+	Clause                               LeaseClauseView
+	Anchor                               string
 }
 
 type LeasePartyView struct {
@@ -41,11 +46,11 @@ type LeasePartyView struct {
 }
 
 type LeaseMoneyView struct {
-	Kind, From, Net, VAT, Origin string
+	Kind, From, Net, VAT, Gross, Origin string
 }
 
 type LeaseClauseView struct {
-	Type, Series, Base, Threshold, Text, Review, Note string
+	Type, Series, Base, Threshold, Text, Review, ReviewClass, Line, Note string
 }
 
 type LeaseForm struct {
@@ -57,7 +62,7 @@ type LeaseForm struct {
 	PriceRestricted, Consumer, Business, TwoWay, Inclusive         bool
 	Kinds, Uses, Scopes, Regimes, PartyRoles                       []view.SelectOption
 	ComponentKinds, VATRates, ClauseTypes, ThresholdKinds          []view.SelectOption
-	Reviews                                                        []view.SelectOption
+	SeriesOptions, Reviews                                         []view.SelectOption
 }
 
 type LeaseImportPageData struct {
@@ -114,4 +119,47 @@ func LeaseMonth(raw string) string {
 		return raw
 	}
 	return parsed.Format("01.2006")
+}
+
+var leaseMonths = [...]string{"", "Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+
+// LeaseSeriesLabel turns a stored index code into the name shown on the page.
+func LeaseSeriesLabel(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if strings.HasPrefix(raw, "vpi") && len(raw) > 3 {
+		return "VPI " + raw[3:]
+	}
+	return raw
+}
+
+// LeaseMonthName renders a stored YYYY-MM as an Austrian month and year.
+func LeaseMonthName(raw string) string {
+	raw = strings.TrimSpace(raw)
+	parsed, err := time.Parse("2006-01", raw)
+	if err != nil {
+		return raw
+	}
+	return leaseMonths[parsed.Month()] + " " + parsed.Format("2006")
+}
+
+// LeaseIndexLine is the read-view sentence for a clause anchor.
+func LeaseIndexLine(series, period, value string) string {
+	label := LeaseSeriesLabel(series)
+	if label == "" {
+		return ""
+	}
+	month := LeaseMonthName(period)
+	value = strings.ReplaceAll(strings.TrimSpace(value), ".", ",")
+	if month == "" || value == "" {
+		return label
+	}
+	return label + " · Basis " + month + " = " + value
+}
+
+// LeaseGrossCents is net plus VAT. VAT is stored in basis points.
+func LeaseGrossCents(net int64, vatBP int) int64 {
+	if vatBP <= 0 {
+		return net
+	}
+	return net + net*int64(vatBP)/10000
 }
