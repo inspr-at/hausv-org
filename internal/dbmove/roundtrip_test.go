@@ -330,7 +330,7 @@ func seedFull(t *testing.T) *source {
 
 		units, _ := store.BindUnitRepository(store.NewSQLUnitStore(src.lanes), tenant)
 		must(t, slug+" units", units.SetUnits([]store.Unit{
-			{ID: "top-1", Label: "Top 1", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"resident@example.com"}},
+			{ID: "top-1", Label: "Top 1", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"resident@example.com"}, PartyContacts: []store.UnitPartyContact{{Email: "resident@example.com", ValidFrom: "2025-07-01", ValidTo: "2027-06-30"}}},
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))

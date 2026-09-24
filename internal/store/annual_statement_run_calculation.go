@@ -11,16 +11,18 @@ const AnnualStatementCalculationVersion = 2
 // AnnualStatementRunInput is an immutable copy of the facts used by a run.
 // Documents contains only originals verified as readable by the repository.
 type AnnualStatementRunInput struct {
-	Presentation AnnualStatementRunPresentation              `json:"presentation"`
-	Parties      []AnnualStatementRunParty                   `json:"parties,omitempty"`
-	Period       AnnualStatementPeriod                       `json:"period"`
-	Structure    AnnualStatementPeriodStructure              `json:"structure"`
-	Units        []AnnualStatementRunUnitIdentity            `json:"units"`
-	Receipts     []AnnualStatementReceipt                    `json:"receipts"`
-	Prepayments  []AnnualStatementPrepayment                 `json:"prepayments"`
-	Documents    []AnnualStatementRunDocument                `json:"documents"`
-	Consumption  map[string]AnnualStatementConsumptionVector `json:"consumption"`
-	Evidence     []AnnualStatementConsumptionEvidence        `json:"evidence"`
+	StatementOn   string                                      `json:"statement_on,omitempty"`
+	PartyEvidence []AnnualStatementConsumptionEvidence        `json:"party_evidence,omitempty"`
+	Presentation  AnnualStatementRunPresentation              `json:"presentation"`
+	Parties       []AnnualStatementRunParty                   `json:"parties,omitempty"`
+	Period        AnnualStatementPeriod                       `json:"period"`
+	Structure     AnnualStatementPeriodStructure              `json:"structure"`
+	Units         []AnnualStatementRunUnitIdentity            `json:"units"`
+	Receipts      []AnnualStatementReceipt                    `json:"receipts"`
+	Prepayments   []AnnualStatementPrepayment                 `json:"prepayments"`
+	Documents     []AnnualStatementRunDocument                `json:"documents"`
+	Consumption   map[string]AnnualStatementConsumptionVector `json:"consumption"`
+	Evidence      []AnnualStatementConsumptionEvidence        `json:"evidence"`
 	// Reserve is the period's Rücklage bookings copied into the run.
 	// A nil slice means the run predates the snapshot and replays without it.
 	Reserve []AnnualStatementReserveEntry `json:"reserve,omitempty"`
@@ -88,6 +90,7 @@ type AnnualStatementVacancyLine struct {
 }
 
 type AnnualStatementRunResult struct {
+	PartyShares   []AnnualStatementPartyShare         `json:"party_shares,omitempty"`
 	Proposals     []AnnualStatementPrepaymentProposal `json:"proposals,omitempty"`
 	Vacancy       []AnnualStatementVacancyLine        `json:"vacancy,omitempty"`
 	VATGroups     []AnnualStatementVATGroup           `json:"vat_groups,omitempty"`
@@ -100,6 +103,9 @@ type AnnualStatementRunResult struct {
 
 // CalculateAnnualStatementRun never returns partial monetary results.
 func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
+	if hasDatedAnnualParties(input) {
+		return calculateAnnualStatementPartyRun(input)
+	}
 	result, issues := calculateAnnualStatementRun(input, true)
 	if len(issues) > 0 || !input.Structure.Legal.ShowVAT {
 		return result, issues
@@ -114,6 +120,8 @@ func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatement
 // original single-key heating allocation even when current settings differ.
 func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
 	switch run.CalculationVersion {
+	case AnnualStatementCalculationVersionParties:
+		return calculateAnnualStatementPartyRun(run.Input)
 	case 1:
 		return calculateAnnualStatementRun(run.Input, false)
 	case 2:

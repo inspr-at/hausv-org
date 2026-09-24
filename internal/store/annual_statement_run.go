@@ -104,12 +104,18 @@ func (s *MemoryAnnualStatementRunStore) previewAnnualStatementRun(tenant TenantR
 	if err != nil {
 		return input, AnnualStatementRunResult{}, err
 	}
+	annualPartyStatementDate(&input, time.Now())
 	return evaluateAnnualStatementRun(input)
 }
 func (s *MemoryAnnualStatementRunStore) createAnnualStatementRun(tenant TenantRef, year int, actor string, now time.Time, presentation ...AnnualStatementRunPresentation) (AnnualStatementRun, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	input, result, err := s.previewAnnualStatementRun(tenant, year, nil)
+	input, err := s.load(tenant, year, nil)
+	if err != nil {
+		return AnnualStatementRun{}, err
+	}
+	annualPartyStatementDate(&input, now)
+	input, result, err := evaluateAnnualStatementRun(input)
 	if err != nil {
 		return AnnualStatementRun{}, err
 	}
@@ -186,7 +192,7 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 	}
 	// The page already loaded these reports for its consumption panel. Creation
 	// always passes nil and reads fresh reports as part of its own input load.
-	if vectors != nil {
+	if vectors != nil && !hasDatedAnnualParties(input) {
 		input.Consumption = vectors
 		return input, nil
 	}
@@ -212,6 +218,21 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 			}
 			input.Consumption[cost.Key] = report.Vector
 			input.Evidence = append(input.Evidence, report.BoundaryEvidence...)
+			if backend, ok := s.sources.Consumption.(annualStatementConsumptionBackend); ok {
+				for id, dates := range annualPartyReadingDates(input) {
+					for _, date := range dates {
+						readings, err := backend.listAnnualStatementConsumption(tenant, cost.Key, date, date)
+						if err != nil {
+							return input, err
+						}
+						for _, reading := range readings {
+							if reading.UnitID == id {
+								input.PartyEvidence = append(input.PartyEvidence, reading)
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	return input, nil
@@ -282,6 +303,7 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	sortAnnualStatementReserveEntries(input.Reserve)
 	sort.Slice(input.Prepayments, func(i, j int) bool { return input.Prepayments[i].UnitID < input.Prepayments[j].UnitID })
 	sort.Slice(input.Documents, func(i, j int) bool { return input.Documents[i].ID < input.Documents[j].ID })
+	sort.Slice(input.PartyEvidence, func(i, j int) bool { return input.PartyEvidence[i].SourceKey < input.PartyEvidence[j].SourceKey })
 	sort.Slice(input.Evidence, func(i, j int) bool { return input.Evidence[i].SourceKey < input.Evidence[j].SourceKey })
 	for key, vector := range input.Consumption {
 		sort.Slice(vector.Units, func(i, j int) bool { return vector.Units[i].UnitID < vector.Units[j].UnitID })
@@ -295,6 +317,9 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	version := AnnualStatementCalculationVersion
 	if input.Structure.Legal.ShowVAT {
 		version = AnnualStatementCalculationVersionVAT
+	}
+	if hasDatedAnnualParties(input) {
+		version = AnnualStatementCalculationVersionParties
 	}
 	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: version, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
 }

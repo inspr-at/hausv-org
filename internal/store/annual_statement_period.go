@@ -847,6 +847,7 @@ func annualStatementFollowupLegal(legal AnnualStatementLegalSettings) AnnualStat
 	legal.HeatingPrepayments = nil
 	legal.MonthlyProposals = nil
 	legal.NextPrepaymentOn = ""
+	legal.PartyDueOn = ""
 	legal.InspectionPeriod = ""
 	return legal
 }

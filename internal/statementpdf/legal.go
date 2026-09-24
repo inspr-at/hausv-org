@@ -12,6 +12,13 @@ import (
 )
 
 func statementDate(run store.AnnualStatementRun) time.Time {
+	if run.CalculationVersion == store.AnnualStatementCalculationVersionParties && run.Input.StatementOn != "" {
+		loc, _ := time.LoadLocation("Europe/Vienna")
+		at, err := time.ParseInLocation("2006-01-02", run.Input.StatementOn, loc)
+		if err == nil {
+			return at
+		}
+	}
 	at := run.CreatedAt
 	if run.Approval != nil {
 		at = run.Approval.ApprovedAt
@@ -40,7 +47,11 @@ func paymentTerms(run store.AnnualStatementRun, unit store.AnnualStatementRunUni
 	case "weg":
 		terms = append(terms, "WEG: Ein Guthaben wird auf künftige Vorauszahlungen angerechnet. Eine Nachzahlung ist bis "+store.ShiftStatementDate(at, 2).Format("02.01.2006")+" fällig (§ 34 Abs. 4 WEG).")
 	default:
-		terms = append(terms, "Betriebskosten: Fälligkeit und Behandlung des Saldos laut Vertrag.")
+		if run.Input.Structure.Legal.PartyDueOn != "" && run.CalculationVersion == store.AnnualStatementCalculationVersionParties {
+			terms = append(terms, "Betriebskosten: Fälligkeit laut Vertrag am "+date(run.Input.Structure.Legal.PartyDueOn)+".")
+		} else {
+			terms = append(terms, "Betriebskosten: Fälligkeit und Behandlung des Saldos laut Vertrag.")
+		}
 	}
 	if legal.HeizKGApplies {
 		terms = append(terms, "HeizKG-Anteil: Guthaben wird bis "+store.ShiftStatementDate(at, 2).Format("02.01.2006")+" zurückgezahlt; eine Nachzahlung ist bis zu diesem Tag fällig (§ 21 HeizKG).")
@@ -133,7 +144,7 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 	return pdf.Pages(d.Pages(), statementPalette), nil
 }
 
-func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost, prepaid int64) []string {
+func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost, prepaid int64, partySplit bool) []string {
 	legal := run.Input.Structure.Legal
 	energy, other, consumed, area := store.AnnualStatementHeatingPools(run.Input, cost.CostTypeKey)
 	var totalArea int
@@ -141,6 +152,10 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		totalArea += legal.HeatableAreas[u.ID]
 	}
 	areaText := func(a int) string { return view.FormatDecimal(float64(a)/100, 2) + " m²" }
+	costLabel := "Kostenanteil Einheit: "
+	if partySplit {
+		costLabel = "Ihr Kostenanteil: "
+	}
 	return []string{
 		"Heizkostenabrechnung nach § 18 HeizKG",
 		"Energiekosten gesamt: " + money(energy) + "; sonstige Betriebskosten: " + money(other),
@@ -148,7 +163,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Verbrauchskosten-Pool: " + money(consumed) + "; Flächenkosten-Pool einschließlich sonstiger Betriebskosten: " + money(area),
 		"Versorgbare Nutzfläche Einheit: " + areaText(legal.HeatableAreas[unit.UnitID]) + "; gesamt: " + areaText(totalArea),
 		"Anteil am gemessenen Verbrauch: " + view.FormatDecimal(float64(cost.SharePPM)/10000, 2) + " %; Methode: Zählerdifferenz",
-		"Kostenanteil Einheit: " + money(cost.AmountCents),
+		costLabel + money(cost.AmountCents),
 		"Geleistetes Akonto dieser Heizkostenart: " + money(prepaid) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-prepaid),
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}

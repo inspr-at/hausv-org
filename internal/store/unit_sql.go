@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/inspr-at/hausv-org/internal/textutil"
 )
@@ -72,10 +73,18 @@ func BindUnitRepository(storage UnitStorage, tenant TenantRef) (UnitRepository, 
 }
 
 func (r *boundUnitRepository) SetUnits(units []Unit) error {
+	for _, u := range units {
+		if err := ValidateUnitPartyContacts(u.PartyContacts); err != nil {
+			return err
+		}
+	}
 	return r.storage.setTenantUnits(r.tenant, units)
 }
 
 func (r *boundUnitRepository) UpsertUnit(origID string, item Unit) (bool, error) {
+	if err := ValidateUnitPartyContacts(item.PartyContacts); err != nil {
+		return false, err
+	}
 	return r.storage.upsertUnit(r.tenant, origID, item)
 }
 
@@ -182,20 +191,23 @@ type storedUnit struct {
 }
 
 func readStoredUnits(q unitRows, tenant TenantRef) ([]storedUnit, error) {
-	rows, err := q.Query(`SELECT id, data FROM units WHERE tenant_id=$1`, tenant.ID)
+	rows, err := q.Query(`SELECT id, data, party_validity FROM units WHERE tenant_id=$1`, tenant.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	out := []storedUnit{}
 	for rows.Next() {
-		var id, data string
-		if err := rows.Scan(&id, &data); err != nil {
+		var id, data, validity string
+		if err := rows.Scan(&id, &data, &validity); err != nil {
 			return nil, unitDataErr(tenant, id, "scan", err)
 		}
 		var item Unit
 		if err := json.Unmarshal([]byte(data), &item); err != nil {
 			return nil, unitDataErr(tenant, id, "decode", err)
+		}
+		if err := decodeUnitValidity(&item, validity); err != nil {
+			return nil, unitDataErr(tenant, id, "dates", err)
 		}
 		out = append(out, storedUnit{id: id, unit: item})
 	}
@@ -206,13 +218,16 @@ func readStoredUnits(q unitRows, tenant TenantRef) ([]storedUnit, error) {
 }
 
 func loadStoredUnit(q unitRows, tenant TenantRef, id string) (Unit, error) {
-	var data string
-	if err := q.QueryRow(`SELECT data FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data); err != nil {
+	var data, validity string
+	if err := q.QueryRow(`SELECT data, party_validity FROM units WHERE tenant_id=$1 AND id=$2`, tenant.ID, id).Scan(&data, &validity); err != nil {
 		return Unit{}, err
 	}
 	var item Unit
 	if err := json.Unmarshal([]byte(data), &item); err != nil {
 		return Unit{}, unitDataErr(tenant, id, "decode", err)
+	}
+	if err := decodeUnitValidity(&item, validity); err != nil {
+		return Unit{}, unitDataErr(tenant, id, "dates", err)
 	}
 	if item.ID == "" {
 		item.ID = id
@@ -233,11 +248,11 @@ func unitRowExists(tx *sql.Tx, tenant TenantRef, id string) (bool, error) {
 }
 
 func writeUnitRow(tx *sql.Tx, tenant TenantRef, item Unit) error {
-	blob, err := json.Marshal(item)
+	blob, validity, err := EncodeUnitWithValidity(item)
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(`UPDATE units SET data=$1 WHERE tenant_id=$2 AND id=$3`, string(blob), tenant.ID, item.ID)
+	res, err := tx.Exec(`UPDATE units SET data=$1, party_validity=$4 WHERE tenant_id=$2 AND id=$3`, blob, tenant.ID, item.ID, validity)
 	if err != nil {
 		return err
 	}
@@ -249,8 +264,8 @@ func writeUnitRow(tx *sql.Tx, tenant TenantRef, item Unit) error {
 		return nil
 	}
 	_, err = tx.Exec(
-		`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4)`,
-		tenant.ID, tenant.Slug, item.ID, string(blob),
+		`INSERT INTO units(tenant_id, tenant_slug, id, data, party_validity) VALUES($1, $2, $3, $4, $5)`,
+		tenant.ID, tenant.Slug, item.ID, blob, validity,
 	)
 	return err
 }
@@ -348,6 +363,11 @@ func (s *SQLUnitStore) upsertUnit(tenant TenantRef, origID string, item Unit) (b
 func (s *SQLUnitStore) updateUnitParties(tenant TenantRef, updates []UnitPartyUpdate) (bool, error) {
 	if s == nil || len(updates) == 0 {
 		return false, nil
+	}
+	for _, update := range updates {
+		if err := ValidateUnitPartyContacts(update.Contacts); err != nil {
+			return false, err
+		}
 	}
 	normalized := normalizeUnitPartyUpdates(updates)
 	tx, err := s.db.For(tenant).Begin()
@@ -543,6 +563,9 @@ func (s *SQLUnitStore) unitsForEmail(tenant TenantRef, email string) []UnitMembe
 	for _, row := range stored {
 		item := row.unit
 		relation := ""
+		if !UnitPartyActive(item, email, time.Now()) {
+			continue
+		}
 		if EmailListContains(item.OwnerEmails, email) {
 			relation = RoleOwner
 		} else if EmailListContains(item.RenterEmails, email) {
@@ -573,7 +596,7 @@ func (s *SQLUnitStore) membersForUnit(tenant TenantRef, unitID string) UnitMembe
 		return UnitMembers{}
 	}
 	item = CopyUnit(item)
-	return UnitMembers{Unit: item, Owners: append([]string(nil), item.OwnerEmails...), Renters: append([]string(nil), item.RenterEmails...), Found: true}
+	return activeUnitMembers(item)
 }
 
 // ImportUnits copies records from a JSON store, each only if absent
@@ -596,13 +619,13 @@ func (s *SQLUnitStore) ImportUnits(src *UnitStore) error {
 		if err != nil {
 			return err
 		}
-		blob, err := json.Marshal(item)
+		blob, validity, err := EncodeUnitWithValidity(item)
 		if err != nil {
 			return err
 		}
 		if _, err := imports.Exec(
-			`INSERT INTO units(tenant_id, tenant_slug, id, data) VALUES($1, $2, $3, $4) ON CONFLICT(tenant_slug, id) DO NOTHING`,
-			tenant.ID, tenant.Slug, item.ID, string(blob),
+			`INSERT INTO units(tenant_id, tenant_slug, id, data, party_validity) VALUES($1, $2, $3, $4, $5) ON CONFLICT(tenant_slug, id) DO NOTHING`,
+			tenant.ID, tenant.Slug, item.ID, blob, validity,
 		); err != nil {
 			return err
 		}
