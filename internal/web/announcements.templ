@@ -188,6 +188,16 @@ templ AnnouncementsStyles() {
 		[data-templ-portal] .announcement-body > summary{grid-template-columns:6px minmax(0,1fr);}
 		[data-templ-portal] .announcement-card-meta{grid-column:2;max-width:100%;justify-content:flex-start;gap:8px 12px;}
 		}
+		[data-templ-portal] .announcement-static{grid-template-columns:6px minmax(0,1fr);padding-bottom:0;}
+		[data-templ-portal] .announcement-card-title-group{width:100%;align-items:baseline;}
+		[data-templ-portal] .announcement-card-title{flex:1 1 auto;min-width:0;}
+		[data-templ-portal] .announcement-card-title-group .announcement-card-meta{flex:0 1 auto;max-width:none;margin-left:auto;align-items:baseline;flex-wrap:nowrap;justify-content:flex-end;}
+		[data-templ-portal] .announcement-category,[data-templ-portal] .announcement-date{align-self:baseline;}
+		[data-templ-portal] .announcement-static-actions{padding-top:12px;}
+		[data-templ-portal] .announcement-body-content{gap:12px;}
+		[data-templ-portal] .announcement-card-actions{align-items:flex-start;}
+		[data-templ-portal] .announcement-card-actions .announcement-text-action{align-items:flex-start;padding-top:0;padding-bottom:0;line-height:1.3;}
+		[data-templ-portal] .announcement-card-actions > span{line-height:1.3;}
 		@media (max-width:760px){[data-templ-portal] .announcement-list{padding-inline:12px;}
 		[data-templ-portal] .announcement-body > summary{padding-left:0;column-gap:10px;}
 		[data-templ-portal] .announcement-body-content{padding-left:16px;padding-right:12px;}
@@ -333,6 +343,15 @@ templ AnnouncementEntryHead(item view.AnnouncementView) {
 			if item.Unread {
 				<span class="announcement-new" title="Neu"><span class="announcement-sr-only">Neu</span></span>
 			}
+			<div class="announcement-card-meta">
+				<span class={ "announcement-category", item.CategoryClass }>{ item.Category }</span><span class="announcement-date" title={ item.PublishedAt }>{ announcementDate(item.PublishedAt) }</span>
+				if item.Pinned {
+					<span class="announcement-fixiert-label">Fixiert</span>
+				}
+				if item.Expired {
+					<span>Abgelaufen</span>
+				}
+			</div>
 		</div>
 		if item.Body != "" {
 			if announcementBodyTruncated(item) {
@@ -340,15 +359,6 @@ templ AnnouncementEntryHead(item view.AnnouncementView) {
 			} else {
 				<div class="announcement-card-lead">{ item.Body }</div>
 			}
-		}
-	</div>
-	<div class="announcement-card-meta">
-		<span class={ "announcement-category", item.CategoryClass }>{ item.Category }</span><span class="announcement-date" title={ item.PublishedAt }>{ announcementDate(item.PublishedAt) }</span>
-		if item.Pinned {
-			<span class="announcement-fixiert-label">Fixiert</span>
-		}
-		if item.Expired {
-			<span>Abgelaufen</span>
 		}
 	</div>
 }
