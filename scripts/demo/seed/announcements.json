@@ -238,5 +238,37 @@
     "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
     "category": "Termin",
     "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-031",
+    "house": "musterstrasse-12",
+    "title": "Wasserabschaltung am 11.09., 9–12 Uhr",
+    "body": "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.",
+    "category": "Wartung",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-032",
+    "house": "musterstrasse-12",
+    "title": "Hausbegehung am 30. September",
+    "body": "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.",
+    "category": "Termin",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-033",
+    "house": "musterstrasse-12",
+    "title": "Bitte Fluchtwege freihalten",
+    "body": "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
+  },
+  {
+    "id": "an-034",
+    "house": "musterstrasse-12",
+    "title": "Betriebskosten 2025 liegen auf",
+    "body": "Musterstraße 12 ist ein Zinshaus aus dem Jahr 1905 in voller Anwendung des MRG. Die Betriebskostenabrechnung 2025 (Heizkosten nach HeizKG, Umsatzsteuer 10 und 20 Prozent, Eigentümeranteil für den Leerstand von Top 6) liegt in der Verwaltung zur Einsicht auf.",
+    "category": "Info",
+    "published_at": "2026-09-08T08:00:00+02:00"
   }
 ]

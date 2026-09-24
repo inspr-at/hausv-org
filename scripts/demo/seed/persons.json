@@ -64,6 +64,11 @@
         "house": "kaiserfeldgasse-19",
         "role": "Admin",
         "units": []
+      },
+      {
+        "house": "musterstrasse-12",
+        "role": "Admin",
+        "units": null
       }
     ]
   },
@@ -132,6 +137,11 @@
         "house": "kaiserfeldgasse-19",
         "role": "Verwalter",
         "units": []
+      },
+      {
+        "house": "musterstrasse-12",
+        "role": "Verwalter",
+        "units": null
       }
     ]
   },
@@ -1068,6 +1078,192 @@
           "Top 7",
           "Stellplatz 3",
           "Stellplatz 6"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12, 8010 Graz",
+    "email": "stiftung.hofbauer@musterstadt.example",
+    "name": "Familie Hofbauer Privatstiftung",
+    "title": "",
+    "phone": "+43 316 555 180",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Eigentümer",
+        "units": [
+          "Geschäft",
+          "Top 1",
+          "Top 2",
+          "Top 3",
+          "Top 4",
+          "Top 5",
+          "Top 6",
+          "Top 7",
+          "Top 8",
+          "Top 9",
+          "Top 10"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/Geschäft\n8010 Graz",
+    "email": "mode.musterstadt@musterstadt.example",
+    "name": "Musterstadt Mode GmbH",
+    "title": "",
+    "phone": "+43 316 555 181",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Geschäft"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/1\n8010 Graz",
+    "email": "elias.berger@musterstadt.example",
+    "name": "Elias Berger",
+    "title": "",
+    "phone": "+43 664 510 20 01",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 1"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/2\n8010 Graz",
+    "email": "lena.krainer@musterstadt.example",
+    "name": "Lena Krainer",
+    "title": "",
+    "phone": "+43 664 510 20 02",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 2"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/3\n8010 Graz",
+    "email": "markus.fellner@musterstadt.example",
+    "name": "Markus Fellner",
+    "title": "",
+    "phone": "+43 664 510 20 03",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 3"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/4\n8010 Graz",
+    "email": "sara.holzer@musterstadt.example",
+    "name": "Sara Holzer",
+    "title": "",
+    "phone": "+43 664 510 20 04",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 4"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/5\n8010 Graz",
+    "email": "tim.oswald@musterstadt.example",
+    "name": "Tim Oswald",
+    "title": "",
+    "phone": "+43 664 510 20 05",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 5"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/7\n8010 Graz",
+    "email": "nora.binder@musterstadt.example",
+    "name": "Nora Binder",
+    "title": "",
+    "phone": "+43 664 510 20 07",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 7"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/8\n8010 Graz",
+    "email": "julian.eder@musterstadt.example",
+    "name": "Julian Eder",
+    "title": "",
+    "phone": "+43 664 510 20 08",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 8"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/9\n8010 Graz",
+    "email": "amira.celik@musterstadt.example",
+    "name": "Amira Celik",
+    "title": "",
+    "phone": "+43 664 510 20 09",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 9"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Musterstraße 12/10\n8010 Graz",
+    "email": "paul.reiter.m12@musterstadt.example",
+    "name": "Paul Reiter",
+    "title": "",
+    "phone": "+43 664 510 20 10",
+    "memberships": [
+      {
+        "house": "musterstrasse-12",
+        "role": "Mieter",
+        "units": [
+          "Top 10"
         ]
       }
     ]

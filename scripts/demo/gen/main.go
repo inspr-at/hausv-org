@@ -183,17 +183,26 @@ func generate(out string) error {
 		return err
 	}
 	houses, persons := buildHousesAndPersons()
+	// Intake, portal documents and the WEG statement stay on the original
+	// portfolio. The Zinshaus is appended afterwards so those files do not shift.
+	portfolio := append([]house(nil), houses...)
+	zinshaus, persons := buildZinshaus(persons)
+	houses = append(houses, zinshaus)
 	templates := demoTemplates()
-	items, err := buildIntake(houses, persons, templates)
+	items, err := buildIntake(portfolio, persons, templates)
 	if err != nil {
 		return err
 	}
+	announcements := buildAnnouncements(houses)
+	announcements = append(announcements, zinshausAnnouncement(zinshaus.Slug, len(announcements)+1))
 	files := map[string]any{
 		"houses.json": houses, "persons.json": persons, "intake.json": items,
 		"textbausteine.json": templates, "events.json": buildEvents(houses),
-		"announcements.json": buildAnnouncements(houses), "org.json": buildOrg(),
-		"annual-statement.json": buildAnnualStatement(houses[0]),
-		"documents.json":        buildDocuments(houses),
+		"announcements.json": announcements, "org.json": buildOrg(),
+		"annual-statement.json":          buildAnnualStatement(portfolio[0]),
+		"annual-statement-zinshaus.json": buildZinshausStatement(zinshaus),
+		"leases-zinshaus.json":           buildZinshausLeases(),
+		"documents.json":                 buildDocuments(portfolio),
 	}
 	for name, value := range files {
 		if err := writeJSON(filepath.Join(out, name), value); err != nil {

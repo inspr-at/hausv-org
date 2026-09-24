@@ -16,6 +16,7 @@ import (
 
 type seedLease struct {
 	ID                   string `json:"id"`
+	House                string `json:"house,omitempty"`
 	Unit                 string `json:"unit"`
 	TenantName           string `json:"tenant_name"`
 	TenantEmail          string `json:"tenant_email"`
@@ -61,6 +62,17 @@ func seedLeases(ctx context.Context, database *sql.DB, identities map[string]sto
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return fmt.Errorf("demo leases: %w", err)
 	}
+	extra, err := os.ReadFile(filepath.Join(dir, "leases-zinshaus.json"))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err == nil {
+		var more []seedLease
+		if err := json.Unmarshal(extra, &more); err != nil {
+			return fmt.Errorf("demo zinshaus leases: %w", err)
+		}
+		items = append(items, more...)
+	}
 	if len(items) == 0 {
 		return nil
 	}
@@ -74,20 +86,44 @@ func seedLeases(ctx context.Context, database *sql.DB, identities map[string]sto
 			return err
 		}
 	}
+	order := []string{}
+	byHouse := map[string][]seedLease{}
 	for _, item := range items {
-		identity, ok := identities[textutil.Slug("janusbergweg-123")]
-		if !ok {
-			return fmt.Errorf("demo leases: missing janusbergweg-123")
+		slug := item.House
+		if slug == "" {
+			slug = "janusbergweg-123"
 		}
-		if err := store.ReplaceLeaseGraph(tx, identity.Ref(), item.lease()); err != nil {
-			return fmt.Errorf("demo lease %s: %w", item.ID, err)
+		slug = textutil.Slug(slug)
+		if _, seen := byHouse[slug]; !seen {
+			order = append(order, slug)
 		}
+		byHouse[slug] = append(byHouse[slug], item)
 	}
-	identity := identities[textutil.Slug("janusbergweg-123")]
-	if err := store.SeedValorisationDraft(tx, identity.Ref(), store.ValorisationInput{EffectiveOn: "2026-04-01", House: "Janusbergweg 123", Address: "Janusbergweg 123, 8010 Graz", Organisation: "Hausverwaltung Musterstadt", Contact: "vera.verwalter@musterstadt.example"}, "musterstadt", time.Date(2026, 4, 1, 9, 0, 0, 0, time.UTC)); err != nil {
-		return err
+	for _, slug := range order {
+		identity, ok := identities[slug]
+		if !ok {
+			return fmt.Errorf("demo leases: missing %s", slug)
+		}
+		for _, item := range byHouse[slug] {
+			if err := store.ReplaceLeaseGraph(tx, identity.Ref(), item.lease()); err != nil {
+				return fmt.Errorf("demo lease %s: %w", item.ID, err)
+			}
+		}
+		input := valorisationDraftInput(slug)
+		if err := store.SeedValorisationDraft(tx, identity.Ref(), input, "musterstadt", time.Date(2026, 4, 1, 9, 0, 0, 0, time.UTC)); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
+}
+
+func valorisationDraftInput(slug string) store.ValorisationInput {
+	input := store.ValorisationInput{EffectiveOn: "2026-04-01", House: "Janusbergweg 123", Address: "Janusbergweg 123, 8010 Graz", Organisation: "Hausverwaltung Musterstadt", Contact: "vera.verwalter@musterstadt.example"}
+	if slug == "musterstrasse-12" {
+		input.House = "Musterstraße 12 · Zinshaus"
+		input.Address = "Musterstraße 12, 8010 Graz"
+	}
+	return input
 }
 
 func (item seedLease) lease() store.Lease {

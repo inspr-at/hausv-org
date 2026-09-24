@@ -21,6 +21,7 @@ import (
 type seedStatement struct {
 	Legal      store.AnnualStatementLegalSettings `json:"legal"`
 	House      string                             `json:"house"`
+	Address    string                             `json:"address,omitempty"`
 	Year       int                                `json:"year"`
 	StartsOn   string                             `json:"starts_on"`
 	EndsOn     string                             `json:"ends_on"`
@@ -45,6 +46,8 @@ type seedStatementBasis struct {
 	Area                  int    `json:"usable_area_m2_hundredths"`
 	Persons               int    `json:"persons"`
 	PrepaidCents          int64  `json:"prepaid_cents"`
+	VacantFrom            string `json:"vacant_from,omitempty"`
+	VacantTo              string `json:"vacant_to,omitempty"`
 }
 type seedPerson struct {
 	Email   string `json:"email"`
@@ -76,8 +79,22 @@ func receiptDocumentTitle(cost seedStatementCost, operating bool) string {
 	}
 }
 
-func loadStatementFixture(dir string, houses []seedHouse, documentDir string) (*seedStatement, error) {
-	path := filepath.Join(dir, "annual-statement.json")
+func loadStatementFixtures(dir string, houses []seedHouse, documentDir string) ([]*seedStatement, error) {
+	var out []*seedStatement
+	for _, name := range []string{"annual-statement.json", "annual-statement-zinshaus.json"} {
+		statement, err := loadStatementFixtureFile(dir, name, houses, documentDir)
+		if err != nil {
+			return nil, err
+		}
+		if statement != nil {
+			out = append(out, statement)
+		}
+	}
+	return out, nil
+}
+
+func loadStatementFixtureFile(dir, name string, houses []seedHouse, documentDir string) (*seedStatement, error) {
+	path := filepath.Join(dir, name)
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	} else if err != nil {
@@ -232,7 +249,11 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 				id += "-betrieb"
 			}
 			title := receiptDocumentTitle(cost, receiptIndex == 1)
-			data := pdf.Simple([]string{title, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: " + cost.InvoiceDate, "Betrag: " + view.FormatEURCents(cost.AmountCents), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
+			address := statement.Address
+			if address == "" {
+				address = "Janusbergweg 123, 8010 Graz"
+			}
+			data := pdf.Simple([]string{title, "Hausverwaltung Musterstadt", address, "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: " + cost.InvoiceDate, "Betrag: " + view.FormatEURCents(cost.AmountCents), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
 			filename := id + ".pdf"
 			if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
 				return err
@@ -260,7 +281,7 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_period_unit_bases(tenant_id,tenant_slug,period_year,unit_id,miteigentumsanteil_ppm,usable_area_m2_hundredths,usable_area_recorded,persons,persons_recorded) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$7) ON CONFLICT(tenant_slug,period_year,unit_id) DO NOTHING`, identity.ID, identity.Slug, year, basis.UnitID, basis.PPM, basis.Area, true, basis.Persons); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE annual_statement_period_unit_bases SET tenant_id=$1,miteigentumsanteil_ppm=$5,usable_area_m2_hundredths=$6,usable_area_recorded=$7,persons=$8,persons_recorded=$7 WHERE tenant_slug=$2 AND period_year=$3 AND unit_id=$4`, identity.ID, identity.Slug, year, basis.UnitID, basis.PPM, basis.Area, true, basis.Persons); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE annual_statement_period_unit_bases SET tenant_id=$1,miteigentumsanteil_ppm=$5,usable_area_m2_hundredths=$6,usable_area_recorded=$7,persons=$8,persons_recorded=$7,vacant_from=$9,vacant_to=$10 WHERE tenant_slug=$2 AND period_year=$3 AND unit_id=$4`, identity.ID, identity.Slug, year, basis.UnitID, basis.PPM, basis.Area, true, basis.Persons, basis.VacantFrom, basis.VacantTo); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_prepayments(tenant_id,tenant_slug,period_year,unit_id,amount_cents,updated_at,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(tenant_slug,period_year,unit_id) DO NOTHING`, identity.ID, identity.Slug, year, basis.UnitID, basis.PrepaidCents, at, actor); err != nil {
@@ -271,38 +292,41 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 		}
 	}
 
-	// Usable area of this house is 1.227 m². The statutory floor of 1,12 €/m²/month
-	// is 1.374,24 € per month, 16.490,88 € for the year. The brief's 11.520,00 €
-	// would warn, so the twelve contributions are the floor itself.
-	// Closing: 18.400,00 + 16.490,88 − 3.260,00 + 212,40 = 31.843,28 €.
-	withdrawalID := fmt.Sprintf("demo-annual-%d-dachrinne", year)
-	withdrawalTitle := "Rechnung Dachrinnenreparatur 2025 (Spenglerei Holzer)"
-	withdrawalPDF := pdf.Simple([]string{withdrawalTitle, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: 2025-06-18", "Betrag: " + view.FormatEURCents(326000), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
-	if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, withdrawalID+".pdf"), withdrawalPDF, 0600); err != nil {
-		return err
-	}
-	withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: withdrawalTitle, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
-	if err := upsertJSON(ctx, tx, "documents", identity, withdrawalID, withdrawalDoc); err != nil {
-		return err
-	}
-	type reserveSeed struct {
-		id, kind, date, note, document string
-		amount                         int64
-	}
-	reserveRows := []reserveSeed{{id: fmt.Sprintf("demo-reserve-%d-opening", year), kind: store.ReserveKindOpening, date: "2025-01-01", amount: 1840000}}
-	for month := 1; month <= 12; month++ {
-		reserveRows = append(reserveRows, reserveSeed{id: fmt.Sprintf("demo-reserve-%d-contribution-%02d", year, month), kind: store.ReserveKindContribution, date: fmt.Sprintf("2025-%02d-01", month), amount: 137424})
-	}
-	reserveRows = append(reserveRows,
-		reserveSeed{id: fmt.Sprintf("demo-reserve-%d-withdrawal", year), kind: store.ReserveKindWithdrawal, date: "2025-06-18", amount: 326000, note: "Dachrinnenreparatur", document: withdrawalID},
-		reserveSeed{id: fmt.Sprintf("demo-reserve-%d-interest", year), kind: store.ReserveKindInterest, date: "2025-12-31", amount: 21240},
-	)
-	for _, row := range reserveRows {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_reserve_entries(tenant_id,tenant_slug,id,period_year,kind,entry_date,amount_cents,document_id,note,created_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(tenant_slug,id) DO NOTHING`, identity.ID, identity.Slug, row.id, year, row.kind, row.date, row.amount, row.document, row.note, at, actor); err != nil {
+	// The WEG reserve belongs to Janusbergweg. An MRG Zinshaus has no Rücklage.
+	if statement.Legal.Regime == "" || statement.Legal.Regime == "weg" {
+		// Usable area of this house is 1.227 m². The statutory floor of 1,12 €/m²/month
+		// is 1.374,24 € per month, 16.490,88 € for the year. The brief's 11.520,00 €
+		// would warn, so the twelve contributions are the floor itself.
+		// Closing: 18.400,00 + 16.490,88 − 3.260,00 + 212,40 = 31.843,28 €.
+		withdrawalID := fmt.Sprintf("demo-annual-%d-dachrinne", year)
+		withdrawalTitle := "Rechnung Dachrinnenreparatur 2025 (Spenglerei Holzer)"
+		withdrawalPDF := pdf.Simple([]string{withdrawalTitle, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: 2025-06-18", "Betrag: " + view.FormatEURCents(326000), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
+		if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
 			return err
+		}
+		if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, withdrawalID+".pdf"), withdrawalPDF, 0600); err != nil {
+			return err
+		}
+		withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: withdrawalTitle, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
+		if err := upsertJSON(ctx, tx, "documents", identity, withdrawalID, withdrawalDoc); err != nil {
+			return err
+		}
+		type reserveSeed struct {
+			id, kind, date, note, document string
+			amount                         int64
+		}
+		reserveRows := []reserveSeed{{id: fmt.Sprintf("demo-reserve-%d-opening", year), kind: store.ReserveKindOpening, date: "2025-01-01", amount: 1840000}}
+		for month := 1; month <= 12; month++ {
+			reserveRows = append(reserveRows, reserveSeed{id: fmt.Sprintf("demo-reserve-%d-contribution-%02d", year, month), kind: store.ReserveKindContribution, date: fmt.Sprintf("2025-%02d-01", month), amount: 137424})
+		}
+		reserveRows = append(reserveRows,
+			reserveSeed{id: fmt.Sprintf("demo-reserve-%d-withdrawal", year), kind: store.ReserveKindWithdrawal, date: "2025-06-18", amount: 326000, note: "Dachrinnenreparatur", document: withdrawalID},
+			reserveSeed{id: fmt.Sprintf("demo-reserve-%d-interest", year), kind: store.ReserveKindInterest, date: "2025-12-31", amount: 21240},
+		)
+		for _, row := range reserveRows {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_reserve_entries(tenant_id,tenant_slug,id,period_year,kind,entry_date,amount_cents,document_id,note,created_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(tenant_slug,id) DO NOTHING`, identity.ID, identity.Slug, row.id, year, row.kind, row.date, row.amount, row.document, row.note, at, actor); err != nil {
+				return err
+			}
 		}
 	}
 	if statement.Legal.HeizKGApplies {
