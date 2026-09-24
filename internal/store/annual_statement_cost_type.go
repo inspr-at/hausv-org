@@ -18,9 +18,12 @@ type AnnualStatementCostType struct {
 	// AllocationKey is the Verteilerschlüssel used to split an allocatable
 	// cost type across units (HAUSV-577). It is required exactly when the
 	// cost type is allocatable and empty otherwise.
-	AllocationKey string    `json:"allocation_key"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	UpdatedBy     string    `json:"updated_by"`
+	AllocationKey string `json:"allocation_key"`
+	// VATRatePercent is 0, 10 or 20 for the period snapshot. The catalogue
+	// leaves it unset; the period column carries the editable rate.
+	VATRatePercent int       `json:"vat_rate_percent,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	UpdatedBy      string    `json:"updated_by"`
 }
 
 // Allocation keys. Nutzwert reuses the Miteigentumsanteil already recorded on
@@ -91,11 +94,11 @@ func (r *boundAnnualStatementCostTypeRepository) List() []AnnualStatementCostTyp
 var annualStatementCostTypeKeyPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
 
 var defaultAnnualStatementCostTypes = []AnnualStatementCostType{
-	{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
-	{Key: "muellabfuhr", Name: "Müllabfuhr", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
-	{Key: "hausbetreuung", Name: "Hausbetreuung", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
-	{Key: "gebaeudeversicherung", Name: "Gebäudeversicherung", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
-	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true, AllocationKey: AllocationKeyNutzwert},
+	{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, VATRatePercent: 10},
+	{Key: "muellabfuhr", Name: "Müllabfuhr", Allocatable: true, AllocationKey: AllocationKeyNutzwert, VATRatePercent: 10},
+	{Key: "hausbetreuung", Name: "Hausbetreuung", Allocatable: true, AllocationKey: AllocationKeyNutzwert, VATRatePercent: 10},
+	{Key: "gebaeudeversicherung", Name: "Gebäudeversicherung", Allocatable: true, AllocationKey: AllocationKeyNutzwert, VATRatePercent: 10},
+	{Key: "gartenpflege", Name: "Gartenpflege", Allocatable: true, AllocationKey: AllocationKeyNutzwert, VATRatePercent: 10},
 }
 
 // AnnualStatementDefaultCostTypes returns the read-only starter catalogue for

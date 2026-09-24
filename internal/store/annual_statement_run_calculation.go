@@ -48,25 +48,30 @@ type AnnualStatementRunBlockedError struct{ Issues []AnnualStatementRunIssue }
 func (e *AnnualStatementRunBlockedError) Error() string { return "annual statement run blocked" }
 
 type AnnualStatementRunCost struct {
-	CostTypeKey   string `json:"cost_type_key"`
-	Name          string `json:"name"`
-	AllocationKey string `json:"allocation_key"`
-	SharePPM      int    `json:"share_ppm"`
-	AmountCents   int64  `json:"amount_cents"`
+	CostTypeKey    string `json:"cost_type_key"`
+	Name           string `json:"name"`
+	AllocationKey  string `json:"allocation_key"`
+	SharePPM       int    `json:"share_ppm"`
+	AmountCents    int64  `json:"amount_cents"`
+	NetCents       int64  `json:"net_cents,omitempty"`
+	VATCents       int64  `json:"vat_cents,omitempty"`
+	VATRatePercent int    `json:"vat_rate_percent,omitempty"`
 }
 
 type AnnualStatementRunUnit struct {
-	UnitID         string                   `json:"unit_id"`
-	Label          string                   `json:"label"`
-	Costs          []AnnualStatementRunCost `json:"costs"`
-	AllocatedCents int64                    `json:"allocated_cents"`
-	PrepaidCents   int64                    `json:"prepaid_cents"`
+	UnitID         string                    `json:"unit_id"`
+	Label          string                    `json:"label"`
+	Costs          []AnnualStatementRunCost  `json:"costs"`
+	VAT            []AnnualStatementVATGroup `json:"vat,omitempty"`
+	AllocatedCents int64                     `json:"allocated_cents"`
+	PrepaidCents   int64                     `json:"prepaid_cents"`
 	// Positive means an amount due; negative means a credit.
 	BalanceCents int64 `json:"balance_cents"`
 }
 
 type AnnualStatementRunResult struct {
 	Proposals     []AnnualStatementPrepaymentProposal `json:"proposals,omitempty"`
+	VATGroups     []AnnualStatementVATGroup           `json:"vat_groups,omitempty"`
 	TotalCents    int64                               `json:"total_cents"`
 	ExcludedCents int64                               `json:"excluded_cents"`
 	Units         []AnnualStatementRunUnit            `json:"units"`
@@ -74,7 +79,14 @@ type AnnualStatementRunResult struct {
 
 // CalculateAnnualStatementRun never returns partial monetary results.
 func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
-	return calculateAnnualStatementRun(input, true)
+	result, issues := calculateAnnualStatementRun(input, true)
+	if len(issues) > 0 || !input.Structure.Legal.ShowVAT {
+		return result, issues
+	}
+	if code := applyAnnualStatementVAT(&result, input); code != "" {
+		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: code}}
+	}
+	return result, nil
 }
 
 // Replay dispatches by the stored algorithm version; version 1 retains its
@@ -85,6 +97,15 @@ func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult,
 		return calculateAnnualStatementRun(run.Input, false)
 	case 2:
 		return calculateAnnualStatementRun(run.Input, true)
+	case AnnualStatementCalculationVersionVAT:
+		result, issues := calculateAnnualStatementRun(run.Input, true)
+		if len(issues) > 0 || !run.Input.Structure.Legal.ShowVAT {
+			return result, issues
+		}
+		if code := applyAnnualStatementVAT(&result, run.Input); code != "" {
+			return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: code}}
+		}
+		return result, nil
 	default:
 		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: "calculation-version"}}
 	}
@@ -257,7 +278,7 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 		}
 
 		for i, share := range shares {
-			result.Units[i].Costs = append(result.Units[i].Costs, AnnualStatementRunCost{cost.Key, cost.Name, cost.AllocationKey, share.SharePPM, cents[i]})
+			result.Units[i].Costs = append(result.Units[i].Costs, AnnualStatementRunCost{CostTypeKey: cost.Key, Name: cost.Name, AllocationKey: cost.AllocationKey, SharePPM: share.SharePPM, AmountCents: cents[i]})
 			result.Units[i].AllocatedCents += cents[i]
 		}
 	}

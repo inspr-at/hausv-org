@@ -101,7 +101,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		}
 		costTypeViews = append(costTypeViews, web.AnnualStatementCostTypeView{
 			Key: costType.Key, Name: costType.Name, Allocatable: costType.Allocatable,
-			AllocationKey: costType.AllocationKey,
+			AllocationKey: costType.AllocationKey, VATRatePercent: costType.VATRatePercent,
 		})
 	}
 	unitViews := make([]web.AnnualStatementUnitView, 0, len(units))
@@ -341,6 +341,18 @@ func formatAnnualStatementBalance(cents int64) string {
 	return "Ausgeglichen"
 }
 
+func annualStatementVATRate(key, raw string) (int, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return store.DefaultAnnualStatementVATPercent(strings.ToLower(strings.TrimSpace(key))), true
+	}
+	rate, err := strconv.Atoi(raw)
+	if err != nil || !store.ValidAnnualStatementVATPercent(rate) {
+		return 0, false
+	}
+	return rate, true
+}
+
 func (a *app) saveAnnualStatementCostType(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	tenant, actorEmail, role, _, ok := a.buildingSettingsContext(w, ac)
 	if !ok {
@@ -357,10 +369,15 @@ func (a *app) saveAnnualStatementCostType(w http.ResponseWriter, r *http.Request
 	}
 	// The store rejects an allocatable cost type without a valid key, so a
 	// missing or tampered allocation_key lands on the same invalid redirect.
+	vatRate, vatOK := annualStatementVATRate(r.FormValue("key"), r.FormValue("vat_rate"))
+	if !vatOK {
+		http.Redirect(w, r, "/app/settings/annual-statement?cost-type=invalid", http.StatusSeeOther)
+		return
+	}
 	costType := store.AnnualStatementCostType{
 		Key: r.FormValue("key"), Name: r.FormValue("name"), Allocatable: allocation == "allocatable",
-		AllocationKey: r.FormValue("allocation_key"),
-		UpdatedAt:     time.Now().UTC(), UpdatedBy: actorEmail,
+		AllocationKey: r.FormValue("allocation_key"), VATRatePercent: vatRate,
+		UpdatedAt: time.Now().UTC(), UpdatedBy: actorEmail,
 	}
 	periodYear, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("period_year")))
 	var saved store.AnnualStatementCostType

@@ -97,7 +97,29 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 				total += receipt.AmountCents
 			}
 		}
-		d.Costs = append(d.Costs, CostRow{Name: cost.Name, Amount: money(total)})
+		row := CostRow{Name: cost.Name, Amount: money(total)}
+		if run.Input.Structure.Legal.ShowVAT {
+			var net, vat int64
+			var rate int
+			for _, unit := range run.Result.Units {
+				for _, line := range unit.Costs {
+					if line.CostTypeKey != cost.Key {
+						continue
+					}
+					net += line.NetCents
+					vat += line.VATCents
+					rate = line.VATRatePercent
+				}
+			}
+			row.Net, row.Rate, row.VAT, row.Gross = money(net), fmt.Sprintf("%d %%", rate), money(vat), money(total)
+			d.ShowVAT = true
+		}
+		d.Costs = append(d.Costs, row)
+	}
+	if d.ShowVAT {
+		for _, group := range run.Result.VATGroups {
+			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
+		}
 	}
 	return pdf.Pages(d.Pages(), statementPalette), nil
 }

@@ -31,10 +31,11 @@ type AnnualStatementUnitView struct {
 }
 
 type AnnualStatementCostTypeView struct {
-	Key           string
-	Name          string
-	Allocatable   bool
-	AllocationKey string
+	Key            string
+	Name           string
+	Allocatable    bool
+	AllocationKey  string
+	VATRatePercent int
 }
 
 type AnnualStatementAllocationKeyOption struct {
@@ -231,6 +232,8 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <option value="ausnahme" selected?={ data.Legal.Regime == "ausnahme" }>MRG Ausnahme</option>
  </select></label>
  <label><input type="checkbox" name="heizkg_applies" checked?={ data.Legal.HeizKGApplies }/> HeizKG anwendbar</label>
+ <label><input type="checkbox" name="show_vat" checked?={ data.Legal.ShowVAT }/> Umsatzsteuer ausweisen</label>
+ <p>Aus bleibt die Abrechnung brutto wie bisher. An zeigt je Kostenart Netto, Steuersatz, Umsatzsteuer und Brutto. Heizung und Warmwasser sind 20 %, die übrigen Kostenarten 10 %, jeweils änderbar auf 0, 10 oder 20 %.</p>
  <fieldset><legend>HeizKG-Verteilung</legend>
  <label>Verbrauchsanteil der Energiekosten (%)<input type="number" name="heating_consumption_percent" min="55" max="85" value={ strconv.Itoa(data.Legal.HeatingConsumptionPercent) } required/></label>
  <p>55–85 %, üblicher Ausgangswert 70 %. Der Rest der Energiekosten und sämtliche sonstigen Betriebskosten folgen der versorgbaren Nutzfläche.</p>
@@ -296,7 +299,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 						for _, option := range data.Allocation.KeyOptions {
 							<option value={ option.Key } selected?={ option.Key == costType.AllocationKey }>{ option.Label }</option>
 						}
-					</select></label><button class="button ghost" type="submit">Speichern</button></form>
+					</select></label><label>USt-Satz<select name="vat_rate" required><option value="0" selected?={ costType.VATRatePercent == 0 }>0 %</option><option value="10" selected?={ costType.VATRatePercent == 10 }>10 %</option><option value="20" selected?={ costType.VATRatePercent == 20 }>20 %</option></select></label><button class="button ghost" type="submit">Speichern</button></form>
 				}
 			</div>
 			<details class="inline-details"><summary>Weitere Kostenart hinzufügen
@@ -305,7 +308,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 					for _, option := range data.Allocation.KeyOptions {
 						<option value={ option.Key }>{ option.Label }</option>
 					}
-				</select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
+				</select></label><label>USt-Satz<select name="vat_rate"><option value="" selected>Standard</option><option value="0">0 %</option><option value="10">10 %</option><option value="20">20 %</option></select></label></div><div class="form-actions"><button class="button primary" type="submit">Kostenart hinzufügen</button></div></form></details>
 		</section>
 
 		<section class="panel workspace" id="verteilerschluessel"><header class="workspace-head"><div><h2>Verteilerschlüssel</h2><p>Jede umlagefähige Kostenart wird nach genau einem Schlüssel auf die Einheiten verteilt. Die Vorschau zeigt die Anteile vor dem Abrechnungslauf.</p></div>

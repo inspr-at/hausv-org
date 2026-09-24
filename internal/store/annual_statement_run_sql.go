@@ -143,10 +143,10 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 		}
 		return rows.Err()
 	}
-	err = read(`SELECT key,name,allocatable,allocation_key,updated_at,updated_by FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY key`, func(rows *sql.Rows) error {
+	err = read(`SELECT key,name,allocatable,allocation_key,vat_rate_percent,updated_at,updated_by FROM annual_statement_period_cost_types WHERE tenant_id=$1 AND period_year=$2 ORDER BY key`, func(rows *sql.Rows) error {
 		var item AnnualStatementCostType
 		var updated string
-		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &updated, &item.UpdatedBy); err != nil {
+		if err := rows.Scan(&item.Key, &item.Name, &item.Allocatable, &item.AllocationKey, &item.VATRatePercent, &updated, &item.UpdatedBy); err != nil {
 			return err
 		}
 		at, err := time.Parse(time.RFC3339Nano, updated)

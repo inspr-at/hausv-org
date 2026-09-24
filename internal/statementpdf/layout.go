@@ -272,14 +272,17 @@ func (l *letterLayout) costTable() {
 	}
 	widths := []float64{153, 87, 83, 65, 83}
 	headings := []string{"Kostenart", "Gesamtkosten", "Schlüssel", "Anteil", "Betrag"}
-	if l.d.PartyID == "" {
+	if l.d.ShowVAT {
+		widths = []float64{151, 80, 70, 80, 90}
+		headings = []string{"Kostenart", "Netto", "USt-Satz", "USt", "Brutto"}
+	} else if l.d.PartyID == "" {
 		widths, headings = []float64{360, 111}, []string{"Kostenart", "Betrag"}
 	}
 	header := func() {
 		x := left
 		for i, label := range headings {
 			xText := x + 5
-			if i == 1 || i >= 3 {
+			if l.d.ShowVAT && i > 0 || !l.d.ShowVAT && (i == 1 || i >= 3) {
 				xText = x + widths[i] - 5 - pdf.TextWidth(label, pdf.Strong, 9)
 			}
 			l.text(label, pdf.Strong, 9, xText, l.y)
@@ -292,7 +295,9 @@ func (l *letterLayout) costTable() {
 	header()
 	for _, row := range l.d.Costs {
 		cells := []string{row.Name, row.Total, row.Key, row.Share, row.Amount}
-		if l.d.PartyID == "" {
+		if l.d.ShowVAT {
+			cells = []string{row.Name, row.Net, row.Rate, row.VAT, row.Gross}
+		} else if l.d.PartyID == "" {
 			cells = []string{row.Name, row.Amount}
 		}
 		wrapped, count := make([][]string, len(cells)), 1
@@ -314,7 +319,7 @@ func (l *letterLayout) costTable() {
 			for i, lines := range wrapped {
 				if n < len(lines) {
 					xText := x + 5
-					if i == 1 || i >= 3 {
+					if l.d.ShowVAT && i > 0 || !l.d.ShowVAT && (i == 1 || i >= 3) {
 						xText = x + widths[i] - 5 - pdf.TextWidth(lines[n], pdf.Body, 9)
 					}
 					l.text(lines[n], pdf.Body, 9, xText, l.y)
@@ -334,6 +339,11 @@ func (l *letterLayout) costTable() {
 	for _, line := range pdf.WrapWidth(l.d.Total, pdf.Strong, 10, measure-110) {
 		l.text(line, pdf.Strong, 10, left+measure-5-pdf.TextWidth(line, pdf.Strong, 10), l.y)
 		l.y -= 13
+	}
+	for _, line := range l.d.VATSummary {
+		l.ensure(16)
+		l.text(line, pdf.Body, 9, left+5, l.y)
+		l.y -= 14
 	}
 	l.y -= 8
 }

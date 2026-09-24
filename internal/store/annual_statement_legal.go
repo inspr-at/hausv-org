@@ -18,6 +18,8 @@ type AnnualStatementLegalSettings struct {
 	InspectionContact         string                      `json:"inspection_contact"`
 	Regime                    string                      `json:"regime"`
 	HeizKGApplies             bool                        `json:"heizkg_applies"`
+	// ShowVAT prints net, rate and VAT. Off leaves the gross statement unchanged.
+	ShowVAT bool `json:"show_vat,omitempty"`
 }
 
 func DefaultAnnualStatementLegalSettings() AnnualStatementLegalSettings {
