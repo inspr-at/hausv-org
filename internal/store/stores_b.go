@@ -38,6 +38,14 @@ const (
 	AuditActionUnitSave             = "building.unit.save"
 	AuditActionUnitDelete           = "building.unit.delete"
 	AuditActionUnitPayment          = "building.unit.payment"
+	AuditActionLeaseCreate          = "lease.create"
+	AuditActionLeaseUpdate          = "lease.update"
+	AuditActionLeaseEnd             = "lease.end"
+	AuditActionLeasePartyChange     = "lease_party.change"
+	AuditActionRentComponentAdd     = "rent_component.add"
+	AuditActionClauseCreate         = "clause.create"
+	AuditActionClauseUpdate         = "clause.update"
+	AuditActionClauseReview         = "clause.review"
 	AuditActionProfilePicture       = "profile.picture"
 	AuditActionAnnualPeriodSave     = "annual-statement.period.save"
 	AuditActionAnnualPartiesImport  = "annual-statement.parties.import"
@@ -2182,7 +2190,9 @@ func NormalizeAuditAction(raw string) string {
 	switch raw {
 	case AuditActionCapabilityOverride, AuditActionCapabilityReset, AuditActionUserCapability, AuditActionCapabilityProfile, AuditActionSupportViewStart, AuditActionSupportViewEnd, AuditActionLogin, AuditActionContextSwitch, AuditActionInviteCreate, AuditActionInviteUpdate, AuditActionInviteDelete,
 		AuditActionBuildingUpdate, AuditActionPortalModulesUpdate, AuditActionHeroUpdate, AuditActionUnitSave, AuditActionUnitDelete,
-		AuditActionUnitPayment, AuditActionProfilePicture,
+		AuditActionUnitPayment, AuditActionLeaseCreate, AuditActionLeaseUpdate, AuditActionLeaseEnd,
+		AuditActionLeasePartyChange, AuditActionRentComponentAdd, AuditActionClauseCreate, AuditActionClauseUpdate, AuditActionClauseReview,
+		AuditActionProfilePicture,
 		AuditActionDocumentUpload, AuditActionDocumentDownload, AuditActionDocumentReplace,
 		AuditActionAttachmentView, AuditActionAttachmentDelete, AuditActionIntegrationImport, AuditActionIntegrationExport,
 		AuditActionHandoverCreate, AuditActionHandoverConfirm, AuditActionHandoverFile,

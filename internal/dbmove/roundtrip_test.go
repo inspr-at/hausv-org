@@ -334,6 +334,22 @@ func seedFull(t *testing.T) *source {
 			{ID: "top-2", Label: "Top 2", UnitType: store.UnitTypeResidential, MiteigentumsanteilPPM: 400_000, OwnerEmails: []string{"multi@example.com"}},
 			{ID: "garage-1", Label: "Garage 1", UnitType: store.UnitTypeParking, BillableWeightPPM: 0, MiteigentumsanteilPPM: 200_000, UsableAreaM2Hundredths: 0, UsableAreaRecorded: true, Persons: 0, PersonsRecorded: true},
 		}))
+		leases, _ := store.BindLeaseRepository(store.NewSQLLeaseStore(src.lanes), tenant)
+		if _, err := leases.Create(store.Lease{
+			UnitID: "top-1", ConcludedOn: "2020-01-15", StartsOn: "2020-02-01",
+			UseKind: store.UseKindWohnung, MRGScope: store.MRGTeil, RentRegime: store.RentRegimeFrei,
+			LandlordIsBusiness: true, TenantIsConsumer: true, UpdatedAt: now, UpdatedBy: "verwalter@example.com",
+			Parties:    []store.LeaseParty{{Name: "Rita Bewohner", Email: "resident@example.com", ValidFrom: "2020-02-01"}},
+			Components: []store.RentComponent{{Kind: store.ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: store.OriginManual}},
+			Clauses: []store.IndexClause{{
+				ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
+				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
+				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+			}},
+		}); err != nil {
+			t.Fatalf("%s lease: %v", slug, err)
+		}
 		if unknown, err := units.UpdateAllocationBases([]store.UnitAllocationBasisUpdate{{UnitID: "top-1", UsableAreaM2Hundredths: 7_250, UsableAreaRecorded: true, Persons: 2, PersonsRecorded: true}}); err != nil || unknown {
 			t.Fatalf("%s allocation bases: unknown=%t err=%v", slug, unknown, err)
 		}

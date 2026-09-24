@@ -29,7 +29,7 @@ var expectedTenantTables = []string{
 	"energy_assets", "energy_entity_mappings", "energy_imports", "energy_intervals",
 	"energy_maintenance_plans", "energy_measures", "energy_tariff_assessments", "events", "handovers",
 	"home_connector_readings", "home_connectors", "home_portals", "home_profiles", "home_reservations",
-	"house_memberships", "integration_imports", "issues", "parking", "unit_payment_status", "units",
+	"house_memberships", "index_clauses", "integration_imports", "issues", "lease_parties", "leases", "parking", "rent_components", "unit_payment_status", "units", "valorisation_state",
 }
 
 func TestOpenConfigDefaultsToSQLite(t *testing.T) {
@@ -352,6 +352,21 @@ func tenantTableSmokeInsert(table string) string {
 	if table == "annual_statement_deliveries" {
 		return `INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES($1,'rls-fixture','delivery','run',1,'party@example.test','top-1','document','hash','party@example.test','2026-09-06T18:00:00Z','sent','','manager@example.test',1)`
 	}
+	// HAUSV-768: the lease tables carry required contract fields and a
+	// parent lease/clause, so a tenant_id-only smoke row would test NOT NULL
+	// and the FK instead of the RLS policy this fixture owns.
+	switch table {
+	case "leases":
+		return `INSERT INTO leases(tenant_id,id,tenant_slug,unit_id,status,concluded_on,starts_on,lease_kind,use_kind,mrg_scope,rent_regime,price_restricted,landlord_is_business,tenant_is_consumer,vat_opted,updated_at) VALUES($1,'rls-lease','rls-fixture','top-1','active','2018-03-15','2018-04-01','hauptmiete','wohnung','teil','frei',false,true,true,false,'2026-09-24T00:00:00Z')`
+	case "lease_parties":
+		return `INSERT INTO lease_parties(tenant_id,id,lease_id,tenant_slug,name,role,valid_from) VALUES($1,'rls-party','rls-lease','rls-fixture','RLS Fixture','hauptmieter','2018-04-01')`
+	case "rent_components":
+		return `INSERT INTO rent_components(tenant_id,id,lease_id,tenant_slug,kind,net_cents,vat_rate_bp,valid_from,origin,created_at) VALUES($1,'rls-component','rls-lease','rls-fixture','hmz',100000,1000,'2018-04-01','manual','2026-09-24T00:00:00Z')`
+	case "index_clauses":
+		return `INSERT INTO index_clauses(tenant_id,id,lease_id,tenant_slug,clause_type,valid_from) VALUES($1,'rls-clause','rls-lease','rls-fixture','vpi_threshold','2018-04-01')`
+	case "valorisation_state":
+		return `INSERT INTO valorisation_state(tenant_id,clause_id,tenant_slug) VALUES($1,'rls-clause','rls-fixture')`
+	}
 	return `INSERT INTO ` + table + `(tenant_id) VALUES($1)`
 }
 
@@ -384,9 +399,17 @@ func seedEveryTenantTable(t *testing.T, database *sql.DB, tables []string) {
 		VALUES($1,'rls-fixture',2026,'rls-fixture')`, tenantA); err != nil {
 		t.Fatalf("seed annual_statement_period_unit_bases: %v", err)
 	}
+	// Parents before children: the lease and its clause exist before the rows
+	// that reference them, whatever order the catalog lists the tables in.
+	for _, table := range []string{"leases", "index_clauses"} {
+		if _, err := tx.Exec(tenantTableSmokeInsert(table), tenantA); err != nil {
+			t.Fatalf("seed prerequisite %s: %v", table, err)
+		}
+	}
 	for _, table := range tables {
 		if table == "home_profiles" || table == "energy_assets" || table == "home_reservations" || table == "home_connectors" ||
-			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" {
+			table == "annual_statement_periods" || table == "annual_statement_period_cost_types" || table == "annual_statement_period_unit_bases" ||
+			table == "leases" || table == "index_clauses" {
 			continue
 		}
 		if !regexp.MustCompile(`^[a-z_]+$`).MatchString(table) {

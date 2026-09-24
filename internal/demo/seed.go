@@ -238,6 +238,9 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	if err := upsertHouseFixtures(ctx, database, houses, identities, intake, events, announcements, org); err != nil {
 		return SeedResult{}, err
 	}
+	if err := seedLeases(ctx, database, identities, dir); err != nil {
+		return SeedResult{}, err
+	}
 	if err := seedDocuments(ctx, database, documents, identities, options.DocumentDir); err != nil {
 		return SeedResult{}, err
 	}
@@ -539,8 +542,18 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 	// a corrected e-mail, a new normalization) would otherwise leave the old
 	// rows behind and the portal would resolve occupants from stale records.
 	for _, house := range houses {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM units WHERE tenant_slug=$1`, textutil.Slug(house.Slug)); err != nil {
-			return err
+		slug := textutil.Slug(house.Slug)
+		for _, query := range []string{
+			`DELETE FROM valorisation_state WHERE tenant_slug=$1`,
+			`DELETE FROM index_clauses WHERE tenant_slug=$1`,
+			`DELETE FROM rent_components WHERE tenant_slug=$1`,
+			`DELETE FROM lease_parties WHERE tenant_slug=$1`,
+			`DELETE FROM leases WHERE tenant_slug=$1`,
+			`DELETE FROM units WHERE tenant_slug=$1`,
+		} {
+			if _, err := tx.ExecContext(ctx, query, slug); err != nil {
+				return err
+			}
 		}
 	}
 	// A fresh demo day imports each mailbox fixture once again. The ledger

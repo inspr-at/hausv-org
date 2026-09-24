@@ -278,6 +278,8 @@ const (
 	capabilityOversight           = authz.CapabilityOversight
 	capabilityManageEnergy        = authz.CapabilityManageEnergy
 	capabilityControlEnergy       = authz.CapabilityControlEnergy
+	capabilityManageLeases        = authz.CapabilityManageLeases
+	capabilityApproveValorisation = authz.CapabilityApproveValorisation
 )
 
 // ── extracted to authz ──────────────────────────────────────────────
@@ -712,6 +714,7 @@ type app struct {
 	handoverStore             handoverStorage
 	protocolFiler             protocolFiler
 	voteStore                 voteStorage
+	leaseStore                store.LeaseStorage
 	voteReminderInterval      time.Duration
 	parkingStore              store.ParkingStorage
 	parkingSampleInterval     time.Duration
@@ -1136,6 +1139,11 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/building/geocode", a.authedAction(capabilityManageBuilding, a.geocodeBuildingAddress))
 	mux.HandleFunc("POST /app/settings/building/hero", a.action(a.updateBuildingHero))
 	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
+	mux.HandleFunc("GET /app/settings/building/units/{unitID}/lease", a.authed(capabilityManageLeases, a.unitLeasePage))
+	mux.HandleFunc("POST /app/settings/building/units/{unitID}/lease", a.authedAction(capabilityManageLeases, a.saveUnitLease))
+	mux.HandleFunc("POST /app/settings/building/units/{unitID}/lease/end", a.authedAction(capabilityManageLeases, a.endUnitLease))
+	mux.HandleFunc("GET /app/settings/building/leases/import", a.authed(capabilityManageLeases, a.leaseImportPage))
+	mux.HandleFunc("POST /app/settings/building/leases/import", a.authedAction(capabilityManageLeases, a.leaseImport))
 	mux.HandleFunc("POST /app/settings/building/units", a.action(a.upsertBuildingUnit))
 	mux.HandleFunc("POST /app/settings/building/units/delete", a.action(a.deleteBuildingUnit))
 	mux.HandleFunc("POST /app/settings/building/payment-status", a.action(a.updateUnitPaymentStatus))
@@ -1197,6 +1205,7 @@ type requestRepositories struct {
 	unitPayments              store.UnitPaymentStatusRepository
 	units                     store.UnitRepository
 	votes                     store.VoteRepository
+	leases                    store.LeaseRepository
 }
 
 type resolvedTenantRequest struct {
@@ -1267,6 +1276,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.voteStore != nil {
 		repositories.votes, _ = store.BindVoteRepository(a.voteStore, tenant)
+	}
+	if a.leaseStore != nil {
+		repositories.leases, _ = store.BindLeaseRepository(a.leaseStore, tenant)
 	}
 	return repositories
 }
@@ -1950,6 +1962,7 @@ func newApp() (*app, error) {
 		handoverStore:             handoverBackend,
 		protocolFiler:             filer,
 		voteStore:                 voteBackend,
+		leaseStore:                store.NewSQLLeaseStore(tenantDB),
 		voteReminderInterval:      voteReminderInterval,
 		parkingStore:              sqlParking,
 		parkingSampleInterval:     parkingSampleInterval,

@@ -87,10 +87,15 @@ var tenantIDTables = []tenantIDTable{
 	{name: "home_reservations", slugColumn: "slug", preTenant: true},
 	{name: "house_memberships", slugColumn: "tenant_slug"},
 	{name: "integration_imports", slugColumn: "tenant_slug"},
+	{name: "index_clauses", slugColumn: "tenant_slug"},
 	{name: "issues", slugColumn: "tenant_slug"},
+	{name: "lease_parties", slugColumn: "tenant_slug"},
+	{name: "leases", slugColumn: "tenant_slug"},
 	{name: "parking", slugColumn: "tenant_slug"},
+	{name: "rent_components", slugColumn: "tenant_slug"},
 	{name: "unit_payment_status", slugColumn: "tenant_slug"},
 	{name: "units", slugColumn: "tenant_slug"},
+	{name: "valorisation_state", slugColumn: "tenant_slug"},
 }
 
 // ErrTenantIDMissing reports rows that reached the completeness check without an

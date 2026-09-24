@@ -60,7 +60,7 @@ func BindCapabilityRepository(database *sql.DB, orgKey string) CapabilityReposit
 // Store validation is independent of authz, which consumes these records.
 func DelegableCapability(capability string) bool {
 	switch capability {
-	case "manage-parking", "manage-announcements", "manage-documents", "manage-issues", "manage-votes", "manage-building", "owner-documents", "vote", "oversight", "manage-energy", "control-energy":
+	case "manage-parking", "manage-announcements", "manage-documents", "manage-issues", "manage-votes", "manage-building", "owner-documents", "vote", "oversight", "manage-energy", "control-energy", "manage_leases", "approve_valorisation":
 		return true
 	default:
 		return false

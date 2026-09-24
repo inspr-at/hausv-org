@@ -178,6 +178,22 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1", MiteigentumsanteilPPM: 1000000}}); err != nil {
 		t.Fatalf("units: %v", err)
 	}
+	leaseRepo, _ := BindLeaseRepository(NewSQLLeaseStore(lanes), tenant)
+	if _, err := leaseRepo.Create(Lease{
+		UnitID: "u1", ConcludedOn: "2020-01-15", StartsOn: "2020-02-01",
+		UseKind: UseKindWohnung, MRGScope: MRGTeil, RentRegime: RentRegimeFrei,
+		LandlordIsBusiness: true, TenantIsConsumer: true, UpdatedAt: now, UpdatedBy: "a@example.com",
+		Parties:    []LeaseParty{{Name: "Rita", Email: "a@example.com", ValidFrom: "2020-02-01"}},
+		Components: []RentComponent{{Kind: ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: OriginManual}},
+		Clauses: []IndexClause{{
+			ClauseType: ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+			ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
+			ReviewStatus: ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
+			State: &ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+		}},
+	}); err != nil {
+		t.Fatalf("lease: %v", err)
+	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
 	costTypes, _ := BindAnnualStatementCostTypeRepository(NewSQLAnnualStatementCostTypeStore(lanes), tenant)
 	if _, err := costTypes.Save(AnnualStatementCostType{Key: "grundsteuer", Name: "Grundsteuer", Allocatable: true, AllocationKey: AllocationKeyNutzwert, UpdatedAt: now, UpdatedBy: "a@example.com"}); err != nil {

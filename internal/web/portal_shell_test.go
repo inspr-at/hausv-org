@@ -81,6 +81,8 @@ func TestAuthenticatedTemplPagesUsePortalDocument(t *testing.T) {
 		{"EnergyDataPage", EnergyDataPage(EnergyDataPageData{Portal: portal}), "data-templ-legacy", nil},
 		{"EbInterfaceImportPage", EbInterfaceImportPage(EbInterfaceImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
 		{"PaymentImportPage", PaymentImportPage(PaymentImportPageData{Portal: portal}), "data-templ-legacy", []string{"attachments.js"}},
+		{"LeasePage", LeasePage(LeasePageData{Portal: portal, UnitID: "top-1", UnitLabel: "Top 1"}), "data-templ-settings", nil},
+		{"LeaseImportPage", LeaseImportPage(LeaseImportPageData{Portal: portal}), "data-templ-settings", nil},
 	}
 
 	assertPageTableCoversTemplPages(t, pages)

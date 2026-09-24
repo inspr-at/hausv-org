@@ -45,8 +45,8 @@ func TestRechtePageAccessAndMatrixHAUSV606(t *testing.T) {
 					t.Errorf("rights page missing %q", want)
 				}
 			}
-			if count := strings.Count(body, "data-family="); count != 45 {
-				t.Errorf("rendered matrix cells = %d, want 45", count)
+			if count := strings.Count(body, "data-family="); count != 48 {
+				t.Errorf("rendered matrix cells = %d, want 48", count)
 			}
 		})
 	}
