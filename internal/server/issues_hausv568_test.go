@@ -101,6 +101,31 @@ func TestPortalIssuesTableShowsBeschreibungNotBodyInOrt(t *testing.T) {
 	}
 }
 
+func TestManagementHouseOverviewNamesUnitWithoutOwnPrefix(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug:     "demo",
+		AuthorEmail:    "resident@example.com",
+		AuthorName:     "Resident",
+		Category:       "Reparatur",
+		Title:          "Heizung kalt",
+		Body:           "Seit gestern kalt.",
+		LocationType:   issueLocationUnit,
+		LocationDetail: "Top 7",
+		Status:         issueStatusNew,
+		Priority:       issuePriorityNorm,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	body := authedRequest(t, a, "manager@example.com", "/demo/app").Body.String()
+	if strings.Contains(body, "Eigene Einheit") {
+		t.Fatal("Verwaltungsansicht zeigt noch das Präfix Eigene Einheit")
+	}
+	if !strings.Contains(body, ">Top 7<") && !strings.Contains(body, ">Top 7</span>") {
+		t.Fatal("Verwaltungsansicht nennt die Einheit nicht")
+	}
+}
+
 // HAUSV-568: Managers must be able to edit body, location_type, and
 // location_detail from the triage page after an issue is created.
 func TestManagerCanEditIssueDetailsFromTriagePage(t *testing.T) {

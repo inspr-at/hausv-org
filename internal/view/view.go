@@ -151,6 +151,9 @@ type SelectOption struct {
 
 type DocumentView struct {
 	Archived          bool
+	ArchiveRunID      string
+	ArchiveYear       int
+	ArchiveRevision   int
 	ArchiveParty      string
 	ArchivePartyEmail string
 	ID                string
@@ -1088,6 +1091,20 @@ func IssueLocationLabel(locationType string, detail string) string {
 	return label + " · " + detail
 }
 
+// IssueLocationLabelForManagement names a place from the Verwaltung's point of
+// view. "Eigene Einheit" is the reporter's framing and is misleading in that
+// column; the unit detail itself ("Top 7") is the place.
+func IssueLocationLabelForManagement(locationType string, detail string) string {
+	detail = strings.TrimSpace(detail)
+	if store.NormalizeIssueLocation(locationType) == store.IssueLocationUnit {
+		if detail == "" {
+			return "Einheit"
+		}
+		return detail
+	}
+	return IssueLocationLabel(locationType, detail)
+}
+
 // TruncateIssueDescription truncates body text for the Beschreibung column,
 // keeping approximately 100 chars and breaking on word boundaries.
 func TruncateIssueDescription(body string) string {
@@ -2004,6 +2021,9 @@ func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 	}
 	return DocumentView{
 		Archived:          item.AnnualStatementArchive != nil,
+		ArchiveRunID:      archiveRunID(item),
+		ArchiveYear:       archiveYear(item),
+		ArchiveRevision:   archiveRevision(item),
 		ArchiveParty:      archiveParty,
 		ArchivePartyEmail: archiveEmail,
 		ID:                item.ID,
@@ -2028,6 +2048,27 @@ func DocumentViewFrom(item store.DocumentRecord) DocumentView {
 		VersionLabel:      DocumentVersionLabel(item.Version),
 		ReplaceDialogID:   "document-replace-" + item.ID,
 	}
+}
+
+func archiveRunID(item store.DocumentRecord) string {
+	if item.AnnualStatementArchive == nil {
+		return ""
+	}
+	return strings.TrimSpace(item.AnnualStatementArchive.RunID)
+}
+
+func archiveYear(item store.DocumentRecord) int {
+	if item.AnnualStatementArchive == nil {
+		return 0
+	}
+	return item.AnnualStatementArchive.PeriodYear
+}
+
+func archiveRevision(item store.DocumentRecord) int {
+	if item.AnnualStatementArchive == nil {
+		return 0
+	}
+	return item.AnnualStatementArchive.Revision
 }
 
 func DocumentVersionLabel(version int) string {

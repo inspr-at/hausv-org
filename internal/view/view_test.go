@@ -71,3 +71,18 @@ func TestTruncateIssueDescription(t *testing.T) {
 		})
 	}
 }
+
+func TestIssueLocationLabelForManagementDropsOwnUnitPrefix(t *testing.T) {
+	if got := IssueLocationLabel("own-unit", "Top 7"); got != "Eigene Einheit · Top 7" {
+		t.Fatalf("resident label = %q", got)
+	}
+	if got := IssueLocationLabelForManagement("own-unit", "Top 7"); got != "Top 7" {
+		t.Fatalf("management label = %q", got)
+	}
+	if got := IssueLocationLabelForManagement("own-unit", ""); got != "Einheit" {
+		t.Fatalf("management label without detail = %q", got)
+	}
+	if got := IssueLocationLabelForManagement("common", "Hof"); got != "Gemeinschaft · Hof" {
+		t.Fatalf("management common label = %q", got)
+	}
+}
