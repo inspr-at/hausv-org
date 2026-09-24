@@ -346,6 +346,10 @@ func tenantTables(t *testing.T, database *sql.DB) []string {
 // Delivery rows have required addressing and outcome fields rather than empty
 // defaults. Use a valid row so the generic probe exercises RLS, not NOT NULL.
 func tenantTableSmokeInsert(table string) string {
+	if table == "units" {
+		return `INSERT INTO units(tenant_id,tenant_slug,id,data,party_validity) VALUES($1,'rls-fixture','unit','{}','{"party@example.test":{"valid_from":"2025-07-01","valid_to":"2026-06-30"}}')`
+	}
+
 	if table == "integration_imports" {
 		return `INSERT INTO integration_imports(tenant_id,tenant_slug,format,file_digest,applied_at,status,blob_key,document_data) VALUES($1,'rls-fixture','ebinterface','digest','2026-09-24T12:00:00Z','pending','import-fixture.xml','{"id":"import-fixture"}')`
 	}

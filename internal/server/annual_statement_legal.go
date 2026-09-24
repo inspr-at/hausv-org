@@ -30,6 +30,7 @@ func (a *app) saveAnnualStatementLegal(w http.ResponseWriter, r *http.Request, a
 		}
 		legal.HeatingConsumptionPercent = n
 	}
+	legal.PartyDueOn = r.FormValue("party_due_on")
 	legal.NextPrepaymentOn = r.FormValue("next_prepayment_on")
 	legal.MonthlyProposals = map[string]map[string]int64{}
 	structure, _ := ac.repositories.annualStatementPeriods.Structure(year)

@@ -234,7 +234,14 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 			}
 			for _, party := range run.Input.Parties {
 				if party.UnitID == unit.UnitID {
-					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: firstNonEmpty(party.Name, party.ID), URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
+					label := firstNonEmpty(party.Name, party.ID)
+					if party.ValidFrom != "" || party.ValidTo != "" {
+						label += " · " + partyDateLabel(party.ValidFrom, party.ValidTo)
+					}
+					if share, ok := store.AnnualStatementPartyAllocation(run, unit.UnitID, party.ID); ok {
+						label += " · " + formatAnnualStatementBalance(-share.Unit.BalanceCents)
+					}
+					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: label, URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
 					if document, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
 						row.PDFs[len(row.PDFs)-1].ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(document.ID)
 					}
@@ -308,6 +315,17 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		}
 	}
 	switch issue.Code {
+	case "party-due-date":
+		return "Parteienwechsel: Vertragliche Fälligkeit unter Rechtsgrundlage ergänzen."
+	case "party-dates":
+		return unit + ": Gültigkeitsdaten der Parteien prüfen."
+	case "party-recipient":
+		return unit + ": Am Fälligkeitstag fehlt eine eindeutige Miet- oder Eigentümerpartei. Zeiträume und Überschneidungen prüfen."
+	case "party-coverage":
+		return unit + ": HeizKG benötigt eine eindeutige Partei für jeden Zeitraum; Leerstand der Eigentümerpartei zuordnen."
+	case "party-reading":
+		return unit + ": Zwischenablesungen sind widersprüchlich. Quelle, Einheit und Zählerstand prüfen."
+
 	case "heating-prepayment":
 		return "HeizKG: Geleistetes Akonto je Einheit und Heizkostenart ergänzen. Die Summe darf das Gesamtakonto nicht überschreiten."
 	case "heating-share":

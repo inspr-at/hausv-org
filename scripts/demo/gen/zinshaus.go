@@ -24,6 +24,8 @@ func buildZinshaus(people []person) (house, []person) {
 		Name: "Familie Hofbauer Privatstiftung", Email: zinshausOwner, Phone: "+43 316 555 180",
 		Address: zinshausAddress, Memberships: []membership{{House: zinshausSlug, Role: "Eigentümer", Units: ownerUnits}},
 	})
+	// Historical tenant remains addressable for the heating statement only.
+	people = append(people, person{Name: "Theresa Aichner", Email: "theresa.aichner@musterstadt.example", Address: "Musterstraße 12/2\n8010 Graz"})
 	for _, spec := range specs {
 		if spec.tenant == "" {
 			continue
@@ -139,7 +141,8 @@ func buildZinshausStatement(home house) map[string]any {
 		{"key": "heizung", "name": "Heizung", "allocation_key": store.AllocationKeyVerbrauch, "amount_cents": 640000, "operating_amount_cents": 96000, "invoice_date": "2025-12-31", "supplier": "Wärmeversorgung Musterstadt", "heating_category": "energie"},
 	}
 	return map[string]any{
-		"legal": legal, "house": home.Slug, "address": zinshausAddress, "year": 2025,
+		"party_changes": []map[string]string{{"unit_id": "top-2", "role": "tenant", "previous_email": "theresa.aichner@musterstadt.example", "current_email": "lena.krainer@musterstadt.example", "changed_on": "2025-07-01"}},
+		"legal":         legal, "house": home.Slug, "address": zinshausAddress, "year": 2025,
 		"starts_on": "2025-01-01", "ends_on": "2025-12-31", "recorded_at": "2026-01-15T09:00:00Z",
 		"built_year": 1905, "cost_types": costs, "unit_bases": bases,
 	}

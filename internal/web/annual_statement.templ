@@ -258,6 +258,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <option value="mrg_teil" selected?={ data.Legal.Regime == "mrg_teil" }>MRG Teilanwendung</option>
  <option value="ausnahme" selected?={ data.Legal.Regime == "ausnahme" }>MRG Ausnahme</option>
  </select></label>
+ <label>Vertragliche Fälligkeit bei Parteienwechsel (Teilanwendung / Ausnahme)<input type="date" name="party_due_on" value={ data.Legal.PartyDueOn }/></label>
  <label><input type="checkbox" name="heizkg_applies" checked?={ data.Legal.HeizKGApplies }/> HeizKG anwendbar</label>
  <label><input type="checkbox" name="show_vat" checked?={ data.Legal.ShowVAT }/> Umsatzsteuer ausweisen</label>
  <p>Aus bleibt die Abrechnung brutto wie bisher. An zeigt je Kostenart Netto, Steuersatz, Umsatzsteuer und Brutto. Heizung und Warmwasser sind 20 %, die übrigen Kostenarten 10 %, jeweils änderbar auf 0, 10 oder 20 %.</p>

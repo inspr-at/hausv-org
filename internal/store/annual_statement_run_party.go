@@ -8,9 +8,11 @@ import (
 // UnitPartyContact is explicitly supplied addressing data, never inferred from
 // a unit's address or from an owner's/renter's role.
 type UnitPartyContact struct {
-	Email   string `json:"email"`
-	Name    string `json:"name,omitempty"`
-	Address string `json:"address,omitempty"`
+	Email     string `json:"email"`
+	Name      string `json:"name,omitempty"`
+	Address   string `json:"address,omitempty"`
+	ValidFrom string `json:"valid_from,omitempty"`
+	ValidTo   string `json:"valid_to,omitempty"`
 }
 
 type AnnualStatementRunPresentation struct {
@@ -25,12 +27,14 @@ type AnnualStatementRunPresentation struct {
 }
 
 type AnnualStatementRunParty struct {
-	UnitID  string `json:"unit_id"`
-	ID      string `json:"id"`
-	Name    string `json:"name,omitempty"`
-	Address string `json:"address,omitempty"`
-	Owner   bool   `json:"owner"`
-	Renter  bool   `json:"renter"`
+	UnitID    string `json:"unit_id"`
+	ID        string `json:"id"`
+	Name      string `json:"name,omitempty"`
+	Address   string `json:"address,omitempty"`
+	Owner     bool   `json:"owner"`
+	Renter    bool   `json:"renter"`
+	ValidFrom string `json:"valid_from,omitempty"`
+	ValidTo   string `json:"valid_to,omitempty"`
 }
 
 func mergeUnitPartyContacts(unit Unit, updates []UnitPartyContact) []UnitPartyContact {
@@ -39,6 +43,10 @@ func mergeUnitPartyContacts(unit Unit, updates []UnitPartyContact) []UnitPartyCo
 		contact.Email = strings.ToLower(strings.TrimSpace(contact.Email))
 		if !EmailListContains(unit.OwnerEmails, contact.Email) && !EmailListContains(unit.RenterEmails, contact.Email) {
 			continue
+		}
+		// Address-only imports predate validity dates and must retain them.
+		if previous, ok := byEmail[contact.Email]; ok && contact.ValidFrom == "" && contact.ValidTo == "" {
+			contact.ValidFrom, contact.ValidTo = previous.ValidFrom, previous.ValidTo
 		}
 		contact.Name = strings.TrimSpace(contact.Name)
 		contact.Address = strings.TrimSpace(contact.Address)
@@ -52,7 +60,7 @@ func mergeUnitPartyContacts(unit Unit, updates []UnitPartyContact) []UnitPartyCo
 	return out
 }
 
-func annualStatementRunParties(unit Unit) []AnnualStatementRunParty {
+func annualStatementRunParties(unit Unit, regime string) []AnnualStatementRunParty {
 	contacts := map[string]UnitPartyContact{}
 	for _, contact := range unit.PartyContacts {
 		contacts[contact.Email] = contact
@@ -61,8 +69,12 @@ func annualStatementRunParties(unit Unit) []AnnualStatementRunParty {
 	sort.Strings(emails)
 	out := make([]AnnualStatementRunParty, 0, len(emails))
 	for _, email := range emails {
+		// Filter only new snapshots: saved historical recipients remain immutable.
+		if regime == "weg" && !EmailListContains(unit.OwnerEmails, email) {
+			continue
+		}
 		contact := contacts[email]
-		out = append(out, AnnualStatementRunParty{UnitID: unit.ID, ID: email, Name: contact.Name, Address: contact.Address, Owner: EmailListContains(unit.OwnerEmails, email), Renter: EmailListContains(unit.RenterEmails, email)})
+		out = append(out, AnnualStatementRunParty{UnitID: unit.ID, ID: email, Name: contact.Name, Address: contact.Address, Owner: EmailListContains(unit.OwnerEmails, email), Renter: EmailListContains(unit.RenterEmails, email), ValidFrom: contact.ValidFrom, ValidTo: contact.ValidTo})
 	}
 	return out
 }

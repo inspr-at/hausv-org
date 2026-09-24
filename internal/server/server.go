@@ -4437,6 +4437,10 @@ func (a *app) upsertBuildingUnit(w http.ResponseWriter, r *http.Request, ac auth
 			}
 		}
 	}
+	if err := applyUnitPartyDates(&item, r.Form); err != nil {
+		http.Redirect(w, r, "/app/settings/building?section=units&unit=invalid"+dialogTarget, http.StatusSeeOther)
+		return
+	}
 	// Add/replace under one lock so a concurrent unit add/delete isn't lost to a
 	// whole-slice overwrite (HAUSV-145).
 	duplicate, err := ac.repositories.units.UpsertUnit(origID, item)
@@ -4787,6 +4791,7 @@ func buildingUnitViews(units []unit) []buildingUnitView {
 			BillableLabel:      unitBillableLabel(item.BillableWeightPPM),
 			Share:              formatMiteigentumsanteil(item.MiteigentumsanteilPPM),
 			ShareValue:         strconv.Itoa(item.MiteigentumsanteilPPM),
+			PartyDates:         unitPartyDateViews(item),
 			OwnerEmails:        strings.Join(item.OwnerEmails, ", "),
 			RenterEmails:       strings.Join(item.RenterEmails, ", "),
 			OwnerSummary:       unitAssignmentSummary(item.OwnerEmails),

@@ -273,7 +273,7 @@ func buildHousesAndPersons() ([]house, []person) {
 	return houses, people
 }
 
-// assignJanusbergOwnership spreads the home WEG across 14 owners. Alina keeps
+// assignJanusbergOwnership spreads the home WEG across 15 current owners. Alina keeps
 // Top 1 and one parking space; Matthias and Sophie stay on their login units.
 // A few flats are rented. Every unit, including parking, still has an owner.
 func assignJanusbergOwnership(people []person, residentStart int, house string) []person {
@@ -296,7 +296,8 @@ func assignJanusbergOwnership(people []person, residentStart int, house string) 
 	people[residentStart+2].Address = "Janusbergweg 123/7\n8010 Graz"
 	people[residentStart+3].Address = "Janusbergweg 123/2\n8010 Graz"
 	owners := []person{
-		{Name: "Clara Berger", Email: "clara.berger@musterstadt.example", Phone: "+43 664 410 20 01", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 3", "Stellplatz 3"}}}},
+		{Name: "Clara Berger", Email: "clara.berger@musterstadt.example", Phone: "+43 664 410 20 01", Address: "Janusbergweg 123/3\n8010 Graz", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Stellplatz 3"}}}},
+		{Name: "Daniel Leitner", Email: "daniel.leitner@musterstadt.example", Phone: "+43 664 410 20 13", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 3"}}}},
 		{Name: "Jonas Meier", Email: "jonas.meier@musterstadt.example", Phone: "+43 664 410 20 02", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 4", "Top 5"}}}},
 		{Name: "Anna Gruber", Email: "anna.gruber@musterstadt.example", Phone: "+43 664 410 20 03", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 6"}}}},
 		{Name: "Nina Hofer", Email: "nina.hofer@musterstadt.example", Phone: "+43 664 410 20 04", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 7", "Stellplatz 5"}}}},
