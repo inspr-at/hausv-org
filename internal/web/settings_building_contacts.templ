@@ -1,0 +1,12 @@
+package web
+
+templ BuildingContacts(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Kontakte der Liegenschaft</h2><p>Verwaltung, Notdienst und Hausmeister klar an einem Ort pflegen.</p></div><span class="scope personal">Im Portal sichtbar</span></header>
+		@SettingsFlash(data.BuildingMsg, data.BuildingOK)
+		<form method="post" action="/app/settings/building/contacts"><div class="contact-grid">
+			<fieldset><legend>Hausverwaltung</legend><label>Name oder Firma<input name="contact_name" value={ data.Tenant.ContactName } maxlength="160"/></label><label>Anschrift<textarea name="contact_address" maxlength="500">{ data.Tenant.ContactAddress }</textarea></label><label>E-Mail<input type="email" name="contact_email" value={ data.Tenant.ContactEmail } maxlength="160" autocomplete="email"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.Tenant.ContactPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+			<fieldset><legend>Notdienst</legend><label>Bezeichnung<input name="emergency_name" value={ data.Tenant.EmergencyName } maxlength="160" placeholder="Notdienst"/></label><label>Telefon<input type="tel" name="emergency_phone" value={ data.Tenant.EmergencyPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+			<fieldset><legend>Hausmeister</legend><label>Name<input name="caretaker_name" value={ data.Tenant.CaretakerName } maxlength="160"/></label><label>E-Mail<input type="email" name="caretaker_email" value={ data.Tenant.CaretakerEmail } maxlength="160" autocomplete="email"/></label><label>Telefon<input type="tel" name="caretaker_phone" value={ data.Tenant.CaretakerPhone } maxlength="80" autocomplete="tel"/></label></fieldset>
+		</div><footer class="form-actions"><a class="button ghost" href="/app/settings/building?section=contacts">Verwerfen</a><button class="button primary" type="submit">Kontakte speichern</button></footer></form>
+	</section>
+}

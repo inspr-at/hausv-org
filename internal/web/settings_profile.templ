@@ -1,0 +1,66 @@
+package web
+
+templ ProfileSettingsPage(data ProfileSettingsPageData) {
+	@SettingsFrame(data.Portal, "Profil", nil, ProfileSettingsContent(data))
+}
+
+templ ProfileSettingsContent(data ProfileSettingsPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Profil",
+			Class: "settings-main",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen", Icon: "users", URL: "/app/settings"},
+		},
+		PortalSectionTitle("Profil"),
+		PortalSectionLede("Persönliche Angaben und Sichtbarkeit. Änderungen gelten nur für Ihren Zugang."),
+		nil,
+		nil,
+		nil,
+		ProfileSettingsBody(data),
+	)
+}
+
+templ ProfileSettingsBody(data ProfileSettingsPageData) {
+	<div data-templ-profile-settings>
+		<div class="two-column"><section class="panel form-card">
+			if data.ProfileMsg != "" {
+				<p class={ "flash", templ.KV("ok", data.ProfileOK) } role="status">{ data.ProfileMsg }</p>
+			}
+			<form method="post" action="/app/settings/profile">
+				<fieldset><legend>Name</legend><p>So werden Sie im Portal angesprochen.</p><div class="form-grid three"><label><span>Titel <small>optional</small></span><input name="title" value={ data.Profile.Title } maxlength="40" autocomplete="honorific-prefix" placeholder="z. B. Dr."/></label><label>Vorname<input name="first_name" value={ data.Profile.FirstName } maxlength="120" autocomplete="given-name"/></label><label>Nachname<input name="last_name" value={ data.Profile.LastName } maxlength="120" autocomplete="family-name"/></label></div></fieldset>
+				<fieldset><legend>Kontakt &amp; Sichtbarkeit</legend><p>Ihre Anmeldung bleibt unverändert.</p><div class="form-grid"><label>E-Mail<span class="readonly">{ data.Email }</span></label><label><span>Telefon <small>optional</small></span><input name="phone" value={ data.Profile.Phone } maxlength="80" autocomplete="tel"/></label></div><label class="check-card"><input type="checkbox" name="directory_opt_in" checked?={ data.Profile.DirectoryOptIn }/><span><strong>Im Kontakte-Verzeichnis anzeigen</strong><small>Name, E-Mail und Telefon werden für die Hausgemeinschaft sichtbar. Die Freigabe ist freiwillig.</small></span></label></fieldset>
+				<footer class="form-actions"><a class="button ghost" href="/app/settings">Abbrechen</a><button class="button primary" type="submit">Profil speichern</button></footer>
+			</form>
+		</section><aside class="aside-stack">
+			<details class="note panel" open><summary>Was andere sehen
+				@DisclosureChevron()
+			</summary><div><ul class="facts"><li><strong>Name</strong><span>Steht an Ihren Beiträgen, Anliegen und Stimmabgaben.</span></li><li><strong>E-Mail und Telefon</strong><span>Nur sichtbar, wenn Sie den Verzeichniseintrag freigeben.</span></li><li><strong>Verzeichniseintrag</strong><span>{ settingsDirectoryStatus(data.Profile.DirectoryOptIn) }</span></li></ul><a class="text-link" href="/app/kontakte">Kontakte ansehen</a></div></details>
+			@MyPermissions(data.EffectiveRights, data.RightsTenant)
+			<details class="note panel"><summary>Konto &amp; Berechtigungen
+				@DisclosureChevron()
+			</summary><div class="facts"><div class="chips">
+				for _, item := range data.PermissionList {
+					<span>{ item }</span>
+				}
+			</div><strong>Anmeldung</strong><div class="chips">
+				for _, item := range data.AuthList {
+					<span>{ item }</span>
+				}
+			</div><strong>Einheiten</strong>
+				if len(data.Units) == 0 {
+					<span>Keine Einheit verknüpft.</span>
+				} else {
+					for _, unit := range data.Units {
+						<span><b>{ unit.Label }</b> · { unit.Relation } · { unit.Share }</span>
+					}
+				}
+			</div></details>
+		</aside></div>
+	</div>
+}
+
+func settingsDirectoryStatus(optedIn bool) string {
+	if optedIn { return "Derzeit freigegeben – Ihr Eintrag steht unter Kontakte." }
+	return "Derzeit nicht freigegeben – Ihr Eintrag fehlt unter Kontakte."
+}

@@ -1,0 +1,27 @@
+package web
+
+templ BuildingAppearance(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Erscheinungsbild</h2><p>Portal-Kennung und Titelbild gestalten.</p></div></header>@SettingsFlash(data.BuildingMsg, data.BuildingOK) @SettingsFlash(data.HeroMsg, data.HeroOK)
+		<div class="appearance-grid" data-appearance-workspace><div class="aside-stack"><form class="panel inset" method="post" action="/app/settings/building/appearance"><fieldset><legend>Portal-Symbol</legend><input type="hidden" name="brand_icon" value={ data.Tenant.BrandIcon } data-brand-icon-value/><div class="brand-grid" role="radiogroup" aria-label="Portal-Symbol">
+			for _, option := range data.BrandIconOptions {
+				<label class="brand-icon-choice"><input type="radio" name="brand_icon_choice" value={ option.Value } checked?={ option.Selected }/><span>@PortalIcon(brandPreviewIcon(option.Value))</span><strong>{ option.Label }</strong></label>
+			}
+		</div></fieldset><section class="icon-search"><label>Weitere Symbole aus Lucide<input type="search" placeholder="Symbol suchen" autocomplete="off" data-brand-icon-search/></label><div data-brand-icon-results hidden></div>
+			<p data-brand-icon-result-note hidden?={ !data.BrandIconIsLucide }>
+				if data.BrandIconIsLucide {
+					Aktuell ausgewählt: { data.BrandIconLabel }
+				}
+			</p>
+		</section><label>Kurzkennung<input id="brand-abbreviation" name="brand_abbreviation" value={ data.Tenant.BrandAbbreviation } maxlength="12" placeholder="HAUS"/><span data-abbreviation-count>{ len(data.Tenant.BrandAbbreviation) } / 12</span></label><button class="button primary" type="submit">Portal-Kennung speichern</button></form>
+			<section class="panel inset"><h3>Titelbild</h3><img class="hero-preview" src={ templ.SafeURL(data.Tenant.HeroImageURL) } alt="Aktuelles Titelbild" data-hero-preview/><p data-hero-file-name>{ heroLabel(data.HasCustomHero) }</p><form method="post" action="/app/settings/building/hero" enctype="multipart/form-data"><label>Neues Titelbild<input id="hero-image" type="file" name="hero_image" accept="image/jpeg,image/png,image/webp" required/></label><button class="button" type="submit">Titelbild übernehmen</button></form>
+				if data.HasCustomHero {
+					<form method="post" action="/app/settings/building/hero/delete" data-confirm="Titelbild entfernen und Standardbild verwenden?"><button class="button ghost" type="submit">Standardbild verwenden</button></form>
+				}
+			</section></div>
+			<aside class="preview panel"><span class="eyebrow">Live-Vorschau</span><img src={ templ.SafeURL(data.Tenant.HeroImageURL) } alt="" data-hero-stage/><div><span class="preview-mark" data-brand-preview-mark>@PortalIcon("home")</span><strong data-brand-preview-abbreviation>{ data.Tenant.BrandAbbreviation }</strong><small>{ data.Tenant.Name }</small></div><h3>Alles Wichtige für Ihr Zuhause.</h3><span class="button primary">Anmelden</span><p>Änderungen erscheinen nach dem Speichern im Portal.</p></aside></div>
+		<script id="brand-lucide-icon-names" type="application/json">@templ.Raw(data.LucideIconNamesJSON)</script>
+	</section>
+}
+
+func brandPreviewIcon(value string) string { if value == "parking" { return "parking" }; return "home" }
+func heroLabel(custom bool) string { if custom { return "Individuelles Titelbild" }; return "HAUSV Standardbild" }

@@ -1,0 +1,17 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/view"
+
+templ SettingsFlash(message string, ok bool) {
+	if message != "" {
+		<p class={ "flash", templ.KV("ok", ok), templ.KV("bad", !ok) } role="status">{ message }</p>
+	}
+}
+
+templ SettingsEmpty(empty view.EmptyStateView) {
+	<section class="empty"><h2>{ empty.Title }</h2><p>{ empty.Message }</p>
+		if empty.HasAction {
+			<a class="button" href={ templ.SafeURL(empty.ActionURL) }>{ empty.ActionLabel }</a>
+		}
+	</section>
+}
