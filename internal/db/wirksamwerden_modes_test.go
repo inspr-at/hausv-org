@@ -9,7 +9,7 @@ import (
 
 func TestWirksamwerdenSettingMigration(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "timing.db")
-	database := openBeforeMigration(t, path, "0065_wirksamwerden_modes.sql")
+	database := openBeforeMigration(t, path, "0066_wirksamwerden_modes.sql")
 	for _, mode := range []string{"cautious", "contractual", "oevi"} {
 		if _, err := database.Exec(`INSERT INTO org_settings(org_key,data) VALUES($1,json_object('name','Test','valorisation',json_object('wirksamwerden_mode',$1,'four_eyes',1)))`, mode); err != nil {
 			t.Fatal(err)
@@ -48,7 +48,7 @@ func TestPostgresWirksamwerdenSettingMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if entry.Name() >= "0038_wirksamwerden_modes.sql" {
+		if entry.Name() >= "0039_wirksamwerden_modes.sql" {
 			break
 		}
 		raw, err := postgresMigrationsFS.ReadFile("postgres/migrations/" + entry.Name())
@@ -73,7 +73,7 @@ func TestPostgresWirksamwerdenSettingMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := postgresMigrationsFS.ReadFile("postgres/migrations/0038_wirksamwerden_modes.sql")
+	raw, err := postgresMigrationsFS.ReadFile("postgres/migrations/0039_wirksamwerden_modes.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
