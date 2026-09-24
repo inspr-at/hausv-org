@@ -213,7 +213,7 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 								} else if !s.Archived {
 									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/archive") }><button class="button primary" type="submit">Mieterabrechnung archivieren</button></form>
 								} else if s.SendIssue == "" {
-									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/send") }><button class="button primary" type="submit">An Mietparteien und Eigentümer senden</button></form>
+									<form method="post" action={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/send") }><button class={ "button", templ.KV("primary", !tenantStatementDelivered(s)), templ.KV("ghost", tenantStatementDelivered(s)) } type="submit">An Mietparteien und Eigentümer senden</button></form>
 								}
 								<a class="button ghost" href={ templ.SafeURL("/app/settings/tenant-statements/" + s.ID + "/pdf") } target="_blank">Eigentümerkopie ansehen</a>
 							</div>
@@ -265,4 +265,18 @@ func tenantUnitHasContract(unit TenantStatementUnitView) bool {
 		}
 	}
 	return false
+}
+
+// tenantStatementDelivered reports a completed send; a retry then only skips
+// recipients, so it is no longer the view's primary action.
+func tenantStatementDelivered(s TenantStatementView) bool {
+	if len(s.Deliveries) == 0 {
+		return false
+	}
+	for _, d := range s.Deliveries {
+		if d.Status != "Gesendet" {
+			return false
+		}
+	}
+	return true
 }
