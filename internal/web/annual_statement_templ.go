@@ -1587,14 +1587,14 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, basis := range data.Allocation.Bases {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<div class=\"allocation-row\"><input type=\"hidden\" name=\"unit_id\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<div class=\"allocation-row allocation-row-basis\"><input type=\"hidden\" name=\"unit_id\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var70 string
 				templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue(basis.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 				if templ_7745c5c3_Err != nil {
@@ -1607,7 +1607,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var71 string
 				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(basis.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 148}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 169}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 				if templ_7745c5c3_Err != nil {
@@ -1620,7 +1620,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var72 string
 				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(basis.Share)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 246}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 267}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
@@ -1633,7 +1633,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var73 string
 				templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(basis.UsableArea)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 353}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 374}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 				if templ_7745c5c3_Err != nil {
@@ -1646,7 +1646,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var74 string
 				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue(basis.Persons)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 521}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 542}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 				if templ_7745c5c3_Err != nil {
@@ -1659,7 +1659,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var75 string
 				templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(basis.VacantFrom)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 664}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 685}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 				if templ_7745c5c3_Err != nil {
@@ -1672,7 +1672,7 @@ func AnnualStatementPreparation(data AnnualStatementPageData) templ.Component {
 				var templ_7745c5c3_Var76 string
 				templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue(basis.VacantTo)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 754}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement.templ`, Line: 424, Col: 775}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 				if templ_7745c5c3_Err != nil {
