@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/tenantid"
 )
@@ -727,11 +729,10 @@ func (c *tenantIdentityCache) id(q tenantid.Querier, slug string) string {
 type SQLStore struct {
 	// db is the lane seam, not a pool. It has For and Unscoped and nothing
 	// else, so every statement below names the lane it runs on before it
-	// compiles: For(tenant) for the reads and the tenant-addressed writes,
-	// Unscoped(store.HealOrphanReason) for the seven upserts that coalesce a
-	// legacy NULL tenant_id, and Unscoped(<retention reason>) for the one
-	// sweep that has no tenant at all. Retyping this field from *sql.DB is
-	// what found all 28 sites; nothing else here changed shape.
+	// compiles: For(tenant) for the reads and the writes, including the
+	// upserts that used to heal a NULL tenant_id, and Unscoped only for the
+	// registry lookup and the retention sweep. Migration 0006 made tenant_id
+	// NOT NULL, so those upserts no longer have an orphan to reach.
 	db      *store.TenantDB
 	homeKey string
 	// tenant is the reference the caller was authorized with. When it is set,
@@ -936,11 +937,10 @@ func (s *SQLStore) SaveProfile(profile HomeProfile) error {
 	if profile.FreeUntilAt != nil {
 		freeUntil = profile.FreeUntilAt.UTC().Format(time.RFC3339Nano)
 	}
-	// ON CONFLICT(tenant_slug,home_key) is a natural key a new write arrives
-	// with, so it can collide with a row the previous release wrote without a
-	// tenant_id — and from a tenant lane that row is neither visible nor
-	// writable. Same lane, same reason as the store's siblings.
-	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO home_profiles
+	// tenant_id is NOT NULL, so this upsert runs on the house's own lane.
+	// coalesce(tenant_id) stays: the immutability trigger treats an owned row
+	// as a no-op, and SQLite can still adopt a NULL left from before 0006.
+	_, err = s.db.For(tenant).Exec(`INSERT INTO home_profiles
 		(tenant_id,tenant_slug,home_key,unit_id,home_type,household_name,operating_mode,automation_stage,onboarding_step,onboarding_complete,target_peak_kw,agreed_power_kw,recommendation_id,recommendation_status,free_started_at,free_until_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		ON CONFLICT(tenant_slug,home_key) DO UPDATE SET
@@ -992,9 +992,10 @@ func (s *SQLStore) adoptUnownedProfile(tenantSlug string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// The row being adopted has no tenant_id, so no tenant lane can reach it:
-	// this is the heal by definition, and it runs where the heal runs.
-	result, err := s.db.Unscoped(store.HealOrphanReason).Exec(
+	// On PostgreSQL this matches nothing: tenant_id is NOT NULL, and a tenant
+	// lane cannot see a NULL anyway. On SQLite the same statement still links
+	// a row the previous release left behind.
+	result, err := s.db.For(tenant).Exec(
 		`UPDATE home_profiles SET tenant_id=$1 WHERE tenant_id IS NULL AND tenant_slug=$2 AND home_key=$3`,
 		tenant.ID, slug, s.scopeHomeKey())
 	if err != nil {
@@ -1065,10 +1066,10 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 	// (tenant_slug,id) would delete that guarantee silently: the insert would
 	// succeed, RowsAffected would be 1, and the check below would never fire.
 	//
-	// The heal lane, like every coalescing upsert here: the id is chosen by the
-	// caller (StableAssetID), so a new write CAN collide with a row the
-	// previous release left without a tenant_id.
-	result, err := s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_assets
+	// The id is globally unique. A row another house already owns is invisible
+	// on this lane, and PostgreSQL then refuses the upsert (42501) instead of
+	// reporting zero rows; that refusal is the same "id taken" answer.
+	result, err := s.db.For(tenant).Exec(`INSERT INTO energy_assets
 		(id,tenant_id,tenant_slug,home_key,kind,name,rated_power_kw,flexibility,source,confirmed,metadata_json,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,name=excluded.name,rated_power_kw=excluded.rated_power_kw,
@@ -1079,6 +1080,9 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 		asset.ID, tenant.ID, asset.TenantSlug, asset.HomeKey, asset.Kind, asset.Name, rated, asset.Flexibility,
 		asset.Source, asset.Confirmed, string(metadata),
 		asset.CreatedAt.Format(time.RFC3339Nano), asset.UpdatedAt.Format(time.RFC3339Nano))
+	if assetIDHiddenByRLS(err) {
+		return ErrAssetIDTaken
+	}
 	if err != nil {
 		return err
 	}
@@ -1097,6 +1101,13 @@ func (s *SQLStore) UpsertAsset(asset Asset) error {
 // covers the cross-tenant guarantee used to accept ANY error — including a
 // dialect failure — as proof that the guard had fired.
 var ErrAssetIDTaken = errors.New("energy: asset id belongs to another tenant")
+
+// assetIDHiddenByRLS reports the PostgreSQL refusal that replaces "zero rows"
+// once the conflicting asset belongs to a house this lane cannot see.
+func assetIDHiddenByRLS(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "42501"
+}
 
 func (s *SQLStore) UpdateAssetPriorities(tenantSlug string, order []string) (bool, error) {
 	if s == nil || s.db == nil {
@@ -1216,7 +1227,7 @@ func (s *SQLStore) UpsertMapping(mapping EntityMapping) error {
 	if mapping.LastSeenAt != nil {
 		seen = mapping.LastSeenAt.UTC().Format(time.RFC3339Nano)
 	}
-	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_entity_mappings
+	_, err = s.db.For(tenant).Exec(`INSERT INTO energy_entity_mappings
 		(id,tenant_id,tenant_slug,home_key,entity_id,asset_id,metric,display_name,unit,device_class,confirmed,last_seen_at,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		ON CONFLICT(tenant_slug,home_key,entity_id) DO UPDATE SET
@@ -1272,7 +1283,7 @@ func (s *SQLStore) PutInterval(interval Interval) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_intervals
+	_, err = s.db.For(tenant).Exec(`INSERT INTO energy_intervals
 		(tenant_id,tenant_slug,home_key,starts_at,duration_minutes,import_kwh,average_kw,quality,source,created_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT(tenant_slug,home_key,starts_at,source) DO UPDATE SET
@@ -1337,19 +1348,19 @@ func (s *SQLStore) PutImport(record ImportRecord, intervals []Interval) (bool, e
 			return false, fmt.Errorf("energy: interval tenant mismatch")
 		}
 	}
-	// The whole transaction is on the heal lane, for two statements in it: the
-	// identity repair below addresses a row that HAS no tenant_id, and the
-	// interval upsert coalesces one. Neither can reach its row from a tenant
-	// lane, and a transaction has exactly one lane.
-	tx, err := s.db.Unscoped(store.HealOrphanReason).Begin()
+	// The transaction is this house's lane. tenant_id is NOT NULL, so the
+	// repair below matches nothing on PostgreSQL; on SQLite it still links a
+	// row the previous release left without an identity.
+	tenant, err := s.identity(record.TenantSlug)
+	if err != nil {
+		return false, err
+	}
+	tx, err := s.db.For(tenant).Begin()
 	if err != nil {
 		return false, err
 	}
 	defer tx.Rollback()
-	tenantID, err := tenantid.Ensure(tx, record.TenantSlug)
-	if err != nil {
-		return false, err
-	}
+	tenantID := tenant.ID
 	// energy_imports is the one upsert here that cannot heal in its conflict
 	// clause: DO NOTHING is what makes RowsAffected==0 mean "this file was
 	// already imported", and turning it into DO UPDATE would report every
@@ -1688,7 +1699,7 @@ func (s *SQLStore) UpsertMaintenance(plan MaintenancePlan) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_maintenance_plans
+	_, err = s.db.For(tenant).Exec(`INSERT INTO energy_maintenance_plans
 		(id,tenant_id,tenant_slug,home_key,asset_id,title,interval_months,last_completed_at,next_due_at,contact_id,document_id,issue_id,evidence_note,active,created_at,updated_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 		ON CONFLICT(tenant_slug,home_key,asset_id) DO UPDATE SET
@@ -1779,7 +1790,7 @@ func (s *SQLStore) UpsertMeasure(item Measure) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Unscoped(store.HealOrphanReason).Exec(`INSERT INTO energy_measures
+	_, err = s.db.For(tenant).Exec(`INSERT INTO energy_measures
 		(id,tenant_id,tenant_slug,home_key,issue_id,recommendation_id,title,status,contact_id,shared_fields_json,offer_note,appointment_at,
 		 work_note,completed_at,evidence_note,before_from,before_to,after_from,after_to,before_peak_kw,after_peak_kw,
 		 before_quality,after_quality,created_at,updated_at)

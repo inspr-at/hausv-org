@@ -164,8 +164,13 @@ var ErrTenantSlugNotCanonical = errors.New("store: a stored tenant slug cannot b
 //
 // Two of them (home_portals, and house_memberships on three of its four paths)
 // reach the maintenance lane under a different reason: they run in transactions
-// that are cross-tenant by nature and stay so after the flip. The rest name this
-// constant. The eight tenant-bound tables that key on a random id minted by the
+// that are cross-tenant by nature and stay so after the flip. Migration 0006
+// then made tenant_id NOT NULL. The energy upserts, announcement_reads,
+// home_connectors and home_connector_readings have gone back to For(tenant).
+// What still names this constant is owned elsewhere and stays until those
+// packages retire it: units (HAUSV-774), unit_payment_status and the import
+// ledger (financial imports), and house_memberships.SetMembership (organisation
+// membership). The eight tenant-bound tables that key on a random id minted by the
 // store or its caller (announcements, attachments, ballots, contacts, documents,
 // events, handovers, issues) stay on the tenant lane: a new row cannot collide
 // with a legacy one, and an edit addresses a row the same lane just read. The
