@@ -21,6 +21,9 @@ type AnnualStatementRunInput struct {
 	Documents    []AnnualStatementRunDocument                `json:"documents"`
 	Consumption  map[string]AnnualStatementConsumptionVector `json:"consumption"`
 	Evidence     []AnnualStatementConsumptionEvidence        `json:"evidence"`
+	// Reserve is the period's Rücklage bookings copied into the run.
+	// A nil slice means the run predates the snapshot and replays without it.
+	Reserve []AnnualStatementReserveEntry `json:"reserve,omitempty"`
 }
 
 type AnnualStatementRunUnitIdentity struct {
@@ -70,6 +73,8 @@ type AnnualStatementRunResult struct {
 	TotalCents    int64                               `json:"total_cents"`
 	ExcludedCents int64                               `json:"excluded_cents"`
 	Units         []AnnualStatementRunUnit            `json:"units"`
+	// Reserve is present only when this run snapshotted WEG Rücklage bookings.
+	Reserve *AnnualStatementReserveResult `json:"reserve,omitempty"`
 }
 
 // CalculateAnnualStatementRun never returns partial monetary results.
@@ -266,6 +271,14 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 	}
 	if heatingSplit {
 		result.Proposals = AnnualStatementPrepaymentProposals(input, result)
+	}
+	// Rücklage does not change the stored cost algorithm. Historical runs have
+	// a nil booking slice and replay without this snapshot.
+	if input.Structure.Legal.Regime == "weg" && len(input.Reserve) > 0 {
+		reserve, ok := AnnualStatementReserveBalance(input.Reserve, input.Period, units)
+		if ok {
+			result.Reserve = &reserve
+		}
 	}
 	return result, nil
 }

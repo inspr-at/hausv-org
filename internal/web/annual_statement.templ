@@ -137,6 +137,25 @@ type AnnualStatementPrepaymentView struct {
 	Recorded      bool
 }
 
+type AnnualStatementReserveEntryView struct {
+	Date     string
+	Kind     string
+	Amount   string
+	Note     string
+	Document string
+}
+
+type AnnualStatementReserveView struct {
+	Entries       []AnnualStatementReserveEntryView
+	Opening       string
+	Contributions string
+	Withdrawals   string
+	Interest      string
+	Closing       string
+	MinimumHint   string
+	Documents     []AnnualStatementReceiptDocumentView
+}
+
 type AnnualStatementPageData struct {
  Legal store.AnnualStatementLegalSettings
 	Portal        PortalPageData
@@ -177,6 +196,10 @@ type AnnualStatementPageData struct {
 	Prepayments            []AnnualStatementPrepaymentView
 	PrepaymentMsg          string
 	PrepaymentOK           bool
+	ShowReserve            bool
+	Reserve                AnnualStatementReserveView
+	ReserveMsg             string
+	ReserveOK              bool
 	Run AnnualStatementRunView
 	SettlementReady        bool
 }
@@ -216,7 +239,7 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 
 templ AnnualStatementPreparation(data AnnualStatementPageData) {
 		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}</style>
-		<details class="annual-preparation" open?={ data.Run.ID == "" || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.HasReceiptSuggestion }>
+		<details class="annual-preparation" open?={ data.Run.ID == "" || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.ReserveMsg != "" || data.HasReceiptSuggestion }>
 		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span>
 			@DisclosureChevron()
 		</summary>
@@ -264,6 +287,58 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <div class="form-actions"><button class="button primary" type="submit">Rechtsgrundlage speichern</button></div>
  </form>
  </section>
+ if data.ShowReserve {
+ <section class="panel workspace" id="ruecklage" data-annual-reserve>
+ <style>
+ [data-annual-reserve] .reserve-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:var(--space-3);margin:var(--space-4) 0}
+ [data-annual-reserve] .reserve-summary div{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);min-width:0}
+ [data-annual-reserve] .reserve-summary span{display:block;color:var(--muted);font-size:12px}
+ [data-annual-reserve] .reserve-list{display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-4)}
+ [data-annual-reserve] .reserve-entry{display:grid;grid-template-columns:7rem 8rem 1fr;gap:var(--space-2);align-items:baseline}
+ @media(max-width:640px){[data-annual-reserve] .reserve-entry{grid-template-columns:1fr}}
+ </style>
+ <header class="workspace-head"><div><h2>Rücklage</h2><p>Buchungen dieser WEG-Periode. Korrekturen sind weitere Buchungen; gespeicherte Zeilen bleiben stehen.</p></div></header>
+ @SettingsFlash(data.ReserveMsg, data.ReserveOK)
+ <div class="reserve-summary" data-reserve-closing={ data.Reserve.Closing }>
+ <div><span>Anfangsstand</span><strong>{ data.Reserve.Opening }</strong></div>
+ <div><span>Zuführungen</span><strong>{ data.Reserve.Contributions }</strong></div>
+ <div><span>Entnahmen</span><strong>{ data.Reserve.Withdrawals }</strong></div>
+ <div><span>Zinsen</span><strong>{ data.Reserve.Interest }</strong></div>
+ <div><span>Endstand</span><strong>{ data.Reserve.Closing }</strong></div>
+ </div>
+ if data.Reserve.MinimumHint != "" {
+ <p class="notice">{ data.Reserve.MinimumHint }</p>
+ }
+ if len(data.Reserve.Entries) > 0 {
+ <div class="reserve-list">
+ for _, entry := range data.Reserve.Entries {
+ <article class="reserve-entry"><span>{ entry.Date }</span><strong>{ entry.Kind }</strong><span>{ entry.Amount }{ entry.Note }{ entry.Document }</span></article>
+ }
+ </div>
+ }
+ <form method="post" action="/app/settings/annual-statement/reserve"><fieldset><legend>Buchung hinzufügen</legend>
+ <input type="hidden" name="year" value={ annualStatementYear(data.StructureYear) }/>
+ <div class="form-grid">
+ <label>Art<select name="kind" required>
+ <option value="opening">Anfangsstand</option>
+ <option value="contribution" selected>Zuführung</option>
+ <option value="withdrawal">Entnahme</option>
+ <option value="interest">Zinsen</option>
+ <option value="closing_check">Endstand-Kontrolle</option>
+ </select></label>
+ <label>Datum<input type="date" name="entry_date" required/></label>
+ <label>Betrag <small>Euro</small><input name="amount" inputmode="decimal" pattern="-?[0-9]+([.,][0-9]{2})" placeholder="0,00" required/></label>
+ <label>Beleg bei Entnahme<select name="document_id"><option value="">Kein Beleg</option>
+ for _, document := range data.Reserve.Documents {
+ <option value={ document.ID }>{ document.Label }</option>
+ }
+ </select></label>
+ <label>Notiz<input name="note" maxlength="500"/></label>
+ </div>
+ <div class="form-actions"><button class="button primary" type="submit">Buchung hinzufügen</button></div>
+ </fieldset></form>
+ </section>
+ }
  }
 
 		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>

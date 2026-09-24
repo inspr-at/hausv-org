@@ -19,7 +19,7 @@ func TestHausv615EveryAuditActionHasGermanLabel(t *testing.T) {
 		store.AuditActionClauseCreate, store.AuditActionClauseUpdate, store.AuditActionClauseReview,
 		store.AuditActionAnnualPeriodSave, store.AuditActionAnnualPartiesImport, store.AuditActionAnnualCostTypeSave,
 		store.AuditActionAnnualBasesSave, store.AuditActionAnnualReceiptCreate, store.AuditActionAnnualReceiptAmount,
-		store.AuditActionAnnualReceiptDelete, store.AuditActionAnnualPrepaymentSave, store.AuditActionAnnualRunCreate,
+		store.AuditActionAnnualReceiptDelete, store.AuditActionAnnualPrepaymentSave, store.AuditActionAnnualReserveAdd, store.AuditActionAnnualRunCreate,
 		store.AuditActionParkingSettings, store.AuditActionParkingMonth, store.AuditActionParkingReminder,
 		store.AuditActionChargingSettings, store.AuditActionChargingManual, store.AuditActionChargingSession,
 		store.AuditActionIssueWorkflow, store.AuditActionIssueEstimate, store.AuditActionIssueServiceAdd,

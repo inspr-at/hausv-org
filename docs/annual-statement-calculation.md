@@ -258,6 +258,31 @@ manuelle Vorausschau; fehlende Werte heißen „Noch festzulegen“. Das Gültig
 ist pro Periode wählbar; ohne Vorgabe gilt im PDF der erste Tag des Monats nach
 der Freigabe (im Entwurf nach Erstellung).
 
+## Rücklage (WEG)
+
+Nur bei Regime `weg`. Buchungen liegen in `annual_statement_reserve_entries`
+und sind nur einfügbar; eine Korrektur ist eine weitere Buchung. Arten:
+`opening`, `contribution`, `withdrawal`, `interest`, `closing_check`.
+Entnahmen verweisen auf ein Dokument. Der Endstand ist
+
+`Anfangsstand + Zuführungen − Entnahmen + Zinsen`
+
+in Cent, ohne Gleitkomma. `closing_check` geht nicht in die Formel ein; weicht
+die Summe der Kontrollbuchungen ab, entsteht ein Hinweis.
+
+Der Anteil je Einheit verwendet die bestehende Nutzwert-Basis und die
+Centverteilung nach größtem Rest. Die Summe der Anteile ist der Endstand.
+Historische Läufe ohne Buchungs-Snapshot (`reserve` fehlt in der Eingabe)
+rechnen die Kosten unverändert und ohne Rücklage nach. Die Berechnungsversion
+bleibt `2`.
+
+Die Mindestprüfung warnt nur. Ab 2026 gilt 1,12 €/m²/Monat Nutzfläche
+(WEG 2002 § 31; 0,90 × 128,1 / 102,6 = 1,1237, angesetzt mit 1,12; Quelle WKO/ÖVI).
+Fläche ist die Summe der erfassten Nutzflächen der Periode in Hundertstel m².
+Ein Rest von 0,50 Cent wird abgerundet. Zuführungen unter
+`Monatsminimum × Monate der Periode` erzeugen den Hinweis, der Schwellenwert
+selbst nicht. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+
 Im Folgejahr füllt der jüngste freigegebene Vorjahreslauf die leeren Akontofelder
 mit zwölf Monatsbeträgen vor. Es bleibt ausdrücklich ein ungespeicherter
 Vorschlag, bis die Verwaltung die tatsächlichen Zahlungen bestätigt; vorhandene
