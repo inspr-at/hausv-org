@@ -11,7 +11,7 @@ import (
 func TestRechteFormsAndProtectedActionsHAUSV699(t *testing.T) {
 	data := RechteData{Editable: true, OrgKey: "org", Policy: &authz.Policy{Rules: store.CapabilityRules{OrgKey: "org"}}}
 	body := renderComponent(t, rechteContent(data))
-	if strings.Count(body, `data-family=`) != 45 {
+	if strings.Count(body, `data-family=`) != 48 {
 		t.Fatal("matrix shape changed")
 	}
 	if !strings.Contains(body, `method="post" action="/app/verwaltung/rechte"`) || !strings.Contains(body, `name="allowed"`) {

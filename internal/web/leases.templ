@@ -1,0 +1,265 @@
+package web
+
+import "strconv"
+
+templ LeasePage(data LeasePageData) {
+	@SettingsFrame(data.Portal, "Mietvertrag", []string{}, LeasePageContent(data))
+}
+
+templ LeasePageContent(data LeasePageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Mietvertrag",
+			Class: "settings-main building",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Einheiten", Icon: "home", URL: "/app/settings/building?section=units"},
+		},
+		PortalSectionTitle("Mietvertrag"),
+		PortalSectionLede(data.UnitLabel),
+		leaseBackLink(),
+		nil,
+		nil,
+		LeasePageBody(data),
+	)
+}
+
+templ leaseBackLink() {
+	<a class="button ghost" href="/app/settings/building?section=units">Zurück zu den Einheiten</a>
+}
+
+templ LeasePageBody(data LeasePageData) {
+	<div class="stack">
+		@SettingsFlash(data.Message, data.OK)
+		if data.HasLease {
+			@LeaseSummary(data.Lease)
+			@LeaseTimeline(data.Lease)
+		} else {
+			<section class="panel workspace"><h2>Noch kein Mietvertrag</h2><p>Legen Sie den Vertrag für { data.UnitLabel } an oder importieren Sie eine Tabelle.</p></section>
+		}
+		@LeaseFormSection(data)
+		if len(data.History) > 1 {
+			<section class="panel workspace"><h2>Weitere Verträge</h2>
+				<ul>
+					for _, item := range data.History {
+						if item.ID != data.Lease.ID {
+							<li>{ item.Starts } – { item.Ends } · { item.Status } · { item.Kind }</li>
+						}
+					}
+				</ul>
+			</section>
+		}
+	</div>
+}
+
+templ LeaseSummary(lease LeaseDetail) {
+	<section class="panel workspace">
+		<h2>Vertrag</h2>
+		<dl class="form-grid">
+			<div><dt>Parteien</dt><dd>
+				for _, party := range lease.Parties {
+					<p><strong>{ party.Name }</strong> · { party.Role }<br/>{ party.Email }<br/>{ party.Address }<br/><small>{ party.From } – { party.To }</small></p>
+				}
+			</dd></div>
+			<div><dt>Abschluss</dt><dd>{ lease.Concluded }</dd></div>
+			<div><dt>Beginn</dt><dd>{ lease.Starts }</dd></div>
+			<div><dt>Ende</dt><dd>{ lease.Ends }</dd></div>
+			<div><dt>Nutzung und Regime</dt><dd>{ lease.Use } · { lease.MRG } · { lease.Regime }</dd></div>
+			<div><dt>MieWeG</dt><dd>{ lease.MieWeG }<br/><small>{ lease.MieWeGReason }</small></dd></div>
+			<div><dt>Sonderdeckel</dt><dd>{ lease.SpecialCap }<br/><small>{ lease.CapReason }</small></dd></div>
+			<div><dt>Zinstermin</dt><dd>{ lease.Zinstermin }</dd></div>
+		</dl>
+		if lease.Notes != "" {
+			<p>{ lease.Notes }</p>
+		}
+	</section>
+}
+
+templ LeaseTimeline(lease LeaseDetail) {
+	<section class="panel workspace">
+		<h2>Mietzins</h2>
+		if len(lease.Components) == 0 {
+			<p>Noch kein Mietzins.</p>
+		} else {
+			<ul>
+				for _, item := range lease.Components {
+					<li>{ item.From } · { item.Kind } · { item.Net } netto · USt { item.VAT } · { item.Origin }</li>
+				}
+			</ul>
+		}
+		<h2>Klausel</h2>
+		if !lease.HasClause {
+			<p>Keine Klausel hinterlegt.</p>
+		} else {
+			<p><strong>{ lease.Clause.Type }</strong> · { lease.Clause.Review }</p>
+			if lease.Clause.Series != "" {
+				<p>Index { lease.Clause.Series }, Basis { lease.Clause.Base }</p>
+			}
+			if lease.Clause.Threshold != "" {
+				<p>Schwelle { lease.Clause.Threshold }</p>
+			}
+			if lease.Clause.Text != "" {
+				<blockquote>{ lease.Clause.Text }</blockquote>
+			}
+			if lease.Clause.Note != "" {
+				<p>{ lease.Clause.Note }</p>
+			}
+		}
+		<h2>Wertsicherung</h2>
+		<p>Noch keine Wertsicherung.</p>
+		if lease.Anchor != "" {
+			<p>{ lease.Anchor }</p>
+		}
+	</section>
+}
+
+templ LeaseFormSection(data LeasePageData) {
+	<section class="panel workspace">
+		<h2>Erfassen</h2>
+		<form method="post" action={ templ.SafeURL("/app/settings/building/units/" + data.UnitID + "/lease") }>
+			if data.Form.ID != "" {
+				<input type="hidden" name="lease_id" value={ data.Form.ID }/>
+			}
+			<input type="hidden" name="price_restricted_set" value="1"/>
+			<div class="form-grid">
+				<label>Abschluss<input type="date" name="concluded_on" value={ data.Form.Concluded } required/></label>
+				<label>Beginn<input type="date" name="starts_on" value={ data.Form.Starts } required/></label>
+				<label>Ende<input type="date" name="ends_on" value={ data.Form.Ends }/></label>
+				<label>Art<select name="lease_kind">
+					for _, option := range data.Form.Kinds {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Nutzung<select name="use_kind">
+					for _, option := range data.Form.Uses {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>MRG<select name="mrg_scope">
+					for _, option := range data.Form.Scopes {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Regime<select name="rent_regime">
+					for _, option := range data.Form.Regimes {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Zinstermin<input type="number" name="zinstermin_day" min="1" max="28" value={ data.Form.Zinstermin }/></label>
+				<label>Sonderdeckel<input type="checkbox" name="price_restricted" checked?={ data.Form.PriceRestricted }/></label>
+				<label>Vermieter ist Unternehmer<input type="checkbox" name="landlord_is_business" checked?={ data.Form.Business }/></label>
+				<label>Mieter ist Verbraucher<input type="checkbox" name="tenant_is_consumer" checked?={ data.Form.Consumer }/></label>
+			</div>
+			<h3>Partei</h3>
+			<div class="form-grid">
+				<label>Name<input name="party_name" value={ data.Form.PartyName } maxlength="160"/></label>
+				<label>E-Mail<input type="email" name="party_email" value={ data.Form.PartyEmail }/></label>
+				<label>Adresse<input name="party_address" value={ data.Form.PartyAddress } maxlength="300"/></label>
+				<label>Rolle<select name="party_role">
+					for _, option := range data.Form.PartyRoles {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Gültig ab<input type="date" name="party_from" value={ data.Form.PartyFrom }/></label>
+				<label>Gültig bis<input type="date" name="party_to" value={ data.Form.PartyTo }/></label>
+			</div>
+			<h3>Neuer Mietzinsbestandteil</h3>
+			<div class="form-grid">
+				<label>Art<select name="component_kind">
+					for _, option := range data.Form.ComponentKinds {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Netto<input name="component_net" value={ data.Form.ComponentNet } inputmode="decimal" placeholder="1.000,00"/></label>
+				<label>USt<select name="component_vat">
+					for _, option := range data.Form.VATRates {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Gültig ab<input type="date" name="component_from" value={ data.Form.ComponentFrom }/></label>
+			</div>
+			<h3>Klausel</h3>
+			<div class="form-grid">
+				if data.Form.ClauseID != "" {
+					<input type="hidden" name="clause_id" value={ data.Form.ClauseID }/>
+				}
+				<label>Typ<select name="clause_type">
+					for _, option := range data.Form.ClauseTypes {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Indexreihe<input name="series" value={ data.Form.Series } placeholder="vpi2020"/></label>
+				<label>Basismonat<input name="base_period" value={ data.Form.BasePeriod } placeholder="2024-09"/></label>
+				<label>Basiswert<input name="base_value" value={ data.Form.BaseValue } placeholder="123,6"/></label>
+				<label>Schwelle<input name="threshold" value={ data.Form.Threshold }/></label>
+				<label>Schwellenart<select name="threshold_kind">
+					for _, option := range data.Form.ThresholdKinds {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Schwelle inklusive<input type="checkbox" name="threshold_inclusive" checked?={ data.Form.Inclusive }/></label>
+				<label>Auch Senkung<input type="checkbox" name="two_way" checked?={ data.Form.TwoWay }/></label>
+				<label>Prüfung<select name="review_status">
+					for _, option := range data.Form.Reviews {
+						<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+					}
+				</select></label>
+				<label>Wortlaut<textarea name="clause_text" maxlength="4000">{ data.Form.ClauseText }</textarea></label>
+				<label>Notiz<textarea name="notes" maxlength="2000">{ data.Form.Notes }</textarea></label>
+			</div>
+			<footer class="form-actions"><button class="button primary" type="submit">Speichern</button><a class="button ghost" href="/app/settings/building/leases/import">Tabelle importieren</a></footer>
+		</form>
+		if data.CanEnd {
+			<form method="post" action={ templ.SafeURL("/app/settings/building/units/" + data.UnitID + "/lease/end") }>
+				<input type="hidden" name="lease_id" value={ data.Form.ID }/>
+				<label>Ende<input type="date" name="ends_on" required/></label>
+				<button class="button ghost" type="submit">Vertrag beenden</button>
+			</form>
+		}
+	</section>
+}
+
+templ LeaseImportPage(data LeaseImportPageData) {
+	@SettingsFrame(data.Portal, "Mietverträge importieren", []string{}, LeaseImportContent(data))
+}
+
+templ LeaseImportContent(data LeaseImportPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Mietverträge importieren",
+			Class: "settings-main building",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Einheiten", Icon: "home", URL: "/app/settings/building?section=units"},
+		},
+		PortalSectionTitle("Mietverträge importieren"),
+		PortalSectionLede("Zuerst prüfen, dann übernehmen. Fehlerhafte Zeilen halten die ganze Datei auf."),
+		leaseBackLink(),
+		nil,
+		nil,
+		LeaseImportBody(data),
+	)
+}
+
+templ LeaseImportBody(data LeaseImportPageData) {
+	<section class="panel workspace">
+		@SettingsFlash(data.Message, data.OK)
+		<p>Spalten: einheit, mieter_name, mieter_email, mieter_adresse, vertragsabschluss, beginn, ende, nutzung, mrg, regime, hmz_netto, bk_akonto, heiz_akonto, ust_satz, klausel_typ, index, basis_monat, basis_wert, schwelle, schwelle_art, schwelle_inkl, letzte_valorisierung_monat, letzte_valorisierung_wert, hmz_nach_letzter_valorisierung, klausel_text.</p>
+		<form method="post" action="/app/settings/building/leases/import" enctype="multipart/form-data">
+			<label>CSV-Datei<input type="file" name="leases_file" accept=".csv,text/csv" required/></label>
+			<footer class="form-actions"><button class="button" type="submit">Prüfen</button><button class="button primary" type="submit" name="commit" value="1">Übernehmen</button></footer>
+		</form>
+		if data.HasRows {
+			<ul>
+				for _, row := range data.Rows {
+					<li>Zeile { strconv.Itoa(row.Line) } · { row.Unit }
+						if row.HasErrors {
+							<br/><span>Fehler: { row.Errors }</span>
+						}
+						if row.HasWarnings {
+							<br/><span>Hinweis: { row.Warnings }</span>
+						}
+					</li>
+				}
+			</ul>
+		}
+	</section>
+}

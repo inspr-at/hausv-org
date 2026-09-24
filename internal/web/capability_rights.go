@@ -68,7 +68,7 @@ func (data RechteData) changed(family string, capability authz.Capability) bool 
 
 // Extra capabilities have no dedicated action in the historical matrix.
 func additionalCapabilities() []authz.Capability {
-	return []authz.Capability{authz.CapabilityManageUsers, authz.CapabilityManageParking, authz.CapabilityOwnerDocuments, authz.CapabilityVote, authz.CapabilityOversight}
+	return []authz.Capability{authz.CapabilityManageUsers, authz.CapabilityManageParking, authz.CapabilityOwnerDocuments, authz.CapabilityVote, authz.CapabilityOversight, authz.CapabilityApproveValorisation}
 }
 
 type UserRightsData struct {

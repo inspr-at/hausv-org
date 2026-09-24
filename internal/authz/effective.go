@@ -156,6 +156,10 @@ func CapabilityLabel(capability Capability) string {
 		return "Energie verwalten"
 	case CapabilityControlEnergy:
 		return "Energie steuern"
+	case CapabilityManageLeases:
+		return "Mietverträge verwalten"
+	case CapabilityApproveValorisation:
+		return "Wertsicherung freigeben"
 	default:
 		return string(capability)
 	}
