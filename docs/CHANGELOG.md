@@ -2,6 +2,23 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924152649.0.0] - 2026-09-24
+
+### Neu
+
+- Wertsicherung: Anpassungslauf je Stichtag mit Übersicht „Bereit“, „Unverändert“ und „Ausnahmen“, nachvollziehbarer Berechnung aus Vertragsklausel und gesetzlicher Begrenzung (MieWeG), Freigabe, Anpassungsschreiben als PDF, Archiv und Versand per E-Mail.
+- Staffelmietzins wird strukturiert erfasst und im Anpassungslauf berücksichtigt.
+- Verbraucherpreisindizes von Statistik Austria lassen sich aktualisieren; vorläufige und endgültige Werte werden unterschieden.
+- Jahresabrechnung: Rücklage für Wohnungseigentumsgemeinschaften mit Buchungen, Anteil je Einheit und Hinweis auf die Mindestrücklage.
+- Jahresabrechnung: Leerstand im Mietrecht wird dem Eigentümer zugeordnet; die Umsatzsteuer kann je Kostenart ausgewiesen werden.
+
+### Verbessert
+
+- Jahresabrechnung übersichtlicher: Vorbereitung eingeklappt, Abrechnungen öffnen direkt im Browser, Freigabe, Archiv und Versand als klare Schritte.
+- Mietvertrag, Wertsicherung und Einstellungen im einheitlichen Erscheinungsbild.
+- Anliegen-Formular, Triage-Board am Smartphone und Hinweise zu KI-Vorschlägen klarer.
+- Stabilität und Datensicherheit verbessert.
+
 ## [260924130443.0.0] - 2026-09-24
 
 ### Neu
