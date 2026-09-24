@@ -161,7 +161,7 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 	if reset {
 		// Stored runs are immutable evidence and survive a demo reset. Only the
 		// fixture's editable input period is restored; other houses/years stay intact.
-		for _, table := range []string{"annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_receipts", "annual_statement_prepayments"} {
+		for _, table := range []string{"annual_statement_period_cost_types", "annual_statement_period_unit_bases", "annual_statement_receipts", "annual_statement_prepayments", "annual_statement_reserve_entries"} {
 			if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE tenant_id=$1 AND period_year=$2`, identity.ID, year); err != nil {
 				return err
 			}
@@ -245,6 +245,39 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 		}
 	}
 
+	// Usable area of this house is 1.227 m². The statutory floor of 1,12 €/m²/month
+	// is 1.374,24 € per month, 16.490,88 € for the year. The brief's 11.520,00 €
+	// would warn, so the twelve contributions are the floor itself.
+	// Closing: 18.400,00 + 16.490,88 − 3.260,00 + 212,40 = 31.843,28 €.
+	withdrawalID := fmt.Sprintf("demo-annual-%d-dachrinne", year)
+	withdrawalPDF := pdf.Simple([]string{"Demobeleg · Dachrinnenreparatur", "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: 2025-06-18", "Betrag: " + view.FormatEURCents(326000), "Synthetischer Demobeleg, keine Zahlungsaufforderung."})
+	if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, withdrawalID+".pdf"), withdrawalPDF, 0600); err != nil {
+		return err
+	}
+	withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: "Demobeleg 2025 · Dachrinnenreparatur", Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
+	if err := upsertJSON(ctx, tx, "documents", identity, withdrawalID, withdrawalDoc); err != nil {
+		return err
+	}
+	type reserveSeed struct {
+		id, kind, date, note, document string
+		amount                         int64
+	}
+	reserveRows := []reserveSeed{{id: fmt.Sprintf("demo-reserve-%d-opening", year), kind: store.ReserveKindOpening, date: "2025-01-01", amount: 1840000}}
+	for month := 1; month <= 12; month++ {
+		reserveRows = append(reserveRows, reserveSeed{id: fmt.Sprintf("demo-reserve-%d-contribution-%02d", year, month), kind: store.ReserveKindContribution, date: fmt.Sprintf("2025-%02d-01", month), amount: 137424})
+	}
+	reserveRows = append(reserveRows,
+		reserveSeed{id: fmt.Sprintf("demo-reserve-%d-withdrawal", year), kind: store.ReserveKindWithdrawal, date: "2025-06-18", amount: 326000, note: "Dachrinnenreparatur", document: withdrawalID},
+		reserveSeed{id: fmt.Sprintf("demo-reserve-%d-interest", year), kind: store.ReserveKindInterest, date: "2025-12-31", amount: 21240},
+	)
+	for _, row := range reserveRows {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO annual_statement_reserve_entries(tenant_id,tenant_slug,id,period_year,kind,entry_date,amount_cents,document_id,note,created_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(tenant_slug,id) DO NOTHING`, identity.ID, identity.Slug, row.id, year, row.kind, row.date, row.amount, row.document, row.note, at, actor); err != nil {
+			return err
+		}
+	}
 	if statement.Legal.HeizKGApplies {
 		loc, err := time.LoadLocation("Europe/Vienna")
 		if err != nil {
