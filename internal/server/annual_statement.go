@@ -240,6 +240,15 @@ func parseAnnualStatementPrepaymentAmount(raw string) (int64, bool) {
 	if len(parts) != 2 || parts[0] == "" || len(parts[1]) != 2 {
 		return 0, false
 	}
+	// ParseInt accepts signs, including negative zero and signed fractional
+	// components. Money input consists only of unsigned decimal digits.
+	for _, part := range parts {
+		for _, digit := range part {
+			if digit < '0' || digit > '9' {
+				return 0, false
+			}
+		}
+	}
 	euros, eurosErr := strconv.ParseInt(parts[0], 10, 64)
 	cents, centsErr := strconv.ParseInt(parts[1], 10, 64)
 	if eurosErr != nil || centsErr != nil || euros < 0 || cents < 0 || cents > 99 || euros > (int64(^uint64(0)>>1)-cents)/100 {

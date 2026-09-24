@@ -267,18 +267,8 @@ func annualStatementReceiptUploadSupported(header *multipart.FileHeader) bool {
 }
 
 func parseAnnualStatementReceiptAmount(raw string) (int64, bool) {
-	raw = strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
-	parts := strings.Split(raw, ".")
-	if len(parts) != 2 || parts[0] == "" || len(parts[1]) != 2 {
-		return 0, false
-	}
-	euros, errEuros := strconv.ParseInt(parts[0], 10, 64)
-	cents, errCents := strconv.ParseInt(parts[1], 10, 64)
-	if errEuros != nil || errCents != nil || euros < 0 || cents < 0 || cents > 99 || euros > (int64(^uint64(0)>>1)-cents)/100 {
-		return 0, false
-	}
-	amount := euros*100 + cents
-	return amount, amount > 0
+	amount, valid := parseAnnualStatementPrepaymentAmount(raw)
+	return amount, valid && amount > 0
 }
 
 func formatAnnualStatementReceiptAmountValue(cents int64) string {
