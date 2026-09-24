@@ -68,6 +68,7 @@ try {
   const expected = [
     ['Abfallentsorgung', 'Personen', '2,78 %', '66,67 €'],
     ['Heizung', 'HeizKG', 'siehe PDF', '443,65 €'],
+    ['Lift', 'Vereinbarte Anteile', '0,00 %', '0,00 €'],
     ['Hausreinigung', 'Nutzfläche', '4,48 %', '161,37 €'],
     ['Gebäudeversicherung', 'Nutzwert', '4,17 %', '200,00 €'],
   ];

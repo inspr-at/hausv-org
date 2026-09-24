@@ -517,6 +517,13 @@ liest diese Grundlagen in einer mandantengebundenen serialisierbaren Transaktion
 SQLite-Migration 0067 und PostgreSQL-Migration 0040 führen die Tabellen ein;
 PostgreSQL erzwingt RLS. `dbmove` übernimmt Tabellen und Freigaben gemeinsam.
 
+Die WEG-Empfängerliste bleibt auf Eigentümer beschränkt; Mietparteien kommen
+aus den gespeicherten Mietverträgen. Teilt ein v4-/v5-WEG-Lauf eine Einheit
+zwischen aufeinanderfolgenden Eigentümern auf, sperrt v1 die Mieterableitung
+mit einem Hinweis auf die gesondert zuzuordnenden Vermieterzeiträume und Akontos.
+Der gesamte Einheitsbetrag darf nicht nochmals jedem Eigentümer zugerechnet
+werden; die nötige zeitliche Vermieterzuordnung ist noch nicht modelliert.
+
 MRG-Jahrespauschalen werden mit der Partei am übernächsten Zinstermin abgerechnet.
 Gültigkeitsintervalle der Verträge und Parteien sind am Ende exklusiv. Bei Leerstand
 am Fälligkeitstag verbleiben BK-Kosten und Jahresakonto beim Eigentümer.

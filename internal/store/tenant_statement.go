@@ -124,6 +124,16 @@ func DeriveTenantStatement(run AnnualStatementRun, management RentalManagement, 
 	if out.Owner.ID == "" || out.Owner.Name == "" {
 		return fail("Eigentümer mit Name muss im WEG-Lauf hinterlegt sein.")
 	}
+	// v4/v5 can split a unit between successive WEG owners. This v1 tenant
+	// workflow has no landlord periods for lease Akontos, so using the whole
+	// unit (or just scaling its costs) would settle against the wrong owner.
+	if _, split := AnnualStatementPartyAllocation(run, management.UnitID, management.OwnerEmail); split {
+		for _, party := range run.Input.Parties {
+			if party.UnitID == management.UnitID && party.Owner && party.ID != management.OwnerEmail {
+				return fail("Bei Eigentümerwechsel benötigt die Mieterabrechnung eine gesonderte Zuordnung der Vermieterzeiträume und Akontos.")
+			}
+		}
+	}
 	legal := run.Input.Structure.Legal
 	if legal.InspectionPlace == "" || legal.InspectionPeriod == "" || legal.InspectionContact == "" {
 		return fail("Ort, Zeitraum und Kontakt für die Belegeinsicht fehlen.")

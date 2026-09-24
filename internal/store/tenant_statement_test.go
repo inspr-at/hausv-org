@@ -105,6 +105,25 @@ func TestTenantStatementPartyChangeWithinLease(t *testing.T) {
 	}
 }
 
+func TestTenantStatementBlocksSplitWEGOwners(t *testing.T) {
+	for _, version := range []int{4, 5} {
+		run, management, leases := tenantStatementFixture()
+		run.CalculationVersion = version
+		run.Input.Parties[0].ValidFrom = "2025-07-01"
+		run.Input.Parties = append(run.Input.Parties, AnnualStatementRunParty{UnitID: "top-1", ID: "previous-owner@example.test", Name: "Früherer Eigentümer", Owner: true, ValidTo: "2025-06-30"})
+		run.Result.PartyShares = []AnnualStatementPartyShare{
+			{UnitID: "top-1", PartyID: management.OwnerEmail, Unit: AnnualStatementRunUnit{UnitID: "top-1", AllocatedCents: 33100}},
+			{UnitID: "top-1", PartyID: "previous-owner@example.test", Unit: AnnualStatementRunUnit{UnitID: "top-1", AllocatedCents: 6001}},
+		}
+		for _, owner := range run.Input.Parties {
+			management.OwnerEmail = owner.ID
+			if _, err := DeriveTenantStatement(run, management, leases, "2026-06-20", ""); err == nil || !strings.Contains(err.Error(), "Eigentümerwechsel") {
+				t.Fatalf("v%d assigned the full unit to %s: %v", version, owner.ID, err)
+			}
+		}
+	}
+}
+
 func TestTenantStatementReturningJointPartyDoesNotDuplicateAkonto(t *testing.T) {
 	run, m, leases := tenantStatementFixture()
 	leases[0].Parties = append(leases[0].Parties, LeaseParty{ID: "joint", Name: "Mitmieter", Role: PartyMitmieter, ValidFrom: "2025-07-01", ValidTo: "2025-10-01"})
