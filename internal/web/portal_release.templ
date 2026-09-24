@@ -1,0 +1,51 @@
+package web
+
+import (
+	"github.com/inspr-at/hausv-org/internal/version"
+)
+
+// PortalReleaseNotes renders only the footer trigger. The notes themselves live
+// in the single ReleaseHistoryDialog per page, so the shell no longer ships the
+// full release history twice (sidebar and mobile menu) and the open panel is a
+// real modal in the top layer instead of a box inside the scrolling sidebar.
+templ PortalReleaseNotes(data PortalPageData) {
+	@ReleaseNotesTrigger(data.DisplayVersion)
+}
+
+// ReleaseNotesTrigger is an anchor, not a button, so a browser without
+// JavaScript still reaches the notes: the href targets the dialog and the
+// :target rule in PortalBaseStyles shows it. With JavaScript app.js cancels the
+// navigation and opens the same element with showModal().
+templ ReleaseNotesTrigger(displayVersion string) {
+	<a
+		class="release-trigger"
+		href="#release-history"
+		data-dialog="release-history"
+		aria-haspopup="dialog"
+		aria-controls="release-history"
+		aria-label={ "Version " + displayVersion + " · Versionsverlauf öffnen" }
+	><span>Version:</span> @VersionStamp(displayVersion, version.Identity().VersionScheme)</a>
+}
+
+// ReleaseHistoryDialog is rendered once per portal page, outside the sidebar, so
+// nothing clips or overlaps it.
+templ ReleaseHistoryDialog(notes []version.Note) {
+	if len(notes) > 0 {
+		<dialog id="release-history" class="release-dialog" aria-labelledby="release-history-title" data-light-dismiss>
+			<div class="release-dialog-head">
+				<h2 id="release-history-title">Versionsverlauf</h2>
+				<button class="release-dialog-close" type="button" data-close-dialog aria-label="Versionsverlauf schließen"><span aria-hidden="true">×</span></button>
+				<a class="release-dialog-close release-dialog-close-nojs" href="#main-content" aria-label="Versionsverlauf schließen"><span aria-hidden="true">×</span></a>
+			</div>
+			<div class="release-dialog-body" tabindex="0">
+				for _, note := range notes {
+					<article class="release-entry"><small>@VersionStamp(note.Version, version.NoteScheme(note)) · { note.Date } · { note.Kind }</small><strong>{ note.Headline }</strong><p>{ note.Intro }</p><ul>
+						for _, item := range note.Items {
+							<li><strong>{ item.Label }:</strong> { item.Text }</li>
+						}
+					</ul></article>
+				}
+			</div>
+		</dialog>
+	}
+}

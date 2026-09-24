@@ -1,0 +1,176 @@
+package web
+
+import (
+	"fmt"
+	"strings"
+)
+
+templ PortalSidebar(data PortalPageData) {
+	{{ shell := portalShellData(data) }}
+	<aside class="sidebar" aria-label="Navigation der Liegenschaft" data-navigation-surface="sidebar">
+		@PortalSideMapHero(data)
+		@PortalOrganisationIdentity(shell)
+		@PortalNavigation(data, true, false)
+		<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
+	</aside>
+	@SidebarResizeHandle()
+}
+
+// PortalAvatarBadge fills the round account tile: the person's profile picture
+// when they have one, their initials otherwise. The picture is decorative — the
+// tile's own aria-label or the copy beside it already names the person — so the
+// alt text stays empty rather than repeating the name to a screen reader.
+
+templ PortalAvatarBadge(avatarURL string, initials string) {
+	if avatarURL != "" {
+		<img class="avatar-image" src={ avatarURL } alt="" width="34" height="34" decoding="async"/>
+	} else {
+		{ initials }
+	}
+}
+
+templ PortalOrganisationIdentity(shell PortalShellData) {
+	if shell.IsOrganisationMember {
+		<header class="portal-organisation-identity" data-navigation-block="organisation-identity">
+			<strong>{ shell.OrganisationName }</strong>
+			<small>{ shell.RoleLabel }</small>
+		</header>
+	}
+}
+
+// PortalMobileHeader is the shared compact shell for route-specific portal
+// pages. Keeping its menu here ensures mobile and desktop use the same
+// permission-gated navigation.
+templ PortalMobileHeader(data PortalPageData, pageLabel string) {
+	{{ scope := portalScopeContext(data) }}
+	@Kontextleiste(scope, true, PortalMobileNavigation(data))
+}
+
+templ PortalMobileNavigation(data PortalPageData) {
+	@PortalSideMapHero(data)
+	@PortalOrganisationIdentity(portalShellData(data))
+	@PortalNavigation(data, false, false)
+	<footer class="sidebar-release" data-navigation-block="release">@PortalReleaseNotes(data)</footer>
+}
+
+func portalShellData(data PortalPageData) PortalShellData {
+	if data.Shell.Ready {
+		return data.Shell
+	}
+	shell := data.Shell
+	shell.PortalContexts = data.Contexts
+	shell.ShowInboxNav = data.ShowInboxNav
+	shell.InboxOpenCount = data.InboxOpenCount
+	seen := map[string]bool{}
+	for _, context := range data.Contexts {
+		if context.Role != "Admin" && context.Role != "Verwalter" || seen[context.TenantSlug] {
+			continue
+		}
+		seen[context.TenantSlug] = true
+		shell.ManagedHouses = append(shell.ManagedHouses, PortalHouse{
+			Slug: context.TenantSlug, Name: context.HouseName, Address: context.Address,
+			Role: context.Role, Current: context.Current,
+		})
+		if context.Current {
+			shell.CurrentHousePosition = len(shell.ManagedHouses)
+		}
+	}
+	shell.IsOrganisationMember = data.ShowVerwaltungNav || len(shell.ManagedHouses) > 1
+	shell.IsVerwaltung = shell.IsOrganisationMember && (data.Role == "Admin" || len(shell.ManagedHouses) > 1)
+	shell.CanManageOrganisationSettings = shell.IsOrganisationMember && data.Role == "Admin"
+	if shell.IsOrganisationMember && strings.TrimSpace(shell.OrganisationName) == "" {
+		shell.OrganisationName = "Verwaltung"
+	}
+	shell.RoleLabel = data.Role
+	return shell
+}
+
+func portalHouseGroupLabel(shell PortalShellData) string {
+	if len(shell.ManagedHouses) < 2 {
+		return "Liegenschaft"
+	}
+	if !shell.IsOrganisationMember {
+		return "Meine Liegenschaften"
+	}
+	position := shell.CurrentHousePosition
+	if position < 1 {
+		position = 1
+	}
+	return fmt.Sprintf("Liegenschaft · %d von %d", position, len(shell.ManagedHouses))
+}
+
+func portalHousePickerID(sidebar bool) string {
+	if sidebar {
+		return "portal-house-picker"
+	}
+	return "portal-house-picker-mobile"
+}
+
+func portalHousePickerShell(sidebar bool) string {
+	if sidebar {
+		return "sidebar"
+	}
+	return "mobile"
+}
+
+templ PortalHouseHeader(data PortalPageData, shell PortalShellData, sidebar bool) {
+	{{ icon := "building-2"; if !data.Overview && (data.Role == "Bewohner" || data.Role == "Eigentümer") { icon = "house" } }}
+	<div class="nav-house-card" data-navigation-block="house-card">
+  if data.Overview {
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), fmt.Sprintf("Alle Liegenschaften · %d", portalScopeContext(data).Switcher.Count), "Portfolio", portalHousePickerShell(sidebar), "Liegenschaften", icon)
+  } else {
+   @LiegenschaftSwitcher(portalScopeContext(data).Switcher, portalHousePickerID(sidebar), portalHouseTitle(data.HouseName, data.Address), portalHousePlace(data.Address), portalHousePickerShell(sidebar), portalHouseGroupLabel(shell), icon)
+  }
+ </div>
+}
+
+// PortalSideMapHero starts the sidebar and mobile drawer, flush with the header:
+// full sidebar width, pin on the address, link to OpenStreetMap.
+// Without coordinates it collapses to a short placeholder band.
+templ PortalSideMapHero(data PortalPageData) {
+ if data.Overview {
+  <div class="side-map-hero side-map-portfolio" data-navigation-block="map" aria-label="Portfolioübersicht"><span>@PortalIcon("building")</span></div>
+ } else {
+	<div class={ "side-map-hero", templ.KV("side-map-hero-empty", !data.Map.Configured) } data-navigation-block="map">
+	<a class="map side-map" href={ templ.SafeURL(data.MapURL) } target="_blank" rel="noopener noreferrer" aria-label={ data.Address + " in OpenStreetMap öffnen" } title={ data.Address + " in OpenStreetMap öffnen" } data-house-map-link>
+		if data.Map.Configured {
+			<span class="side-map-tiles">
+				for _, tile := range data.Map.Tiles {
+					<img class="side-map-tile" src={ templ.SafeURL(tile.URL) } style={ templ.SafeCSS(tile.Style) } width="256" height="256" alt="" draggable="false"/>
+				}
+			</span>
+			<span class="side-map-pin">
+				<svg class="side-map-pin-shape" viewBox="0 0 44 56" focusable="false"><path d="M22 55C18.7 49.2 4.5 36.7 4.5 22.2A17.5 17.5 0 1 1 39.5 22.2C39.5 36.7 25.3 49.2 22 55Z"></path></svg>
+				if data.BrandMarkSVG != "" {
+					<span class="side-map-pin-mark">@templ.Raw(data.BrandMarkSVG)</span>
+				}
+			</span>
+		} else {
+			<span class="side-map-fallback">Standort nicht hinterlegt</span>
+		}
+	</a>
+	</div>
+ }
+}
+
+func portalHousePlace(address string) string {
+	parts := strings.Split(address, ",")
+	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+// portalHouseTitle keeps the house card from naming the place twice: a tenant
+// without a display name falls back to its postal address (houseDisplayName),
+// so "Janischhofweg 22, 8043 Graz" would sit above "8043 Graz". The strong
+// line then carries the street only; the place stays in the small line.
+func portalHouseTitle(name, address string) string {
+	title := strings.TrimSpace(name)
+	place := portalHousePlace(address)
+	if place == "" || !strings.HasSuffix(title, place) || len(title) == len(place) {
+		return title
+	}
+	street := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(title[:len(title)-len(place)]), ","))
+	if street == "" {
+		return title
+	}
+	return street
+}
