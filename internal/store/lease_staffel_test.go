@@ -93,7 +93,7 @@ func TestStaffelAprilCutoffAndLaterIndependentCurves(t *testing.T) {
 }
 
 func TestStaffelCSVValidation(t *testing.T) {
-	for _, raw := range []string{"", "Text aus Vertrag", "2026-02-30:1050,00", "2026-04-01:-1", "2026-04-01:0", "2026-04-01:1.001", "2026-04-01:999999999999999999", "2026-04-01:2%;2026-04-01:1100", "2027-04-01:2%;2026-04-01:1100", "2026-04-01:2%;"} {
+	for _, raw := range []string{"", "Text aus Vertrag", "2026-02-30:1050,00", "2026-04-01:-1", "2026-04-01:0", "2026-04-01:1.001", "2026-04-01:1.050", "2026-04-01:999999999999999999", "2026-04-01:2%;2026-04-01:1100", "2027-04-01:2%;2026-04-01:1100", "2026-04-01:2%;"} {
 		if _, err := ParseStaffel(raw); err == nil {
 			t.Fatalf("accepted %q", raw)
 		}
@@ -158,6 +158,12 @@ func TestStaffelPersistenceAndFrozenApproval(t *testing.T) {
 	if err != nil || stored.Items[0].Decision.CappedCents != 5972 || stored.Items[0].Contract.ExactAmountCents != "110000" {
 		t.Fatal("lost capped contract", err)
 	}
+	// Approval persisted a capped HMZ and a rounded state value. Repeating the
+	// same date must still use the original anchor from the approved snapshot.
+	repeated, err := repo.Preview(in, mustDate(in.EffectiveOn))
+	if err != nil || repeated.Items[0].Group != "unchanged" || repeated.Items[0].NewCents != 104028 || repeated.Items[0].CapStartCents != 100000 {
+		t.Fatalf("repeated capped run: %+v %v", repeated, err)
+	}
 	updated := loaded.Clauses[0]
 	updated.StaffelSteps = updated.StaffelSteps[:1]
 	if _, err := leases.SetClause(updated); err != nil {
@@ -174,5 +180,29 @@ func TestStaffelPersistenceAndFrozenApproval(t *testing.T) {
 	var steps []indexation.StaffelStep
 	if json.Unmarshal([]byte(raw), &steps) != nil || len(steps) != 1 {
 		t.Fatal("row replacement failed", raw)
+	}
+}
+
+func TestStaffelHistoricalAdjustmentsNeedReviewedAnchor(t *testing.T) {
+	l := staffelFixture(t)
+	l.Clauses[0].StaffelSteps, _ = ParseStaffel("2025-04-01:1100;2026-04-01:1200")
+	l.Components = append(l.Components, RentComponent{Kind: ComponentHMZ, NetCents: 110000, ValidFrom: "2025-04-01"})
+	got := previewTest(t, l, "2026-04-01")
+	if got.Group != "exception" || !strings.Contains(strings.Join(got.Exceptions, ","), "missed_pre2026") {
+		t.Fatalf("guessed historical cap anchor: %+v", got)
+	}
+	l.Clauses[0].State = &ValorisationState{CapAnchorPeriod: "2025-04", CapValue: "1100.00", LastEffectiveOn: "2025-04-01"}
+	got = previewTest(t, l, "2026-04-01")
+	if got.Group != "ready" || got.ContractCents != 120000 || got.CapStartCents != 110000 {
+		t.Fatalf("reviewed anchor: %+v", got)
+	}
+
+	l = staffelFixture(t)
+	l.Components[0].NetCents = 10001
+	l.Components = append(l.Components, RentComponent{Kind: ComponentHMZ, NetCents: 10051, ValidFrom: "2025-04-01"})
+	l.Clauses[0].StaffelSteps, _ = ParseStaffel("2025-04-01:0.5%")
+	got = previewTest(t, l, "2026-04-01")
+	if got.Group != "unchanged" {
+		t.Fatalf("rounded legacy step: %+v", got)
 	}
 }

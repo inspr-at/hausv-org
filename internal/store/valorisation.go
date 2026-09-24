@@ -234,6 +234,18 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			item.exception("clause_invalid")
 			return finishValorisationItem(item)
 		}
+		if item.MieWeG && !hasPrior && clause.StaffelSteps[0].EffectiveOn < "2026-01-01" && (clause.State == nil || clause.State.CapAnchorPeriod == "" || clause.State.CapValue == "") {
+			contract, _, err := indexation.EvaluateStaffel(start, item.OldCents, clause.StaffelSteps, effective)
+			if err != nil {
+				item.exception("clause_invalid")
+				return finishValorisationItem(item)
+			}
+			if contract.Crossed {
+				item.exception("missed_pre2026")
+				item.Explanation = append(item.Explanation, "Frühere Staffelstufen benötigen einen geprüften MieWeG-Anker samt damaligem Hauptmietzins. Bitte den bisherigen Anpassungsstand ergänzen.")
+				return finishValorisationItem(item)
+			}
+		}
 	}
 	if clause.State != nil && clause.State.CapAnchorPeriod != "" {
 		anchor = indexation.Month(clause.State.CapAnchorPeriod)
@@ -298,7 +310,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			if scheduled.Percent != "" {
 				basis = "+" + strings.ReplaceAll(scheduled.Percent, ".", ",") + " % auf den vorigen Vertragsbetrag"
 			}
-			item.Explanation = append(item.Explanation, fmt.Sprintf("Staffelmietzins laut Vertrag ab %s: %s; Vertragskurve %s (gerundet angezeigt).", mustDate(scheduled.EffectiveOn).Format("02.01.2006"), basis, ValorisationExactMoney(step.ExactAmountCents)))
+			item.Explanation = append(item.Explanation, fmt.Sprintf("Staffelmietzins laut Vertrag ab %s: %s; vertraglich vereinbarter Hauptmietzins netto %s.", mustDate(scheduled.EffectiveOn).Format("02.01.2006"), basis, ValorisationExactMoney(step.ExactAmountCents)))
 		}
 		if !contractualOn.IsZero() && contractualOn.Year() < 2026 && (clause.State == nil || clause.State.LastEffectiveOn < contractualOn.Format(time.DateOnly)) && contract.Crossed {
 			item.exception("missed_pre2026")

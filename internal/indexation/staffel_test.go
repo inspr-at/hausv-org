@@ -72,3 +72,11 @@ func TestStaffelHalfCentUsesStatutoryRounding(t *testing.T) {
 		t.Fatalf("half-cent %+v %+v %v", contract, got, err)
 	}
 }
+
+func TestStaffelRoundedResidueIsNotAnotherAdjustment(t *testing.T) {
+	at := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+	got, _, err := EvaluateStaffel(10001, 10051, []StaffelStep{{EffectiveOn: "2025-04-01", Percent: "0.5"}}, at)
+	if err != nil || got.Crossed || got.ExactAmountCents != "2010201/200" {
+		t.Fatalf("already prescribed rounded value must be unchanged: %+v %v", got, err)
+	}
+}

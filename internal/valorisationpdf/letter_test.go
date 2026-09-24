@@ -87,7 +87,7 @@ func TestLetterVariants(t *testing.T) {
 			if strings.HasPrefix(variant, "staffel-") && !strings.Contains(text, "Staffelmietzins laut Vertrag") {
 				t.Fatal("Staffel letter basis missing", text)
 			}
-			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1`).MatchString(text) {
+			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1|[0-9]{4}-[0-9]{2}-[0-9]{2}`).MatchString(text) {
 				t.Fatal("technical notation in letter", text)
 			}
 			if !strings.Contains(text, "Top 1 · Eva Huber") {

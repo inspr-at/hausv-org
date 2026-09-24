@@ -392,8 +392,8 @@ func leaseFromForm(r *http.Request, unitID, actor string) (store.Lease, store.Le
 		for i, date := range dates {
 			v := strings.TrimSpace(values[i])
 			if kinds[i] == "percent" {
-				v += "%"
-			} else if kinds[i] != "amount" {
+				v = strings.TrimSpace(strings.TrimSuffix(v, "%")) + "%"
+			} else if kinds[i] != "amount" || strings.Contains(v, "%") {
 				return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
 			}
 			step, err := store.ParseStaffelStep(date, v)
@@ -403,7 +403,7 @@ func leaseFromForm(r *http.Request, unitID, actor string) (store.Lease, store.Le
 			clause.StaffelSteps = append(clause.StaffelSteps, step)
 		}
 		if err := indexation.ValidateStaffelSteps(clause.StaffelSteps); err != nil {
-			return lease, party, component, clause, addComponent, err
+			return lease, party, component, clause, addComponent, store.ErrLeaseInvalid
 		}
 	}
 	return lease, party, component, clause, addComponent, nil

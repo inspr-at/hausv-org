@@ -51,6 +51,8 @@ at commencement remains the schedule's base. The complete CSV cell must be quote
 Clause prose is never parsed. Covered leases use the independent MieWeG ceiling
 and April timing; uncapped contractual values and capped/deferred differences stay
 in the run snapshot. Fixed schedules require no monthly index publication.
+Schedules with pre-2026 steps require a reviewed prior cap anchor and rent before
+a further covered adjustment; missing history is held for review.
 Steps with a separately agreed non-inflation reason require individual review;
 this schedule type applies the cap to every covered increase.
 

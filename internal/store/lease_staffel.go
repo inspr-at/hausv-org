@@ -43,6 +43,8 @@ func ParseStaffelStep(date, value string) (indexation.StaffelStep, error) {
 		value = strings.TrimSpace(strings.TrimSuffix(value, "€"))
 		if strings.Contains(value, ",") {
 			value = strings.ReplaceAll(value, ".", "")
+		} else if parts := strings.Split(value, "."); len(parts) == 2 && len(parts[1]) == 3 {
+			return step, fmt.Errorf("Staffel-HMZ bitte eindeutig mit Dezimalkomma angeben, z. B. 1.050,00")
 		}
 		d, err := indexation.ParseDecimal(value)
 		if err != nil || d <= 0 || d%(indexation.Unit/100) != 0 {

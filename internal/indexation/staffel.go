@@ -78,6 +78,8 @@ func EvaluateStaffel(startCents, currentCents int64, steps []StaffelStep, throug
 		result.NewAmountCents, result.ExactAmountCents = cents, amount.RatString()
 		result.Explanation = append(result.Explanation, ExplanationStep{Code: "staffel_step", Month: monthOf(on), Applied: percent, AmountCents: cents, ExactAmountCents: amount.RatString()})
 	}
-	result.Crossed = !effective.IsZero() && amount.Cmp(big.NewRat(currentCents, 1)) != 0
+	// A sub-cent residue alone is not a new contractual adjustment. The exact
+	// value remains available for MieWeG rounding and later percentage steps.
+	result.Crossed = !effective.IsZero() && result.NewAmountCents != currentCents
 	return result, effective, nil
 }
