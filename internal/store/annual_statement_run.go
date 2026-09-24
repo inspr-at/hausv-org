@@ -83,6 +83,7 @@ type AnnualStatementRunSources struct {
 	Units       UnitStorage
 	Receipts    AnnualStatementReceiptStorage
 	Prepayments AnnualStatementPrepaymentStorage
+	Reserve     AnnualStatementReserveStorage
 	Consumption AnnualStatementConsumptionStorage
 	Documents   DocumentStorage
 }
@@ -165,6 +166,14 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 	referenced := map[string]bool{}
 	for _, receipt := range input.Receipts {
 		referenced[receipt.DocumentID] = true
+	}
+	if reserve, ok := BindAnnualStatementReserveRepository(s.sources.Reserve, tenant); ok {
+		input.Reserve = reserve.ListByPeriod(year)
+		for _, entry := range input.Reserve {
+			if entry.DocumentID != "" {
+				referenced[entry.DocumentID] = true
+			}
+		}
 	}
 	for _, doc := range documents.List() {
 		if referenced[doc.ID] && annualStatementRunDocumentReadable(doc, documents) {
@@ -258,6 +267,7 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	sort.Slice(input.Structure.CostTypes, func(i, j int) bool { return input.Structure.CostTypes[i].Key < input.Structure.CostTypes[j].Key })
 	sort.Slice(input.Structure.UnitBases, func(i, j int) bool { return input.Structure.UnitBases[i].UnitID < input.Structure.UnitBases[j].UnitID })
 	sort.Slice(input.Receipts, func(i, j int) bool { return input.Receipts[i].ID < input.Receipts[j].ID })
+	sortAnnualStatementReserveEntries(input.Reserve)
 	sort.Slice(input.Prepayments, func(i, j int) bool { return input.Prepayments[i].UnitID < input.Prepayments[j].UnitID })
 	sort.Slice(input.Documents, func(i, j int) bool { return input.Documents[i].ID < input.Documents[j].ID })
 	sort.Slice(input.Evidence, func(i, j int) bool { return input.Evidence[i].SourceKey < input.Evidence[j].SourceKey })

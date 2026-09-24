@@ -222,6 +222,13 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("annual statement receipt: %v", err)
 	}
+	reserve, _ := BindAnnualStatementReserveRepository(NewSQLAnnualStatementReserveStore(lanes), tenant)
+	if _, err := reserve.Add(AnnualStatementReserveEntry{
+		PeriodYear: 2026, Kind: ReserveKindWithdrawal, EntryDate: "2026-06-30", AmountCents: 500,
+		DocumentID: receiptDocument.ID, Note: "Reparatur", CreatedAt: now, CreatedBy: "a@example.com",
+	}); err != nil {
+		t.Fatalf("annual statement reserve: %v", err)
+	}
 	runs, _ := BindAnnualStatementRunRepository(NewSQLAnnualStatementRunStore(lanes, NewSQLDocumentStore(lanes, filepath.Join(fileDir, "docs"))), tenant)
 	run, err := runs.Create(2026, "a@example.com", now)
 	if err != nil {

@@ -101,6 +101,7 @@ var TableOrder = []string{
 	"annual_statement_period_unit_bases",
 	"annual_statement_prepayments",
 	"annual_statement_receipts",
+	"annual_statement_reserve_entries",
 	"annual_statement_runs",
 	"annual_statement_run_approvals",
 	"annual_statement_deliveries",

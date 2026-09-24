@@ -367,6 +367,10 @@ func seedFull(t *testing.T) *source {
 		}); err != nil {
 			t.Fatalf("%s annual statement receipt: %v", slug, err)
 		}
+		reserve, _ := store.BindAnnualStatementReserveRepository(store.NewSQLAnnualStatementReserveStore(src.lanes), tenant)
+		if _, err := reserve.Add(store.AnnualStatementReserveEntry{PeriodYear: 2026, Kind: store.ReserveKindOpening, EntryDate: "2026-01-01", AmountCents: 10000, Note: "Eröffnung", CreatedAt: now, CreatedBy: "verwalter@example.com"}); err != nil {
+			t.Fatalf("%s annual statement reserve: %v", slug, err)
+		}
 		// HAUSV-580: a stored run is an immutable calculation with its input
 		// snapshot. The seed inserts the row directly: a valid run through the
 		// repository would need complete unit bases, receipts and prepayments for
