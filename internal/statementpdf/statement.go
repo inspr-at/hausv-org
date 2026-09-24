@@ -85,15 +85,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			role = "Wohnungseigentümer und Mietpartei"
 		}
 	}
-	d.Address = append(d.Address, role)
-	if party.Name != "" {
-		d.Address = append(d.Address, party.Name)
-	}
-	if strings.TrimSpace(party.Address) == "" {
-		d.Address = append(d.Address, "Anschrift fehlt")
-	} else {
-		d.Address = append(d.Address, party.Address)
-	}
+	d.Address = nonempty(role, party.Name, party.Address)
 	d.Basis = []string{"Einheit: " + unit.Label}
 	for _, basis := range run.Input.Structure.UnitBases {
 		if basis.UnitID != unit.UnitID {
@@ -190,8 +182,14 @@ func Render(run store.AnnualStatementRun, unitID, partyID string) ([]byte, error
 func nonempty(values ...string) []string {
 	var out []string
 	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			out = append(out, value)
+		var lines []string
+		for _, line := range strings.Split(value, "\n") {
+			if line = strings.TrimSpace(line); line != "" {
+				lines = append(lines, line)
+			}
+		}
+		if len(lines) > 0 {
+			out = append(out, strings.Join(lines, "\n"))
 		}
 	}
 	return out

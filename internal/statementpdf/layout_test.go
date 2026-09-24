@@ -1,11 +1,69 @@
 package statementpdf
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
 	"github.com/inspr-at/hausv-org/internal/pdf"
 )
+
+func TestOptionalLetterheadFieldsAreOmittedWithoutSpacing(t *testing.T) {
+	run := fixture()
+	run.Input.Presentation.ContactAddress = "\n Musterstraße 12\n \n8010 Graz\n"
+	docs, err := Documents(run, "a", "owner@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete := docs[0]
+	for _, line := range complete.Pages()[0].Lines {
+		if line.Text == "Vera Verwalter" && line.Y != 764 {
+			t.Fatalf("empty sender address line reserved space: %+v", line)
+		}
+	}
+	run.Input.Presentation.ContactAddress = " \n "
+	run.Input.Presentation.ContactName = "\t"
+	run.Input.Presentation.ContactPhone = " "
+	run.Input.Parties[2].Name = "\n"
+	run.Input.Parties[2].Address = " "
+	docs, _ = Documents(run, "a", "owner@example.com")
+	if len(docs[0].Sender) != 2 || len(docs[0].Address) != 1 {
+		t.Fatalf("optional field reserved a line: sender=%q recipient=%q", docs[0].Sender, docs[0].Address)
+	}
+	for _, line := range docs[0].Pages()[0].Lines {
+		if line.Text == "verwaltung@musterstadt.example" && line.Y != 786 {
+			t.Fatalf("omitted sender fields reserved space: %+v", line)
+		}
+	}
+	// No sender at all must also work on continuation pages and the house notice.
+	run.Input.Presentation.Organisation = ""
+	run.Input.Presentation.ContactEmail = ""
+	run.Input.Presentation.EstateName = ""
+	run.Input.Presentation.EstateAddress = ""
+	run.Input.Structure.Legal.Regime = "mrg_voll"
+	docs, _ = Documents(run, "a", "owner@example.com")
+	if len(docs[0].Sender) != 0 || docs[0].Contact != "" {
+		t.Fatal("invented sender")
+	}
+	for _, page := range docs[0].Pages() {
+		for _, line := range page.Lines {
+			if strings.TrimSpace(line.Text) == "" || strings.Contains(line.Text, "fehlt") || line.Text == "Liegenschaft" {
+				t.Fatalf("empty/placeholder letter field: %q", line.Text)
+			}
+		}
+		for _, line := range page.Footer {
+			if strings.TrimSpace(line) == "" {
+				t.Fatal("empty footer line")
+			}
+		}
+	}
+	for _, render := range []func() ([]byte, error){func() ([]byte, error) { return Render(run, "", "") }, func() ([]byte, error) { return RenderAushang(run) }} {
+		raw, err := render()
+		if err != nil || bytes.Contains(raw, []byte("fehlt")) || bytes.Contains(raw, []byte("TODO")) {
+			t.Fatal("placeholder in rendered customer document", err)
+		}
+	}
+}
 
 func TestLetterLayoutSummaryGridAndPrivateReferences(t *testing.T) {
 	run := fixture()

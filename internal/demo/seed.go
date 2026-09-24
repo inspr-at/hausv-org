@@ -45,16 +45,17 @@ type SeedResult struct {
 }
 
 type seedOrg struct {
-	Key           string            `json:"key"`
-	Name          string            `json:"name"`
-	ContactName   string            `json:"contact_name,omitempty"`
-	ContactEmail  string            `json:"contact_email,omitempty"`
-	ContactPhone  string            `json:"contact_phone,omitempty"`
-	TrustLevels   map[string]string `json:"trust_levels"`
-	AutoThreshold float64           `json:"auto_threshold"`
-	AutoEnabled   bool              `json:"auto_enabled"`
-	Assignees     []seedAssignee    `json:"assignees"`
-	Members       []seedMember      `json:"members"`
+	Key            string            `json:"key"`
+	Name           string            `json:"name"`
+	ContactName    string            `json:"contact_name,omitempty"`
+	ContactAddress string            `json:"contact_address,omitempty"`
+	ContactEmail   string            `json:"contact_email,omitempty"`
+	ContactPhone   string            `json:"contact_phone,omitempty"`
+	TrustLevels    map[string]string `json:"trust_levels"`
+	AutoThreshold  float64           `json:"auto_threshold"`
+	AutoEnabled    bool              `json:"auto_enabled"`
+	Assignees      []seedAssignee    `json:"assignees"`
+	Members        []seedMember      `json:"members"`
 }
 
 type seedMember struct {
@@ -196,7 +197,8 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	settings := store.BindOrgSettingsRepository(database, org.Key)
 	if err := settings.Save(ctx, store.OrgSettings{
 		Organisation: org.Key, Name: org.Name, TrustLevels: org.TrustLevels,
-		AutoThreshold: org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
+		ContactAddress: org.ContactAddress,
+		AutoThreshold:  org.AutoThreshold, AutoEnabled: org.AutoEnabled, Counters: seedCounters(intake),
 	}); err != nil {
 		return SeedResult{}, err
 	}

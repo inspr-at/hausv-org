@@ -8,8 +8,71 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/config"
+	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
+
+func TestAnnualManagementAddressWarningAndFrozenSnapshot(t *testing.T) {
+	a, repos, _ := newArchiveDemoApp(t)
+	tenant := a.tenants[archiveDemoTenant]
+	tenant.Organisation = "musterstadt"
+	a.tenants[archiveDemoTenant] = tenant
+	a.organisations = map[string]config.OrganisationConfig{"musterstadt": {Key: "musterstadt", Name: "Hausverwaltung Musterstadt GmbH"}}
+	database := dbtest.Open(t)
+	a.orgSettings = func(key string) store.OrgSettingsRepository { return store.BindOrgSettingsRepository(database, key) }
+	settings, err := a.orgSettings("musterstadt").Get(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	settings.ContactAddress = ""
+	if err := a.orgSettings("musterstadt").Save(t.Context(), settings); err != nil {
+		t.Fatal(err)
+	}
+	checkWarning := func(runID string, want bool) {
+		t.Helper()
+		page := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, "/app/settings/annual-statement?year=2025&run="+url.QueryEscape(runID), nil)
+		if page.Code != http.StatusOK || strings.Contains(page.Body.String(), "data-management-address-warning") != want {
+			t.Fatalf("address warning=%v status=%d", want, page.Code)
+		}
+		if want && !strings.Contains(page.Body.String(), "/app/verwaltung/einstellungen#hausverwaltung") {
+			t.Fatal("address warning has no settings link")
+		}
+	}
+	create := func() store.AnnualStatementRun {
+		t.Helper()
+		response := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs", url.Values{"year": {"2025"}})
+		if response.Code != http.StatusSeeOther {
+			t.Fatal("create", response.Code)
+		}
+		runs, err := repos.annualStatementRuns.List(2025)
+		if err != nil || len(runs) == 0 {
+			t.Fatal("runs", err)
+		}
+		return runs[0]
+	}
+	checkWarning("", true)
+	first := create()
+	checkWarning(first.ID, true)
+	settings.ContactAddress = "Musterstraße 12, 8010 Graz"
+	if err := a.orgSettings("musterstadt").Save(t.Context(), settings); err != nil {
+		t.Fatal(err)
+	}
+	checkWarning(first.ID, true)
+	second := create()
+	if second.Input.Presentation.ContactAddress != settings.ContactAddress {
+		t.Fatal("new run did not snapshot organisation address")
+	}
+	checkWarning(second.ID, false)
+	frozen, _, err := repos.annualStatementRuns.Get(first.ID)
+	if err != nil || frozen.Input.Presentation.ContactAddress != "" {
+		t.Fatal("settings edit changed stored address", err)
+	}
+	if _, _, err := repos.annualStatementRuns.Approve(first.ID, archiveDemoManager, store.RoleManager, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	checkWarning(first.ID, false)
+}
 
 func TestAnnualApprovalLifecycle(t *testing.T) {
 	a, repos, _ := newArchiveDemoApp(t)

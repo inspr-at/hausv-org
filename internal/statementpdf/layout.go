@@ -35,7 +35,9 @@ func (l *letterLayout) newPage(first bool) {
 		l.text("ENTWURF · zur Prüfung", pdf.Strong, 8, left+8, 819)
 	}
 	if !first {
-		l.text(pdf.WrapWidth(l.d.Sender[0], pdf.Strong, 9, measure)[0], pdf.Strong, 9, left, 797)
+		if len(l.d.Sender) > 0 {
+			l.text(pdf.WrapWidth(l.d.Sender[0], pdf.Strong, 9, measure)[0], pdf.Strong, 9, left, 797)
+		}
 		l.y = 768
 		// Bound the repeated header even when supplied labels span pages.
 		title := pdf.WrapWidth(l.d.Title+" · Fortsetzung", pdf.Heading, 16, measure)
@@ -52,6 +54,9 @@ func (l *letterLayout) newPage(first bool) {
 	addressBottom := l.fixedBlock(l.d.Address, left, 703, 250, 10, 13, 8)
 	infoY := 796.0
 	for _, field := range l.d.Info {
+		if strings.TrimSpace(field.Value) == "" {
+			continue
+		}
 		if infoY < 612 {
 			l.overflow = append(l.overflow, field.Label+": "+field.Value)
 			continue
@@ -111,10 +116,7 @@ func (l *letterLayout) section(title string) {
 
 func (d Document) Pages() []pdf.Page {
 	l := &letterLayout{d: d}
-	// Documents normally have a sender; keep hand-built documents renderable.
-	if len(l.d.Sender) == 0 {
-		l.d.Sender = []string{"Hausverwaltung"}
-	}
+	l.d.Sender, l.d.Address = nonempty(d.Sender...), nonempty(d.Address...)
 	l.newPage(true)
 	l.summary()
 	l.costTable()
@@ -193,7 +195,7 @@ func (d Document) Pages() []pdf.Page {
 	if notice == "" {
 		notice = DraftNotice
 	}
-	contact := pdf.WrapWidth(d.Contact, pdf.Body, 7, measure)
+	contact := nonempty(pdf.WrapWidth(d.Contact, pdf.Body, 7, measure)...)
 	if len(contact) > 2 {
 		contact = []string{"Verwaltung: Kontaktdaten siehe Briefkopf und ergänzende Verwaltungsangaben."}
 	}

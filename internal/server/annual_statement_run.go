@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/statementpdf"
@@ -35,6 +36,7 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	presentation := store.AnnualStatementRunPresentation{EstateSlug: tenant.Slug, EstateName: tenant.Name, EstateAddress: tenant.Address, Organisation: tenant.ContactName, ContactName: tenant.ContactName, ContactAddress: tenant.ContactAddress, ContactEmail: tenant.ContactEmail, ContactPhone: tenant.ContactPhone}
 	if org, found := a.organisationRecordFor(r.Context(), &ac); found {
 		presentation.Organisation = org.Name
+		presentation.ContactAddress = firstNonEmpty(org.ContactAddress, presentation.ContactAddress)
 		presentation.ContactName = firstNonEmpty(org.ContactName, presentation.ContactName)
 		presentation.ContactEmail = firstNonEmpty(org.ContactEmail, presentation.ContactEmail)
 		presentation.ContactPhone = firstNonEmpty(org.ContactPhone, presentation.ContactPhone)
@@ -177,6 +179,7 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 			}
 		}
 		out.Approved = run.Approval != nil
+		out.ManagementAddressMissing = strings.TrimSpace(run.Input.Presentation.ContactAddress) == ""
 		if run.Approval != nil {
 			out.ApprovedAt = run.Approval.ApprovedAt.Format("02.01.2006")
 		} else {

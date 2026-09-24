@@ -4,6 +4,7 @@ import "strconv"
 import "net/url"
 
 type AnnualStatementRunView struct {
+ ManagementAddressMissing bool
  Approved bool
  ApprovedAt string
  ApproveAction string
@@ -339,6 +340,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			}
 		</header>
 		@SettingsFlash(data.Message, data.MessageOK)
+		if !data.Approved && data.ManagementAddressMissing {
+			<p class="muted" data-management-address-warning>Die Anschrift der Hausverwaltung fehlt — sie erscheint sonst nicht im Briefkopf. <a href="/app/verwaltung/einstellungen#hausverwaltung">In den Verwaltungseinstellungen ergänzen.</a>
+				if data.ID != "" {
+					<span> Danach einen neuen Abrechnungslauf berechnen, damit die Anschrift übernommen wird.</span>
+				}
+			</p>
+		}
 		<p>Der Lauf speichert Kostenanteile, Akontos und Salden gemeinsam mit den verwendeten Grundlagen. Er ist eine rechnerische Arbeitsfassung auf Ihren Einstellungen; eine rechtliche Prüfung nach WEG/MRG ist damit nicht verbunden.</p>
 		if len(data.Issues)>0 {
 			<div class="notice" role="status">

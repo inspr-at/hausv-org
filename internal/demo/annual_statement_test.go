@@ -59,7 +59,15 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if len(originals) != 11 {
 		t.Fatalf("original count=%d", len(originals))
 	}
-	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt", EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: "Vera Verwalter", ContactEmail: "vera.verwalter@musterstadt.example"}
+	organisation, found, err := store.BindOrganisationRepository(database, "musterstadt").Get(ctx)
+	if err != nil || !found {
+		t.Fatal("demo organisation missing", err)
+	}
+	settings, err := store.BindOrgSettingsRepository(database, "musterstadt").Get(ctx)
+	if err != nil || settings.ContactAddress != "Musterstraße 12, 8010 Graz" || organisation.Name != "Hausverwaltung Musterstadt GmbH" || organisation.ContactPhone != "+43 316 555 100" {
+		t.Fatal("incomplete demo letterhead", err)
+	}
+	presentation := store.AnnualStatementRunPresentation{Organisation: organisation.Name, EstateSlug: "janusbergweg-123", EstateName: "Janusbergweg 123", EstateAddress: "Janusbergweg 123, 8010 Graz", ContactName: organisation.ContactName, ContactAddress: settings.ContactAddress, ContactEmail: organisation.ContactEmail, ContactPhone: organisation.ContactPhone}
 	run, err := repo.Create(2025, "vera.verwalter@musterstadt.example", time.Date(2026, 1, 20, 9, 0, 0, 0, time.UTC), presentation)
 	if err != nil {
 		t.Fatal(err)
@@ -106,6 +114,11 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		raw, err := statementpdf.Render(loaded, party.UnitID, party.ID)
 		if err != nil || !bytes.HasPrefix(raw, []byte("%PDF-")) {
 			t.Fatal("party PDF", err)
+		}
+		for _, placeholder := range []string{"fehlt", "TODO", "Noch nicht hinterlegt", "Noch festzulegen"} {
+			if bytes.Contains(raw, []byte(placeholder)) {
+				t.Fatalf("complete demo PDF contains %q", placeholder)
+			}
 		}
 		renderedUnits[party.UnitID] = true
 		pdfs[party.UnitID+"/"+party.ID] = raw

@@ -146,6 +146,15 @@ trotz gleicher Zahlen nicht bytegleich. Der Snapshot speichert keine
 Originaldatei-Bytes, keinen Hash der Belegoriginale und keinen Rendererstand.
 
 Der A4-Briefkopf trennt Verwaltung, Empfängerfenster und Abrechnungsdaten.
+Optionale Absender- und Empfängerangaben werden bei Leerwerten ohne Platzhalter
+oder Leerzeilen ausgelassen. Die Verwaltungsanschrift wird unter
+`/app/verwaltung/einstellungen#hausverwaltung` gepflegt und migrationsfrei im
+bestehenden organisationsbezogenen JSON-Datensatz `org_settings.data` gespeichert.
+Neue Läufe bevorzugen diese Anschrift; bestehende Liegenschaftskontaktdaten bleiben
+der Rückfallwert. Vor Freigabe weist die Seite auf eine fehlende Briefkopfanschrift
+hin. Ein gespeicherter Lauf behält seinen Stand: Nach einer Ergänzung muss ein
+neuer Lauf berechnet werden. Der Demobriefkopf verwendet den vollen Firmennamen,
+Musterstraße 12, 8010 Graz und +43 316 555 100.
 Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
 geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
 Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter

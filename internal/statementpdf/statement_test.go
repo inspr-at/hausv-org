@@ -46,7 +46,7 @@ func TestDocumentStoredFiguresPartiesAndMeasurementEvidence(t *testing.T) {
 	if docs[1].Total != d.Total || docs[1].Balance != d.Balance || docs[1].Address[1] == d.Address[1] {
 		t.Fatal("party figures/address mismatch")
 	}
-	if docs[2].Balance != "Nachzahlung 100,00 €" || !strings.Contains(strings.Join(docs[2].Address, " "), "Anschrift fehlt") {
+	if docs[2].Balance != "Nachzahlung 100,00 €" || strings.Join(docs[2].Address, " · ") != "Wohnungseigentümer · Zoë Groß" {
 		t.Fatal(docs[2])
 	}
 	run.Result.Units[0].BalanceCents = 0

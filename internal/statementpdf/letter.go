@@ -16,13 +16,7 @@ var statementPalette = pdf.Palette{Paper: [3]uint8{255, 255, 255}, Ink: [3]uint8
 func letterDocument(run store.AnnualStatementRun, unit string) Document {
 	p := run.Input.Presentation
 	org := p.Organisation
-	if strings.TrimSpace(org) == "" {
-		org = "Hausverwaltung: Angabe fehlt"
-	}
 	address := p.ContactAddress
-	if strings.TrimSpace(address) == "" {
-		address = "Verwaltungsanschrift fehlt"
-	}
 	d := Document{
 		UnitLabel: unit,
 		Title:     fmt.Sprintf("Jahresabrechnung %d — %s", run.PeriodYear, unit),
