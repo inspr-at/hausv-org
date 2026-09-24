@@ -940,7 +940,7 @@ async function ensureResponsiveAnnouncement() {
     await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
     const form = page.locator('#announcement-create form');
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente.');
+    await form.locator('textarea[name="body"]').fill('Dieser Aushang prüft Aktionszeile und Inhaltsbreite ohne abgeschnittene Bedienelemente. Er ist bewusst länger als die Vorschau, damit das Aufklappen, das Einklappen und die Fokusrückgabe weiterhin geprüft werden (HAUSV-662).');
     await form.getByRole('button', { name: 'Aushang veröffentlichen' }).click();
     await page.waitForURL(/\/app\/announcements/);
   }
