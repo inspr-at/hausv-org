@@ -159,8 +159,26 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				color: var(--gold-ink);
 				padding-bottom: var(--space-2);
 			}
-			.annual-costs .allocation-row {
+			.annual-cost-table {
+				width: 100%;
+				table-layout: fixed;
+				border-collapse: collapse;
 				margin-bottom: var(--space-2);
+			}
+			.annual-cost-table th,
+			.annual-cost-table td {
+				overflow-wrap: anywhere;
+				padding: var(--space-3);
+			}
+			.annual-cost-table thead th:first-child {
+				width: 34%;
+			}
+			.annual-cost-table tbody tr {
+				border-bottom: 1px solid var(--line);
+			}
+			.annual-cost-table .annual-cost-amount {
+				text-align: right;
+				font-variant-numeric: tabular-nums;
 			}
 			@media (max-width: 1050px) {
 				.annual-units,
@@ -210,8 +228,34 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 					grid-row: 2;
 				}
 				.annual-cost-row,
-				.annual-cost-row td {
+				.annual-cost-row td,
+				.annual-cost-table {
 					display: block;
+				}
+				.annual-cost-table tbody tr {
+					display: grid;
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					margin-bottom: var(--space-2);
+					border: 1px solid var(--line);
+					border-radius: var(--radius-sm);
+					background: var(--panel-soft);
+				}
+				.annual-cost-table [data-label] {
+					min-width: 0;
+					text-align: left;
+				}
+				.annual-cost-table [data-label]::before {
+					content: attr(data-label);
+					display: block;
+					margin-bottom: var(--space-1);
+					font-size: 11px;
+					font-weight: 400;
+					color: var(--muted);
+				}
+			}
+			@media (max-width: 760px) {
+				.annual-cost-table tbody tr {
+					grid-template-columns: minmax(0, 1fr);
 				}
 			}
 			.annual-deliveries {
@@ -353,9 +397,14 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 										<summary>Kostenarten und Anteile<span class="sr-only"> · { unit.Label }</span>
 											@DisclosureChevron()
 										</summary>
-										for _,cost:=range unit.Costs {
-											<div class="allocation-row"><strong>{ cost.Name }</strong><span>{ cost.Key }</span><span>{ cost.Share }</span><strong>{ cost.Amount }</strong></div>
-										}
+										<table class="annual-cost-table" role="table" aria-label={ "Kostenarten und Anteile · " + unit.Label }>
+											<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Kostenart</th><th role="columnheader" scope="col">Verteilerschlüssel</th><th role="columnheader" scope="col">Anteil</th><th role="columnheader" scope="col" class="annual-cost-amount">Betrag</th></tr></thead>
+											<tbody role="rowgroup">
+												for _,cost:=range unit.Costs {
+													<tr role="row"><th role="rowheader" scope="row" data-label="Kostenart">{ cost.Name }</th><td role="cell" data-label="Verteilerschlüssel">{ cost.Key }</td><td role="cell" data-label="Anteil">{ cost.Share }</td><td role="cell" data-label="Betrag" class="annual-cost-amount"><strong>{ cost.Amount }</strong></td></tr>
+												}
+											</tbody>
+										</table>
 									</details>
 								</td>
 							</tr>

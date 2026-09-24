@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924071544.0.0] - 2026-09-24
+
+### Verbessert
+
+- Kostenart, Verteilerschlüssel, Anteil und Betrag sind in der Jahresabrechnung auf Desktop, Tablet und Smartphone eindeutig beschriftet.
+
 ## [260923172835.0.0] - 2026-09-23
 
 ### Verbessert

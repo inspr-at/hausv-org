@@ -225,6 +225,12 @@ jobs:
           HV_CAPTURE: shell-widths.mjs
         run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/widths.json" 8299
 
+      - name: Annual cost breakdown headings and responsive labels
+        env:
+          CI: "true"
+          HV_CAPTURE: qa-annual-costs.mjs
+        run: bash scripts/snapshot/run.sh WORKTREE "${{ github.workspace }}/artifacts/portal-oracles/annual-costs" 8699
+
       - name: Long overview text and greeting alignment
         env:
           CI: "true"

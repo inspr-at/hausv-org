@@ -86,7 +86,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"panel workspace annual-run-panel\" id=\"abrechnungslauf\"><style>\n\t\t\t.annual-run-panel {\n\t\t\t\tmin-width: 0;\n\t\t\t}\n\t\t\t.annual-run-panel .subhead {\n\t\t\t\tmargin-top: var(--space-4);\n\t\t\t}\n\t\t\t.annual-run-panel .subhead > div {\n\t\t\t\tmin-width: 0;\n\t\t\t\toverflow-wrap: anywhere;\n\t\t\t}\n\t\t\t.annual-history {\n\t\t\t\tdisplay: flex;\n\t\t\t\tflex-wrap: wrap;\n\t\t\t\tgap: var(--space-2);\n\t\t\t}\n\t\t\t.settings-links.annual-history a {\n\t\t\t\tdisplay: flex;\n\t\t\t\tmin-height: 44px;\n\t\t\t\tborder: 1px solid var(--line);\n\t\t\t\tborder-radius: var(--radius-sm);\n\t\t\t\twhite-space: nowrap;\n\t\t\t}\n\t\t\t.annual-actions {\n\t\t\t\tdisplay: flex;\n\t\t\t\tgap: var(--space-3);\n\t\t\t\tflex-wrap: wrap;\n\t\t\t\talign-items: center;\n\t\t\t\tmargin-block: var(--space-4);\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-actions > * {\n\t\t\t\tmin-width: 0;\n\t\t\t\tmax-width: 100%;\n\t\t\t}\n\t\t\t.annual-actions .button {\n\t\t\t\twhite-space: normal;\n\t\t\t\ttext-align: center;\n\t\t\t}\n\t\t\t.annual-units {\n\t\t\t\twidth: 100%;\n\t\t\t\tmargin-top: var(--space-5);\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-units caption {\n\t\t\t\ttext-align: left;\n\t\t\t\tfont-weight: 700;\n\t\t\t\tfont-size: 18px;\n\t\t\t\tpadding-block: var(--space-3);\n\t\t\t}\n\t\t\t.annual-units th,\n\t\t\t.annual-units td {\n\t\t\t\tpadding: var(--space-2);\n\t\t\t\ttext-align: left;\n\t\t\t\tvertical-align: top;\n\t\t\t}\n\t\t\t.annual-units thead {\n\t\t\t\tbackground: var(--panel-soft);\n\t\t\t\tcolor: var(--muted);\n\t\t\t}\n\t\t\t.annual-unit-row {\n\t\t\t\tborder-top: 1px solid var(--line);\n\t\t\t}\n\t\t\t.annual-units .annual-money {\n\t\t\t\ttext-align: right;\n\t\t\t\tfont-variant-numeric: tabular-nums;\n\t\t\t}\n\t\t\t.annual-party-name {\n\t\t\t\tdisplay: -webkit-box;\n\t\t\t\t-webkit-box-orient: vertical;\n\t\t\t\t-webkit-line-clamp: 2;\n\t\t\t\toverflow: hidden;\n\t\t\t}\n\t\t\t.annual-party {\n\t\t\t\theight: 44px;\n\t\t\t}\n\t\t\t.annual-party,\n\t\t\t.annual-pdf {\n\t\t\t\tdisplay: flex;\n\t\t\t\talign-items: center;\n\t\t\t\tmin-height: 44px;\n\t\t\t}\n\t\t\t.annual-pdf {\n\t\t\t\tgap: var(--space-3);\n\t\t\t}\n\t\t\t.annual-pdf a {\n\t\t\t\tdisplay: inline-flex;\n\t\t\t\talign-items: center;\n\t\t\t\tmin-height: 44px;\n\t\t\t\tcolor: var(--gold-ink);\n\t\t\t\ttext-decoration: underline;\n\t\t\t\ttext-underline-offset: 3px;\n\t\t\t\twhite-space: nowrap;\n\t\t\t}\n\t\t\t.annual-costs summary {\n\t\t\t\tcursor: pointer;\n\t\t\t\tcolor: var(--gold-ink);\n\t\t\t\tpadding-bottom: var(--space-2);\n\t\t\t}\n\t\t\t.annual-costs .allocation-row {\n\t\t\t\tmargin-bottom: var(--space-2);\n\t\t\t}\n\t\t\t@media (max-width: 1050px) {\n\t\t\t\t.annual-units,\n\t\t\t\t.annual-units tbody {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t\t.annual-units caption {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t\t.annual-units thead {\n\t\t\t\t\tposition: absolute;\n\t\t\t\t\twidth: 1px;\n\t\t\t\t\theight: 1px;\n\t\t\t\t\toverflow: hidden;\n\t\t\t\t\tclip-path: inset(50%);\n\t\t\t\t\twhite-space: nowrap;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row {\n\t\t\t\t\tdisplay: grid;\n\t\t\t\t\tgrid-template-columns: minmax(0, 1fr) minmax(0, 1fr);\n\t\t\t\t\tpadding-top: var(--space-3);\n\t\t\t\t}\n\t\t\t\t.annual-unit-row th {\n\t\t\t\t\tgrid-column: 1/-1;\n\t\t\t\t\tfont-size: 16px;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row td {\n\t\t\t\t\tmin-width: 0;\n\t\t\t\t\toverflow-wrap: anywhere;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row td::before {\n\t\t\t\t\tcontent: attr(data-label);\n\t\t\t\t\tdisplay: block;\n\t\t\t\t\tcolor: var(--muted);\n\t\t\t\t\tfont-size: 11px;\n\t\t\t\t\tmargin-bottom: var(--space-1);\n\t\t\t\t}\n\t\t\t\t.annual-units .annual-money {\n\t\t\t\t\ttext-align: left;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row .annual-parties {\n\t\t\t\t\tgrid-column: 1;\n\t\t\t\t\tgrid-row: 2;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row .annual-documents {\n\t\t\t\t\tgrid-column: 2;\n\t\t\t\t\tgrid-row: 2;\n\t\t\t\t}\n\t\t\t\t.annual-cost-row,\n\t\t\t\t.annual-cost-row td {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t}\n\t\t\t.annual-deliveries {\n\t\t\t\tmax-width: 100%;\n\t\t\t\tmin-width: 0;\n\t\t\t\toverflow-x: auto;\n\t\t\t\tmargin-block: var(--space-4);\n\t\t\t\tborder: 1px solid var(--line);\n\t\t\t\tborder-radius: var(--radius-sm);\n\t\t\t}\n\t\t\t.annual-deliveries table {\n\t\t\t\twidth: 100%;\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-deliveries caption {\n\t\t\t\ttext-align: left;\n\t\t\t\tpadding: var(--space-3);\n\t\t\t\tfont-weight: 700;\n\t\t\t}\n\t\t\t.annual-deliveries th,\n\t\t\t.annual-deliveries td {\n\t\t\t\tpadding: var(--space-3);\n\t\t\t\ttext-align: left;\n\t\t\t\tvertical-align: top;\n\t\t\t\tborder-top: 1px solid var(--line);\n\t\t\t\toverflow-wrap: anywhere;\n\t\t\t}\n\t\t\t.annual-deliveries th {\n\t\t\t\tbackground: var(--panel-soft);\n\t\t\t\tcolor: var(--muted);\n\t\t\t}\n\t\t</style><header class=\"workspace-head\"><div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"panel workspace annual-run-panel\" id=\"abrechnungslauf\"><style>\n\t\t\t.annual-run-panel {\n\t\t\t\tmin-width: 0;\n\t\t\t}\n\t\t\t.annual-run-panel .subhead {\n\t\t\t\tmargin-top: var(--space-4);\n\t\t\t}\n\t\t\t.annual-run-panel .subhead > div {\n\t\t\t\tmin-width: 0;\n\t\t\t\toverflow-wrap: anywhere;\n\t\t\t}\n\t\t\t.annual-history {\n\t\t\t\tdisplay: flex;\n\t\t\t\tflex-wrap: wrap;\n\t\t\t\tgap: var(--space-2);\n\t\t\t}\n\t\t\t.settings-links.annual-history a {\n\t\t\t\tdisplay: flex;\n\t\t\t\tmin-height: 44px;\n\t\t\t\tborder: 1px solid var(--line);\n\t\t\t\tborder-radius: var(--radius-sm);\n\t\t\t\twhite-space: nowrap;\n\t\t\t}\n\t\t\t.annual-actions {\n\t\t\t\tdisplay: flex;\n\t\t\t\tgap: var(--space-3);\n\t\t\t\tflex-wrap: wrap;\n\t\t\t\talign-items: center;\n\t\t\t\tmargin-block: var(--space-4);\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-actions > * {\n\t\t\t\tmin-width: 0;\n\t\t\t\tmax-width: 100%;\n\t\t\t}\n\t\t\t.annual-actions .button {\n\t\t\t\twhite-space: normal;\n\t\t\t\ttext-align: center;\n\t\t\t}\n\t\t\t.annual-units {\n\t\t\t\twidth: 100%;\n\t\t\t\tmargin-top: var(--space-5);\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-units caption {\n\t\t\t\ttext-align: left;\n\t\t\t\tfont-weight: 700;\n\t\t\t\tfont-size: 18px;\n\t\t\t\tpadding-block: var(--space-3);\n\t\t\t}\n\t\t\t.annual-units th,\n\t\t\t.annual-units td {\n\t\t\t\tpadding: var(--space-2);\n\t\t\t\ttext-align: left;\n\t\t\t\tvertical-align: top;\n\t\t\t}\n\t\t\t.annual-units thead {\n\t\t\t\tbackground: var(--panel-soft);\n\t\t\t\tcolor: var(--muted);\n\t\t\t}\n\t\t\t.annual-unit-row {\n\t\t\t\tborder-top: 1px solid var(--line);\n\t\t\t}\n\t\t\t.annual-units .annual-money {\n\t\t\t\ttext-align: right;\n\t\t\t\tfont-variant-numeric: tabular-nums;\n\t\t\t}\n\t\t\t.annual-party-name {\n\t\t\t\tdisplay: -webkit-box;\n\t\t\t\t-webkit-box-orient: vertical;\n\t\t\t\t-webkit-line-clamp: 2;\n\t\t\t\toverflow: hidden;\n\t\t\t}\n\t\t\t.annual-party {\n\t\t\t\theight: 44px;\n\t\t\t}\n\t\t\t.annual-party,\n\t\t\t.annual-pdf {\n\t\t\t\tdisplay: flex;\n\t\t\t\talign-items: center;\n\t\t\t\tmin-height: 44px;\n\t\t\t}\n\t\t\t.annual-pdf {\n\t\t\t\tgap: var(--space-3);\n\t\t\t}\n\t\t\t.annual-pdf a {\n\t\t\t\tdisplay: inline-flex;\n\t\t\t\talign-items: center;\n\t\t\t\tmin-height: 44px;\n\t\t\t\tcolor: var(--gold-ink);\n\t\t\t\ttext-decoration: underline;\n\t\t\t\ttext-underline-offset: 3px;\n\t\t\t\twhite-space: nowrap;\n\t\t\t}\n\t\t\t.annual-costs summary {\n\t\t\t\tcursor: pointer;\n\t\t\t\tcolor: var(--gold-ink);\n\t\t\t\tpadding-bottom: var(--space-2);\n\t\t\t}\n\t\t\t.annual-cost-table {\n\t\t\t\twidth: 100%;\n\t\t\t\ttable-layout: fixed;\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tmargin-bottom: var(--space-2);\n\t\t\t}\n\t\t\t.annual-cost-table th,\n\t\t\t.annual-cost-table td {\n\t\t\t\toverflow-wrap: anywhere;\n\t\t\t\tpadding: var(--space-3);\n\t\t\t}\n\t\t\t.annual-cost-table thead th:first-child {\n\t\t\t\twidth: 34%;\n\t\t\t}\n\t\t\t.annual-cost-table tbody tr {\n\t\t\t\tborder-bottom: 1px solid var(--line);\n\t\t\t}\n\t\t\t.annual-cost-table .annual-cost-amount {\n\t\t\t\ttext-align: right;\n\t\t\t\tfont-variant-numeric: tabular-nums;\n\t\t\t}\n\t\t\t@media (max-width: 1050px) {\n\t\t\t\t.annual-units,\n\t\t\t\t.annual-units tbody {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t\t.annual-units caption {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t\t.annual-units thead {\n\t\t\t\t\tposition: absolute;\n\t\t\t\t\twidth: 1px;\n\t\t\t\t\theight: 1px;\n\t\t\t\t\toverflow: hidden;\n\t\t\t\t\tclip-path: inset(50%);\n\t\t\t\t\twhite-space: nowrap;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row {\n\t\t\t\t\tdisplay: grid;\n\t\t\t\t\tgrid-template-columns: minmax(0, 1fr) minmax(0, 1fr);\n\t\t\t\t\tpadding-top: var(--space-3);\n\t\t\t\t}\n\t\t\t\t.annual-unit-row th {\n\t\t\t\t\tgrid-column: 1/-1;\n\t\t\t\t\tfont-size: 16px;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row td {\n\t\t\t\t\tmin-width: 0;\n\t\t\t\t\toverflow-wrap: anywhere;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row td::before {\n\t\t\t\t\tcontent: attr(data-label);\n\t\t\t\t\tdisplay: block;\n\t\t\t\t\tcolor: var(--muted);\n\t\t\t\t\tfont-size: 11px;\n\t\t\t\t\tmargin-bottom: var(--space-1);\n\t\t\t\t}\n\t\t\t\t.annual-units .annual-money {\n\t\t\t\t\ttext-align: left;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row .annual-parties {\n\t\t\t\t\tgrid-column: 1;\n\t\t\t\t\tgrid-row: 2;\n\t\t\t\t}\n\t\t\t\t.annual-unit-row .annual-documents {\n\t\t\t\t\tgrid-column: 2;\n\t\t\t\t\tgrid-row: 2;\n\t\t\t\t}\n\t\t\t\t.annual-cost-row,\n\t\t\t\t.annual-cost-row td,\n\t\t\t\t.annual-cost-table {\n\t\t\t\t\tdisplay: block;\n\t\t\t\t}\n\t\t\t\t.annual-cost-table tbody tr {\n\t\t\t\t\tdisplay: grid;\n\t\t\t\t\tgrid-template-columns: repeat(2, minmax(0, 1fr));\n\t\t\t\t\tmargin-bottom: var(--space-2);\n\t\t\t\t\tborder: 1px solid var(--line);\n\t\t\t\t\tborder-radius: var(--radius-sm);\n\t\t\t\t\tbackground: var(--panel-soft);\n\t\t\t\t}\n\t\t\t\t.annual-cost-table [data-label] {\n\t\t\t\t\tmin-width: 0;\n\t\t\t\t\ttext-align: left;\n\t\t\t\t}\n\t\t\t\t.annual-cost-table [data-label]::before {\n\t\t\t\t\tcontent: attr(data-label);\n\t\t\t\t\tdisplay: block;\n\t\t\t\t\tmargin-bottom: var(--space-1);\n\t\t\t\t\tfont-size: 11px;\n\t\t\t\t\tfont-weight: 400;\n\t\t\t\t\tcolor: var(--muted);\n\t\t\t\t}\n\t\t\t}\n\t\t\t@media (max-width: 760px) {\n\t\t\t\t.annual-cost-table tbody tr {\n\t\t\t\t\tgrid-template-columns: minmax(0, 1fr);\n\t\t\t\t}\n\t\t\t}\n\t\t\t.annual-deliveries {\n\t\t\t\tmax-width: 100%;\n\t\t\t\tmin-width: 0;\n\t\t\t\toverflow-x: auto;\n\t\t\t\tmargin-block: var(--space-4);\n\t\t\t\tborder: 1px solid var(--line);\n\t\t\t\tborder-radius: var(--radius-sm);\n\t\t\t}\n\t\t\t.annual-deliveries table {\n\t\t\t\twidth: 100%;\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tfont-size: 12px;\n\t\t\t}\n\t\t\t.annual-deliveries caption {\n\t\t\t\ttext-align: left;\n\t\t\t\tpadding: var(--space-3);\n\t\t\t\tfont-weight: 700;\n\t\t\t}\n\t\t\t.annual-deliveries th,\n\t\t\t.annual-deliveries td {\n\t\t\t\tpadding: var(--space-3);\n\t\t\t\ttext-align: left;\n\t\t\t\tvertical-align: top;\n\t\t\t\tborder-top: 1px solid var(--line);\n\t\t\t\toverflow-wrap: anywhere;\n\t\t\t}\n\t\t\t.annual-deliveries th {\n\t\t\t\tbackground: var(--panel-soft);\n\t\t\t\tcolor: var(--muted);\n\t\t\t}\n\t\t</style><header class=\"workspace-head\"><div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -126,7 +126,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(issue)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 263, Col: 17}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 307, Col: 17}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
@@ -149,7 +149,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualStatementYear(data.Year))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 268, Col: 138}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 312, Col: 138}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
@@ -191,7 +191,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var4 templ.SafeURL
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/settings/annual-statement?year=" + annualStatementYear(data.Year) + "&run=" + url.QueryEscape(run.ID) + "#abrechnungsergebnis"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 277, Col: 162}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 321, Col: 162}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -204,7 +204,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.ResolveAttributeValue(portalAriaCurrent(run.Selected))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 277, Col: 211}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 321, Col: 211}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 					if templ_7745c5c3_Err != nil {
@@ -217,7 +217,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(run.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 277, Col: 233}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 321, Col: 233}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -241,7 +241,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 282, Col: 47}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 326, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 				if templ_7745c5c3_Err != nil {
@@ -254,7 +254,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.Revision))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 283, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 327, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -267,7 +267,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.CreatedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 283, Col: 109}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 327, Col: 109}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -280,7 +280,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.CreatedBy)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 283, Col: 131}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 327, Col: 131}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -293,7 +293,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 283, Col: 162}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 327, Col: 162}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -306,7 +306,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.Total)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 284, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 328, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -319,7 +319,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(data.Excluded)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 284, Col: 129}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 328, Col: 129}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -337,7 +337,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var14 templ.SafeURL
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.AllPDFURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 287, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 331, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -355,7 +355,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var15 string
 						templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(data.ArchivedAt)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 289, Col: 55}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 333, Col: 55}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 						if templ_7745c5c3_Err != nil {
@@ -368,7 +368,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var16 string
 						templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.ArchiveCount))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 289, Col: 94}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 333, Col: 94}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 						if templ_7745c5c3_Err != nil {
@@ -381,7 +381,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var17 templ.SafeURL
 						templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.ArchiveURL))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 290, Col: 68}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 334, Col: 68}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 						if templ_7745c5c3_Err != nil {
@@ -399,7 +399,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var18 templ.SafeURL
 						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.ArchiveAction))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 292, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 336, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 						if templ_7745c5c3_Err != nil {
@@ -434,7 +434,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(data.MailMode)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 302, Col: 68}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 346, Col: 68}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 					if templ_7745c5c3_Err != nil {
@@ -447,7 +447,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var20 templ.SafeURL
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.SendAction))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 304, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 348, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 					if templ_7745c5c3_Err != nil {
@@ -475,7 +475,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var21 string
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(data.SendIssue)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 306, Col: 40}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 350, Col: 40}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 						if templ_7745c5c3_Err != nil {
@@ -498,7 +498,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var22 string
 						templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(data.DeliverySummary)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 309, Col: 45}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 353, Col: 45}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 						if templ_7745c5c3_Err != nil {
@@ -526,7 +526,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var23 string
 							templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Party)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 317, Col: 34}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 361, Col: 34}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 							if templ_7745c5c3_Err != nil {
@@ -539,7 +539,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var24 string
 							templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Recipient)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 317, Col: 65}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 361, Col: 65}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 							if templ_7745c5c3_Err != nil {
@@ -552,7 +552,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var25 string
 							templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Time)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 317, Col: 91}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 361, Col: 91}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 							if templ_7745c5c3_Err != nil {
@@ -565,7 +565,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var26 string
 							templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Status)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 317, Col: 119}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 361, Col: 119}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 							if templ_7745c5c3_Err != nil {
@@ -578,7 +578,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var27 string
 							templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Error)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 317, Col: 146}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 361, Col: 146}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 							if templ_7745c5c3_Err != nil {
@@ -607,7 +607,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var28 string
 					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 330, Col: 53}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 374, Col: 53}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 					if templ_7745c5c3_Err != nil {
@@ -625,7 +625,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var29 string
 						templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.ResolveAttributeValue(document.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 333, Col: 91}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 377, Col: 91}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 						if templ_7745c5c3_Err != nil {
@@ -638,7 +638,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var30 string
 						templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(document.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 333, Col: 110}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 377, Col: 110}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 						if templ_7745c5c3_Err != nil {
@@ -656,7 +656,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var31 string
 					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Allocated)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 336, Col: 87}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 380, Col: 87}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 					if templ_7745c5c3_Err != nil {
@@ -669,7 +669,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var32 string
 					templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Prepaid)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 337, Col: 79}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 381, Col: 79}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 					if templ_7745c5c3_Err != nil {
@@ -682,7 +682,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var33 string
 					templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Balance)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 338, Col: 86}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 382, Col: 86}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 					if templ_7745c5c3_Err != nil {
@@ -700,7 +700,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var34 templ.SafeURL
 						templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(document.URL))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 342, Col: 48}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 386, Col: 48}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 						if templ_7745c5c3_Err != nil {
@@ -713,7 +713,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 						var templ_7745c5c3_Var35 string
 						templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue("PDF für " + document.Label + " · " + unit.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 342, Col: 114}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 386, Col: 114}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 						if templ_7745c5c3_Err != nil {
@@ -731,7 +731,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var36 templ.SafeURL
 							templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(document.ArchiveURL))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 344, Col: 56}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 388, Col: 56}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 							if templ_7745c5c3_Err != nil {
@@ -744,7 +744,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 							var templ_7745c5c3_Var37 string
 							templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue("Archiv für " + document.Label + " · " + unit.Label)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 344, Col: 125}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 388, Col: 125}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 							if templ_7745c5c3_Err != nil {
@@ -767,7 +767,7 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(unit.Label)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 353, Col: 80}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 397, Col: 80}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
@@ -781,79 +781,92 @@ func AnnualStatementRunPanel(data AnnualStatementRunView) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</summary> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</summary><table class=\"annual-cost-table\" role=\"table\" aria-label=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var39 string
+					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.ResolveAttributeValue("Kostenarten und Anteile · " + unit.Label)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 400, Col: 111}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "\"><thead role=\"rowgroup\"><tr role=\"row\"><th role=\"columnheader\" scope=\"col\">Kostenart</th><th role=\"columnheader\" scope=\"col\">Verteilerschlüssel</th><th role=\"columnheader\" scope=\"col\">Anteil</th><th role=\"columnheader\" scope=\"col\" class=\"annual-cost-amount\">Betrag</th></tr></thead> <tbody role=\"rowgroup\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					for _, cost := range unit.Costs {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<div class=\"allocation-row\"><strong>")
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-						var templ_7745c5c3_Var39 string
-						templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Name)
-						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 357, Col: 58}
-						}
-						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
-						if templ_7745c5c3_Err != nil {
-							return templ_7745c5c3_Err
-						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "</strong><span>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<tr role=\"row\"><th role=\"rowheader\" scope=\"row\" data-label=\"Kostenart\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var40 string
-						templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Key)
+						templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 357, Col: 85}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 404, Col: 95}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</span><span>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "</th><td role=\"cell\" data-label=\"Verteilerschlüssel\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var41 string
-						templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Share)
+						templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Key)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 357, Col: 112}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 404, Col: 161}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</span><strong>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "</td><td role=\"cell\" data-label=\"Anteil\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var42 string
-						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Amount)
+						templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Share)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 357, Col: 142}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 404, Col: 216}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</strong></div>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</td><td role=\"cell\" data-label=\"Betrag\" class=\"annual-cost-amount\"><strong>")
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+						var templ_7745c5c3_Var43 string
+						templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(cost.Amount)
+						if templ_7745c5c3_Err != nil {
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_run.templ`, Line: 404, Col: 307}
+						}
+						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</strong></td></tr>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</details></td></tr>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</tbody></table></details></td></tr>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</tbody></table></article>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</tbody></table></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</section>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</section>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
