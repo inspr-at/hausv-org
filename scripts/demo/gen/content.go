@@ -74,15 +74,20 @@ func buildDemoBallots() []map[string]any {
 }
 
 func buildDemoMembers() []map[string]any {
-	adminHouses, clerkHouses := map[string]string{}, map[string]string{}
-	for _, house := range houseSpecs {
-		adminHouses[house.slug] = "Admin"
-		clerkHouses[house.slug] = "Verwalter"
+	_, people := buildHousesAndPersons()
+	_, people = buildZinshaus(people)
+	var members []map[string]any
+	for i, role := range []string{"admin", "sachbearbeiter"} {
+		previous := map[string]any{}
+		for _, membership := range people[i].Memberships {
+			previous[membership.House] = map[string]any{
+				"role": membership.Role, "permissions": []string{},
+				"status": "Aktiv", "directory_opt_in": nil,
+			}
+		}
+		members = append(members, map[string]any{
+			"email": people[i].Email, "role": role, "previous_memberships": previous,
+		})
 	}
-	adminHouses[zinshausSlug] = "Admin"
-	clerkHouses[zinshausSlug] = "Verwalter"
-	return []map[string]any{
-		{"email": "vera.verwalter@musterstadt.example", "role": "admin", "granted": adminHouses},
-		{"email": "paul.verwalter@musterstadt.example", "role": "sachbearbeiter", "granted": clerkHouses},
-	}
+	return members
 }
