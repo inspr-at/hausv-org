@@ -1,11 +1,13 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/inspr-at/hausv-org/internal/integrations"
+	"github.com/inspr-at/hausv-org/internal/store"
 )
 
 type unitPaymentReferenceCandidate struct {
@@ -83,29 +85,80 @@ func unitPaymentReferenceCandidates(tenantSlug string, period string, units []un
 	return candidates, nil
 }
 
+// The JSON compatibility helper is used by legacy, non-SQL fixtures. The
+// product SQL path below executes the same decisions inside ImportLedger.Apply.
 func (a *app) applyImportedPaymentsToUnitStatuses(repository unitPaymentRepository, payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail string, actorRole string, meta paymentImportAuditMeta) (unitPaymentImportReport, error) {
-	report := reconcileImportedPaymentsWithUnitStatus(payments, candidates)
-	if a == nil || repository == nil {
-		return report, fmt.Errorf("unit payment status store not configured")
+	if a == nil || repository == nil || a.auditStore == nil {
+		return unitPaymentImportReport{}, fmt.Errorf("payment import stores not configured")
 	}
+	report, events, err := applyPaymentDecisions(payments, candidates, actorEmail, actorRole, meta, func(item unitPaymentStatus) (unitPaymentStatus, bool, error) {
+		if current, ok := repository.Get(item.UnitID); ok && normalizeUnitPaymentStatus(current.Status) == normalizeUnitPaymentStatus(item.Status) {
+			return current, false, nil
+		}
+		record, err := repository.Set(item)
+		return record, err == nil, err
+	})
+	if err != nil {
+		return report, err
+	}
+	for _, event := range events {
+		if err := a.auditStore.Append(event); err != nil {
+			return report, err
+		}
+	}
+	return report, nil
+}
+
+func (a *app) applyPaymentImportAtomically(ctx context.Context, tenant store.TenantRef, preview camtImportPreview, candidates []unitPaymentReferenceCandidate, actorEmail, actorRole string) (unitPaymentImportReport, bool, error) {
+	var report unitPaymentImportReport
+	var events []auditEvent
+	if a.auditStore == nil {
+		return report, false, fmt.Errorf("audit store not configured")
+	}
+	already, err := store.NewImportLedger(a.tenantDB).Apply(ctx, tenant, store.ImportKey{
+		Format: string(integrations.FormatCAMT053), SourceVersion: preview.SourceVersion, AppliedBy: actorEmail,
+	}, preview.FileDigest, func(tx *store.ImportTx) error {
+		var err error
+		report, events, err = applyPaymentDecisions(preview.Payments, candidates, actorEmail, actorRole, paymentImportAuditMeta{
+			TargetID: paymentImportTargetID(preview.FileDigest), SourceVersion: preview.SourceVersion, FileDigest: preview.FileDigest,
+		}, tx.SetPaymentStatus)
+		tx.Counts = store.ImportCounts{Assigned: report.Assigned, Changed: report.Changed, Unclear: report.Unclear, Rejected: report.Rejected + len(preview.ParserErrors)}
+		return err
+	})
+	if err != nil || already {
+		return report, already, err
+	}
+	// AuditStore is a separate JSON sink. An error here cannot roll back SQL
+	// and must never advertise the committed import as safe to apply again.
+	for _, event := range events {
+		if err := a.auditStore.Append(event); err != nil {
+			logError("committed payment import audit failed", err, "tenant", tenant.Slug)
+		}
+	}
+	return report, false, nil
+}
+
+func applyPaymentDecisions(payments []integrations.Payment, candidates []unitPaymentReferenceCandidate, actorEmail, actorRole string, meta paymentImportAuditMeta, set func(unitPaymentStatus) (unitPaymentStatus, bool, error)) (unitPaymentImportReport, []auditEvent, error) {
+	report := reconcileImportedPaymentsWithUnitStatus(payments, candidates)
+	var events []auditEvent
 	for _, row := range report.Rows {
 		if row.Decision != unitPaymentImportAssigned {
 			continue
 		}
 		tenantSlug := candidateTenant(candidates, row.Reference)
-		if current, ok := repository.Get(row.UnitID); ok && normalizeUnitPaymentStatus(current.Status) == normalizeUnitPaymentStatus(row.Status) {
-			continue
-		}
-		record, err := repository.Set(unitPaymentStatus{
+		record, changed, err := set(unitPaymentStatus{
 			TenantSlug: tenantSlug,
 			UnitID:     row.UnitID,
 			Status:     row.Status,
 			UpdatedBy:  actorEmail,
 		})
 		if err != nil {
-			return report, err
+			return report, nil, err
 		}
-		a.recordAudit(auditEvent{
+		if !changed {
+			continue
+		}
+		events = append(events, auditEvent{
 			TenantSlug: record.TenantSlug,
 			ActorEmail: actorEmail,
 			ActorRole:  actorRole,
@@ -140,14 +193,9 @@ func (a *app) applyImportedPaymentsToUnitStatuses(repository unitPaymentReposito
 				"rejected":       strconv.Itoa(report.Rejected),
 			},
 		}
-		if a.auditStore == nil {
-			return report, fmt.Errorf("audit store not configured")
-		}
-		if err := a.auditStore.Append(event); err != nil {
-			return report, err
-		}
+		events = append(events, event)
 	}
-	return report, nil
+	return report, events, nil
 }
 
 func shortImportDigest(digest string) string {

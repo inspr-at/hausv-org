@@ -37,9 +37,25 @@ separates Folgeprofil. 4.x und 3.x werden nicht akzeptiert.
    Fehler werden ohne XML-Inhalt verständlich angezeigt.
 4. Nach Bestätigung wird das Original im Dokumentenbereich als `Abrechnung`
    mit `verwalter-only`-Sichtbarkeit abgelegt.
-5. Ein hausbezogener SHA-256-Nachweis sperrt doppelte Ablagen. Audit und
-   Import-Ledger enthalten nur Format, Profil, gekürzte Prüfsumme,
-   Rechnungsnummer und Dokumentbezug.
+5. Ein hausbezogener SHA-256-Nachweis sperrt doppelte Ablagen. Das Import-Ledger
+   hält außerdem den Ablagestatus, den festen Dateischlüssel und die ursprünglichen
+   Dokumentmetadaten; die Original-XML liegt ausschließlich im Dokumentenspeicher.
+   Der Audit-Verlauf enthält Format, Profil, gekürzte Prüfsumme, Rechnungsnummer
+   und Dokumentbezug.
+
+Die Ablage erfolgt wiederaufnehmbar: Zuerst wird eine `pending`-Reservierung
+dauerhaft gespeichert, dann die vollständige Datei atomar veröffentlicht.
+Dokumentmetadaten und `complete` werden anschließend gemeinsam committed.
+Nach einem Abbruch kann dieselbe Datei erneut bestätigt werden. Der Versuch
+verwendet die bestehende Dokument-ID und die ursprünglichen Metadaten; bis zur
+vollständigen Ablage erscheint kein Dokument in der Liste. Gleichzeitige
+Bestätigungen werden durch den eindeutigen Ledger-Schlüssel und die
+Abschlusstransaktion auf eine Ablage begrenzt. Alle Serverprozesse müssen wie
+bisher denselben Dokumentenspeicher verwenden.
+
+Der separate Audit-Verlauf wird nach dem erfolgreichen Commit ergänzt. Ein
+Audit-Fehler wird angezeigt, erzeugt bei Wiederholung aber kein zweites Dokument.
+Ein Prozessabbruch zwischen Commit und Audit kann den Audit-Eintrag auslassen.
 
 Die Originaldatei ist ausschließlich über authentisierte App-Routen erreichbar.
 Bewohner sehen sie weder in der Dokumentliste noch über einen öffentlichen

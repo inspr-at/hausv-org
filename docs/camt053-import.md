@@ -46,8 +46,15 @@ importiert.
 - Nur eindeutige Treffer ändern den manuellen Zahlungsstatus.
 - Ein mandantenbezogenes Digest-Ledger verhindert die doppelte Übernahme
   derselben Datei, ohne die Bankdatei abzulegen.
+- Ledger-Reservierung, sämtliche Statusänderungen und Ergebniszahlen werden
+  in einer gemeinsamen Datenbanktransaktion gespeichert. Ein später Fehler
+  verwirft die gesamte Übernahme; ein erneuter Versuch bleibt möglich. Der
+  eindeutige Datenbankschlüssel schützt auch bei mehreren Serverprozessen.
 - Der Audit-Eintrag enthält Profil, gekürzten Digest und Summen, aber keine
   Bank- oder Personendaten.
+- Der separate Audit-Verlauf wird nach dem Commit ergänzt. Ein Fehler dort
+  wird protokolliert und hebt die dauerhafte Importsperre nicht auf. Ein
+  Prozessabbruch zwischen Commit und Audit kann einen Audit-Eintrag auslassen.
 
 ## Reproduzierbarer Betreiber-Nachweis
 

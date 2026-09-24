@@ -346,6 +346,9 @@ func tenantTables(t *testing.T, database *sql.DB) []string {
 // Delivery rows have required addressing and outcome fields rather than empty
 // defaults. Use a valid row so the generic probe exercises RLS, not NOT NULL.
 func tenantTableSmokeInsert(table string) string {
+	if table == "integration_imports" {
+		return `INSERT INTO integration_imports(tenant_id,tenant_slug,format,file_digest,applied_at,status,blob_key,document_data) VALUES($1,'rls-fixture','ebinterface','digest','2026-09-24T12:00:00Z','pending','import-fixture.xml','{"id":"import-fixture"}')`
+	}
 	if table == "annual_statement_run_approvals" {
 		return `INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES($1,'rls-fixture','run','{"ApprovedBy":"manager@example.test","Role":"Verwalter","ApprovedAt":"2026-09-24T10:00:00Z"}')`
 	}
