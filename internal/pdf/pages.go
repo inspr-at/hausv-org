@@ -15,12 +15,21 @@ const (
 )
 
 type Line struct {
-	Text  string
-	Style Style
+	Text       string
+	Style      Style
+	X, Y, Size float64 // PDF points, used by positioned pages.
 }
 type Page struct {
-	Lines  []Line
-	Footer []string
+	Lines      []Line
+	Footer     []string
+	Positioned bool
+	Shapes     []Shape
+}
+
+// Shape is a filled rectangle or horizontal rule, in PDF points.
+type Shape struct {
+	X, Y, Width, Height float64
+	Color               [3]uint8
 }
 type Palette struct{ Paper, Ink, Accent [3]uint8 }
 
@@ -36,6 +45,21 @@ func Pages(pages []Page, palette Palette) []byte {
 	}
 	for i, page := range pages {
 		var b strings.Builder
+		if page.Positioned {
+			fmt.Fprintf(&b, "%s rg\n0 0 595 842 re f\n", color(palette.Paper))
+			for _, shape := range page.Shapes {
+				fmt.Fprintf(&b, "%s rg\n%.2f %.2f %.2f %.2f re f\n", color(shape.Color), shape.X, shape.Y, shape.Width, shape.Height)
+			}
+			for _, line := range page.Lines {
+				fmt.Fprintf(&b, "%s rg\nBT /%s %.2f Tf 1 0 0 1 %.2f %.2f Tm (%s) Tj ET\n", color(palette.Ink), fontName(line.Style), line.Size, line.X, line.Y, escapeASCII(line.Text))
+			}
+			fmt.Fprintf(&b, "%s RG\n0.5 w\n62 83 m 533 83 l S\n", color(palette.Accent))
+			for j, line := range page.Footer {
+				fmt.Fprintf(&b, "%s rg\nBT /F1 7 Tf 1 0 0 1 62 %d Tm (%s) Tj ET\n", color(palette.Ink), 69-j*10, escapeASCII(line))
+			}
+			streams[i] = b.String()
+			continue
+		}
 		fmt.Fprintf(&b, "%s rg\n0 0 595 842 re f\n%s RG\n0.7 w\n50 806 m 545 806 l S\n50 78 m 545 78 l S\n", color(palette.Paper), color(palette.Accent))
 		for j, line := range page.Lines {
 			font, size := "F1", 10
@@ -55,6 +79,19 @@ func Pages(pages []Page, palette Palette) []byte {
 		streams[i] = b.String()
 	}
 	return writeStreams(streams)
+}
+
+func fontName(style Style) string {
+	switch style {
+	case Strong:
+		return "F2"
+	case Heading:
+		return "F4"
+	case Table:
+		return "F3"
+	default:
+		return "F1"
+	}
 }
 
 // Columns wraps and aligns cells for the fixed-width Table font. Positive

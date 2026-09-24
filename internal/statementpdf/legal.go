@@ -72,8 +72,8 @@ func inspectionAppendix(run store.AnnualStatementRun) ([]string, []string) {
 		names[cost.Key] = cost.Name
 	}
 	var appendix []string
-	for _, receipt := range receipts {
-		appendix = append(appendix, date(receipt.InvoiceDate)+" · "+fallback(receipt.Supplier)+" · "+names[receipt.CostTypeKey]+" · "+money(receipt.AmountCents), "Dokument: "+receipt.DocumentID)
+	for i, receipt := range receipts {
+		appendix = append(appendix, fmt.Sprintf("Beleg %d · ", i+1)+date(receipt.InvoiceDate)+" · "+fallback(receipt.Supplier)+" · "+names[receipt.CostTypeKey]+" · "+money(receipt.AmountCents))
 	}
 	return inspection, appendix
 }
@@ -83,11 +83,10 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 	if run.Input.Structure.Legal.Regime != "mrg_voll" {
 		return nil, ErrNotFound
 	}
-	d := Document{Title: "Jahresabrechnung · Aushang", UnitLabel: "Liegenschaft", Header: []string{run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), run.Input.Structure.Legal.Basis()}, Contact: run.Input.Structure.Legal.InspectionContact, Total: money(run.Result.TotalCents)}
+	d := letterDocument(run, "Liegenschaft")
+	d.Title = fmt.Sprintf("Jahresabrechnung %d — Aushang", run.PeriodYear)
+	d.Total = money(run.Result.TotalCents)
 	d.Inspection, _ = inspectionAppendix(run)
-	if d.Contact == "" {
-		d.Contact = "Kontakt der Verwaltung fehlt"
-	}
 	for _, cost := range run.Input.Structure.CostTypes {
 		if !cost.Allocatable {
 			continue
@@ -98,16 +97,9 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 				total += receipt.AmountCents
 			}
 		}
-		d.Basis = append(d.Basis, cost.Name+": "+money(total))
+		d.Costs = append(d.Costs, CostRow{Name: cost.Name, Amount: money(total)})
 	}
-	if run.Approval != nil {
-		role := "Verwaltung"
-		if run.Approval.Role == store.RoleAdmin {
-			role = "Administration"
-		}
-		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
-	}
-	return pdf.Pages(d.Pages(), pdf.Palette{Paper: [3]uint8{247, 243, 234}, Ink: [3]uint8{32, 37, 31}, Accent: [3]uint8{200, 153, 63}}), nil
+	return pdf.Pages(d.Pages(), statementPalette), nil
 }
 
 func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost) []string {
