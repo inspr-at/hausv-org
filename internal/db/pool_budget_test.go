@@ -58,6 +58,25 @@ func TestConnectionBudgetAcceptsAPlanThatFits(t *testing.T) {
 	}
 }
 
+func TestScopedBudgetUsesActualProcessPoolLimit(t *testing.T) {
+	scoped := offlineScoped(t, 2)
+	scoped.process.SetMaxOpenConns(7)
+	if got := scoped.Budget().Peak(); got != 2*3+7 {
+		t.Fatalf("budget uses a stale config instead of the pool cap: %d", got)
+	}
+}
+
+func TestScopedRejectsUnboundedProcessPool(t *testing.T) {
+	scoped := offlineScoped(t, 2)
+	scoped.process.SetMaxOpenConns(0)
+	if _, err := NewScoped(scoped.cfg, scoped.process); err == nil {
+		t.Fatal("an unbounded process pool cannot have a finite connection budget")
+	}
+	if err := scoped.Budget().fits(100, 3); err == nil {
+		t.Fatal("an existing factory must reject a process pool changed to unlimited")
+	}
+}
+
 // The same assertion against a real server, because the pure arithmetic cannot
 // tell whether max_connections is being read correctly.
 func TestVerifyConnectionBudgetAgainstLivePostgres(t *testing.T) {
