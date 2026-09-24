@@ -79,6 +79,8 @@ func buildDemoMembers() []map[string]any {
 		adminHouses[house.slug] = "Admin"
 		clerkHouses[house.slug] = "Verwalter"
 	}
+	adminHouses[zinshausSlug] = "Admin"
+	clerkHouses[zinshausSlug] = "Verwalter"
 	return []map[string]any{
 		{"email": "vera.verwalter@musterstadt.example", "role": "admin", "granted": adminHouses},
 		{"email": "paul.verwalter@musterstadt.example", "role": "sachbearbeiter", "granted": clerkHouses},

@@ -168,7 +168,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	if err != nil {
 		return SeedResult{}, err
 	}
-	statement, err := loadStatementFixture(dir, houses, options.DocumentDir)
+	statements, err := loadStatementFixtures(dir, houses, options.DocumentDir)
 	if err != nil {
 		return SeedResult{}, err
 	}
@@ -244,7 +244,7 @@ func Load(ctx context.Context, database *sql.DB, dir string, options SeedOptions
 	if err := seedDocuments(ctx, database, documents, identities, options.DocumentDir); err != nil {
 		return SeedResult{}, err
 	}
-	if statement != nil {
+	for _, statement := range statements {
 		if err := seedAnnualStatement(ctx, database, statement, identities[statement.House], options.DocumentDir, options.Reset); err != nil {
 			return SeedResult{}, err
 		}

@@ -2420,5 +2420,90 @@
         "tenant_email": ""
       }
     ]
+  },
+  {
+    "slug": "musterstrasse-12",
+    "name": "Musterstraße 12 · Zinshaus",
+    "address": "Musterstraße 12, 8010 Graz",
+    "organisation": "musterstadt",
+    "units": [
+      {
+        "label": "Geschäft",
+        "floor": "EG",
+        "unit_type": "Geschäft",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "mode.musterstadt@musterstadt.example"
+      },
+      {
+        "label": "Top 1",
+        "floor": "1. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "elias.berger@musterstadt.example"
+      },
+      {
+        "label": "Top 2",
+        "floor": "1. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "lena.krainer@musterstadt.example"
+      },
+      {
+        "label": "Top 3",
+        "floor": "2. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "markus.fellner@musterstadt.example"
+      },
+      {
+        "label": "Top 4",
+        "floor": "2. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "sara.holzer@musterstadt.example"
+      },
+      {
+        "label": "Top 5",
+        "floor": "3. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "tim.oswald@musterstadt.example"
+      },
+      {
+        "label": "Top 6",
+        "floor": "3. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": ""
+      },
+      {
+        "label": "Top 7",
+        "floor": "4. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "nora.binder@musterstadt.example"
+      },
+      {
+        "label": "Top 8",
+        "floor": "4. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "julian.eder@musterstadt.example"
+      },
+      {
+        "label": "Top 9",
+        "floor": "5. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "amira.celik@musterstadt.example"
+      },
+      {
+        "label": "Top 10",
+        "floor": "5. OG",
+        "unit_type": "Wohnung",
+        "owner_email": "stiftung.hofbauer@musterstadt.example",
+        "tenant_email": "paul.reiter.m12@musterstadt.example"
+      }
+    ]
   }
 ]

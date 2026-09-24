@@ -37,12 +37,18 @@ func TestCommittedSeed(t *testing.T) {
 	if len(items) < 350 || len(items) > 450 {
 		t.Fatalf("intake count = %d, want 350..450", len(items))
 	}
-	if len(houses) != 12 {
-		t.Fatalf("house count = %d, want 12", len(houses))
+	if len(houses) != 13 {
+		t.Fatalf("house count = %d, want 13", len(houses))
 	}
 	houseSet := map[string]bool{}
 	for index, h := range houses {
 		houseSet[h.Slug] = true
+		if h.Slug == zinshausSlug {
+			if len(h.Units) != 11 {
+				t.Errorf("zinshaus has %d units, want 10 flats and 1 shop", len(h.Units))
+			}
+			continue
+		}
 		if len(h.Units) != houseSpecs[index].count+parkingCount(houseSpecs[index].count) {
 			t.Errorf("house %s has %d units", h.Slug, len(h.Units))
 		}
@@ -153,7 +159,7 @@ func TestGeneratorIsDeterministic(t *testing.T) {
 	if err := generate(out); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json", "annual-statement.json"} {
+	for _, name := range []string{"houses.json", "persons.json", "intake.json", "textbausteine.json", "events.json", "announcements.json", "org.json", "annual-statement.json", "annual-statement-zinshaus.json", "leases-zinshaus.json"} {
 		got, err := os.ReadFile(filepath.Join(out, name))
 		if err != nil {
 			t.Fatal(err)

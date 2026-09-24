@@ -215,3 +215,60 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	}
 	t.Logf("2025: %d units, %d party PDFs, %d originals, total %d cents", len(renderedUnits), len(pdfs), len(originals), loaded.Result.TotalCents)
 }
+
+func TestZinshausAnnualStatementShowsMRGVacancyAndVAT(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.Open(filepath.Join(t.TempDir(), "demo.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	scoped, err := db.NewScoped(db.Config{Backend: db.BackendSQLite}, database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer scoped.Close()
+	lanes := store.NewTenantDB(scoped)
+	options := SeedOptions{Reset: true, DocumentDir: t.TempDir()}
+	if _, err := Load(ctx, database, "../../scripts/demo/seed", options); err != nil {
+		t.Fatal(err)
+	}
+	identities, err := store.EnsureTenantIdentities(ctx, database, []store.TenantIdentity{{Slug: "musterstrasse-12"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tenant := identities["musterstrasse-12"].Ref()
+	docs := store.NewSQLDocumentStore(lanes, options.DocumentDir)
+	repo, _ := store.BindAnnualStatementRunRepository(store.NewSQLAnnualStatementRunStore(lanes, docs), tenant)
+	presentation := store.AnnualStatementRunPresentation{Organisation: "Hausverwaltung Musterstadt GmbH", EstateSlug: "musterstrasse-12", EstateName: "Musterstraße 12 · Zinshaus", EstateAddress: "Musterstraße 12, 8010 Graz"}
+	run, err := repo.Create(2025, "vera.verwalter@musterstadt.example", time.Date(2026, 1, 20, 9, 0, 0, 0, time.UTC), presentation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, found, err := repo.Get(run.ID)
+	if err != nil || !found {
+		t.Fatal(found, err)
+	}
+	legal := loaded.Input.Structure.Legal
+	if legal.Regime != "mrg_voll" || !legal.HeizKGApplies || legal.HeatingConsumptionPercent != 65 || !legal.ShowVAT {
+		t.Fatalf("legal %+v", legal)
+	}
+	if len(loaded.Result.Vacancy) != 1 || loaded.Result.Vacancy[0].Label != "Top 6" || loaded.Result.Vacancy[0].From != "2025-03-01" || loaded.Result.Vacancy[0].To != "2025-08-31" {
+		t.Fatalf("vacancy %+v", loaded.Result.Vacancy)
+	}
+	keys := map[string]bool{}
+	for _, cost := range loaded.Input.Structure.CostTypes {
+		keys[cost.Key] = true
+	}
+	for _, key := range []string{"wasser", "muell", "versicherung", "hausbetreuung", "verwaltungshonorar", "heizung"} {
+		if !keys[key] {
+			t.Fatalf("missing %s in %+v", key, keys)
+		}
+	}
+	if len(loaded.Result.VATGroups) != 2 || loaded.Result.TotalCents != 1_959_600 || len(loaded.Result.Units) != 11 {
+		t.Fatalf("result units=%d vat=%d total=%d", len(loaded.Result.Units), len(loaded.Result.VATGroups), loaded.Result.TotalCents)
+	}
+	if loaded.Result.Vacancy[0].AmountCents != 50433 {
+		t.Fatalf("vacancy amount %d", loaded.Result.Vacancy[0].AmountCents)
+	}
+}
