@@ -154,7 +154,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			prepayments[item.UnitID] = item
 		}
 	}
-	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units)
+	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units, consumption.Vectors)
 	allocatedByUnit := map[string]int64{}
 	for _, item := range settlement {
 		allocatedByUnit[item.UnitID] = item.AllocatedCents

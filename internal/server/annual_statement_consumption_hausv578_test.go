@@ -59,6 +59,16 @@ func TestAnnualStatementConsumptionPeriodSharesAndBlockedPage(t *testing.T) {
 	if strings.Contains(page.Body.String(), "Verteilung blockiert") {
 		t.Fatal("unused hot-water gap must not block heating")
 	}
+	// Complete consumption must also unlock the current Akonto allocation.
+	startSection := strings.Index(page.Body.String(), `id="vorauszahlungen"`)
+	if startSection < 0 {
+		t.Fatal("missing prepayment section")
+	}
+	section := page.Body.String()[startSection:]
+	section = section[:strings.Index(section, "</section>")]
+	if !strings.Contains(section, "0,00 €") {
+		t.Fatal("complete measured allocation is unavailable in Akonto preview")
+	}
 	// A different period cannot reuse this year's boundary facts.
 	other := annualStatementConsumption(repos.annualConsumption, store.AnnualStatementPeriod{Year: 2024, StartsOn: "2024-01-01", EndsOn: "2024-12-31"}, units, costs)
 	if other.View.Groups[0].Complete {
