@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -94,6 +93,8 @@ type TriageSuggester interface {
 
 // NewFromEnv constructs an OpenAI-compatible suggester. An empty AI_BASE_URL
 // deliberately returns (nil, nil): callers treat nil as AI being unavailable.
+// The client refuses cross-origin redirects. AI_ENFORCE_DESTINATION_POLICY=1
+// rejects bases that fail ValidateDestination.
 func NewFromEnv(getenv func(string) string) (TriageSuggester, error) {
 	if getenv == nil {
 		return nil, errors.New("ai: getenv function is nil")
@@ -103,7 +104,11 @@ func NewFromEnv(getenv func(string) string) (TriageSuggester, error) {
 		return nil, nil
 	}
 	parsed, err := url.Parse(baseURL)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+	scheme := ""
+	if parsed != nil {
+		scheme = strings.ToLower(parsed.Scheme)
+	}
+	if err != nil || scheme == "" || parsed.Host == "" || (scheme != "http" && scheme != "https") {
 		return nil, fmt.Errorf("ai: invalid AI_BASE_URL")
 	}
 	model := strings.TrimSpace(getenv("AI_MODEL"))
@@ -131,6 +136,15 @@ func NewFromEnv(getenv func(string) string) (TriageSuggester, error) {
 			label = "Cloud (OpenRouter)"
 		}
 	}
+	// Organisation overrides opt in. The operator's own base URL stays on the
+	// existing parser so a process-wide destination is not judged as a tenant
+	// choice. Callers withhold AI_API_KEY themselves unless this URL is the
+	// operator origin; this function sends whatever key it is given.
+	if strings.TrimSpace(getenv("AI_ENFORCE_DESTINATION_POLICY")) == "1" {
+		if err := ValidateDestination(baseURL); err != nil {
+			return nil, fmt.Errorf("ai: organisation destination rejected: %w", err)
+		}
+	}
 	return &openAICompatSuggester{
 		baseURL:       strings.TrimRight(baseURL, "/"),
 		apiKey:        strings.TrimSpace(getenv("AI_API_KEY")),
@@ -140,7 +154,7 @@ func NewFromEnv(getenv func(string) string) (TriageSuggester, error) {
 		httpReferer:   strings.TrimSpace(getenv("AI_HTTP_REFERER")),
 		timeout:       timeout,
 		minConfidence: minConfidence,
-		client:        http.DefaultClient,
+		client:        aiHTTPClient(),
 		retryBackoff:  100 * time.Millisecond,
 	}, nil
 }
