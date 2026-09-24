@@ -26,7 +26,10 @@ type LeasePageData struct {
 	CanEnd    bool
 }
 
+type LeaseValorisationView struct{ URL, PDFURL, Date, Amount, Due, Status string }
+
 type LeaseDetail struct {
+	Valorisation                         []LeaseValorisationView
 	ID, Status, Kind, Use, MRG, Regime   string
 	Concluded, Starts, Ends, Zinstermin  string
 	Notes                                string

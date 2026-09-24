@@ -105,6 +105,20 @@ func Revalue(cents int64, base, current Decimal) (Decimal, int64, error) {
 // It does not mutate the clause or dataset. To replay subsequent jumps, call it
 // again with NextClause. Timing and MieWeG are deliberately separate operations.
 func Evaluate(clause Clause, data Dataset, asOf Month) (Evaluation, error) {
+	return evaluateClause(clause, data, asOf, "")
+}
+
+// EvaluateReference applies a reviewed periodic clause to its specified
+// reference month. It shares all decimal, threshold and rounding logic with
+// Evaluate; no synthetic intermediate index observations are introduced.
+func EvaluateReference(clause Clause, data Dataset, reference Month) (Evaluation, error) {
+	if !reference.Valid() || reference <= clause.BaseMonth {
+		return Evaluation{}, fmt.Errorf("reference must follow base month")
+	}
+	return evaluateClause(clause, data, reference, reference)
+}
+
+func evaluateClause(clause Clause, data Dataset, asOf, reference Month) (Evaluation, error) {
 	if !clause.Series.Valid() || !clause.BaseMonth.Valid() || !asOf.Valid() || asOf < clause.BaseMonth || clause.AmountCents <= 0 || clause.BaseValue <= 0 || clause.Threshold < 0 || clause.MinimumChangeCents < 0 {
 		return Evaluation{}, fmt.Errorf("invalid clause or observation cutoff")
 	}
@@ -139,6 +153,9 @@ func Evaluate(clause Clause, data Dataset, asOf Month) (Evaluation, error) {
 	result.Explanation = append(result.Explanation, ExplanationStep{Code: "base_final", Month: clause.BaseMonth, Base: base, Index: base, AmountCents: clause.AmountCents, Source: baseObservation.Source, ChainSource: baseObservation.ChainSource})
 	latest := data.latest(clause.Series)
 	for month := clause.BaseMonth.next(); month.Valid() && month <= asOf; month = month.next() {
+		if reference != "" && month != reference {
+			continue
+		}
 		v, found, err := data.Lookup(clause.Series, month)
 		if err != nil {
 			return Evaluation{}, err

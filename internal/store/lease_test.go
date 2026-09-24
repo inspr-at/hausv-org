@@ -128,7 +128,7 @@ func TestLeaseStoreCreateHistoryOverlapAndImport(t *testing.T) {
 	if err != nil || preview.Committed != 0 || !preview.HasErrors() {
 		t.Fatalf("dry run = %+v err=%v", preview, err)
 	}
-	if len(preview.Rows) != 2 || preview.Rows[0].Warnings[0] != ImportWarningIndexUnchecked || preview.Rows[1].Errors[0] != "unknown_unit" {
+	if len(preview.Rows) != 2 || len(preview.Rows[0].Warnings) != 0 || preview.Rows[1].Errors[0] != "unknown_unit" {
 		t.Fatalf("rows = %+v", preview.Rows)
 	}
 	if listed, _ = repo.List(); len(listed) != 3 {

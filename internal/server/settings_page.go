@@ -42,6 +42,7 @@ func (a *app) renderSettingsHubTempl(w http.ResponseWriter, r *http.Request, ac 
 		SettingsCanManageEnergyData: data["SettingsCanManageEnergyData"].(bool),
 		CanManageHomeIdentity:       modules.Energy && a.canManageHomeIdentity(ac),
 		CanManageBuilding:           ac.can(capabilityManageBuilding),
+		CanManageLeases:             ac.can(capabilityManageLeases),
 		CanManageDocuments:          ac.can(capabilityManageDocuments),
 		CanManageHandovers:          canManageHandovers(ac.actor(), ac.resource()),
 		CanViewAudit:                canViewAudit(ac.actor(), ac.resource()),

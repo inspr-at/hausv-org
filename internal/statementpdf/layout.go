@@ -49,52 +49,11 @@ func (l *letterLayout) newPage(first bool) {
 		l.y -= 22
 		return
 	}
-	// The recipient starts 49 mm below the page edge, within a letter window.
-	l.fixedBlock(l.d.Sender, left, 797, 257, 9, 11, 6)
-	addressBottom := l.fixedBlock(l.d.Address, left, 703, 250, 10, 13, 8)
-	infoY := 796.0
-	for _, field := range l.d.Info {
-		if strings.TrimSpace(field.Value) == "" {
-			continue
-		}
-		if infoY < 612 {
-			l.overflow = append(l.overflow, field.Label+": "+field.Value)
-			continue
-		}
-		l.text(field.Label, pdf.Strong, 7.5, 347, infoY)
-		infoY -= 11
-		for _, line := range pdf.WrapWidth(field.Value, pdf.Body, 8.5, 186) {
-			if infoY < 600 {
-				l.overflow = append(l.overflow, line)
-				continue
-			}
-			l.text(line, pdf.Body, 8.5, 347, infoY)
-			infoY -= 11
-		}
-		infoY -= 6
-	}
-	l.y = min(640, addressBottom-20, infoY-13)
+	l.y, l.overflow = pdf.Letterhead(l.page(), l.d.Sender, l.d.Address, l.d.Info)
 	l.paragraph(l.d.Title, pdf.Heading, 22, 25)
 	l.y -= 6
 }
 
-// Pathological supplied addresses are continued in a labelled section instead
-// of colliding with the recipient window, metadata or footer.
-func (l *letterLayout) fixedBlock(values []string, x, y, width, size, gap float64, maxLines int) float64 {
-	count := 0
-	for _, value := range values {
-		for _, line := range pdf.WrapWidth(value, pdf.Body, size, width) {
-			if count >= maxLines {
-				l.overflow = append(l.overflow, line)
-				continue
-			}
-			l.text(line, pdf.Body, size, x, y)
-			y -= gap
-			count++
-		}
-	}
-	return y
-}
 func (l *letterLayout) ensure(height float64) {
 	if l.y-height < bottom {
 		l.newPage(false)

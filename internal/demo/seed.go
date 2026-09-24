@@ -573,6 +573,9 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 	if !discardAnnualStatements {
 		return tx.Commit()
 	}
+	if err := resetValorisation(ctx, tx, houses, postgres); err != nil {
+		return err
+	}
 	for _, house := range houses {
 		slug := textutil.Slug(house.Slug)
 		paths, err := archivedDocumentPaths(ctx, tx, slug, documentDir)
@@ -581,7 +584,7 @@ func reset(ctx context.Context, database *sql.DB, orgKey string, houses []seedHo
 		}
 		archived = append(archived, paths...)
 		for _, query := range []string{
-			`DELETE FROM documents WHERE tenant_slug=$1 AND id LIKE 'annual-archive-%'`,
+			`DELETE FROM documents WHERE tenant_slug=$1 AND (id LIKE 'annual-archive-%' OR id LIKE 'valorisation-%')`,
 			`DELETE FROM annual_statement_deliveries WHERE tenant_slug=$1`,
 		} {
 			if _, err := tx.ExecContext(ctx, query, slug); err != nil {
@@ -625,7 +628,7 @@ func archivedDocumentPaths(ctx context.Context, tx *sql.Tx, slug, documentDir st
 	if documentDir == "" {
 		return nil, nil
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT data FROM documents WHERE tenant_slug=$1 AND id LIKE 'annual-archive-%'`, slug)
+	rows, err := tx.QueryContext(ctx, `SELECT data FROM documents WHERE tenant_slug=$1 AND (id LIKE 'annual-archive-%' OR id LIKE 'valorisation-%')`, slug)
 	if err != nil {
 		return nil, err
 	}

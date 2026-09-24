@@ -74,7 +74,7 @@ const leaseURL = `${baseURL}/app/settings/building/units/top-1/lease`;
 let response = await page.goto(leaseURL, { waitUntil: 'networkidle' });
 if (!response || response.status() !== 200) fail(`Mietvertrag HTTP ${response?.status()}`);
 const body = await page.locator('body').innerText();
-for (const text of ['MieWeG', 'ja', 'MRG-Teilanwendung', 'freier Mietzins', '1.000,00', 'VPI 2020', 'Basis September 2024', 'geprüft', 'Monatlich gesamt', 'VPI mit Schwelle', 'Noch keine Wertsicherung', 'Eva Huber', 'Bearbeiten']) {
+for (const text of ['MieWeG', 'ja', 'MRG-Teilanwendung', 'freier Mietzins', '1.000,00', 'VPI 2020', 'Basis September 2024', 'geprüft', 'Monatlich gesamt', 'VPI mit Schwelle', 'Wertsicherung', 'Eva Huber', 'Bearbeiten']) {
   if (!body.includes(text)) fail(`Mietvertrag zeigt „${text}“ nicht`);
 }
 if (body.includes('Speichern') || body.includes('Tabelle importieren') || body.includes('vpi2020')) {
@@ -117,7 +117,7 @@ await page.getByRole('button', { name: 'Prüfen' }).click();
 await page.waitForLoadState('networkidle');
 const imported = await page.locator('body').innerText();
 if (!imported.includes('Einheit ist nicht vorhanden')) fail('Import nennt die unbekannte Einheit nicht');
-if (!imported.includes('Indexwert wurde nicht geprüft')) fail('Import nennt index_check_unavailable nicht');
+if (imported.includes('Indexwert wurde nicht geprüft')) fail('Veröffentlichter Index wurde nicht geprüft');
 if (imported.includes('wurden übernommen')) fail('Die Prüfung hat gespeichert');
 await shot(page, 'import-dry-run');
 await manager.close();

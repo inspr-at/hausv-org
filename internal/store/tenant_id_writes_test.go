@@ -189,13 +189,29 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		Parties:    []LeaseParty{{Name: "Rita", Email: "a@example.com", ValidFrom: "2020-02-01"}},
 		Components: []RentComponent{{Kind: ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: OriginManual}},
 		Clauses: []IndexClause{{
-			ClauseType: ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+			ClauseType: ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2024-09", BaseValue: "123.6",
 			ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
 			ReviewStatus: ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
-			State: &ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+			State: &ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2024-09", ContractBaseValue: "123.6", CapValue: "1000.00", CapAnchorPeriod: "2024-09"},
 		}},
 	}); err != nil {
 		t.Fatalf("lease: %v", err)
+	}
+	vr, _ := BindValorisationRepository(lanes, NewSQLDocumentStore(lanes, fileDir), tenant)
+	actor := ValorisationActor{Email: "a@example.com", Manage: true, Approve: true}
+	valorisationRun, err := vr.Create(ValorisationInput{EffectiveOn: "2026-04-01"}, "org", actor, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valorisationRun, err = vr.Approve(valorisationRun.ID, actor, DefaultValorisationSettings(), now, func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) {
+		return []byte("%PDF-1.4 seed"), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	vd, _ := BindValorisationDeliveryRepository(NewSQLValorisationDeliveryStore(lanes), tenant)
+	if _, _, err := vd.Attempt(context.Background(), ValorisationDelivery{RunID: valorisationRun.ID, Revision: valorisationRun.Revision, PartyID: "a@example.com", UnitID: "u1", DocumentID: valorisationRun.Items[0].LetterDocumentID, SHA256: valorisationRun.Items[0].LetterSHA256, Recipient: "a@example.com", Actor: actor.Email}, func(context.Context) error { return nil }); err != nil {
+		t.Fatal(err)
 	}
 	periods, _ := BindAnnualStatementPeriodRepository(NewSQLAnnualStatementPeriodStore(lanes), tenant)
 	costTypes, _ := BindAnnualStatementCostTypeRepository(NewSQLAnnualStatementCostTypeStore(lanes), tenant)

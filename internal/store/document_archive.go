@@ -36,6 +36,9 @@ func AnnualStatementArchiveID(runID string, revision int, unitID, partyID string
 
 func prepareArchiveRecord(item DocumentRecord, filename, contentType string, data []byte, now time.Time) (DocumentRecord, error) {
 	item = CopyDocument(item)
+	if item.ValorisationArchive != nil {
+		return prepareValorisationArchive(item, filename, contentType, data, now)
+	}
 	item.UnitID = NormalizeUnitID(item.UnitID)
 	archive := item.AnnualStatementArchive
 	if archive == nil || strings.TrimSpace(archive.RunID) == "" || archive.Revision < 1 || archive.PeriodYear < 1 || archive.PeriodYear > 9999 || (item.UnitID == "") != (archive.PartyID == "") {
@@ -108,7 +111,7 @@ func writeArchiveFile(fileDir string, item DocumentRecord, data []byte) error {
 
 func verifyArchiveFile(fileDir string, item DocumentRecord) error {
 	path, ok := documentFilePathIn(fileDir, item)
-	if !ok || item.AnnualStatementArchive == nil {
+	if !ok || (item.AnnualStatementArchive == nil && item.ValorisationArchive == nil) {
 		return fmt.Errorf("invalid archive file")
 	}
 	info, err := os.Lstat(path)
@@ -127,7 +130,7 @@ func verifyArchiveFile(fileDir string, item DocumentRecord) error {
 	if _, err := io.Copy(hash, file); err != nil {
 		return err
 	}
-	if fmt.Sprintf("%x", hash.Sum(nil)) != item.AnnualStatementArchive.SHA256 {
+	if fmt.Sprintf("%x", hash.Sum(nil)) != documentArchiveSHA(item) {
 		return fmt.Errorf("archive file integrity mismatch")
 	}
 	return nil

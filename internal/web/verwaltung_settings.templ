@@ -9,6 +9,8 @@ func VerwaltungSettingsPage(shell PortalPageData, data VerwaltungSettingsData) t
 type VerwaltungSettingsCategory struct { Key, Label, Level string }
 
 type VerwaltungSettingsData struct {
+	ValorisationMode, ValorisationReviewPolicy, ValorisationSender string
+	ValorisationFourEyes bool
 	Categories []VerwaltungSettingsCategory
 	OrganisationName string
 	Members []VerwaltungSettingsMember
@@ -77,6 +79,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 		.automation-explanation{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}.automation-explanation .settings-options{margin-top:0;grid-template-columns:minmax(0,1fr);gap:16px}.automation-note{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);line-height:1.6}@media(max-width:760px){.automation-explanation{grid-template-columns:minmax(0,1fr);gap:16px}}
 	</style>
 	<section class="verwaltung-settings">
+<section class="settings-card"><h2>Wertsicherung</h2><p>Mietzinse der betreuten Liegenschaften prüfen und freigeben.</p><a class="button" href="/app/verwaltung/wertsicherung">Wertsicherung öffnen</a></section>
 		if data.Flash != "" {
 			<p class="settings-card" role="status">{ data.Flash }</p>
 		}
@@ -86,6 +89,13 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				<div class="ai-fields"><label>Anschrift<input id="organisation-contact-address" type="text" name="contact_address" value={ data.ContactAddress } maxlength="500" autocomplete="street-address"/></label></div>
 				<div class="ai-fields"><label>E-Mail<input type="email" name="contact_email" value={ data.ContactEmail } placeholder="optional"/></label><label>Telefon<input type="tel" name="contact_phone" value={ data.ContactPhone } placeholder="optional"/></label></div>
 				<p class="settings-note">{ fmt.Sprintf("%d Liegenschaften gehören zu dieser Verwaltung.", data.OrganisationHouses) } Wer welche davon betreut, entscheidet weiterhin die Rolle je Liegenschaft.</p>
+			</section>
+			<section class="settings-card"><h2>Wertsicherung</h2>
+				<input type="hidden" name="valorisation_present" value="1"/>
+				<div class="ai-fields"><label>Wirksamwerden<select name="valorisation_mode"><option value="cautious" selected?={ data.ValorisationMode != "contractual" }>Vorsichtig: nach endgültiger Veröffentlichung</option><option value="contractual" selected?={ data.ValorisationMode == "contractual" }>Vertraglich vorgesehener Termin</option></select></label><label>Ungeprüfte Klauseln<select name="valorisation_review"><option value="block" selected?={ data.ValorisationReviewPolicy != "warn" }>Freigabe sperren</option><option value="warn" selected?={ data.ValorisationReviewPolicy == "warn" }>Mit Warnung zulassen</option></select></label></div>
+				<label class="check"><input type="checkbox" name="valorisation_four_eyes" value="1" checked?={ data.ValorisationFourEyes }/> Vier-Augen-Freigabe: eine andere berechtigte Person muss freigeben</label>
+				<label>Absenderzeile im Anpassungsschreiben<input type="text" name="valorisation_sender" value={ data.ValorisationSender } maxlength="240" placeholder="Leer = Name der Hausverwaltung"/></label>
+				<p class="settings-note">Geänderte Regeln gelten für neu berechnete Läufe. Gesetzliche Fristen bleiben verbindlich.</p>
 			</section>
 			<section class="settings-card"><h2>Automatisierung</h2><table class="trust-table"><thead><tr><th>Kategorie</th><th>Stufe</th></tr></thead><tbody>
 				for _, category := range data.Categories {
