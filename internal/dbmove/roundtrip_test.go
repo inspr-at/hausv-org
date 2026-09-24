@@ -342,10 +342,10 @@ func seedFull(t *testing.T) *source {
 			Parties:    []store.LeaseParty{{Name: "Rita Bewohner", Email: "resident@example.com", ValidFrom: "2020-02-01"}},
 			Components: []store.RentComponent{{Kind: store.ComponentHMZ, NetCents: 100000, VATRateBP: 1000, ValidFrom: "2020-02-01", Origin: store.OriginManual}},
 			Clauses: []store.IndexClause{{
-				ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2020-01", BaseValue: "100.0",
+				ClauseType: store.ClauseVPIThreshold, Series: "vpi2020", BasePeriod: "2024-09", BaseValue: "123.6",
 				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
 				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
-				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2020-01", ContractBaseValue: "100.0", CapValue: "1000.00", CapAnchorPeriod: "2020-01"},
+				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2024-09", ContractBaseValue: "123.6", CapValue: "1000.00", CapAnchorPeriod: "2024-09"},
 			}},
 		}); err != nil {
 			t.Fatalf("%s lease: %v", slug, err)
@@ -403,6 +403,23 @@ func seedFull(t *testing.T) *source {
 			t.Fatalf("%s payment 2: %v", slug, err)
 		}
 
+		leaseRows, err := leases.List()
+		must(t, "roundtrip leases", err)
+		lease := leaseRows[0]
+		vr, _ := store.BindValorisationRepository(src.lanes, store.NewSQLDocumentStore(src.lanes, filepath.Join(src.files, "documents")), tenant)
+		actor := store.ValorisationActor{Email: "admin@example.com", Manage: true, Approve: true}
+		run, err := vr.Create(store.ValorisationInput{EffectiveOn: "2026-04-01"}, "org", actor, now)
+		must(t, "valorisation draft", err)
+		if len(run.Items) != 1 || run.Items[0].LeaseID != lease.ID {
+			t.Fatal("valorisation seed")
+		}
+		run, err = vr.Approve(run.ID, actor, store.DefaultValorisationSettings(), now, func(store.ValorisationRun, store.ValorisationItem, time.Time) ([]byte, error) {
+			return []byte("%PDF-1.4 seed"), nil
+		})
+		must(t, "valorisation approval", err)
+		deliveryRepo, _ := store.BindValorisationDeliveryRepository(store.NewSQLValorisationDeliveryStore(src.lanes), tenant)
+		_, _, err = deliveryRepo.Attempt(ctx, store.ValorisationDelivery{RunID: run.ID, Revision: run.Revision, PartyID: "resident@example.com", UnitID: "top-1", DocumentID: run.Items[0].LetterDocumentID, SHA256: run.Items[0].LetterSHA256, Recipient: "resident@example.com", Actor: actor.Email}, func(context.Context) error { return nil })
+		must(t, "valorisation delivery", err)
 		votes, _ := store.BindVoteRepository(store.NewSQLVoteStore(src.lanes), tenant)
 		ballot, err := votes.Create(store.Ballot{
 			TenantSlug: slug, Title: "Fassadensanierung", Description: "Angebot Firma Bunt", Options: []string{"Ja", "Nein", "Enthaltung"},

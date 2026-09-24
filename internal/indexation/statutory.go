@@ -207,7 +207,7 @@ func ApplyMieWeG(contract Evaluation, context StatutoryContext, asOf time.Time) 
 			return LimitedAdjustment{}, fmt.Errorf("missed_pre2026: entitlement requires transition review")
 		}
 		ceiling := context.Ceiling
-		if ceiling.PriceControlled != full {
+		if ceiling.PriceControlled && !full {
 			return LimitedAdjustment{}, fmt.Errorf("price-control ceiling must match full versus partial MRG classification")
 		}
 		if ceiling.EffectiveOn.IsZero() || ceiling.EffectiveOn.Year() < 2026 || ceiling.EffectiveOn.Month() != time.April || ceiling.EffectiveOn.Day() != 1 {

@@ -94,6 +94,10 @@ var tenantIDTables = []tenantIDTable{
 	{name: "rent_components", slugColumn: "tenant_slug"},
 	{name: "unit_payment_status", slugColumn: "tenant_slug"},
 	{name: "units", slugColumn: "tenant_slug"},
+	{name: "valorisation_deliveries", slugColumn: "tenant_slug"},
+	{name: "valorisation_events", slugColumn: "tenant_slug"},
+	{name: "valorisation_items", slugColumn: "tenant_slug"},
+	{name: "valorisation_runs", slugColumn: "tenant_slug"},
 	{name: "valorisation_state", slugColumn: "tenant_slug"},
 }
 

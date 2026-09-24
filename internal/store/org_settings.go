@@ -19,16 +19,17 @@ type OrgCounters struct {
 }
 
 type OrgSettings struct {
-	Organisation  string            `json:"organisation"`
-	Name          string            `json:"name"`
-	TrustLevels   map[string]string `json:"trust_levels"`
-	AutoThreshold float64           `json:"auto_threshold"`
-	AutoEnabled   bool              `json:"auto_enabled"`
-	AIProvider    string            `json:"ai_provider,omitempty"`
-	AIBaseURL     string            `json:"ai_base_url,omitempty"`
-	AIModel       string            `json:"ai_model,omitempty"`
-	Counters      OrgCounters       `json:"counters"`
-	UpdatedAt     time.Time         `json:"updated_at"`
+	Valorisation  ValorisationSettings `json:"valorisation"`
+	Organisation  string               `json:"organisation"`
+	Name          string               `json:"name"`
+	TrustLevels   map[string]string    `json:"trust_levels"`
+	AutoThreshold float64              `json:"auto_threshold"`
+	AutoEnabled   bool                 `json:"auto_enabled"`
+	AIProvider    string               `json:"ai_provider,omitempty"`
+	AIBaseURL     string               `json:"ai_base_url,omitempty"`
+	AIModel       string               `json:"ai_model,omitempty"`
+	Counters      OrgCounters          `json:"counters"`
+	UpdatedAt     time.Time            `json:"updated_at"`
 }
 
 type OrgSettingsRepository interface {
@@ -54,11 +55,12 @@ func DefaultOrgSettings(orgKey string) OrgSettings {
 	for _, category := range IntakeCategories() {
 		trust[category.Key] = "propose"
 	}
-	return OrgSettings{Organisation: textutil.Slug(orgKey), TrustLevels: trust, AutoThreshold: 0.9}
+	return OrgSettings{Valorisation: DefaultValorisationSettings(), Organisation: textutil.Slug(orgKey), TrustLevels: trust, AutoThreshold: 0.9}
 }
 
 func normalizeOrgSettings(orgKey string, item OrgSettings) (OrgSettings, error) {
 	defaults := DefaultOrgSettings(orgKey)
+	item.Valorisation = item.Valorisation.Normalized()
 	item.Organisation = defaults.Organisation
 	item.Name = strings.TrimSpace(item.Name)
 	item.AIProvider = strings.ToLower(strings.TrimSpace(item.AIProvider))
