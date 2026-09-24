@@ -35,7 +35,7 @@ func TestAnnualStatementRunHandlerAllUnitsAndFailClosed(t *testing.T) {
 		}
 	}
 	page := authedRequest(t, a, manager, "/demo/app/settings/annual-statement?year=2025")
-	for _, want := range []string{"Abrechnungslauf gesperrt", "Kein bestätigter Beleg erfasst", "Akonto fehlt", "disabled"} {
+	for _, want := range []string{"Abrechnungslauf gesperrt", "Kein bestätigter Beleg erfasst", "Akonto fehlt", "disabled", `class="annual-preparation" open`, `href="#belege"`, `href="#vorauszahlungen"`, `data-annual-blocking-section="vorauszahlungen"`} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("missing %q", want)
 		}
@@ -63,6 +63,9 @@ func TestAnnualStatementRunHandlerAllUnitsAndFailClosed(t *testing.T) {
 	ready := authedRequest(t, a, manager, "/demo/app/settings/annual-statement?year=2025")
 	if !strings.Contains(ready.Body.String(), "Bereit zur Berechnung") {
 		t.Fatal("complete input blocked")
+	}
+	if strings.Contains(ready.Body.String(), `class="annual-preparation" open`) {
+		t.Fatal("calculable period without a saved run must start collapsed")
 	}
 	if runs, _ := repos.annualStatementRuns.List(2025); len(runs) != 0 {
 		t.Fatal("GET wrote run")

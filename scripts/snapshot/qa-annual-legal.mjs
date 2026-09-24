@@ -94,8 +94,26 @@ try {
   assert.equal((await context.request.post(sendURL, { headers: { Origin: baseURL, Connection: 'close' }, maxRedirects: 0 })).status(), 409);
   await page.getByRole('button', { name: 'Abrechnung freigeben', exact: true }).click();
   assert.match(await run.innerText(), /Freigegeben am/);
+  const steps = run.locator('.annual-lifecycle > li');
+  assert.deepEqual(await steps.locator(':scope > strong').allTextContents(), ['1 · Freigabe', '2 · Dokumentenarchiv', '3 · E-Mail-Versand']);
+  const send = run.getByRole('button', { name: 'Per E-Mail senden', exact: true });
+  assert(await send.isDisabled());
+  assert.match(await send.getAttribute('class'), /ghost/);
+  assert.match(await run.locator('#annual-send-issue').innerText(), /Zuerst im Archiv ablegen/);
+  assert(!/SMTP/.test(await run.innerText()));
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await run.locator('.annual-lifecycle').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${out}/approved-lifecycle-${width}.png` });
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  }
+
   const final = await getPDF(pdfURL, 'final');
   assert(!final.includes(Buffer.from('Entwurf')));
+  assert(!final.includes(Buffer.from('Manuelle Vorausschau')));
+  assert(final.includes(Buffer.from('vereinbarte monatliche Vorauszahlung')));
+  assert(final.includes(Buffer.from('Vorauszahlung auf Basis des Vorjahres')));
+
   for (const forbidden of ['fehlt', 'TODO', 'Noch nicht hinterlegt']) assert(!final.includes(Buffer.from(forbidden)));
   assert(final.includes(Buffer.from('Hausverwaltung Musterstadt GmbH')));
   assert(final.includes(Buffer.from('Musterstra', 'ascii')));

@@ -182,7 +182,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 			t.Errorf("run view missing %q", want)
 		}
 	}
-	if strings.Contains(page.Body.String(), "Im Archiv ablegen") {
+	if strings.Contains(page.Body.String(), ">Im Archiv ablegen</button>") {
 		t.Fatal("completed archive still offered")
 	}
 	library := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, "/app/dokumente?q=Jahresabrechnung", nil)

@@ -241,8 +241,8 @@ templ AnnualStatementBody(data AnnualStatementPageData) {
 }
 
 templ AnnualStatementPreparation(data AnnualStatementPageData) {
-		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}</style>
-		<details class="annual-preparation" open?={ data.Run.ID == "" || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.ReserveMsg != "" || data.HasReceiptSuggestion }>
+		<style>.annual-preparation{margin-top:var(--space-4);min-width:0}.annual-preparation>summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;font-weight:700;list-style:none}.annual-preparation>summary::-webkit-details-marker{display:none}.annual-preparation>summary small{display:block;margin-top:var(--space-1);font-size:12px;font-weight:400;color:var(--muted)}.annual-preparation>.workspace{margin-top:var(--space-4)}.annual-preparation :is(.annual-blocker,:target){outline:2px solid var(--gold);outline-offset:4px;scroll-margin-top:100px}.annual-preparation :is(#heizflaechen,#heizakontos)>summary{cursor:pointer;min-height:44px;padding:var(--space-3) 0;font-weight:600}</style>
+		<details class="annual-preparation" open?={ !data.Run.Ready || data.PeriodMsg != "" || data.ImportMsg != "" || data.CostTypeMsg != "" || data.ReceiptMsg != "" || data.BasesMsg != "" || data.PrepaymentMsg != "" || data.ReserveMsg != "" || data.HasReceiptSuggestion } data-annual-blocking-section={ data.Run.BlockingSection }>
 		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span>
 			@DisclosureChevron()
 		</summary>
@@ -263,13 +263,19 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  <fieldset><legend>HeizKG-Verteilung</legend>
  <label>Verbrauchsanteil der Energiekosten (%)<input type="number" name="heating_consumption_percent" min="55" max="85" value={ strconv.Itoa(data.Legal.HeatingConsumptionPercent) } required/></label>
  <p>55–85 %, üblicher Ausgangswert 70 %. Der Rest der Energiekosten und sämtliche sonstigen Betriebskosten folgen der versorgbaren Nutzfläche.</p>
+ <details id="heizflaechen"><summary>Versorgbare Nutzflächen je Einheit erfassen</summary>
  for _, unit := range data.Units {
  <label>{ unit.Label } · versorgbare Nutzfläche (m²)<input name={ "heatable_area_"+unit.ID } value={ annualHeatableArea(data.Legal,unit.ID) } inputmode="decimal"/></label>
+ }
+ </details>
+ <details id="heizakontos"><summary>Geleistete Heizungs- und Warmwasserakontos je Einheit erfassen</summary>
+ for _, unit := range data.Units {
  for _, key := range []string{"heizung", "warmwasser"} {
  <label>{ unit.Label } · { key } · geleistetes Akonto (Euro)<input name={ "heating_prepayment_"+key+"_"+unit.ID } value={ annualHeatingPrepayment(data.Legal,unit.ID,key) } inputmode="decimal"/></label>
  }
 
  }
+ </details>
  </fieldset>
  <fieldset><legend>Neue monatliche Vorauszahlungen</legend>
  <label>Gültig ab<input type="date" name="next_prepayment_on" value={ data.Legal.NextPrepaymentOn }/></label>
@@ -367,7 +373,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class="scope management">{ strconv.Itoa(data.CostTypeCount) } Kostenarten</span></header>
+		<section class="panel workspace" id="kostenarten"><header class="workspace-head"><div><h2>Kostenartenkatalog</h2><p>Wiederverwendbare Kostenarten mit eindeutigen Schlüsseln und Umlagefähigkeit.</p></div><span class="scope management">{ strconv.Itoa(data.CostTypeCount) } Kostenarten</span></header>
 			@SettingsFlash(data.CostTypeMsg, data.CostTypeOK)
 			<div class="metrics"><span><strong>{ strconv.Itoa(data.AllocatableCostTypeCount) }</strong><small>umlagefähig</small></span><span><strong>{ strconv.Itoa(data.CostTypeCount - data.AllocatableCostTypeCount) }</strong><small>nicht umlagefähig</small></span></div>
 			<p class="notice">Die Umlagefähigkeit ist eine Arbeitseinstellung für diese Liegenschaft und keine rechtliche Beurteilung.</p>
@@ -536,7 +542,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Belege</h2><p>Originaldokumente mit Betrag, Rechnungsdatum, Kostenart und Abrechnungsperiode verknüpfen.</p></div><span class="scope management">Verwaltung</span></header>
+		<section class="panel workspace" id="belege"><header class="workspace-head"><div><h2>Belege</h2><p>Originaldokumente mit Betrag, Rechnungsdatum, Kostenart und Abrechnungsperiode verknüpfen.</p></div><span class="scope management">Verwaltung</span></header>
 			<p class="notice">Ein Beleg verwendet das Original aus Dokumente. Beim Entfernen der Zuordnung bleibt die Originaldatei in Dokumente erhalten.</p>
 			if data.HasPeriods && len(data.CostTypes) > 0 {
 				<form method="post" action="/app/settings/annual-statement/receipts" enctype="multipart/form-data"><fieldset><legend>Beleg erfassen</legend><div class="form-grid"><label>Vorhandenes Dokument<select name="document_id"><option value="">Dokument auswählen</option>
@@ -568,7 +574,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			}
 		</section>
 
-		<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
+		<section class="panel workspace" id="parteien"><header class="workspace-head"><div><h2>Einheiten und Parteien</h2><p>Wohnungseigentümer und Mietverhältnisse werden aus den bestehenden Einheiten wiederverwendet.</p></div><a class="button ghost" href="/app/settings/building?section=units">Einheiten verwalten</a></header>
 			@SettingsFlash(data.ImportMsg, data.ImportOK)
 			if data.UnitDataNotice != "" {
 				<p class="notice" role="status">{ data.UnitDataNotice }</p>
