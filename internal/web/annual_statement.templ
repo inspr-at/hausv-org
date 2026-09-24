@@ -4,6 +4,7 @@ import "github.com/inspr-at/hausv-org/internal/store"
 
 import "strconv"
 import "fmt"
+import "strings"
 
 type AnnualStatementPeriodView struct {
 	Year      int
@@ -304,9 +305,17 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  [data-annual-reserve] .reserve-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:var(--space-3);margin:var(--space-4) 0}
  [data-annual-reserve] .reserve-summary div{padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);min-width:0}
  [data-annual-reserve] .reserve-summary span{display:block;color:var(--muted);font-size:12px}
- [data-annual-reserve] .reserve-list{display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-4)}
- [data-annual-reserve] .reserve-entry{display:grid;grid-template-columns:7rem 8rem 1fr;gap:var(--space-2);align-items:baseline}
- @media(max-width:640px){[data-annual-reserve] .reserve-entry{grid-template-columns:1fr}}
+ [data-annual-reserve] .reserve-summary strong{display:block;margin-top:2px;font-variant-numeric:tabular-nums}
+ [data-annual-reserve] .reserve-list{display:flex;flex-direction:column;margin-bottom:var(--space-4);border-bottom:1px solid var(--line);font-size:13px}
+ [data-annual-reserve] .reserve-entry{display:grid;grid-template-columns:6.5rem 9rem 8rem minmax(0,1fr);gap:var(--space-4);align-items:baseline;padding:9px 0;border-top:1px solid var(--line)}
+ [data-annual-reserve] .reserve-entry>*{min-width:0;overflow-wrap:anywhere}
+ [data-annual-reserve] .reserve-entry>span:first-child{color:var(--muted);font-variant-numeric:tabular-nums}
+ [data-annual-reserve] .reserve-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+ [data-annual-reserve] .reserve-note{color:var(--muted)}
+ [data-annual-reserve] .reserve-entry>strong{font-weight:600}
+ [data-annual-reserve]{container-type:inline-size}
+ [data-annual-reserve] .form-grid :is(input,select){font-size:14px;font-weight:500}
+ @container (max-width:640px){[data-annual-reserve] .reserve-entry{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"kind amount" "date date" "note note";gap:2px var(--space-3)}[data-annual-reserve] .reserve-entry>strong{grid-area:kind}[data-annual-reserve] .reserve-amount{grid-area:amount}[data-annual-reserve] .reserve-entry>span:first-child{grid-area:date;font-size:12px}[data-annual-reserve] .reserve-note{grid-area:note;font-size:12px}[data-annual-reserve] .reserve-note:empty{display:none}}
  </style>
  <header class="workspace-head"><div><h2>Rücklage</h2><p>Buchungen dieser WEG-Periode. Korrekturen sind weitere Buchungen; gespeicherte Zeilen bleiben stehen.</p></div></header>
  @SettingsFlash(data.ReserveMsg, data.ReserveOK)
@@ -323,7 +332,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  if len(data.Reserve.Entries) > 0 {
  <div class="reserve-list">
  for _, entry := range data.Reserve.Entries {
- <article class="reserve-entry"><span>{ entry.Date }</span><strong>{ entry.Kind }</strong><span>{ entry.Amount }{ entry.Note }{ entry.Document }</span></article>
+ <article class="reserve-entry"><span>{ entry.Date }</span><strong>{ entry.Kind }</strong><span class="reserve-amount">{ entry.Amount }</span><span class="reserve-note">{ annualReserveNote(entry.Note + entry.Document) }</span></article>
  }
  </div>
  }
@@ -612,4 +621,10 @@ func annualMonthlyProposal(legal store.AnnualStatementLegalSettings,id,key strin
  value,ok:=legal.MonthlyProposals[id][key]
  if !ok { return "" }
  return fmt.Sprintf("%d,%02d",value/100,value%100)
+}
+
+// annualReserveNote drops the list separator the view puts in front of the
+// note and document, because the ledger shows them in a column of their own.
+func annualReserveNote(text string) string {
+	return strings.TrimPrefix(text, " · ")
 }
