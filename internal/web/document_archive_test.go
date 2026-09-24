@@ -46,4 +46,50 @@ func TestDocumentBlocksGroupOneArchiveRunCollapsed(t *testing.T) {
 	if !strings.Contains(html, `id="document-a"`) || !strings.Contains(html, "Archiviert · unveränderlich") {
 		t.Fatalf("grouped row lost the archive article:\n%s", html)
 	}
+	if blocks[1].ManagerOnly || blocks[1].Date != "" {
+		t.Fatalf("incomplete archive views must not invent a chip or date: %+v", blocks[1])
+	}
+}
+
+func TestDocumentLibraryUsesCompactRows(t *testing.T) {
+	data := DocumentsPageData{
+		CanManageDocuments: true,
+		HasDocuments:       true,
+		HasAnyDocuments:    true,
+		DocumentSections: []view.DocumentCategoryView{{
+			Category: "Abrechnung",
+			Documents: []view.DocumentView{
+				{ID: "a", Title: "Jahresabrechnung 2025 · Top 1", Archived: true, ArchiveRunID: "run", ArchiveYear: 2025, ArchiveRevision: 1, Visibility: "Nur Verwaltung", UploadedDate: "02.03.2026", VersionLabel: "Version 1", Size: "20 KB", Filename: "a.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/a/preview", DownloadURL: "/app/dokumente/a/download"},
+				{ID: "b", Title: "Jahresabrechnung 2025 · Top 2", Archived: true, ArchiveRunID: "run", ArchiveYear: 2025, ArchiveRevision: 1, Visibility: "Nur Verwaltung", UploadedDate: "02.03.2026", VersionLabel: "Version 1", Size: "20 KB", Filename: "b.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/b/preview", DownloadURL: "/app/dokumente/b/download"},
+				{ID: "rules", Title: "Hausordnung", Visibility: "Alle Bewohner", VersionLabel: "Version 1", UploadedDate: "01.09.2026", Size: "12 KB", Filename: "hausordnung.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/rules/preview", DownloadURL: "/app/dokumente/rules/download", ReplaceDialogID: "document-replace-rules"},
+			},
+		}},
+	}
+	html := renderComponent(t, DocumentLibrary(data))
+	if !strings.Contains(html, `<details class="document-archive-group">`) || strings.Contains(html, `class="document-archive-group" open`) {
+		t.Fatal("archive group must start collapsed")
+	}
+	for _, want := range []string{
+		"Jahresabrechnung 2025 · Lauf 1",
+		"2 Dokumente",
+		"02.03.2026",
+		"Nur Verwaltung",
+		`class="document-title"`,
+		`aria-label="Vorschau: Hausordnung"`,
+		`aria-label="Herunterladen"`,
+		">Mehr",
+		"Neue Version hochladen",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("library missing %q", want)
+		}
+	}
+	_, row, found := strings.Cut(html, `<article class="document-row" id="document-rules">`)
+	row, _, closed := strings.Cut(row, "</article>")
+	if !found || !closed || strings.Contains(row, `class="button primary"`) {
+		t.Fatal("document row still carries a filled button")
+	}
+	if strings.Contains(html, ">Vorschau<") {
+		t.Fatal("preview is still a separate filled action")
+	}
 }

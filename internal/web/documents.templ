@@ -55,6 +55,52 @@ templ DocumentsStyles() {
 		@media(max-width:760px){.document-library{padding:16px}.document-toolbar{grid-template-columns:minmax(0,1fr) auto}.document-search{grid-column:1/-1}.document-row{grid-template-columns:48px minmax(0,1fr);gap:16px}.document-icon{width:48px;height:56px}.document-copy>strong{font-size:20px}.document-actions{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}.document-actions .primary{grid-column:auto}.file-details,.admin-tools,.versions{grid-column:1/-1;margin-top:0}.document-categories a{min-height:48px}.file-details summary,.admin-tools>summary,.versions>summary{min-height:48px}}
 		@media(max-width:520px){.document-icon{display:grid}.document-row{grid-template-columns:40px minmax(0,1fr);gap:8px 16px}.document-icon{width:40px;height:48px}.document-icon svg{width:20px;height:20px}}
 		.document-archive-group{border:1px solid var(--line);border-radius:8px;background:var(--panel)}.document-archive-group>summary{min-height:48px;display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;list-style:none}.document-archive-group>summary::-webkit-details-marker{display:none}.document-archive-label{font-family:var(--font-serif);font-size:18px;font-weight:600}.document-archive-count{margin-left:auto;color:var(--muted);font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}.document-archive-list{display:grid;border-top:1px solid var(--line)}.document-archive-list .document-row{border:0;border-radius:0;border-top:1px solid var(--line);padding:10px 16px;background:transparent;grid-template-columns:40px minmax(0,1fr) auto}.document-archive-list .document-row:first-child{border-top:0}.document-archive-list .document-icon{width:36px;height:42px}.document-archive-list .document-copy>strong{font-size:16px}.document-archive-list .document-meta{margin-top:4px}.document-archive-list .file-details{margin-top:4px}@media(max-width:760px){.document-archive-group>summary{min-height:48px;align-items:flex-start;padding-top:12px;padding-bottom:12px}.document-archive-count{white-space:nowrap}.document-archive-list .document-row{grid-template-columns:40px minmax(0,1fr)}}
+		.documents-screen.documents-main{padding:0}
+		.documents-screen .document-library{display:flex;flex-direction:column;gap:12px;margin-top:0;padding:8px 16px 12px}
+		.documents-screen .library-head{padding-bottom:8px}
+		.documents-screen .document-sections{display:block;margin-top:20px}
+		.documents-screen .document-section{display:block;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+		.documents-screen .document-section + .document-section{margin-top:32px}
+		.documents-screen .document-section h2{display:flex;align-items:baseline;gap:8px;margin:0 0 12px;font-size:20px;line-height:1.2}
+		.documents-screen .section-count{align-self:baseline}
+		.documents-screen .document-list{display:block}
+		.documents-screen .document-row,.documents-screen .document-archive-group>summary{display:grid;grid-template-columns:28px minmax(0,1fr) 36px max-content;align-items:center;column-gap:8px;min-height:40px;margin:0;padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;scroll-margin-top:82px}
+		.documents-screen .document-icon{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;color:var(--gold-ink)}
+		.documents-screen .document-icon svg{width:20px;height:20px}
+		.documents-screen .document-icon small{display:none}
+		.documents-screen .document-copy{min-width:0}
+		.documents-screen .document-title{display:block;color:var(--ink);font-family:var(--font-sans);font-size:14px;font-weight:650;line-height:1.25;overflow-wrap:anywhere;white-space:normal;text-decoration:none}
+		.documents-screen .document-title:hover{text-decoration:underline;text-underline-offset:2px}
+		.documents-screen .document-meta{display:flex;flex-wrap:wrap;align-items:center;gap:1px 6px;margin:0;color:var(--muted);font-size:12px;line-height:1.25}
+		.documents-screen .document-meta .pill{min-height:18px;padding:0 6px;font-size:10px;line-height:1.4}
+		.documents-screen .document-meta-dot{color:var(--soft)}
+		.documents-screen .document-download{display:grid;place-items:center;width:36px;height:36px;border-radius:8px;color:var(--muted)}
+		.documents-screen .document-download svg{width:18px;height:18px;display:block}
+		.documents-screen .document-download:hover{background:var(--panel-soft);color:var(--ink)}
+		.documents-screen .document-more{position:relative}
+		body[data-authenticated-app] .documents-screen .document-more>summary{display:inline-flex;align-items:center;min-height:36px;padding-inline:8px 28px;border:0;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+		.documents-screen .document-more>summary:hover{background:var(--panel-soft);color:var(--ink)}
+		.documents-screen .document-more[open]{z-index:4}
+		.documents-screen .document-more:not([open])>.document-more-panel{display:none}
+		.documents-screen .document-more[open]>.document-more-panel{position:absolute;z-index:5;right:0;top:calc(100% + 4px);display:grid;gap:10px;width:min(380px,calc(100vw - 32px));padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow-dialog)}
+		.documents-screen .document-more-panel .button{min-height:44px}
+		.documents-screen .document-file{color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+		.documents-screen .document-more-facts{display:flex;flex-wrap:wrap;gap:6px}
+		.documents-screen .admin-body{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+		.documents-screen .version-list{display:grid;gap:8px}
+		.documents-screen .version-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+		.documents-screen .version-row a{color:var(--gold-ink);font-weight:650}
+		.documents-screen .document-archive-group{border:0;border-radius:0;background:transparent}
+		body[data-authenticated-app] .documents-screen .document-archive-group>summary{padding-inline-end:0}
+		.documents-screen .document-archive-spacer{width:44px;height:44px}
+		.documents-screen .document-row:has(.document-more[open]),.documents-screen .document-archive-group[open]{position:relative;z-index:4}
+		body[data-authenticated-app] .documents-screen .document-archive-group>summary>.disclosure-chevron{position:static;top:auto;right:auto;transform:none;width:44px;height:44px;margin:0;border:0;border-radius:8px;background:transparent;opacity:.7}
+		body[data-authenticated-app] .documents-screen .document-archive-group[open]>summary>.disclosure-chevron{opacity:1;background:transparent}
+		.documents-screen .document-archive-list{display:block;margin:0;padding:0 0 0 28px;border:0}
+		.documents-screen .document-archive-list .document-row{grid-template-columns:28px minmax(0,1fr) 44px max-content;padding:2px 0;background:transparent}
+		.documents-screen .document-title:focus-visible,.documents-screen .document-download:focus-visible,.documents-screen .document-more>summary:focus-visible,.documents-screen .document-archive-group>summary:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px}
+		@media(max-width:760px){.documents-screen .document-library{padding:8px 12px 12px}.documents-screen .document-row,.documents-screen .document-archive-group>summary,.documents-screen .document-archive-list .document-row{grid-template-columns:24px minmax(0,1fr) 44px max-content;min-height:44px}.documents-screen .document-download{width:44px;height:44px}.body[data-authenticated-app] .documents-screen .document-more>summary{min-height:44px}.documents-screen .document-icon{display:grid;width:24px;height:24px}.documents-screen .document-title{font-size:15px;line-height:1.3}}
+		@media(max-width:520px){.documents-screen .document-icon{display:grid}.documents-screen .document-row,.documents-screen .document-archive-group>summary,.documents-screen .document-archive-list .document-row{grid-template-columns:22px minmax(0,1fr) 44px max-content}}
 
 	</style>
 }
@@ -134,8 +180,16 @@ templ DocumentLibrary(data DocumentsPageData) {
 							if block.Grouped {
 								<details class="document-archive-group">
 									<summary>
-										<span class="document-archive-label">{ block.Label }</span>
-										<span class="document-archive-count">{ documentArchiveCount(block.Count) }</span>
+										<span class="document-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><path d="M9 12h6M9 16h6"></path></svg></span>
+										<span class="document-copy"><span class="document-title">{ block.Label }</span><span class="document-meta"><span>{ documentArchiveCount(block.Count) }</span>
+											if block.Date != "" {
+												<span class="document-meta-dot" aria-hidden="true">·</span><span>{ block.Date }</span>
+											}
+											if block.ManagerOnly {
+												<span class="document-meta-dot" aria-hidden="true">·</span><span class="pill role-admin">Nur Verwaltung</span>
+											}
+										</span></span>
+										<span class="document-archive-spacer" aria-hidden="true"></span>
 										@DisclosureChevron()
 									</summary>
 									<div class="document-archive-list">
@@ -159,54 +213,70 @@ templ DocumentLibrary(data DocumentsPageData) {
 
 templ DocumentRow(document view.DocumentView, canManage bool) {
 	<article class="document-row" id={ "document-" + document.ID }>
-		<span class="document-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><path d="M9 12h6M9 16h6"></path></svg><small>{ document.FileKind }</small></span>
-		<div class="document-copy"><strong>{ document.Title }</strong><div class="document-meta"><span class={ "pill", document.VisibilityClass }>{ document.Visibility }</span>
-			if document.Archived {
-				<span class="pill">Archiviert · unveränderlich</span>
-			}
-			if document.ArchiveParty != "" {
-				if document.ArchiveParty == document.ArchivePartyEmail {
-					<span class="pill">Partei ohne gespeicherten Namen</span><span class="document-party-address">{ document.ArchivePartyEmail }</span>
-				} else {
-					<span class="pill" title={ document.ArchivePartyEmail }>Für { document.ArchiveParty }</span>
+		<span class="document-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7z"></path><path d="M14 3v4h4"></path><path d="M9 12h6M9 16h6"></path></svg></span>
+		<div class="document-copy">
+			@DocumentTitleLink(document)
+			<p class="document-meta">
+				if document.Visibility != "" {
+					<span class={ "pill", document.VisibilityClass }>{ document.Visibility }</span>
 				}
-			}
-			if document.HasUnit {
-				<span class="pill">Einheit { document.UnitLabel }</span>
-			}
-			<span>{ document.VersionLabel }</span><span class="document-meta-secondary">{ document.UploadedDate } · { document.Size }</span></div></div>
-		<div class="document-actions">
-			if document.CanPreview {
-				if document.IsImage {
-					<button class="button primary" type="button" data-lightbox-src={ document.PreviewURL } data-lightbox-caption={ document.Filename }>Vorschau</button>
-				} else {
-					<a class="button primary" href={ templ.SafeURL(document.PreviewURL) } target="_blank" rel="noopener">Vorschau</a>
+				for i, part := range documentMetaParts(document) {
+					if document.Visibility != "" || i > 0 {
+						<span class="document-meta-dot" aria-hidden="true">·</span>
+					}
+					<span>{ part }</span>
 				}
-				<a class="button small ghost" href={ templ.SafeURL(document.DownloadURL) }>Herunterladen</a>
-			} else {
-				<a class="button primary" href={ templ.SafeURL(document.DownloadURL) }>Herunterladen</a>
-			}
+			</p>
 		</div>
-		<details class="file-details"><summary>Dateidetails
-			@DisclosureChevron()
-		</summary><span class="document-file">{ document.Filename } · hochgeladen { document.UploadedAt }</span></details>
-		if canManage && !document.Archived {
-			<details class="admin-tools"><summary>Dokument verwalten
+		<a class="document-download" href={ templ.SafeURL(document.DownloadURL) } aria-label="Herunterladen">@PortalAssetIcon("download")</a>
+		<details class="document-more">
+			<summary>Mehr
 				@DisclosureChevron()
-			</summary><div class="admin-body"><button class="button small ghost" type="button" data-dialog={ document.ReplaceDialogID } aria-haspopup="dialog" aria-controls={ document.ReplaceDialogID }>Neue Version hochladen</button><span class="mini">Kategorie, Sichtbarkeit und Einheit bleiben dabei erhalten.</span></div></details>
-		}
-		if document.HasVersions {
-			<details class="versions"><summary>Versionsverlauf
-				@DisclosureChevron()
-			</summary><div class="version-list">
-				for _, version := range document.Versions {
-					<div class="version-row"><span>{ version.Version } · { version.UploadedAt } · { version.Size } · { version.Filename }</span><a class="button small ghost" href={ templ.SafeURL(version.DownloadURL) }>Herunterladen</a></div>
+			</summary>
+			<div class="document-more-panel">
+				<p class="document-file">{ document.FileKind } · { document.Filename } · hochgeladen { document.UploadedAt }</p>
+				if document.Archived || document.ArchiveParty != "" || document.HasUnit {
+					<div class="document-more-facts">
+						if document.Archived {
+							<span class="pill">Archiviert · unveränderlich</span>
+						}
+						if document.ArchiveParty != "" {
+							if document.ArchiveParty == document.ArchivePartyEmail {
+								<span class="pill">Partei ohne gespeicherten Namen</span><span class="document-party-address">{ document.ArchivePartyEmail }</span>
+							} else {
+								<span class="pill" title={ document.ArchivePartyEmail }>Für { document.ArchiveParty }</span>
+							}
+						}
+						if document.HasUnit {
+							<span class="pill">Einheit { document.UnitLabel }</span>
+						}
+					</div>
 				}
-			</div></details>
-		}
+				if canManage && !document.Archived {
+					<div class="admin-tools"><div class="admin-body"><button class="button small ghost" type="button" data-dialog={ document.ReplaceDialogID } aria-haspopup="dialog" aria-controls={ document.ReplaceDialogID }>Neue Version hochladen</button><span class="mini">Kategorie, Sichtbarkeit und Einheit bleiben dabei erhalten.</span></div></div>
+				}
+				if document.HasVersions {
+					<div class="versions"><p class="mini">Versionsverlauf</p><div class="version-list">
+						for _, version := range document.Versions {
+							<div class="version-row"><span>{ version.Version } · { version.UploadedAt } · { version.Size } · { version.Filename }</span><a href={ templ.SafeURL(version.DownloadURL) }>Herunterladen</a></div>
+						}
+					</div></div>
+				}
+			</div>
+		</details>
 	</article>
 	if canManage && !document.Archived {
 		@DocumentReplaceDialog(document)
+	}
+}
+
+templ DocumentTitleLink(document view.DocumentView) {
+	if document.CanPreview && document.IsImage {
+		<a class="document-title" href={ templ.SafeURL(document.PreviewURL) } data-lightbox-src={ document.PreviewURL } data-lightbox-caption={ document.Filename } aria-label={ "Vorschau: " + document.Title }>{ document.Title }</a>
+	} else if document.CanPreview {
+		<a class="document-title" href={ templ.SafeURL(document.PreviewURL) } target="_blank" rel="noopener" aria-label={ "Vorschau: " + document.Title }>{ document.Title }</a>
+	} else {
+		<a class="document-title" href={ templ.SafeURL(document.DownloadURL) }>{ document.Title }</a>
 	}
 }
 
@@ -259,10 +329,12 @@ templ DocumentUploadDialog(data DocumentsPageData) {
 }
 
 type documentBlock struct {
-	Grouped   bool
-	Label     string
-	Count     int
-	Documents []view.DocumentView
+	Grouped     bool
+	Label       string
+	Count       int
+	Date        string
+	ManagerOnly bool
+	Documents   []view.DocumentView
 }
 
 func documentBlocks(docs []view.DocumentView) []documentBlock {
@@ -276,10 +348,12 @@ func documentBlocks(docs []view.DocumentView) []documentBlock {
 			}
 			group := docs[i:j]
 			blocks = append(blocks, documentBlock{
-				Grouped:   true,
-				Label:     documentArchiveLabel(doc),
-				Count:     len(group),
-				Documents: group,
+				Grouped:     true,
+				Label:       documentArchiveLabel(doc),
+				Count:       len(group),
+				Date:        group[0].UploadedDate,
+				ManagerOnly: documentGroupManagerOnly(group),
+				Documents:   group,
 			})
 			i = j
 			continue
@@ -298,6 +372,32 @@ func documentArchiveLabel(doc view.DocumentView) string {
 		return fmt.Sprintf("Jahresabrechnung %d", doc.ArchiveYear)
 	}
 	return "Archivierte Jahresabrechnung"
+}
+
+func documentMetaParts(document view.DocumentView) []string {
+	parts := make([]string, 0, 3)
+	if document.VersionLabel != "" {
+		parts = append(parts, document.VersionLabel)
+	}
+	if document.UploadedDate != "" {
+		parts = append(parts, document.UploadedDate)
+	}
+	if document.Size != "" {
+		parts = append(parts, document.Size)
+	}
+	return parts
+}
+
+func documentGroupManagerOnly(group []view.DocumentView) bool {
+	if len(group) == 0 {
+		return false
+	}
+	for _, doc := range group {
+		if doc.Visibility != "Nur Verwaltung" {
+			return false
+		}
+	}
+	return true
 }
 
 func documentArchiveCount(count int) string {
