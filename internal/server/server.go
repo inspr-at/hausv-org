@@ -310,13 +310,10 @@ var defaultAuthMethods = store.DefaultAuthMethods
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	inviteStore      = store.InviteStore
-	inviteStoreData  = store.InviteStoreData
 	tenantMembership = store.TenantMembership
 	userProfile      = store.UserProfile
 )
 
-var initialLetter = store.InitialLetter
 var newInviteStore = store.NewInviteStore
 var normalizeAuthMethod = store.NormalizeAuthMethod
 var normalizeAuthMethods = store.NormalizeAuthMethods
@@ -352,48 +349,32 @@ const (
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 var cleanParkingPaymentField = store.CleanParkingPaymentField
 var handoverTokenHash = store.HandoverTokenHash
-var subtleConstantStringCompare = store.SubtleConstantStringCompare
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var defaultParkingTenantData = store.DefaultParkingTenantData
 var normalizeNumericSamples = store.NormalizeNumericSamples
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
-var copyMonthStates = store.CopyMonthStates
 var uniqueEmails = store.UniqueEmails
 
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	attachmentFileSave    = store.AttachmentFileSave
 	attachmentRecord      = store.AttachmentRecord
-	attachmentStore       = store.AttachmentStore
-	attachmentStoreData   = store.AttachmentStoreData
-	documentFileSave      = store.DocumentFileSave
 	documentRecord        = store.DocumentRecord
-	documentStore         = store.DocumentStore
-	documentStoreData     = store.DocumentStoreData
 	handoverConfirmation  = store.HandoverConfirmation
 	handoverKey           = store.HandoverKey
 	handoverMeter         = store.HandoverMeter
 	handoverRecord        = store.HandoverRecord
 	handoverRoom          = store.HandoverRoom
-	handoverStore         = store.HandoverStore
-	handoverStoreData     = store.HandoverStoreData
 	handoverTokenDelivery = store.HandoverTokenDelivery
 	issueComment          = store.IssueComment
-	issueStatusChange     = store.IssueStatusChange
-	issueStore            = store.IssueStore
-	issueStoreData        = store.IssueStoreData
 	issueWorkflowUpdate   = store.IssueWorkflowUpdate
 	chargingSession       = store.ChargingSession
 	parkingMonthState     = store.ParkingMonthState
 	parkingNumericSample  = store.ParkingNumericSample
 	parkingSettings       = store.ParkingSettings
-	parkingStore          = store.ParkingStore
-	parkingStoreData      = store.ParkingStoreData
 	parkingStoredSample   = store.ParkingStoredSample
 	parkingTariff         = store.ParkingTariff
 	parkingTenantData     = store.ParkingTenantData
@@ -401,12 +382,7 @@ type (
 	uploadedFile          = store.UploadedFile
 )
 
-var attachmentExtension = store.AttachmentExtension
 var copyDocument = store.CopyDocument
-var copyHandover = store.CopyHandover
-var copyIssue = store.CopyIssue
-var detectAttachmentContentType = store.DetectAttachmentContentType
-var documentExtension = store.DocumentExtension
 var isImageContentType = store.IsImageContentType
 var issuePhotoExtension = store.IssuePhotoExtension
 var newAttachmentStore = store.NewAttachmentStore
@@ -416,16 +392,11 @@ var newIssueStore = store.NewIssueStore
 var newParkingStore = store.NewParkingStore
 var normalizeAttachmentEntity = store.NormalizeAttachmentEntity
 var normalizeDocumentCategory = store.NormalizeDocumentCategory
-var normalizeDocumentRecord = store.NormalizeDocumentRecord
 var normalizeDocumentVisibility = store.NormalizeDocumentVisibility
-var normalizeDocuments = store.NormalizeDocuments
 var normalizeHandover = store.NormalizeHandover
-var normalizeHandoverConfirmations = store.NormalizeHandoverConfirmations
 var normalizeHandoverKeys = store.NormalizeHandoverKeys
 var normalizeHandoverMeters = store.NormalizeHandoverMeters
 var normalizeHandoverRooms = store.NormalizeHandoverRooms
-var normalizeHandoverType = store.NormalizeHandoverType
-var normalizeHandovers = store.NormalizeHandovers
 var normalizeIssueCategory = store.NormalizeIssueCategory
 var normalizeIssueCommentKind = store.NormalizeIssueCommentKind
 var normalizeIssueLocation = store.NormalizeIssueLocation
@@ -433,19 +404,12 @@ var normalizeIssuePriority = store.NormalizeIssuePriority
 var normalizeIssueStatus = store.NormalizeIssueStatus
 var normalizeParkingMonthState = store.NormalizeParkingMonthState
 var normalizeParkingMonthStates = store.NormalizeParkingMonthStates
-var normalizeParkingMonths = store.NormalizeParkingMonths
 var normalizeParkingSettings = store.NormalizeParkingSettings
 var normalizeParkingTariff = store.NormalizeParkingTariff
 var normalizeParkingTariffDate = store.NormalizeParkingTariffDate
 var normalizeChargingSessions = store.NormalizeChargingSessions
 var surplusRate = store.SurplusRate
-var rejectActiveAttachmentContent = store.RejectActiveAttachmentContent
-var resizeImageNearest = store.ResizeImageNearest
-var sanitizeDocumentFilename = store.SanitizeDocumentFilename
-var sortHandovers = store.SortHandovers
 var sortIssues = store.SortIssues
-var writeImageAttachmentVariant = store.WriteImageAttachmentVariant
-var writePrivateFile = store.WritePrivateFile
 
 // Vocabulary constants now owned by the store; aliased so call sites are unchanged.
 const (
@@ -520,24 +484,14 @@ var defaultUnitBillableWeight = store.DefaultUnitBillableWeight
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	announcement          = store.Announcement
-	announcementStore     = store.AnnouncementStore
-	announcementStoreData = store.AnnouncementStoreData
-	auditEvent            = store.AuditEvent
-	auditFilter           = store.AuditFilter
-	auditStore            = store.AuditStore
-	ballot                = store.Ballot
-	ballotVote            = store.BallotVote
-	eventStore            = store.EventStore
-	eventStoreData        = store.EventStoreData
-	houseEvent            = store.HouseEvent
-	unit                  = store.Unit
-	unitMembers           = store.UnitMembers
-	unitMembership        = store.UnitMembership
-	unitStore             = store.UnitStore
-	unitStoreData         = store.UnitStoreData
-	voteStore             = store.VoteStore
-	voteStoreData         = store.VoteStoreData
+	announcement   = store.Announcement
+	auditEvent     = store.AuditEvent
+	auditFilter    = store.AuditFilter
+	auditStore     = store.AuditStore
+	ballot         = store.Ballot
+	houseEvent     = store.HouseEvent
+	unit           = store.Unit
+	unitMembership = store.UnitMembership
 )
 
 var auditDetailValues = store.AuditDetailValues
@@ -545,9 +499,6 @@ var auditEventMatches = store.AuditEventMatches
 var ballotHasOption = store.BallotHasOption
 var billableUnitWeight = store.BillableUnitWeight
 var copyAuditEvent = store.CopyAuditEvent
-var copyBallot = store.CopyBallot
-var copyEvent = store.CopyEvent
-var copyUnit = store.CopyUnit
 var emailListContains = store.EmailListContains
 var eventRollsOffAt = store.EventRollsOffAt
 var newAnnouncementStore = store.NewAnnouncementStore
@@ -557,27 +508,14 @@ var newUnitStore = store.NewUnitStore
 var newVoteStore = store.NewVoteStore
 var normalizeAnnouncementCategory = store.NormalizeAnnouncementCategory
 var normalizeAuditAction = store.NormalizeAuditAction
-var normalizeAuditEvent = store.NormalizeAuditEvent
 var normalizeBallot = store.NormalizeBallot
-var normalizeBallotOptions = store.NormalizeBallotOptions
 var normalizeBallotStatus = store.NormalizeBallotStatus
 var normalizeBallotType = store.NormalizeBallotType
 var normalizeBallotWeighting = store.NormalizeBallotWeighting
-var normalizeBallots = store.NormalizeBallots
 var normalizeEmailList = store.NormalizeEmailList
 var normalizeEventCategory = store.NormalizeEventCategory
-var normalizeHouseEvent = store.NormalizeHouseEvent
 var normalizeRole = store.NormalizeRole
-var normalizeUnitBillableWeight = store.NormalizeUnitBillableWeight
 var normalizeUnitType = store.NormalizeUnitType
-var normalizeUnits = store.NormalizeUnits
-var sanitizeAuditDetails = store.SanitizeAuditDetails
-var sortAnnouncements = store.SortAnnouncements
-var sortBallots = store.SortBallots
-var sortEvents = store.SortEvents
-var sortUnits = store.SortUnits
-var truncateAuditValue = store.TruncateAuditValue
-var unitLess = store.UnitLess
 
 const (
 	unitPaymentStatusOpen    = store.UnitPaymentStatusOpen
@@ -589,8 +527,6 @@ const (
 // ── extracted to store ──────────────────────────────────────────────
 // Aliases so the move needs zero call-site changes. Delete as callers migrate.
 type (
-	activityRecord             = store.ActivityRecord
-	activityStore              = store.ActivityStore
 	activityStorage            = store.ActivityStorage
 	announcementRepository     = store.AnnouncementRepository
 	profileOverlayStorage      = store.ProfileOverlayStorage
@@ -604,9 +540,7 @@ type (
 	announcementStorage        = store.AnnouncementStorage
 	eventRepository            = store.EventRepository
 	eventStorage               = store.EventStorage
-	handoverRepository         = store.HandoverRepository
 	handoverStorage            = store.HandoverStorage
-	identityRepository         = store.IdentityRepository
 	documentStorage            = store.DocumentStorage
 	protocolFiler              = store.ProtocolFiler
 	attachmentStorage          = store.AttachmentStorage
@@ -617,25 +551,14 @@ type (
 	voteStorage                = store.VoteStorage
 	issueStorage               = store.IssueStorage
 	profileStorage             = store.ProfileStorage
-	announcementReadStore      = store.AnnouncementReadStore
-	announcementReadStoreData  = store.AnnouncementReadStoreData
-	contactBookStore           = store.ContactBookStore
-	contactBookStoreData       = store.ContactBookStoreData
 	managedContact             = store.ManagedContact
-	notificationPrefStore      = store.NotificationPrefStore
-	notificationPrefStoreData  = store.NotificationPrefStoreData
 	notificationPreferences    = store.NotificationPreferences
 	profileOverlay             = store.ProfileOverlay
-	profileOverlayStore        = store.ProfileOverlayStore
-	profileOverlayStoreData    = store.ProfileOverlayStoreData
 	unitPaymentStatus          = store.UnitPaymentStatus
-	unitPaymentStatusData      = store.UnitPaymentStatusData
-	unitPaymentStatusStore     = store.UnitPaymentStatusStore
 )
 
 var defaultNotificationPreferences = store.DefaultNotificationPreferences
 var managedContactDisplayName = store.ManagedContactDisplayName
-var mergeNotificationPreferences = store.MergeNotificationPreferences
 var newActivityStore = store.NewActivityStore
 var newSQLActivityStore = store.NewSQLActivityStore
 var newSQLProfileOverlayStore = store.NewSQLProfileOverlayStore
@@ -664,14 +587,9 @@ var newUnitPaymentStatusStore = store.NewUnitPaymentStatusStore
 var normalizeContactKind = store.NormalizeContactKind
 var normalizeManagedContact = store.NormalizeManagedContact
 var normalizeNotificationEvent = store.NormalizeNotificationEvent
-var normalizeNotificationPreferences = store.NormalizeNotificationPreferences
-var normalizeProfileOverlay = store.NormalizeProfileOverlay
 var normalizeUnitID = store.NormalizeUnitID
-var normalizeUnitPaymentRecord = store.NormalizeUnitPaymentRecord
 var normalizeUnitPaymentStatus = store.NormalizeUnitPaymentStatus
 var saveJSONAtomic = store.SaveJSONAtomic
-var sortManagedContacts = store.SortManagedContacts
-var sortUnitPaymentStatuses = store.SortUnitPaymentStatuses
 
 const (
 	roleAdmin                     = store.RoleAdmin
