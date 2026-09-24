@@ -206,3 +206,24 @@ func TestStaffelHistoricalAdjustmentsNeedReviewedAnchor(t *testing.T) {
 		t.Fatalf("rounded legacy step: %+v", got)
 	}
 }
+
+func TestStaffelManualRentChangesCannotBecomeCapDecreases(t *testing.T) {
+	l := staffelFixture(t)
+	l.Components = append(l.Components, RentComponent{Kind: ComponentHMZ, NetCents: 105000, ValidFrom: "2025-09-01", Origin: OriginManual})
+	got := previewTest(t, l, "2026-04-01")
+	if got.Group != "exception" || got.Outcome == "decrease" || got.NewCents != 105000 || !strings.Contains(strings.Join(got.Exceptions, ","), "staffel_anchor_missing") {
+		t.Fatalf("manual rent with unreviewed anchor: %+v", got)
+	}
+
+	l = staffelFixture(t)
+	first := previewTest(t, l, "2026-04-01")
+	l.Components = append(l.Components, RentComponent{Kind: ComponentHMZ, NetCents: 105000, ValidFrom: "2026-04-01", Origin: OriginManual})
+	snap, err := indexation.LoadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01", Leases: []Lease{l}, Prior: map[string]ValorisationItem{l.Clauses[0].ID: first}}, snap, mustDate("2026-04-01"))
+	if err != nil || run.Items[0].Group != "exception" || run.Items[0].Outcome == "decrease" || run.Items[0].NewCents != 105000 {
+		t.Fatalf("manual change since prior: %+v %v", run, err)
+	}
+}

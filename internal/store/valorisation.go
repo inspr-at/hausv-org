@@ -85,21 +85,22 @@ type ValorisationItem struct {
 }
 
 var ValorisationExceptionLabels = map[string]string{
-	"no_clause":           "Keine Wertsicherungsklausel vorhanden.",
-	"clause_invalid":      "Die Klausel ist ungültig oder nicht maschinell abbildbar.",
-	"clause_unreviewed":   "Die Klausel muss geprüft werden.",
-	"one_way_clause_risk": "Einseitige Klausel bei einem Verbraucher: rechtliche Prüfung erforderlich.",
-	"index_preliminary":   "Ein benötigter Indexwert ist noch vorläufig.",
-	"index_missing":       "Ein benötigter Indexwert oder sein Veröffentlichungsnachweis fehlt.",
-	"index_derived":       "Abgeleiteter Indexwert: veröffentlichte Messzahl erforderlich.",
-	"base_value_mismatch": "Die Basis stimmt nicht mit der veröffentlichten Messzahl überein.",
-	"max_hmz_exceeded":    "Die berechnete Miete überschreitet die geprüfte Mietzinsobergrenze.",
-	"lease_ended":         "Der Mietvertrag ist zum Stichtag beendet.",
-	"lease_not_started":   "Der Mietvertrag ist zum Stichtag noch nicht aktiv.",
-	"missed_pre2026":      "Nicht geltend gemachte Erhöhung vor 2026: gesonderte Prüfung erforderlich.",
-	"mixed_use_check":     "Nutzung oder rechtliche Einordnung muss gesondert geprüft werden.",
-	"no_recipient":        "Eine gültige E-Mail-Adresse einer Vertragspartei fehlt.",
-	"letter_too_early":    "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.",
+	"no_clause":              "Keine Wertsicherungsklausel vorhanden.",
+	"clause_invalid":         "Die Klausel ist ungültig oder nicht maschinell abbildbar.",
+	"clause_unreviewed":      "Die Klausel muss geprüft werden.",
+	"one_way_clause_risk":    "Einseitige Klausel bei einem Verbraucher: rechtliche Prüfung erforderlich.",
+	"index_preliminary":      "Ein benötigter Indexwert ist noch vorläufig.",
+	"index_missing":          "Ein benötigter Indexwert oder sein Veröffentlichungsnachweis fehlt.",
+	"index_derived":          "Abgeleiteter Indexwert: veröffentlichte Messzahl erforderlich.",
+	"base_value_mismatch":    "Die Basis stimmt nicht mit der veröffentlichten Messzahl überein.",
+	"max_hmz_exceeded":       "Die berechnete Miete überschreitet die geprüfte Mietzinsobergrenze.",
+	"lease_ended":            "Der Mietvertrag ist zum Stichtag beendet.",
+	"lease_not_started":      "Der Mietvertrag ist zum Stichtag noch nicht aktiv.",
+	"missed_pre2026":         "Nicht geltend gemachte Erhöhung vor 2026: gesonderte Prüfung erforderlich.",
+	"staffel_anchor_missing": "Bisherige Mietzinsänderung: geprüfter MieWeG-Anker für die Staffel erforderlich.",
+	"mixed_use_check":        "Nutzung oder rechtliche Einordnung muss gesondert geprüft werden.",
+	"no_recipient":           "Eine gültige E-Mail-Adresse einer Vertragspartei fehlt.",
+	"letter_too_early":       "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.",
 }
 
 func (i *ValorisationItem) exception(code string) {
@@ -234,15 +235,22 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			item.exception("clause_invalid")
 			return finishValorisationItem(item)
 		}
-		if item.MieWeG && !hasPrior && clause.StaffelSteps[0].EffectiveOn < "2026-01-01" && (clause.State == nil || clause.State.CapAnchorPeriod == "" || clause.State.CapValue == "") {
+		legacy := clause.StaffelSteps[0].EffectiveOn < "2026-01-01"
+		missingAnchor := !hasPrior && (clause.State == nil || clause.State.CapAnchorPeriod == "" || clause.State.CapValue == "")
+		changedSincePrior := hasPrior && item.OldCents != prior.NewCents
+		if item.MieWeG && ((missingAnchor && (legacy || item.OldCents != start)) || changedSincePrior) {
 			contract, _, err := indexation.EvaluateStaffel(start, item.OldCents, clause.StaffelSteps, effective)
 			if err != nil {
 				item.exception("clause_invalid")
 				return finishValorisationItem(item)
 			}
 			if contract.Crossed {
-				item.exception("missed_pre2026")
-				item.Explanation = append(item.Explanation, "Frühere Staffelstufen benötigen einen geprüften MieWeG-Anker samt damaligem Hauptmietzins. Bitte den bisherigen Anpassungsstand ergänzen.")
+				if legacy && !hasPrior {
+					item.exception("missed_pre2026")
+				} else {
+					item.exception("staffel_anchor_missing")
+				}
+				item.Explanation = append(item.Explanation, "Bisherige Mietzinsänderungen benötigen einen geprüften MieWeG-Anker samt damaligem Hauptmietzins. Bitte den bisherigen Anpassungsstand ergänzen.")
 				return finishValorisationItem(item)
 			}
 		}

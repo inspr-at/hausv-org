@@ -52,7 +52,9 @@ Clause prose is never parsed. Covered leases use the independent MieWeG ceiling
 and April timing; uncapped contractual values and capped/deferred differences stay
 in the run snapshot. Fixed schedules require no monthly index publication.
 Schedules with pre-2026 steps require a reviewed prior cap anchor and rent before
-a further covered adjustment; missing history is held for review.
+a further covered adjustment; missing history is held for review. Manual HMZ
+changes outside the stored schedule or after an approved run also require anchor
+review before the next covered adjustment.
 Steps with a separately agreed non-inflation reason require individual review;
 this schedule type applies the cap to every covered increase.
 
