@@ -1,0 +1,88 @@
+package web
+
+templ PortalSectionLanding(data PortalSectionLandingData, title, lede, action, status, context, content templ.Component) {
+	<main
+		id="main-content"
+		class={ "portal-section-landing", data.Class, templ.KV("has-hero", data.Hero), templ.KV("portal-section-wide", data.Wide), templ.KV("has-status", status != nil) }
+		tabindex="-1"
+		data-skip-target
+		data-portal-section-landing
+		data-portal-hero={ portalBool(data.Hero) }
+	>
+		if status != nil {
+			@status
+		}
+		if data.Portal.Flash != "" {
+			<div class="portal-flash" role="status">{ data.Portal.Flash }</div>
+		}
+
+		if data.Hero {
+			@PortalSectionHero(data.Portal, PortalSectionHeader(data.Identity, title, lede, action))
+		} else {
+			@PortalSectionHeader(data.Identity, title, lede, action)
+		}
+		if context != nil {
+			<div class="portal-section-context">
+				@context
+			</div>
+		}
+		<div class="portal-section-content">
+			@content
+		</div>
+	</main>
+}
+
+templ PortalSectionHero(data PortalPageData, header templ.Component) {
+	<section class="portal-section-hero" data-portal-section-hero>
+		if data.HeroImageURL != "" {
+			<img class="portal-section-hero-image" src={ templ.SafeURL(data.HeroImageURL) } alt=""/>
+		}
+		<div class="portal-section-hero-inner">
+			@header
+		</div>
+	</section>
+}
+
+templ PortalSectionHeader(identity PortalSectionIdentityData, title, lede, action templ.Component) {
+	<header class="portal-section-header" data-portal-section-header>
+		<div class="portal-section-header-copy">
+			if identity.Label != "" {
+				@PortalSectionIdentity(identity)
+			}
+			<div class="portal-section-title">
+				@title
+			</div>
+			if lede != nil {
+				<div class="portal-section-lede">
+					@lede
+				</div>
+			}
+		</div>
+		if action != nil {
+			<div class="portal-section-header-action">
+				@action
+			</div>
+		}
+	</header>
+}
+
+templ PortalSectionIdentity(data PortalSectionIdentityData) {
+	<div class="portal-section-identity">
+		if data.Icon != "" {
+			<span class="portal-section-identity-icon">@PortalIcon(data.Icon)</span>
+		}
+		if data.URL != "" {
+			<a href={ templ.SafeURL(data.URL) }>{ data.Label }</a>
+		} else {
+			<span>{ data.Label }</span>
+		}
+	</div>
+}
+
+templ PortalSectionTitle(title string) {
+	<h1>{ title }</h1>
+}
+
+templ PortalSectionLede(lede string) {
+	<p>{ lede }</p>
+}

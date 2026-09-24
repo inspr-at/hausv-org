@@ -1,0 +1,111 @@
+package web
+
+import (
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+templ PortalMobile(data PortalPageData) {
+	<div class="mobile-content">
+		<article class="task-card"><p class="eyebrow">Jetzt zu erledigen</p>
+			if data.HasPrimary {
+				<h2>{ data.Primary.Title }</h2><p>{ data.Primary.Detail }</p><a class="primary" href={ templ.SafeURL(data.Primary.URL) }>{ data.Primary.ActionLabel }</a>
+			} else {
+				<h2>Alles im Blick</h2><p>Heute ist nichts zu erledigen.</p>
+			}
+		</article>
+		<nav class="counts" aria-label="Kennzahlen">
+			if data.Modules.Issues {
+				<a class="count-tile" href={ templ.SafeURL(portalIssuesURL(data)) }><strong>{ len(data.Issues) }</strong><span>Anliegen</span></a>
+			}
+			if data.Modules.Events {
+				<a class="count-tile" href="/app/events"><strong>{ len(data.Events) }</strong><span>Termine</span></a>
+			}
+			if data.Modules.Announcements {
+				<a class="count-tile" href="/app/announcements"><strong>{ data.UnreadAnnouncements }</strong><span>Aushang</span></a>
+			}
+		</nav>
+		if data.Modules.Events {
+			<section class="mobile-section"><h2>Nächste Termine</h2>
+			if len(data.Events) == 0 {
+				<p class="mobile-empty">Kein Termin eingetragen.</p>
+			}
+			<ol class="mobile-list" hidden?={ len(data.Events) == 0 }>
+				for index, event := range data.Events {
+					if index < 2 {
+						@PortalMobileEvent(event)
+					}
+				}
+			</ol>
+			if len(data.Events) > 2 {
+				<details class="more-data"><summary>Alle { len(data.Events) } Termine
+					@DisclosureChevron()
+				</summary><ol class="mobile-list" start="3">
+					for index, event := range data.Events {
+						if index >= 2 {
+							@PortalMobileEvent(event)
+						}
+					}
+				</ol></details>
+			}
+			</section>
+		}
+		if data.Modules.Announcements {
+			<section class="mobile-section"><h2>Am Aushang</h2>
+			if len(data.Announcements) == 0 {
+				<p class="mobile-empty">Der Aushang ist leer.</p>
+			}
+			<ul class="mobile-list" hidden?={ len(data.Announcements) == 0 }>
+				for index, item := range data.Announcements {
+					if index == 0 {
+						@PortalMobileAnnouncement(item)
+					}
+				}
+			</ul>
+			if len(data.Announcements) > 1 {
+				<details class="more-data"><summary>Alle { len(data.Announcements) } Beiträge
+					@DisclosureChevron()
+				</summary><ul class="mobile-list">
+					for index, item := range data.Announcements {
+						if index > 0 {
+							@PortalMobileAnnouncement(item)
+						}
+					}
+				</ul></details>
+			}
+			</section>
+		}
+	</div>
+	<div class="thumb-zone" aria-label="Schnellzugriff">
+		if data.Modules.Issues && data.CanCreateResidentIssue {
+			<a class="report" href="/app/anliegen?new=1#issue-new"><span aria-hidden="true">＋</span>Anliegen melden</a>
+		}
+		<nav class="tabs" aria-label="Hauptbereiche"><a class="active" href="/app" aria-current="page"><span class="tab-icon">@PortalIcon("home")</span><span>Liegenschaft</span></a>
+			if data.CanUseResidentAreas && data.Modules.Announcements {
+				<a href="/app/announcements"><span class="tab-icon">@PortalIcon("announcement")</span><span>Aushang</span></a>
+			}
+			if data.CanUseResidentAreas && data.Modules.Events {
+				<a href="/app/events"><span class="tab-icon">@PortalIcon("calendar")</span><span>Termine</span></a>
+			}
+			<details class="bottom-more"><summary><span class="tab-icon">•••</span><span>Mehr</span></summary><div class="bottom-more-panel">
+				for _, area := range data.Areas {
+					<a href={ templ.SafeURL(area.URL) }>{ area.Label }</a>
+				}
+				if data.Modules.Help {
+					<a href="/app/hilfe">Hilfe</a>
+				}
+			</div></details>
+		</nav>
+	</div>
+}
+
+templ PortalMobileEvent(event view.HouseEventView) {
+	<li><a class="mobile-event" href="/app/events"><time class="date-chip"><strong>{ event.DateBadgeDay }</strong><span>{ event.DateBadgeMonth }</span></time><span class="item-copy"><strong>{ event.Title }</strong><span>{ event.TimeRange }
+		if event.HasLocation {
+			<span> · { event.Location }</span>
+		}
+	</span></span><span class="chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span></a></li>
+}
+
+templ PortalMobileAnnouncement(item view.AnnouncementView) {
+	<li><a class="mobile-notice" href="/app/announcements"><span class={ "dot", templ.KV("gold", item.Unread) }></span><span class="item-copy"><strong>{ item.Title }</strong><span>{ item.Category } · { item.PublishedAt }</span></span><span class="chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span></a></li>
+}
