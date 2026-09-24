@@ -109,7 +109,7 @@ func TestAnnualStatementRunCompactRowsKeepPartyDocuments(t *testing.T) {
 	if err := AnnualStatementRunPanel(data).Render(t.Context(), &body); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`<table class="annual-units" role="table">`, `<th role="columnheader" scope="col">Partei</th>`, `<details class="annual-costs">`, `PDF für Anna &lt;Groß&gt; · Top 1`, `Archiv für Anna &lt;Groß&gt; · Top 1`, `Wasser`, `12,00 €`} {
+	for _, want := range []string{`<table class="annual-units" role="table">`, `<th role="columnheader" scope="col">Partei</th>`, `<details class="annual-costs">`, `<table class="annual-cost-table" role="table" aria-label="Kostenarten und Anteile · Top 1">`, `<th role="columnheader" scope="col">Verteilerschlüssel</th>`, `data-label="Kostenart">Wasser</th>`, `data-label="Anteil"`, `data-label="Betrag"`, `PDF für Anna &lt;Groß&gt; · Top 1`, `Archiv für Anna &lt;Groß&gt; · Top 1`, `Wasser`, `12,00 €`} {
 		if !strings.Contains(body.String(), want) {
 			t.Errorf("missing %q", want)
 		}

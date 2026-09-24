@@ -58,6 +58,12 @@ export HV_QA_HA_PORT=${HV_QA_HA_PORT:-$((port + 100))}
 
 capture=${HV_CAPTURE:-capture.mjs}
 runtime=$src
+if [ "$capture" = qa-annual-costs.mjs ]; then
+    # Stored cost results require the complete demo accounting fixture.
+    . "$repo/scripts/demo/env.sh" || exit 1
+    runtime=$tmp
+    ( cd "$runtime" && "$tmp/app" demo-seed -dir "$repo/scripts/demo/seed" -anchor none ) || exit 1
+fi
 if [ "$capture" = qa-legacy-routes.mjs ]; then
     # The existing fixture writer exits before launching Playwright. Month
     # details must contain real samples rather than silently testing a 404.
