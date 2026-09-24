@@ -70,7 +70,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualLegalDeadline(period, periodLegal.Legal), Selected: selected,
 		})
 	}
-	units := ac.repositories.units.List()
+	units, unitNotice := unitsForPage(ac.repositories.units)
 	structureYear := 0
 	legal := store.DefaultAnnualStatementLegalSettings()
 	if selectedPeriodFound {
@@ -215,7 +215,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		ReceiptMsg:            receiptMsg, ReceiptOK: receiptOK,
 		ReceiptSuggestion: receiptSuggestion, HasReceiptSuggestion: receiptSuggestion.DocumentID != "",
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
-		Units: unitViews, HasUnits: len(unitViews) > 0,
+		Units: unitViews, HasUnits: len(unitViews) > 0, UnitDataNotice: unitNotice,
 		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
 		Run:         a.annualStatementDeliveryView(annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors), ac.repositories, r.URL.Query()),
 		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
