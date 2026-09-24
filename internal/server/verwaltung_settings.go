@@ -77,17 +77,42 @@ func effectiveAIConfig(getenv func(string) string, settings store.OrgSettings) a
 	return aiSettingsConfig{Provider: provider, Label: label, BaseURL: baseURL, Host: host, Model: model, Timeout: timeout, Configured: baseURL != "" && model != ""}
 }
 
+// aiSettingsGetenv overlays an organisation's endpoint and model on the
+// process environment. getenv must be the process environment, not another
+// overlay: the operator base URL is captured from it once.
+//
+// OrgSettings stores no API key. The process-wide AI_API_KEY is therefore
+// returned only when the override names the operator origin (scheme, host
+// and port). Any other origin gets an empty key, so the request carries no
+// Authorization header. That is the local-hardware case: an OpenAI-compatible
+// server on the customer's own machine, with no inherited credential.
 func aiSettingsGetenv(getenv func(string) string, settings store.OrgSettings) func(string) string {
+	operatorURL := ""
+	if getenv != nil {
+		operatorURL = strings.TrimSpace(getenv("AI_BASE_URL"))
+	}
+	overrideURL := strings.TrimSpace(settings.AIBaseURL)
+	allowProcessKey := overrideURL == "" || ai.SameOrigin(overrideURL, operatorURL)
+	model := strings.TrimSpace(settings.AIModel)
 	return func(key string) string {
 		switch key {
 		case "AI_BASE_URL":
-			if settings.AIBaseURL != "" {
-				return strings.TrimSpace(settings.AIBaseURL)
+			if overrideURL != "" {
+				return overrideURL
 			}
 		case "AI_MODEL":
-			if settings.AIModel != "" {
-				return strings.TrimSpace(settings.AIModel)
+			if model != "" {
+				return model
 			}
+		case "AI_API_KEY":
+			if !allowProcessKey {
+				return ""
+			}
+		case "AI_ENFORCE_DESTINATION_POLICY":
+			if overrideURL != "" {
+				return "1"
+			}
+			return ""
 		}
 		if getenv == nil {
 			return ""
@@ -97,18 +122,30 @@ func aiSettingsGetenv(getenv func(string) string, settings store.OrgSettings) fu
 }
 
 func validateAIBaseURL(raw string) error {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
+	switch err := ai.ValidateDestination(raw); {
+	case err == nil:
 		return nil
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+	case errors.Is(err, ai.ErrDestinationUserinfo):
+		return fmt.Errorf("Die KI-Basis-URL darf keine Zugangsdaten enthalten.")
+	case errors.Is(err, ai.ErrDestinationFragment):
+		return fmt.Errorf("Die KI-Basis-URL darf keinen Anker enthalten.")
+	case errors.Is(err, ai.ErrDestinationHTTP):
+		return fmt.Errorf("Eine unverschlüsselte KI-Adresse ist nur im lokalen Netz erlaubt.")
+	default:
 		return fmt.Errorf("Die KI-Basis-URL muss eine vollständige HTTP- oder HTTPS-Adresse sein.")
 	}
-	if parsed.User != nil {
-		return fmt.Errorf("Die KI-Basis-URL darf keine Zugangsdaten enthalten.")
+}
+
+func aiAuditOriginLabel(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "Umgebung"
 	}
-	return nil
+	origin, ok := ai.Origin(raw)
+	if !ok {
+		return "ungültig"
+	}
+	return origin
 }
 
 func (a *app) verwaltungSettingsPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -218,11 +255,22 @@ func (a *app) verwaltungSettingsAction(w http.ResponseWriter, r *http.Request, a
 		return
 	}
 	summary := settingsDiff(before, after) + organisationSummary
-	if before.AIProvider != after.AIProvider || before.AIBaseURL != after.AIBaseURL || before.AIModel != after.AIModel {
-		summary += "; KI-Anbieter aktualisiert"
+	aiChanged := before.AIProvider != after.AIProvider || before.AIBaseURL != after.AIBaseURL || before.AIModel != after.AIModel
+	originBefore, originAfter := "", ""
+	if aiChanged {
+		originBefore = aiAuditOriginLabel(before.AIBaseURL)
+		originAfter = aiAuditOriginLabel(after.AIBaseURL)
+		summary += "; KI-Anbieter aktualisiert (" + originBefore + " → " + originAfter + ")"
 	}
 	for _, tenant := range a.managedTenants(&ac) {
-		a.recordAudit(store.AuditEvent{TenantSlug: tenant.Ref.Slug, ActorEmail: ac.email, ActorRole: tenant.Role, Action: store.AuditActionVerwaltungSettings, TargetType: "organisation", TargetID: orgKey, Summary: "Verwaltungseinstellungen gespeichert", Details: map[string]string{"diff": strings.TrimPrefix(summary, "; ")}})
+		details := map[string]string{"diff": strings.TrimPrefix(summary, "; ")}
+		if aiChanged {
+			// Origins only. OrgSettings has no API key, and a raw URL could
+			// have carried userinfo; the normalised origin cannot.
+			details["ai_origin_before"] = originBefore
+			details["ai_origin_after"] = originAfter
+		}
+		a.recordAudit(store.AuditEvent{TenantSlug: tenant.Ref.Slug, ActorEmail: ac.email, ActorRole: tenant.Role, Action: store.AuditActionVerwaltungSettings, TargetType: "organisation", TargetID: orgKey, Summary: "Verwaltungseinstellungen gespeichert", Details: details})
 	}
 	http.Redirect(w, r, "/app/verwaltung/einstellungen?flash="+url.QueryEscape("Einstellungen gespeichert"), http.StatusSeeOther)
 }
@@ -234,6 +282,9 @@ func (a *app) renderVerwaltungSettings(w http.ResponseWriter, r *http.Request, a
 		share = settings.Counters.Approved * 100 / total
 	}
 	config := effectiveAIConfig(os.Getenv, settings)
+	if strings.TrimSpace(settings.AIBaseURL) != "" && validateAIBaseURL(settings.AIBaseURL) != nil {
+		config.Label = aiUnavailableLabel
+	}
 	organisation, _ := a.organisationRecordFor(r.Context(), &ac)
 	mailStatus, _ := a.mailIntake.get(organisation.Key)
 	mailLastRun, mailLastSuccess := "", ""
@@ -292,8 +343,23 @@ func (a *app) verwaltungAITestAction(w http.ResponseWriter, r *http.Request, ac 
 		a.inboxError(w, err)
 		return
 	}
+	if organisationAIOverridden(settings) {
+		if destErr := validateAIBaseURL(settings.AIBaseURL); destErr != nil {
+			logError("organisation ai destination rejected", destErr, "organisation", orgKey)
+			a.renderVerwaltungSettings(w, r, ac, settings, "", "Verbindung fehlgeschlagen · "+aiUnavailableLabel, false)
+			return
+		}
+	}
 	getenv := aiSettingsGetenv(os.Getenv, settings)
 	suggester, err := newSettingsAISuggester(getenv)
+	if (err != nil || suggester == nil) && organisationAIOverridden(settings) {
+		if err == nil {
+			err = fmt.Errorf("ai provider unavailable")
+		}
+		logError("organisation ai provider unavailable", err, "organisation", orgKey)
+		a.renderVerwaltungSettings(w, r, ac, settings, "", "Verbindung fehlgeschlagen · "+aiUnavailableLabel, false)
+		return
+	}
 	if err == nil && suggester == nil {
 		err = ai.ErrUnavailable
 	}

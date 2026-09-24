@@ -1622,6 +1622,10 @@ func AuditDetailLabel(key string) string {
 		return "Vorher"
 	case "after":
 		return "Nachher"
+	case "ai_origin_before":
+		return "KI-Ziel vorher"
+	case "ai_origin_after":
+		return "KI-Ziel neu"
 	case "auth_method":
 		return "Anmeldung"
 	case "role_from":
