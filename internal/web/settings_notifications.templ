@@ -1,0 +1,66 @@
+package web
+
+import (
+	"strconv"
+
+	"github.com/inspr-at/hausv-org/internal/view"
+)
+
+templ NotificationSettingsPage(data NotificationSettingsPageData) {
+	@SettingsFrame(data.Portal, "Benachrichtigungen", nil, NotificationSettingsContent(data))
+}
+
+templ NotificationSettingsContent(data NotificationSettingsPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Benachrichtigungen",
+			Class: "settings-main",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Kommunikation", Icon: "announcement", URL: "/app/settings"},
+		},
+		PortalSectionTitle("Benachrichtigungen"),
+		PortalSectionLede("Festlegen, welche E-Mails Sie erhalten möchten. Die Auswahl gilt nur für Ihr Postfach."),
+		nil,
+		nil,
+		nil,
+		NotificationSettingsBody(data),
+	)
+}
+
+templ NotificationSettingsBody(data NotificationSettingsPageData) {
+	<div data-templ-notification-settings>
+		<div class="two-column"><section class="panel form-card">
+			if data.NotifyMsg != "" {
+				<p class={ "flash", templ.KV("ok", data.NotifyOK) } role="status">{ data.NotifyMsg }</p>
+			}
+			<form class={ "notification-form", templ.KV("email-paused", !data.EmailNotificationsEnabled) } method="post" action="/app/settings/notifications" data-notification-form>
+				<label class="master-switch"><span class="link-icon">@PortalIcon("announcement")</span><span><strong>E-Mails erhalten</strong><small data-notification-status>{ notificationStatus(data) }</small></span><span class="switch"><input type="checkbox" name="email_enabled" value="on" checked?={ data.EmailNotificationsEnabled } data-notification-master/><i></i></span></label>
+				<header class="subhead"><div><h2>Wofür?</h2><p>Ihre Auswahl für einzelne Themen.</p></div><span data-notification-count>{ data.NotificationEnabledCount } von { data.NotificationEventCount } aktiv</span></header>
+				<p class="paused-note">Die Themenauswahl bleibt gespeichert und gilt wieder, sobald Sie E-Mails aktivieren.</p>
+				@NotificationGroup("Liegenschaft & Kommunikation", data.NotificationEvents, "announcement", "issue")
+				@NotificationGroup("Entscheidungen & Unterlagen", data.NotificationEvents, "vote", "document")
+				@NotificationGroup("Zahlung & Nutzung", data.NotificationEvents, "payment", "charging")
+				<footer class="form-actions"><a class="button ghost" href="/app/settings">Abbrechen</a><button class="button primary" type="submit">Benachrichtigungen speichern</button></footer>
+			</form>
+		</section><aside class="aside-stack"><details class="note panel" open><summary>Empfängeradresse
+			@DisclosureChevron()
+		</summary><div><span class="readonly">{ data.Email }</span><p>Die Adresse ist zugleich Ihre Anmeldung und lässt sich hier nicht ändern.</p><a class="text-link" href="/app/settings/profile">Profil ansehen</a></div></details><details class="note panel"><summary>Grundregeln
+			@DisclosureChevron()
+		</summary><div><ul class="facts"><li><strong>Anmeldelinks</strong><span>Selbst angeforderte Links erhalten Sie immer.</span></li><li><strong>Keine Werbung</strong><span>Versendet wird ausschließlich, was diese Liegenschaft betrifft.</span></li><li><strong>Im Portal vollständig</strong><span>Alles bleibt im Portal sichtbar.</span></li></ul></div></details></aside></div>
+	</div>
+}
+
+templ NotificationGroup(title string, options []view.NotificationEventOption, first, second string) {
+	<section class="option-group"><h3>{ title }</h3>
+		for _, option := range options {
+			if option.Key == first || option.Key == second {
+				<label><span><strong>{ option.Label }</strong><small>{ option.Description }</small></span><span class="switch"><input type="checkbox" name="events" value={ option.Key } checked?={ option.Checked } data-notification-topic/><i></i></span></label>
+			}
+		}
+	</section>
+}
+
+func notificationStatus(data NotificationSettingsPageData) string {
+	if !data.EmailNotificationsEnabled { return "Der Versand ist derzeit pausiert." }
+	return "Aktuell zu " + strconv.Itoa(data.NotificationEnabledCount) + " von " + strconv.Itoa(data.NotificationEventCount) + " Themen."
+}

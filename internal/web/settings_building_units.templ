@@ -1,0 +1,83 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/view"
+
+templ BuildingUnits(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Einheiten</h2><p>Stammdaten, Zuordnungen und Zahlungsstatus je Einheit verwalten.</p></div><div class="head-actions"><a class="button ghost" href="/app/settings/building/leases/import">Tabelle importieren</a><a class="button ghost" href="/app/settings/payments/import">Bankdatei einlesen</a><a class="button primary" href="#unit-add">Einheit hinzufügen</a></div></header>
+		<div class="metrics"><span><strong>{ data.UnitTotal }</strong><small>Einheiten gesamt</small></span><span><strong>{ data.BillableUnits } von { data.FairUseFreeUnits }</strong><small>{ data.BillableLabel } im inkludierten Rahmen</small></span></div>
+		if data.FairUseExceeded {
+			<p class="notice">Über dem inkludierten Rahmen von { data.FairUseFreeUnits } Wohneinheiten. Richtwert: 1 € pro Einheit und Monat.</p>
+		}
+		if data.HomeProfileSaved {
+			@SettingsFlash("Der Anzeigename von „Mein Zuhause“ wurde gespeichert.", true)
+		}
+		if data.HasHomeProfile && !data.HasHomeProfileUnit {
+			<aside class="notice"><strong>{ data.HomeProfileName }</strong> ist { homeProfileScope(data.HomeProfileType) }. <a href="/app/settings/home?from=building">Zuhause bearbeiten</a></aside>
+		}
+		@SettingsFlash(data.UnitMsg, data.UnitOK) @SettingsFlash(data.PaymentMsg, data.PaymentOK)
+		if data.UnitDataNotice != "" {
+			<p class="notice" role="status">{ data.UnitDataNotice }</p>
+		} else if len(data.Units) == 0 {
+			@SettingsEmpty(data.UnitsEmpty)
+		} else {
+			<div class="unit-list">
+				for _, unit := range data.Units {
+					@BuildingUnitRow(unit)
+				}
+			</div>
+		}
+		@BuildingUnitDialog(view.BuildingUnitView{}, data.NewUnitTypeOptions, data.NewUnitPaymentOptions, true)
+		for _, unit := range data.Units {
+			@BuildingUnitDialog(unit, unit.TypeOptions, unit.PaymentOptions, false)
+		}
+	</section>
+}
+
+func homeProfileScope(kind string) string { if kind == "apartment" { return "noch keiner offiziellen Einheit zugeordnet" }; return "als gesamte Liegenschaft angelegt" }
+
+templ BuildingUnitRow(unit view.BuildingUnitView) {
+	<article class="unit-card"><span class="unit-kind">@PortalIcon("home")</span><div class="unit-title"><strong>{ unit.Label }</strong><small>{ unit.UnitTypeLabel } · { unit.BillableLabel }</small>
+		if unit.HasHomeDisplayName {
+			<em>Mein Zuhause · { unit.HomeDisplayName }</em>
+		}
+	</div><div class="assignment"><small>Eigentümer</small><strong>{ unit.OwnerSummary }</strong>
+		if unit.HasOwners {
+			<small>{ unit.OwnerEmails }</small>
+		}
+		<small>Mieter</small><strong>{ unit.RenterSummary }</strong>
+		if unit.HasRenters {
+			<small>{ unit.RenterEmails }</small>
+		}
+	</div><div><strong>{ unit.Share }</strong><small>{ unit.MembersLabel }</small></div><div><span class={ "pill", unit.PaymentStatusClass }>{ unit.PaymentStatus }</span><small>{ paymentUpdated(unit) }</small></div><a class="button ghost" href={ templ.SafeURL("/app/settings/building/units/" + unit.ID + "/lease") }>Mietvertrag</a><a class="icon-button" href={ templ.SafeURL("#unit-" + unit.ID) } aria-label={ unit.Label + " bearbeiten" }>✎</a></article>
+}
+
+func paymentUpdated(unit view.BuildingUnitView) string { if unit.PaymentHasUpdated { return unit.PaymentUpdatedAt }; return "Manuell" }
+
+templ BuildingUnitDialog(unit view.BuildingUnitView, types, payments []view.SelectOption, add bool) {
+	<section class="anchor-dialog unit-dialog-shell" id={ unitDialogID(unit, add) } role="dialog" aria-modal="true" aria-labelledby={ unitDialogID(unit, add) + "-title" } tabindex="-1"><a class="dialog-backdrop" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close></a><div class="dialog-card"><header><div><h2 id={ unitDialogID(unit, add) + "-title" }>{ unitDialogTitle(add) }</h2><p>{ unitDialogDetail(unit, add) }</p></div><a class="icon-button" href="?section=units" aria-label="Dialog schließen" data-unit-dialog-close>×</a></header><form id={ unitDialogID(unit, add) + "-form" } method="post" action="/app/settings/building/units">
+		if !add {
+			<input type="hidden" name="orig_id" value={ unit.ID }/><input type="hidden" name="id" value={ unit.ID }/>
+		}
+		<fieldset><legend>Stammdaten</legend><label>Offizielle Bezeichnung<input name="label" value={ unit.Label } maxlength="120" required placeholder="Top 1"/></label><label>Typ<select name="unit_type">
+			for _, option := range types {
+				<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+			}
+		</select></label><label>Miteigentumsanteil<input type="number" name="miteigentumsanteil" min="0" max="1000000" step="1" value={ unitShareValue(unit, add) } inputmode="numeric"/></label></fieldset>
+		<fieldset><legend>Personen &amp; Zuordnung</legend><label>Eigentümer E-Mails<input name="owner_emails" value={ unit.OwnerEmails } placeholder="name@example.com, zweite@example.com"/></label><label>Mieter E-Mails<input name="renter_emails" value={ unit.RenterEmails } placeholder="name@example.com"/></label></fieldset>
+		<fieldset><legend>Zahlungsstatus</legend><label>Status<select name="payment_status">
+			for _, option := range payments {
+				<option value={ option.Value } selected?={ option.Selected }>{ option.Label }</option>
+			}
+		</select></label></fieldset>
+	</form><footer>
+		if !add {
+			<form method="post" action="/app/settings/building/units/delete" data-confirm={ unit.DeleteConfirmLabel + "?" }><input type="hidden" name="id" value={ unit.ID }/><button class="button ghost" type="submit">Einheit löschen</button></form>
+		}
+		<a class="button ghost" href="?section=units">Abbrechen</a><button class="button primary" type="submit" form={ unitDialogID(unit, add) + "-form" }>{ unitDialogButton(add) }</button></footer></div></section>
+}
+
+func unitDialogID(unit view.BuildingUnitView, add bool) string { if add { return "unit-add" }; return "unit-" + unit.ID }
+func unitDialogTitle(add bool) string { if add { return "Einheit hinzufügen" }; return "Einheit bearbeiten" }
+func unitDialogButton(add bool) string { if add { return "Einheit anlegen" }; return "Änderungen speichern" }
+func unitDialogDetail(unit view.BuildingUnitView, add bool) string { if add { return "Stammdaten und Zuordnungen an einem Ort erfassen." }; return unit.Label + " · " + unit.UnitTypeLabel }
+func unitShareValue(unit view.BuildingUnitView, add bool) string { if add { return "0" }; return unit.ShareValue }
