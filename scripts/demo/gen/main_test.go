@@ -229,6 +229,32 @@ func assertUnitMemberships(t *testing.T, houses []house, persons []person) {
 	if top1.OwnerEmail != "alina.eigentuemer@musterstadt.example" || top3.TenantEmail != "matthias.mieter@musterstadt.example" {
 		t.Fatalf("top memberships = %#v %#v", top1, top3)
 	}
+	owners := map[string]int{}
+	alinaUnits := 0
+	for _, item := range first.Units {
+		if item.OwnerEmail == "" {
+			t.Errorf("%s has no owner", item.Label)
+		}
+		owners[item.OwnerEmail]++
+		if item.OwnerEmail == "alina.eigentuemer@musterstadt.example" {
+			alinaUnits++
+		}
+	}
+	if len(owners) != 14 {
+		t.Errorf("distinct owners = %d, want 14", len(owners))
+	}
+	if alinaUnits != 2 {
+		t.Errorf("Alina owns %d units, want Top 1 and one more", alinaUnits)
+	}
+	var top7 unit
+	for _, item := range first.Units {
+		if item.Label == "Top 7" {
+			top7 = item
+		}
+	}
+	if top7.TenantEmail != "sophie.bewohner@musterstadt.example" || top7.OwnerEmail == "alina.eigentuemer@musterstadt.example" {
+		t.Errorf("Top 7 parties = %#v", top7)
+	}
 	if parking < 4 || parking > 12 {
 		t.Fatalf("parking spaces = %d", parking)
 	}

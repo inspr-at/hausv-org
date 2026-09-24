@@ -147,29 +147,7 @@
         "role": "Eigentümer",
         "units": [
           "Top 1",
-          "Stellplatz 1",
-          "Top 2",
-          "Top 3",
-          "Top 4",
-          "Top 5",
-          "Top 6",
-          "Top 7",
-          "Top 8",
-          "Top 9",
-          "Top 10",
-          "Top 11",
-          "Top 12",
-          "Top 13",
-          "Top 14",
-          "Top 15",
-          "Top 16",
-          "Top 17",
-          "Top 18",
-          "Stellplatz 2",
-          "Stellplatz 3",
-          "Stellplatz 4",
-          "Stellplatz 5",
-          "Stellplatz 6"
+          "Stellplatz 1"
         ]
       }
     ]
@@ -185,9 +163,7 @@
         "house": "janusbergweg-123",
         "role": "Mieter",
         "units": [
-          "Top 3",
-          "Stellplatz 2",
-          "Stellplatz 5"
+          "Top 3"
         ]
       }
     ]
@@ -203,14 +179,13 @@
         "house": "janusbergweg-123",
         "role": "Bewohner",
         "units": [
-          "Top 7",
-          "Stellplatz 3",
-          "Stellplatz 6"
+          "Top 7"
         ]
       }
     ]
   },
   {
+    "address": "Janusbergweg 123/2\n8010 Graz",
     "email": "hedwig.beirat@musterstadt.example",
     "name": "Hedwig Eder",
     "title": "",
@@ -221,6 +196,278 @@
         "role": "Beirat",
         "units": [
           "Top 2"
+        ]
+      },
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 2",
+          "Stellplatz 2"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/3\n8010 Graz",
+    "email": "clara.berger@musterstadt.example",
+    "name": "Clara Berger",
+    "title": "",
+    "phone": "+43 664 410 20 01",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 3",
+          "Stellplatz 3"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/4\n8010 Graz",
+    "email": "jonas.meier@musterstadt.example",
+    "name": "Jonas Meier",
+    "title": "",
+    "phone": "+43 664 410 20 02",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 4",
+          "Top 5"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/6\n8010 Graz",
+    "email": "anna.gruber@musterstadt.example",
+    "name": "Anna Gruber",
+    "title": "",
+    "phone": "+43 664 410 20 03",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 6"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/7\n8010 Graz",
+    "email": "nina.hofer@musterstadt.example",
+    "name": "Nina Hofer",
+    "title": "",
+    "phone": "+43 664 410 20 04",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 7",
+          "Stellplatz 5"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/8\n8010 Graz",
+    "email": "felix.wagner@musterstadt.example",
+    "name": "Felix Wagner",
+    "title": "",
+    "phone": "+43 664 410 20 05",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 8",
+          "Top 9"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/10\n8010 Graz",
+    "email": "laura.schmid@musterstadt.example",
+    "name": "Laura Schmid",
+    "title": "",
+    "phone": "+43 664 410 20 06",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 10"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/11\n8010 Graz",
+    "email": "sara.klein@musterstadt.example",
+    "name": "Sara Klein",
+    "title": "",
+    "phone": "+43 664 410 20 07",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 11",
+          "Stellplatz 6"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/12\n8010 Graz",
+    "email": "thomas.berger@musterstadt.example",
+    "name": "Thomas Berger",
+    "title": "",
+    "phone": "+43 664 410 20 08",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 12",
+          "Top 13"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/14\n8010 Graz",
+    "email": "julia.maier@musterstadt.example",
+    "name": "Julia Maier",
+    "title": "",
+    "phone": "+43 664 410 20 09",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 14"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/15\n8010 Graz",
+    "email": "stefan.huber@musterstadt.example",
+    "name": "Stefan Huber",
+    "title": "",
+    "phone": "+43 664 410 20 10",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 15"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/16\n8010 Graz",
+    "email": "maria.lang@musterstadt.example",
+    "name": "Maria Lang",
+    "title": "",
+    "phone": "+43 664 410 20 11",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 16",
+          "Top 17"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/18\n8010 Graz",
+    "email": "lena.pichler@musterstadt.example",
+    "name": "Lena Pichler",
+    "title": "",
+    "phone": "+43 664 410 20 12",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Eigentümer",
+        "units": [
+          "Top 18",
+          "Stellplatz 4"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/5\n8010 Graz",
+    "email": "mia.berger@musterstadt.example",
+    "name": "Mia Berger",
+    "title": "",
+    "phone": "+43 676 410 20 04",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Mieter",
+        "units": [
+          "Top 5"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/9\n8010 Graz",
+    "email": "omar.kostic@musterstadt.example",
+    "name": "Omar Kostic",
+    "title": "",
+    "phone": "+43 676 410 20 01",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Mieter",
+        "units": [
+          "Top 9"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/14\n8010 Graz",
+    "email": "ines.winkler@musterstadt.example",
+    "name": "Ines Winkler",
+    "title": "",
+    "phone": "+43 676 410 20 02",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Mieter",
+        "units": [
+          "Top 14"
+        ]
+      }
+    ]
+  },
+  {
+    "address": "Janusbergweg 123/16\n8010 Graz",
+    "email": "farid.aslan@musterstadt.example",
+    "name": "Farid Aslan",
+    "title": "",
+    "phone": "+43 676 410 20 03",
+    "memberships": [
+      {
+        "house": "janusbergweg-123",
+        "role": "Mieter",
+        "units": [
+          "Top 16"
         ]
       }
     ]

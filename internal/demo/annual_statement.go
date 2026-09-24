@@ -52,6 +52,30 @@ type seedPerson struct {
 	Address string `json:"address"`
 }
 
+// receiptDocumentTitle is the name shown in Dokumente. Heating energy and
+// heating operating costs are two invoices; they must not share one title.
+func receiptDocumentTitle(cost seedStatementCost, operating bool) string {
+	supplier := strings.TrimSpace(cost.Supplier)
+	if supplier == "" {
+		supplier = "Hausverwaltung Musterstadt"
+	}
+	if operating {
+		return "Rechnung Heizungsbetriebskosten 2025 (" + supplier + ")"
+	}
+	switch cost.Key {
+	case "versicherung":
+		return "Gebäudeversicherung 2025 (" + supplier + ")"
+	case "abfall":
+		return "Rechnung Abfallentsorgung 2025 (" + supplier + ")"
+	case "reinigung":
+		return "Rechnung Hausreinigung 2025 (" + supplier + ")"
+	case "heizung":
+		return "Rechnung Wärmeversorgung 2025 (" + supplier + ")"
+	default:
+		return "Rechnung " + cost.Name + " 2025 (" + supplier + ")"
+	}
+}
+
 func loadStatementFixture(dir string, houses []seedHouse, documentDir string) (*seedStatement, error) {
 	path := filepath.Join(dir, "annual-statement.json")
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
@@ -207,7 +231,8 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 			if receiptIndex == 1 {
 				id += "-betrieb"
 			}
-			data := pdf.Simple([]string{"Demobeleg · " + cost.Name, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: " + cost.InvoiceDate, "Betrag: " + view.FormatEURCents(cost.AmountCents), "Synthetischer Demobeleg, keine Zahlungsaufforderung."})
+			title := receiptDocumentTitle(cost, receiptIndex == 1)
+			data := pdf.Simple([]string{title, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: " + cost.InvoiceDate, "Betrag: " + view.FormatEURCents(cost.AmountCents), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
 			filename := id + ".pdf"
 			if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
 				return err
@@ -215,7 +240,7 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 			if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, filename), data, 0600); err != nil {
 				return err
 			}
-			doc := store.DocumentRecord{ID: id, SeriesID: id, Version: 1, Current: true, TenantSlug: identity.Slug, Title: "Demobeleg 2025 · " + cost.Name, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: filename, StoredFilename: filename, Size: int64(len(data)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
+			doc := store.DocumentRecord{ID: id, SeriesID: id, Version: 1, Current: true, TenantSlug: identity.Slug, Title: title, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: filename, StoredFilename: filename, Size: int64(len(data)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
 			if err := upsertJSON(ctx, tx, "documents", identity, id, doc); err != nil {
 				return err
 			}
@@ -251,14 +276,15 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 	// would warn, so the twelve contributions are the floor itself.
 	// Closing: 18.400,00 + 16.490,88 − 3.260,00 + 212,40 = 31.843,28 €.
 	withdrawalID := fmt.Sprintf("demo-annual-%d-dachrinne", year)
-	withdrawalPDF := pdf.Simple([]string{"Demobeleg · Dachrinnenreparatur", "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: 2025-06-18", "Betrag: " + view.FormatEURCents(326000), "Synthetischer Demobeleg, keine Zahlungsaufforderung."})
+	withdrawalTitle := "Rechnung Dachrinnenreparatur 2025 (Spenglerei Holzer)"
+	withdrawalPDF := pdf.Simple([]string{withdrawalTitle, "Hausverwaltung Musterstadt", "Janusbergweg 123, 8010 Graz", "Periode: 01.01.2025 bis 31.12.2025", "Rechnungsdatum: 2025-06-18", "Betrag: " + view.FormatEURCents(326000), "Rechnung der Hausverwaltung, keine Zahlungsaufforderung."})
 	if err := os.MkdirAll(filepath.Join(documentDir, identity.Slug), 0700); err != nil {
 		return err
 	}
 	if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, withdrawalID+".pdf"), withdrawalPDF, 0600); err != nil {
 		return err
 	}
-	withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: "Demobeleg 2025 · Dachrinnenreparatur", Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
+	withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: withdrawalTitle, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
 	if err := upsertJSON(ctx, tx, "documents", identity, withdrawalID, withdrawalDoc); err != nil {
 		return err
 	}
