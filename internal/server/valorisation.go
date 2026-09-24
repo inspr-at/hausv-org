@@ -52,6 +52,17 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 		effective = next.Format(time.DateOnly)
 	}
 	page := web.ValorisationPageData{Portal: a.settingsPortalContext(ac, "Wertsicherung", "settings"), EffectiveOn: effective, New: r.URL.Query().Get("new") == "1", Organisation: strings.Contains(r.URL.Path, "/verwaltung/")}
+	if page.Organisation {
+		page.CanRefreshIndices = canRefreshIndices(ac)
+		page.IndexRefreshURL = strings.TrimSuffix(r.URL.Path, "/") + "/refresh"
+		page.IndexRefreshStatus = r.URL.Query().Get("index_refresh")
+		var err error
+		page.IndexImports, err = store.NewIndexReferenceStore(a.tenantDB).Recent(ac.tenantRef)
+		if err != nil {
+			a.valorisationError(w, err)
+			return
+		}
+	}
 	contexts := []authCtx{ac}
 	if page.Organisation {
 		contexts = nil

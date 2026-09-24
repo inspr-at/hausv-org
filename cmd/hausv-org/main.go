@@ -136,6 +136,8 @@ func main() {
 	defer stopCharging()
 	stopTelegram := app.StartTelegramBot()
 	defer stopTelegram()
+	stopIndices := app.StartIndexRefreshWorker()
+	defer stopIndices()
 	stopEnergyRetention := app.StartEnergyRetentionWorker()
 	defer stopEnergyRetention()
 	stopHomeReservationRetention := app.StartHomeReservationRetentionWorker()

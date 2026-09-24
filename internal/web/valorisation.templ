@@ -7,6 +7,9 @@ import (
 )
 
 type ValorisationPageData struct {
+	CanRefreshIndices bool
+	IndexRefreshURL, IndexRefreshStatus string
+	IndexImports []store.IndexImport
 	Portal       PortalPageData
 	EffectiveOn  string
 	Houses       []ValorisationHouseView
@@ -288,6 +291,9 @@ templ ValorisationBody(data ValorisationPageData) {
 			}
 		</style>
 		@PortalSectionHeader(PortalSectionIdentityData{Label: "Einstellungen", URL: "/app/settings"}, PortalSectionTitle("Wertsicherung"), PortalSectionLede("Vertragliche Anpassung prüfen, freigeben und verständigen."), ValorisationNewAction())
+		if data.Organisation {
+			@ValorisationIndexRefresh(data)
+		}
 		if data.New {
 			<section class="vr-card">
 				<h2>Neuer Lauf</h2>
@@ -329,6 +335,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 		<p class="pill">
 			{ valorisationStatus(view.Run.Status) } · { fmt.Sprintf("Revision %d",view.Run.Revision) }
 		</p>
+		if view.Run.IndexRevised {
+			<p class="vr-exception" data-index-status="index_revised"><strong>Neu berechnen empfohlen</strong> · Ein verwendeter Indexwert wurde revidiert oder zur Prüfung markiert. Freigegebene Beträge und Schreiben bleiben unverändert.</p>
+		}
 		for _,deadline := range view.Run.NoticeDeadlines() {
 			@ValorisationDeadline(deadline)
 		}
@@ -557,7 +566,7 @@ templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) 
 	if len(indices)>0 {
 		<div class="vr-table">
 			<table>
-				<caption>{ caption }</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültig veröffentlicht</th></tr></thead>
+				<caption>{ caption }</caption><thead><tr><th>Reihe / Zeitraum</th><th>Messzahl</th><th>Status</th><th>Endgültigkeit belegt am</th></tr></thead>
 				<tbody>
 					for _,index:=range indices {
 						<tr>
@@ -577,4 +586,51 @@ templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) 
 			</table>
 		</div>
 	}
+}
+
+
+templ ValorisationIndexRefresh(data ValorisationPageData) {
+	<section class="vr-card" aria-labelledby="index-refresh-title">
+		<h2 id="index-refresh-title">Verbraucherpreisindex</h2>
+		<p>Datenquelle: <a href="https://data.statistik.gv.at/" target="_blank" rel="noreferrer">Statistik Austria</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></p>
+		<p class="vr-meta">Gesamtindex und Jahresmittel; Zeiträume und Zahlen vereinheitlicht, Status aus den amtlichen Periodenbezeichnungen ergänzt. Vorläufige Werte werden erst nach Bestätigung für Berechnungen verwendet.</p>
+		if data.CanRefreshIndices {
+			<form method="post" action={ templ.SafeURL(data.IndexRefreshURL) } class="vr-actions"><button class="button" type="submit">VPI aktualisieren</button></form>
+		}
+		if data.IndexRefreshStatus == "ok" {
+			<p role="status">VPI-Abfrage abgeschlossen. Unveränderte Veröffentlichungen werden nicht erneut importiert.</p>
+		} else if data.IndexRefreshStatus == "partial" {
+			<p role="status" class="vr-exception">Nicht alle Reihen konnten aktualisiert werden. Erfolgreiche Importe sind unten dokumentiert; vorhandene Werte bleiben verfügbar.</p>
+		} else if data.IndexRefreshStatus == "failed" {
+			<p role="status" class="vr-exception">VPI-Abfrage derzeit nicht möglich. Bitte später erneut versuchen. Vorhandene Werte bleiben verfügbar.</p>
+		}
+		if len(data.IndexImports) == 0 {
+			<p>Noch kein Online-Import. Der mitgelieferte Indexstand ist verfügbar.</p>
+		} else {
+			<p>Letzter Import: { data.IndexImports[0].SeriesLabel() } · { data.IndexImports[0].FetchedAt.UTC().Format("02.01.2006, 15:04") } UTC · { fmt.Sprintf("%d neu · %d revidiert · %d zur Prüfung",data.IndexImports[0].RowsAdded,data.IndexImports[0].RowsRevised,data.IndexImports[0].RowsFlagged) }</p>
+			<details>
+				<summary>Importverlauf · neue und revidierte Zeiträume</summary>
+				for _,item := range data.IndexImports {
+					<div>
+						<p><a href={ templ.SafeURL(item.URL) } target="_blank" rel="noreferrer">{ item.SeriesLabel() } · { item.FetchedAt.UTC().Format("02.01.2006, 15:04") } UTC</a> · { fmt.Sprintf("%d neu · %d revidiert · %d zur Prüfung",item.RowsAdded,item.RowsRevised,item.RowsFlagged) }</p>
+						if len(item.Changes)>0 {
+							<ul>
+								for _,change := range item.Changes {
+									<li>{ change.Series } · { change.Period }: { store.ValorisationNumber(change.Before,1) } → { store.ValorisationNumber(change.After,1) }
+										if change.Kind=="final_conflict" {
+											<strong> · Endgültiger Wert abweichend; bisheriger Wert bleibt aktiv. Prüfung erforderlich.</strong>
+										} else if change.AfterStatus=="final" {
+											<span> · endgültig</span>
+										} else {
+											<span> · vorläufig</span>
+										}
+									</li>
+								}
+							</ul>
+						}
+					</div>
+				}
+			</details>
+		}
+	</section>
 }
