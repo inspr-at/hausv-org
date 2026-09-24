@@ -39,6 +39,7 @@ type LeaseDetail struct {
 	Components                           []LeaseMoneyView
 	MonthlyNet, MonthlyVAT, MonthlyGross string
 	HasMonthly                           bool
+	ShowOrigin                           bool
 	HasClause                            bool
 	Clause                               LeaseClauseView
 	Anchor                               string

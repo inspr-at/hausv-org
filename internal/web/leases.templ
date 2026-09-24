@@ -117,7 +117,11 @@ templ LeaseTimeline(lease LeaseDetail) {
 		} else {
 			<div class="lease-table-wrap">
 				<table class="lease-rent">
-					<thead><tr><th>Gültig ab</th><th>Bestandteil</th><th class="num">Netto</th><th class="num">USt</th><th class="num">Brutto</th><th>Herkunft</th></tr></thead>
+					<thead><tr><th>Gültig ab</th><th>Bestandteil</th><th class="num">Netto</th><th class="num">USt</th><th class="num">Brutto</th>
+						if lease.ShowOrigin {
+							<th>Herkunft</th>
+						}
+					</tr></thead>
 					<tbody>
 						for _, item := range lease.Components {
 							<tr>
@@ -126,7 +130,9 @@ templ LeaseTimeline(lease LeaseDetail) {
 								<td class="num" data-label="Netto">{ item.Net }</td>
 								<td class="num" data-label="USt">{ item.VAT }</td>
 								<td class="num" data-label="Brutto">{ item.Gross }</td>
-								<td data-label="Herkunft">{ item.Origin }</td>
+								if lease.ShowOrigin {
+									<td data-label="Herkunft">{ item.Origin }</td>
+								}
 							</tr>
 						}
 						if lease.HasMonthly {
@@ -136,7 +142,9 @@ templ LeaseTimeline(lease LeaseDetail) {
 								<td class="num" data-label="Netto">{ lease.MonthlyNet }</td>
 								<td class="num" data-label="USt">{ lease.MonthlyVAT }</td>
 								<td class="num" data-label="Brutto">{ lease.MonthlyGross }</td>
-								<td data-label="Herkunft"></td>
+								if lease.ShowOrigin {
+									<td data-label="Herkunft"></td>
+								}
 							</tr>
 						}
 					</tbody>

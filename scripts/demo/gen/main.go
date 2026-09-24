@@ -245,22 +245,14 @@ func buildHousesAndPersons() ([]house, []person) {
 			label := fmt.Sprintf("Stellplatz %d", parking)
 			// Every fourth parking space stays free. The other spaces are assigned
 			// round-robin to the people whose memberships belong to this house.
-			if parking%4 != 0 {
+			// Janusbergweg gets an explicit owner table below, so it skips this.
+			if hi != 0 && parking%4 != 0 {
 				people[residentStart+(parking-1)%3].Memberships[0].Units = append(people[residentStart+(parking-1)%3].Memberships[0].Units, label)
 			}
 			units = append(units, unit{Label: label, Floor: "Garage", UnitType: "Stellplatz"})
 		}
 		if hi == 0 {
-			// The home fixture explicitly records one owner for every unit,
-			// including vacant parking spaces. Existing tenant roles remain.
-			for _, unit := range units {
-				if !containsUnit(people[residentStart].Memberships[0].Units, unit.Label) {
-					people[residentStart].Memberships[0].Units = append(people[residentStart].Memberships[0].Units, unit.Label)
-				}
-			}
-			for pi, label := range []string{"1", "3", "7"} {
-				people[residentStart+pi].Address = "Janusbergweg 123/" + label + "\n8010 Graz"
-			}
+			people = assignJanusbergOwnership(people, residentStart, spec.slug)
 		}
 		for index := range units {
 			units[index].OwnerEmail, units[index].TenantEmail = unitParties(people, spec.slug, units[index].Label)
@@ -270,6 +262,57 @@ func buildHousesAndPersons() ([]house, []person) {
 	houses[0].Contacts = buildDemoContacts()
 	houses[0].Ballots = buildDemoBallots()
 	return houses, people
+}
+
+// assignJanusbergOwnership spreads the home WEG across 14 owners. Alina keeps
+// Top 1 and one parking space; Matthias and Sophie stay on their login units.
+// A few flats are rented. Every unit, including parking, still has an owner.
+func assignJanusbergOwnership(people []person, residentStart int, house string) []person {
+	for i := residentStart; i < len(people); i++ {
+		for mi := range people[i].Memberships {
+			if people[i].Memberships[mi].House == house {
+				people[i].Memberships[mi].Units = nil
+			}
+		}
+	}
+	people[residentStart].Memberships[0].Units = []string{"Top 1", "Stellplatz 1"}
+	people[residentStart+1].Memberships[0].Units = []string{"Top 3"}
+	people[residentStart+2].Memberships[0].Units = []string{"Top 7"}
+	people[residentStart+3].Memberships[0].Units = []string{"Top 2"}
+	people[residentStart+3].Memberships = append(people[residentStart+3].Memberships, membership{
+		House: house, Role: "Eigentümer", Units: []string{"Top 2", "Stellplatz 2"},
+	})
+	people[residentStart].Address = "Janusbergweg 123/1\n8010 Graz"
+	people[residentStart+1].Address = "Janusbergweg 123/3\n8010 Graz"
+	people[residentStart+2].Address = "Janusbergweg 123/7\n8010 Graz"
+	people[residentStart+3].Address = "Janusbergweg 123/2\n8010 Graz"
+	owners := []person{
+		{Name: "Clara Berger", Email: "clara.berger@musterstadt.example", Phone: "+43 664 410 20 01", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 3", "Stellplatz 3"}}}},
+		{Name: "Jonas Meier", Email: "jonas.meier@musterstadt.example", Phone: "+43 664 410 20 02", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 4", "Top 5"}}}},
+		{Name: "Anna Gruber", Email: "anna.gruber@musterstadt.example", Phone: "+43 664 410 20 03", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 6"}}}},
+		{Name: "Nina Hofer", Email: "nina.hofer@musterstadt.example", Phone: "+43 664 410 20 04", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 7", "Stellplatz 5"}}}},
+		{Name: "Felix Wagner", Email: "felix.wagner@musterstadt.example", Phone: "+43 664 410 20 05", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 8", "Top 9"}}}},
+		{Name: "Laura Schmid", Email: "laura.schmid@musterstadt.example", Phone: "+43 664 410 20 06", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 10"}}}},
+		{Name: "Sara Klein", Email: "sara.klein@musterstadt.example", Phone: "+43 664 410 20 07", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 11", "Stellplatz 6"}}}},
+		{Name: "Thomas Berger", Email: "thomas.berger@musterstadt.example", Phone: "+43 664 410 20 08", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 12", "Top 13"}}}},
+		{Name: "Julia Maier", Email: "julia.maier@musterstadt.example", Phone: "+43 664 410 20 09", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 14"}}}},
+		{Name: "Stefan Huber", Email: "stefan.huber@musterstadt.example", Phone: "+43 664 410 20 10", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 15"}}}},
+		{Name: "Maria Lang", Email: "maria.lang@musterstadt.example", Phone: "+43 664 410 20 11", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 16", "Top 17"}}}},
+		{Name: "Lena Pichler", Email: "lena.pichler@musterstadt.example", Phone: "+43 664 410 20 12", Memberships: []membership{{House: house, Role: "Eigentümer", Units: []string{"Top 18", "Stellplatz 4"}}}},
+	}
+	tenants := []person{
+		{Name: "Mia Berger", Email: "mia.berger@musterstadt.example", Phone: "+43 676 410 20 04", Address: "Janusbergweg 123/5\n8010 Graz", Memberships: []membership{{House: house, Role: "Mieter", Units: []string{"Top 5"}}}},
+		{Name: "Omar Kostic", Email: "omar.kostic@musterstadt.example", Phone: "+43 676 410 20 01", Address: "Janusbergweg 123/9\n8010 Graz", Memberships: []membership{{House: house, Role: "Mieter", Units: []string{"Top 9"}}}},
+		{Name: "Ines Winkler", Email: "ines.winkler@musterstadt.example", Phone: "+43 676 410 20 02", Address: "Janusbergweg 123/14\n8010 Graz", Memberships: []membership{{House: house, Role: "Mieter", Units: []string{"Top 14"}}}},
+		{Name: "Farid Aslan", Email: "farid.aslan@musterstadt.example", Phone: "+43 676 410 20 03", Address: "Janusbergweg 123/16\n8010 Graz", Memberships: []membership{{House: house, Role: "Mieter", Units: []string{"Top 16"}}}},
+	}
+	for _, owner := range owners {
+		if len(owner.Memberships[0].Units) > 0 && strings.HasPrefix(owner.Memberships[0].Units[0], "Top ") {
+			owner.Address = "Janusbergweg 123/" + strings.TrimPrefix(owner.Memberships[0].Units[0], "Top ") + "\n8010 Graz"
+		}
+		people = append(people, owner)
+	}
+	return append(people, tenants...)
 }
 
 func fixtureEmail(value string) string {
@@ -543,7 +586,7 @@ func buildAnnouncements(houses []house) []announcement {
 	for hi, h := range houses {
 		entries := []struct{ title, body, category string }{
 			{"Wasserabschaltung am 11.09., 9–12 Uhr", "Wegen Arbeiten an der Steigleitung wird das Wasser vorübergehend abgestellt. Bitte halten Sie die Absperrhähne frei.", "Wartung"},
-			{"Hausbegehung in der Demo-Woche", "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.", "Termin"},
+			{"Hausbegehung am 30. September", "Die Hausverwaltung prüft die Allgemeinflächen. Hinweise können vorab über das Portal gemeldet werden.", "Termin"},
 		}
 		if hi%2 == 0 {
 			entries = append(entries, struct{ title, body, category string }{"Bitte Fluchtwege freihalten", "Kinderwägen, Fahrräder und Kartons dürfen nicht im Stiegenhaus abgestellt werden.", "Info"})
