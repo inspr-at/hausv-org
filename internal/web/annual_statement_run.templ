@@ -98,6 +98,24 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				white-space: normal;
 				text-align: center;
 			}
+			.annual-run-details {
+				margin-block: var(--space-3);
+				overflow-wrap: anywhere;
+			}
+			.annual-run-details summary {
+				cursor: pointer;
+				color: var(--gold-ink);
+			}
+			@media (min-width: 1051px) {
+				.annual-unit-value {
+					display: flex;
+					align-items: center;
+					min-height: 44px;
+				}
+				.annual-money > .annual-unit-value {
+					justify-content: flex-end;
+				}
+			}
 			.annual-units {
 				width: 100%;
 				margin-top: var(--space-5);
@@ -324,7 +342,11 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 		}
 		if data.ID!="" {
 			<article data-annual-statement-run={ data.ID }>
-				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p><small>Kennung: { data.ID }</small></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
+				<header class="subhead"><div><h3>Ergebnis · Lauf { strconv.Itoa(data.Revision) }</h3><p>{ data.CreatedAt } · { data.CreatedBy }</p></div><span class="scope management">Gespeicherte Arbeitsfassung</span></header>
+				<details class="annual-run-details">
+					<summary>Details zum Abrechnungslauf</summary>
+					<p>Kennung: <code>{ data.ID }</code></p>
+				</details>
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
 					<div class="annual-actions">
@@ -371,15 +393,15 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 					<tbody role="rowgroup">
 						for _,unit:=range data.Units {
 							<tr class="annual-unit-row" role="row">
-								<th scope="row" role="rowheader">{ unit.Label }</th>
+								<th scope="row" role="rowheader"><span class="annual-unit-value">{ unit.Label }</span></th>
 								<td role="cell" class="annual-parties" data-label="Partei">
 									for _, document := range unit.PDFs {
 										<span class="annual-party"><span class="annual-party-name" title={ document.Label }>{ document.Label }</span></span>
 									}
 								</td>
-								<td role="cell" class="annual-money" data-label="Kostenanteil">{ unit.Allocated }</td>
-								<td role="cell" class="annual-money" data-label="Akonto">{ unit.Prepaid }</td>
-								<td role="cell" class="annual-money" data-label="Saldo"><strong>{ unit.Balance }</strong></td>
+								<td role="cell" class="annual-money" data-label="Kostenanteil"><span class="annual-unit-value">{ unit.Allocated }</span></td>
+								<td role="cell" class="annual-money" data-label="Akonto"><span class="annual-unit-value">{ unit.Prepaid }</span></td>
+								<td role="cell" class="annual-money" data-label="Saldo"><strong class="annual-unit-value">{ unit.Balance }</strong></td>
 								<td role="cell" class="annual-documents" data-label="PDF / Archiv">
 									for _, document := range unit.PDFs {
 										<div class="annual-pdf">

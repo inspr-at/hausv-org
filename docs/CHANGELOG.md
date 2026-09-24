@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924082155.0.0] - 2026-09-24
+
+### Verbessert
+
+- Einheiten, Parteien und Beträge sind in der Jahresabrechnung am Desktop auf einer Höhe ausgerichtet.
+- Die interne Laufkennung ist übersichtlich in aufklappbaren Details erreichbar.
+
 ## [260924071544.0.0] - 2026-09-24
 
 ### Verbessert
