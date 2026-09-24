@@ -1492,6 +1492,8 @@ func AuditActionLabel(action string) string {
 		return "Jahresabrechnung per E-Mail versendet"
 	case store.AuditActionAnnualRunArchive:
 		return "Jahresabrechnung im Archiv abgelegt"
+	case store.AuditActionAnnualReserveAdd:
+		return "Rücklage gebucht"
 	case store.AuditActionAnnualPrepaymentSave:
 		return "Vorauszahlung gespeichert"
 	case store.AuditActionIssueAISuggest:

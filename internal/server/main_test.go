@@ -6155,9 +6155,10 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		t.Fatalf("document store: %v", err)
 	}
 	annualStatementReceipts := storepkg.NewMemoryAnnualStatementReceiptStore(annualStatementPeriods, annualStatementCostTypes, documentStore)
+	annualStatementReserve := storepkg.NewMemoryAnnualStatementReserveStore(annualStatementPeriods, documentStore)
 	annualStatementAkontos := storepkg.NewMemoryAnnualStatementPrepaymentStore(annualStatementPeriods, unitStore)
 	annualConsumption := storepkg.NewMemoryAnnualStatementConsumptionStore()
-	annualStatementRuns := storepkg.NewMemoryAnnualStatementRunStore(storepkg.AnnualStatementRunSources{Periods: annualStatementPeriods, Units: unitStore, Receipts: annualStatementReceipts, Prepayments: annualStatementAkontos, Consumption: annualConsumption, Documents: documentStore})
+	annualStatementRuns := storepkg.NewMemoryAnnualStatementRunStore(storepkg.AnnualStatementRunSources{Periods: annualStatementPeriods, Units: unitStore, Receipts: annualStatementReceipts, Prepayments: annualStatementAkontos, Consumption: annualConsumption, Documents: documentStore, Reserve: annualStatementReserve})
 	handoverStore, err := newHandoverStore("")
 	if err != nil {
 		t.Fatalf("handover store: %v", err)
@@ -6205,6 +6206,7 @@ func newTestPortalApp(t *testing.T, profile userProfile) *app {
 		annualStatementPeriods:   annualStatementPeriods,
 		annualStatementAkontos:   annualStatementAkontos,
 		annualStatementReceipts:  annualStatementReceipts,
+		annualStatementReserve:   annualStatementReserve,
 		annualConsumption:        annualConsumption,
 		annualStatementRuns:      annualStatementRuns,
 		unitStore:                unitStore,

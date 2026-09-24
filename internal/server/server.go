@@ -515,6 +515,7 @@ const (
 	auditActionAnnualReceiptAmount     = store.AuditActionAnnualReceiptAmount
 	auditActionAnnualReceiptDelete     = store.AuditActionAnnualReceiptDelete
 	auditActionAnnualPrepaymentSave    = store.AuditActionAnnualPrepaymentSave
+	auditActionAnnualReserveAdd        = store.AuditActionAnnualReserveAdd
 	auditActionVoteCast                = store.AuditActionVoteCast
 	auditActionVoteClose               = store.AuditActionVoteClose
 	auditActionVoteCreate              = store.AuditActionVoteCreate
@@ -806,6 +807,7 @@ type app struct {
 	annualStatementPeriods    store.AnnualStatementPeriodStorage
 	annualStatementAkontos    store.AnnualStatementPrepaymentStorage
 	annualStatementReceipts   store.AnnualStatementReceiptStorage
+	annualStatementReserve    store.AnnualStatementReserveStorage
 	annualConsumption         store.AnnualStatementConsumptionStorage
 	annualStatementRuns       store.AnnualStatementRunStorage
 	annualStatementDeliveries *store.SQLAnnualStatementDeliveryStore
@@ -1221,6 +1223,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
 	mux.HandleFunc("POST /app/settings/annual-statement/receipts/metadata", a.action(a.saveAnnualStatementReceiptMetadata))
 	mux.HandleFunc("POST /app/settings/annual-statement/legal", a.action(a.saveAnnualStatementLegal))
+	mux.HandleFunc("POST /app/settings/annual-statement/reserve", a.action(a.saveAnnualStatementReserve))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/approve", a.action(a.approveAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/archive", a.action(a.archiveAnnualStatementRun))
@@ -1289,6 +1292,7 @@ type requestRepositories struct {
 	annualStatementPeriods    store.AnnualStatementPeriodRepository
 	annualStatementAkontos    store.AnnualStatementPrepaymentRepository
 	annualStatementReceipts   store.AnnualStatementReceiptRepository
+	annualStatementReserve    store.AnnualStatementReserveRepository
 	annualConsumption         store.AnnualStatementConsumptionRepository
 	annualStatementRuns       store.AnnualStatementRunRepository
 	annualStatementDeliveries store.AnnualStatementDeliveryRepository
@@ -1338,6 +1342,9 @@ func (a *app) repositoriesForTenant(tenant store.TenantRef) requestRepositories 
 	}
 	if a.annualStatementReceipts != nil {
 		repositories.annualStatementReceipts, _ = store.BindAnnualStatementReceiptRepository(a.annualStatementReceipts, tenant)
+	}
+	if a.annualStatementReserve != nil {
+		repositories.annualStatementReserve, _ = store.BindAnnualStatementReserveRepository(a.annualStatementReserve, tenant)
 	}
 	if a.announcementReadStore != nil {
 		repositories.announcementReads, _ = store.BindAnnouncementReadRepository(a.announcementReadStore, tenant)
@@ -1859,6 +1866,7 @@ func newApp() (*app, error) {
 	sqlAnnualStatementPeriods := store.NewSQLAnnualStatementPeriodStore(tenantDB)
 	sqlAnnualStatementPrepayments := store.NewSQLAnnualStatementPrepaymentStore(tenantDB)
 	sqlAnnualStatementReceipts := store.NewSQLAnnualStatementReceiptStore(tenantDB)
+	sqlAnnualStatementReserve := store.NewSQLAnnualStatementReserveStore(tenantDB)
 	sqlProfileOverlay := newSQLProfileOverlayStore(tenantDB)
 	sqlNotification := newSQLNotificationPrefStore(tenantDB)
 	sqlUnitPayment := newSQLUnitPaymentStatusStore(tenantDB)
@@ -2044,6 +2052,7 @@ func newApp() (*app, error) {
 		annualStatementPeriods:    annualStatementPeriodBackend,
 		annualStatementAkontos:    annualStatementPrepaymentBackend,
 		annualStatementReceipts:   annualStatementReceiptBackend,
+		annualStatementReserve:    sqlAnnualStatementReserve,
 		annualConsumption:         store.NewSQLAnnualStatementConsumptionStore(tenantDB),
 		annualStatementRuns:       store.NewSQLAnnualStatementRunStore(tenantDB, documentBackend),
 		annualStatementDeliveries: store.NewSQLAnnualStatementDeliveryStore(tenantDB),

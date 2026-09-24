@@ -201,6 +201,24 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		prepaymentViews = append(prepaymentViews, view)
 	}
 	prepaymentMsg, prepaymentOK := annualStatementPrepaymentMessage(r.URL.Query().Get("prepayment"))
+	reserveMsg, reserveOK := annualStatementReserveMessage(r.URL.Query().Get("reserve"))
+	reserveDocuments := []web.AnnualStatementReceiptDocumentView{}
+	if ac.repositories.documents != nil {
+		for _, document := range ac.repositories.documents.List() {
+			if document.Current && annualStatementReceiptContentTypeSupported(document.ContentType) {
+				reserveDocuments = append(reserveDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: document.Title + " · " + document.Filename})
+			}
+		}
+	}
+	showReserve := legal.Regime == "weg" && structureYear > 0 && ac.repositories.annualStatementReserve != nil
+	reserveView := web.AnnualStatementReserveView{}
+	if showReserve {
+		titles := map[string]string{}
+		for _, document := range reserveDocuments {
+			titles[document.ID] = document.Label
+		}
+		reserveView, showReserve = annualStatementReserveView(ac.repositories.annualStatementReserve, selectedYear, selectedPeriod, units, reserveDocuments, titles)
+	}
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
@@ -219,6 +237,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
 		Run:         a.annualStatementDeliveryView(annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors), ac.repositories, r.URL.Query()),
 		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
+		ShowReserve: showReserve, Reserve: reserveView, ReserveMsg: reserveMsg, ReserveOK: reserveOK,
 	}))
 }
 
