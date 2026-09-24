@@ -318,3 +318,23 @@ größtem Rest auf die Einheiten und innerhalb der Einheit auf die Kostenarten.
 Netto ist Brutto minus Umsatzsteuer, daher stimmt jede Zeile, jede Gruppe und
 die Gesamtsumme auf den Cent. Solche Läufe speichern Berechnungsversion 3.
 Das PDF zeigt dann Netto, USt-Satz, USt und Brutto sowie die Summen je Satz.
+
+## Bedienung der Jahresabrechnung
+
+Berechenbare Perioden zeigen „Grundlagen und Belege prüfen oder bearbeiten“
+zunächst geschlossen, auch ohne gespeicherten Lauf. Blockierende Angaben öffnen
+die Vorbereitung; der erste zuordenbare Blocker wird angesprungen und markiert.
+Die Hinweisliste verlinkt weitere betroffene Abschnitte. Rückmeldungen zu
+Änderungen bleiben sichtbar. HeizKG-Flächen und geleistete Komponenten-Akontos
+haben getrennte Aufklappbereiche; ihre Werte werden weiterhin zusammen mit der
+Rechtsgrundlage gespeichert.
+
+Partei-PDFs öffnen im selben Browser-Tab (`Content-Disposition: inline`).
+„Herunterladen“ verwendet dieselbe Route mit `download=1` und liefert dieselben
+PDF-Daten als Attachment. Die Schritte lauten Freigabe → Dokumentenarchiv →
+E-Mail-Versand; unter Dokumente erscheinen die Abrechnungen nach dem Archivieren.
+Gesperrte Aktionen zeigen den Grund direkt daneben.
+
+Das PDF übersetzt die gespeicherte Vorschlagsbasis in Eigentümersprache:
+„vereinbarte monatliche Vorauszahlung“ bzw. „Vorauszahlung auf Basis des Vorjahres“.
+Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.

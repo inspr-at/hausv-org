@@ -101,7 +101,7 @@ func TestAnnualStatementRunArchiveActionAndStatus(t *testing.T) {
 			t.Errorf("missing %q", want)
 		}
 	}
-	if strings.Contains(body.String(), "Im Archiv ablegen") {
+	if strings.Contains(body.String(), ">Im Archiv ablegen</button>") {
 		t.Fatal("completed archive has create action")
 	}
 }
@@ -152,9 +152,10 @@ func TestAnnualStatementPreparationCollapsesOnlyWithoutFeedback(t *testing.T) {
 		data AnnualStatementPageData
 		open bool
 	}{
-		{"first preparation", AnnualStatementPageData{}, true},
-		{"saved result", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run"}}, false},
-		{"correction feedback", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run"}, ReceiptMsg: "Betrag korrigiert"}, true},
+		{"blocked preparation", AnnualStatementPageData{}, true},
+		{"ready without run", AnnualStatementPageData{Run: AnnualStatementRunView{Ready: true}}, false},
+		{"saved result", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run", Ready: true}}, false},
+		{"correction feedback", AnnualStatementPageData{Run: AnnualStatementRunView{ID: "run", Ready: true}, ReceiptMsg: "Betrag korrigiert"}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var body bytes.Buffer

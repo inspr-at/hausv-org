@@ -23,10 +23,37 @@ try {
   await page.goto(`${baseURL}/janusbergweg-123/app/settings/annual-statement?year=2025`);
   const calculate = page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true });
   assert(await calculate.isEnabled(), 'Seed must provide calculable annual costs');
+  // HAUSV-792: a calculable first period starts compact; HeizKG details stay opt-in.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const preparation = page.locator('details.annual-preparation');
+  assert.equal(await preparation.getAttribute('open'), null);
+  const initialHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  console.log(`Default annual page: ${initialHeight}px at 1440px`);
+  assert(initialHeight < 3000, `Default page is ${initialHeight}px tall`);
+  await page.screenshot({ path: `${out}/preparation-default-1440.png`, fullPage: true });
+  await preparation.locator(':scope > summary').click();
+  for (const id of ['heizflaechen', 'heizakontos']) {
+    const section = page.locator(`#${id}`);
+    assert.equal(await section.getAttribute('open'), null);
+    assert.equal(await section.locator('input').first().isVisible(), false);
+    await section.locator('summary').click();
+    assert.equal(await section.locator('input').first().isVisible(), true);
+    await section.locator('summary').click();
+  }
+  await preparation.locator(':scope > summary').click();
   await calculate.click();
   await page.locator('[data-annual-statement-run]').waitFor();
   const run = page.locator('[data-annual-statement-run]');
   const runID = await run.getAttribute('data-annual-statement-run');
+  const pdf = run.getByRole('link', { name: 'PDF für Alina Auer · Top 1', exact: true });
+  assert.equal(await pdf.getAttribute('download'), null);
+  const inlineResponse = await page.request.get(new URL(await pdf.getAttribute('href'), baseURL).href);
+  assert.match(inlineResponse.headers()['content-disposition'], /^inline;/);
+  const download = run.getByRole('link', { name: 'Herunterladen für Alina Auer · Top 1', exact: true });
+  const attachmentResponse = await page.request.get(new URL(await download.getAttribute('href'), baseURL).href);
+  assert.match(attachmentResponse.headers()['content-disposition'], /^attachment;/);
+  assert((await inlineResponse.body()).equals(await attachmentResponse.body()));
+
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');

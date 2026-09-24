@@ -12,6 +12,8 @@ type AnnualStatementRunView struct {
 	Year            int
 	Ready           bool
 	Issues          []string
+	IssueTargets []string
+	BlockingSection string
 	Message         string
 	MessageOK       bool
 	ID              string
@@ -331,6 +333,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				background: var(--panel-soft);
 				color: var(--muted);
 			}
+            .annual-run-panel .annual-lifecycle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);padding:0;margin:var(--space-4) 0;list-style:none}
+            .annual-run-panel .annual-lifecycle li{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-2);min-width:0;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm)}
+            .annual-run-panel .annual-lifecycle form{margin:0;max-width:100%}
+            .annual-run-panel .annual-lifecycle .button{white-space:normal}
+            .annual-run-panel .annual-lifecycle .button:disabled{opacity:.62;cursor:not-allowed;border-color:var(--line);background:var(--panel-soft);color:var(--muted)}
+            .annual-run-panel .annual-pdf .annual-download{color:var(--muted);font-size:12px}
+            @media(max-width:1050px){.annual-run-panel .annual-lifecycle{grid-template-columns:1fr}}
 		</style>
 		<header class="workspace-head">
 			<div><h2>Abrechnungslauf berechnen</h2><p>Eine Berechnung für alle Einheiten der gewählten Periode.</p></div>
@@ -353,8 +362,12 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			<div class="notice" role="status">
 				<strong>Bitte vor der Berechnung ergänzen:</strong>
 				<ul>
-					for _,issue:=range data.Issues {
-						<li>{ issue }</li>
+					for i,issue:=range data.Issues {
+						<li>if i < len(data.IssueTargets) && data.IssueTargets[i] != "" {
+<a href={ templ.SafeURL("#" + data.IssueTargets[i]) }>{ issue }</a>
+} else {
+{ issue }
+}</li>
 					}
 				</ul>
 			</div>
@@ -388,33 +401,53 @@ if data.Approved {
 				<div class="metrics"><span><strong>{ data.Total }</strong><small>Verteilte Kosten</small></span><span><strong>{ data.Excluded }</strong><small>Nicht umlagefähige Belege</small></span></div>
 				if data.AllPDFURL != "" {
 					<div class="annual-actions">
-						<a class="button ghost" href={ templ.SafeURL(data.AllPDFURL) } download>Alle Dokumente (PDF)</a>
+						<a class="button ghost" href={ templ.SafeURL(annualPDFDownloadURL(data.AllPDFURL)) } download>Alle Dokumente (PDF)</a>
  if data.AushangURL != "" {
- <a class="button ghost" href={ templ.SafeURL(data.AushangURL) } download>Aushang (PDF)</a>
+ <a class="button ghost" href={ templ.SafeURL(annualPDFDownloadURL(data.AushangURL)) } download>Aushang (PDF)</a>
  }
-						if data.ApproveAction != "" {
- <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
- }
- if data.ArchivedAt != "" {
-							<p role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
-							<a class="button ghost" href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
-						} else if data.Approved && data.ArchiveAction != "" {
-							<form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
-						}
 					</div>
-					if data.Approved && data.ArchivedAt == "" && data.ArchiveAction != "" {
-						<p class="mini">Alle Partei-PDFs und das Gesamt-PDF werden unveränderlich abgelegt. Sichtbar nur für die Verwaltung.</p>
-					}
 				} else {
 					<p class="notice">Für alle Dokumente fehlen gespeicherte Parteien. Bitte Parteien zuordnen und einen neuen Lauf berechnen.</p>
 				}
-				if data.SendAction != "" {
-					<header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
-					<p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
-					<form method="post" action={ templ.SafeURL(data.SendAction) }><button class="button" type="submit" disabled?={ data.SendIssue != "" }>Per E-Mail senden</button></form>
-					if data.SendIssue != "" {
-						<p class="notice">{ data.SendIssue }</p>
-					}
+                <ol class="annual-lifecycle" aria-label="Abrechnung freigeben, ablegen und versenden">
+                    <li><strong>1 · Freigabe</strong>
+                        if data.Approved {
+                            <p class="mini">Freigegeben am { data.ApprovedAt }</p>
+                        } else if data.ApproveAction != "" {
+                            <form method="post" action={ templ.SafeURL(data.ApproveAction) }><button class="button primary" type="submit">Abrechnung freigeben</button></form>
+                        } else {
+                            <button class="button ghost" type="button" disabled>Abrechnung freigeben</button>
+                            <p class="mini">Zuerst Parteien zuordnen.</p>
+                        }
+                    </li>
+                    <li><strong>2 · Dokumentenarchiv</strong>
+                        if data.ArchivedAt != "" {
+                            <p class="mini" role="status">Archiviert am { data.ArchivedAt } · { strconv.Itoa(data.ArchiveCount) } Dokumente</p>
+                            <a href={ templ.SafeURL(data.ArchiveURL) }>Im Dokumentenarchiv ansehen</a>
+                        } else if data.Approved && data.ArchiveAction != "" {
+                            <form method="post" action={ templ.SafeURL(data.ArchiveAction) }><button class="button" type="submit">Im Archiv ablegen</button></form>
+                        } else {
+                            <button class="button ghost" type="button" disabled aria-describedby="annual-archive-issue">Im Archiv ablegen</button>
+                            <p class="mini" id="annual-archive-issue">Zuerst den Abrechnungslauf freigeben.</p>
+                        }
+                    </li>
+                    if data.SendAction != "" {
+                        <li><strong>3 · E-Mail-Versand</strong>
+                            <form method="post" action={ templ.SafeURL(data.SendAction) }><button class={ "button", templ.KV("ghost", data.SendIssue != "") } type="submit" disabled?={ data.SendIssue != "" } aria-describedby="annual-send-issue">Per E-Mail senden</button></form>
+                            <p class="mini" id="annual-send-issue">
+if data.SendIssue != "" {
+{ data.SendIssue }
+} else {
+{ data.MailMode }
+}
+</p>
+                        </li>
+                    }
+                </ol>
+                <p class="mini">Nach „Im Archiv ablegen“ finden Sie die Abrechnungen unter Dokumente. Sichtbar nur für die Verwaltung.</p>
+                if data.SendAction != "" {
+                    <header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
+                    <p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
 					if data.DeliverySummary != "" {
 						<p role="status">{ data.DeliverySummary }</p>
 					}
@@ -449,7 +482,8 @@ if data.Approved {
 								<td role="cell" class="annual-documents" data-label="PDF / Archiv">
 									for _, document := range unit.PDFs {
 										<div class="annual-pdf">
-											<a href={ templ.SafeURL(document.URL) } aria-label={ "PDF für " + document.Label + " · " + unit.Label } download>PDF</a>
+											<a href={ templ.SafeURL(document.URL) } aria-label={ "PDF für " + document.Label + " · " + unit.Label }>PDF</a>
+<a class="annual-download" href={ templ.SafeURL(annualPDFDownloadURL(document.URL)) } aria-label={ "Herunterladen für " + document.Label + " · " + unit.Label } download>Herunterladen</a>
 											if document.ArchiveURL != "" {
 												<a href={ templ.SafeURL(document.ArchiveURL) } aria-label={ "Archiv für " + document.Label + " · " + unit.Label }>Archiv</a>
 											}
@@ -498,4 +532,14 @@ if data.Approved {
 		}
 	</section>
 	}
+}
+
+// Keep an explicit attachment URL for secondary downloads and shared links.
+func annualPDFDownloadURL(raw string) string {
+    target, err := url.Parse(raw)
+    if err != nil { return raw }
+    query := target.Query()
+    query.Set("download", "1")
+    target.RawQuery = query.Encode()
+    return target.String()
 }

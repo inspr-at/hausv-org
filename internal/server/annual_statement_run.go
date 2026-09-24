@@ -62,7 +62,10 @@ func (a *app) createAnnualStatementRun(w http.ResponseWriter, r *http.Request, a
 	if run.ID != "" {
 		target += "&run=" + url.QueryEscape(run.ID)
 	}
-	http.Redirect(w, r, target+"#abrechnungsergebnis", http.StatusSeeOther)
+	if status != "blocked" {
+		target += "#abrechnungsergebnis"
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
 func (a *app) archiveAnnualStatementRun(w http.ResponseWriter, r *http.Request, ac authCtx) {
@@ -135,6 +138,10 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		if errors.As(err, &blocked) {
 			for _, issue := range blocked.Issues {
 				out.Issues = append(out.Issues, annualStatementRunIssueMessage(issue, input))
+				out.IssueTargets = append(out.IssueTargets, annualStatementRunIssueTarget(issue.Code))
+				if out.BlockingSection == "" {
+					out.BlockingSection = annualStatementRunIssueTarget(issue.Code)
+				}
 			}
 		} else {
 			out.Issues = append(out.Issues, "Die Abrechnungsgrundlagen konnten nicht vollständig gelesen werden. Bitte erneut versuchen.")
@@ -256,6 +263,33 @@ func annualStatementArchiveDocuments(repository store.DocumentRepository, run st
 		}
 	}
 	return out
+}
+
+func annualStatementRunIssueTarget(code string) string {
+	switch code {
+	case "heating-area":
+		return "heizflaechen"
+	case "heating-prepayment":
+		return "heizakontos"
+	case "heating-share":
+		return "rechtsgrundlage"
+	case "period":
+		return "perioden"
+	case "units", "unit-data":
+		return "parteien"
+	case "cost-types", "key", "heating-key":
+		return "kostenarten"
+	case "structure", "basis", "nutzwert-total":
+		return "verteilerschluessel"
+	case "missing-receipt", "receipt", "document", "heating-category":
+		return "belege"
+	case "prepayment":
+		return "vorauszahlungen"
+	case "consumption", "measurement-rule":
+		return "verbrauchswerte"
+	default:
+		return ""
+	}
 }
 
 func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input store.AnnualStatementRunInput) string {

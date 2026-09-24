@@ -184,15 +184,28 @@
   function openHashDialog() {
     if (!window.location.hash) return;
     var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
-    var preparation = target && target.closest ? target.closest("details.annual-preparation") : null;
-    if (preparation && !preparation.open) {
-      preparation.open = true;
-      target.scrollIntoView();
-    }
+    revealAnnualSection(target);
     var dialog = target && target.closest ? target.closest("dialog") : null;
     if (!dialog || dialog.open || typeof dialog.showModal !== "function") return;
     dialog.showModal();
     setExpanded(dialog.id, true);
+  }
+
+  function revealAnnualSection(target) {
+    if (!target || !target.closest("details.annual-preparation")) return;
+    for (var node = target; node; node = node.parentElement) {
+      if (node.tagName === "DETAILS") node.open = true;
+    }
+    target.classList.add("annual-blocker");
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start" });
+  }
+
+  // Explicit deep links take priority over the first calculation blocker.
+  var annualPreparation = document.querySelector("[data-annual-blocking-section]");
+  if (!window.location.hash && annualPreparation && annualPreparation.dataset.annualBlockingSection) {
+    revealAnnualSection(document.getElementById(annualPreparation.dataset.annualBlockingSection));
   }
 
   openHashDialog();
