@@ -164,10 +164,11 @@ Berechtigungsnachweis gezählt.
 
 ## Orakel und CI-Gates
 
-Stand: 10. September 2026, Arbeitsbaum auf Basis von 1.9.26. Maßgeblich sind die
+Orakel-Liste ergänzt am 24. September 2026 (HAUSV-662). Maßgeblich sind die
 Aufrufe in `.github/workflows/ci.yml` und die ausgeführten Prüfungen, nicht alte
 Zählungen in Kopfkommentaren. `Portal parity and responsive shell` startet
-nacheinander `shell-widths.mjs` (8299), `qa-viewport-actions.mjs` (8499) und
+nacheinander `shell-widths.mjs` (8299), `qa-annual-costs.mjs` (8699),
+`qa-calm-overview.mjs` (8599), `qa-viewport-actions.mjs` (8499) und
 `templ-coverage.mjs` (8399). Trotz des Jobnamens gibt es keinen Vergleich zweier
 Renderer mehr. Beide Browserjobs laden Fehlerartefakte für sieben Tage hoch.
 
@@ -188,8 +189,8 @@ direnv exec . mkdir -p /tmp/hausv-oracles
 
 Das entspricht dem Einzelaufruf
 `CI=true HV_CAPTURE=<orakel>.mjs direnv exec . bash scripts/snapshot/run.sh WORKTREE <ausgabe> <port>`.
-Die drei Portal-Gates schreiben JSON-Dateien; ihr Elternverzeichnis muss schon
-existieren. Die übrigen `qa_orakel`-Aufrufe erhalten Artefaktverzeichnisse. Die
+Shell-, Aktions- und Renderer-Gates schreiben JSON-Dateien; ihr Elternverzeichnis
+muss schon existieren. Die übrigen `qa_orakel`-Aufrufe erhalten Artefaktverzeichnisse. Die
 Versionsprüfung startet ohne App-Port.
 
 | Datei | Misst | Blind für | CI-Job / Port | Lokaler Start |
@@ -201,6 +202,7 @@ Versionsprüfung startet ohne App-Port.
 | `qa-settings-parking.mjs` | Einstellungen, Einladungen, Export/CAMT, Parkplatzrechte sowie leere und befüllte Monate. | Reale Banken, Ladegeräte und nicht modellierte Monatszustände. | `Full browser flow suite` / 8121, zweimal | Fachlauf; Fixture-Wechsel und Neustart gehören dazu |
 | `qa-home-setup.mjs` | Reservierung, lokale SMTP-Mail, Aktivierung, Connector und Mandantentrennung nach Neustart. | Externe Mailzustellung und reale Connector-Installation. | `Full browser flow suite` / 8121 | Fachlauf; benötigt SMTP, `create`/`verify` und Zustandsdatei |
 | `shell-widths.mjs` | Einheitliche sichtbare Navigation und Shell-Geometrie an 19 Breiten; Hausüberblick, Tablet-Spalten, Breiten-Sweep und Posteingangs-Aktionsbereich. | Vollständige Klickwege, alle Rollen und Paint-Flackern; fehlende Aktionsleiste allein ist kein Fehler. | `Portal parity and responsive shell` / 8299 | `qa_orakel shell-widths.mjs /tmp/hausv-oracles/widths.json 8299` |
+| `qa-annual-costs.mjs` | Berechnet einen gespeicherten Lauf aus der isolierten Demo-Fixture; prüft unveränderte Kostenwerte, Desktop-Spaltenköpfe, mobile Beschriftungen, Ausrichtung, Überlauf und Tastatur-Aufklapper bei 320/390/820/1050/1051/1440 px. | Andere Kostenkombinationen, echte Finanzdaten, PDF-Darstellung und externe Zustellung; nur lokale synthetische Daten. | `Portal parity and responsive shell` / 8699 | `qa_orakel qa-annual-costs.mjs /tmp/hausv-oracles/annual-costs 8699` |
 | `qa-viewport-actions.mjs` | Erreichbarkeit und Trefferpunkt ausgewählter Aktionen, scrollender Panels und Dialogabschlüsse bei 1512 × 982, 1440 × 900 und 1280 × 720. | Fachlicher Erfolg nach Absenden, andere Rollen/Breiten, übersprungene HTTP-Fehler, nicht erfasste Selektoren und ausgelassene Dialoge. | `Portal parity and responsive shell` / 8499 | `qa_orakel qa-viewport-actions.mjs /tmp/hausv-oracles/viewport-actions.json 8499` |
 | `templ-coverage.mjs` | 22 gepflegte Routen: HTTP 200, exaktes Routenziel, templ-Marker; Unterlängen kompakter Titel bei 1440 und 390 Pixeln. | Vollständiger Inhalt, Schreibaktionen und Unterrouten außerhalb der Liste; kein Vergleich mit dem entfernten Renderer. | `Portal parity and responsive shell` / 8399 | `qa_orakel templ-coverage.mjs /tmp/hausv-oracles/renderer.json 8399` |
 | `qa-nav-flicker.mjs` | Helligkeit tatsächlicher CDP-Frames bei 18 Admin-Seitenwechseln auf 1440 × 900; helle Sidebar oder dunkler Inhalt. | Nicht gelieferte Frames, kleine lokale Farbfehler unter den Flächenmittelwerten und andere Viewports. | Lokal / 8099 | `qa_orakel qa-nav-flicker.mjs /tmp/hausv-oracles/nav-flicker 8099` |
