@@ -240,8 +240,10 @@ body[data-authenticated-app] .portal-section-content{padding-top:var(--space-6)}
    its own family keeps it (zero-specificity :where). */
 :where(.portal-section-content) :where(h2){font-family:var(--font-serif);font-weight:600;letter-spacing:-.005em}
 /* Buttons: default = gold outline, primary = gold fill with dark ink (AA contrast;
-   white on gold was 2.6:1), ghost = quiet neutral outline. One height, one weight. */
-body[data-authenticated-app] .button{min-height:40px;gap:var(--space-2);padding:0 var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:650;line-height:1.2;letter-spacing:0;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+   white on gold was 2.6:1), ghost = quiet neutral outline. One height, one weight.
+   Labels may wrap: a nowrap label widened the annual statement to 779px at 761px
+   (shell-widths). Only header actions stay on one line. */
+body[data-authenticated-app] .button{min-height:40px;gap:var(--space-2);padding:var(--space-2) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:650;line-height:1.2;letter-spacing:0;text-align:center;text-decoration:none;max-width:100%;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
 body[data-authenticated-app] .button:hover{background-color:rgba(200,153,63,.08)}
 body[data-authenticated-app] .button.primary{border-color:var(--gold);background:var(--gold);color:var(--nav)}
 body[data-authenticated-app] .button.primary:hover{border-color:#b88a34;background:#b88a34;color:var(--nav)}
