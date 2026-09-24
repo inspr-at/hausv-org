@@ -288,6 +288,11 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			return finishValorisationItem(item)
 		}
 		item.CapCents = item.Ceiling.AmountCents
+		if clause.ClauseType == ClauseStaffel && item.CapCents < item.OldCents {
+			item.exception("staffel_anchor_missing")
+			item.Explanation = append(item.Explanation, "Die Deckelkurve liegt unter dem geltenden Hauptmietzins. Bitte den bisherigen Anpassungsstand prüfen.")
+			return finishValorisationItem(item)
+		}
 		for _, step := range item.Ceiling.Years {
 			item.Explanation = append(item.Explanation, fmt.Sprintf("%d: Jahresmittel %s → %s; Änderung %s; nach Begrenzung %s; %d von 12 Monaten berücksichtigt. Deckelkurve: %s (gerundet angezeigt).", step.Year, ValorisationNumber(step.PreviousAverage.String(), 1), ValorisationNumber(step.CurrentAverage.String(), 1), ValorisationPercent(step.RawRatePercent, 5), ValorisationPercent(step.LimitedRatePercent, 5), step.FullMonths, ValorisationExactMoney(step.ExactAmountCents)))
 		}

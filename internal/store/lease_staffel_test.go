@@ -226,4 +226,24 @@ func TestStaffelManualRentChangesCannotBecomeCapDecreases(t *testing.T) {
 	if err != nil || run.Items[0].Group != "exception" || run.Items[0].Outcome == "decrease" || run.Items[0].NewCents != 105000 {
 		t.Fatalf("manual change since prior: %+v %v", run, err)
 	}
+
+	l = staffelFixture(t)
+	l.Clauses[0].StaffelSteps, _ = ParseStaffel("2025-04-01:1100;2026-04-01:1200")
+	l.Components = append(l.Components,
+		RentComponent{Kind: ComponentHMZ, NetCents: 110000, ValidFrom: "2025-04-01"},
+		RentComponent{Kind: ComponentHMZ, NetCents: 115000, ValidFrom: "2025-09-01", Origin: OriginManual})
+	l.Clauses[0].State = &ValorisationState{CapAnchorPeriod: "2025-04", CapValue: "1100.00", LastEffectiveOn: "2025-04-01"}
+	got = previewTest(t, l, "2026-04-01")
+	if got.Group != "exception" || got.Outcome == "decrease" || got.NewCents != 115000 || !strings.Contains(strings.Join(got.Exceptions, ","), "staffel_anchor_missing") {
+		t.Fatalf("manual change after reviewed historical anchor: %+v", got)
+	}
+
+	// A real decrease agreed in the schedule remains supported when the cap
+	// history is consistent with the rent in force.
+	l = staffelFixture(t)
+	l.Clauses[0].StaffelSteps, _ = ParseStaffel("2026-04-01:950")
+	got = previewTest(t, l, "2026-04-01")
+	if got.Group != "ready" || got.Outcome != "decrease" || got.NewCents != 95000 {
+		t.Fatalf("contractual decrease: %+v", got)
+	}
 }
