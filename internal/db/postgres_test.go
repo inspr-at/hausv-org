@@ -371,7 +371,7 @@ func tenantTableSmokeInsert(table string) string {
 	case "rent_components":
 		return `INSERT INTO rent_components(tenant_id,id,lease_id,tenant_slug,kind,net_cents,vat_rate_bp,valid_from,origin,created_at) VALUES($1,'rls-component','rls-lease','rls-fixture','hmz',100000,1000,'2018-04-01','manual','2026-09-24T00:00:00Z')`
 	case "index_clauses":
-		return `INSERT INTO index_clauses(tenant_id,id,lease_id,tenant_slug,clause_type,valid_from) VALUES($1,'rls-clause','rls-lease','rls-fixture','vpi_threshold','2018-04-01')`
+		return `INSERT INTO index_clauses(tenant_id,id,lease_id,tenant_slug,clause_type,valid_from,staffel_steps) VALUES($1,'rls-clause','rls-lease','rls-fixture','staffel','2018-04-01','[{"effective_on":"2026-04-01","net_cents":110000}]')`
 	case "valorisation_state":
 		return `INSERT INTO valorisation_state(tenant_id,clause_id,tenant_slug) VALUES($1,'rls-clause','rls-fixture')`
 	}

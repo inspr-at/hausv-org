@@ -42,6 +42,7 @@ import (
 	"github.com/inspr-at/hausv-org/internal/dbmove"
 	"github.com/inspr-at/hausv-org/internal/dbtest"
 	"github.com/inspr-at/hausv-org/internal/energy"
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/store"
 )
 
@@ -346,6 +347,9 @@ func seedFull(t *testing.T) *source {
 				ThresholdKind: "percent", ThresholdValue: "5", FullChangeOnTrigger: true, TwoWay: true,
 				ReviewStatus: store.ReviewOK, ValidFrom: "2020-02-01", ClauseText: "Der Hauptmietzins ist wertgesichert.",
 				State: &store.ValorisationState{ContractValue: "1000.00", ContractBasePeriod: "2024-09", ContractBaseValue: "123.6", CapValue: "1000.00", CapAnchorPeriod: "2024-09"},
+			}, {
+				ClauseType: store.ClauseStaffel, ValidFrom: "2027-01-01", TwoWay: true, ReviewStatus: store.ReviewOK,
+				StaffelSteps: []indexation.StaffelStep{{EffectiveOn: "2028-04-01", Percent: "2.5"}},
 			}},
 		}); err != nil {
 			t.Fatalf("%s lease: %v", slug, err)

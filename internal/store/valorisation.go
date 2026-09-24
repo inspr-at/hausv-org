@@ -200,7 +200,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	switch {
 	case clause.ID == "" || clause.ClauseType == ClauseNone:
 		item.exception("no_clause")
-	case clause.ReviewStatus == ReviewInvalid || clause.ClauseType == ClauseStaffel:
+	case clause.ReviewStatus == ReviewInvalid:
 		item.exception("clause_invalid")
 	case clause.ReviewStatus == ReviewDoubtful || (clause.ReviewStatus != ReviewOK && input.Settings.UnreviewedClausePolicy == "block"):
 		item.exception("clause_unreviewed")
@@ -227,6 +227,14 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	prior, hasPrior := input.Prior[clause.ID]
 	anchor := indexation.Month(lease.ConcludedOn[:7])
 	start := item.OldCents
+	if clause.ClauseType == ClauseStaffel {
+		var err error
+		start, err = staffelStartCents(lease, clause)
+		if err != nil || indexation.ValidateStaffelSteps(clause.StaffelSteps) != nil {
+			item.exception("clause_invalid")
+			return finishValorisationItem(item)
+		}
+	}
 	if clause.State != nil && clause.State.CapAnchorPeriod != "" {
 		anchor = indexation.Month(clause.State.CapAnchorPeriod)
 		var err error
@@ -267,7 +275,36 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	var contract indexation.Evaluation
 	var contractualOn, published time.Time
 	var trigger indexation.Month
-	if clause.ClauseType == ClauseMieWeG {
+	if clause.ClauseType == ClauseStaffel {
+		base, err := staffelStartCents(lease, clause)
+		if err != nil {
+			item.exception("clause_invalid")
+			return finishValorisationItem(item)
+		}
+		contract, contractualOn, err = indexation.EvaluateStaffel(base, item.OldCents, clause.StaffelSteps, effective)
+		if err == nil && item.MieWeG && contract.NewAmountCents > item.OldCents && contractualOn.After(item.Ceiling.EffectiveOn) {
+			// An increase after April cannot enter the preceding April curve.
+			contract, contractualOn, err = indexation.EvaluateStaffel(base, item.OldCents, clause.StaffelSteps, item.Ceiling.EffectiveOn)
+			item.Reason = "Weitere Staffelstufen werden frühestens am nächsten 1. April berücksichtigt."
+		}
+		if err != nil {
+			item.exception("clause_invalid")
+			return finishValorisationItem(item)
+		}
+		item.CalculationSteps = contract.Explanation
+		for n, step := range contract.Explanation {
+			scheduled := clause.StaffelSteps[n]
+			basis := "neuer HMZ netto"
+			if scheduled.Percent != "" {
+				basis = "+" + strings.ReplaceAll(scheduled.Percent, ".", ",") + " % auf den vorigen Vertragsbetrag"
+			}
+			item.Explanation = append(item.Explanation, fmt.Sprintf("Staffelmietzins laut Vertrag ab %s: %s; Vertragskurve %s (gerundet angezeigt).", mustDate(scheduled.EffectiveOn).Format("02.01.2006"), basis, ValorisationExactMoney(step.ExactAmountCents)))
+		}
+		if !contractualOn.IsZero() && contractualOn.Year() < 2026 && (clause.State == nil || clause.State.LastEffectiveOn < contractualOn.Format(time.DateOnly)) && contract.Crossed {
+			item.exception("missed_pre2026")
+			return finishValorisationItem(item)
+		}
+	} else if clause.ClauseType == ClauseMieWeG {
 		if !item.MieWeG {
 			item.exception("clause_invalid")
 			return finishValorisationItem(item)
@@ -449,7 +486,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	if !contract.Crossed {
 		return finishValorisationItem(item)
 	}
-	if published.IsZero() || published.After(now) || published.After(effective) {
+	if clause.ClauseType != ClauseStaffel && (published.IsZero() || published.After(now) || published.After(effective)) {
 		item.exception("index_missing")
 		return finishValorisationItem(item)
 	}
@@ -476,6 +513,9 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		return finishValorisationItem(item)
 	}
 	item.NewCents = item.Decision.AllowedNowCents
+	if clause.ClauseType == ClauseStaffel && item.MieWeG && item.Decision.CappedCents > 0 {
+		item.Explanation = append(item.Explanation, fmt.Sprintf("MieWeG begrenzt die Staffel: %s bleiben oberhalb des zulässigen Betrags. Die Vertragskurve bleibt erhalten; der begrenzte Teil ist keine Nachforderung.", ValorisationExactMoney(fmt.Sprint(item.Decision.CappedCents))))
+	}
 	for _, step := range item.Decision.Explanation {
 		if step.Code == "section_16_ceiling" {
 			item.exception("max_hmz_exceeded")
@@ -485,11 +525,15 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 	mode := indexation.ContractualTiming
 	if item.MieWeG && item.NewCents > item.OldCents {
 		mode = indexation.MieWeGTiming
-	} else if item.RequiresMRGNotice {
+	} else if item.RequiresMRGNotice && clause.ClauseType != ClauseStaffel {
 		mode = indexation.TimingMode(input.Settings.WirksamwerdenMode)
 	}
 	item.TimingInput = indexation.TimingInput{TriggerMonth: trigger, FinalPublishedOn: published, Mode: mode, ContractualEffectiveOn: contractualOn, StatutoryEffectiveOn: item.Decision.EffectiveOn, RequiresMRGNotice: item.RequiresMRGNotice, DueDay: lease.ZinsterminDay}
-	if mode == indexation.ContractualTiming && !item.MieWeG {
+	item.TimingInput.ContractSchedule = clause.ClauseType == ClauseStaffel
+	if item.TimingInput.ContractSchedule && item.MieWeG && item.Decision.PermittedCents > item.OldCents {
+		item.TimingInput.Mode = indexation.MieWeGTiming
+	}
+	if mode == indexation.ContractualTiming && !item.MieWeG && clause.ClauseType != ClauseStaffel {
 		item.TimingInput.ContractualEffectiveOn = effective
 	}
 	item.Timing, err = indexation.Timing(item.TimingInput)

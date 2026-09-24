@@ -107,16 +107,20 @@ func TestDemoValorisationDraft(t *testing.T) {
 		if item.LeaseID == "lease-top-2" && item.NewCents != 101735 {
 			t.Fatal("E2", item)
 		}
+		// 105000 * (1 + (3 + ((128.2/123.8-1)*100-3)/2)/100*11/12), half-down.
+		if item.LeaseID == "lease-top-9" && (item.Group != "ready" || !item.MieWeG || item.ContractCents != 115000 || item.NewCents != 108154 || item.Decision.CappedCents != 6846) {
+			t.Fatal("Staffel with MieWeG cap", item)
+		}
 	}
-	if groups["ready"] != 6 || groups["unchanged"] != 2 || groups["exception"] != 4 {
+	if groups["ready"] != 7 || groups["unchanged"] != 2 || groups["exception"] != 3 {
 		t.Fatalf("demo mix: %+v", groups)
 	}
-	for _, code := range []string{"no_clause", "clause_unreviewed", "one_way_clause_risk", "clause_invalid"} {
+	for _, code := range []string{"no_clause", "clause_unreviewed", "one_way_clause_risk"} {
 		if !codes[code] {
 			t.Fatalf("missing intended exception %s", code)
 		}
 	}
-	if len(codes) != 4 {
+	if len(codes) != 3 {
 		t.Fatal("unexpected exception", codes)
 	}
 	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {

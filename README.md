@@ -42,6 +42,18 @@ Heating and hot-water evidence comes from confirmed consumer-energy mappings of 
 
 HAUSV does not replace property accounting software or issue bookkeeping records, dunning notices or payment orders. Structured data can be exchanged with existing systems such as BMD.
 
+Lease clauses support structured Staffelmietzins schedules: dated new net principal
+rent amounts or percentage increases on the preceding contractual amount. The
+optional lease-import column `staffel` uses
+`"2026-04-01:1050,00;2027-04-01:2%"` with `klausel_typ=staffel`.
+Dates must be unique, ascending and after clause commencement; the original HMZ
+at commencement remains the schedule's base. The complete CSV cell must be quoted.
+Clause prose is never parsed. Covered leases use the independent MieWeG ceiling
+and April timing; uncapped contractual values and capped/deferred differences stay
+in the run snapshot. Fixed schedules require no monthly index publication.
+Steps with a separately agreed non-inflation reason require individual review;
+this schedule type applies the cap to every covered increase.
+
 ## Development
 
 Requirements:

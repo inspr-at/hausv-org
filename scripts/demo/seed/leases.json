@@ -199,8 +199,8 @@
     "tenant_name": "Emil Roth",
     "tenant_email": "emil.roth@musterstadt.example",
     "tenant_address": "Janusbergweg 123/9, 8010 Graz",
-    "concluded_on": "2022-06-01",
-    "starts_on": "2022-07-01",
+    "concluded_on": "2025-01-01",
+    "starts_on": "2025-02-01",
     "use_kind": "wohnung",
     "mrg_scope": "teil",
     "rent_regime": "frei",
@@ -209,7 +209,11 @@
     "vat_bp": 1000,
     "clause_type": "staffel",
     "review_status": "ok",
-    "clause_text": "Der Hauptmietzins steigt jeweils am 1. April um 2 Prozent, unabhängig vom Index."
+    "staffel_steps": [
+      {"effective_on": "2026-04-01", "net_cents": 115000},
+      {"effective_on": "2027-04-01", "percent": "2"}
+    ],
+    "clause_text": "Staffelmietzins: ab 1. April 2026 beträgt der HMZ netto 1.150,00 Euro, ab 1. April 2027 steigt der Vertragsbetrag um 2 Prozent. Die gesetzlichen MieWeG-Begrenzungen bleiben anwendbar."
   },
   {
     "id": "lease-top-10",

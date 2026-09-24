@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inspr-at/hausv-org/internal/indexation"
 	"github.com/inspr-at/hausv-org/internal/textutil"
 	"github.com/inspr-at/hausv-org/internal/ulid"
 )
@@ -108,6 +109,7 @@ type RentComponent struct {
 }
 
 type IndexClause struct {
+	StaffelSteps                           []indexation.StaffelStep
 	ID, LeaseID, ComponentKind, ClauseType string
 	Series, BasePeriod, BaseValue          string
 	ThresholdKind, ThresholdValue          string
@@ -499,6 +501,16 @@ func normalizeClause(leaseID string, clause IndexClause) (IndexClause, error) {
 		if err := normalizeValorisation(clause.State); err != nil {
 			return IndexClause{}, err
 		}
+	}
+	if clause.ClauseType == ClauseStaffel {
+		if err := indexation.ValidateStaffelSteps(clause.StaffelSteps); err != nil {
+			return IndexClause{}, fmt.Errorf("%w: %s", ErrLeaseInvalid, err)
+		}
+		if clause.StaffelSteps[0].EffectiveOn <= clause.ValidFrom {
+			return IndexClause{}, fmt.Errorf("%w: Staffel muss nach Klauselbeginn liegen", ErrLeaseInvalid)
+		}
+	} else if len(clause.StaffelSteps) != 0 {
+		return IndexClause{}, fmt.Errorf("%w: Staffeln nur für Staffelklauseln", ErrLeaseInvalid)
 	}
 	return clause, nil
 }
