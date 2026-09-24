@@ -122,6 +122,10 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 	if err != nil {
 		return input, err
 	}
+	input.Structure.Legal, err = loadAnnualStatementLegal(tx, tenant, year)
+	if err != nil {
+		return input, err
+	}
 	input.Period.UpdatedAt, err = time.Parse(time.RFC3339Nano, updatedAt)
 	if err != nil {
 		return input, err

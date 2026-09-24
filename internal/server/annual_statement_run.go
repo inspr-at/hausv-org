@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -307,6 +308,13 @@ func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 	if !found {
 		http.NotFound(w, r)
 		return
+	}
+	if run.Approval == nil && ac.repositories.annualStatementPeriods != nil {
+		structure, ok := ac.repositories.annualStatementPeriods.Structure(run.PeriodYear)
+		if !ok || !reflect.DeepEqual(structure.Legal, run.Input.Structure.Legal) {
+			http.Error(w, "Die Rechtsgrundlage wurde geändert. Bitte einen neuen Lauf berechnen.", 409)
+			return
+		}
 	}
 	if _, err := statementpdf.Documents(run, "", ""); err != nil {
 		http.Error(w, "Bitte zuerst alle Parteien zuordnen und einen neuen Lauf berechnen.", 409)

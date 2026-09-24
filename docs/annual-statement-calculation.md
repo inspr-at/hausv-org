@@ -169,3 +169,14 @@ bis zu jeder adressierten PDF-Kopie und deren Bytes nach Speicherung.
 Die bestehenden Run-, PDF-, Archiv- und Versandtests ergänzen diese um
 Persistenz, Berechtigungen, Mandantentrennung, Prüfsummen, Wiederholung und
 Unterbrechung. Konkrete Ausführungsergebnisse gehören in den Lane-Bericht.
+
+## Rechtsgrundlage je Periode
+
+Die Periodenstruktur hält `weg`, `mrg_voll`, `mrg_teil` oder `ausnahme` und
+`heizkg_applies`. Bestehende Perioden beginnen mit WEG und ohne HeizKG; die
+Verwaltung muss die tatsächliche Anwendbarkeit prüfen. Die Fristerinnerung
+verwendet 30. Juni nach dem Abrechnungsjahr bei MRG Vollanwendung, sonst sechs
+Monate ab Periodenende bei WEG/HeizKG. Bei überlappenden Fristen zählt die frühere.
+Teilanwendung/Ausnahme ohne HeizKG verweist auf den Vertrag. Der PDF-Kopf nennt
+Regime und Rechtsgrundlage aus dem Snapshot. Änderungen erfordern eine neue
+Revision; freigegebene Läufe werden niemals umgeschrieben.

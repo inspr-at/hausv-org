@@ -74,6 +74,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d := Document{UnitID: unit.UnitID, PartyID: party.ID, UnitLabel: unit.Label,
 		Header: []string{org, p.EstateName, p.EstateAddress, "Abrechnungsperiode: " + date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn), fmt.Sprintf("Lauf %s · Revision %d", run.ID, run.Revision), "Erstellt: " + timestamp(run.CreatedAt)},
 		Total:  money(unit.AllocatedCents), Prepaid: money(unit.PrepaidCents), Contact: strings.Join(nonempty(p.ContactName, p.ContactEmail, p.ContactPhone, p.ContactAddress), " · ")}
+	if run.Input.Structure.Legal.Regime != "" {
+		d.Header = append(d.Header, run.Input.Structure.Legal.Basis())
+	}
 	if run.Approval != nil {
 		role := "Verwaltung"
 		if run.Approval.Role == store.RoleAdmin {

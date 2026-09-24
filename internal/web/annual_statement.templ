@@ -1,5 +1,7 @@
 package web
 
+import "github.com/inspr-at/hausv-org/internal/store"
+
 import "strconv"
 
 type AnnualStatementPeriodView struct {
@@ -132,6 +134,7 @@ type AnnualStatementPrepaymentView struct {
 }
 
 type AnnualStatementPageData struct {
+ Legal store.AnnualStatementLegalSettings
 	Portal        PortalPageData
 	EstateName    string
 	EstateAddress string
@@ -212,6 +215,23 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 		<summary><span>Grundlagen und Belege prüfen oder bearbeiten · { annualStatementYear(data.Year) }<small>Kostenarten, Einheiten, Parteien, Periode</small></span>
 			@DisclosureChevron()
 		</summary>
+ if data.StructureYear > 0 {
+ <section class="panel workspace" id="rechtsgrundlage">
+ <header class="workspace-head"><div><h2>Rechtsgrundlage</h2><p>Gilt für diese Liegenschaft und Periode. Nach Änderungen einen neuen Lauf berechnen; freigegebene Läufe bleiben erhalten.</p></div></header>
+ <form method="post" action="/app/settings/annual-statement/legal">
+ <input type="hidden" name="year" value={ annualStatementYear(data.StructureYear) }/>
+ <label>Abrechnungsregime<select name="regime">
+ <option value="weg" selected?={ data.Legal.Regime == "weg" }>WEG</option>
+ <option value="mrg_voll" selected?={ data.Legal.Regime == "mrg_voll" }>MRG Vollanwendung</option>
+ <option value="mrg_teil" selected?={ data.Legal.Regime == "mrg_teil" }>MRG Teilanwendung</option>
+ <option value="ausnahme" selected?={ data.Legal.Regime == "ausnahme" }>MRG Ausnahme</option>
+ </select></label>
+ <label><input type="checkbox" name="heizkg_applies" checked?={ data.Legal.HeizKGApplies }/> HeizKG anwendbar</label>
+ <div class="form-actions"><button class="button primary" type="submit">Rechtsgrundlage speichern</button></div>
+ </form>
+ </section>
+ }
+
 		<section class="panel workspace" id="perioden"><header class="workspace-head"><div><h2>Liegenschaft &amp; Abrechnungsperiode</h2><p>Grunddaten ohne Belege, Schlüssel oder Berechnung.</p></div></header>
 			@SettingsFlash(data.PeriodMsg, data.PeriodOK)
 			<div class="form-grid"><fieldset><legend>Liegenschaft</legend><label>Name<span class="readonly"><strong>{ data.EstateName }</strong></span></label><label>Adresse<span class="readonly">{ data.EstateAddress }</span></label></fieldset>
@@ -227,7 +247,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
 			if data.Followup.Available {
 				<article class="inline-details"><header class="subhead"><div><h3>Folgejahr { annualStatementYear(data.Followup.Year) } vorbereiten</h3><p>{ data.Followup.DateRange }</p></div><span class="scope management">Vorlage</span></header>
 					<p>Der Kostenartenkatalog, seine Verteilerschlüssel und Verteilerbasen werden als unabhängig bearbeitbare Vorlage übernommen. Einheiten und Parteien bleiben zentral gepflegt. Belege, Beträge, Vorauszahlungen und Abrechnungsergebnisse werden nicht kopiert.</p>
-					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach § 34 Abs. 1 WEG aus dem gespeicherten Periodenende mit sechs Monaten berechnet. Das ist eine Arbeitserinnerung und keine Rechtsberatung; Vereinbarungen und Einzelfall bitte prüfen.</p>
+					<p class="notice"><strong>Abrechnungsfrist als Erinnerung: { data.Followup.Deadline }</strong><br/>Nach der gewählten Rechtsgrundlage: { data.Legal.Basis() }. Vereinbarungen und Einzelfall bitte prüfen.</p>
 					<form method="post" action="/app/settings/annual-statement/periods/next"><input type="hidden" name="source_year" value={ annualStatementYear(data.Followup.SourceYear) }/><button class="button primary" type="submit">Folgejahr als Vorlage anlegen</button></form>
 				</article>
 			}

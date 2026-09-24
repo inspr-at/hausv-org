@@ -64,13 +64,15 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 				}
 			}
 		}
+		periodLegal, _ := ac.repositories.annualStatementPeriods.Structure(period.Year)
 		periodViews = append(periodViews, web.AnnualStatementPeriodView{
 			Year: period.Year, StartsOn: period.StartsOn, EndsOn: period.EndsOn,
-			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualStatementDeadline(period.EndsOn), Selected: selected,
+			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualLegalDeadline(period, periodLegal.Legal), Selected: selected,
 		})
 	}
 	units := ac.repositories.units.List()
 	structureYear := 0
+	legal := store.DefaultAnnualStatementLegalSettings()
 	if selectedPeriodFound {
 		structureYear = selectedYear
 		structure, found := ac.repositories.annualStatementPeriods.Structure(selectedYear)
@@ -78,6 +80,15 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			logError("annual statement period structure unavailable", fmt.Errorf("missing period snapshot"), "tenant", tenant.Slug, "year", selectedYear)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
+		}
+		legal = structure.Legal
+		for i := range periodViews {
+			if periodViews[i].Selected {
+				periodViews[i].Deadline = annualLegalDeadline(selectedPeriod, legal)
+			}
+		}
+		if next, ok := annualStatementFollowupPeriod(selectedPeriod, actorEmail); ok {
+			followup.Deadline = annualLegalDeadline(next, legal)
 		}
 		costTypes = structure.CostTypes
 		units = annualStatementUnitsWithPeriodBases(units, structure.UnitBases)
@@ -178,6 +189,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
+		Legal:   legal,
 		Periods: periodViews, HasPeriods: len(periodViews) > 0,
 		Year: formYear, StructureYear: structureYear, StartsOn: startsOn, EndsOn: endsOn,
 		PeriodMsg: periodMsg, PeriodOK: periodOK, Followup: followup, ImportMsg: importMsg, ImportOK: importOK,

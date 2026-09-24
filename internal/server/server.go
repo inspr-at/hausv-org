@@ -1219,6 +1219,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/annual-statement/periods/next", a.action(a.cloneNextAnnualStatementPeriod))
 	mux.HandleFunc("POST /app/settings/annual-statement/parties/import", a.action(a.importAnnualStatementParties))
 	mux.HandleFunc("POST /app/settings/annual-statement/allocation-bases", a.action(a.saveAnnualStatementAllocationBases))
+	mux.HandleFunc("POST /app/settings/annual-statement/legal", a.action(a.saveAnnualStatementLegal))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs", a.action(a.createAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/approve", a.action(a.approveAnnualStatementRun))
 	mux.HandleFunc("POST /app/settings/annual-statement/runs/{runID}/archive", a.action(a.archiveAnnualStatementRun))
