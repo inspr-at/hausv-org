@@ -225,19 +225,25 @@ func TestWritesHealRowsLeftWithoutAnIdentity(t *testing.T) {
 		t.Error("announcement_reads: the repository wrote a seen marker it cannot read back")
 	}
 
-	// units: SetUnits deletes by identity — which misses the legacy row — and
-	// then upserts onto it by (tenant_slug, id).
+	// units: a tenant lane neither sees nor adopts a row left with no tenant_id
+	// (HAUSV-774). The write fails, the legacy row stays, and the boot backfill
+	// below is what links it.
 	if _, err := database.ExecContext(t.Context(),
 		`INSERT INTO units(tenant_slug, id, data) VALUES($1,$2,'{"id":"u1","label":"alt"}')`,
 		"demo", "u1"); err != nil {
 		t.Fatalf("seed legacy unit: %v", err)
 	}
 	units, _ := BindUnitRepository(NewSQLUnitStore(lanes), tenant)
-	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err != nil {
-		t.Fatalf("set units: %v", err)
+	if err := units.SetUnits([]Unit{{ID: "u1", Label: "Top 1"}}); err == nil {
+		t.Fatal("set units adopted a row with no tenant_id")
 	}
-	if got := units.List(); len(got) != 1 {
-		t.Errorf("units: the repository wrote a row it cannot see: List() = %d rows, want 1", len(got))
+	if got := units.List(); len(got) != 0 {
+		t.Errorf("units: tenant lane sees a row with no tenant_id: List() = %d rows", len(got))
+	}
+	var legacyID string
+	if err := database.QueryRowContext(t.Context(),
+		`SELECT id FROM units WHERE tenant_slug=$1 AND id=$2 AND tenant_id IS NULL`, "demo", "u1").Scan(&legacyID); err != nil {
+		t.Fatalf("legacy unit was deleted or already linked: %v", err)
 	}
 
 	// And the boot check now agrees, on rows it previously refused to serve.

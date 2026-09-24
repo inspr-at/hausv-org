@@ -13,11 +13,13 @@ import (
 )
 
 func TestEffectiveAIConfigUsesEnvironmentAndOverrides(t *testing.T) {
+	const syntheticKey = "audit-synthetic-nonsecret"
 	environment := map[string]string{
 		"AI_BASE_URL":       "https://openrouter.ai/api/v1?source=demo",
 		"AI_MODEL":          "cloud-model",
 		"AI_TIMEOUT":        "12s",
 		"AI_PROVIDER_LABEL": "Cloud-Dienst",
+		"AI_API_KEY":        syntheticKey,
 	}
 	getenv := func(key string) string { return environment[key] }
 
@@ -37,14 +39,34 @@ func TestEffectiveAIConfigUsesEnvironmentAndOverrides(t *testing.T) {
 	if resolved("AI_BASE_URL") != "http://localhost:11434/v1" || resolved("AI_MODEL") != "local-model" {
 		t.Fatalf("resolved override = %q / %q", resolved("AI_BASE_URL"), resolved("AI_MODEL"))
 	}
+	// HAUSV-772: localhost is not the operator origin, so the process key stops here.
+	if resolved("AI_API_KEY") != "" {
+		t.Fatal("foreign override inherited the process key")
+	}
+	if got := aiSettingsGetenv(getenv, store.OrgSettings{})("AI_API_KEY"); got != syntheticKey {
+		t.Fatal("operator destination lost its process key")
+	}
+	sameOrigin := aiSettingsGetenv(getenv, store.OrgSettings{AIBaseURL: "https://openrouter.ai/api/v1/extra"})
+	if sameOrigin("AI_API_KEY") != syntheticKey || sameOrigin("AI_BASE_URL") != "https://openrouter.ai/api/v1/extra" {
+		t.Fatal("same-origin override lost the process key or the override URL")
+	}
 }
 
 func TestValidateAIBaseURLRejectsCredentials(t *testing.T) {
 	if err := validateAIBaseURL("https://user:pass@example.test/v1"); err == nil {
 		t.Fatal("URL userinfo was accepted")
 	}
+	if err := validateAIBaseURL("https://example.test/v1#abschnitt"); err == nil {
+		t.Fatal("URL fragment was accepted")
+	}
 	if err := validateAIBaseURL("ftp://example.test/v1"); err == nil {
 		t.Fatal("non-http URL was accepted")
+	}
+	if err := validateAIBaseURL("http://8.8.8.8/v1"); err == nil {
+		t.Fatal("public http URL was accepted")
+	}
+	if err := validateAIBaseURL("http://192.168.8.10/v1"); err != nil {
+		t.Fatalf("LAN http URL rejected: %v", err)
 	}
 	if err := validateAIBaseURL("https://example.test/v1"); err != nil {
 		t.Fatalf("valid URL rejected: %v", err)
@@ -73,12 +95,15 @@ func TestVerwaltungAITestUsesFakeAndNeverRendersAPIKey(t *testing.T) {
 	}
 	const secret = "dummy-api-key-must-not-appear"
 	t.Setenv("AI_API_KEY", secret)
+	t.Setenv("AI_BASE_URL", "https://operator.example/v1")
 	original := newSettingsAISuggester
 	t.Cleanup(func() { newSettingsAISuggester = original })
 	calls := 0
 	newSettingsAISuggester = func(getenv func(string) string) (ai.TriageSuggester, error) {
 		calls++
-		if getenv("AI_API_KEY") != secret || getenv("AI_MODEL") != "override-model" {
+		// HAUSV-772: openrouter.ai is not the operator origin, so the factory
+		// must not observe the process key. The page still must not render it.
+		if getenv("AI_API_KEY") != "" || getenv("AI_MODEL") != "override-model" {
 			return nil, errors.New("test resolver mismatch")
 		}
 		return settingsAITestSuggester{suggestion: ai.TriageSuggestion{Model: "resolved-model"}}, nil

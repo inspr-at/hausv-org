@@ -15,8 +15,12 @@ import (
 var ErrIntakeNotFound = errors.New("intake item not found")
 
 type sqlIntakeRepository struct {
-	begin  func(context.Context, string) (*sql.Tx, error)
-	orgKey string
+	begin    func(context.Context, string) (*sql.Tx, error)
+	orgKey   string
+	postgres bool
+	// observe, when set, reports how many rows a list or count query returned
+	// to this repository. Tests use it to prove those paths stay bounded.
+	observe func(op string, rows int)
 }
 
 func beginOrgTx(ctx context.Context, database *sql.DB, orgKey string) (*sql.Tx, error) {
@@ -35,8 +39,9 @@ func beginOrgTx(ctx context.Context, database *sql.DB, orgKey string) (*sql.Tx, 
 
 func BindIntakeRepository(database *sql.DB, orgKey string) IntakeRepository {
 	return &sqlIntakeRepository{
-		begin:  func(ctx context.Context, orgKey string) (*sql.Tx, error) { return beginOrgTx(ctx, database, orgKey) },
-		orgKey: textutil.Slug(orgKey),
+		begin:    func(ctx context.Context, orgKey string) (*sql.Tx, error) { return beginOrgTx(ctx, database, orgKey) },
+		orgKey:   textutil.Slug(orgKey),
+		postgres: database != nil && strings.Contains(fmt.Sprintf("%T", database.Driver()), "stdlib"),
 	}
 }
 
@@ -132,7 +137,56 @@ func (r *sqlIntakeRepository) Get(ctx context.Context, id string) (IntakeItem, e
 	return item, nil
 }
 
-func intakeWhere(orgKey string, filter IntakeFilter) (string, []any) {
+// intakeBindSlug returns the slug to bind. The second result is true when the
+// caller named a slug that cannot match a stored house, including the "\x00"
+// sentinel for "no house". PostgreSQL rejects that byte in a text parameter,
+// and the sentinel's contract is to match nothing, so it never reaches SQL.
+func intakeBindSlug(raw string) (string, bool) {
+	slug := textutil.Slug(raw)
+	if strings.Contains(slug, "\x00") {
+		return "", true
+	}
+	return slug, false
+}
+
+func intakeAssigneeExpr(postgres bool) string {
+	if postgres {
+		return `(data::json #>> '{suggestion,assignee}')`
+	}
+	return `json_extract(data, '$.suggestion.assignee')`
+}
+
+func intakeOrder(sort string) string {
+	// id is the tie-break. received_at and due_at stay the primary keys, so a
+	// row that already sorted first still sorts first; equal timestamps no
+	// longer make OFFSET pages overlap.
+	if sort == "due" {
+		return ` ORDER BY CASE WHEN due_at='' THEN 1 ELSE 0 END, due_at ASC, received_at DESC, id ASC`
+	}
+	return ` ORDER BY received_at DESC, id ASC`
+}
+
+func intakeLimit(postgres bool, filter IntakeFilter, args []any) (string, []any) {
+	if filter.Limit > 0 {
+		args = append(args, filter.Limit)
+		clause := fmt.Sprintf(" LIMIT $%d", len(args))
+		if filter.Offset > 0 {
+			args = append(args, filter.Offset)
+			clause += fmt.Sprintf(" OFFSET $%d", len(args))
+		}
+		return clause, args
+	}
+	if filter.Offset > 0 {
+		args = append(args, filter.Offset)
+		if postgres {
+			return fmt.Sprintf(" OFFSET $%d", len(args)), args
+		}
+		return fmt.Sprintf(" LIMIT -1 OFFSET $%d", len(args)), args
+	}
+	return "", args
+}
+
+func intakeWhere(orgKey string, filter IntakeFilter, postgres bool) (string, []any) {
 	parts := []string{"org_key=$1"}
 	args := []any{orgKey}
 	addList := func(column string, values []string) {
@@ -162,13 +216,21 @@ func intakeWhere(orgKey string, filter IntakeFilter) (string, []any) {
 	addList("source", sources)
 	if filter.Unassigned {
 		parts = append(parts, "tenant_"+"slug=''")
-	} else if slug := textutil.Slug(filter.TenantSlug); slug != "" {
+	} else if slug, impossible := intakeBindSlug(filter.TenantSlug); impossible {
+		parts = append(parts, "1=0")
+	} else if slug != "" {
 		args = append(args, slug)
 		parts = append(parts, fmt.Sprintf("tenant_"+"slug=$%d", len(args)))
 	} else if len(filter.TenantSlugs) > 0 {
 		slugs := make([]string, 0, len(filter.TenantSlugs))
+		impossible := false
 		for _, value := range filter.TenantSlugs {
-			if slug := textutil.Slug(value); slug != "" {
+			slug, blocked := intakeBindSlug(value)
+			if blocked {
+				impossible = true
+				continue
+			}
+			if slug != "" {
 				slugs = append(slugs, slug)
 			}
 		}
@@ -183,6 +245,8 @@ func intakeWhere(orgKey string, filter IntakeFilter) (string, []any) {
 				clause = "(" + clause + " OR tenant_" + "slug='')"
 			}
 			parts = append(parts, clause)
+		} else if impossible && !filter.IncludeUnassigned {
+			parts = append(parts, "1=0")
 		} else if filter.IncludeUnassigned {
 			parts = append(parts, "tenant_"+"slug=''")
 		}
@@ -193,31 +257,26 @@ func intakeWhere(orgKey string, filter IntakeFilter) (string, []any) {
 		args = append(args, filter.Since.UTC().Format(time.RFC3339Nano))
 		parts = append(parts, fmt.Sprintf("received_at >= $%d", len(args)))
 	}
+	if assignee := strings.TrimSpace(filter.Assignee); assignee != "" {
+		args = append(args, assignee)
+		parts = append(parts, fmt.Sprintf("%s=$%d", intakeAssigneeExpr(postgres), len(args)))
+	}
 	return strings.Join(parts, " AND "), args
 }
 
+func (r *sqlIntakeRepository) noteRows(op string, rows int) {
+	if r.observe != nil {
+		r.observe(op, rows)
+	}
+}
+
 func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]IntakeItem, error) {
-	where, args := intakeWhere(r.orgKey, filter)
-	query := `SELECT data FROM intake_items WHERE ` + where
-	if filter.Sort == "due" {
-		query += ` ORDER BY CASE WHEN due_at='' THEN 1 ELSE 0 END, due_at ASC, received_at DESC`
-	} else {
-		query += ` ORDER BY received_at DESC`
-	}
-	if filter.Assignee == "" && filter.Limit > 0 {
-		args = append(args, filter.Limit)
-		query += fmt.Sprintf(" LIMIT $%d", len(args))
-		if filter.Offset > 0 {
-			args = append(args, filter.Offset)
-			query += fmt.Sprintf(" OFFSET $%d", len(args))
-		}
-	} else if filter.Assignee == "" && filter.Offset > 0 {
-		args = append(args, filter.Offset)
-		query += fmt.Sprintf(" LIMIT -1 OFFSET $%d", len(args))
-	}
 	if r.begin == nil || r.orgKey == "" {
 		return nil, fmt.Errorf("intake repository is not bound")
 	}
+	where, args := intakeWhere(r.orgKey, filter, r.postgres)
+	limit, args := intakeLimit(r.postgres, filter, args)
+	query := `SELECT data FROM intake_items WHERE ` + where + intakeOrder(filter.Sort) + limit
 	tx, err := r.begin(ctx, r.orgKey)
 	if err != nil {
 		return nil, err
@@ -229,7 +288,9 @@ func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]
 	}
 	defer rows.Close()
 	items := []IntakeItem{}
+	returned := 0
 	for rows.Next() {
+		returned++
 		var data string
 		if err := rows.Scan(&data); err != nil {
 			return nil, err
@@ -237,9 +298,6 @@ func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]
 		var item IntakeItem
 		if err := json.Unmarshal([]byte(data), &item); err != nil {
 			return nil, err
-		}
-		if filter.Assignee != "" && (item.Suggestion == nil || item.Suggestion.Assignee != strings.TrimSpace(filter.Assignee)) {
-			continue
 		}
 		items = append(items, item)
 	}
@@ -252,20 +310,47 @@ func (r *sqlIntakeRepository) List(ctx context.Context, filter IntakeFilter) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	if filter.Assignee != "" {
-		start := min(filter.Offset, len(items))
-		end := len(items)
-		if filter.Limit > 0 {
-			end = min(start+filter.Limit, end)
-		}
-		items = items[start:end]
-	}
+	r.noteRows("list", returned)
 	return items, nil
 }
 
 func (r *sqlIntakeRepository) Count(ctx context.Context, filter IntakeFilter) (int, error) {
-	items, err := r.List(ctx, IntakeFilter{Statuses: filter.Statuses, Sources: filter.Sources, TenantSlug: filter.TenantSlug, TenantSlugs: filter.TenantSlugs, Unassigned: filter.Unassigned, IncludeUnassigned: filter.IncludeUnassigned, Assignee: filter.Assignee, Since: filter.Since})
-	return len(items), err
+	if r.begin == nil || r.orgKey == "" {
+		return 0, fmt.Errorf("intake repository is not bound")
+	}
+	where, args := intakeWhere(r.orgKey, filter, r.postgres)
+	tx, err := r.begin(ctx, r.orgKey)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `SELECT COUNT(*) FROM intake_items WHERE `+where, args...)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	returned := 0
+	var count int
+	if rows.Next() {
+		returned++
+		if err := rows.Scan(&count); err != nil {
+			return 0, err
+		}
+	}
+	for rows.Next() {
+		returned++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	r.noteRows("count", returned)
+	return count, nil
 }
 
 func (r *sqlIntakeRepository) UpdateSuggestion(ctx context.Context, id string, suggestion IntakeSuggestion, status IntakeStatus) error {

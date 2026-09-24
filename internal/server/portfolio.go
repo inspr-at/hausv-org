@@ -30,9 +30,15 @@ type portfolioHouseInput struct {
 func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	shell := a.verwaltungShell(r.Context(), &ac, "portfolio")
 	profile := a.profileForTenant(ac.email, ac.tenant.Slug)
+	// Portfolio rows are the selected organisation's managed houses. The
+	// switcher still lists every house the person can open.
+	access := a.organisationAccessFor(&ac)
 	managed := a.organisationManagedTenants(r.Context(), &ac)
 	houses := make([]portfolioHouseInput, 0, len(managed))
 	for _, tenant := range managed {
+		if !access.managesHouse(tenant.Ref.Slug) {
+			continue
+		}
 		repositories := a.repositoriesFor(tenant.Ref)
 		house := portfolioHouseInput{
 			Slug:        tenant.Config.Slug,
