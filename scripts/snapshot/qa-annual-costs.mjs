@@ -30,7 +30,7 @@ try {
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
-  assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['428,04 €', '600,00 €', 'Guthaben 171,96 €']);
+  assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
   assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'Fixture covers multiple parties');
   const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
@@ -39,6 +39,7 @@ try {
   const labels = ['Kostenart', 'Verteilerschlüssel', 'Anteil', 'Betrag'];
   const expected = [
     ['Abfallentsorgung', 'Personen', '2,78 %', '66,67 €'],
+    ['Heizung', 'HeizKG', 'siehe PDF', '443,65 €'],
     ['Hausreinigung', 'Nutzfläche', '4,48 %', '161,37 €'],
     ['Gebäudeversicherung', 'Nutzwert', '4,17 %', '200,00 €'],
   ];

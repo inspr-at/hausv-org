@@ -13,19 +13,22 @@ import (
 // AnnualStatementReceipt links trusted invoice metadata to one original file
 // in Dokumente. Deleting the link deliberately never deletes the document.
 type AnnualStatementReceipt struct {
-	ID          string    `json:"id"`
-	DocumentID  string    `json:"document_id"`
-	PeriodYear  int       `json:"period_year"`
-	CostTypeKey string    `json:"cost_type_key"`
-	AmountCents int64     `json:"amount_cents"`
-	InvoiceDate string    `json:"invoice_date"`
-	CreatedAt   time.Time `json:"created_at"`
-	CreatedBy   string    `json:"created_by"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	UpdatedBy   string    `json:"updated_by"`
+	HeatingCategory string    `json:"heating_category,omitempty"`
+	Supplier        string    `json:"supplier"`
+	ID              string    `json:"id"`
+	DocumentID      string    `json:"document_id"`
+	PeriodYear      int       `json:"period_year"`
+	CostTypeKey     string    `json:"cost_type_key"`
+	AmountCents     int64     `json:"amount_cents"`
+	InvoiceDate     string    `json:"invoice_date"`
+	CreatedAt       time.Time `json:"created_at"`
+	CreatedBy       string    `json:"created_by"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	UpdatedBy       string    `json:"updated_by"`
 }
 
 type AnnualStatementReceiptRepository interface {
+	UpdateMetadata(id, supplier, category, actor string) (AnnualStatementReceipt, error)
 	Create(receipt AnnualStatementReceipt) (AnnualStatementReceipt, error)
 	UpdateAmount(id string, amountCents int64, actor string) (AnnualStatementReceipt, error)
 	Get(id string) (AnnualStatementReceipt, bool)
@@ -39,6 +42,7 @@ type AnnualStatementReceiptStorage interface {
 }
 
 type annualStatementReceiptBackend interface {
+	updateAnnualStatementReceiptMetadata(TenantRef, string, string, string, string) (AnnualStatementReceipt, error)
 	createAnnualStatementReceipt(tenant TenantRef, receipt AnnualStatementReceipt) (AnnualStatementReceipt, error)
 	updateAnnualStatementReceiptAmount(tenant TenantRef, id string, amountCents int64, actor string) (AnnualStatementReceipt, error)
 	getAnnualStatementReceipt(tenant TenantRef, id string) (AnnualStatementReceipt, bool)
@@ -212,11 +216,11 @@ func (s *SQLAnnualStatementReceiptStore) createAnnualStatementReceipt(tenant Ten
 	}
 	_, err = tx.Exec(
 		`INSERT INTO annual_statement_receipts(
-		 tenant_id, tenant_slug, id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by)
-		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+		 tenant_id, tenant_slug, id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier, heating_category)
+		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
 		tenant.ID, tenant.Slug, receipt.ID, receipt.DocumentID, receipt.PeriodYear, receipt.CostTypeKey,
 		receipt.AmountCents, receipt.InvoiceDate, receipt.CreatedAt.Format(time.RFC3339Nano), receipt.CreatedBy,
-		receipt.UpdatedAt.Format(time.RFC3339Nano), receipt.UpdatedBy,
+		receipt.UpdatedAt.Format(time.RFC3339Nano), receipt.UpdatedBy, receipt.Supplier, receipt.HeatingCategory,
 	)
 	if err != nil {
 		return AnnualStatementReceipt{}, err
@@ -253,14 +257,14 @@ func (s *SQLAnnualStatementReceiptStore) updateAnnualStatementReceiptAmount(tena
 
 func (s *SQLAnnualStatementReceiptStore) getAnnualStatementReceipt(tenant TenantRef, id string) (AnnualStatementReceipt, bool) {
 	row := s.db.For(tenant).QueryRow(
-		`SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by
+		`SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier, heating_category
 		 FROM annual_statement_receipts WHERE tenant_id=$1 AND id=$2`, tenant.ID, strings.TrimSpace(id))
 	receipt, err := scanAnnualStatementReceipt(row)
 	return receipt, err == nil
 }
 
 func (s *SQLAnnualStatementReceiptStore) listAnnualStatementReceipts(tenant TenantRef, periodYear int) []AnnualStatementReceipt {
-	query := `SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by
+	query := `SELECT id, document_id, period_year, cost_type_key, amount_cents, invoice_date, created_at, created_by, updated_at, updated_by, supplier, heating_category
 	 FROM annual_statement_receipts WHERE tenant_id=$1`
 	args := []any{tenant.ID}
 	if periodYear != 0 {
@@ -301,7 +305,7 @@ func scanAnnualStatementReceipt(scanner annualStatementReceiptScanner) (AnnualSt
 	var createdAt, updatedAt string
 	if err := scanner.Scan(
 		&receipt.ID, &receipt.DocumentID, &receipt.PeriodYear, &receipt.CostTypeKey, &receipt.AmountCents,
-		&receipt.InvoiceDate, &createdAt, &receipt.CreatedBy, &updatedAt, &receipt.UpdatedBy,
+		&receipt.InvoiceDate, &createdAt, &receipt.CreatedBy, &updatedAt, &receipt.UpdatedBy, &receipt.Supplier, &receipt.HeatingCategory,
 	); err != nil {
 		return AnnualStatementReceipt{}, err
 	}
@@ -316,6 +320,13 @@ func scanAnnualStatementReceipt(scanner annualStatementReceiptScanner) (AnnualSt
 }
 
 func normalizeAnnualStatementReceipt(receipt AnnualStatementReceipt) (AnnualStatementReceipt, error) {
+	if receipt.HeatingCategory != "" && receipt.HeatingCategory != "energie" && receipt.HeatingCategory != "sonstige_betriebskosten" {
+		return AnnualStatementReceipt{}, fmt.Errorf("invalid heating category")
+	}
+	receipt.Supplier = strings.TrimSpace(receipt.Supplier)
+	if len(receipt.Supplier) > 300 {
+		return AnnualStatementReceipt{}, fmt.Errorf("supplier too long")
+	}
 	receipt.ID = strings.TrimSpace(receipt.ID)
 	receipt.DocumentID = strings.TrimSpace(receipt.DocumentID)
 	receipt.CostTypeKey = strings.ToLower(strings.TrimSpace(receipt.CostTypeKey))
@@ -426,3 +437,54 @@ func sortAnnualStatementReceipts(receipts []AnnualStatementReceipt) {
 
 var _ AnnualStatementReceiptStorage = (*MemoryAnnualStatementReceiptStore)(nil)
 var _ AnnualStatementReceiptStorage = (*SQLAnnualStatementReceiptStore)(nil)
+
+func (r *boundAnnualStatementReceiptRepository) UpdateMetadata(id, supplier, category, actor string) (AnnualStatementReceipt, error) {
+	return r.storage.updateAnnualStatementReceiptMetadata(r.tenant, id, supplier, category, actor)
+}
+func receiptMetadata(receipt AnnualStatementReceipt, supplier, category, actor string) (AnnualStatementReceipt, error) {
+	receipt.Supplier = supplier
+	receipt.HeatingCategory = category
+	receipt.UpdatedBy = actor
+	receipt.UpdatedAt = time.Now().UTC()
+	if strings.TrimSpace(actor) == "" {
+		return AnnualStatementReceipt{}, fmt.Errorf("missing actor")
+	}
+	return normalizeAnnualStatementReceipt(receipt)
+}
+func (s *MemoryAnnualStatementReceiptStore) updateAnnualStatementReceiptMetadata(tenant TenantRef, id, supplier, category, actor string) (AnnualStatementReceipt, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	receipt, ok := s.byHome[tenant.ID][id]
+	if !ok {
+		return AnnualStatementReceipt{}, fmt.Errorf("receipt not found")
+	}
+	receipt, err := receiptMetadata(receipt, supplier, category, actor)
+	if err != nil {
+		return AnnualStatementReceipt{}, err
+	}
+	s.byHome[tenant.ID][id] = receipt
+	return receipt, nil
+}
+func (s *SQLAnnualStatementReceiptStore) updateAnnualStatementReceiptMetadata(tenant TenantRef, id, supplier, category, actor string) (AnnualStatementReceipt, error) {
+	receipt, ok := s.getAnnualStatementReceipt(tenant, id)
+	if !ok {
+		return AnnualStatementReceipt{}, fmt.Errorf("receipt not found")
+	}
+	receipt, err := receiptMetadata(receipt, supplier, category, actor)
+	if err != nil {
+		return AnnualStatementReceipt{}, err
+	}
+	result, err := s.db.For(tenant).Exec(`UPDATE annual_statement_receipts SET supplier=$1,heating_category=$2,updated_by=$3,updated_at=$4 WHERE tenant_id=$5 AND id=$6`, receipt.Supplier, receipt.HeatingCategory, receipt.UpdatedBy, receipt.UpdatedAt.Format(time.RFC3339Nano), tenant.ID, id)
+	if err != nil {
+		return AnnualStatementReceipt{}, err
+	}
+	n, err := result.RowsAffected()
+	if err != nil || n != 1 {
+		return AnnualStatementReceipt{}, fmt.Errorf("receipt update failed")
+	}
+	saved, ok := s.getAnnualStatementReceipt(tenant, id)
+	if !ok {
+		return AnnualStatementReceipt{}, fmt.Errorf("receipt not found")
+	}
+	return saved, nil
+}

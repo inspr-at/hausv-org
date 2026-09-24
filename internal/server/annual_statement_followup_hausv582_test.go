@@ -121,7 +121,7 @@ func TestAnnualStatementFollowupClonesStructureWithoutAmountsHAUSV582(t *testing
 	}
 	page := authedRequest(t, a, "manager@example.com", "/demo/app/settings/annual-statement?year=2027&period=cloned")
 	for _, want := range []string{
-		"Folgejahr 2028 vorbereiten", "01.04.2028 – 31.03.2029", "Abrechnungsfrist als Erinnerung", "30.09.2028", "keine Rechtsberatung",
+		"Folgejahr 2028 vorbereiten", "01.04.2028 – 31.03.2029", "Abrechnungsfrist als Erinnerung", "30.09.2028", "Vereinbarungen und Einzelfall bitte prüfen",
 		"Vorlage übernommen. Belege, Beträge und Akonto wurden nicht kopiert.",
 	} {
 		if !strings.Contains(page.Body.String(), want) {

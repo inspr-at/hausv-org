@@ -64,13 +64,15 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 				}
 			}
 		}
+		periodLegal, _ := ac.repositories.annualStatementPeriods.Structure(period.Year)
 		periodViews = append(periodViews, web.AnnualStatementPeriodView{
 			Year: period.Year, StartsOn: period.StartsOn, EndsOn: period.EndsOn,
-			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualStatementDeadline(period.EndsOn), Selected: selected,
+			DateRange: annualStatementDateRange(period.StartsOn, period.EndsOn), Deadline: annualLegalDeadline(period, periodLegal.Legal), Selected: selected,
 		})
 	}
 	units := ac.repositories.units.List()
 	structureYear := 0
+	legal := store.DefaultAnnualStatementLegalSettings()
 	if selectedPeriodFound {
 		structureYear = selectedYear
 		structure, found := ac.repositories.annualStatementPeriods.Structure(selectedYear)
@@ -78,6 +80,15 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			logError("annual statement period structure unavailable", fmt.Errorf("missing period snapshot"), "tenant", tenant.Slug, "year", selectedYear)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
+		}
+		legal = structure.Legal
+		for i := range periodViews {
+			if periodViews[i].Selected {
+				periodViews[i].Deadline = annualLegalDeadline(selectedPeriod, legal)
+			}
+		}
+		if next, ok := annualStatementFollowupPeriod(selectedPeriod, actorEmail); ok {
+			followup.Deadline = annualLegalDeadline(next, legal)
 		}
 		costTypes = structure.CostTypes
 		units = annualStatementUnitsWithPeriodBases(units, structure.UnitBases)
@@ -139,7 +150,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 				invoiceDate = parsed.Format("02.01.2006")
 			}
 			receiptViews = append(receiptViews, web.AnnualStatementReceiptView{
-				ID: receipt.ID, DocumentTitle: documentTitle,
+				ID: receipt.ID, DocumentTitle: documentTitle, Supplier: receipt.Supplier, HeatingCategory: receipt.HeatingCategory,
 				Amount: formatAnnualStatementReceiptAmount(receipt.AmountCents), AmountValue: formatAnnualStatementReceiptAmountValue(receipt.AmountCents),
 				InvoiceDate: invoiceDate, CostTypeName: costTypeNames[receipt.CostTypeKey],
 			})
@@ -154,11 +165,22 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			prepayments[item.UnitID] = item
 		}
 	}
-	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units)
+	settlement, settlementReady := store.AnnualStatementSettlementPreview(costTypes, selectedReceipts, units, consumption.Vectors)
+	if legal.HeizKGApplies && ac.repositories.annualStatementRuns != nil {
+		_, result, err := ac.repositories.annualStatementRuns.Preview(selectedYear, consumption.Vectors)
+		settlement = nil
+		settlementReady = err == nil
+		if err == nil {
+			for _, u := range result.Units {
+				settlement = append(settlement, store.AnnualStatementSettlementUnit{UnitID: u.UnitID, AllocatedCents: u.AllocatedCents})
+			}
+		}
+	}
 	allocatedByUnit := map[string]int64{}
 	for _, item := range settlement {
 		allocatedByUnit[item.UnitID] = item.AllocatedCents
 	}
+	prefill := annualStatementPrepaymentPrefill(ac.repositories.annualStatementRuns, selectedYear)
 	prepaymentViews := make([]web.AnnualStatementPrepaymentView, 0, len(units))
 	for _, unit := range units {
 		item, recorded := prepayments[unit.ID]
@@ -172,12 +194,17 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 			view.AmountValue = formatAnnualStatementReceiptAmountValue(item.AmountCents)
 			view.Paid = formatAnnualStatementMoney(item.AmountCents)
 		}
+		if amount, ok := prefill[unit.ID]; ok && !recorded {
+			view.AmountValue = formatAnnualStatementReceiptAmountValue(amount)
+			view.Prefilled = true
+		}
 		prepaymentViews = append(prepaymentViews, view)
 	}
 	prepaymentMsg, prepaymentOK := annualStatementPrepaymentMessage(r.URL.Query().Get("prepayment"))
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
+		Legal:   legal,
 		Periods: periodViews, HasPeriods: len(periodViews) > 0,
 		Year: formYear, StructureYear: structureYear, StartsOn: startsOn, EndsOn: endsOn,
 		PeriodMsg: periodMsg, PeriodOK: periodOK, Followup: followup, ImportMsg: importMsg, ImportOK: importOK,
@@ -239,6 +266,15 @@ func parseAnnualStatementPrepaymentAmount(raw string) (int64, bool) {
 	parts := strings.Split(raw, ".")
 	if len(parts) != 2 || parts[0] == "" || len(parts[1]) != 2 {
 		return 0, false
+	}
+	// ParseInt accepts signs, including negative zero and signed fractional
+	// components. Money input consists only of unsigned decimal digits.
+	for _, part := range parts {
+		for _, digit := range part {
+			if digit < '0' || digit > '9' {
+				return 0, false
+			}
+		}
 	}
 	euros, eurosErr := strconv.ParseInt(parts[0], 10, 64)
 	cents, centsErr := strconv.ParseInt(parts[1], 10, 64)
