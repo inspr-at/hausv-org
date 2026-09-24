@@ -570,3 +570,31 @@
     window.location.assign(row.getAttribute("data-href"));
   });
 })();
+
+// Annual statement: keep the native disclosure as the no-JS fallback, and
+// expose its keyboard-operable trigger inline with the unit's totals.
+(function () {
+  function enhanceAnnualRows() {
+    document.querySelectorAll(".annual-details-toggle[hidden]").forEach(function (button) {
+      var details = document.getElementById(button.getAttribute("aria-controls"));
+      if (!details) return;
+      var row = details.closest(".annual-cost-row");
+      var summary = details.querySelector("summary");
+      if (!row || !summary) return;
+      function sync() {
+        row.hidden = !details.open;
+        button.setAttribute("aria-expanded", String(details.open));
+      }
+      button.addEventListener("click", function () {
+        details.open = !details.open;
+        sync();
+      });
+      details.addEventListener("toggle", sync);
+      summary.hidden = true;
+      button.hidden = false;
+      sync();
+    });
+  }
+  enhanceAnnualRows();
+  document.addEventListener("htmx:load", enhanceAnnualRows);
+})();

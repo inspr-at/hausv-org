@@ -24,10 +24,13 @@ func TestReceiptInspectionAppendix(t *testing.T) {
 			text += " " + l.Text
 		}
 	}
-	for _, want := range []string{"Einsicht in die Belege", "Büro Graz", "verwaltung@example.com", "Belegverzeichnis", "Wasserwerke", "03.04.2025", "original-4711"} {
+	for _, want := range []string{"Einsicht in die Belege", "Büro Graz", "verwaltung@example.com", "Belegverzeichnis", "Wasserwerke", "03.04.2025", "Beleg 1"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %s", want)
 		}
+	}
+	if strings.Contains(text, "original-4711") {
+		t.Fatal("internal document ID leaked into customer PDF")
 	}
 }
 

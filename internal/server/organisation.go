@@ -13,11 +13,12 @@ import (
 // exists, otherwise the configured name so a deployment without the table (or
 // without an organisation at all) reads exactly as it did before.
 type organisationRecord struct {
-	Key          string
-	Name         string
-	ContactName  string
-	ContactEmail string
-	ContactPhone string
+	Key            string
+	Name           string
+	ContactName    string
+	ContactAddress string
+	ContactEmail   string
+	ContactPhone   string
 	// Houses are the organisation's tenant slugs. Authorization never reads
 	// this: a person still sees only houses they are a member of.
 	Houses []string
@@ -111,6 +112,16 @@ func (a *app) organisationRecordFor(ctx context.Context, ac *authCtx) (organisat
 	}
 	if record.Name == "" {
 		record.Name = record.Key
+	}
+	if a.orgSettings != nil {
+		if repo := a.orgSettings(record.Key); repo != nil {
+			settings, err := repo.Get(ctx)
+			if err != nil {
+				logError("organisation address could not be read", err, "organisation", record.Key)
+			} else {
+				record.ContactAddress = settings.ContactAddress
+			}
+		}
 	}
 	if a.organisationRepo == nil || record.Key == "" {
 		return record, true

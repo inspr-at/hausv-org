@@ -4,6 +4,7 @@ import "strconv"
 import "net/url"
 
 type AnnualStatementRunView struct {
+ ManagementAddressMissing bool
  Approved bool
  ApprovedAt string
  ApproveAction string
@@ -134,7 +135,7 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			}
 			.annual-units th,
 			.annual-units td {
-				padding: var(--space-2);
+				padding: 6px var(--space-2);
 				text-align: left;
 				vertical-align: top;
 			}
@@ -176,6 +177,25 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 				text-underline-offset: 3px;
 				white-space: nowrap;
 			}
+			.annual-cost-row[hidden] { display: none; }
+			.annual-details-toggle:not([hidden]) {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				min-height: 44px;
+				min-width: 44px;
+				padding: 0 6px;
+				border: 0;
+				background: transparent;
+				color: var(--gold-ink);
+				font: inherit;
+				cursor: pointer;
+			}
+			.annual-details-toggle[aria-expanded="true"] .disclosure-chevron svg { transform: rotate(180deg); }
+			body[data-authenticated-app] .annual-details-toggle .disclosure-chevron { position: static; transform: none; flex: none; }
+			.annual-details-toggle:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 2px; }
+			.annual-details-cell { width: 84px; }
+			.annual-costs summary[hidden] { display: none; }
 			.annual-costs summary {
 				cursor: pointer;
 				color: var(--gold-ink);
@@ -320,6 +340,13 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
 			}
 		</header>
 		@SettingsFlash(data.Message, data.MessageOK)
+		if !data.Approved && data.ManagementAddressMissing {
+			<p class="muted" data-management-address-warning>Die Anschrift der Hausverwaltung fehlt — sie erscheint sonst nicht im Briefkopf. <a href="/app/verwaltung/einstellungen#hausverwaltung">In den Verwaltungseinstellungen ergänzen.</a>
+				if data.ID != "" {
+					<span> Danach einen neuen Abrechnungslauf berechnen, damit die Anschrift übernommen wird.</span>
+				}
+			</p>
+		}
 		<p>Der Lauf speichert Kostenanteile, Akontos und Salden gemeinsam mit den verwendeten Grundlagen. Er ist eine rechnerische Arbeitsfassung auf Ihren Einstellungen; eine rechtliche Prüfung nach WEG/MRG ist damit nicht verbunden.</p>
 		if len(data.Issues)>0 {
 			<div class="notice" role="status">
@@ -405,9 +432,9 @@ if data.Approved {
 				}
 				<table class="annual-units" role="table">
 					<caption>Ergebnis je Einheit</caption>
-					<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Einheit</th><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col" class="annual-money">Kostenanteil</th><th role="columnheader" scope="col" class="annual-money">Akonto</th><th role="columnheader" scope="col" class="annual-money">Saldo</th><th role="columnheader" scope="col">PDF / Archiv</th></tr></thead>
+					<thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Einheit</th><th role="columnheader" scope="col">Partei</th><th role="columnheader" scope="col" class="annual-money">Kostenanteil</th><th role="columnheader" scope="col" class="annual-money">Akonto</th><th role="columnheader" scope="col" class="annual-money">Saldo</th><th role="columnheader" scope="col">PDF / Archiv</th><th role="columnheader" scope="col"><span class="sr-only">Kostenarten</span></th></tr></thead>
 					<tbody role="rowgroup">
-						for _,unit:=range data.Units {
+						for unitIndex,unit:=range data.Units {
 							<tr class="annual-unit-row" role="row">
 								<th scope="row" role="rowheader"><span class="annual-unit-value">{ unit.Label }</span></th>
 								<td role="cell" class="annual-parties" data-label="Partei">
@@ -428,10 +455,16 @@ if data.Approved {
 										</div>
 									}
 								</td>
+								<td role="cell" class="annual-details-cell" data-label="Kostenarten">
+									<button type="button" class="annual-details-toggle" aria-label={ "Details · " + unit.Label } aria-expanded="false" aria-controls={ "annual-costs-" + strconv.Itoa(unitIndex) } hidden>
+										Details
+										@DisclosureChevron()
+									</button>
+								</td>
 							</tr>
 							<tr class="annual-cost-row" role="row">
-								<td role="cell" colspan="6">
-									<details class="annual-costs">
+								<td role="cell" colspan="7">
+									<details class="annual-costs" id={ "annual-costs-" + strconv.Itoa(unitIndex) }>
 										<summary>Kostenarten und Anteile<span class="sr-only"> · { unit.Label }</span>
 											@DisclosureChevron()
 										</summary>

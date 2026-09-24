@@ -201,6 +201,14 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		prepaymentViews = append(prepaymentViews, view)
 	}
 	prepaymentMsg, prepaymentOK := annualStatementPrepaymentMessage(r.URL.Query().Get("prepayment"))
+	runView := a.annualStatementDeliveryView(annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors), ac.repositories, r.URL.Query())
+	if runView.ID == "" {
+		address := tenant.ContactAddress
+		if org, found := a.organisationRecordFor(r.Context(), &ac); found {
+			address = firstNonEmpty(org.ContactAddress, address)
+		}
+		runView.ManagementAddressMissing = strings.TrimSpace(address) == ""
+	}
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
@@ -217,7 +225,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		Receipts: receiptViews, HasReceipts: len(receiptViews) > 0,
 		Units: unitViews, HasUnits: len(unitViews) > 0,
 		Allocation: allocation, Consumption: consumption.View, BasesMsg: basesMsg, BasesOK: basesOK,
-		Run:         a.annualStatementDeliveryView(annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors), ac.repositories, r.URL.Query()),
+		Run:         runView,
 		Prepayments: prepaymentViews, PrepaymentMsg: prepaymentMsg, PrepaymentOK: prepaymentOK, SettlementReady: settlementReady,
 	}))
 }

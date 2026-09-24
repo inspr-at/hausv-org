@@ -174,6 +174,7 @@ func TestOrganisationContactIsEditableBySettings(t *testing.T) {
 		"threshold":         {"90"},
 		"organisation_name": {"Hausverwaltung Musterstadt GmbH"},
 		"contact_name":      {"Vera Verwalter"},
+		"contact_address":   {" Musterstraße 12, 8010 Graz "},
 		"contact_email":     {"buero@musterstadt.example"},
 		"contact_phone":     {"+43 316 123456"},
 	}
@@ -195,10 +196,38 @@ func TestOrganisationContactIsEditableBySettings(t *testing.T) {
 	if len(stored.Houses) != 2 {
 		t.Fatalf("saving the contact changed the house set: %v", stored.Houses)
 	}
+	settings, err := a.orgSettings("musterstadt").Get(ctx)
+	if err != nil || settings.ContactAddress != "Musterstraße 12, 8010 Graz" {
+		t.Fatal("address not persisted in organisation JSON", err)
+	}
+	foreign, err := a.orgSettings("other").Get(ctx)
+	if err != nil || foreign.ContactAddress != "" {
+		t.Fatal("address escaped organisation scope", err)
+	}
 
 	page := authedRequest(t, a, email, "/demo/app/verwaltung/einstellungen")
-	if !strings.Contains(page.Body.String(), "Vera Verwalter") {
+	if !strings.Contains(page.Body.String(), "Vera Verwalter") || !strings.Contains(page.Body.String(), `value="Musterstraße 12, 8010 Graz"`) {
 		t.Fatal("the settings page does not show the stored contact")
+	}
+	form.Set("contact_address", strings.Repeat("ä", 501))
+	if got := authedFormRequest(t, a, email, "/demo/app/verwaltung/einstellungen", form); got.Code != http.StatusBadRequest {
+		t.Fatal("overlong address accepted", got.Code)
+	}
+	form.Del("contact_address")
+	if got := authedFormRequest(t, a, email, "/demo/app/verwaltung/einstellungen", form); got.Code != http.StatusSeeOther {
+		t.Fatal("legacy settings save failed", got.Code)
+	}
+	settings, _ = a.orgSettings("musterstadt").Get(ctx)
+	if settings.ContactAddress != "Musterstraße 12, 8010 Graz" {
+		t.Fatal("omitted field erased address")
+	}
+	form.Set("contact_address", "")
+	if got := authedFormRequest(t, a, email, "/demo/app/verwaltung/einstellungen", form); got.Code != http.StatusSeeOther {
+		t.Fatal("address clear failed", got.Code)
+	}
+	settings, _ = a.orgSettings("musterstadt").Get(ctx)
+	if settings.ContactAddress != "" {
+		t.Fatal("address was not cleared")
 	}
 }
 
