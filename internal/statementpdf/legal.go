@@ -133,7 +133,7 @@ func RenderAushang(run store.AnnualStatementRun) ([]byte, error) {
 	return pdf.Pages(d.Pages(), statementPalette), nil
 }
 
-func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost) []string {
+func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, cost store.AnnualStatementRunCost, prepaid int64) []string {
 	legal := run.Input.Structure.Legal
 	energy, other, consumed, area := store.AnnualStatementHeatingPools(run.Input, cost.CostTypeKey)
 	var totalArea int
@@ -149,7 +149,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Versorgbare Nutzfläche Einheit: " + areaText(legal.HeatableAreas[unit.UnitID]) + "; gesamt: " + areaText(totalArea),
 		"Anteil am gemessenen Verbrauch: " + view.FormatDecimal(float64(cost.SharePPM)/10000, 2) + " %; Methode: Zählerdifferenz",
 		"Kostenanteil Einheit: " + money(cost.AmountCents),
-		"Geleistetes Akonto dieser Heizkostenart: " + money(legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]),
+		"Geleistetes Akonto dieser Heizkostenart: " + money(prepaid) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-prepaid),
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}
 }

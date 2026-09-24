@@ -157,7 +157,11 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 			// A two-pool split has no single allocation share. Consumption and
 			// area shares are explained separately in the measurement appendix.
 			row.Share = "im Anhang"
-			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost)...)
+			prepaid := run.Input.Structure.Legal.HeatingPrepayments[unit.UnitID][cost.CostTypeKey]
+			if vacancyNote != "" && party.Owner && !party.Renter {
+				prepaid = 0 // The occupied party keeps the recorded prepayments.
+			}
+			row.Measurements = append(row.Measurements, heatingDetails(run, unit, cost, prepaid)...)
 		}
 		if run.Input.Structure.Legal.ShowVAT {
 			row.Net = money(cost.NetCents)
@@ -213,7 +217,17 @@ func annualStatementPartyUnit(run store.AnnualStatementRun, unit store.AnnualSta
 	}
 	if party.Owner && party.Renter {
 		combined := unit
-		combined.Costs = append(append([]store.AnnualStatementRunCost(nil), unit.Costs...), line.Costs...)
+		combined.Costs = append([]store.AnnualStatementRunCost(nil), unit.Costs...)
+		for _, vacant := range line.Costs {
+			for i := range combined.Costs {
+				if combined.Costs[i].CostTypeKey == vacant.CostTypeKey {
+					combined.Costs[i].AmountCents += vacant.AmountCents
+					combined.Costs[i].NetCents += vacant.NetCents
+					combined.Costs[i].VATCents += vacant.VATCents
+					break
+				}
+			}
+		}
 		combined.VAT = append([]store.AnnualStatementVATGroup(nil), unit.VAT...)
 		for _, vacant := range line.VAT {
 			found := false

@@ -88,10 +88,9 @@ Vorzeichen, einschließlich `-0,50`, werden abgelehnt.
 
 ## Zeitanteile, Leerstand und Parteien
 
-Es gibt keine zeitabhängigen Basen, Eigentums-/Mietzeiträume oder Tagesanteile.
-Auch in einem Schaltjahr wird ein Betrag nicht automatisch mit 365/366 Tagen
-gewichtet. Ein unterjähriger Personen-, Eigentümer- oder Mieterwechsel wird
-derzeit nicht anteilig berechnet.
+Außer dem ausdrücklich hinterlegten Leerstand gibt es keine zeitabhängigen
+Basen oder Eigentums-/Mietzeiträume. Ein unterjähriger Personen-, Eigentümer-
+oder Mieterwechsel wird derzeit nicht anteilig berechnet.
 
 Ohne hinterlegten Leerstandszeitraum bleibt die Einheit in der Verteilung:
 Fläche und Miteigentum laufen weiter, null erfasste Personen ergeben null
@@ -110,13 +109,17 @@ Leerstand; der Restcent des Tagesanteils bleibt bei der Einheit. Bei WEG und
 Ausnahme ändert der Zeitraum das Ergebnis nicht, weil dort der Eigentümer
 ohnehin die Partei ist beziehungsweise der Vertrag gilt. Gespeicherte Läufe
 ohne Leerstandsdaten wiederholen sich unverändert; die Berechnungsversion
-bleibt 2, weil sich der Algorithmus für diese Eingaben nicht ändert.
+bleibt ohne Umsatzsteuerausweis 2, weil sich der Algorithmus für diese Eingaben
+nicht ändert.
 
-Ergebnisse und Akonto gehören zur **Einheit**, nicht zu einer einzelnen Person.
-Jede gespeicherte Eigentümer-/Mietpartei erhält eine adressierte Kopie des
-vollständigen Einheitenergebnisses. Es gibt weder eine Aufteilung zwischen
-Miteigentümern noch eine gesonderte Eigentümer-/Mieter-Kostenauswahl. Deshalb
-dürfen die Summen aller Parteien-PDFs nicht als Haussumme addiert werden.
+Ohne Leerstandsanteil erhält jede gespeicherte Eigentümer-/Mietpartei eine
+adressierte Kopie des vollständigen Einheitenergebnisses. Bei MRG-Leerstand
+erhält die reine Eigentümerpartei den Leerstandsanteil ohne Akonto; die Mietpartei
+behält den bewohnten Rest und die erfassten Akontos, auch im HeizKG-Nachweis.
+Eine Partei mit beiden Rollen erhält die zusammengeführten Kostenarten und
+jedes Heizkosten-Akonto genau einmal. Miteigentümer werden nicht untereinander
+aufgeteilt. Deshalb dürfen die Summen aller Parteien-PDFs nicht als Haussumme
+addiert werden.
 
 ## Verbrauchsnachweise
 

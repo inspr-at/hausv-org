@@ -46,6 +46,7 @@ func TestCombinedStatementPDF(t *testing.T) {
 	for _, regime := range []string{"weg", "mrg_voll"} {
 		t.Run(regime, func(t *testing.T) {
 			run := combinedRun(t, regime)
+			run.Input.Structure.Legal.HeatingPrepayments["a"]["heizung"] = 1000
 			for _, party := range []string{"owner", "tenant"} {
 				docs, err := Documents(run, "a", party)
 				if err != nil {
@@ -90,6 +91,13 @@ func TestCombinedStatementPDF(t *testing.T) {
 					if party == "owner" && !strings.Contains(text, store.AnnualStatementVacancyLabel) {
 						t.Fatal("missing owner vacancy")
 					}
+					wantAkonto := "Geleistetes Akonto dieser Heizkostenart: 0,00 €"
+					if party == "tenant" {
+						wantAkonto = "Geleistetes Akonto dieser Heizkostenart: 10,00 €"
+					}
+					if !strings.Contains(text, wantAkonto) {
+						t.Fatalf("wrong party heating prepayment: %s", text)
+					}
 				}
 				raw, err := Render(run, "a", party)
 				if err != nil {
@@ -114,6 +122,9 @@ func TestCombinedStatementPDF(t *testing.T) {
 				// A party holding both roles must get one reconciled VAT summary.
 				run.Input.Parties[0].Renter = true
 				docs, _ := Documents(run, "a", "owner")
+				if len(docs[0].Costs) != 2 || !strings.Contains(strings.Join(docs[0].Costs[0].Measurements, "\n"), "Guthaben negativ): 415,00 €") {
+					t.Fatalf("combined heating charged the prepayment twice: %+v", docs[0].Costs)
+				}
 				if docs[0].Total != "452,50 €" || !strings.Contains(docs[0].VATSummary[0], "Brutto 27,50 €") || !strings.Contains(docs[0].VATSummary[1], "Brutto 425,00 €") {
 					t.Fatal(docs[0])
 				}
