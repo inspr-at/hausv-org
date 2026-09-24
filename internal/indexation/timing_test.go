@@ -28,7 +28,7 @@ func TestTiming(t *testing.T) {
 		notice bool
 		want   string
 	}{
-		{ContractualTiming, true, "2026-07-05"},
+		{ContractualTiming, true, "2026-09-05"},
 		{ContractualTiming, false, "2026-07-05"},
 		{CautiousTiming, false, "2026-08-05"},
 	} {
@@ -76,5 +76,32 @@ func TestTimingCivilDatesYearBoundaryAndLeapYear(t *testing.T) {
 	}
 	if got := rentDue("2028-02", 31); got != date("2028-02-29") {
 		t.Fatal(got)
+	}
+}
+
+func TestThreeTimingModesApril(t *testing.T) {
+	for _, tc := range []struct {
+		name                     string
+		mode, floor              TimingMode
+		contract, effective, due string
+	}{
+		{"WKO", CautiousTiming, "", "2026-06-01", "2026-08-01", "2026-09-05"},
+		{"OEVI", OEVITiming, "", "2026-06-01", "2026-06-17", "2026-07-05"},
+		{"contract WKO floor", ContractualTiming, CautiousTiming, "2026-06-01", "2026-08-01", "2026-09-05"},
+		{"contract OEVI floor", ContractualTiming, OEVITiming, "2026-06-01", "2026-06-17", "2026-07-05"},
+		{"contract later", ContractualTiming, OEVITiming, "2026-09-01", "2026-09-01", "2026-10-05"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := TimingInput{TriggerMonth: "2026-04", FinalPublishedOn: date("2026-06-17"), Mode: tc.mode, LegalFloorMode: tc.floor, ContractualEffectiveOn: date(tc.contract), RequiresMRGNotice: true}
+			got, err := Timing(in)
+			if err != nil || got.IndexEffectiveOn != date(tc.effective) || got.DueOn != date(tc.due) {
+				t.Fatalf("%+v %v", got, err)
+			}
+			in.NoticeIssuedOn = date(tc.effective).AddDate(0, 0, -1)
+			in.NoticeReceivedOn = date(tc.effective)
+			if _, err := Timing(in); err == nil {
+				t.Fatal("early letter accepted")
+			}
+		})
 	}
 }

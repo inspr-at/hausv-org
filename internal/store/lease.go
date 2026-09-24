@@ -88,6 +88,7 @@ type Lease struct {
 	LandlordIsBusiness bool
 	TenantIsConsumer   bool
 	ZinsterminDay      int
+	WirksamwerdenMode  string // Empty inherits the organisation default.
 	VATOpted           bool
 	Notes              string
 	UpdatedAt          time.Time
@@ -339,6 +340,11 @@ func validateLease(lease Lease) error {
 	}
 	if lease.Status == LeaseStatusEnded && lease.EndsOn == "" {
 		return fmt.Errorf("%w: ended lease needs ends_on", ErrLeaseInvalid)
+	}
+	switch lease.WirksamwerdenMode {
+	case "", "wko", "oevi", "contract":
+	default:
+		return fmt.Errorf("%w: wirksamwerden mode", ErrLeaseInvalid)
 	}
 	if lease.ZinsterminDay < 1 || lease.ZinsterminDay > 28 {
 		return fmt.Errorf("%w: zinstermin", ErrLeaseInvalid)

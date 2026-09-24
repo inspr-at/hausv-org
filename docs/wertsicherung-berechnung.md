@@ -184,13 +184,28 @@ werden als `missed_pre2026` zur gesonderten Prüfung zurückgegeben.
 `Timing(TimingInput)` verwendet Kalenderdaten unabhängig von der Zeitzone.
 Der Modus ist verpflichtend:
 
-- `CautiousTiming`: übernächster Monatserster nach endgültiger Veröffentlichung.
+- `CautiousTiming` (`wko`, Standard): übernächster Monatserster nach endgültiger Veröffentlichung.
   April-Index, endgültig 17. Juni → 1. August wirksam → bei Zustellung ab
   1. August und Zinstermin am 5. erstmals September einhebbar.
-- `ContractualTiming`: ausdrücklich übergebener, geprüfter Vertragstermin,
-  nicht vor endgültiger Veröffentlichung.
+- `OEVITiming` (`oevi`): Tag der endgültigen Veröffentlichung. April-Index,
+  endgültig 17. Juni → bei rechtzeitigem Zugang erstmals 5. Juli einhebbar.
+  Das ist eine offene Auslegungsfrage, keine gesicherte Rechtsprechung.
+- `ContractualTiming` (`contract`): ausdrücklich übergebener Vertragstermin,
+  mindestens endgültige Veröffentlichung; bei Hauptmiete in Vollanwendung
+  zusätzlich mindestens der Termin aus `LegalFloorMode`. Die Vertragsauswahl
+  übernimmt dafür die Organisationsvorgabe. Eine Organisationsvorgabe `contract`
+  oder eine fehlende Vorgabe verwendet WKO als Untergrenze.
+  Der Laufstichtag gilt bei Schwellenklauseln als geprüfter Vertragstermin,
+  bei periodischen Klauseln der hinterlegte Anpassungsmonat.
 - `MieWeGTiming`: ausdrücklich übergebener 1. April aus der Parallelrechnung.
   Für diese Fälle gilt nicht zusätzlich die vorsichtige Verschiebung.
+
+Die Organisationswerte `cautious`/`contractual` werden zu `wko`/`contract`
+migriert. `leases.wirksamwerden_mode` ist leer (Organisationsstandard) oder
+`wko`, `oevi`, `contract`; die Wahl gilt ausschließlich für Indexerhöhungen
+bei Hauptmiete in Vollanwendung außerhalb des MieWeG. Feste Staffeltermine
+bleiben davon unabhängig. Eingaben und gewählter Modus sind im Lauf eingefroren.
+Die Hilfe unter `/app/hilfe#recht-wirksamwerden` erläutert die Quellen.
 
 Bei `RequiresMRGNotice` werden **Ausstellungs- und tatsächliches Zugangsdatum**
 geprüft. Vor Wirksamkeit datierte oder zugegangene Schreiben sind ungültig;
@@ -198,7 +213,15 @@ der Kern schiebt sie nicht stillschweigend auf einen späteren Termin.
 Der erste Zinstermin muss mindestens 14 Kalendertage nach Zugang liegen.
 Standard-Zinstermin ist der 5.; Tage 29–31 werden in kürzeren Monaten auf den
 letzten Kalendertag begrenzt. Ohne tatsächliche Schreibenstermine liefert der
-Kern eine als `PlannedNotice` erkennbare früheste Planung.
+Kern eine als `PlannedNotice` erkennbare früheste Planung. Freigabe und
+PDF-Erstellung rechnen mit Zugang am Schreibendatum; beide Annahmen werden
+im `TimingInput` gespeichert und in der Oberfläche ausdrücklich als Annahme
+angezeigt. Das ist kein Zustellnachweis. Tatsächliche E-Mail-Versandzeiten
+stehen getrennt in `valorisation_deliveries`. Dort werden auch bestätigter
+Zugang (`received_on`) und der daraus folgende erste Zinstermin
+(`receipt_due_on`) pro Empfänger gespeichert; die Erfassung wird protokolliert.
+Die Freigabeberechnung bleibt unverändert, ein späterer Zugang wird separat
+sichtbar und kann keine rückwirkende Zahlungspflicht erzeugen.
 
 MieWeG-Beispiele: Zugang 21.04.2026 → 05.05.2026; Zugang 22.04.2026 → 05.06.2026.
 Ein verpasster April-Versand kann später einen künftigen Zinstermin erreichen,
