@@ -65,7 +65,7 @@ async function measure(page, width, sidebarWidth, label) {
       active: links.filter(el => el.getAttribute('aria-current') === 'page').length,
       taps: [...links, document.querySelector('[data-context-bar] .house-header-card'), surface.querySelector('.release-trigger')].map(el => ({ label: el?.textContent.trim(), height: el?.getBoundingClientRect().height })),
       navigationCount: [...document.querySelectorAll('nav[aria-label="Bereiche"]')].filter(visible).length,
-      barCount: bar.length, barHeight: bar[0]?.getBoundingClientRect().height,
+      barCount: bar.length, barHeight: bar[0]?.getBoundingClientRect().height, activeView: !!bar[0]?.querySelector('.context-view'),
       headerCount: document.querySelectorAll('[data-portal-section-header]').length,
       h1Count: document.querySelectorAll('main h1').length, headerVisible: visible(header),
       identity: !!header?.querySelector('.portal-section-identity'),
@@ -89,7 +89,8 @@ async function measure(page, width, sidebarWidth, label) {
   }
   assert.equal(result.navigationCount, 1, `${label}: exactly one navigation`);
   assert.equal(result.barCount, 1, `${label}: exactly one context bar`);
-  assert.equal(Math.round(result.barHeight), width <= 760 ? 148 : width <= 1100 ? 116 : 72, `${label}: context height`);
+  // HAUSV-765: the second context row exists only while a role or support view is active.
+  assert.equal(Math.round(result.barHeight), width <= 760 ? (result.activeView ? 148 : 104) : width <= 1100 && result.activeView ? 116 : 72, `${label}: context height`);
   assert.deepEqual(result.blocks.map(b => b.name), result.organisation ? expectedBlocks : ['map','house-navigation','release'], `${label}: block order`);
   assert(Math.abs(result.mapTopGap) < 1, `${label}: map starts flush at navigation surface edge`);
   // Without organisation context, navigation follows the map's normal bottom margin.

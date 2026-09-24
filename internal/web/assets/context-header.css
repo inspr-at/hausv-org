@@ -53,7 +53,7 @@ body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--c
  .unified-context-bar .context-view-slot{grid-column:1/-1;grid-row:3}
  .context-view{gap:8px;justify-content:space-between}
  .context-view-copy strong{font-size:11px}
- .context-view-copy>span{font-size:10px;gap:3px}
+ .context-view-copy>span{font-size:11px;gap:3px}
  .context-action{padding:8px 10px;font-size:11px}
  .unified-context-bar .menu-panel{position:fixed;inset:var(--context-bar-h) 0 0;overflow:auto;overscroll-behavior:contain;background:var(--nav);color:var(--panel);z-index:225}
  .unified-context-bar .role-preview-menu{inset:auto 0 0;width:100%;max-height:calc(100dvh - 16px)}
@@ -77,3 +77,22 @@ body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--c
 .release-trigger{gap:6px;font-size:11px;line-height:24px}.product-version{font-variant-numeric:tabular-nums}
 
 .unified-context-bar :is(.context-navigation,.context-account,.liegenschaft-switcher):not([open])>:is(.menu-panel,.context-account-menu,.switcher-panel){display:none}
+
+/* HAUSV-765: the extra context row exists only while a role or support view is
+   ACTIVE (it carries the "Vorschau … · endet in" copy and the exit). Without it the
+   row was an empty 52px band for residents and an orphaned "Ansicht als" button for
+   administrators. The chooser now sits in the first row; heights stay fixed per
+   state, so the geometry contract still holds from the first paint. (:has() cannot
+   nest, hence :root:not(:has(…)) for the height.) */
+@media(min-width:761px) and (max-width:1100px){
+ :root:has(.unified-context-bar[data-context-bar]):not(:has(.unified-context-bar .context-view)){--context-bar-h:72px}
+ body .unified-context-bar[data-context-bar]:not(:has(.context-view)){grid-template-columns:minmax(150px,1fr) minmax(220px,1.4fr) auto;grid-template-rows:72px;align-items:center}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-view-slot{grid-column:3;grid-row:1;width:auto}
+}
+@media(max-width:760px){
+ :root:has(.unified-context-bar[data-context-bar]):not(:has(.unified-context-bar .context-view)){--context-bar-h:104px}
+ body .unified-context-bar[data-context-bar]:not(:has(.context-view)){grid-template-columns:minmax(0,1fr) auto 44px;grid-template-rows:48px 56px;align-items:center}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-view-slot{grid-column:2;grid-row:1;width:auto}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-navigation{grid-column:3}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-scope{align-self:start}
+}
