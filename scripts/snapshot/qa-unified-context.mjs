@@ -26,7 +26,7 @@ try{
   for(const width of [320,390,768,1440]){
    await page.setViewportSize({width,height:900});
    // HAUSV-765: without an active view the chooser shares the first row.
-   const active=mode!=='normal';const expectedHeight=width<=760?(active?148:104):width<=1100&&active?116:72;
+   const active=mode!=='normal';const expectedHeight=width<=760?(active?148:108):width<=1100&&active?116:72;
    for(const route of ['/app','/app/announcements','/app/events','/app/kontakte','/app/dokumente','/app/anliegen','/app/abstimmungen','/app/settings','/app/hilfe']){
     await page.goto(app+route,{waitUntil:'networkidle'});await page.waitForTimeout(180);
     const frames=await page.evaluate(()=>window.__chromeFrames);assert(frames.length>=2,`${mode}/${width}/${route}: frame samples`);

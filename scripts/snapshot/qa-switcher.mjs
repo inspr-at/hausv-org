@@ -65,7 +65,8 @@ async function alignedNavigation(page,label) {
 }
 async function geometry(page,width,label) {
   assert.equal(await visibleBar(page).count(),1,`${label}: one visible context bar`);
-  const box=await visibleBar(page).boundingBox();assert(Math.abs(box.y)<=1,`${label}: sticky bar top`);assert.equal(Math.round(box.height),width<=760?148:width<=1100?116:72,`${label}: context height`);
+  const box=await visibleBar(page).boundingBox();assert(Math.abs(box.y)<=1,`${label}: sticky bar top`);const activeView=await visibleBar(page).evaluate(bar=>!!bar.querySelector('.context-view'));// HAUSV-765: the view row exists only while a view is active
+  assert.equal(Math.round(box.height),width<=760?(activeView?148:108):width<=1100&&activeView?116:72,`${label}: context height`);
   const probe=await page.evaluate(() => {
     const visible=e=>!!e.getClientRects().length && getComputedStyle(e).visibility!=='hidden';
     // OSM tile images deliberately extend inside a clipped map; all controls,

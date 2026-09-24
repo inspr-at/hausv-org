@@ -90,8 +90,10 @@ body .unified-context-bar[data-context-bar]{position:sticky;top:0;height:var(--c
  .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-view-slot{grid-column:3;grid-row:1;width:auto}
 }
 @media(max-width:760px){
- :root:has(.unified-context-bar[data-context-bar]):not(:has(.unified-context-bar .context-view)){--context-bar-h:104px}
- body .unified-context-bar[data-context-bar]:not(:has(.context-view)){grid-template-columns:minmax(0,1fr) auto 44px;grid-template-rows:48px 56px;align-items:center}
+ :root:has(.unified-context-bar[data-context-bar]):not(:has(.unified-context-bar .context-view)){--context-bar-h:108px}
+ body .unified-context-bar[data-context-bar]:not(:has(.context-view)){grid-template-columns:minmax(0,1fr) auto 44px;grid-template-rows:52px 56px;align-items:center}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-action{min-height:44px;padding:0 var(--space-2);border:0;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+ .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-action:hover{background:transparent;color:var(--ink)}
  .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-view-slot{grid-column:2;grid-row:1;width:auto}
  .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-navigation{grid-column:3}
  .unified-context-bar[data-context-bar]:not(:has(.context-view)) .context-scope{align-self:start}

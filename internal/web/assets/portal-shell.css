@@ -259,3 +259,26 @@ body[data-authenticated-app] .portal-section-header-action .button.ghost{min-hei
  body[data-authenticated-app] .portal-section-content{padding-top:var(--space-4)}
  body[data-authenticated-app] .button.small{min-height:44px}
 }
+/* HAUSV-765 r2: the dense Hausüberblick is a page, not a clipped 100vh board.
+   The Anliegen card shows whole rows (8 + "Alle … anzeigen"); both columns end on
+   one line because the side stack's last card takes the remaining height. */
+@media(min-width:1024px){
+ .portal-home-landing.dense-main{height:auto;min-height:calc(100dvh - var(--context-bar-h));overflow:visible;display:block}
+ .portal-home-desktop,.dense-home-body{height:auto}
+ .dense-home-body .working-grid{align-items:stretch}
+ .dense-home-body .issues-card{overflow:visible}
+ .dense-home-body .side-stack{grid-template-rows:auto 1fr}
+ .dense-home-body .side-stack>.card:only-child{grid-row:1/-1}
+}
+/* The sidebar scrolls on short viewports: a fade at its lower edge says "more
+   below" instead of a nav item cut mid-glyph. Scroll-driven, so it is invisible
+   when nothing overflows and fades out at the end of the scroll. */
+.sidebar::after{content:"";position:sticky;bottom:0;z-index:1;display:block;flex:0 0 48px;height:48px;margin-top:-48px;background:linear-gradient(rgba(23,32,25,0),var(--nav) 85%);pointer-events:none;opacity:0}
+@supports (animation-timeline:scroll()){
+ .sidebar{scroll-timeline:--portal-sidebar block}
+ .sidebar::after{animation:portal-sidebar-more linear both;animation-timeline:--portal-sidebar}
+}
+@keyframes portal-sidebar-more{0%,90%{opacity:1}100%{opacity:0}}
+/* Phone "Alle … anzeigen" disclosures: the chevron sits beside its label. */
+body[data-authenticated-app] .more-data>summary:has(>.disclosure-chevron){display:flex;align-items:center;justify-content:center;gap:var(--space-2);padding-inline-end:0}
+body[data-authenticated-app] .more-data>summary>.disclosure-chevron{position:static;transform:none}
