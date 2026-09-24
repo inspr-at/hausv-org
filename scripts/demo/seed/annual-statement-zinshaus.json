@@ -192,6 +192,15 @@
     "heizkg_applies": true,
     "show_vat": true
   },
+  "party_changes": [
+    {
+      "changed_on": "2025-07-01",
+      "current_email": "lena.krainer@musterstadt.example",
+      "previous_email": "theresa.aichner@musterstadt.example",
+      "role": "tenant",
+      "unit_id": "top-2"
+    }
+  ],
   "recorded_at": "2026-01-15T09:00:00Z",
   "starts_on": "2025-01-01",
   "unit_bases": [

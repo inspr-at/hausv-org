@@ -271,8 +271,9 @@
   "party_changes": [
     {
       "changed_on": "2025-07-01",
-      "current_email": "matthias.mieter@musterstadt.example",
-      "previous_email": "sophie.bewohner@musterstadt.example",
+      "current_email": "daniel.leitner@musterstadt.example",
+      "previous_email": "clara.berger@musterstadt.example",
+      "role": "owner",
       "unit_id": "top-3"
     }
   ],

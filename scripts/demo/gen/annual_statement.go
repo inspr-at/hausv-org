@@ -43,6 +43,6 @@ func buildAnnualStatement(home house) any {
 		}
 		bases = append(bases, map[string]any{"unit_id": store.NormalizeUnitID(unit.Label), "miteigentumsanteil_ppm": ppm, "usable_area_m2_hundredths": area, "persons": persons, "prepaid_cents": prepaid, "heating_consumption_kwh": kwh})
 	}
-	changes := []map[string]string{{"unit_id": "top-3", "previous_email": "sophie.bewohner@musterstadt.example", "current_email": "matthias.mieter@musterstadt.example", "changed_on": "2025-07-01"}}
+	changes := []map[string]string{{"unit_id": "top-3", "role": "owner", "previous_email": "clara.berger@musterstadt.example", "current_email": "daniel.leitner@musterstadt.example", "changed_on": "2025-07-01"}}
 	return map[string]any{"party_changes": changes, "legal": legal, "house": home.Slug, "year": 2025, "starts_on": "2025-01-01", "ends_on": "2025-12-31", "recorded_at": "2026-01-15T09:00:00Z", "cost_types": costs, "unit_bases": bases}
 }

@@ -189,7 +189,7 @@ func (s *SQLAnnualStatementRunStore) load(tx annualStatementRunQueryer, tenant T
 			return fmt.Errorf("annual statement unit identity mismatch")
 		}
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{ID: unit.ID, Label: unit.Label, UnitType: NormalizeUnitType(unit.UnitType)})
-		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
+		input.Parties = append(input.Parties, annualStatementRunParties(unit, input.Structure.Legal.Regime)...)
 		return nil
 	}, tenant.ID)
 	if err != nil {

@@ -126,6 +126,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		totals[receipt.CostTypeKey] += receipt.AmountCents
 	}
 	for _, cost := range unit.Costs {
+		if datedParty && cost.AmountCents == 0 {
+			continue
+		}
 		row := CostRow{Name: cost.Name, Total: money(totals[cost.CostTypeKey]), Key: allocationKey(cost.AllocationKey), Share: view.FormatDecimal(float64((cost.SharePPM+50)/100)/100, 2) + " %", Amount: money(cost.AmountCents)}
 		if datedParty {
 			row.Share = "siehe Hinweis"
@@ -186,6 +189,9 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	}
 	if d.ShowVAT {
 		for _, group := range unit.VAT {
+			if datedParty && group.GrossCents == 0 {
+				continue
+			}
 			d.VATSummary = append(d.VATSummary, fmt.Sprintf("%d %% · Netto %s · USt %s · Brutto %s", group.RatePercent, money(group.NetCents), money(group.VATCents), money(group.GrossCents)))
 		}
 	}

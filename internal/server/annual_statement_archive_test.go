@@ -141,7 +141,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatal("seed must contain five cost receipts, the Rücklage receipt and six portal documents")
 	}
 	run := createArchiveDemoRun(t, a, repos)
-	if len(run.Result.Units) != 24 || len(run.Input.Parties) != 31 {
+	if len(run.Result.Units) != 24 || len(run.Input.Parties) != 25 {
 		t.Fatal("fixture incomplete")
 	}
 	route := "/app/settings/annual-statement/runs/" + run.ID + "/archive"
@@ -155,7 +155,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatalf("archive=%d %s", response.Code, response.Header().Get("Location"))
 	}
 	archived := annualStatementArchiveDocuments(repos.documents, run)
-	if len(archived) != 32 || len(repos.documents.List()) != 44 {
+	if len(archived) != 26 || len(repos.documents.List()) != 38 {
 		t.Fatalf("archive=%d total=%d", len(archived), len(repos.documents.List()))
 	}
 	bytesBefore := map[string][]byte{}
@@ -177,7 +177,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		}
 	}
 	page := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, pageRoute, nil)
-	for _, want := range []string{"Archiviert am", "32 Dokumente", "Im Dokumentenarchiv ansehen", "Archiv für", "/app/dokumente?q=Abrechnung#document-"} {
+	for _, want := range []string{"Archiviert am", "26 Dokumente", "Im Dokumentenarchiv ansehen", "Archiv für", "/app/dokumente?q=Abrechnung#document-"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("run view missing %q", want)
 		}
@@ -186,7 +186,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		t.Fatal("completed archive still offered")
 	}
 	library := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, "/app/dokumente?q=Jahresabrechnung", nil)
-	if strings.Count(library.Body.String(), "Archiviert · unveränderlich") != 32 {
+	if strings.Count(library.Body.String(), "Archiviert · unveränderlich") != 26 {
 		t.Fatal("archive library badges missing")
 	}
 	// The public demo summary is replaceable; each archived row must remain immutable.
@@ -216,11 +216,11 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 		last = index
 	}
 	events := a.auditStore.List(auditFilter{TenantSlug: archiveDemoTenant, Action: store.AuditActionAnnualRunArchive, Limit: 10})
-	if len(events) != 1 || events[0].TargetID != run.ID || events[0].Details["run_id"] != run.ID || events[0].Details["revision"] != "1" || events[0].Details["document_count"] != "32" {
+	if len(events) != 1 || events[0].TargetID != run.ID || events[0].Details["run_id"] != run.ID || events[0].Details["revision"] != "1" || events[0].Details["document_count"] != "26" {
 		t.Fatalf("audit=%+v", events)
 	}
 	response = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, route, nil)
-	if response.Code != http.StatusSeeOther || !reflect.DeepEqual(archived, annualStatementArchiveDocuments(repos.documents, run)) || len(repos.documents.List()) != 44 {
+	if response.Code != http.StatusSeeOther || !reflect.DeepEqual(archived, annualStatementArchiveDocuments(repos.documents, run)) || len(repos.documents.List()) != 38 {
 		t.Fatal("second archive changed documents")
 	}
 	for _, item := range archived {
@@ -247,7 +247,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 	}
 	next := createArchiveDemoRun(t, a, repos)
 	response = archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs/"+next.ID+"/archive", nil)
-	if next.Revision != 2 || response.Code != http.StatusSeeOther || len(annualStatementArchiveDocuments(repos.documents, next)) != 32 || len(repos.documents.List()) != 76 {
+	if next.Revision != 2 || response.Code != http.StatusSeeOther || len(annualStatementArchiveDocuments(repos.documents, next)) != 26 || len(repos.documents.List()) != 64 {
 		t.Fatal("new revision archive failed")
 	}
 	// Reset remains an input operation and cannot destroy previously archived files.
@@ -265,7 +265,7 @@ func TestMusterstadt2025ArchiveThroughRoutes(t *testing.T) {
 			t.Fatal("earlier revision bytes changed", err)
 		}
 	}
-	t.Log("fresh SQLite seed → 24 units / 31 parties → 32 archived PDFs; byte-identical routes, retry adds zero; replace/delete refused; revision 2 and reseed preserve revision 1")
+	t.Log("fresh SQLite seed → 24 units / 25 owner parties → 26 archived PDFs; byte-identical routes, retry adds zero; replace/delete refused; revision 2 and reseed preserve revision 1")
 }
 
 func TestAnnualStatementArchiveAuthorizationAndTenantIsolation(t *testing.T) {
@@ -309,13 +309,14 @@ func TestAnnualStatementArchiveAuthorizationAndTenantIsolation(t *testing.T) {
 		}
 		a.profiles[party.ID] = userProfile{Email: party.ID, Role: role, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
 	}
-	privacyActors := map[string]string{}
+	privacyActors := map[string]string{"renter": "matthias.mieter@musterstadt.example"}
+	a.profiles[privacyActors["renter"]] = userProfile{Email: privacyActors["renter"], Role: roleResident, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
 	for _, party := range run.Input.Parties {
 		if party.Owner {
 			privacyActors["owner"] = party.ID
 		}
 		if party.Renter {
-			privacyActors["renter"] = party.ID
+			t.Fatal("WEG renter received an archived statement")
 		}
 	}
 	if len(privacyActors) != 2 {
@@ -402,7 +403,7 @@ func TestAnnualStatementArchiveIncompleteRunAndInterruptedAttempt(t *testing.T) 
 	if w := request(); !strings.Contains(w.Header().Get("Location"), "run-status=archived") {
 		t.Fatal("archive retry failed")
 	}
-	if len(annualStatementArchiveDocuments(repos.documents, run)) != 32 {
+	if len(annualStatementArchiveDocuments(repos.documents, run)) != 26 {
 		t.Fatal("retry did not finish the set")
 	}
 	for id, before := range partial {

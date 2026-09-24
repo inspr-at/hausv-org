@@ -58,7 +58,7 @@ try {
   const unitRows = page.locator('.annual-unit-row');
   assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
   assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
-  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 3, 'Fixture covers an owner and a tenant change');
+  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'WEG fixture covers an owner change without tenant statements');
   const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
   })));
@@ -85,6 +85,12 @@ try {
     const alignment = await unitRows.evaluateAll((rows, width) => {
       const issues = [];
       const textCenter = node => {
+        // A Range includes hidden lines beyond the two-line party clamp.
+        // Compare the visible label box with the visible amount text instead.
+        if (getComputedStyle(node).webkitLineClamp !== 'none') {
+          const rect = node.getBoundingClientRect();
+          return rect.top + rect.height / 2;
+        }
         const range = document.createRange();
         range.selectNodeContents(node);
         const rect = range.getBoundingClientRect();
@@ -179,5 +185,7 @@ try {
   assert.deepEqual(errors, [], 'Browser JavaScript errors');
   await writeFile(`${out}/evidence.json`, JSON.stringify({ report, errors }, null, 2));
 } finally {
+  await page.request.dispose();
+  await page.context().close();
   await browser.close();
 }

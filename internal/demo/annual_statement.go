@@ -19,6 +19,7 @@ import (
 )
 
 type seedStatementPartyChange struct {
+	Role          string `json:"role"`
 	UnitID        string `json:"unit_id"`
 	PreviousEmail string `json:"previous_email"`
 	CurrentEmail  string `json:"current_email"`
@@ -172,7 +173,13 @@ func loadStatementFixtureFile(dir, name string, houses []seedHouse, documentDir 
 				if change.UnitID != basis.UnitID {
 					continue
 				}
-				if unit.TenantEmail != change.CurrentEmail {
+				current := unit.TenantEmail
+				if change.Role == "owner" {
+					current = unit.OwnerEmail
+				} else if change.Role != "tenant" {
+					return nil, fmt.Errorf("invalid demo party change role")
+				}
+				if current != change.CurrentEmail {
 					return nil, fmt.Errorf("demo party change mismatch")
 				}
 				previous, ok := contacts[change.PreviousEmail]
@@ -184,7 +191,11 @@ func loadStatementFixtureFile(dir, name string, houses []seedHouse, documentDir 
 					return nil, err
 				}
 				previous.ValidTo = at.AddDate(0, 0, -1).Format("2006-01-02")
-				unit.PreviousTenantEmail = previous.Email
+				if change.Role == "owner" {
+					unit.PreviousOwnerEmail = previous.Email
+				} else {
+					unit.PreviousTenantEmail = previous.Email
+				}
 				unit.PartyContacts = append(unit.PartyContacts, previous)
 			}
 			if unit.OwnerEmail == "" {

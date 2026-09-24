@@ -110,6 +110,9 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		byEmail[p.Email] = p
 	}
 	for _, party := range loaded.Input.Parties {
+		if !party.Owner {
+			t.Fatal("WEG statement contains a tenant", party)
+		}
 		person, ok := byEmail[party.ID]
 		if !ok || party.Name != person.Name || party.Address != person.Address || party.Address == "" {
 			t.Fatalf("invented/missing party: %+v", party)
@@ -126,8 +129,14 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 		renderedUnits[party.UnitID] = true
 		pdfs[party.UnitID+"/"+party.ID] = raw
 	}
-	if len(renderedUnits) != 24 || len(pdfs) != 31 {
+	if len(renderedUnits) != 24 || len(pdfs) != 25 {
 		t.Fatalf("units=%d documents=%d", len(renderedUnits), len(pdfs))
+	}
+	if loaded.CalculationVersion != 4 || len(loaded.Result.PartyShares) != 2 {
+		t.Fatal("WEG owner change missing", loaded.Result.PartyShares)
+	}
+	if _, err := statementpdf.Render(loaded, "top-3", "matthias.mieter@musterstadt.example"); err != statementpdf.ErrNotFound {
+		t.Fatal("WEG tenant PDF available", err)
 	}
 	all, err := statementpdf.Render(loaded, "", "")
 	if err != nil || !bytes.Contains(all, []byte("R\\374cklage")) || !bytes.Contains(all, []byte("Anfangsstand")) || !bytes.Contains(all, []byte("Anteil dieser Einheit")) {
@@ -270,5 +279,17 @@ func TestZinshausAnnualStatementShowsMRGVacancyAndVAT(t *testing.T) {
 	}
 	if loaded.Result.Vacancy[0].AmountCents != 50433 {
 		t.Fatalf("vacancy amount %d", loaded.Result.Vacancy[0].AmountCents)
+	}
+	if loaded.CalculationVersion != 4 || len(loaded.Result.PartyShares) != 3 {
+		t.Fatal("MRG tenant change missing", loaded.Result.PartyShares)
+	}
+	for _, email := range []string{"theresa.aichner@musterstadt.example", "lena.krainer@musterstadt.example"} {
+		share, ok := store.AnnualStatementPartyAllocation(loaded, "top-2", email)
+		if !ok || share.Unit.AllocatedCents == 0 {
+			t.Fatal("MRG tenant has no heating share", email, share)
+		}
+		if share.SettlementRecipient != (email == "lena.krainer@musterstadt.example") {
+			t.Fatal("MRG due-date recipient incorrect", share)
+		}
 	}
 }

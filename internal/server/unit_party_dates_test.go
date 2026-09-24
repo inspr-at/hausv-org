@@ -27,3 +27,16 @@ func TestUnitPartyDateFormPreservesAddressAndValidates(t *testing.T) {
 		}
 	}
 }
+
+func TestPartyDateLabelOpenBounds(t *testing.T) {
+	for _, tc := range []struct{ from, to, want string }{
+		{"", "2025-06-30", "bis 30.06.2025"},
+		{"2025-07-01", "", "ab 01.07.2025"},
+		{"", "", "unbefristet"},
+		{"2025-01-01", "2025-06-30", "01.01.2025 – 30.06.2025"},
+	} {
+		if got := partyDateLabel(tc.from, tc.to); got != tc.want {
+			t.Fatalf("got %q, want %q", got, tc.want)
+		}
+	}
+}

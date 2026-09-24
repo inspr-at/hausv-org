@@ -79,6 +79,29 @@ func TestPartyDueDateRegimesAndVacancy(t *testing.T) {
 		})
 	}
 }
+
+func TestWEGOwnerChangeHeatingMonthlyAndTenantDatesIgnored(t *testing.T) {
+	in := datedInput(true)
+	in.Structure.Legal.Regime = "weg"
+	in.Parties = []AnnualStatementRunParty{
+		{UnitID: "a", ID: "a-old@example.com", Owner: true, ValidTo: "2025-06-30"},
+		{UnitID: "a", ID: "b-new@example.com", Owner: true, ValidFrom: "2025-07-01"},
+		{UnitID: "a", ID: "tenant@example.com", Renter: true},
+	}
+	result, issues := CalculateAnnualStatementRun(in)
+	if len(issues) != 0 || len(result.PartyShares) != 2 {
+		t.Fatal(result, issues)
+	}
+	old, next := partyResult(t, result, "a-old@example.com"), partyResult(t, result, "b-new@example.com")
+	if old.Unit.AllocatedCents != 21250 || next.Unit.AllocatedCents != 21250 || old.Unit.PrepaidCents != 500 || next.Unit.PrepaidCents != 2500 || old.SettlementRecipient || !next.SettlementRecipient {
+		t.Fatal(old, next)
+	}
+	// Tenant-only bounds must neither select v4 nor request interim evidence.
+	in.Parties = []AnnualStatementRunParty{{UnitID: "a", ID: "owner", Owner: true}, {UnitID: "a", ID: "tenant", Renter: true, ValidFrom: "2025-07-01"}}
+	if hasDatedAnnualParties(in) || datedAnnualUnit(in, "a") || len(annualPartyReadingDates(in)) != 0 {
+		t.Fatal("WEG tenant dates affect billing")
+	}
+}
 func TestPartyHeatingMonthlyInterimVATAndConservation(t *testing.T) {
 	for _, interim := range []bool{false, true} {
 		for _, vat := range []bool{false, true} {
@@ -224,8 +247,9 @@ func TestPartyHistoricalReplayAndExactMonthWeights(t *testing.T) {
 }
 
 func TestPartyValidityPersistenceAndSnapshot(t *testing.T) {
-	for _, kind := range []string{"memory", "sql"} {
-		t.Run(kind, func(t *testing.T) {
+	for _, scenario := range []struct{ kind, regime string }{{"memory", "mrg_voll"}, {"sql", "mrg_voll"}, {"memory", "mrg_teil"}, {"sql", "mrg_teil"}, {"memory", "weg"}, {"sql", "weg"}} {
+		t.Run(scenario.kind+"/"+scenario.regime, func(t *testing.T) {
+			kind := scenario.kind
 			var sources AnnualStatementRunSources
 			var storage AnnualStatementRunStorage
 			if kind == "memory" {
@@ -242,6 +266,8 @@ func TestPartyValidityPersistenceAndSnapshot(t *testing.T) {
 			}
 			tenant := testTenantRef("demo")
 			in := datedInput(true)
+			in.Structure.Legal.Regime = scenario.regime
+			in.Structure.Legal.PartyDueOn = "2026-08-01"
 			seedAnnualRunInput(t, sources, tenant, in)
 			periods, _ := BindAnnualStatementPeriodRepository(sources.Periods, tenant)
 			if err := periods.SaveLegal(2025, in.Structure.Legal); err != nil {
@@ -249,6 +275,9 @@ func TestPartyValidityPersistenceAndSnapshot(t *testing.T) {
 			}
 			units, _ := BindUnitRepository(sources.Units, tenant)
 			update := UnitPartyUpdate{UnitID: "a", SetOwners: true, SetRenters: true, OwnerEmails: []string{"owner@example.com"}, RenterEmails: []string{"a-old@example.com", "b-new@example.com"}, Contacts: []UnitPartyContact{{Email: "a-old@example.com", ValidTo: "2025-06-30"}, {Email: "b-new@example.com", ValidFrom: "2025-07-01"}}}
+			if scenario.regime == "weg" {
+				update.OwnerEmails, update.RenterEmails = update.RenterEmails, []string{"tenant@example.com"}
+			}
 			if _, err := units.UpdateParties([]UnitPartyUpdate{update}); err != nil {
 				t.Fatal(err)
 			}
@@ -284,6 +313,9 @@ func TestPartyValidityPersistenceAndSnapshot(t *testing.T) {
 			}
 			if run.CalculationVersion != 4 || len(run.Input.PartyEvidence) != 1 || run.Input.StatementOn != "2026-06-01" {
 				t.Fatal(run)
+			}
+			if scenario.regime == "weg" && (len(run.Input.Parties) != 2 || len(run.Result.PartyShares) != 2) {
+				t.Fatal("WEG tenant received a snapshot or share", run.Input.Parties, run.Result.PartyShares)
 			}
 			old, next := partyResult(t, run.Result, "a-old@example.com"), partyResult(t, run.Result, "b-new@example.com")
 			if old.Unit.AllocatedCents != 26500 || next.Unit.AllocatedCents != 16000 || !strings.Contains(old.Note, "Zwischenablesung") {

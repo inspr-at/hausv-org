@@ -79,7 +79,16 @@ func partyDateLabel(from, to string) string {
 		}
 		return at.Format("02.01.2006")
 	}
-	return date(from, "Beginn offen") + " – " + date(to, "unbefristet")
+	switch {
+	case from == "" && to == "":
+		return "unbefristet"
+	case from == "":
+		return "bis " + date(to, "")
+	case to == "":
+		return "ab " + date(from, "")
+	default:
+		return date(from, "") + " – " + date(to, "")
+	}
 }
 func addOccupancyPartyDates(people []web.Person, unit store.Unit) {
 	for i, p := range people {

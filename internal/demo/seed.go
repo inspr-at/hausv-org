@@ -81,6 +81,7 @@ type seedHouse struct {
 }
 
 type seedUnit struct {
+	PreviousOwnerEmail  string                   `json:"-"`
 	PreviousTenantEmail string                   `json:"-"`
 	StatementBasis      *seedStatementBasis      `json:"-"`
 	PartyContacts       []store.UnitPartyContact `json:"-"`
@@ -480,6 +481,9 @@ func fixtureUnits(tenantSlug string, rawUnits []seedUnit) []store.Unit {
 		}
 		if raw.OwnerEmail != "" {
 			unit.OwnerEmails = []string{raw.OwnerEmail}
+		}
+		if raw.PreviousOwnerEmail != "" {
+			unit.OwnerEmails = append(unit.OwnerEmails, raw.PreviousOwnerEmail)
 		}
 		if raw.TenantEmail != "" {
 			unit.RenterEmails = []string{raw.TenantEmail}

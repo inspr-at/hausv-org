@@ -22,7 +22,7 @@ type AnnualStatementPartyShare struct {
 
 func hasDatedAnnualParties(input AnnualStatementRunInput) bool {
 	for _, p := range input.Parties {
-		if p.ValidFrom != "" || p.ValidTo != "" {
+		if (input.Structure.Legal.Regime != "weg" || p.Owner) && (p.ValidFrom != "" || p.ValidTo != "") {
 			return true
 		}
 	}
@@ -30,7 +30,7 @@ func hasDatedAnnualParties(input AnnualStatementRunInput) bool {
 }
 func datedAnnualUnit(input AnnualStatementRunInput, id string) bool {
 	for _, p := range input.Parties {
-		if p.UnitID == id && (p.ValidFrom != "" || p.ValidTo != "") {
+		if p.UnitID == id && (input.Structure.Legal.Regime != "weg" || p.Owner) && (p.ValidFrom != "" || p.ValidTo != "") {
 			return true
 		}
 	}
@@ -169,7 +169,7 @@ func annualPartySegments(input AnnualStatementRunInput, parties []AnnualStatemen
 		if bounds[i].Equal(bounds[i-1]) {
 			continue
 		}
-		party, ok := annualPartyAt(parties, bounds[i-1].Format("2006-01-02"), true)
+		party, ok := annualPartyAt(parties, bounds[i-1].Format("2006-01-02"), input.Structure.Legal.Regime != "weg")
 		if !ok {
 			return nil, false
 		}
@@ -289,7 +289,7 @@ func interimPartyWeights(input AnnualStatementRunInput, unit, cost string, segme
 func annualUnitPartyShares(input AnnualStatementRunInput, unit AnnualStatementRunUnit, due string) ([]AnnualStatementPartyShare, string) {
 	var parties []AnnualStatementRunParty
 	for _, p := range input.Parties {
-		if p.UnitID == unit.UnitID {
+		if p.UnitID == unit.UnitID && (input.Structure.Legal.Regime != "weg" || p.Owner) {
 			parties = append(parties, p)
 		}
 	}
@@ -304,16 +304,16 @@ func annualUnitPartyShares(input AnnualStatementRunInput, unit AnnualStatementRu
 		return nil, "party-recipient"
 	}
 	shares := make([]AnnualStatementPartyShare, len(parties))
-	note := fmt.Sprintf("Parteienwechsel: Betriebskostensaldo vollständig an die Partei am Fälligkeitstag %s; keine zeitanteilige Aufteilung.", due)
+	note := fmt.Sprintf("Parteienwechsel: Betriebskostensaldo vollständig an die Partei am Fälligkeitstag %s; keine zeitanteilige Aufteilung", due)
 	if input.Structure.Legal.Regime == "weg" {
-		note += " § 34 Abs. 4 WEG."
+		note = fmt.Sprintf("Parteienwechsel (Eigentümer): Betriebskostensaldo und Rücklage an den Eigentümer am Fälligkeitstag %s (§ 34 Abs. 4 WEG)", due)
 	} else if input.Structure.Legal.Regime == "mrg_voll" {
-		note += " Raumschuldnerprinzip (§ 21 MRG)."
+		note += "; Raumschuldnerprinzip (§ 21 MRG)"
 	} else {
-		note += " Fälligkeit laut Vertrag."
+		note += "; Fälligkeit laut Vertrag"
 	}
 	if !parties[recipient].Renter && input.Structure.Legal.Regime != "weg" {
-		note += " Kein Mieter am Fälligkeitstag: Eigentümeranteil."
+		note += "; Kein Mieter am Fälligkeitstag: Eigentümeranteil"
 	}
 	for i, p := range parties {
 		shares[i] = AnnualStatementPartyShare{UnitID: unit.UnitID, PartyID: p.ID, Unit: AnnualStatementRunUnit{UnitID: unit.UnitID, Label: unit.Label}, HeatingPrepayments: map[string]int64{}, Note: note, DueOn: due, SettlementRecipient: i == recipient}
@@ -355,7 +355,7 @@ func annualUnitPartyShares(input AnnualStatementRunInput, unit AnnualStatementRu
 			for i := range shares {
 				shares[i].HeatingPrepayments[cost.CostTypeKey] = payments[i]
 				shares[i].Unit.PrepaidCents += payments[i]
-				shares[i].Note += " " + cost.Name + ": " + method + " (§ 23 HeizKG); erfasstes Einheiten-Akonto nach Monatsanteilen."
+				shares[i].Note += "; " + cost.Name + ": " + method + " (§ 23 HeizKG); erfasstes Einheiten-Akonto nach Monatsanteilen"
 			}
 		}
 		// Split the unit's VAT by the resulting gross cents. This preserves both
@@ -372,6 +372,7 @@ func annualUnitPartyShares(input AnnualStatementRunInput, unit AnnualStatementRu
 	}
 	shares[recipient].Unit.PrepaidCents += unit.PrepaidCents - heatPrepaid
 	for i := range shares {
+		shares[i].Note += "."
 		u := &shares[i].Unit
 		u.BalanceCents = u.AllocatedCents - u.PrepaidCents
 		if input.Structure.Legal.ShowVAT {
@@ -440,6 +441,9 @@ func annualPartyReadingDates(input AnnualStatementRunInput) map[string][]time.Ti
 	loc, _ := time.LoadLocation("Europe/Vienna")
 	seen := map[string]bool{}
 	for _, p := range input.Parties {
+		if input.Structure.Legal.Regime == "weg" && !p.Owner {
+			continue
+		}
 		for i, raw := range []string{p.ValidFrom, p.ValidTo} {
 			if raw == "" {
 				continue

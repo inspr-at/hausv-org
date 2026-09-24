@@ -169,7 +169,7 @@ func (s *MemoryAnnualStatementRunStore) load(tenant TenantRef, year int, vectors
 	}
 	for _, unit := range listed {
 		input.Units = append(input.Units, AnnualStatementRunUnitIdentity{ID: unit.ID, Label: unit.Label, UnitType: NormalizeUnitType(unit.UnitType)})
-		input.Parties = append(input.Parties, annualStatementRunParties(unit)...)
+		input.Parties = append(input.Parties, annualStatementRunParties(unit, input.Structure.Legal.Regime)...)
 	}
 	input.Receipts = receipts.ListByPeriod(year)
 	input.Prepayments = prepayments.ListByPeriod(year)

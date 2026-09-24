@@ -87,7 +87,7 @@ func TestAnnualStatementRunStorage(t *testing.T) {
 			tenant := testTenantRef("demo")
 			receipt, document := seedAnnualRunSources(t, sources, tenant)
 			units, _ := BindUnitRepository(sources.Units, tenant)
-			contacts := []UnitPartyContact{{Email: "anna@example.com", Name: "Anna Groß", Address: "Gasse 2, 8010 Graz"}}
+			contacts := []UnitPartyContact{{Email: "anna@example.com", Name: "Anna Groß", Address: "Gasse 2, 8010 Graz"}, {Email: "mieter@example.com", ValidFrom: "2025-07-01"}}
 			if _, err := units.UpdateParties([]UnitPartyUpdate{{UnitID: "a", SetOwners: true, SetRenters: true, OwnerEmails: []string{"anna@example.com"}, RenterEmails: []string{"anna@example.com", "mieter@example.com"}, Contacts: contacts}}); err != nil {
 				t.Fatal(err)
 			}
@@ -110,11 +110,11 @@ func TestAnnualStatementRunStorage(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if run.ID == "" || run.Revision != 1 || run.InputHash == "" || run.Result.Units[0].BalanceCents != -449 {
+			if run.ID == "" || run.Revision != 1 || run.CalculationVersion != 2 || run.InputHash == "" || run.Result.Units[0].BalanceCents != -449 {
 				t.Fatalf("run=%+v", run)
 			}
 			original := copyAnnualStatementRun(run)
-			if len(run.Input.Parties) != 2 || run.Input.Parties[0].Address != "Gasse 2, 8010 Graz" || !run.Input.Parties[0].Owner || !run.Input.Parties[0].Renter {
+			if len(run.Input.Parties) != 1 || run.Input.Parties[0].Address != "Gasse 2, 8010 Graz" || !run.Input.Parties[0].Owner || !run.Input.Parties[0].Renter {
 				t.Fatalf("parties=%+v", run.Input.Parties)
 			}
 			if _, err := units.UpdateParties([]UnitPartyUpdate{{UnitID: "a", SetOwners: true, OwnerEmails: []string{"new@example.com"}, Contacts: []UnitPartyContact{{Email: "anna@example.com", Address: "Changed"}}}}); err != nil {

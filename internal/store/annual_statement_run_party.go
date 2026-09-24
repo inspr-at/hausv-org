@@ -60,7 +60,7 @@ func mergeUnitPartyContacts(unit Unit, updates []UnitPartyContact) []UnitPartyCo
 	return out
 }
 
-func annualStatementRunParties(unit Unit) []AnnualStatementRunParty {
+func annualStatementRunParties(unit Unit, regime string) []AnnualStatementRunParty {
 	contacts := map[string]UnitPartyContact{}
 	for _, contact := range unit.PartyContacts {
 		contacts[contact.Email] = contact
@@ -69,6 +69,10 @@ func annualStatementRunParties(unit Unit) []AnnualStatementRunParty {
 	sort.Strings(emails)
 	out := make([]AnnualStatementRunParty, 0, len(emails))
 	for _, email := range emails {
+		// Filter only new snapshots: saved historical recipients remain immutable.
+		if regime == "weg" && !EmailListContains(unit.OwnerEmails, email) {
+			continue
+		}
 		contact := contacts[email]
 		out = append(out, AnnualStatementRunParty{UnitID: unit.ID, ID: email, Name: contact.Name, Address: contact.Address, Owner: EmailListContains(unit.OwnerEmails, email), Renter: EmailListContains(unit.RenterEmails, email), ValidFrom: contact.ValidFrom, ValidTo: contact.ValidTo})
 	}
