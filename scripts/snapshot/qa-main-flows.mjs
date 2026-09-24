@@ -1429,7 +1429,7 @@ async function seedManagedContent() {
   await page.getByRole('button', { name: 'Aushang erstellen' }).first().click();
   const announcement = page.locator('#announcement-create form');
   await announcement.locator('input[name="title"]').fill('QA Hausinformation zur Trinkwasserwartung');
-  await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang.');
+  await announcement.locator('textarea[name="body"]').fill('Der gemeinsame Playwright-Lauf prüft diesen Aushang. Der Text ist bewusst länger als die Vorschau, damit Lesen, Einklappen und Ausklappen weiterhin über die native Aufklappfläche geprüft werden (HAUSV-662).');
   await announcement.locator('button[type="submit"]').click();
   await page.waitForURL(/\/app\/announcements/);
 
