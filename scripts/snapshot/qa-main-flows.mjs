@@ -1571,7 +1571,7 @@ async function assertResidentContentResponsiveMatrix(sizes = [
     { name: 'aushang', path: '/app/announcements', email: 'resident@example.com', details: '.announcement-body', guide: '.announcement-legend' },
     { name: 'termine', path: '/app/events', email: 'resident@example.com', details: '.event-details', guide: '.events-aside > details.guide' },
     { name: 'kontakte', path: '/app/kontakte', email: 'resident@example.com', details: '.contacts-aside > details.aside-panel', guide: '.contacts-aside > details.aside-panel' },
-    { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: '.file-details' },
+    { name: 'dokumente', path: '/app/dokumente', email: 'resident@example.com', details: 'details.document-more' },
     { name: 'abstimmungen', path: '/app/abstimmungen', email: 'owner@example.com', details: '.vote-details' },
     { name: 'verlauf', path: '/app/audit', email: 'resident@example.com', details: '.filter-panel', guide: '.help-disclosure' },
   ];
@@ -1824,7 +1824,7 @@ async function assertResidentContentClickFlows() {
     { path: '/app/announcements', details: '.announcement-body' },
     { path: '/app/events', details: '.event-details' },
     { path: '/app/kontakte', details: '.contacts-aside > details.aside-panel' },
-    { path: '/app/dokumente', details: '.file-details' },
+    { path: '/app/dokumente', details: 'details.document-more' },
     { path: '/app/audit', details: '.help-disclosure' },
   ]) {
     const response = await noJSPage.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle' });
