@@ -18,7 +18,8 @@ import (
 // back for superusers, and this process's own unscoped pool, which is open the
 // whole time the lanes are.
 type ConnectionBudget struct {
-	// LaneCap is the maximum number of tenant-pinned pools kept alive at once.
+	// LaneCap is the hard maximum of tenant and maintenance pools combined.
+	// When all lanes are leased, Scoped waits for capacity before adding one.
 	LaneCap int
 	// PerLaneMax is MaxOpenConns of a single lane.
 	PerLaneMax int
@@ -35,6 +36,9 @@ func (b ConnectionBudget) Peak() int {
 // than, not at most: a process that can consume the last usable slot leaves
 // nothing for a second replica, a migration run, or a human with psql.
 func (b ConnectionBudget) fits(maxConnections int, reserved int) error {
+	if b.LaneCap <= 0 || b.PerLaneMax <= 0 || b.ProcessPool <= 0 {
+		return fmt.Errorf("db: connection budget requires positive, bounded pool limits")
+	}
 	available := maxConnections - reserved
 	if b.Peak() < available {
 		return nil

@@ -174,15 +174,16 @@ func sanitise(name string) string {
 // On SQLite there are no lanes and no policy; every accessor of the seam is the
 // one process pool, and that is what comes back.
 //
-// The concrete type is asserted, not wrapped: a lane IS a *sql.DB (stdlib.OpenDB
-// returns one), and fixtures use the context-taking methods db.Handle does not
-// carry.
+// Fixtures need a concrete pool for migration helpers as well as context
+// methods. Reserve an explicit maintenance lease until test cleanup; ordinary
+// store handles acquire and release their own leases per operation.
 func MaintenanceView(t *testing.T, scoped *db.Scoped) *sql.DB {
 	t.Helper()
-	view, ok := scoped.Unscoped("test fixtures and assertions read and write outside every tenant lane").(*sql.DB)
-	if !ok {
-		t.Fatal("the maintenance lane is not a *sql.DB; fixtures cannot use it")
+	view, release, err := db.LeasePool(t.Context(), scoped.Unscoped("test fixtures and assertions read and write outside every tenant lane"))
+	if err != nil {
+		t.Fatalf("lease maintenance fixture pool: %v", err)
 	}
+	t.Cleanup(release)
 	return view
 }
 

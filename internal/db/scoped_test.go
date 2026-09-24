@@ -19,6 +19,11 @@ const (
 
 func scopedPostgres(t *testing.T) (*Scoped, *sql.DB) {
 	t.Helper()
+	return scopedPostgresConfig(t, nil)
+}
+
+func scopedPostgresConfig(t *testing.T, configure func(*Config)) (*Scoped, *sql.DB) {
+	t.Helper()
 	baseDSN := strings.TrimSpace(os.Getenv("HAUSV_TEST_POSTGRES_DSN"))
 	if baseDSN == "" {
 		if os.Getenv("HAUSV_TEST_POSTGRES_REQUIRED") == "true" {
@@ -33,6 +38,9 @@ func scopedPostgres(t *testing.T) (*Scoped, *sql.DB) {
 		MaxOpenConns:    2,
 		ConnMaxLifetime: time.Minute,
 		ConnMaxIdleTime: time.Minute,
+	}
+	if configure != nil {
+		configure(&cfg)
 	}
 	database, err := OpenConfig(t.Context(), cfg)
 	if err != nil {
@@ -116,12 +124,12 @@ func TestLaneScopeSurvivesEveryResetAConnectionCanBeGiven(t *testing.T) {
 	lane := scoped.For(scopedTenantA)
 
 	for index, reset := range []string{`RESET ALL`, `RESET "hausv.tenant_id"`, `SET "hausv.tenant_id" = DEFAULT`, `DISCARD ALL`} {
-		conn, err := lane.(*sql.DB).Conn(t.Context())
+		conn, finish, err := lane.(scopedHandle).checkout(t.Context())
 		if err != nil {
 			t.Fatalf("check out lane connection: %v", err)
 		}
 		if _, err := conn.ExecContext(t.Context(), reset); err != nil {
-			conn.Close()
+			finish()
 			t.Fatalf("%s: %v", reset, err)
 		}
 		var scope string
@@ -133,10 +141,10 @@ func TestLaneScopeSurvivesEveryResetAConnectionCanBeGiven(t *testing.T) {
 		// must never issue DISCARD ALL on a pooled connection.
 		read := fmt.Sprintf(`SELECT /* reset %d */ coalesce(current_setting('hausv.tenant_id', true), '')`, index)
 		if err := conn.QueryRowContext(t.Context(), read).Scan(&scope); err != nil {
-			conn.Close()
+			finish()
 			t.Fatalf("read scope after %s: %v", reset, err)
 		}
-		conn.Close()
+		finish()
 		if scope != scopedTenantA {
 			t.Fatalf("scope after %s = %q, want %q — the lane needs a session-reset hook after all", reset, scope, scopedTenantA)
 		}

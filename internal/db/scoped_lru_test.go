@@ -19,9 +19,8 @@ func laneID(index int) string {
 }
 
 // offlineScoped builds the lane factory against a DSN nothing listens on.
-// database/sql connects lazily, so every lane here is a real pool that has never
-// opened a socket — which is exactly what the cache bookkeeping operates on, and
-// it lets the eviction rules be tested without a server.
+// Operations create real pools but cannot establish a connection. Failed
+// operations still exercise acquisition, release, and eviction without a server.
 func offlineScoped(t *testing.T, laneCap int) *Scoped {
 	t.Helper()
 	const dsn = "postgres://nobody:nothing@127.0.0.1:1/none?sslmode=disable"
@@ -30,6 +29,7 @@ func offlineScoped(t *testing.T, laneCap int) *Scoped {
 		t.Fatalf("parse offline DSN: %v", err)
 	}
 	process := stdlib.OpenDB(*placeholder)
+	process.SetMaxOpenConns(defaultMaxOpenConns)
 	t.Cleanup(func() { _ = process.Close() })
 	scoped, err := NewScoped(Config{
 		Backend:      BackendPostgres,
@@ -55,7 +55,7 @@ func laneIsClosed(t *testing.T, handle Handle) bool {
 func TestLaneCacheStaysWithinItsCap(t *testing.T) {
 	scoped := offlineScoped(t, 3)
 	for i := range 12 {
-		scoped.For(laneID(i))
+		scoped.For(laneID(i)).Exec(`SELECT 1`)
 	}
 	if got := scoped.openLanes(); got > 3 {
 		t.Fatalf("lane cache holds %d pools, cap is 3", got)
@@ -66,10 +66,12 @@ func TestLaneCacheStaysWithinItsCap(t *testing.T) {
 // must not be evicted because it was first through the door.
 func TestLaneCacheEvictsTheLeastRecentlyUsedLane(t *testing.T) {
 	scoped := offlineScoped(t, 2)
-	laneA := scoped.For(laneID(0))
-	laneB := scoped.For(laneID(1))
-	scoped.For(laneID(0)) // A is used again, so B becomes the oldest
-	scoped.For(laneID(2)) // forces one eviction
+	scoped.For(laneID(0)).Exec(`SELECT 1`)
+	scoped.For(laneID(1)).Exec(`SELECT 1`)
+	laneA := scoped.lanes["t:"+laneID(0)].pool
+	laneB := scoped.lanes["t:"+laneID(1)].pool
+	scoped.For(laneID(0)).Exec(`SELECT 1`) // A used again, B becomes oldest
+	scoped.For(laneID(2)).Exec(`SELECT 1`) // forces one eviction
 
 	if !laneIsClosed(t, laneB) {
 		t.Fatal("the least recently used lane was not evicted")
@@ -85,8 +87,7 @@ func TestLaneCacheEvictsTheLeastRecentlyUsedLane(t *testing.T) {
 // underneath that and the next statement fails with "sql: database is closed" —
 // a request killed by a cache-size policy, which is never an acceptable trade.
 //
-// So a lane with connections checked out is skipped, and the cache is allowed to
-// run over its cap until they come back.
+// A leased lane is skipped; a new tenant waits if every lane is leased.
 func TestLaneCacheNeverEvictsAPoolWithWorkInFlight(t *testing.T) {
 	scoped, _ := scopedPostgres(t)
 	scoped.laneCap = 2
@@ -99,7 +100,7 @@ func TestLaneCacheNeverEvictsAPoolWithWorkInFlight(t *testing.T) {
 	defer tx.Rollback()
 
 	for i := range 8 {
-		scoped.For(laneID(i + 10))
+		scopeOf(t, scoped.For(laneID(i+10)))
 	}
 
 	// The handle the caller still holds has to keep working: this is what an
@@ -118,10 +119,9 @@ func TestLaneCacheNeverEvictsAPoolWithWorkInFlight(t *testing.T) {
 		t.Fatalf("commit after evictions: %v", err)
 	}
 
-	// Once the work is done the lane is evictable again, so the overflow is
-	// temporary rather than a leak.
+	// Once the work is done the lane is evictable again; there was no overflow.
 	for i := range 8 {
-		scoped.For(laneID(i + 30))
+		scopeOf(t, scoped.For(laneID(i+30)))
 	}
 	if got := scoped.openLanes(); got > 2 {
 		t.Fatalf("lane cache stayed at %d pools after the busy lane went idle, cap is 2", got)

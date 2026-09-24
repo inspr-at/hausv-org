@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260924192435.0.0] - 2026-09-24
+
+### Verbessert
+
+- Stabilität bei vielen gleichzeitig genutzten Liegenschaften verbessert.
+
 ## [260924183440.0.0] - 2026-09-24
 
 ### Neu
