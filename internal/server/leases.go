@@ -432,7 +432,7 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 	detail := web.LeaseDetail{
 		ID: lease.ID, Status: leaseStatusLabel(lease.Status), Kind: leaseKindLabel(lease.LeaseKind),
 		Use: useKindLabel(lease.UseKind), MRG: mrgLabel(lease.MRGScope), Regime: regimeLabel(lease.RentRegime),
-		Concluded: web.LeaseDate(lease.ConcludedOn), Starts: web.LeaseDate(lease.StartsOn), Ends: web.LeaseDate(lease.EndsOn),
+		Concluded: web.LeaseDate(lease.ConcludedOn), Starts: web.LeaseDate(lease.StartsOn), Ends: leaseEndLabel(lease.EndsOn),
 		Zinstermin: strconv.Itoa(lease.ZinsterminDay) + ". des Monats", Notes: lease.Notes,
 		MieWeG: yesNo(class.MieWeG), SpecialCap: yesNo(class.SpecialCap),
 		MieWeGReason: class.MieWeGReason, CapReason: class.CapReason,
@@ -440,7 +440,7 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 	for _, party := range lease.Parties {
 		detail.Parties = append(detail.Parties, web.LeasePartyView{
 			Name: party.Name, Email: party.Email, Address: party.Address, Role: partyRoleLabel(party.Role),
-			From: web.LeaseDate(party.ValidFrom), To: web.LeaseDate(party.ValidTo),
+			From: web.LeaseDate(party.ValidFrom), To: leaseEndLabel(party.ValidTo),
 		})
 	}
 	today := time.Now().UTC().Format("2006-01-02")
@@ -451,8 +451,11 @@ func leaseDetail(lease store.Lease) web.LeaseDetail {
 		detail.Components = append(detail.Components, web.LeaseMoneyView{
 			Kind: componentKindLabel(component.Kind), From: web.LeaseDate(component.ValidFrom),
 			Net: web.LeaseMoney(component.NetCents), VAT: web.LeaseMoney(gross - component.NetCents),
-			Gross: web.LeaseMoney(gross), Origin: originLabel(component.Origin),
+			Gross: web.LeaseMoney(gross), Origin: readingOrigin(component.Origin),
 		})
+		if readingOrigin(component.Origin) != "" {
+			detail.ShowOrigin = true
+		}
 	}
 	for _, component := range currentMoney {
 		gross := web.LeaseGrossCents(component.NetCents, component.VATRateBP)
@@ -700,6 +703,23 @@ func originLabel(raw string) string {
 		return "Import"
 	}
 	return "manuell"
+}
+
+// readingOrigin hides the internal import mark on the lease reading view.
+// Manual and valorisation origins stay visible. An empty end date reads as
+// an open-ended contract, not as a missing database value.
+func readingOrigin(raw string) string {
+	if raw == store.OriginImport {
+		return ""
+	}
+	return originLabel(raw)
+}
+
+func leaseEndLabel(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return "unbefristet"
+	}
+	return web.LeaseDate(raw)
 }
 
 func clauseTypeLabel(raw string) string {
