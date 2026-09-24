@@ -142,3 +142,24 @@ func TestFirstIssueHeadingKeepsResidentsBlindToPrivateFilingsHAUSV657(t *testing
 		t.Fatal("management sees the filing and the plain heading")
 	}
 }
+
+func TestIssueWizardStaysClosedWhenTheHouseAlreadyHasCases(t *testing.T) {
+	a := newTestPortalApp(t, userProfile{Email: "vera@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	if _, err := issueRepositoryForTest(a, "demo").Create(residentIssue{
+		TenantSlug: "demo", AuthorEmail: "other@example.com", Category: "Reparatur",
+		Title: "Licht im Stiegenhaus", Body: "Das Licht bleibt dunkel.", LocationType: issueLocationCommon, Status: issueStatusNew,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	closed := authedRequest(t, a, "vera@example.com", "/demo/app/anliegen").Body.String()
+	if strings.Contains(closed, `id="issue-new" open`) {
+		t.Fatal("wizard must stay closed on a normal visit when the house has cases")
+	}
+	if !strings.Contains(closed, `id="issue-new"`) || !strings.Contains(closed, "Licht im Stiegenhaus") {
+		t.Fatal("the closed wizard and the house list must both be on the page")
+	}
+	opened := authedRequest(t, a, "vera@example.com", "/demo/app/anliegen?new=1").Body.String()
+	if !strings.Contains(opened, `id="issue-new" open`) {
+		t.Fatal("?new=1 must open the wizard")
+	}
+}
