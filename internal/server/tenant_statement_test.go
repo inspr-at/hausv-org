@@ -39,6 +39,9 @@ func TestTenantStatementRoutesArchiveDeliveryAndDenials(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := strings.Join(append(append(d.Basis, d.PaymentTerms...), d.Inspection...), "\n")
+	for _, field := range d.Info {
+		text += "\n" + field.Label + ": " + field.Value
+	}
 	for _, want := range []string{"Im Namen und auf Rechnung von", "30. Juni 2026", "übernächsten Zinstermin", "05.08.2026", "HeizKG", structure.Legal.InspectionPlace} {
 		if !strings.Contains(text, want) {
 			t.Errorf("PDF missing %s: %s", want, text)

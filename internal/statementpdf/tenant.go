@@ -28,8 +28,8 @@ func TenantDocument(s store.TenantStatement, accountID string) (Document, error)
 	d := letterDocument(run, s.UnitLabel)
 	d.UnitID, d.PartyID = s.UnitID, a.ID
 	d.Title = fmt.Sprintf("Mieter-Betriebskostenabrechnung %d", run.PeriodYear)
-	d.Reference = "Mieterabrechnung " + s.ID + " · WEG-Lauf " + s.RunID
-	d.Basis = []string{"Im Namen und auf Rechnung von " + s.Owner.Name, "Einheit: " + s.UnitLabel}
+	d.Reference = "Ref. " + s.ID
+	d.Basis = nil
 	d.Address = []string{"Mietpartei"}
 	for _, p := range a.Parties {
 		d.Address = append(d.Address, p.Name)
@@ -42,7 +42,11 @@ func TenantDocument(s store.TenantStatement, accountID string) (Document, error)
 		d.Basis = append(d.Basis, "Leerstand: Ausgleich verbleibt beim Eigentümer.")
 	}
 	d.Info = nil
-	d.Info = append(d.Info, InfoField{Label: "Liegenschaft", Value: strings.Join(nonempty(run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress), " · ")}, InfoField{Label: "Einheit", Value: s.UnitLabel}, InfoField{Label: "Abrechnungsperiode", Value: date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn)}, InfoField{Label: "Abrechnungsdatum", Value: date(s.StatementOn)})
+	estate := nonempty(run.Input.Presentation.EstateName, run.Input.Presentation.EstateAddress)
+	if len(estate) == 2 && strings.HasPrefix(estate[1], estate[0]) {
+		estate = estate[1:] // The address already starts with the estate name.
+	}
+	d.Info = append(d.Info, InfoField{Label: "Liegenschaft", Value: strings.Join(estate, "\n")}, InfoField{Label: "Im Namen und auf Rechnung von", Value: s.Owner.Name}, InfoField{Label: "Einheit", Value: s.UnitLabel}, InfoField{Label: "Abrechnungsperiode", Value: date(run.Input.Period.StartsOn) + " bis " + date(run.Input.Period.EndsOn)}, InfoField{Label: "Abrechnungsdatum", Value: date(s.StatementOn)})
 	for _, line := range a.Lines {
 		row := CostRow{Name: line.Name, Total: money(line.SourceGrossCents), Key: "WEG-Ableitung", Share: "siehe Hinweise", Amount: money(line.GrossCents), Net: money(line.NetCents), Rate: fmt.Sprintf("%d %%", line.VATRate), VAT: money(line.VATCents), Gross: money(line.GrossCents)}
 		if line.Heating {
@@ -59,7 +63,7 @@ func TenantDocument(s store.TenantStatement, accountID string) (Document, error)
 					// only this tenant's lease Akonto belongs in the settlement.
 					row.Measurements = append(row.Measurements, details[:7]...)
 					for _, interval := range a.Intervals {
-						row.Measurements = append(row.Measurements, "Mietzeitraum (Ende exklusiv): "+date(interval.From)+" bis "+date(interval.To))
+						row.Measurements = append(row.Measurements, "Mietzeitraum: "+date(interval.From)+" bis "+date(lastDay(interval.To)))
 					}
 					row.Measurements = append(row.Measurements, "Abgeleiteter Heizkostenanteil dieser Mietpartei: "+money(line.GrossCents), details[8])
 				}
@@ -70,15 +74,8 @@ func TenantDocument(s store.TenantStatement, accountID string) (Document, error)
 	}
 	d.Total = money(a.OperatingCents + a.HeatingCents)
 	d.Prepaid = money(a.OperatingPrepaidCents + a.HeatingPrepaidCents)
-	balance := a.BalanceCents()
-	d.Balance = "Ausgeglichen 0,00 €"
-	if balance > 0 {
-		d.Balance = "Nachzahlung " + money(balance)
-	}
-	if balance < 0 {
-		d.Balance = "Guthaben " + money(-balance)
-	}
-	d.PaymentTerms = []string{fmt.Sprintf("Betriebskosten: %s · BK-Akonto aus Mietvertrag: %s · Saldo: %s", money(a.OperatingCents), money(a.OperatingPrepaidCents), money(a.OperatingCents-a.OperatingPrepaidCents)), fmt.Sprintf("Heizkosten: %s · Heiz-Akonto aus Mietvertrag: %s · Saldo: %s", money(a.HeatingCents), money(a.HeatingPrepaidCents), money(a.HeatingCents-a.HeatingPrepaidCents))}
+	d.Balance = settlement(a.BalanceCents())
+	d.PaymentTerms = []string{fmt.Sprintf("Betriebskosten %s abzüglich BK-Akonto laut Mietvertrag %s: %s", money(a.OperatingCents), money(a.OperatingPrepaidCents), settlement(a.OperatingCents-a.OperatingPrepaidCents)), fmt.Sprintf("Heizkosten %s abzüglich Heizkosten-Akonto laut Mietvertrag %s: %s", money(a.HeatingCents), money(a.HeatingPrepaidCents), settlement(a.HeatingCents-a.HeatingPrepaidCents))}
 	if a.Scope == store.MRGVoll || a.Landlord {
 		d.PaymentTerms = append(d.PaymentTerms, fmt.Sprintf("Betriebskosten gemäß § 21 Abs. 3 MRG: Abrechnung bis 30. Juni %d. Guthaben oder Nachzahlung zum übernächsten Zinstermin, am %s. Maßgeblich ist die Mietpartei am Fälligkeitstag; keine zeitanteilige BK-Aufteilung bei Mieterwechsel.", run.PeriodYear+1, date(a.OperatingDueOn)))
 		d.InspectionBasis = "§ 21 Abs. 3 MRG"
@@ -118,4 +115,25 @@ func RenderTenant(s store.TenantStatement, accountID string) ([]byte, error) {
 		return nil, ErrNotFound
 	}
 	return pdf.Pages(pages, statementPalette), nil
+}
+
+// settlement names a tenant balance instead of printing a signed saldo.
+func settlement(cents int64) string {
+	switch {
+	case cents > 0:
+		return "Nachzahlung " + money(cents)
+	case cents < 0:
+		return "Guthaben " + money(-cents)
+	default:
+		return "Ausgeglichen " + money(0)
+	}
+}
+
+// lastDay turns a stored exclusive interval end into the last included day.
+func lastDay(exclusive string) string {
+	at, err := time.Parse(time.DateOnly, exclusive)
+	if err != nil {
+		return exclusive
+	}
+	return at.AddDate(0, 0, -1).Format(time.DateOnly)
 }
