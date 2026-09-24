@@ -326,6 +326,9 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 		for _, p := range run.Input.Parties {
 			if p.UnitID == u.UnitID && p.Owner {
 				unit.Owners = append(unit.Owners, web.TenantStatementOption{Key: p.ID, Label: p.Name, Selected: p.ID == m.OwnerEmail})
+				if p.ID == m.OwnerEmail {
+					unit.OwnerName = p.Name
+				}
 			}
 		}
 		for _, c := range run.Input.Structure.CostTypes {
@@ -343,7 +346,7 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 			for _, p := range l.Parties {
 				names = append(names, p.Name)
 			}
-			lv := web.TenantStatementLeaseView{ID: l.ID, Label: strings.Join(names, ", ") + " · " + l.MRGScope, Contract: l.MRGScope != store.MRGVoll}
+			lv := web.TenantStatementLeaseView{ID: l.ID, Label: strings.Join(names, ", "), Scope: mrgLabel(l.MRGScope), Contract: l.MRGScope != store.MRGVoll}
 			for _, c := range unit.Costs {
 				option := c
 				option.Selected = false
@@ -365,7 +368,7 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 		return out
 	}
 	for _, s := range statements {
-		v := web.TenantStatementView{ID: s.ID, Label: s.UnitLabel + " · " + s.StatementOn, Approved: s.Approval != nil, Owner: s.Owner.Name, SourcePassed: view.FormatEURCents(s.SourcePassedCents), SourceRetained: view.FormatEURCents(s.SourceRetainedCents)}
+		v := web.TenantStatementView{ID: s.ID, Label: s.UnitLabel, Date: tenantStatementDate(s.StatementOn), Approved: s.Approval != nil, Owner: s.Owner.Name, SourcePassed: view.FormatEURCents(s.SourcePassedCents), SourceRetained: view.FormatEURCents(s.SourceRetainedCents)}
 		if a.mailer == nil || !a.mailer.Configured() || ac.repositories.annualStatementDeliveries == nil {
 			v.SendIssue = "E-Mail-Versand ist nicht eingerichtet."
 		}
@@ -382,19 +385,55 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 			if account.Landlord {
 				names = []string{"Eigentümer (Leerstand)"}
 			}
-			v.Accounts = append(v.Accounts, web.TenantStatementAccountView{ID: account.ID, Names: strings.Join(names, ", "), Balance: view.FormatEURCents(account.BalanceCents())})
+			result, amount := tenantStatementResult(account.BalanceCents())
+			v.Accounts = append(v.Accounts, web.TenantStatementAccountView{ID: account.ID, Names: strings.Join(names, ", "), Result: result, Amount: amount})
 		}
 		if ac.repositories.annualStatementDeliveries != nil {
 			deliveries, e := ac.repositories.annualStatementDeliveries.List(s.ID)
 			if e != nil {
 				out.Message = "Versandprotokoll konnte nicht gelesen werden."
 			} else {
+				location, err := time.LoadLocation("Europe/Vienna")
+				if err != nil {
+					location = time.UTC
+				}
 				for _, d := range deliveries {
-					v.Deliveries = append(v.Deliveries, web.AnnualStatementDeliveryView{Recipient: d.Recipient, Status: d.Status, Error: d.Error, Time: d.SentAt.Format("02.01.2006 15:04")})
+					status, detail := "Fehlgeschlagen", d.Error
+					switch d.Status {
+					case "sent":
+						status = "Gesendet"
+					case "pending":
+						if time.Since(d.SentAt) < store.AnnualStatementDeliveryPendingTTL {
+							status = "Wird gesendet"
+						} else {
+							detail = store.AnnualStatementDeliveryInterrupted
+						}
+					}
+					v.Deliveries = append(v.Deliveries, web.AnnualStatementDeliveryView{Recipient: d.Recipient, Status: status, Error: detail, Time: d.SentAt.In(location).Format("02.01.2006 15:04")})
 				}
 			}
 		}
 		out.Statements = append(out.Statements, v)
 	}
 	return out
+}
+
+// tenantStatementDate shows a stored ISO date in Austrian notation.
+func tenantStatementDate(iso string) string {
+	if at, err := time.Parse(time.DateOnly, iso); err == nil {
+		return at.Format("02.01.2006")
+	}
+	return iso
+}
+
+// tenantStatementResult names the tenant's settlement instead of a signed saldo.
+func tenantStatementResult(balance int64) (string, string) {
+	switch {
+	case balance > 0:
+		return "Nachzahlung", view.FormatEURCents(balance)
+	case balance < 0:
+		return "Guthaben", view.FormatEURCents(-balance)
+	default:
+		return "Ausgeglichen", view.FormatEURCents(0)
+	}
 }
