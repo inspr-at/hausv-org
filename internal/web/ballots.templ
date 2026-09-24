@@ -48,7 +48,7 @@ templ BallotsContent(data BallotsPageData) {
 
 templ BallotsHeaderAction(data BallotsPageData) {
 	if data.CanManageVotes && data.HasBallots {
-		<button class="button" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Abstimmung anlegen</button>
+		<button class="button primary" type="button" data-dialog="ballot-create" aria-haspopup="dialog" aria-controls="ballot-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Abstimmung anlegen</button>
 	}
 }
 

@@ -72,8 +72,8 @@ templ EventsStyles() {
 		.events-main .event-category{display:inline-flex;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--panel-soft);color:var(--ink);font-size:11px;font-weight:700;white-space:nowrap}
 		.events-main .event-meta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);color:var(--muted);font-size:12px}
 		.events-main .event-meta>span{white-space:nowrap}
-		.events-main .event-details{margin-top:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft)}
-		.events-main .event-details>summary{min-height:42px;display:flex;align-items:center;padding:0 var(--space-3);cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}
+		.events-main :is(.section-head,.event-copy,.aside-panel) :is(h2,h3,p){margin-bottom:0}.events-main .event-details{margin-top:var(--space-1);border:0;border-top:1px solid var(--line);border-radius:0;background:transparent}
+		.events-main .event-details>summary{min-height:44px;display:flex;align-items:center;padding:0;cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}
 		.events-main .event-details-body{display:grid;gap:var(--space-3);padding:0 var(--space-3) var(--space-3);border-top:1px solid var(--line)}
 		.events-main .entry-body{padding-top:var(--space-3);font-size:13px;line-height:1.55;white-space:normal}
 		.events-main .event-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}
@@ -88,7 +88,7 @@ templ EventsStyles() {
 		.events-main .aside-panel{display:grid;gap:var(--space-3);padding:var(--space-4)}
 		.events-main .aside-panel h2{margin-top:var(--space-1);font-size:17px}
 		.events-main .aside-panel>p{color:var(--muted);font-size:11px;line-height:1.5}
-		.events-main .aside-panel .button{min-height:38px;font-size:12px}
+		
 		.events-main .feed-note{padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);color:var(--soft);font-size:11px;line-height:1.4}
 		.events-main .guide>summary{cursor:pointer;list-style:none}
 		.events-main .guide>summary::-webkit-details-marker{display:none}
@@ -150,7 +150,7 @@ templ EventsStyles() {
 		.event-dialog .button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 		@media(max-width:520px){.event-dialog .dialog-head,.event-dialog .dialog-body,.event-dialog .dialog-footer{padding:var(--space-4)}.event-dialog .dialog-head h2{font-size:24px}.event-dialog .dialog-footer .button{flex:1 1 auto}}
 		@media(max-width:1050px){.events-main .events-layout{grid-template-columns:minmax(0,1fr)}.events-main .events-aside{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
-		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .event-actions .button{min-height:42px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}
+		@media(max-width:760px){.events-main{padding:var(--space-4)}.events-main .page{margin-top:0}.events-main .events-layout{margin-top:var(--space-4);gap:var(--space-3)}.events-main .events-aside{grid-template-columns:minmax(0,1fr);gap:var(--space-3)}.events-main .agenda-panel{padding:var(--space-4)}.events-main .section-head{display:grid}.events-main .event-month{margin-top:var(--space-4)}.events-main .event-card{grid-template-columns:50px minmax(0,1fr);gap:var(--space-3);padding:var(--space-3)}.events-main .date-badge{width:50px;height:50px}.events-main .date-badge strong{font-size:20px}.events-main .event-card-head{flex-wrap:wrap}.events-main .event-card-head h3{font-size:17px}.events-main .blank{min-height:0;padding:var(--space-6) var(--space-4)}.events-main .blank-actions{width:100%;display:grid}}
 		.events-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel)}
 		.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}.event-search{display:flex;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--panel)}
 		.event-search input{min-width:0;width:100%;border:0;padding:8px 16px;background:transparent;color:var(--ink);font-size:14px}
@@ -185,7 +185,7 @@ templ EventsContent(data EventsPageData) {
 
 templ EventHeaderAction(data EventsPageData) {
 	if data.CanManageEvents {
-		<button class="button" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Termin erstellen</button>
+		<button class="button primary" type="button" data-dialog="event-create" aria-haspopup="dialog" aria-controls="event-create"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Termin erstellen</button>
 	}
 }
 
@@ -282,7 +282,9 @@ templ EventCard(event view.HouseEventView) {
 			if event.IsNext {
 				<span class="next-label">Als Nächstes</span>
 			}
-			<h3>{ event.Title }</h3></div><span class="event-category">{ event.Category }</span>
+			<h3>{ event.Title }</h3></div>if event.Category != "" && event.Category != "Termin" {
+				<span class="event-category">{ event.Category }</span>
+			}
 			if event.Status != "" && event.Status != "Geplant" {
 				<span class="tag">{ event.Status }</span>
 			}
