@@ -84,6 +84,11 @@ func TestLetterVariants(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(out)
+			for _, internal := range []string{"Lauf", "Referenz", "SHA-256", run.ID[:16], run.InputsSHA256[:16]} {
+				if strings.Contains(text, internal) {
+					t.Fatalf("internal audit data %q in tenant letter", internal)
+				}
+			}
 			if strings.HasPrefix(variant, "staffel-") && !strings.Contains(text, "Staffelmietzins laut Vertrag") {
 				t.Fatal("Staffel letter basis missing", text)
 			}

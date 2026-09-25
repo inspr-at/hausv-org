@@ -114,7 +114,6 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		{Label: "Datum", Value: letterDate.Format("02.01.2006")},
 		{Label: "Einheit / Hauptmieter", Value: item.Label()},
 		{Label: "Vertragsabschluss", Value: Date(item.Lease.ConcludedOn)},
-		{Label: "Lauf", Value: fmt.Sprintf("%s / %d", short(run.ID), run.Revision)},
 	}
 	var overflow []string
 	l.y, overflow = pdf.Letterhead(&l.pages[0], []string{sender}, address, info)
@@ -217,15 +216,9 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		}
 	}
 	for j := range l.pages {
-		l.pages[j].Footer = []string{fmt.Sprintf("%s · Wertsicherung · %s · Seite %d von %d", run.Input.Organisation, item.Label(), j+1, len(l.pages)), "Referenz " + short(run.ID) + " · Eingaben SHA-256 " + short(run.InputsSHA256)}
+		l.pages[j].Footer = []string{fmt.Sprintf("%s · Wertsicherung · %s · Seite %d von %d", run.Input.Organisation, item.Label(), j+1, len(l.pages))}
 	}
 	return pdf.Pages(l.pages, pdf.Palette{Paper: [3]uint8{255, 255, 255}, Ink: [3]uint8{32, 43, 39}, Accent: [3]uint8{97, 118, 107}}), nil
-}
-func short(s string) string {
-	if len(s) > 16 {
-		return s[:16]
-	}
-	return s
 }
 func displayRatio(raw string) string { return store.ValorisationNumber(raw, 5) }
 func componentLabel(kind string) string {

@@ -53,6 +53,16 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 	if err != nil || unchanged.Status != "draft" {
 		t.Fatal("blocked approval changed the run", err)
 	}
+	for _, item := range run.Items {
+		if item.Group != "ready" {
+			continue
+		}
+		preview := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"/runs/"+run.ID+"/items/"+item.ID+"/pdf", nil)
+		if preview.Code != http.StatusOK || preview.Header().Get("Content-Disposition") != `inline; filename="wertsicherung.pdf"` {
+			t.Fatal("draft PDF must open inline", preview.Code)
+		}
+		break
+	}
 	for _, role := range []string{roleOwner, roleResident, roleServiceProvider, roleBeirat} {
 		actor := strings.ToLower(role) + "@example.com"
 		a.profiles[actor] = userProfile{Email: actor, Role: role, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
@@ -92,6 +102,9 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		response := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"/runs/"+run.ID+"/items/"+item.ID+"/pdf", nil)
 		if response.Code != http.StatusOK || !strings.HasPrefix(response.Body.String(), "%PDF-") || strings.Contains(response.Body.String(), "Entwurf") {
 			t.Fatal("final PDF", response.Code)
+		}
+		if response.Header().Get("Content-Disposition") != `inline; filename="wertsicherung.pdf"` {
+			t.Fatal("archived PDF must open inline")
 		}
 	}
 	lease := archiveDemoRequest(t, a, archiveDemoManager, "GET", "/app/settings/building/units/top-1/lease", nil)

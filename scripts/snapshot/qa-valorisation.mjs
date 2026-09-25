@@ -2,7 +2,8 @@
 // Valorisation demo: preview, approval, archived PDF and owner denial. Headless, against one local rig.
 //   node qa-valorisation.mjs http://localhost:8309 /path/to/artifacts
 
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
 const baseURL = process.argv[2];
@@ -60,6 +61,24 @@ async function shot(page, name) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${artifactDir}/${name}.png`, fullPage: true });
   process.stdout.write(`  screenshot ${artifactDir}/${name}.png\n`);
+}
+
+async function checkLetter(context, href, runID, name) {
+  const response = await context.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
+  const raw = await response.body();
+  if (response.status() !== 200 || !raw.subarray(0, 5).equals(Buffer.from('%PDF-'))) fail(`${name}: PDF fehlt`);
+  if (!/^inline;/.test(response.headers()['content-disposition'] || '')) fail(`${name}: Schreiben öffnet nicht inline`);
+  // Requires Poppler; check extracted text, including every page footer.
+  const text = execFileSync('pdftotext', ['-layout', '-', '-'], { input: raw, encoding: 'utf8' });
+  for (const forbidden of ['Lauf', 'Referenz', 'SHA-256', runID.slice(0, 16)]) {
+    if (text.includes(forbidden)) fail(`${name}: interne Prüfdaten im Schreiben (${forbidden})`);
+  }
+  if (!text.includes('Anpassung des Hauptmietzinses')) fail(`${name}: Brieftext fehlt`);
+  if (artifactDir) {
+    writeFileSync(`${artifactDir}/${name}.pdf`, raw);
+    writeFileSync(`${artifactDir}/${name}.txt`, text);
+    writeFileSync(`${artifactDir}/${name}-headers.json`, JSON.stringify({ status: response.status(), contentDisposition: response.headers()['content-disposition'], contentType: response.headers()['content-type'] }, null, 2));
+  }
 }
 
 try {
@@ -123,6 +142,8 @@ try {
   const first = page.locator('article[data-run-id]').first();
   const runID = await first.getAttribute('data-run-id');
   if (!runID) fail('Demo-Lauf fehlt');
+  const draftPDF = first.locator('[data-group="ready"] a[href$="/pdf"]').first();
+  await checkLetter(manager, await draftPDF.getAttribute('href'), runID, 'valorisation-letter-draft');
   const approveButton = first.getByRole('button', { name: 'Freigeben und archivieren' });
   if (!(await approveButton.isDisabled()) || !(await approveButton.getAttribute('class')).includes('ghost')) fail('Freigabe bei offenen Ausnahmen nicht deaktiviert');
   const issueID = await approveButton.getAttribute('aria-describedby');
@@ -166,8 +187,7 @@ try {
   await approved.locator('.vr-cancel > summary').click();
   const href = await pdfLink.getAttribute('href');
   if (!href) fail('PDF-Link fehlt');
-  const pdf = await manager.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
-  if (pdf.status() !== 200 || !(await pdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-'))) fail('Archiv-PDF fehlt');
+  await checkLetter(manager, href, runID, 'valorisation-letter-approved');
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await shot(page, `valorisation-approved-${width}`);

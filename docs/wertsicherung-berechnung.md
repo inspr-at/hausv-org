@@ -357,6 +357,9 @@ Beide Brieftypen verwenden `pdf.Letterhead` für Absender, Fensteranschrift und
 Infoblock. Überlange Angaben laufen in einen gesonderten Abschnitt weiter.
 Deutsche Dezimalzahlen und Geldbeträge sind reine Darstellung; exakte Brüche
 bleiben in den gespeicherten Berechnungsschritten und Kurven erhalten.
+Entwürfe und archivierte Anpassungsschreiben werden mit `Content-Disposition:
+inline` geöffnet. Lauf-ID, Referenz und Eingabe-Prüfsumme stehen ausschließlich
+im Lauf beziehungsweise in den Archivmetadaten, nicht im Mieterbrief.
 
 Hausroute: `/app/settings/valorisation`; Organisationsroute:
 `/app/verwaltung/wertsicherung`. Mutationen liegen unter
@@ -389,5 +392,5 @@ sichtbar. Die technische Prüfsumme liegt in einem eigenen Detailbereich.
 Browserprüfung gegen ein frisches Demo-Rig (verändert ausschließlich lokale
 Demodaten): `node scripts/snapshot/qa-valorisation.mjs http://localhost:8309
 /absoluter/artefaktpfad`. Sie prüft Vorschau, Beträge, Freigabe, PDF, Rollenabsage
-und 390/1440 Pixel. Die PDF-Inhaltstests benötigen `pdftotext`; mit
+und 390/1440 Pixel. Browseroracle und PDF-Inhaltstests benötigen `pdftotext`; mit
 `HAUSV_VALORISATION_PDF_DIR` werden die fünf Testbriefe zusätzlich exportiert.

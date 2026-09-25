@@ -291,7 +291,7 @@ func (a *app) valorisationPDF(w http.ResponseWriter, r *http.Request, ac authCtx
 			return
 		}
 		w.Header().Set("Content-Type", "application/pdf")
-		w.Header().Set("Content-Disposition", `attachment; filename="wertsicherung.pdf"`)
+		w.Header().Set("Content-Disposition", `inline; filename="wertsicherung.pdf"`)
 		w.Header().Set("Cache-Control", "private, no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		_, _ = w.Write(data)
