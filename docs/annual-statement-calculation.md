@@ -5,8 +5,11 @@ Berechnungsversionen `1` bis `5`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
-vom unveränderlichen Lauf. Freigegebene PDFs tragen Datum und Rolle statt
-„Entwurf“. Archiv und Versand verlangen die Freigabe. Bereits archivierte
+vom unveränderlichen Lauf. Neue Freigaben speichern zusätzlich den Anzeigenamen
+in `approved_name` im bestehenden Freigabe-JSON. Freigegebene PDFs tragen Datum
+in Europe/Vienna und diesen Namen statt „Entwurf“; ältere Freigaben ohne Namen
+verwenden die gespeicherte Personenkennung. Spätere Profiländerungen verändern
+diesen Freigabetext nicht. Archiv und Versand verlangen die Freigabe. Bereits archivierte
 Altentwürfe benötigen einen neuen Lauf; ihre Dateien bleiben unverändert.
 Die Freigabe wird als `annual-statement.run.approve` protokolliert.
 
@@ -239,15 +242,23 @@ Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
 geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
 Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter
 „Hinweise“. Messnachweise und Belegverzeichnis nutzen dieselben Seitenränder;
-Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufkennung und Revision
-stehen nur als kleine Fußreferenz, Partei-E-Mail-Adressen nicht im Briefkopf.
+Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufnummer und Erstellzeit
+stehen als kleine Fußreferenz; die technische Laufkennung erscheint dort nicht.
+Messwerte verwenden deutsche Zahlformatierung mit höchstens zwei Nachkommastellen,
+Messquellen heißen „Zähler“. Die gespeicherten Mikroeinheiten bleiben unverändert.
 Standard-PDF-Schriftmetriken bestimmen Zeilenumbrüche und rechtsbündige Beträge
 in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
 
 Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
 öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
 Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
-Mehrere Parteien behalten je eine zugeordnete PDF-Zeile und 44-px-Bedienflächen.
+Jede Partei erhält eine eigene Ergebniszeile mit Zeitraum, Kostenanteil, Akonto,
+Saldo und PDF-/Downloadlinks, auf schmalen Bildschirmen eine eigene Karte.
+Die Einheit gruppiert diese Zeilen; die aufklappbaren Kostenarten zeigen weiterhin
+die Einheitsbeträge. Parteibeträge verwenden dieselbe gespeicherte Projektion wie
+das jeweilige PDF, einschließlich der historischen Leerstandsbehandlung.
+Bedienflächen bleiben mindestens 44 px hoch. Der Lauf nennt den Anzeigenamen der
+erstellenden Person; das Freigabedatum verwendet den Wiener Kalendertag.
 
 Das Archiv legt je Partei ein PDF sowie zuletzt das Gesamtpaket ab. IDs sind
 aus Lauf/Revision/Einheit/Partei abgeleitet; Wiederholungen ergänzen ein partielles

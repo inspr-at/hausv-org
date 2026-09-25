@@ -76,6 +76,9 @@ func TestAnnualManagementAddressWarningAndFrozenSnapshot(t *testing.T) {
 
 func TestAnnualApprovalLifecycle(t *testing.T) {
 	a, repos, _ := newArchiveDemoApp(t)
+	profile := a.profiles[archiveDemoManager]
+	profile.FirstName, profile.LastName = "Vera", "Verwalter"
+	a.profiles[archiveDemoManager] = profile
 	w := archiveDemoRequest(t, a, archiveDemoManager, http.MethodPost, "/app/settings/annual-statement/runs", url.Values{"year": {"2025"}})
 	if w.Code != http.StatusSeeOther {
 		t.Fatal(w.Code)
@@ -110,7 +113,7 @@ func TestAnnualApprovalLifecycle(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	final, _, err := repos.annualStatementRuns.Get(draft.ID)
-	if err != nil || final.Approval == nil || final.Approval.ApprovedBy != archiveDemoManager || final.Approval.Role != store.RoleManager {
+	if err != nil || final.Approval == nil || final.Approval.ApprovedBy != archiveDemoManager || final.Approval.Role != store.RoleManager || final.Approval.ApprovedName != "Vera Verwalter" {
 		t.Fatal(final.Approval, err)
 	}
 	if final.InputHash != draft.InputHash || !reflect.DeepEqual(final.Input, draft.Input) || !reflect.DeepEqual(final.Result, draft.Result) {
@@ -124,11 +127,26 @@ func TestAnnualApprovalLifecycle(t *testing.T) {
 	if pdf.Code != 200 || strings.Contains(pdf.Body.String(), "Entwurf") || !strings.Contains(pdf.Body.String(), "Freigegeben:") {
 		t.Fatal("final PDF", pdf.Code)
 	}
+	profile.FirstName = "Geändert"
+	a.profiles[archiveDemoManager] = profile
 	if err := repos.annualStatementPeriods.SaveLegal(2025, changedLegal); err != nil {
 		t.Fatal(err)
 	}
 	frozen := archiveDemoRequest(t, a, archiveDemoManager, http.MethodGet, route+"/pdf", nil)
 	if frozen.Body.String() != pdf.Body.String() {
 		t.Fatal("approved PDF changed with legal settings")
+	}
+}
+
+func TestAnnualApprovalViennaCalendarDate(t *testing.T) {
+	for _, tc := range []struct{ at, want string }{
+		{"2026-09-24T23:47:00Z", "25.09.2026"},
+		{"2026-01-31T23:30:00Z", "01.02.2026"},
+		{"2026-03-29T01:30:00Z", "29.03.2026"},
+	} {
+		at, _ := time.Parse(time.RFC3339, tc.at)
+		if got := annualStatementViennaDate(at); got != tc.want {
+			t.Errorf("%s: %s", tc.at, got)
+		}
 	}
 }

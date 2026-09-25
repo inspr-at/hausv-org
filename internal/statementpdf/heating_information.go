@@ -30,7 +30,7 @@ func heatingInformation(run store.AnnualStatementRun, unitID, costKey string) []
 		decimal := func(value int64) string {
 			return strings.ReplaceAll(strings.TrimRight(strings.TrimRight(new(big.Rat).SetFrac(big.NewInt(value), big.NewInt(1_000_000)).FloatString(6), "0"), "."), ".", ",")
 		}
-		lines = append(lines, p.Supplier+" · "+p.Carrier+": "+decimal(p.QuantityMicros)+" "+p.Unit+"; Preis: "+decimal(p.PriceMicros)+" EUR/"+p.Unit, "Preisstand: "+p.PriceNote)
+		lines = append(lines, p.Supplier+" · "+p.Carrier+": "+measurement(p.QuantityMicros, p.Unit)+"; Preis: "+decimal(p.PriceMicros)+" EUR/"+p.Unit, "Preisstand: "+p.PriceNote)
 	}
 	if n == 0 {
 		lines = append(lines, "Energiebezugsmenge und tatsächliche Preise: Noch nicht hinterlegt")

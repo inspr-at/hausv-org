@@ -94,6 +94,8 @@ try {
   assert.equal((await context.request.post(sendURL, { headers: { Origin: baseURL, Connection: 'close' }, maxRedirects: 0 })).status(), 409);
   await page.getByRole('button', { name: 'Abrechnung freigeben', exact: true }).click();
   assert.match(await run.innerText(), /Freigegeben am/);
+  const viennaDate = new Intl.DateTimeFormat('de-DE', {timeZone:'Europe/Vienna', day:'2-digit', month:'2-digit', year:'numeric'}).format(new Date());
+  assert((await run.innerText()).includes(`Freigegeben am ${viennaDate}`));
   const steps = run.locator('.annual-lifecycle > li');
   assert.deepEqual(await steps.locator(':scope > strong').allTextContents(), ['1 · Freigabe', '2 · Dokumentenarchiv', '3 · E-Mail-Versand']);
   const send = run.getByRole('button', { name: 'Per E-Mail senden', exact: true });
@@ -114,7 +116,8 @@ try {
   assert(final.includes(Buffer.from('vereinbarte monatliche Vorauszahlung')));
   assert(final.includes(Buffer.from('Vorauszahlung auf Basis des Vorjahres')));
 
-  for (const forbidden of ['fehlt', 'TODO', 'Noch nicht hinterlegt']) assert(!final.includes(Buffer.from(forbidden)));
+  assert(final.includes(Buffer.from('Vera Verwalter')));
+  for (const forbidden of ['Ref. ', 'Quelle: entity', ',000000 kWh', 'Administration', 'fehlt', 'TODO', 'Noch nicht hinterlegt']) assert(!final.includes(Buffer.from(forbidden)));
   assert(final.includes(Buffer.from('Hausverwaltung Musterstadt GmbH')));
   assert(final.includes(Buffer.from('Musterstra', 'ascii')));
   assert(final.includes(Buffer.from('+43 316 555 100')));
@@ -128,7 +131,7 @@ try {
     assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
     const box = await toggle.boundingBox();
     assert(box.height >= 44 && box.width >= 44);
-    if (width === 1440) assert((await row.boundingBox()).height <= 60, 'Collapsed unit row stays near 56px');
+    if (width === 1440) assert((await row.boundingBox()).height <= 76, 'Party and period remain compact');
     await toggle.focus();
     await page.keyboard.press('Space');
     assert.equal(await toggle.getAttribute('aria-expanded'), 'true');

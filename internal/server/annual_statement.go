@@ -204,6 +204,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	}
 	prepaymentMsg, prepaymentOK := annualStatementPrepaymentMessage(r.URL.Query().Get("prepayment"))
 	runView := a.annualStatementDeliveryView(annualStatementRunView(ac.repositories.annualStatementRuns, ac.repositories.documents, selectedYear, r.URL.Query().Get("run"), r.URL.Query().Get("run-status"), consumption.Vectors), ac.repositories, r.URL.Query())
+	runView.CreatedBy = a.profileForTenant(runView.CreatedBy, ac.tenant.Slug).DisplayName()
 	if runView.ID == "" {
 		address := tenant.ContactAddress
 		if org, found := a.organisationRecordFor(r.Context(), &ac); found {

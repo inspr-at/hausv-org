@@ -60,6 +60,8 @@ try {
     await page.setViewportSize({ width, height: 1000 });
     await page.locator('details.annual-preparation').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
     await section.scrollIntoViewIfNeeded();
+    const notes = await section.locator('.reserve-note').evaluateAll(nodes=>nodes.map(n=>({width:n.clientWidth,scroll:n.scrollWidth,white:getComputedStyle(n).whiteSpace})));
+    assert(notes.every(n=>n.scroll<=n.width+1&&n.white==='normal'),'reserve receipt must wrap inside its row');
     await page.screenshot({ path: `${out}/reserve-${width}.png`, fullPage: false });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   }
