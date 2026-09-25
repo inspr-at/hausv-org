@@ -338,7 +338,7 @@ func (s *SQLAnnualStatementRunStore) getAnnualStatementRun(tenant TenantRef, id 
 	return run, true, nil
 }
 
-func (s *SQLAnnualStatementRunStore) approveAnnualStatementRun(tenant TenantRef, id, actor, role string, now time.Time) (AnnualStatementRun, bool, error) {
+func (s *SQLAnnualStatementRunStore) approveAnnualStatementRun(tenant TenantRef, id, actor, role string, now time.Time, displayName ...string) (AnnualStatementRun, bool, error) {
 	run, found, err := s.getAnnualStatementRun(tenant, id)
 	if err != nil {
 		return run, false, err
@@ -349,7 +349,7 @@ func (s *SQLAnnualStatementRunStore) approveAnnualStatementRun(tenant TenantRef,
 	if run.Approval != nil {
 		return run, false, nil
 	}
-	approval, err := newAnnualStatementApproval(run, actor, role, now)
+	approval, err := newAnnualStatementApproval(run, actor, role, now, displayName...)
 	if err != nil {
 		return run, false, err
 	}

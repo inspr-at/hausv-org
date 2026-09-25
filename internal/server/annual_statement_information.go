@@ -33,15 +33,15 @@ func (a *app) saveAnnualStatementAgreedShares(w http.ResponseWriter, r *http.Req
 	}
 	shares := map[string]int{}
 	for _, unit := range units {
-		n, e := strconv.Atoi(r.FormValue("share_" + unit.ID))
-		if e != nil || n < 0 || n > 1_000_000 {
-			http.Error(w, "Jede Einheit benötigt einen Anteil zwischen 0 und 1.000.000 PPM.", 400)
+		n, valid := parseAnnualSharePercent(r.FormValue("share_" + unit.ID))
+		if !valid {
+			http.Error(w, "Jede Einheit benötigt einen Anteil zwischen 0 und 100 % mit höchstens vier Nachkommastellen.", 400)
 			return
 		}
 		shares[unit.ID] = n
 	}
 	if store.AnnualStatementAgreedPreview(key, units, shares).Blocked {
-		http.Error(w, "Die vereinbarten Anteile müssen genau 1.000.000 PPM ergeben.", 400)
+		http.Error(w, "Die vereinbarten Anteile müssen genau 100 % ergeben.", 400)
 		return
 	}
 	if structure.Legal.AgreedShares == nil {
@@ -54,6 +54,19 @@ func (a *app) saveAnnualStatementAgreedShares(w http.ResponseWriter, r *http.Req
 	}
 	a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualPeriodSave, TargetType: "annual-statement-period", TargetID: strconv.Itoa(year), Summary: "Vereinbarte Anteile gespeichert", Details: map[string]string{"cost_type": key}})
 	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(year)+"#vereinbarte-anteile", http.StatusSeeOther)
+}
+
+// Percent inputs are converted exactly to the existing millionths vector.
+func parseAnnualSharePercent(raw string) (int, bool) {
+	raw = strings.TrimSpace(raw)
+	if i := strings.IndexAny(raw, ",."); i >= 0 && len(raw)-i-1 > 4 {
+		return 0, false
+	}
+	micros, ok := parseAnnualInformationMicros(raw)
+	if !ok || micros > 100_000_000 || micros%100 != 0 {
+		return 0, false
+	}
+	return int(micros / 100), true
 }
 
 // Decimal EUR and quantities support six places without float conversion.
@@ -95,14 +108,14 @@ func (a *app) saveAnnualStatementHeatingInformation(w http.ResponseWriter, r *ht
 		return
 	}
 	info := store.AnnualStatementHeatingInformation{TaxesNote: strings.TrimSpace(r.FormValue("taxes_note")), DistrictHeatingOver20MW: r.FormValue("district_over_20mw") == "on", FuelMix: strings.TrimSpace(r.FormValue("fuel_mix")), Emissions: strings.TrimSpace(r.FormValue("emissions")), MeteringCostsNote: strings.TrimSpace(r.FormValue("metering_costs_note")), OperatingCostsNote: strings.TrimSpace(r.FormValue("operating_costs_note")), RemoteMeters: r.FormValue("remote_meters"), MonthlyInformation: strings.TrimSpace(r.FormValue("monthly_information")), ClimateSource: strings.TrimSpace(r.FormValue("climate_source")), ComplaintContact: strings.TrimSpace(r.FormValue("complaint_contact"))}
-	for name, target := range map[string]*int{"climate_current_ppm": &info.ClimateCurrentPPM, "climate_previous_ppm": &info.ClimatePreviousPPM} {
+	for name, target := range map[string]*int{"climate_current_factor": &info.ClimateCurrentPPM, "climate_previous_factor": &info.ClimatePreviousPPM} {
 		if raw := r.FormValue(name); raw != "" {
-			n, e := strconv.Atoi(raw)
-			if e != nil {
+			n, valid := parseAnnualInformationMicros(raw)
+			if !valid || n <= 0 || n > 10_000_000 {
 				http.Error(w, "Ungültiger Klimafaktor.", 400)
 				return
 			}
-			*target = n
+			*target = int(n)
 		}
 	}
 	rows := r.Form["purchase_row"]

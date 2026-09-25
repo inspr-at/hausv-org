@@ -25,16 +25,25 @@ func TestHeizKG18AnnexContentAndHistoricalSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 	var lines []string
+	headings := map[string]bool{"Energiebezüge und Preise (§ 18 Abs. 1 Z 1a–1c HeizKG)": false, "Verbrauchsvergleich": false, "Verbraucherinformation (§ 18 Abs. 1 Z 13–15 HeizKG)": false}
 	for _, page := range docs[0].Pages() {
 		for _, line := range page.Lines {
 			lines = append(lines, line.Text)
+			if _, heading := headings[line.Text]; heading {
+				headings[line.Text] = line.Style == pdf.Strong
+			}
 			if line.X < left || line.X+pdf.TextWidth(line.Text, line.Style, line.Size) > left+measure+.01 || line.Y < bottom {
 				t.Fatalf("out of bounds: %+v", line)
 			}
 		}
 	}
+	for heading, bold := range headings {
+		if !bold {
+			t.Fatalf("missing bold subsection: %s", heading)
+		}
+	}
 	text := strings.Join(lines, " ")
-	for _, want := range []string{"Energie Muster", "10 kWh", "0,123456 EUR/kWh", "31.12.2025", "20 % Umsatzsteuer", "Brennstoffmix", "80 % Biomasse", "12.000 t CO2", "Mess- und Berechnungskosten", "Wartung 600,00 EUR", "Vorperiode 01.01.2024", "Revision 2", "Klimabereinigt: aktuell 1,10 kWh; Vorperiode 1,80 kWh", "2,00 kWh je Einheit", "Vergleichsgruppe: 2", "Verbraucherinformation", "www.topprodukte.at", "www.verbraucherschlichtung.at/antrag/", "Schlichtungsstelle", "Monatliche Verbrauchsinformation", "Zugang beim Versorger"} {
+	for _, want := range []string{"Energie Muster", "10 kWh", "0,123456 €/kWh", "31.12.2025", "20 % Umsatzsteuer", "Brennstoffmix", "80 % Biomasse", "12.000 t CO2", "Mess- und Berechnungskosten", "Wartung 600,00 EUR", "Vorperiode 01.01.2024", "Revision 2", "Klimabereinigt: aktuell 1,1 kWh; Vorperiode 1,8 kWh", "2 kWh je Einheit", "Vergleichsgruppe: 2", "Verbraucherinformation", "www.topprodukte.at", "www.verbraucherschlichtung.at/antrag/", "Schlichtungsstelle", "Monatliche Verbrauchsinformation", "Zugang beim Versorger"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("annex missing %q", want)
 		}
@@ -43,7 +52,7 @@ func TestHeizKG18AnnexContentAndHistoricalSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Energie Muster", "0,123456 EUR/kWh", "Klimabereinigt", "www.verbraucherschlichtung.at/antrag/"} {
+	for _, want := range []string{"Energie Muster", "0,123456 \\200/kWh", "Klimabereinigt", "www.verbraucherschlichtung.at/antrag/"} {
 		if !bytes.Contains(raw, []byte(want)) {
 			t.Fatalf("PDF omits %q", want)
 		}
@@ -69,7 +78,7 @@ func TestHeatingComparisonsExcludeOtherCategoriesAndFlagMissingData(t *testing.T
 	run.Input.Units[1].UnitType = "geschaeft"
 	info := &store.AnnualStatementHeatingInformation{}
 	text := strings.Join(heatingComparisons(run, "a", "heizung", info), " ")
-	if !strings.Contains(text, "1,00 kWh je Einheit") || !strings.Contains(text, "Vergleichsgruppe: 1") || !strings.Contains(text, "Vorperiodenvergleich nicht verfügbar") {
+	if !strings.Contains(text, "1 kWh je Einheit") || !strings.Contains(text, "Vergleichsgruppe: 1") || !strings.Contains(text, "Vorperiodenvergleich nicht verfügbar") {
 		t.Fatal(text)
 	}
 	run.Input.PreviousHeating = &store.AnnualStatementPreviousHeating{Consumption: run.Input.Consumption}

@@ -10,7 +10,7 @@ import (
 
 func TestApprovedStatementHasFinalNotice(t *testing.T) {
 	run := fixture()
-	run.Approval = &store.AnnualStatementRunApproval{ApprovedAt: time.Date(2026, 3, 2, 10, 0, 0, 0, time.UTC), ApprovedBy: "manager@example.com", Role: store.RoleManager}
+	run.Approval = &store.AnnualStatementRunApproval{ApprovedAt: time.Date(2026, 3, 2, 10, 0, 0, 0, time.UTC), ApprovedBy: "manager@example.com", Role: store.RoleManager, ApprovedName: "Vera Verwalter"}
 	docs, err := Documents(run, "a", "owner@example.com")
 	if err != nil {
 		t.Fatal(err)
@@ -20,7 +20,7 @@ func TestApprovedStatementHasFinalNotice(t *testing.T) {
 		for _, line := range page.Lines {
 			text += " " + line.Text
 		}
-		if strings.Contains(text, "Entwurf") || !strings.Contains(text, "02.03.2026") || !strings.Contains(text, "Verwaltung") {
+		if strings.Contains(text, "Entwurf") || !strings.Contains(text, "02.03.2026") || !strings.Contains(text, "Vera Verwalter") {
 			t.Fatal(text)
 		}
 	}

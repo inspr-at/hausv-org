@@ -60,6 +60,9 @@ func TestDemoDocumentsReseedRestoresFilesWithoutDuplicates(t *testing.T) {
 				if !strings.HasPrefix(item.ID, "demo-document-") {
 					continue
 				}
+				if strings.Contains(strings.ToLower(item.Filename), "demo") {
+					t.Fatalf("fixture prefix visible in filename: %s", item.Filename)
+				}
 				if !item.Current || item.Version != 1 || item.SeriesID != item.ID {
 					t.Fatalf("unexpected version: %+v", item)
 				}
@@ -99,7 +102,7 @@ func TestDemoDocumentsReseedRestoresFilesWithoutDuplicates(t *testing.T) {
 			}
 		}
 		// Simulate a lost file without deleting: the next load must restore it.
-		if err := os.Rename(filepath.Join(dir, houses[0].Slug, fixtures[0].Filename), filepath.Join(t.TempDir(), "saved.pdf")); err != nil {
+		if err := os.Rename(filepath.Join(dir, houses[0].Slug, fixtures[0].ID+".pdf"), filepath.Join(t.TempDir(), "saved.pdf")); err != nil {
 			t.Fatal(err)
 		}
 	}

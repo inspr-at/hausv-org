@@ -5,8 +5,11 @@ Berechnungsversionen `1` bis `5`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
-vom unveränderlichen Lauf. Freigegebene PDFs tragen Datum und Rolle statt
-„Entwurf“. Archiv und Versand verlangen die Freigabe. Bereits archivierte
+vom unveränderlichen Lauf. Neue Freigaben speichern zusätzlich den Anzeigenamen
+in `approved_name` im bestehenden Freigabe-JSON. Freigegebene PDFs tragen Datum
+in Europe/Vienna und diesen Namen statt „Entwurf“; ältere Freigaben ohne Namen
+verwenden die gespeicherte Personenkennung. Spätere Profiländerungen verändern
+diesen Freigabetext nicht. Archiv und Versand verlangen die Freigabe. Bereits archivierte
 Altentwürfe benötigen einen neuen Lauf; ihre Dateien bleiben unverändert.
 Die Freigabe wird als `annual-statement.run.approve` protokolliert.
 
@@ -239,15 +242,23 @@ Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
 geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
 Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter
 „Hinweise“. Messnachweise und Belegverzeichnis nutzen dieselben Seitenränder;
-Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufkennung und Revision
-stehen nur als kleine Fußreferenz, Partei-E-Mail-Adressen nicht im Briefkopf.
+Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufnummer und Erstellzeit
+stehen als kleine Fußreferenz; die technische Laufkennung erscheint dort nicht.
+Messwerte verwenden deutsche Zahlformatierung mit höchstens zwei Nachkommastellen,
+Messquellen heißen „Zähler“. Die gespeicherten Mikroeinheiten bleiben unverändert.
 Standard-PDF-Schriftmetriken bestimmen Zeilenumbrüche und rechtsbündige Beträge
 in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
 
 Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
 öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
 Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
-Mehrere Parteien behalten je eine zugeordnete PDF-Zeile und 44-px-Bedienflächen.
+Jede Partei erhält eine eigene Ergebniszeile mit Zeitraum, Kostenanteil, Akonto,
+Saldo und PDF-/Downloadlinks, auf schmalen Bildschirmen eine eigene Karte.
+Die Einheit gruppiert diese Zeilen; die aufklappbaren Kostenarten zeigen weiterhin
+die Einheitsbeträge. Parteibeträge verwenden dieselbe gespeicherte Projektion wie
+das jeweilige PDF, einschließlich der historischen Leerstandsbehandlung.
+Bedienflächen bleiben mindestens 44 px hoch. Der Lauf nennt den Anzeigenamen der
+erstellenden Person; das Freigabedatum verwendet den Wiener Kalendertag.
 
 Das Archiv legt je Partei ein PDF sowie zuletzt das Gesamtpaket ab. IDs sind
 aus Lauf/Revision/Einheit/Partei abgeleitet; Wiederholungen ergänzen ein partielles
@@ -343,6 +354,8 @@ der Freigabe (im Entwurf nach Erstellung).
 Nur bei Regime `weg`. Buchungen liegen in `annual_statement_reserve_entries`
 und sind nur einfügbar; eine Korrektur ist eine weitere Buchung. Arten:
 `opening`, `contribution`, `withdrawal`, `interest`, `closing_check`.
+Die Liste zeigt am selben Datum zuerst den Anfangsstand. Entnahmen zeigen
+Notiz und Dokumenttitel; nur ohne Titel erscheint der Dateiname.
 Entnahmen verweisen auf ein Dokument. Der Endstand ist
 
 `Anfangsstand + Zuführungen − Entnahmen + Zinsen`
@@ -416,6 +429,9 @@ Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.
 
 Der zusätzliche Schlüssel `vereinbart` speichert einen eigenen PPM-Vektor je
 Kostenart in `annual_statement_periods.legal_settings.agreed_shares_ppm`.
+Die Eingabetabelle zeigt Prozent mit bis zu vier Nachkommastellen (deutsches
+Komma); 0,0001 % entspricht einem Millionstel. Client und Server prüfen die
+Summe von genau 100 %, ohne Gleitkommarundung bei der Speicherung.
 Jede aktuelle Einheit muss ausdrücklich erfasst sein; 0 ist eine vereinbarte
 Ausnahme, etwa für Erdgeschoßwohnungen beim Lift. Negative Werte, fehlende oder
 zusätzliche Einheiten sowie eine Summe ungleich 1.000.000 sperren die Berechnung.
@@ -453,6 +469,11 @@ halten Steuern/Abgaben/Zolltarife, Mess-/Berechnungskosten, sonstige Betriebskos
 bei Fernwärmeanlagen über 20 MW Brennstoffmix und jährliche Treibhausgasemissionen,
 Beschwerdekontakt und den Zugang zur monatlichen Verbrauchsinformation fest.
 Die Energieinformationen werden beim Anlegen des Folgejahres geleert.
+Der PDF-Anhang gliedert Messnachweis, Energiebezüge/Preise, Verbrauchsvergleich
+und Verbraucherinformation mit eigenen Überschriften; kurze Fakten erscheinen
+als Beschriftung/Wert. Mess- und Vergleichswerte verwenden Tausenderpunkte und
+höchstens zwei Dezimalstellen, Energiepreise das Eurozeichen bei unveränderter
+Preispräzision. Die gespeicherten Rechenwerte bleiben unverändert.
 
 Neue Läufe frieren die höchste gespeicherte Revision des gleichen
 Vorjahreszeitraums samt Einheitsverbrauch als `previous_heating` ein. Beginn und
@@ -462,7 +483,8 @@ fehlende Vergleichbarkeit ausdrücklich genannt; es gibt keine Schätzung oder
 stillschweigende Einheitenumrechnung. Nachträgliche Vorjahresrevisionen verändern
 das bereits gespeicherte Vergleichsmaterial nicht. PostgreSQL liest es innerhalb
 der Transaktion des aktuellen Laufs. Der Vergleich zeigt tatsächliche Mengen;
-für Heizung können fachlich ermittelte Klimafaktoren beider Perioden in PPM samt
+für Heizung können fachlich ermittelte Klimafaktoren beider Perioden (Eingabe
+als Dezimalfaktor, intern weiterhin Millionstel) samt
 Quelle/Methode hinterlegt werden. Der korrigierte Verbrauch ist
 `Verbrauch × Klimafaktor / 1.000.000`. Ohne diese Eingabe kennzeichnet das PDF die
 fehlende Klimabereinigung ausdrücklich. HAUSV beschafft keine Wetterdaten.
