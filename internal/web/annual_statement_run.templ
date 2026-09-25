@@ -450,8 +450,8 @@ if data.SendIssue != "" {
                 </ol>
                 <p class="mini">Nach „Im Archiv ablegen“ finden Sie die Abrechnungen unter Dokumente. Sichtbar nur für die Verwaltung.</p>
                 if data.SendAction != "" {
-                    <header class="subhead"><div><h3>Versand</h3><p>{ data.MailMode }</p></div></header>
-                    <p>Jede Partei erhält ihr archiviertes PDF je Einheit. Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
+                    <header class="subhead"><div><h3>Versand</h3></div></header>
+                    <p>{ data.MailMode } Bereits gesendete Dokumente werden übersprungen; fehlgeschlagene Sendungen werden erneut versucht.</p>
 					if data.DeliverySummary != "" {
 						<p role="status">{ data.DeliverySummary }</p>
 					}

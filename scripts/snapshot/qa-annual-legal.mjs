@@ -90,6 +90,15 @@ try {
   const pdfURL = await run.locator('.annual-pdf a').first().getAttribute('href');
   const draft = await getPDF(pdfURL, 'draft');
   assert(draft.includes(Buffer.from('Entwurf')));
+  assert.equal(await run.locator('#annual-archive-issue').innerText(), 'Zuerst den Abrechnungslauf freigeben.');
+  assert.equal(await run.locator('#annual-send-issue').innerText(), 'Zuerst den Abrechnungslauf freigeben.');
+  const shipping = run.locator('header.subhead').filter({ has: page.getByRole('heading', { name: 'Versand', exact: true }) });
+  assert.equal(await shipping.locator('p').count(), 0, 'Shipping explanation belongs at body size');
+  const shippingText = await shipping.evaluate(node => node.nextElementSibling.textContent);
+  assert(shippingText.startsWith('Jede Partei erhält ihr archiviertes PDF je Einheit per E-Mail an die hinterlegte Adresse. Bereits'));
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await run.locator('.annual-lifecycle').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${out}/draft-lifecycle-1440.png` });
   const sendURL = `${baseURL}/janusbergweg-123/app/settings/annual-statement/runs/${runID}/send`;
   assert.equal((await context.request.post(sendURL, { headers: { Origin: baseURL, Connection: 'close' }, maxRedirects: 0 })).status(), 409);
   await page.getByRole('button', { name: 'Abrechnung freigeben', exact: true }).click();
@@ -117,7 +126,9 @@ try {
   assert(final.includes(Buffer.from('Vorauszahlung auf Basis des Vorjahres')));
 
   assert(final.includes(Buffer.from('Vera Verwalter')));
-  for (const forbidden of ['Ref. ', 'Quelle: entity', ',000000 kWh', 'Administration', 'fehlt', 'TODO', 'Noch nicht hinterlegt']) assert(!final.includes(Buffer.from(forbidden)));
+  for (const fact of ['4.500 kWh je Einheit', '0,09 \\200/kWh', '0,075 \\200/kWh', '300,00 \\200']) assert(final.includes(Buffer.from(fact)), `Missing formatted fact: ${fact}`);
+  assert.equal((final.toString().match(/\/Type \/Page\b/g) || []).length, 4, 'Top-1 stays at four pages');
+  for (const forbidden of ['Demodaten:', '4500,00 kWh', ' EUR', 'Ref. ', 'Quelle: entity', ',000000 kWh', 'Administration', 'fehlt', 'TODO', 'Noch nicht hinterlegt']) assert(!final.includes(Buffer.from(forbidden)));
   assert(final.includes(Buffer.from('Hausverwaltung Musterstadt GmbH')));
   assert(final.includes(Buffer.from('Musterstra', 'ascii')));
   assert(final.includes(Buffer.from('+43 316 555 100')));

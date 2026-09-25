@@ -29,6 +29,12 @@ try {
   await page.locator('details.annual-preparation').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
   const section = page.locator('#ruecklage');
   await section.scrollIntoViewIfNeeded();
+  const sameDayKinds = await section.locator('.reserve-entry').evaluateAll(rows => rows.filter(row => row.firstElementChild.textContent === '01.01.2025').map(row => row.querySelector('strong').textContent));
+  assert.equal(sameDayKinds[0], 'Anfangsstand');
+  assert(sameDayKinds.includes('Zuführung'));
+  const withdrawal = section.locator('.reserve-entry').filter({ hasText: 'Entnahme' }).locator('.reserve-note');
+  assert.equal(await withdrawal.innerText(), 'Dachrinnenreparatur · Rechnung Dachrinnenreparatur 2025 (Spenglerei Holzer)');
+  assert(!/\.pdf|demo-document/i.test(await withdrawal.innerText()), 'Use the document title without repeating its filename');
   const before = await section.locator('[data-reserve-closing]').getAttribute('data-reserve-closing');
   await section.locator('[name="kind"]').selectOption('contribution');
   await section.locator('[name="entry_date"]').fill('2025-03-15');
@@ -64,6 +70,7 @@ try {
     assert(notes.every(n=>n.scroll<=n.width+1&&n.white==='normal'),'reserve receipt must wrap inside its row');
     await page.screenshot({ path: `${out}/reserve-${width}.png`, fullPage: false });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await section.screenshot({ path: `${out}/reserve-section-${width}.png` });
   }
   assert.deepEqual(pageErrors, []);
 } finally {

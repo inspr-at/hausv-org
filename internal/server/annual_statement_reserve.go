@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -63,6 +64,14 @@ func annualStatementReserveView(repo store.AnnualStatementReserveRepository, yea
 		return web.AnnualStatementReserveView{}, false
 	}
 	entries := repo.ListByPeriod(year)
+	// Presentation order only: preserve the repository/snapshot ordering used
+	// by historical runs, but show opening balances before same-day bookings.
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].EntryDate != entries[j].EntryDate {
+			return entries[i].EntryDate < entries[j].EntryDate
+		}
+		return entries[i].Kind == store.ReserveKindOpening && entries[j].Kind != store.ReserveKindOpening
+	})
 	balance, ok := store.AnnualStatementReserveBalance(entries, period, units)
 	if !ok {
 		balance = store.AnnualStatementReserveResult{}

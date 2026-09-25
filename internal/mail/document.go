@@ -36,7 +36,7 @@ func (m SmtpMailer) Mode() string {
 	if m.outboxDir != "" {
 		return "Postausgang als Datei — Testmodus"
 	}
-	return "Versand per E-Mail an die hinterlegten Adressen"
+	return "Jede Partei erhält ihr archiviertes PDF je Einheit per E-Mail an die hinterlegte Adresse."
 }
 
 func (m SmtpMailer) SendDocument(ctx context.Context, to, subject, body string, attachment Attachment) error {

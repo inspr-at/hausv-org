@@ -217,7 +217,7 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	if ac.repositories.documents != nil {
 		for _, document := range ac.repositories.documents.List() {
 			if document.Current && annualStatementReceiptContentTypeSupported(document.ContentType) {
-				reserveDocuments = append(reserveDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: document.Title + " · " + document.Filename})
+				reserveDocuments = append(reserveDocuments, web.AnnualStatementReceiptDocumentView{ID: document.ID, Label: firstNonEmpty(document.Title, document.Filename)})
 			}
 		}
 	}

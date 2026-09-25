@@ -354,6 +354,8 @@ der Freigabe (im Entwurf nach Erstellung).
 Nur bei Regime `weg`. Buchungen liegen in `annual_statement_reserve_entries`
 und sind nur einfügbar; eine Korrektur ist eine weitere Buchung. Arten:
 `opening`, `contribution`, `withdrawal`, `interest`, `closing_check`.
+Die Liste zeigt am selben Datum zuerst den Anfangsstand. Entnahmen zeigen
+Notiz und Dokumenttitel; nur ohne Titel erscheint der Dateiname.
 Entnahmen verweisen auf ein Dokument. Der Endstand ist
 
 `Anfangsstand + Zuführungen − Entnahmen + Zinsen`
@@ -467,6 +469,11 @@ halten Steuern/Abgaben/Zolltarife, Mess-/Berechnungskosten, sonstige Betriebskos
 bei Fernwärmeanlagen über 20 MW Brennstoffmix und jährliche Treibhausgasemissionen,
 Beschwerdekontakt und den Zugang zur monatlichen Verbrauchsinformation fest.
 Die Energieinformationen werden beim Anlegen des Folgejahres geleert.
+Der PDF-Anhang gliedert Messnachweis, Energiebezüge/Preise, Verbrauchsvergleich
+und Verbraucherinformation mit eigenen Überschriften; kurze Fakten erscheinen
+als Beschriftung/Wert. Mess- und Vergleichswerte verwenden Tausenderpunkte und
+höchstens zwei Dezimalstellen, Energiepreise das Eurozeichen bei unveränderter
+Preispräzision. Die gespeicherten Rechenwerte bleiben unverändert.
 
 Neue Läufe frieren die höchste gespeicherte Revision des gleichen
 Vorjahreszeitraums samt Einheitsverbrauch als `previous_heating` ein. Beginn und
