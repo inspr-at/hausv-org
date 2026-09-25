@@ -43,7 +43,7 @@ try {
   await page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true }).click();
   const owner = page.locator('[data-vacancy-owner]');
   await owner.first().waitFor();
-  assert.match(await owner.first().innerText(), /Leerstand – Eigentümeranteil/);
+  assert.match(await owner.first().innerText(), /Leerstand · Eigentümer trägt/);
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await owner.first().scrollIntoViewIfNeeded();

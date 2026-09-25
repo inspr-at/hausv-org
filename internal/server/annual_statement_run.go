@@ -236,8 +236,8 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 				if party.UnitID != unit.UnitID {
 					continue
 				}
-				// Reuse the PDF's saved party projection, including legacy vacancy
-				// treatment. No unit totals or new calculations enter party rows.
+				// Copy recipients keep their PDF access without a second charge row.
+				// Monetary rows use only saved unit, party and vacancy amounts.
 				docs, err := statementpdf.Documents(run, unit.UnitID, party.ID)
 				if err != nil {
 					continue
@@ -247,24 +247,74 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 				if party.ValidFrom == "" && party.ValidTo == "" {
 					period = partyDateLabel(run.Input.Period.StartsOn, run.Input.Period.EndsOn)
 				}
-				row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{
+				pdfView := web.AnnualStatementRunPDFView{
 					Label: firstNonEmpty(party.Name, party.ID), Period: period,
 					Allocated: document.Total, Prepaid: document.Prepaid, Balance: document.Balance,
 					URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID),
-				})
-				if archivedDocument, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
-					row.PDFs[len(row.PDFs)-1].ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(archivedDocument.ID)
 				}
+				if archivedDocument, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
+					pdfView.ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(archivedDocument.ID)
+				}
+				if document.LandlordCopy {
+					row.Copies = append(row.Copies, pdfView)
+					// Dated runs may assign an actual owner share (e.g. no tenant
+					// at the due date). Preserve it, but omit zero information copies.
+					if share, ok := store.AnnualStatementPartyAllocation(run, unit.UnitID, party.ID); ok && (share.Unit.AllocatedCents != 0 || share.Unit.PrepaidCents != 0) {
+						pdfView.Label = "Eigentümer trägt · " + pdfView.Label
+						pdfView.URL, pdfView.ArchiveURL = "", ""
+						row.PDFs = append(row.PDFs, pdfView)
+					}
+					continue
+				}
+				// A dual-role recipient's PDF includes vacancy. The table shows
+				// that saved slice separately, so its main row is the remainder.
+				if _, dated := store.AnnualStatementPartyAllocation(run, unit.UnitID, party.ID); !dated {
+					for _, vacancy := range run.Result.Vacancy {
+						if vacancy.UnitID == unit.UnitID {
+							pdfView.Allocated, pdfView.Prepaid, pdfView.Balance = row.Allocated, row.Prepaid, row.Balance
+							pdfView.Period = annualStatementOccupiedPeriod(run, vacancy)
+						}
+					}
+				}
+				row.PDFs = append(row.PDFs, pdfView)
+			}
+			mrg := run.Input.Structure.Legal.Regime == "mrg_voll" || run.Input.Structure.Legal.Regime == "mrg_teil"
+			var vacancy *store.AnnualStatementVacancyLine
+			for i := range run.Result.Vacancy {
+				if run.Result.Vacancy[i].UnitID == unit.UnitID {
+					vacancy = &run.Result.Vacancy[i]
+					break
+				}
+			}
+			if mrg && len(row.PDFs) == 0 && (vacancy == nil || unit.AllocatedCents != 0 || unit.PrepaidCents != 0) {
+				period := partyDateLabel(run.Input.Period.StartsOn, run.Input.Period.EndsOn)
+				if vacancy != nil {
+					period = annualStatementOccupiedPeriod(run, *vacancy)
+				}
+				row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: "Mietzeitraum · keine Mietpartei gespeichert", Period: period, Allocated: row.Allocated, Prepaid: row.Prepaid, Balance: row.Balance})
+			}
+			if vacancy != nil {
+				row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{
+					Label: "Leerstand · Eigentümer trägt", Period: partyDateLabel(vacancy.From, vacancy.To), Vacancy: true,
+					Allocated: formatAnnualStatementMoney(vacancy.AmountCents), Prepaid: formatAnnualStatementMoney(0), Balance: formatAnnualStatementBalance(-vacancy.AmountCents),
+				})
 			}
 			out.Units = append(out.Units, row)
 		}
-		for _, line := range run.Result.Vacancy {
-			out.Vacancy = append(out.Vacancy, web.AnnualStatementRunUnitView{
-				Label: line.Label, Allocated: formatAnnualStatementMoney(line.AmountCents), Prepaid: formatAnnualStatementMoney(0), Balance: formatAnnualStatementBalance(-line.AmountCents),
-			})
-		}
 	}
 	return out
+}
+
+// Display the occupied intervals without inventing recipients or splitting cents.
+func annualStatementOccupiedPeriod(run store.AnnualStatementRun, vacancy store.AnnualStatementVacancyLine) string {
+	var periods []string
+	if from, err := time.Parse("2006-01-02", vacancy.From); err == nil && vacancy.From > run.Input.Period.StartsOn {
+		periods = append(periods, partyDateLabel(run.Input.Period.StartsOn, from.AddDate(0, 0, -1).Format("2006-01-02")))
+	}
+	if to, err := time.Parse("2006-01-02", vacancy.To); err == nil && vacancy.To < run.Input.Period.EndsOn {
+		periods = append(periods, partyDateLabel(to.AddDate(0, 0, 1).Format("2006-01-02"), run.Input.Period.EndsOn))
+	}
+	return strings.Join(periods, " · ")
 }
 
 func annualStatementArchiveDocuments(repository store.DocumentRepository, run store.AnnualStatementRun) map[string]store.DocumentRecord {

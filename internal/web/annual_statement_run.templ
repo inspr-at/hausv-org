@@ -23,7 +23,6 @@ type AnnualStatementRunView struct {
 	Total           string
 	Excluded        string
 	Units           []AnnualStatementRunUnitView
-	Vacancy         []AnnualStatementRunUnitView
 	History         []AnnualStatementRunLinkView
 	AllPDFURL       string
 	ArchiveAction   string
@@ -52,8 +51,10 @@ type AnnualStatementRunUnitView struct {
 	Balance   string
 	Costs     []AnnualStatementRunCostView
 	PDFs      []AnnualStatementRunPDFView
+	Copies    []AnnualStatementRunPDFView
 }
 type AnnualStatementRunPDFView struct {
+	Vacancy bool
 	Period, Allocated, Prepaid, Balance string
 	Label      string
 	URL        string
@@ -276,6 +277,8 @@ templ AnnualStatementRunPanel(data AnnualStatementRunView) {
                 .annual-unit-row .annual-documents { grid-column: 1/-1; }
                 .annual-unit-row td[data-label="Saldo"] { grid-column: 1/-1; }
                 .annual-unit-row .annual-money .annual-unit-value { white-space: nowrap; }
+				.annual-copy-row,
+				.annual-copy-row td,
 				.annual-cost-row,
 				.annual-cost-row td,
 				.annual-cost-table {
@@ -474,7 +477,7 @@ if data.SendIssue != "" {
                     for unitIndex,unit:=range data.Units {
                         <tbody class="annual-unit-group" role="rowgroup" aria-label={ unit.Label }>
                             for partyIndex, document := range annualStatementPartyRows(unit) {
-                                <tr class="annual-unit-row" role="row">
+                                <tr class="annual-unit-row" role="row" data-vacancy-owner?={ document.Vacancy }>
                                     if partyIndex == 0 {
                                         <th scope="row" role="rowheader"><span class="annual-unit-value">@UnitLabel(unit.Label)</span></th>
                                     } else {
@@ -509,6 +512,17 @@ if data.SendIssue != "" {
                                     }
                                 </tr>
                             }
+                            if len(unit.Copies) > 0 {
+                                <tr class="annual-copy-row" role="row"><td role="cell" colspan="7">
+                                    for _, copy := range unit.Copies {
+                                        <div class="annual-pdf"><a href={ templ.SafeURL(copy.URL) } aria-label={ "Kopie für Vermieter · " + copy.Label + " · " + unit.Label }>Kopie für Vermieter</a><span>{ copy.Label }</span>
+                                            if copy.ArchiveURL != "" {
+                                                <a href={ templ.SafeURL(copy.ArchiveURL) } aria-label={ "Archivkopie für Vermieter · " + copy.Label + " · " + unit.Label }>Archiv</a>
+                                            }
+                                        </div>
+                                    }
+                                </td></tr>
+                            }
 							<tr class="annual-cost-row" role="row">
 								<td role="cell" colspan="7">
 									<details class="annual-costs" id={ "annual-costs-" + strconv.Itoa(unitIndex) }>
@@ -528,19 +542,7 @@ if data.SendIssue != "" {
 							</tr>
 						</tbody>
                     }
-                    <tbody role="rowgroup">
-						for _, line := range data.Vacancy {
-							<tr class="annual-unit-row" role="row" data-vacancy-owner>
-								<th scope="row" role="rowheader"><span class="annual-unit-value">Leerstand – Eigentümeranteil</span></th>
-								<td role="cell" class="annual-parties" data-label="Partei"><span class="annual-party"><span class="annual-party-name">{ line.Label }</span></span></td>
-								<td role="cell" class="annual-money" data-label="Kostenanteil"><span class="annual-unit-value">{ line.Allocated }</span></td>
-								<td role="cell" class="annual-money" data-label="Akonto"><span class="annual-unit-value">{ line.Prepaid }</span></td>
-								<td role="cell" class="annual-money" data-label="Saldo"><strong class="annual-unit-value">{ line.Balance }</strong></td>
-								<td role="cell" class="annual-documents" data-label="PDF / Archiv"></td>
-								<td role="cell" class="annual-details-cell" data-label="Kostenarten"></td>
-							</tr>
-						}
-					</tbody>
+
 				</table>
 			</article>
 		}

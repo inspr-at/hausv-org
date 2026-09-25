@@ -186,3 +186,42 @@ func TestMeasurementDisplayPrecision(t *testing.T) {
 		}
 	}
 }
+
+func TestMRGLandlordPDFIsInformationCopy(t *testing.T) {
+	for _, regime := range []string{"mrg_voll", "mrg_teil"} {
+		for _, approved := range []bool{false, true} {
+			run := fixture()
+			run.Input.Structure.Legal.Regime = regime
+			if approved {
+				run.Approval = &store.AnnualStatementRunApproval{ApprovedAt: run.CreatedAt, ApprovedBy: "manager"}
+			}
+			before, _ := json.Marshal(run)
+			docs, err := Documents(run, "a", "owner@example.com")
+			if err != nil {
+				t.Fatal(err)
+			}
+			d := docs[0]
+			if !d.LandlordCopy || d.Total != "300,00 €" || d.Prepaid != "350,00 €" || len(d.PaymentTerms) != 0 || len(d.Proposals) != 0 {
+				t.Fatal(d)
+			}
+			var text strings.Builder
+			for _, page := range d.Pages() {
+				for _, line := range page.Lines {
+					text.WriteString(line.Text)
+					text.WriteString("\n")
+				}
+			}
+			if !strings.Contains(text.String(), "Kopie für den Vermieter – keine Zahlungsaufforderung") || !strings.Contains(text.String(), "Vermieter / Eigentümer") || strings.Contains(text.String(), "Wohnungseigentümer") || strings.Contains(text.String(), "Ihr Kostenanteil") {
+				t.Fatal(text.String())
+			}
+			tenant, err := Documents(run, "a", "tenant@example.com")
+			if err != nil || tenant[0].LandlordCopy || len(tenant[0].PaymentTerms) == 0 || tenant[0].Total != d.Total {
+				t.Fatal(tenant, err)
+			}
+			after, _ := json.Marshal(run)
+			if !bytes.Equal(before, after) {
+				t.Fatal("copy changed the stored run")
+			}
+		}
+	}
+}

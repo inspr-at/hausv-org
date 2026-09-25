@@ -31,8 +31,8 @@ var wegMinimumReserveRates = [...]WEGMinimumReserveRate{
 	// BGBl I 222/2021, § 31 and § 58g Abs 2 (effective 1 July 2022):
 	// https://www.ris.bka.gv.at/eli/bgbl/i/2021/222
 	{ValidFrom: "2022-07-01", CentsPerSquareMetreMonth: 90},
-	// WKO publication for 2024: June 2023 = 120,4 → 1,06.
-	// https://www.wko.at/oe/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-weg-2024-1.pdf
+	// ÖVI confirmation of the 2024 minimum (15 November 2023): 1,06.
+	// https://www.ovi.at/aktuelles/detailansicht/anhebung-der-mindestruecklage-auf-106-eur-m2-ab-112024
 	{ValidFrom: "2024-01-01", CentsPerSquareMetreMonth: 106},
 	// WKO publication 10 September 2025: June 2025 = 128,1 → 1,12.
 	// https://www.wko.at/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-wohnungseigentumsgesetz
