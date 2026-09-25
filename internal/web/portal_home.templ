@@ -36,15 +36,13 @@ templ PortalHeroGreeting(data PortalPageData) {
 		} else {
 			<h1>Hallo { data.GreetingName }.</h1>
 		}
-		<p>{ portalHomeDateLine(data) }</p>
+		<p>
+			if strings.TrimSpace(data.Address) != "" {
+				{ data.Address } ·
+			}
+			<span class="home-date">{ data.Today }</span>
+		</p>
 	</div>
-}
-
-func portalHomeDateLine(data PortalPageData) string {
-	if strings.TrimSpace(data.Address) == "" {
-		return data.Today
-	}
-	return data.Address + " · " + data.Today
 }
 
 templ PortalHomeHeaderAction(data PortalPageData) {
@@ -80,6 +78,8 @@ templ PortalHomeBody(data PortalPageData) {
 
 templ PortalHomeStyles() {
 	<style>
+		.portal-home-landing .home-date{white-space:nowrap}
+		.portal-home-landing .dense-home-body .side-stack{align-self:start;grid-template-rows:auto auto}
 		.portal-home-landing :is(.item-copy,.top-actions,.metrics,.metric,.home-strip>*){min-width:0}
 		.portal-home-landing .issues-card .subject{white-space:normal;overflow:visible;overflow-wrap:normal;line-height:1.4;min-height:44px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
 		.portal-home-landing .issues-card .subject-place{white-space:normal;overflow-wrap:normal}

@@ -3461,7 +3461,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Heute wartet nichts auf Sie.", "Heute ist nichts zu erledigen", "Alles im Blick", `calm-main`, `data-portal-section-landing`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
+	for _, want := range []string{"Heute wartet nichts auf Sie.", "Alles im Blick", `calm-main`, `data-portal-section-landing`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}

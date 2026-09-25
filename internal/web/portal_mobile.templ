@@ -10,7 +10,7 @@ templ PortalMobile(data PortalPageData) {
 			if data.HasPrimary {
 				<h2>{ data.Primary.Title }</h2><p>{ data.Primary.Detail }</p><a class="primary" href={ templ.SafeURL(data.Primary.URL) }>{ data.Primary.ActionLabel }</a>
 			} else {
-				<h2>Alles im Blick</h2><p>Heute ist nichts zu erledigen.</p>
+				<h2>Alles im Blick</h2><p>{ calmAnswer(data) }</p>
 			}
 		</article>
 		<nav class="counts" aria-label="Kennzahlen">
@@ -21,7 +21,7 @@ templ PortalMobile(data PortalPageData) {
 				<a class="count-tile" href="/app/events"><strong>{ len(data.Events) }</strong><span>Termine</span></a>
 			}
 			if data.Modules.Announcements {
-				<a class="count-tile" href="/app/announcements"><strong>{ data.UnreadAnnouncements }</strong><span>Aushang</span></a>
+				<a class="count-tile" href="/app/announcements" title="Ungelesene Beiträge am Aushang"><strong>{ data.UnreadAnnouncements }</strong><span>ungelesen</span></a>
 			}
 		</nav>
 		if data.Modules.Events {
