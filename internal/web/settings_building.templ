@@ -1,0 +1,50 @@
+package web
+
+templ BuildingSettingsPage(data BuildingSettingsPageData) {
+	@SettingsFrame(data.Portal, "Gebäude & Einheiten", []string{"attachments.js", "building-settings.js"}, BuildingSettingsContent(data))
+}
+
+templ BuildingSettingsContent(data BuildingSettingsPageData) {
+	@PortalSectionLanding(
+		PortalSectionLandingData{
+			Portal: data.Portal,
+			PageLabel: "Gebäude & Einheiten",
+			Class: "settings-main building",
+			Identity: PortalSectionIdentityData{Label: "Einstellungen · Verwaltung", Icon: "home", URL: "/app/settings"},
+		},
+		PortalSectionTitle("Gebäude & Einheiten"),
+		PortalSectionLede("Liegenschaftsdaten, Kontakte und Einheiten an einem Ort."),
+		BuildingSettingsHeaderAction(),
+		nil,
+		nil,
+		BuildingSettingsBody(data),
+	)
+}
+
+templ BuildingSettingsHeaderAction() {
+	<a class="button" href="/app/settings">Zurück zu Einstellungen</a>
+}
+
+templ BuildingSettingsBody(data BuildingSettingsPageData) {
+	<div data-templ-building-settings>
+		<nav class="section-tabs" aria-label="Bereiche">
+			@BuildingTab("overview", "Stammdaten", data.BuildingSection)
+			@BuildingTab("contacts", "Kontakte", data.BuildingSection)
+			@BuildingTab("units", "Einheiten", data.BuildingSection)
+			@BuildingTab("appearance", "Erscheinungsbild", data.BuildingSection)
+		</nav>
+		if data.BuildingSection == "overview" {
+			@BuildingOverview(data)
+		} else if data.BuildingSection == "contacts" {
+			@BuildingContacts(data)
+		} else if data.BuildingSection == "units" {
+			@BuildingUnits(data)
+		} else {
+			@BuildingAppearance(data)
+		}
+	</div>
+}
+
+templ BuildingTab(section, label, active string) {
+	<a href={ templ.SafeURL("/app/settings/building?section=" + section) } class={ templ.KV("active", section == active) } aria-current={ portalAriaCurrent(section == active) }>{ label }</a>
+}
