@@ -454,7 +454,7 @@ templ IssueTriageContent(data IssueTriagePageData) {
 			<header class="issue-triage-context">
 				<a class="issue-triage-back" href="/app/anliegen/board">← Zurück zur Liste</a>
 				<h1>{ data.Issue.Title }</h1>
-				<div class="issue-triage-facts"><span>{ data.Issue.Author }</span><span>{ data.Issue.Location }</span><span>{ data.Issue.CreatedAt }</span><span>{ data.Issue.Category }</span></div>
+				<div class="issue-triage-facts"><span>{ data.Issue.Author }</span><span>{ data.Issue.Location }</span><span>{ data.Issue.CreatedAt }</span><span>{ issueCategoryLabel(data.Issue.Category) }</span></div>
 				<p>{ data.Issue.Body }</p>
 			</header>
 			<div class="issue-triage-layout">
@@ -595,7 +595,7 @@ templ IssueTriageAside(data IssueTriagePageData) {
 						noch offen
 					}
 				</dd></div>
-				<div><dt>Kategorie</dt><dd>{ data.Issue.Category }</dd></div>
+				<div><dt>Kategorie</dt><dd>{ issueCategoryLabel(data.Issue.Category) }</dd></div>
 				<div><dt>Gemeldet</dt><dd>{ data.Issue.CreatedAt }</dd></div>
 			</dl>
 			if data.Issue.HasServiceAppointment {

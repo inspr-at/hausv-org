@@ -332,8 +332,10 @@ type AuditEvent struct {
 type AuditFilter struct {
 	TenantSlug string
 	Action     string
-	Query      string
-	Limit      int
+	// Actions restricts the feed before Limit is applied. An empty list keeps all actions.
+	Actions []string
+	Query   string
+	Limit   int
 }
 
 type UnitMembers struct {
@@ -2006,6 +2008,10 @@ func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
 	filter.TenantSlug = textutil.Slug(filter.TenantSlug)
 	filter.Action = NormalizeAuditAction(filter.Action)
 	filter.Query = strings.ToLower(strings.TrimSpace(filter.Query))
+	actions := make(map[string]bool, len(filter.Actions))
+	for _, action := range filter.Actions {
+		actions[NormalizeAuditAction(action)] = true
+	}
 	if filter.Limit <= 0 || filter.Limit > 500 {
 		filter.Limit = 200
 	}
@@ -2018,6 +2024,9 @@ func (s *AuditStore) List(filter AuditFilter) []AuditEvent {
 			continue
 		}
 		if filter.Action != "" && NormalizeAuditAction(event.Action) != filter.Action {
+			continue
+		}
+		if len(actions) > 0 && !actions[NormalizeAuditAction(event.Action)] {
 			continue
 		}
 		if filter.Query != "" && !AuditEventMatches(event, filter.Query) {

@@ -50,13 +50,28 @@ func TestDemoContentSurvivesReseed(t *testing.T) {
 			t.Fatalf("ballots = %d", len(got))
 		}
 		closed, found := votes.Get("demo-ballot-fassade-2027")
-		if !found || closed.Status != store.BallotStatusClosed || len(closed.Votes) != 1 || !closed.ClosesAt.Before(anchor) {
+		if !found || closed.Status != store.BallotStatusClosed || len(closed.Votes) != 9 || !closed.ClosesAt.Before(anchor) {
 			t.Fatalf("closed ballot: %+v", closed)
 		}
-		for _, vote := range closed.Votes {
-			if vote.Option != "Ja" || vote.Weight != 1000000 || vote.At.Before(closed.OpensAt) || vote.At.After(closed.ClosesAt) {
-				t.Fatalf("vote: %+v", vote)
+		units, _ := store.BindUnitRepository(store.NewSQLUnitStore(lanes), tenant)
+		participation, yes := 0, 0
+		for email, vote := range closed.Votes {
+			share := 0
+			for _, membership := range units.UnitsForEmail(email) {
+				if membership.Relation == store.RoleOwner {
+					share += membership.Unit.MiteigentumsanteilPPM
+				}
 			}
+			if vote.Weight != share || vote.Weight <= 0 || vote.At.Before(closed.OpensAt) || vote.At.After(closed.ClosesAt) {
+				t.Fatalf("vote for %s: %+v, actual owner share %d", email, vote, share)
+			}
+			participation += vote.Weight
+			if vote.Option == "Ja" {
+				yes += vote.Weight
+			}
+		}
+		if participation < 600000 || participation > 750000 || yes*100 < participation*60 {
+			t.Fatalf("unrealistic result: participation %d, yes %d", participation, yes)
 		}
 		open, found := votes.Get("demo-ballot-ebikes")
 		if !found || open.Status != store.BallotStatusOpen || !open.OpensAt.Before(anchor) || !open.ClosesAt.After(anchor) || len(open.Votes) != 0 {

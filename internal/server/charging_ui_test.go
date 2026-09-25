@@ -40,8 +40,8 @@ func validChargingForm() url.Values {
 		"shadow_mode":        {"1"},
 		"start_soc_percent":  {"99"},
 		"stop_soc_percent":   {"95"},
-		"start_feed_in_w":    {"3300"},
-		"stop_feed_in_w":     {"1500"},
+		"start_feed_in_kw":   {"3,3"},
+		"stop_feed_in_kw":    {"1,5"},
 		"stop_delay_minutes": {"10"},
 		"min_on_minutes":     {"10"},
 		"min_off_minutes":    {"5"},
@@ -65,7 +65,7 @@ func TestChargingSettingsAdminOnly(t *testing.T) {
 func TestChargingSettingsRejectsInvertedHysteresis(t *testing.T) {
 	a := chargingUITestApp(t)
 	form := validChargingForm()
-	form.Set("stop_feed_in_w", "4000") // above start
+	form.Set("stop_feed_in_kw", "4,0") // above start
 	rr := authedFormRequest(t, a, "admin@example.com", "/demo/app/parking/charging/settings", form)
 	if rr.Code != http.StatusSeeOther || !strings.Contains(rr.Header().Get("Location"), "charging=invalid") {
 		t.Fatalf("expected invalid redirect, got %d %s", rr.Code, rr.Header().Get("Location"))
@@ -107,5 +107,40 @@ func TestParkingPageRendersLiveCardStructures(t *testing.T) {
 	// render — the template handles a zero Live view.
 	if strings.Contains(rr.Body.String(), `<section class="panel parking-live"`) {
 		t.Fatal("live card must be hidden when charging is not configured")
+	}
+}
+
+func TestChargingKWFormRoundTrip(t *testing.T) {
+	a := chargingUITestApp(t)
+	for _, tc := range []struct {
+		start, stop           string
+		wattsStart, wattsStop float64
+	}{
+		{"3,3", "1,5", 3300, 1500}, {"3.325", "0.05", 3325, 50}, {"50", "49,9", 50000, 49900},
+	} {
+		form := validChargingForm()
+		form.Set("start_feed_in_kw", tc.start)
+		form.Set("stop_feed_in_kw", tc.stop)
+		cfg, err := chargingControlFromForm(form)
+		if err != nil || cfg.StartFeedInW != tc.wattsStart || cfg.StopFeedInW != tc.wattsStop {
+			t.Fatalf("conversion=%+v err=%v", cfg, err)
+		}
+		if err := a.parkingStore.SetChargingControl("demo", cfg); err != nil {
+			t.Fatal(err)
+		}
+		rendered := a.chargingAdminView(a.tenants["demo"], nil)
+		form.Set("start_feed_in_kw", rendered.StartFeedInValue)
+		form.Set("stop_feed_in_kw", rendered.StopFeedInValue)
+		again, err := chargingControlFromForm(form)
+		if err != nil || again.StartFeedInW != cfg.StartFeedInW || again.StopFeedInW != cfg.StopFeedInW {
+			t.Fatalf("roundtrip=%+v err=%v", again, err)
+		}
+	}
+	for _, bad := range []string{"NaN", "+Inf", "-1", "50,1", "0,099", "3300"} {
+		form := validChargingForm()
+		form.Set("start_feed_in_kw", bad)
+		if _, err := chargingControlFromForm(form); err == nil {
+			t.Errorf("accepted %q kW", bad)
+		}
 	}
 }

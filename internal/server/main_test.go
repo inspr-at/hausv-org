@@ -3461,7 +3461,7 @@ func TestPortalUsesOneCalmStateWithoutPrototypeCopy(t *testing.T) {
 			t.Fatalf("portal must not contain placeholder copy %q", forbidden)
 		}
 	}
-	for _, want := range []string{"Heute wartet nichts auf Sie.", "Heute ist nichts zu erledigen", "Alles im Blick", `calm-main`, `data-portal-section-landing`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
+	for _, want := range []string{"Heute wartet nichts auf Sie.", "Alles im Blick", `calm-main`, `data-portal-section-landing`, `href="/demo/app/anliegen?new=1#issue-new"`, germanDateLong(time.Now().In(time.Local))} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("calm portal should contain %q", want)
 		}
@@ -4699,9 +4699,14 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 		t.Fatalf("owner visibility wrong:\n%s", owner)
 	}
 	board := authedRequest(t, a, "board@example.com", "/demo/app/anliegen").Body.String()
-	for _, want := range []string{"Renter private", "Owner private", "Common roof", "Other private"} {
+	for _, want := range []string{"Common roof"} {
 		if !strings.Contains(board, want) {
 			t.Fatalf("beirat view missing %q:\n%s", want, board)
+		}
+	}
+	for _, hidden := range []string{"Renter private", "Owner private", "Other private"} {
+		if strings.Contains(board, hidden) {
+			t.Fatalf("Beirat leaked %q", hidden)
 		}
 	}
 	if strings.Contains(board, "Kommentar senden") || strings.Contains(board, "Anliegen senden") {

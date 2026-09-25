@@ -138,7 +138,7 @@ templ IssueCard(issue view.IssueView) {
 			if issue.HasAssignee {
 				<span title={ issue.AssigneeEmail }> · Zuständig: { issueAssigneeLabel(issue) }</span>
 			}
-		</p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="pill">{ issue.Category }</span><span class="pill">{ issue.Priority }</span><span>{ issue.CreatedAt }</span></div></header>
+		</p></div><div class="issue-meta"><span class={ "pill", issue.StatusClass }>{ issue.StatusLabel }</span><span class="pill">{ issueCategoryLabel(issue.Category) }</span><span class="pill">{ issue.Priority }</span><span>{ issue.CreatedAt }</span></div></header>
 		<div class="issue-progress" aria-label="Bearbeitungsfortschritt"><span class={ "issue-progress-fill", issue.StatusClass }></span></div>
 		<p class="issue-next-step">{ issue.NextStep }</p>
 		if issue.HasServiceAppointment {

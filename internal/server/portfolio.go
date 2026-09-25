@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -66,7 +67,7 @@ func (a *app) portfolioPage(w http.ResponseWriter, r *http.Request, ac authCtx) 
 			}
 		}
 		if a.auditStore != nil {
-			house.AuditEvents = a.auditStore.List(auditFilter{TenantSlug: tenant.Ref.Slug, Limit: 6})
+			house.AuditEvents = a.auditStore.List(auditFilter{TenantSlug: tenant.Ref.Slug, Actions: portfolioActivityActions, Limit: 6})
 			for _, event := range house.AuditEvents {
 				addPortfolioPersonName(a, tenant.Config.Slug, house.PeopleNames, event.ActorEmail)
 			}
@@ -211,6 +212,9 @@ func buildPortfolio(now time.Time, organisationName, firstName, sortMode string,
 			})
 		}
 		for _, event := range house.AuditEvents {
+			if !slices.Contains(portfolioActivityActions, store.NormalizeAuditAction(event.Action)) {
+				continue
+			}
 			actor := strings.TrimSpace(house.PeopleNames[normalizeEmail(event.ActorEmail)])
 			if actor == "" {
 				actor = strings.TrimSpace(event.ActorEmail)
@@ -263,6 +267,21 @@ func buildPortfolio(now time.Time, organisationName, firstName, sortMode string,
 	}
 	data.TodayLine = fmt.Sprintf("%s · %s · %s", data.Today, portfolioHouseCount(data.HouseCount), portfolioUnitCount(data.UnitCount))
 	return data
+}
+
+// Portfolio activity records work on a house, not session activity, reads or
+// account administration. Audit logging itself remains complete and unchanged.
+var portfolioActivityActions = []string{
+	store.AuditActionIssueWorkflow, store.AuditActionIssueEstimate,
+	store.AuditActionIssueComment, store.AuditActionIssueServiceAdd,
+	store.AuditActionIntakePhoneNote, store.AuditActionIntakeAssign,
+	store.AuditActionAnnualRunCreate, store.AuditActionAnnualRunApprove,
+	store.AuditActionAnnualRunSend, store.AuditActionAnnualRunArchive,
+	store.AuditActionEventCreate, store.AuditActionEventUpdate, store.AuditActionEventDelete,
+	store.AuditActionDocumentUpload, store.AuditActionDocumentReplace,
+	store.AuditActionLeaseCreate, store.AuditActionLeaseUpdate, store.AuditActionLeaseEnd,
+	store.AuditActionHandoverCreate, store.AuditActionHandoverConfirm,
+	store.AuditActionVoteCreate, store.AuditActionVoteOpen, store.AuditActionVoteClose,
 }
 
 func portfolioGreeting(now time.Time, firstName string) string {
@@ -394,9 +413,9 @@ func portfolioHouseCount(count int) string {
 
 func portfolioUnitCount(count int) string {
 	if count == 1 {
-		return "1 Einheit"
+		return "1\u00a0Einheit"
 	}
-	return fmt.Sprintf("%d Einheiten", count)
+	return fmt.Sprintf("%d\u00a0Einheiten", count)
 }
 
 // KPIs keep their organisation-wide meaning; only the matching 50 rows are

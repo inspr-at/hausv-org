@@ -112,6 +112,7 @@ try {
  assert.match(await unit('top-2').innerText(),/ausgewiesene Netto-\/USt-Basis/);
  assert.equal(await unit('top-2').getByRole('button',{name:'Mieterabrechnung erstellen',exact:true}).count(),0);
  await unit('top-2').getByRole('link',{name:'Umsatzsteuer in der Rechtsgrundlage ausweisen'}).click();
+ await page.locator('input[name=show_vat]').waitFor({state:'visible'});
  assert.equal(await page.locator('input[name=show_vat]').isVisible(),true,'Setting link must open Grundlagen');
  assert.deepEqual(errors,[]);console.log('HAUSV-798: mandate, three demo units, preview, approve, archive, tenant + owner delivery, retry, mobile widths passed');
 } catch(error) { console.log('Page title:', await page.title()); console.log((await page.locator('body').innerText()).slice(0,2200)); await page.screenshot({path:`${out}/failure.png`,fullPage:true}); throw error; } finally {await context.close();await browser.close();}

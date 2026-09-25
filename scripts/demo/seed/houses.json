@@ -242,7 +242,47 @@
           "alina.eigentuemer@musterstadt.example": {
             "at": "2026-09-03T10:00:00+02:00",
             "option": "Ja",
-            "weight": 1000000
+            "weight": 83333
+          },
+          "anna.gruber@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 41667
+          },
+          "felix.wagner@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 83334
+          },
+          "hedwig.beirat@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 83333
+          },
+          "jonas.meier@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 83334
+          },
+          "laura.schmid@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 41667
+          },
+          "nina.hofer@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Ja",
+            "weight": 83333
+          },
+          "sara.klein@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Nein",
+            "weight": 83333
+          },
+          "thomas.berger@musterstadt.example": {
+            "at": "2026-09-03T10:00:00+02:00",
+            "option": "Enthaltung",
+            "weight": 83334
           }
         },
         "weighting": "per-share"

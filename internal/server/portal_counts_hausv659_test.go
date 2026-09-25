@@ -43,8 +43,8 @@ func TestPortalAnnouncementCountsShareReadStateHAUSV659(t *testing.T) {
 				if page.Code != http.StatusOK {
 					t.Fatalf("home status = %d", page.Code)
 				}
-				for _, metric := range []struct{ class, label string }{{"metric", "neue Beiträge"}, {"count-tile", "Aushang"}} {
-					pattern := `<a class="` + metric.class + `" href="/demo/app/announcements"><strong>([0-9]+)</strong><span>` + metric.label + `</span></a>`
+				for _, metric := range []struct{ class, label string }{{"metric", "neue Beiträge"}, {"count-tile", "ungelesen"}} {
+					pattern := `<a class="` + metric.class + `" href="/demo/app/announcements"[^>]*><strong>([0-9]+)</strong><span>` + metric.label + `</span></a>`
 					matches := regexp.MustCompile(pattern).FindAllStringSubmatch(page.Body.String(), -1)
 					if len(matches) != 1 {
 						t.Fatalf("%s: got %d count metrics, want one", metric.class, len(matches))
