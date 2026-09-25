@@ -365,6 +365,16 @@ im Lauf beziehungsweise in den Archivmetadaten, nicht im Mieterbrief.
 Monate werden im Brief ausgeschrieben, berechnete Prozentwerte auf zwei
 Nachkommastellen dargestellt. Anrede, kurze Erläuterung der Anpassung,
 Zugangsfrist, Rückfragekontakt und Grußformel ergänzen die Berechnung.
+Ohne gespeicherte Anrede wird die Vertragspartei mit „Guten Tag Vorname Nachname,“
+angesprochen (gemeinsamer HAUSV-616-Textbausteinhelfer). Der Brief nennt den
+eingefrorenen Abrufstand der Indexdaten als Datum; die genaue Datenversion bleibt
+in den Prüfdaten des Laufs. Der Abrufstand wird im vorhandenen Snapshot-JSON
+gespeichert. Bei älteren Läufen wird das Datum nur für den exakt übereinstimmenden
+eingebetteten Datenbestand ergänzt; andernfalls bleibt die Quellenangabe ohne
+unbelegtes Datum. Archivierte Briefe werden nicht nachträglich verändert.
+Liegt der erste Zinstermin einer Erhöhung wegen § 16 Abs 9 MRG nach der Wirksamkeit,
+erklärt „Termine und Hinweise“, dass erst ab diesem Zinstermin der höhere Betrag
+zu bezahlen ist und für davorliegende Monate keine Nachzahlung verlangt wird.
 Die Frist benennt in Lauf, Detailansicht, Brief und Hilfe ausdrücklich den
 Zugang beim Mieter, nicht das Absenden; die Verwaltung plant die Postlaufzeit ein.
 

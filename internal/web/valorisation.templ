@@ -925,8 +925,16 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			if view.CreatedByName != "" {
 				<p class="vr-meta">Erstellt von { view.CreatedByName }</p>
 			}
-			if view.Run.InputsSHA256 != "" {
-				<details class="vr-meta"><summary>Prüfdaten</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
+			if view.Run.InputsSHA256 != "" || view.Run.IndexVersion != "" {
+				<details class="vr-meta">
+					<summary>Prüfdaten</summary>
+					if view.Run.IndexVersion != "" {
+						<p>Index-Datenversion <code>{ view.Run.IndexVersion }</code></p>
+					}
+					if view.Run.InputsSHA256 != "" {
+						<p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p>
+					}
+				</details>
 			}
 		}
 	</article>

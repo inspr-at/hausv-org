@@ -136,7 +136,12 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	if run.Status == "draft" {
 		l.paragraph("Entwurf zur Prüfung", pdf.Strong)
 	}
-	l.paragraph("Sehr geehrte Damen und Herren,", pdf.Body)
+	// LeaseParty has no form of address; reuse HAUSV-616's neutral named greeting.
+	salutation := "Guten Tag,"
+	if strings.TrimSpace(item.Recipients[0].Name) != "" {
+		salutation, _ = store.FillReply("Sehr geehrte{{Anrede}} {{Name}},", map[string]string{"Name": item.Recipients[0].Name})
+	}
+	l.paragraph(salutation, pdf.Body)
 	l.paragraph("auf Grundlage Ihrer vertraglichen Wertsicherung passen wir Ihren monatlichen Hauptmietzins wie folgt an.", pdf.Body)
 	l.room(85)
 	page := &l.pages[len(l.pages)-1]
@@ -210,6 +215,9 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	l.heading("Termine und Hinweise")
 	if item.RequiresMRGNotice {
 		l.paragraph("Der angepasste Hauptmietzins wird gemäß § 16 Abs 9 MRG erstmals am "+Date(item.CollectableFrom)+" fällig, sofern Ihnen dieses Schreiben spätestens am "+Date(item.NoticeDeadline)+" zugeht (mindestens 14 Tage vor dem Zinstermin). Bei späterem Zugang verschiebt sich die Fälligkeit auf den nächsten zulässigen Zinstermin.", pdf.Body)
+		if item.NewCents > item.OldCents && item.CollectableFrom > item.WirksamOn {
+			l.paragraph("Der höhere Hauptmietzins ist erst ab diesem Zinstermin zu bezahlen; für die davorliegenden Monate wird keine Nachzahlung verlangt.", pdf.Body)
+		}
 	} else {
 		l.paragraph("Die Anpassung ist ab "+Date(item.WirksamOn)+" wirksam. Erster Zinstermin: "+Date(item.CollectableFrom)+".", pdf.Body)
 	}
@@ -224,7 +232,11 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	}
 	l.paragraph("Mit freundlichen Grüßen", pdf.Body)
 	l.paragraph(run.Input.Organisation+" · im Auftrag des Vermieters", pdf.Body)
-	l.paragraph("Datenquelle: Statistik Austria · data.statistik.gv.at (CC BY 4.0). Berechnung: HAUSV. Datenstand "+run.IndexVersion+".", pdf.Body)
+	dataState := "Indexwerte laut Statistik Austria"
+	if !run.IndexRetrievedAt.IsZero() {
+		dataState += ", Stand " + run.IndexRetrievedAt.UTC().Format("02.01.2006")
+	}
+	l.paragraph(dataState+" · data.statistik.gv.at (CC BY 4.0). Berechnung: HAUSV.", pdf.Body)
 	if len(overflow) > 0 {
 		l.heading("Ergänzende Adress- und Verwaltungsangaben")
 		for _, line := range overflow {

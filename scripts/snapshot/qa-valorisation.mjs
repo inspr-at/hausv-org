@@ -78,14 +78,17 @@ async function checkLetter(context, href, runID, name, requiresMRGNotice = false
   if (!/^inline;/.test(response.headers()['content-disposition'] || '')) fail(`${name}: Schreiben öffnet nicht inline`);
   // Requires Poppler; check extracted text, including every page footer.
   const text = execFileSync('pdftotext', ['-layout', '-', '-'], { input: raw, encoding: 'utf8' });
-  for (const forbidden of ['Lauf', 'Referenz', 'SHA-256', runID.slice(0, 16)]) {
+  for (const forbidden of ['Lauf', 'Referenz', 'SHA-256', runID.slice(0, 16), '260924101853.0.0', 'Sehr geehrte Damen und Herren,']) {
     if (text.includes(forbidden)) fail(`${name}: interne Prüfdaten im Schreiben (${forbidden})`);
   }
   if (!text.includes('Anpassung des Hauptmietzinses')) fail(`${name}: Brieftext fehlt`);
   const letterText = text.replace(/\s+/g, ' ');
-  for (const expected of ['VPI 2020, Basis September 2024: 123,6', 'Auslösemonat Dezember 2025', 'Anker: September 2024', '5,02 %', '+2,91 %', 'Sehr geehrte Damen und Herren,', 'Für Rückfragen:', 'Mit freundlichen Grüßen', ...(requiresMRGNotice ? ['§ 16 Abs 9 MRG', 'zugeht', '14 Tage'] : ['+3,28 %'])]) {
+  const noBackPayment = 'Der höhere Hauptmietzins ist erst ab diesem Zinstermin zu bezahlen; für die davorliegenden Monate wird keine Nachzahlung verlangt.';
+  for (const expected of ['VPI 2020, Basis September 2024: 123,6', 'Auslösemonat Dezember 2025', 'Anker: September 2024', '5,02 %', '+2,91 %', 'Indexwerte laut Statistik Austria, Stand 24.09.2026', `Guten Tag ${requiresMRGNotice ? 'Lukas Steiner' : 'Eva Huber'},`, 'Für Rückfragen:', 'Mit freundlichen Grüßen', ...(requiresMRGNotice ? ['§ 16 Abs 9 MRG', 'zugeht', '14 Tage', noBackPayment] : ['+3,28 %'])]) {
     if (!letterText.includes(expected)) fail(`${name}: ${expected} fehlt`);
   }
+  if (!requiresMRGNotice && letterText.includes(noBackPayment)) fail(`${name}: MRG-Nachzahlungshinweis in Teilanwendung`);
+  if (requiresMRGNotice && !text.split('\f')[1]?.replace(/\s+/g, ' ').includes(noBackPayment)) fail(`${name}: Nachzahlungshinweis fehlt auf Seite 2`);
   if (/\d{4}-\d{2}|\d+,\d{3,} %|Wertsicherung · Janusbergweg 123 · Janusbergweg 123/.test(text)) fail(`${name}: technische oder doppelte Briefangaben`);
   if (text.split('\f').filter(page => page.trim()).length !== 2) fail(`${name}: erwartet zwei Briefseiten`);
   if (artifactDir) {
@@ -176,7 +179,8 @@ try {
   if (!(await first.innerText()).includes('Erstellt von Vera Verwalter')) fail('Anzeigename im Fuß fehlt');
   if (await first.getByText('Prüfsumme', { exact: true }).count()) fail('Leere Prüfsummenbeschriftung');
   const audit = first.locator('details.vr-meta');
-  if (await audit.count() && (await audit.evaluate(node => node.open) || !(await audit.locator('code').textContent()).trim())) fail('Prüfdaten offen oder leer');
+  if (await audit.count() !== 1 || await audit.evaluate(node => node.open)) fail('Prüfdaten fehlen oder sind offen');
+  if (!(await audit.textContent()).includes('Index-Datenversion 260924101853.0.0')) fail('Exakte Index-Datenversion fehlt in Prüfdaten');
   const deadline = await first.locator(':scope > .vr-deadline').first().innerText();
   if (!deadline.includes('spätestens am 21.04.2026 zugehen') || !deadline.includes('Postlaufzeit einplanen.')) fail(`Zugangsfrist: ${deadline}`);
   for (const width of [1440, 390]) {

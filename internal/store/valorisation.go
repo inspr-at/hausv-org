@@ -60,6 +60,7 @@ type ValorisationRun struct {
 	CreatedAt, ApprovedAt                                     time.Time
 	Input                                                     ValorisationInput
 	IndexVersion, IndexSHA256                                 string
+	IndexRetrievedAt                                          time.Time
 	IndexSnapshot                                             []ValorisationIndex
 	Items                                                     []ValorisationItem
 }
@@ -195,7 +196,18 @@ func PreviewValorisation(input ValorisationInput, snapshot indexation.Snapshot, 
 	input.Settings = input.Settings.Normalized()
 	input.Leases = append([]Lease(nil), input.Leases...)
 	sort.Slice(input.Leases, func(i, j int) bool { return input.Leases[i].ID < input.Leases[j].ID })
-	run := ValorisationRun{EffectiveOn: input.EffectiveOn, Status: "draft", Input: input, IndexVersion: snapshot.Manifest.Version, IndexSHA256: snapshot.Manifest.DataSHA256}
+	run := ValorisationRun{EffectiveOn: input.EffectiveOn, Status: "draft", Input: input, IndexVersion: snapshot.Manifest.Version, IndexSHA256: snapshot.Manifest.DataSHA256, IndexRetrievedAt: snapshot.Manifest.RetrievedAt}
+	// Runtime observations can be newer than the embedded base snapshot.
+	for _, value := range snapshot.Data.Values() {
+		if value.FetchedAt.After(run.IndexRetrievedAt) {
+			run.IndexRetrievedAt = value.FetchedAt
+		}
+	}
+	for _, value := range snapshot.Annual {
+		if value.FetchedAt.After(run.IndexRetrievedAt) {
+			run.IndexRetrievedAt = value.FetchedAt
+		}
+	}
 	evidence := map[string]ValorisationIndex{}
 	for _, lease := range input.Leases {
 		item := evaluateValorisationLease(lease, input, snapshot, effective, now)

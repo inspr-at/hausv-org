@@ -84,7 +84,7 @@ func TestLetterVariants(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(out)
-			for _, internal := range []string{"Lauf", "Referenz", "SHA-256", run.ID[:16], run.InputsSHA256[:16]} {
+			for _, internal := range []string{"Lauf", "Referenz", "SHA-256", run.ID[:16], run.InputsSHA256[:16], run.IndexVersion} {
 				if strings.Contains(text, internal) {
 					t.Fatalf("internal audit data %q in tenant letter", internal)
 				}
@@ -98,7 +98,7 @@ func TestLetterVariants(t *testing.T) {
 			if !strings.Contains(text, "Top 1 · Eva Huber") {
 				t.Fatal("unit and tenant label missing", text)
 			}
-			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Statistik Austria", "Sehr geehrte Damen und Herren,", "Für Rückfragen:", "Mit freundlichen Grüßen"} {
+			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Indexwerte laut Statistik Austria, Stand 24.09.2026", "Guten Tag Eva Huber,", "Für Rückfragen:", "Mit freundlichen Grüßen"} {
 				if !strings.Contains(text, want) {
 					t.Errorf("missing %q", want)
 				}
@@ -121,6 +121,11 @@ func TestLetterVariants(t *testing.T) {
 			}
 			if item.RequiresMRGNotice && (!strings.Contains(text, Date(item.NoticeDeadline)) || !strings.Contains(text, "zugeht") || !strings.Contains(text, "14 Tage")) {
 				t.Fatal("receipt deadline missing")
+			}
+			letterText := strings.Join(strings.Fields(text), " ")
+			noBackPayment := "Der höhere Hauptmietzins ist erst ab diesem Zinstermin zu bezahlen; für die davorliegenden Monate wird keine Nachzahlung verlangt."
+			if strings.Contains(letterText, noBackPayment) != (item.RequiresMRGNotice && item.NewCents > item.OldCents && item.CollectableFrom > item.WirksamOn) {
+				t.Fatal("no-back-payment notice does not match MRG timing")
 			}
 			if item.MieWeG && !strings.Contains(text, "niedrigere Betrag") {
 				t.Fatal("parallel decision missing")

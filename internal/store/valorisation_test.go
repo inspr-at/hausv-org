@@ -213,6 +213,10 @@ func TestValorisationLifecycle(t *testing.T) {
 	if len(run.InputsSHA256) != 64 || len(run.IndexSnapshot) == 0 {
 		t.Fatal("missing snapshot")
 	}
+	loaded, found, err := repo.Get(run.ID)
+	if err != nil || !found || run.IndexRetrievedAt.IsZero() || !loaded.IndexRetrievedAt.Equal(run.IndexRetrievedAt) {
+		t.Fatalf("snapshot retrieval date not persisted: %s / %s, %v", run.IndexRetrievedAt, loaded.IndexRetrievedAt, err)
+	}
 	render := func(run ValorisationRun, item ValorisationItem, at time.Time) ([]byte, error) {
 		if run.Status != "approved" {
 			t.Fatal("draft render at approval")
