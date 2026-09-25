@@ -1,0 +1,45 @@
+package web
+
+type OrganisationStatementRow struct {
+	Name, Address, Tenant, Role, OpenPath string
+	Foreign                               bool
+	Detail                                string
+}
+
+type OrganisationStatementsData struct {
+	Rows []OrganisationStatementRow
+}
+
+func OrganisationStatementsPage(shell PortalPageData, data OrganisationStatementsData) templ.Component {
+	return organisationStatementsPage(shell, data)
+}
+
+templ organisationStatementsPage(shell PortalPageData, data OrganisationStatementsData) {
+	@PortalOrganisationPage(shell, "Jahresabrechnung", organisationStatementsLede(), nil, nil, organisationStatementsBody(data))
+}
+
+templ organisationStatementsLede() {
+	<p>Abrechnungsläufe der betreuten Liegenschaften. Die Bearbeitung öffnet die jeweilige Liegenschaft.</p>
+}
+
+templ organisationStatementsBody(data OrganisationStatementsData) {
+	<section class="panel workspace">
+		if len(data.Rows) == 0 {
+			<p class="empty">Keine Liegenschaft mit einer Abrechnungsperiode.</p>
+		}
+		<ul class="board-list">
+			for _, row := range data.Rows {
+				<li>
+					if row.Foreign {
+						<div class="portfolio-agenda-item">
+							<span class="item-copy"><strong>{ row.Name }</strong><span>{ row.Address }</span><span>{ row.Detail }</span></span>
+							@HouseOpenForm(row.Tenant, row.Role, row.OpenPath, "In Liegenschaft öffnen")
+						</div>
+					} else {
+						<a href={ templ.SafeURL(row.OpenPath) }><strong>{ row.Name }</strong><span>{ row.Detail }</span></a>
+					}
+				</li>
+			}
+		</ul>
+	</section>
+}

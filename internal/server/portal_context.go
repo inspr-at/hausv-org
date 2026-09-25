@@ -397,13 +397,3 @@ func (a *app) switchPortalContext(w http.ResponseWriter, r *http.Request, ac aut
 	next := portalContextNext(r.FormValue("next"))
 	http.Redirect(w, r, strings.TrimRight(a.baseURL, "/")+target.PublicURL(next), http.StatusSeeOther)
 }
-
-// Only known house menu destinations can continue a context switch.
-func portalContextNext(path string) string {
-	switch path {
-	case "/app", "/app/energie", "/app/announcements", "/app/events", "/app/kontakte", "/app/dokumente", "/app/anliegen", "/app/anliegen/board", "/app/abstimmungen", "/app/parking", "/app/uebergaben", "/app/settings/users", "/app/audit", "/app/settings", "/app/hilfe":
-		return path
-	default:
-		return "/app"
-	}
-}

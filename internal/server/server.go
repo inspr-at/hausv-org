@@ -1157,6 +1157,7 @@ func (a *app) routes() *http.ServeMux {
 	mux.HandleFunc("POST /app/settings/building/hero/delete", a.action(a.deleteBuildingHero))
 	mux.HandleFunc("GET /app/settings/valorisation", a.authed(capabilityManageLeases, a.valorisationPage))
 	mux.HandleFunc("GET /app/verwaltung/wertsicherung", a.authed(capabilityManageLeases, a.valorisationPage))
+	mux.HandleFunc("GET /app/verwaltung/jahresabrechnung", a.page(a.requireVerwaltung(a.organisationStatementsPage)))
 	mux.HandleFunc("POST /app/verwaltung/wertsicherung/refresh", a.authedAction(capabilityManageLeases, a.refreshIndices))
 	mux.HandleFunc("POST /app/settings/valorisation/runs", a.authedAction(capabilityManageLeases, a.createValorisation))
 	mux.HandleFunc("POST /app/settings/valorisation/runs/{runID}/approve", a.authedAction(capabilityManageLeases, a.approveValorisation))
@@ -5782,12 +5783,17 @@ func prefixTenantHTMLPaths(body string, tenantSlug string) string {
 	if prefix == "/" {
 		return body
 	}
+	// Context-switch return paths stay tenant-relative. Prefixing them with the
+	// session house would send the next house to the wrong path.
+	const nextSentinel = "\x00HAUSV_NEXT\x00"
+	body = strings.ReplaceAll(body, `name="next" value="/`, `name="next" value="`+nextSentinel)
 	for _, attribute := range []string{"href", "action", "formaction", "src", "data-src", "data-glass-src", "data-map-tile", "value", "hx-get", "hx-post", "hx-put", "hx-patch", "hx-delete"} {
 		needle := attribute + `="/`
 		body = strings.ReplaceAll(body, needle+tenantSlug+"/", "\x00HAUSV_TENANT_PATH\x00")
 		body = strings.ReplaceAll(body, needle, attribute+`="`+prefix+"/")
 		body = strings.ReplaceAll(body, "\x00HAUSV_TENANT_PATH\x00", needle+tenantSlug+"/")
 	}
+	body = strings.ReplaceAll(body, nextSentinel, "/")
 	body = strings.ReplaceAll(body, "url(/", "url("+prefix+"/")
 	body = strings.ReplaceAll(body, "url('/", "url('"+prefix+"/")
 	body = strings.ReplaceAll(body, `url("/`, `url("`+prefix+`/`)

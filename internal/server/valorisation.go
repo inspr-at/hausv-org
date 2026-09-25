@@ -93,7 +93,10 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 		if !ok {
 			continue
 		}
-		target := "/" + ctx.tenant.Slug + "/app/settings/valorisation"
+		target, foreign := OrganisationHousePath(ac.tenant.Slug, ctx.tenant.Slug, "/app/settings/valorisation")
+		if foreign {
+			target = ""
+		}
 		canApprove := can(a.actorFor(ac.email, ctx.tenant.Slug, ctx.role), capabilityApproveValorisation, resourceFor(ctx.tenant.Slug))
 		runs, err := repo.List()
 		if err != nil {
@@ -107,7 +110,7 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 				a.valorisationError(w, err)
 				return
 			}
-			page.Runs = append(page.Runs, web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run), Deliveries: deliveries})
+			page.Runs = append(page.Runs, valorisationRunView(run, target, foreign, ctx, canApprove, deliveries))
 		}
 		if chosen && r.URL.Query().Get("preview") == "1" {
 			input, err := a.valorisationInput(r, ctx, effective)
@@ -120,10 +123,19 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 				a.valorisationError(w, err)
 				return
 			}
-			page.Previews = append(page.Previews, web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run)})
+			page.Previews = append(page.Previews, valorisationRunView(run, target, foreign, ctx, canApprove, nil))
 		}
 	}
 	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ValorisationPage(page))
+}
+func valorisationRunView(run store.ValorisationRun, target string, foreign bool, ctx authCtx, canApprove bool, deliveries []store.ValorisationDelivery) web.ValorisationRunView {
+	openPath := "/app/settings/valorisation"
+	if run.ID != "" {
+		if safe, ok := safePortalReturnPath(openPath + "#run-" + run.ID); ok {
+			openPath = safe
+		}
+	}
+	return web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run), Deliveries: deliveries, Foreign: foreign, SwitchTenant: ctx.tenant.Slug, SwitchRole: ctx.role, OpenPath: openPath}
 }
 func (a *app) createValorisation(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	repo, ok := a.valorisationRepo(ac)

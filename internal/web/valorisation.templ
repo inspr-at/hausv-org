@@ -23,11 +23,15 @@ type ValorisationHouseView struct {
 	Selected   bool
 }
 type ValorisationRunView struct {
-	Run        store.ValorisationRun
-	URL        string
-	CanApprove bool
-	Groups     []ValorisationGroupView
-	Deliveries []store.ValorisationDelivery
+	Run          store.ValorisationRun
+	URL          string
+	CanApprove   bool
+	Groups       []ValorisationGroupView
+	Deliveries   []store.ValorisationDelivery
+	Foreign      bool
+	SwitchTenant string
+	SwitchRole   string
+	OpenPath     string
 }
 type ValorisationGroupView struct {
 	Key, Label string
@@ -653,7 +657,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 		for _,deadline := range view.Run.NoticeDeadlines() {
 			@ValorisationDeadline(deadline)
 		}
-		if preview {
+		if view.Foreign {
+			@HouseOpenForm(view.SwitchTenant, view.SwitchRole, view.OpenPath, "In Liegenschaft öffnen")
+		} else if preview {
 			<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button primary" type="submit">Lauf anlegen</button></form>
 		}
 		for _,group:=range view.Groups {
@@ -681,7 +687,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								}
 							</span>
 							<span class="vr-letter">
-								if !preview && item.LetterDocumentID != "" {
+								if !preview && !view.Foreign && item.LetterDocumentID != "" {
 									<a class="button small" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Schreiben (PDF)</a>
 								}
 							</span>
@@ -702,7 +708,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						<p class="vr-note">
 							{ item.Lease.Notes }
 						</p>
-						<p class="vr-note"><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						if !view.Foreign {
+							<p class="vr-note"><a href={ templ.SafeURL("/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						}
 						if item.ContractCents > 0 {
 							<div class="vr-table">
 								<table>
@@ -804,7 +812,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								Manuelle Entscheidung: { item.OverrideReason } · { item.OverrideBy }
 							</p>
 						}
-						if !preview {
+						if !preview && !view.Foreign {
 							if item.LetterDocumentID!="" || item.Group=="ready" {
 								<p><a class="button" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Anpassungsschreiben PDF</a></p>
 							}
@@ -835,7 +843,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 				}
 			</section>
 		}
-		if !preview {
+		if !preview && !view.Foreign {
 			if len(view.Deliveries)>0 {
 				<div class="vr-table">
 					<table>
