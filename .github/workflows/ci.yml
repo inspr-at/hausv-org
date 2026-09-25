@@ -28,6 +28,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
+          --tmpfs /var/lib/postgresql/data:rw,noexec,nosuid,size=2g
           --health-cmd "pg_isready --username postgres --dbname hausv_ci"
           --health-interval 5s
           --health-timeout 5s
@@ -50,10 +51,22 @@ jobs:
       - name: Create unprivileged PostgreSQL test role
         run: |
           postgres_image='postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94'
-          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+          hausv_pg_role="hausv-pg-ci-role-$$"
+          hausv_pg_owner="hausv-pg-ci-owner-$$"
+          hausv_pg_ci_stop() {
+            docker rm -f "$hausv_pg_role" "$hausv_pg_owner" >/dev/null 2>&1 || true
+          }
+          trap hausv_pg_ci_stop EXIT
+          trap 'hausv_pg_ci_stop; exit 130' INT
+          trap 'hausv_pg_ci_stop; exit 143' TERM
+          docker run --rm --name "$hausv_pg_role" \
+            --tmpfs /var/lib/postgresql/data:rw,noexec,nosuid,size=64m \
+            --network host --env PGPASSWORD=postgres "$postgres_image" \
             psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
             --command "CREATE ROLE hausv_ci LOGIN PASSWORD 'hausv_ci' NOSUPERUSER NOBYPASSRLS"
-          docker run --rm --network host --env PGPASSWORD=postgres "$postgres_image" \
+          docker run --rm --name "$hausv_pg_owner" \
+            --tmpfs /var/lib/postgresql/data:rw,noexec,nosuid,size=64m \
+            --network host --env PGPASSWORD=postgres "$postgres_image" \
             psql --host 127.0.0.1 --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
             --command "ALTER DATABASE hausv_ci OWNER TO hausv_ci"
 
