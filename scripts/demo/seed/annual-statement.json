@@ -351,7 +351,8 @@
     "inspection_period": "Nach Terminvereinbarung, Montag bis Freitag 9–12 Uhr",
     "inspection_contact": "vera.verwalter@musterstadt.example",
     "regime": "weg",
-    "heizkg_applies": true
+    "heizkg_applies": true,
+    "show_vat": true
   },
   "party_changes": [
     {

@@ -53,9 +53,16 @@ try {
   await submit(shares);
   for(const id of ['top-1','top-2','top-3','top-4','stellplatz-1'])assert.equal(await shares.locator(`input[name=share_${id}]`).inputValue(),'0');
   assert.equal(await shares.locator('[data-agreed-sum]').getAttribute('data-valid'),'true');
-  await shares.locator('input[name=share_top-1]').fill('1');
+  await shares.locator('input[name=share_top-1]').fill('0,0001');
+  assert.match(await shares.locator('[data-agreed-sum]').innerText(), /^100,0001 % \/ 100 %/);
   assert.equal(await shares.locator('[data-agreed-sum]').getAttribute('data-valid'),'false');
   assert.equal(await shares.locator('button[type=submit]').isDisabled(),true);
+  assert.match(await shares.locator('button[type=submit]').getAttribute('class'), /ghost/);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({width,height:1000});
+    await shares.locator('[data-agreed-sum]').scrollIntoViewIfNeeded();
+    await page.screenshot({path:`${out}/agreed-invalid-${width}.png`});
+  }
   const invalid = await shares.evaluate(form=>Object.fromEntries(new FormData(form)));
   const rejected = await context.request.post(`${baseURL}/janusbergweg-123/app/settings/annual-statement/agreed-shares`,{form:invalid,headers:{Origin:baseURL},maxRedirects:0});
   assert.equal(rejected.status(),400);
@@ -72,6 +79,7 @@ try {
   await page.setViewportSize({width:1440,height:1200});
   await openSection('heizinformationen');
   const energy=page.locator('form[action$="/heating-information"]');
+  assert.match(await energy.textContent(), /Klimafaktoren wirken im Verbrauchsvergleich erst/);
   assert.equal(await energy.locator('input[name=purchase_0_quantity]').inputValue(),'100000');
   assert.equal(await energy.locator('input[name=purchase_0_price]').inputValue(),'0,09');
   await energy.locator('input[name=purchase_0_quantity]').fill('100000,000001');
