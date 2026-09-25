@@ -82,7 +82,7 @@ templ LeasePageBody(data LeasePageData) {
 				</section>
 			}
 		} else {
-			<section class="lease-card"><h2>Noch kein Mietvertrag</h2><p>Legen Sie den Vertrag für { data.UnitLabel } an. Eine Tabelle importieren Sie über die Einheiten.</p></section>
+			<section class="lease-card"><h2>Noch kein Mietvertrag</h2><p>Legen Sie den Vertrag für @UnitLabel(data.UnitLabel) an. Eine Tabelle importieren Sie über die Einheiten.</p></section>
 		}
 	</div>
 }
@@ -364,7 +364,7 @@ templ leaseStaffelRow(row LeaseStaffelRow) {
 templ LeaseEndConfirm(data LeasePageData) {
 	<section class="lease-card">
 		<h2>Vertrag beenden</h2>
-		<p>Der Vertrag für { data.UnitLabel } endet an dem gewählten Tag. Danach gilt er nicht mehr als laufende Hauptmiete.</p>
+		<p>Der Vertrag für @UnitLabel(data.UnitLabel) endet an dem gewählten Tag. Danach gilt er nicht mehr als laufende Hauptmiete.</p>
 		<form method="post" action={ templ.SafeURL("/app/settings/building/units/" + data.UnitID + "/lease/end") }>
 			<input type="hidden" name="lease_id" value={ data.Form.ID }/>
 			<label class="lease-field">Ende<input type="date" name="ends_on" required/></label>

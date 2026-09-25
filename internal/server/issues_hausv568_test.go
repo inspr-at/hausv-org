@@ -121,7 +121,7 @@ func TestManagementHouseOverviewNamesUnitWithoutOwnPrefix(t *testing.T) {
 	if strings.Contains(body, "Eigene Einheit") {
 		t.Fatal("Verwaltungsansicht zeigt noch das Präfix Eigene Einheit")
 	}
-	if !strings.Contains(body, ">Top 7<") && !strings.Contains(body, ">Top 7</span>") {
+	if !strings.Contains(body, "Top\u00a07") {
 		t.Fatal("Verwaltungsansicht nennt die Einheit nicht")
 	}
 }

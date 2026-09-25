@@ -1,6 +1,10 @@
 package store
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
 
 // UnitLabelLess orders unit labels the way a person reads them: "Top 2" comes
 // before "Top 10", and "Stellplatz 9" before "Stellplatz 11". Plain string
@@ -41,6 +45,33 @@ func naturalLess(a string, b string) bool {
 		j++
 	}
 	return len(a)-i < len(b)-j
+}
+
+// UnitLabelText keeps a unit name and its number on one line. Stored labels
+// stay ordinary spaces; only the displayed text uses a non-breaking space,
+// so "Top" never wraps away from "3".
+func UnitLabelText(label string) string {
+	if !strings.Contains(label, " ") {
+		return label
+	}
+	var b strings.Builder
+	b.Grow(len(label))
+	for i := 0; i < len(label); {
+		r, size := utf8.DecodeRuneInString(label[i:])
+		if r == ' ' && unitLabelGlue(label, i) {
+			b.WriteRune('\u00a0')
+		} else {
+			b.WriteRune(r)
+		}
+		i += size
+	}
+	return b.String()
+}
+
+func unitLabelGlue(label string, space int) bool {
+	prev, _ := utf8.DecodeLastRuneInString(label[:space])
+	next, _ := utf8.DecodeRuneInString(label[space+1:])
+	return unicode.IsLetter(prev) && unicode.IsDigit(next)
 }
 
 func isDigit(c byte) bool { return c >= '0' && c <= '9' }

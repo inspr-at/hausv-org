@@ -51,7 +51,7 @@ func TestHausv622InboxCaseUsesSuggestedUnitOccupancy(t *testing.T) {
 	if err := web.InboxCaseWorkflowContent(view).Render(context.Background(), &rendered); err != nil {
 		t.Fatal(err)
 	}
-	if body := rendered.String(); !strings.Contains(body, "Top 3") || !strings.Contains(body, "Mieter Matthias Dorn") {
+	if body := rendered.String(); !strings.Contains(body, "Top\u00a03") || !strings.Contains(body, "Mieter Matthias Dorn") {
 		t.Fatalf("case occupancy was not rendered: %s", body)
 	}
 }
@@ -72,7 +72,7 @@ func TestHausv622BuildingAndContactsShowOccupancyByRole(t *testing.T) {
 		{"Top 1", "Alina Auer", "alina.eigentuemer@musterstadt.example"},
 		{"Top 3", "Matthias Dorn", "matthias.mieter@musterstadt.example"},
 	} {
-		start := strings.Index(buildingBody, "<strong>"+check.unit+"</strong>")
+		start := strings.Index(buildingBody, "<strong><span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">"+strings.ReplaceAll(check.unit, " ", "\u00a0")+"</span></strong>")
 		if start < 0 {
 			t.Fatalf("building page missing unit %q", check.unit)
 		}
@@ -91,7 +91,7 @@ func TestHausv622BuildingAndContactsShowOccupancyByRole(t *testing.T) {
 
 	for _, email := range []string{"vera.verwalter@musterstadt.example", "hedwig.beirat@musterstadt.example"} {
 		page := authedRequest(t, a, email, "/demo/app/kontakte")
-		if page.Code != 200 || !strings.Contains(page.Body.String(), "Bewohner je Einheit") || !strings.Contains(page.Body.String(), "Stellplatz 2") {
+		if page.Code != 200 || !strings.Contains(page.Body.String(), "Bewohner je Einheit") || !strings.Contains(page.Body.String(), "Stellplatz\u00a02") {
 			t.Fatalf("contacts occupancy for %s = %d %s", email, page.Code, page.Body.String())
 		}
 	}

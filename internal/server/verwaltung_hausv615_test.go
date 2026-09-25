@@ -31,7 +31,7 @@ func TestHausv615PortfolioUsesFullNamesGermanAuditLabelsAndAnchoredDueDates(t *t
 
 func TestHausv615EffectiveAIConfigUsesNeutralEnvironmentState(t *testing.T) {
 	empty := effectiveAIConfig(func(string) string { return "" }, store.OrgSettings{})
-	if empty.Provider != "environment" || empty.Configured || empty.Label != "Umgebung" || empty.Host != "" || empty.Model != "" {
+	if empty.Provider != "environment" || empty.Configured || empty.Label != "Vorgabe des Servers" || empty.Host != "" || empty.Model != "" {
 		t.Fatalf("empty config = %#v", empty)
 	}
 	localEnvironment := map[string]string{"AI_BASE_URL": "http://localhost:11434/v1", "AI_MODEL": "local-model"}
