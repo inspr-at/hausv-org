@@ -18,13 +18,13 @@ func TestHausv615PortfolioUsesFullNamesGermanAuditLabelsAndAnchoredDueDates(t *t
 			Status: store.IssueStatusProgress, CreatedAt: now.Add(-8 * 24 * time.Hour),
 			DueAt: now.Add(-24 * time.Hour), AssigneeEmail: "vera.verwalter@example.test",
 		}},
-		AuditEvents: []store.AuditEvent{{Action: store.AuditActionContextSwitch, ActorEmail: "vera.verwalter@example.test", At: now.Add(-time.Hour)}},
+		AuditEvents: []store.AuditEvent{{Action: store.AuditActionIssueWorkflow, ActorEmail: "vera.verwalter@example.test", At: now.Add(-time.Hour)}},
 		PeopleNames: map[string]string{"vera.verwalter@example.test": "Vera Verwalter"},
 	}})
 	if data.OpenIssues != 1 || data.Overdue != 1 || data.Houses[0].Assignee != "Vera Verwalter" {
 		t.Fatalf("portfolio aggregate = %+v", data)
 	}
-	if len(data.AuditEvents) != 1 || data.AuditEvents[0].Action != "Portal gewechselt" || strings.Contains(data.AuditEvents[0].Action, ".") {
+	if len(data.AuditEvents) != 1 || data.AuditEvents[0].Action != "Anliegen bearbeitet" || strings.Contains(data.AuditEvents[0].Action, ".") {
 		t.Fatalf("portfolio audit = %+v", data.AuditEvents)
 	}
 }

@@ -135,3 +135,48 @@ func TestPortfolioHTTPShowsOnlyManagedHousesAndForbidsOwner(t *testing.T) {
 		t.Fatalf("owner portfolio status = %d, want 403", denied.Code)
 	}
 }
+
+func TestPortfolioActivityFiltersBeforeLimitAndKeepsAuditLog(t *testing.T) {
+	const email = "manager@example.com"
+	a := newTestPortalApp(t, userProfile{Email: email, Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+	now := time.Now()
+	appendEvent := func(tenant, action string, at time.Time) {
+		t.Helper()
+		if err := a.auditStore.Append(store.AuditEvent{TenantSlug: tenant, Action: action, ActorEmail: email, At: at}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Session activity alone leaves a calm empty state.
+	appendEvent("demo", store.AuditActionLogin, now.Add(-time.Hour))
+	page := authedRequest(t, a, email, "/demo/app/verwaltung")
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Noch keine Aktivitäten.") {
+		t.Fatal("portfolio with only a login must show an empty activity feed")
+	}
+	for i := range 8 {
+		appendEvent("demo", store.AuditActionIssueWorkflow, now.Add(time.Duration(i-60)*time.Minute))
+	}
+	appendEvent("demo", store.AuditActionAnnualRunApprove, now.Add(-20*time.Minute))
+	// More than the store's default page of reads and session changes must not
+	// crowd older domain events out of the six visible activity slots.
+	for i := range 210 {
+		for _, action := range []string{store.AuditActionLogin, store.AuditActionContextSwitch, store.AuditActionDocumentDownload} {
+			appendEvent("demo", action, now.Add(time.Duration(i-1000)*time.Second))
+		}
+	}
+	appendEvent("foreign", store.AuditActionEventCreate, now)
+	page = authedRequest(t, a, email, "/demo/app/verwaltung")
+	body := page.Body.String()
+	if page.Code != http.StatusOK || strings.Count(body, `class="portfolio-audit-item"`) != 6 || !strings.Contains(body, "Jahresabrechnung freigegeben") {
+		t.Fatal("portfolio must show the six latest domain events, including the approval")
+	}
+	_, recent, _ := strings.Cut(body, `id="portfolio-recent-title"`)
+	recent, _, _ = strings.Cut(recent, "</section>")
+	for _, forbidden := range []string{" · Anmeldung", " · Portal gewechselt", " · Dokument heruntergeladen", " · Termin angelegt"} {
+		if strings.Contains(recent, forbidden) {
+			t.Fatalf("portfolio activity exposed %q", forbidden)
+		}
+	}
+	if len(a.auditStore.List(store.AuditFilter{TenantSlug: "demo", Action: store.AuditActionLogin, Limit: 500})) != 211 {
+		t.Fatal("filtering the portfolio must preserve login audit records")
+	}
+}

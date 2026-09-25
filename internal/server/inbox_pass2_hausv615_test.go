@@ -38,7 +38,7 @@ func TestHausv615InboxLabelsAndProviderFootline(t *testing.T) {
 	}
 }
 
-func TestHausv615DemoResetIsNewestPortfolioActivity(t *testing.T) {
+func TestHausv615DemoResetAndLoginStayOutOfPortfolioActivity(t *testing.T) {
 	a, _, _ := newInboxTestApp(t, roleAdmin)
 	a.recordAudit(store.AuditEvent{
 		At: time.Now().Add(-time.Hour), TenantSlug: "demo", ActorEmail: "vera@example.com",
@@ -60,9 +60,8 @@ func TestHausv615DemoResetIsNewestPortfolioActivity(t *testing.T) {
 	if recentStart < 0 {
 		t.Fatalf("portfolio recent section missing: %s", body)
 	}
-	recent := body[recentStart:]
-	resetIndex, loginIndex := strings.Index(recent, "Demodaten initialisiert"), strings.Index(recent, "Anmeldung")
-	if resetIndex < 0 || loginIndex < 0 || resetIndex > loginIndex || strings.Contains(recent[:resetIndex], "Noch keine Aktivitäten") {
-		t.Fatalf("recent activity order is wrong: %s", recent)
+	recent, _, _ := strings.Cut(body[recentStart:], "</section>")
+	if strings.Contains(recent, "Demodaten initialisiert") || strings.Contains(recent, "Anmeldung") || !strings.Contains(recent, "Noch keine Aktivitäten") {
+		t.Fatalf("administrative activity should leave the domain feed empty: %s", recent)
 	}
 }
