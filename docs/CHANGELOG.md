@@ -2,6 +2,15 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260925031315.0.0] - 2026-09-25
+
+### Verbessert
+
+- Portfolio, Hausüberblick, Dokumente, Kontakte und Termine übersichtlicher, auch am Smartphone.
+- Der Beirat sieht Anliegen zu Gemeinschaftsflächen und zur eigenen Einheit; private Anliegen anderer Einheiten bleiben bei Verfasser und Verwaltung.
+- „Zuletzt“ im Portfolio zeigt die Arbeit an den Liegenschaften.
+- Laderegeln werden in kW angezeigt.
+
 ## [260925020443.0.0] - 2026-09-25
 
 ### Verbessert
