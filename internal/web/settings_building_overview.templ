@@ -1,0 +1,20 @@
+package web
+
+import "strconv"
+
+templ BuildingOverview(data BuildingSettingsPageData) {
+	<section class="panel workspace"><header class="workspace-head"><div><h2>Stammdaten</h2><p>Name, Adresse und Kartenposition dieses Portals.</p></div></header>
+		@SettingsFlash(data.BuildingMsg, data.BuildingOK)
+		<form method="post" action="/app/settings/building" data-building-form>
+			<div class="form-grid"><fieldset><legend>Hausadresse</legend><label>Name<input id="building-name" type="text" name="name" value={ data.Tenant.Name } maxlength="160" required/></label><label>Adresse<textarea id="building-address" name="address" maxlength="500" required>{ data.Tenant.Address }</textarea></label><button class="button ghost" type="button" data-geocode-address data-geocode-url="/app/settings/building/geocode">Standort aus Adresse ermitteln</button><span class="muted" data-geocode-status aria-live="polite">Nur bei Klick wird die Adresse an OpenStreetMap übermittelt.</span><div data-geocode-results hidden></div></fieldset>
+			<fieldset><legend>Kartenposition</legend><div class="map-card" data-map-preview><span class="map-pin">@PortalIcon("home")</span><strong data-map-label>{ mapStatus(data.MapConfigured) }</strong><small data-map-coordinates>{ mapCoordinates(data) }</small></div><details class="inline-details"><summary>Koordinaten manuell eingeben
+				@DisclosureChevron()
+			</summary><label>Breitengrad, Längengrad<input id="building-map-position" type="text" name="map_position" value={ mapCoordinatesValue(data) } inputmode="decimal" placeholder="48.208200, 16.373800"/></label></details></fieldset></div>
+			<footer class="form-actions"><a class="button ghost" href="/app/settings/building?section=overview">Verwerfen</a><button class="button primary" type="submit">Änderungen speichern</button></footer>
+		</form>
+	</section>
+}
+
+func mapStatus(configured bool) string { if configured { return "Standort hinterlegt" }; return "Kein Standort hinterlegt" }
+func mapCoordinatesValue(data BuildingSettingsPageData) string { if data.MapConfigured { return strconv.FormatFloat(data.Tenant.MapLatitude, 'f', 6, 64) + ", " + strconv.FormatFloat(data.Tenant.MapLongitude, 'f', 6, 64) }; return "" }
+func mapCoordinates(data BuildingSettingsPageData) string { if value := mapCoordinatesValue(data); value != "" { return value }; return "Die Karte wird nach der Auswahl aktualisiert." }
