@@ -98,6 +98,23 @@ func TestValorisationExceptions(t *testing.T) {
 		t.Fatalf("early %+v", early)
 	}
 }
+
+func TestValorisationOpenExceptions(t *testing.T) {
+	run := ValorisationRun{Items: []ValorisationItem{
+		{Exceptions: []string{"clause_unreviewed", "one_way_clause_risk"}},
+		{Exceptions: []string{"no_clause"}, Excluded: true},
+		{Exceptions: []string{"letter_too_early"}, WirksamOn: "2026-04-01"},
+	}}
+	if got := run.OpenExceptionCount(mustDate("2026-03-31")); got != 2 {
+		t.Fatalf("open items before effective date: %d", got)
+	}
+	if got := run.OpenExceptionCount(mustDate("2026-04-01")); got != 1 {
+		t.Fatalf("elapsed letter exception must not block: %d", got)
+	}
+	if got := run.Items[0].ApprovalException(mustDate("2026-04-01")); got != "Die Klausel muss geprüft werden." {
+		t.Fatal(got)
+	}
+}
 func containsValorisation(items []string, s string) bool {
 	for _, item := range items {
 		if item == s {

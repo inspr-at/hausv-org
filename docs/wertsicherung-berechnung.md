@@ -326,6 +326,10 @@ unveränderliche PDF-Dateien mit SHA-256, ergänzt den HMZ-Bestandteil ab
 fort. Die exakte Vertragskurve und der ursprüngliche Deckelanker bleiben im
 vorherigen Lauf erhalten; der niedrigere vorgeschriebene Betrag setzt sie nicht
 zurück. Ausnahmen müssen bearbeitet oder begründet ausgeschlossen sein.
+Solange Ausnahmen offen sind, ist „Freigeben und archivieren“ deaktiviert;
+der Hinweis nennt die Anzahl betroffener Verträge. Ein trotzdem gesendeter
+Freigabe-POST führt mit deutscher Fehlermeldung zum Lauf in der Anwendung
+zurück. Eine reine Datumssperre entfällt, sobald die Wirksamkeit erreicht ist.
 
 Organisationsadministratoren konfigurieren unter Verwaltung → Einstellungen
 `wirksamwerden_mode` (Standard `cautious`), die Behandlung ungeprüfter Klauseln,

@@ -110,12 +110,24 @@ try {
   const first = page.locator('article[data-run-id]').first();
   const runID = await first.getAttribute('data-run-id');
   if (!runID) fail('Demo-Lauf fehlt');
+  const approveButton = first.getByRole('button', { name: 'Freigeben und archivieren' });
+  if (!(await approveButton.isDisabled()) || !(await approveButton.getAttribute('class')).includes('ghost')) fail('Freigabe bei offenen Ausnahmen nicht deaktiviert');
+  const issueID = await approveButton.getAttribute('aria-describedby');
+  if (!issueID || !(await page.locator(`#${issueID}`).innerText()).includes('3 Ausnahmen sind noch offen.')) fail('Anzahl offener Ausnahmen fehlt');
+  const approveAction = await approveButton.locator('..').getAttribute('action');
+  const blocked = await manager.request.post(new URL(approveAction, baseURL).href, { headers: { Origin: baseURL }, maxRedirects: 0 });
+  if (blocked.status() !== 303) fail(`Freigabe mit offenen Ausnahmen: HTTP ${blocked.status()}`);
+  await page.goto(new URL(blocked.headers().location, baseURL).href, { waitUntil: 'networkidle' });
+  const notice = await page.locator(`#run-${runID} [role="status"]`).innerText();
+  if (!notice.includes('Ausnahmen zuerst bearbeiten') || /clause_|index_|no_clause/.test(notice)) fail(`Freigabehinweis: ${notice}`);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await first.locator('.vr-item').first().evaluate(node => { node.open = true; });
     await shot(page, `valorisation-${width}`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) fail(`${width}px: Überlauf ${overflow}px`);
+    await first.locator('.vr-item').evaluateAll(nodes => nodes.forEach(node => { node.open = false; }));
+    await shot(page, `valorisation-open-exceptions-${width}`);
   }
   const itemIDs = await first.locator('[data-group="exception"] > .vr-item').evaluateAll(nodes => nodes.map(node => node.id.slice(5)));
   for (const itemID of itemIDs) {
@@ -126,6 +138,7 @@ try {
     await detail.getByRole('button', { name: 'Ausschließen', exact: true }).click();
     await page.waitForLoadState('networkidle');
   }
+  if (!(await approveButton.isEnabled())) fail('Freigabe nach begründetem Ausschluss noch gesperrt');
   await page.locator(`#run-${runID}`).getByRole('button', { name: 'Freigeben und archivieren' }).click();
   await page.waitForLoadState('networkidle');
   const approved = page.locator(`#run-${runID}`);
@@ -142,7 +155,10 @@ try {
   if (!href) fail('PDF-Link fehlt');
   const pdf = await manager.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
   if (pdf.status() !== 200 || !(await pdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-'))) fail('Archiv-PDF fehlt');
-  await shot(page, 'valorisation-approved-390');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await shot(page, `valorisation-approved-${width}`);
+  }
   // Structured schedule editing must survive a save, without interpreting prose.
   await page.goto(`${baseURL}/app/settings/building/units/top-9/lease?bearbeiten=1`, { waitUntil: 'networkidle' });
   const editor = page.locator('[data-staffel-editor]');

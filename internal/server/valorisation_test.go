@@ -34,6 +34,25 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		t.Fatal(err)
 	}
 	run := runs[0]
+	blocked := archiveDemoRequest(t, a, archiveDemoManager, "POST", path+"/runs/"+run.ID+"/approve", nil)
+	if blocked.Code != http.StatusSeeOther {
+		t.Fatalf("blocked approval must redirect: %d", blocked.Code)
+	}
+	location := strings.TrimPrefix(blocked.Header().Get("Location"), "/"+archiveDemoTenant)
+	location, _, _ = strings.Cut(location, "#") // Browsers never send fragments to the server.
+	notice := archiveDemoRequest(t, a, archiveDemoManager, "GET", location, nil)
+	for _, want := range []string{"Wertsicherung", "Ausnahmen zuerst bearbeiten", "Keine Wertsicherungsklausel vorhanden.", "3 Ausnahmen sind noch offen.", `class="button ghost"`, `disabled`, `role="status"`} {
+		if notice.Code != http.StatusOK || !strings.Contains(notice.Body.String(), want) {
+			t.Errorf("blocked approval notice missing %q: HTTP %d", want, notice.Code)
+		}
+	}
+	if strings.Contains(notice.Body.String(), "clause_unreviewed") {
+		t.Fatal("raw exception code in notice")
+	}
+	unchanged, _, err := repo.Get(run.ID)
+	if err != nil || unchanged.Status != "draft" {
+		t.Fatal("blocked approval changed the run", err)
+	}
 	for _, role := range []string{roleOwner, roleResident, roleServiceProvider, roleBeirat} {
 		actor := strings.ToLower(role) + "@example.com"
 		a.profiles[actor] = userProfile{Email: actor, Role: role, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
@@ -63,8 +82,8 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		t.Fatal("approve", approved.Code, approved.Body.String())
 	}
 	run, _, err = repo.Get(run.ID)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || run.Status != "approved" {
+		t.Fatal("run not approved", err)
 	}
 	for _, item := range run.Items {
 		if item.LetterDocumentID == "" {

@@ -272,7 +272,7 @@ func TestRuntimeValuesReachEngineAndFlagPersistedDraft(t *testing.T) {
 	if err != nil || !frozen.IndexRevised || frozen.InputsSHA256 != old.InputsSHA256 {
 		t.Fatal("stored draft revision warning", err)
 	}
-	if _, err = repo.Approve(old.ID, actor, input.Settings, mustDate("2026-12-01"), func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) { return []byte("%PDF"), nil }); err == nil || !strings.Contains(err.Error(), "index_revised") {
+	if _, err = repo.Approve(old.ID, actor, input.Settings, mustDate("2026-12-01"), func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) { return []byte("%PDF"), nil }); err == nil || !strings.Contains(err.Error(), "Indexwerte wurden berichtigt") {
 		t.Fatal("stale draft approval", err)
 	}
 	newRun, err := repo.Create(input, "org", actor, mustDate("2026-12-01"))

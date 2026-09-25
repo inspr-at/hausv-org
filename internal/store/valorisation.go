@@ -110,6 +110,34 @@ var ValorisationExceptionLabels = map[string]string{
 	"letter_too_early":       "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.",
 }
 
+// ApprovalException rechecks time-only exceptions in an otherwise frozen draft.
+// Excluded items and letters whose effective date has arrived no longer block.
+func (i ValorisationItem) ApprovalException(now time.Time) string {
+	if i.Excluded {
+		return ""
+	}
+	for _, code := range i.Exceptions {
+		if code == "letter_too_early" && i.WirksamOn != "" && now.Format(time.DateOnly) >= i.WirksamOn {
+			continue
+		}
+		if label := ValorisationExceptionLabels[code]; label != "" {
+			return label
+		}
+		return "Die Ausnahme muss geprüft werden."
+	}
+	return ""
+}
+
+func (r ValorisationRun) OpenExceptionCount(now time.Time) int {
+	count := 0
+	for _, item := range r.Items {
+		if item.ApprovalException(now) != "" {
+			count++
+		}
+	}
+	return count
+}
+
 func (i *ValorisationItem) exception(code string) {
 	for _, c := range i.Exceptions {
 		if c == code {

@@ -308,7 +308,7 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 		}
 	}
 	if run.IndexRevised {
-		return run, fmt.Errorf("index_revised: neuen Lauf berechnen")
+		return run, fmt.Errorf("Indexwerte wurden berichtigt. Bitte einen neuen Lauf berechnen.")
 	}
 	included := 0
 	run.ApprovedBy, run.ApprovedAt = actor.Email, now.UTC()
@@ -316,10 +316,8 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 		if item.Excluded || item.Outcome == "unchanged" && item.Group != "exception" {
 			continue
 		}
-		for _, code := range item.Exceptions {
-			if code != "letter_too_early" {
-				return run, fmt.Errorf("Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: %s", code)
-			}
+		if issue := item.ApprovalException(now); issue != "" {
+			return run, fmt.Errorf("Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: %s", issue)
 		}
 		item, err = ValorisationLetterTiming(item, now)
 		if err != nil {

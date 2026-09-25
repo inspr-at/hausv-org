@@ -28,6 +28,8 @@ type ValorisationRunView struct {
 	CanApprove bool
 	Groups     []ValorisationGroupView
 	Deliveries []store.ValorisationDelivery
+	OpenExceptions int
+	Notice string
 }
 type ValorisationGroupView struct {
 	Key, Label string
@@ -644,6 +646,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 				<span class="vr-revision">{ fmt.Sprintf("Revision %d",view.Run.Revision) }</span>
 			</div>
 		</header>
+		if view.Notice != "" {
+			<p class="notice" role="status">{ view.Notice }</p>
+		}
 		if view.Run.IndexRevised {
 			<p class="vr-exception" data-index-status="index_revised"><strong>Neu berechnen empfohlen</strong> · Ein verwendeter Indexwert wurde revidiert. Freigegebene Beträge und Schreiben bleiben unverändert.</p>
 		}
@@ -871,10 +876,26 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					</table>
 				</div>
 			}
+			if view.Run.Status == "draft" && view.OpenExceptions > 0 {
+				<p class="vr-note" id={ "approval-issue-" + view.Run.ID }>
+					if view.OpenExceptions == 1 {
+						1 Ausnahme ist noch offen.
+					} else {
+						{ fmt.Sprint(view.OpenExceptions) } Ausnahmen sind noch offen.
+					}
+					 Bitte zuerst prüfen oder mit Begründung ausschließen.
+				</p>
+			}
 			<div class="vr-actions">
 				if view.Run.Status=="draft" {
 					if view.CanApprove {
-						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }><button class="button primary" type="submit">Freigeben und archivieren</button></form>
+						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }>
+							<button class={ "button", templ.KV("primary", view.OpenExceptions == 0), templ.KV("ghost", view.OpenExceptions > 0) } type="submit" disabled?={ view.OpenExceptions > 0 }
+								if view.OpenExceptions > 0 {
+									aria-describedby={ "approval-issue-" + view.Run.ID }
+								}
+							>Freigeben und archivieren</button>
+						</form>
 					}
 					<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button" type="submit">Neu berechnen</button></form>
 				}
