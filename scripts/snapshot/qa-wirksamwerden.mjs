@@ -17,7 +17,7 @@ async function go(path) {
 }
 async function checkWidth(name, locator=page.locator('main').first()) {
  if(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)>1) throw new Error(`${name}: horizontal overflow`);
- await locator.screenshot({path:`${out}/${name}.png`});
+ await locator.screenshot({path:`${out}/${name}.png`,style:'[data-context-bar], .skip-link { visibility: hidden !important; }'});
 }
 async function submit(form) {
  await form.locator('button[type="submit"]:not([form])').first().click();
