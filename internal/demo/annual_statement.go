@@ -350,7 +350,7 @@ func seedAnnualStatement(ctx context.Context, database *sql.DB, statement *seedS
 		if err := os.WriteFile(filepath.Join(documentDir, identity.Slug, withdrawalID+".pdf"), withdrawalPDF, 0600); err != nil {
 			return err
 		}
-		withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: withdrawalTitle, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: withdrawalID + ".pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
+		withdrawalDoc := store.DocumentRecord{ID: withdrawalID, SeriesID: withdrawalID, Version: 1, Current: true, TenantSlug: identity.Slug, Title: withdrawalTitle, Category: store.DocumentCategoryBilling, Visibility: store.DocumentVisibilityManagerOnly, Filename: "Rechnung Dachrinne Juni 2025.pdf", StoredFilename: withdrawalID + ".pdf", Size: int64(len(withdrawalPDF)), ContentType: "application/pdf", UploadedBy: actor, UploadedAt: statement.RecordedAt}
 		if err := upsertJSON(ctx, tx, "documents", identity, withdrawalID, withdrawalDoc); err != nil {
 			return err
 		}
