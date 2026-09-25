@@ -2,6 +2,13 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260925041115.0.0] - 2026-09-25
+
+### Verbessert
+
+- Mietrechtsabrechnung: Vermieter erhalten eine gekennzeichnete Kopie ohne Zahlungsaufforderung; Leerstand wird einmal als Eigentümeranteil ausgewiesen.
+- Hilfe: aktuelle Quelle zur Mindest-Rücklage 2024.
+
 ## [260925031315.0.0] - 2026-09-25
 
 ### Verbessert

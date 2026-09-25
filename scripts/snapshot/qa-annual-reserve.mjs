@@ -78,6 +78,10 @@ try {
     // Keep sticky page chrome from covering rows in the full-section capture.
     await section.screenshot({ path: `${out}/reserve-section-${width}.png`, style: '[data-context-bar], .skip-link { visibility: hidden !important; }' });
   }
+  await page.goto(`${baseURL}/janusbergweg-123/app/hilfe#recht-ruecklage`);
+  const source = page.getByRole('link', {name:'ÖVI · Mindestrücklage 2024', exact:true});
+  assert.equal(await source.getAttribute('href'), 'https://www.ovi.at/aktuelles/detailansicht/anhebung-der-mindestruecklage-auf-106-eur-m2-ab-112024');
+  assert.equal(await page.locator('a[href*="mindestruecklage-weg-2024-1.pdf"]').count(), 0);
   assert.deepEqual(pageErrors, []);
 } finally {
   await context.request.dispose();

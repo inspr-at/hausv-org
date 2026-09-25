@@ -19,6 +19,9 @@ func TestStatementPaymentTerms(t *testing.T) {
 		{"ausnahme", false, 30, "Vertrag"},
 	} {
 		run := fixture()
+		if tc.regime == "mrg_voll" || tc.regime == "mrg_teil" {
+			run.Input.Parties[0].Owner, run.Input.Parties[0].Renter = false, true
+		}
 		run.Input.Structure.Legal = store.AnnualStatementLegalSettings{Regime: tc.regime, HeizKGApplies: tc.heat}
 		run.Approval = &store.AnnualStatementRunApproval{ApprovedAt: time.Date(2026, 6, tc.day, 12, 0, 0, 0, time.UTC), Role: store.RoleManager}
 		docs, err := Documents(run, "b", "zoe@example.com")

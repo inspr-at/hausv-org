@@ -252,11 +252,20 @@ in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
 Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
 öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
 Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
-Jede Partei erhält eine eigene Ergebniszeile mit Zeitraum, Kostenanteil, Akonto,
-Saldo und PDF-/Downloadlinks, auf schmalen Bildschirmen eine eigene Karte.
-Die Einheit gruppiert diese Zeilen; die aufklappbaren Kostenarten zeigen weiterhin
-die Einheitsbeträge. Parteibeträge verwenden dieselbe gespeicherte Projektion wie
-das jeweilige PDF, einschließlich der historischen Leerstandsbehandlung.
+Abrechnungsparteien erhalten eine eigene Ergebniszeile mit Zeitraum, Kostenanteil,
+Akonto, Saldo und PDF-/Downloadlinks, mobil eine eigene Karte. In MRG-Häusern
+stehen reine Vermieterempfänger als „Kopie für Vermieter“ ohne Beträge in der
+Einheitengruppe. Ihre PDFs tragen „Kopie für den Vermieter – keine Zahlungsaufforderung“
+und die Anrede „Vermieter / Eigentümer“; Zahlungsfristen und Akontovorschläge
+entfallen in diesen Informationskopien. Gespeicherte echte Eigentümeranteile bei
+datierten Parteien bleiben als „Eigentümer trägt“ sichtbar, Nullkopien entfallen.
+Leerstand steht genau einmal als „Leerstand · Eigentümer trägt“ mit Zeitraum
+innerhalb der Einheit. Die übrige Zeile zeigt den gespeicherten bewohnten Rest
+und dessen Akontos. Fehlt eine gespeicherte Mietpartei, wird dies ausdrücklich
+benannt; Namen und weitere Geldaufteilungen werden nicht ergänzt.
+Die aufklappbaren Kostenarten zeigen weiterhin die gespeicherten Einheitsbeträge.
+Die Projektion verändert weder Laufdaten noch Berechnungsversion oder archivierte
+PDF-Dateien. Summen werden ohne Vermieterkopien, mit dem Leerstandsanteil geprüft.
 Bedienflächen bleiben mindestens 44 px hoch. Der Lauf nennt den Anzeigenamen der
 erstellenden Person; das Freigabedatum verwendet den Wiener Kalendertag.
 

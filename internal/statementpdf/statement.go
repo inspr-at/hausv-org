@@ -24,6 +24,7 @@ type CostRow struct {
 	Measurements                    []string
 }
 type Document struct {
+	LandlordCopy               bool
 	PartySplit                 bool
 	UnitID, PartyID, UnitLabel string
 	Sender, Address, Basis     []string
@@ -85,15 +86,20 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 		unit, vacancyNote = partyShare.Unit, partyShare.Note
 	}
 	d := letterDocument(run, unit.Label)
+	d.LandlordCopy = party.Owner && !party.Renter && (run.Input.Structure.Legal.Regime == "mrg_voll" || run.Input.Structure.Legal.Regime == "mrg_teil")
 	d.UnitID, d.PartyID = unit.UnitID, party.ID
 	d.PartySplit = datedParty
 	d.Total, d.Prepaid = money(unit.AllocatedCents), money(unit.PrepaidCents)
 	d.Timing = balanceTiming(run, unit)
 	role := "Wohnungseigentümer"
+	if run.Input.Structure.Legal.Regime == "mrg_voll" || run.Input.Structure.Legal.Regime == "mrg_teil" {
+		role = "Vermieter / Eigentümer"
+	}
 	if party.Renter {
-		role = "Mietpartei"
 		if party.Owner {
-			role = "Wohnungseigentümer und Mietpartei"
+			role += " und Mietpartei"
+		} else {
+			role = "Mietpartei"
 		}
 	}
 	d.Address = nonempty(role, party.Name, party.Address)
@@ -206,6 +212,10 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 	d.Reserve = ReserveLines(run, unit.UnitID)
 	d.PaymentTerms = paymentTerms(run, unit)
 	d.Proposals = proposalLines(run, unit.UnitID)
+	if d.LandlordCopy {
+		d.Timing = "Kopie für den Vermieter – keine Zahlungsaufforderung"
+		d.PaymentTerms, d.Proposals = nil, nil
+	}
 	if datedParty && !partyShare.SettlementRecipient {
 		d.Reserve, d.Proposals = nil, nil
 	}
