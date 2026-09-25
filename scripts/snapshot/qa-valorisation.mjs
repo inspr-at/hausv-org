@@ -107,17 +107,6 @@ try {
     if (artifactDir) await indexCard.screenshot({ path: `${artifactDir}/index-refresh-${width}.png` });
   }
   await page.setViewportSize({ width: 1440, height: 900 });
-  // An organisation action must address its own house, even while another
-  // house is selected in the shell.
-  const orgRun = page.locator('article[data-run-id]').filter({ has: page.locator('[data-lease-id="m12-lease-top-8"]') }).first();
-  const orgRunID = await orgRun.getAttribute('data-run-id');
-  const orgApproveAction = await orgRun.getByRole('button', { name: 'Freigeben und archivieren' }).locator('..').getAttribute('action');
-  if (!orgApproveAction.startsWith('/musterstrasse-12/app/settings/valorisation/')) fail('Organisationsfreigabe verweist auf das falsche Haus');
-  const orgBlocked = await manager.request.post(new URL(orgApproveAction, baseURL).href, { headers: { Origin: baseURL }, maxRedirects: 0 });
-  if (orgBlocked.status() !== 303) fail(`Organisationsfreigabe HTTP ${orgBlocked.status()}`);
-  const orgReturn = await page.goto(new URL(orgBlocked.headers().location, baseURL).href, { waitUntil: 'networkidle' });
-  if (orgReturn?.status() !== 200 || !(await page.locator(`#run-${orgRunID} [role="status"]`).innerText()).includes('Ausnahmen zuerst bearbeiten')) fail('Organisationsfreigabe verliert Lauf oder deutsche Meldung');
-  await switchHouse(page, 'Janusbergweg 123');
   let response = await page.goto(`${route}?new=1&preview=1&effective_on=2026-04-01&house=janusbergweg-123`, { waitUntil: 'networkidle' });
   if (response?.status() !== 200) fail(`Vorschau HTTP ${response?.status()}`);
   const preview = page.locator('article[data-run-id=""]');

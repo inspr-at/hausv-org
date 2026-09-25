@@ -17,7 +17,7 @@ func (a *app) settingsPortalContext(ac authCtx, title, activePage string) web.Po
 	return a.portalBaseData(ac, activePage, title)
 }
 
-func (a *app) renderSettingsComponent(w http.ResponseWriter, r *http.Request, tenantSlug string, component templ.Component, preservedTenantSlugs ...string) {
+func (a *app) renderSettingsComponent(w http.ResponseWriter, r *http.Request, tenantSlug string, component templ.Component) {
 	var rendered bytes.Buffer
 	if err := component.Render(r.Context(), &rendered); err != nil {
 		logError("templ settings render failed", err)
@@ -25,7 +25,7 @@ func (a *app) renderSettingsComponent(w http.ResponseWriter, r *http.Request, te
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), tenantSlug, preservedTenantSlugs...))
+	_, _ = io.WriteString(w, prefixTenantHTMLPaths(rendered.String(), tenantSlug))
 }
 
 func (a *app) renderSettingsHubTempl(w http.ResponseWriter, r *http.Request, ac authCtx, data map[string]any) {

@@ -5,40 +5,13 @@ import (
 	"fmt"
 	appmail "github.com/inspr-at/hausv-org/internal/mail"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/inspr-at/hausv-org/internal/store"
-	"github.com/inspr-at/hausv-org/internal/web"
 )
-
-func TestValorisationOrganisationPreservesHouseActions(t *testing.T) {
-	view := web.ValorisationRunView{
-		Run:        store.ValorisationRun{ID: "muster-run", Status: "draft"},
-		URL:        "/musterstrasse-12/app/settings/valorisation",
-		CanApprove: true,
-	}
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/app/verwaltung/wertsicherung", nil)
-	a := &app{}
-	a.renderSettingsComponent(w, r, archiveDemoTenant, web.ValorisationRun(view, false), "musterstrasse-12")
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `action="/musterstrasse-12/app/settings/valorisation/runs/muster-run/approve"`) {
-		t.Fatal("organisation approval must retain the run's house prefix")
-	}
-	if strings.Contains(w.Body.String(), "/janusbergweg-123/musterstrasse-12/") {
-		t.Fatal("selected house must not prefix another house's action")
-	}
-	// Unqualified shell links continue to belong to the selected house.
-	body := `<a href="/app/settings">Settings</a><form action="/musterstrasse-12/app/settings/valorisation/runs/muster-run/approve"></form>`
-	want := `<a href="/janusbergweg-123/app/settings">Settings</a><form action="/musterstrasse-12/app/settings/valorisation/runs/muster-run/approve"></form>`
-	got := prefixTenantHTMLPaths(body, archiveDemoTenant, "musterstrasse-12")
-	if got != want || prefixTenantHTMLPaths(got, archiveDemoTenant, "musterstrasse-12") != want {
-		t.Fatal("house-aware rendering must preserve shell scoping and be idempotent")
-	}
-}
 
 func TestValorisationRoutesAndDenials(t *testing.T) {
 	a, _, _ := newArchiveDemoApp(t)

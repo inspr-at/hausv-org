@@ -334,8 +334,6 @@ Freigabe-POST führt mit deutscher Fehlermeldung zum Lauf in der Anwendung
 zurück. Eine reine Datumssperre zeigt separat „Freigabe ab … möglich“ und
 entfällt, sobald die Wirksamkeit erreicht ist; sie zählt nicht als zu prüfende
 Ausnahme. Der POST prüft das Datum weiterhin mit `ValorisationLetterTiming`.
-Auch aus der Organisationsübersicht behalten Aktionen das Haus des jeweiligen
-Laufs; die Rückkehr zeigt dessen Meldung im zugehörigen Hauskontext.
 
 Organisationsadministratoren konfigurieren unter Verwaltung → Einstellungen
 `wirksamwerden_mode` (Standard `cautious`), die Behandlung ungeprüfter Klauseln,
