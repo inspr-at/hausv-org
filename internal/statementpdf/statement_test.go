@@ -38,7 +38,7 @@ func TestDocumentStoredFiguresPartiesAndMeasurementEvidence(t *testing.T) {
 		t.Fatalf("model=%+v", d)
 	}
 	raw, _ := json.Marshal(d)
-	for _, want := range []string{"01.01.2025 bis 31.12.2025", "Revision 2", "03.02.2026 11:20 CET", "60,00 m²", "Personen: 1", "100,000000 kWh / 400,000000 kWh", "Grenzmessung Beginn", "Grenzmessung Ende", "500,000000 kWh", "600,000000 kWh", "Rücklage: 50,00 €"} {
+	for _, want := range []string{"01.01.2025 bis 31.12.2025", "Lauf 2", "03.02.2026 11:20 CET", "60,00 m²", "Personen: 1", "100 kWh / 400 kWh", "Grenzmessung Beginn", "Grenzmessung Ende", "500 kWh", "600 kWh", "Rücklage: 50,00 €"} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("missing %q", want)
 		}
@@ -142,7 +142,7 @@ func TestMeasuredVectorTotalCannotOverflowOrRoundStoredMicros(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "9.223.372.036.854,775807 kWh / 18.446.744.073.709,551614 kWh"
+	want := "9.223.372.036.854,78 kWh / 18.446.744.073.709,55 kWh"
 	if !strings.Contains(docs[0].Costs[1].Measurements[0], want) {
 		t.Fatal(docs[0].Costs[1].Measurements)
 	}
@@ -176,5 +176,13 @@ func TestDocumentsFollowTheRegisterOrder(t *testing.T) {
 	}
 	if got := strings.Join(labels, ", "); got != "Top 1, Top 2, Top 10, Stellplatz 1" {
 		t.Fatalf("document order = %q", got)
+	}
+}
+
+func TestMeasurementDisplayPrecision(t *testing.T) {
+	for micros, want := range map[int64]string{3500_000000: "3.500 kWh", 100000_000000: "100.000 kWh", 1234567: "1,23 kWh", 1999999: "2 kWh", 1005000: "1,01 kWh"} {
+		if got := measurement(micros, "kWh"); got != want {
+			t.Errorf("%d: %s", micros, got)
+		}
 	}
 }

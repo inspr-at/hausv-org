@@ -28,7 +28,7 @@ func letterDocument(run store.AnnualStatementRun, unit string) Document {
 			{Label: "Abrechnungsdatum", Value: statementDate(run).Format("02.01.2006")},
 		},
 		Contact:   strings.Join(nonempty(org, p.ContactPhone, p.ContactEmail), " · "),
-		Reference: fmt.Sprintf("Ref. %s · Revision %d · Erstellt: %s", run.ID, run.Revision, timestamp(run.CreatedAt)),
+		Reference: fmt.Sprintf("Lauf %d · Erstellt: %s", run.Revision, timestamp(run.CreatedAt)),
 	}
 	if basis := run.Input.Structure.Legal.Basis(); run.Input.Structure.Legal.Regime != "" {
 		d.Info = append(d.Info, InfoField{Label: "Rechtsgrundlage", Value: basis})
@@ -47,11 +47,11 @@ func letterDocument(run store.AnnualStatementRun, unit string) Document {
 	}
 	d.InspectionBasis = strings.Join(inspectionRefs, "; ")
 	if run.Approval != nil {
-		role := "Verwaltung"
-		if run.Approval.Role == store.RoleAdmin {
-			role = "Administration"
+		name := strings.TrimSpace(run.Approval.ApprovedName)
+		if name == "" {
+			name = run.Approval.ApprovedBy
 		}
-		d.ApprovalNotice = "Freigegeben: " + timestamp(run.Approval.ApprovedAt) + " · " + role
+		d.ApprovalNotice = strings.Join(nonempty("Freigegeben: "+timestamp(run.Approval.ApprovedAt), name), " · ")
 	}
 	return d
 }

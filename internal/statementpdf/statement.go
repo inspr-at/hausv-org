@@ -158,7 +158,7 @@ func document(run store.AnnualStatementRun, unit store.AnnualStatementRunUnit, p
 				if i > 0 {
 					label = "Grenzmessung Ende"
 				}
-				row.Measurements = append(row.Measurements, label+": "+timestamp(item.MeasuredAt)+" · "+measurement(item.ValueMicros, item.MeasurementUnit), "Quelle: "+item.SourceKind)
+				row.Measurements = append(row.Measurements, label+": "+timestamp(item.MeasuredAt)+" · "+measurement(item.ValueMicros, item.MeasurementUnit), "Quelle: "+measurementSourceLabel(item.SourceKind))
 			}
 			if len(evidence) != 2 {
 				row.Measurements = append(row.Measurements, "Grenzmessungen im gespeicherten Lauf unvollständig")
@@ -306,15 +306,19 @@ func measurement(micros int64, unit string) string {
 }
 
 // A vector's total can exceed int64 even though every stored counter fits.
-// Preserve the six stored decimal places without floating-point rounding.
+// Round only the presentation to at most two decimals using exact arithmetic.
 func measurementTotal(micros *big.Int, unit string) string {
-	raw := new(big.Rat).SetFrac(micros, big.NewInt(1_000_000)).FloatString(6)
+	raw := new(big.Rat).SetFrac(micros, big.NewInt(1_000_000)).FloatString(2)
 	parts := strings.SplitN(raw, ".", 2)
 	digits := parts[0]
 	for i := len(digits) - 3; i > 0; i -= 3 {
 		digits = digits[:i] + "." + digits[i:]
 	}
-	return digits + "," + parts[1] + " " + unit
+	fraction := strings.TrimRight(parts[1], "0")
+	if fraction != "" {
+		digits += "," + fraction
+	}
+	return digits + " " + unit
 }
 func date(raw string) string {
 	at, err := time.Parse("2006-01-02", raw)
@@ -344,5 +348,14 @@ func allocationKey(key string) string {
 		return "Verbrauch"
 	default:
 		return key
+	}
+}
+
+func measurementSourceLabel(kind string) string {
+	switch kind {
+	case store.ConsumptionSourceEntity, store.ConsumptionSourceAsset, "meter":
+		return "Zähler"
+	default:
+		return "Gespeicherte Messung"
 	}
 }
