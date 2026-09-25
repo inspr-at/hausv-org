@@ -35,7 +35,7 @@ func buildDocuments(houses []house) []map[string]any {
 			}
 			documents = append(documents, map[string]any{
 				"id": id, "house": house.Slug, "title": kind.title, "category": kind.category,
-				"visibility": visibility, "filename": id + ".pdf", "uploaded_at": "2026-09-01T08:00:00Z",
+				"visibility": visibility, "filename": kind.key + ".pdf", "uploaded_at": "2026-09-01T08:00:00Z",
 				"pdf": data, "sha256": fmt.Sprintf("%x", sha256.Sum256(data)),
 			})
 		}
