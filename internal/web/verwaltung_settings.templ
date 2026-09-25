@@ -115,9 +115,14 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 					<p class="active-provider" data-provider-state="nicht eingerichtet"><strong>KI-Vorschläge sind in dieser Umgebung nicht eingerichtet</strong></p>
 					<p class="settings-note">Vorschläge und Sicherheitswerte im Posteingang sind Beispielvorschläge.</p>
 				}
-				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
-				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer lassen = Standard der Plattform"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer lassen = Standard der Plattform"/></label></div>
-				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein. Leer lassen = Standard der Plattform.</p>
+				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Vorgabe des Servers</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
+				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="https://…/v1"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Modellname"/></label></div>
+				<p class="settings-note">Die Wahl gilt für den nächsten Vorschlag; ein lokaler Endpunkt muss vom Server erreichbar sein.</p>
+				<p class="settings-hint">Ohne Eintrag gilt der Standard der Plattform.</p>
+				if data.AITestResult != "" {
+					<p class="settings-result" role="status" data-ok={ fmt.Sprint(data.AITestOK) }><span class="status-dot"></span>{ data.AITestResult }</p>
+				}
+				<div class="settings-actions"><button class="settings-secondary" type="submit" form="ki-test">Verbindung testen</button></div>
 			</section>
 			<div class="settings-actions"><button class="settings-save" type="submit">Einstellungen speichern</button></div>
 		</form>
@@ -150,12 +155,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				</form>
 			</section>
 		}
-		<form class="settings-card" method="post" action="/app/verwaltung/einstellungen/ki-test"><h2>KI-Verbindung</h2><p>Prüft die aktive Konfiguration mit einer kurzen, synthetischen Anfrage.</p>
-			if data.AITestResult != "" {
-				<p class="settings-result" role="status" data-ok={ fmt.Sprint(data.AITestOK) }><span class="status-dot"></span>{ data.AITestResult }</p>
-			}
-			<div class="settings-actions"><button class="settings-secondary" type="submit">Verbindung testen</button></div>
-		</form>
+		<form id="ki-test" method="post" action="/app/verwaltung/einstellungen/ki-test" hidden></form>
 		<section class="settings-card"><h2>E-Mail-Eingang</h2>
 			if data.MailConfigured {
 				<p class="active-provider"><strong>Aktiv:</strong> { data.MailMailbox } · alle { data.MailInterval }</p>

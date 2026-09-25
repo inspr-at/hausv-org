@@ -72,7 +72,7 @@ func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
 	settings := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment", MembersAvailable: true,
 	}))
-	for _, want := range []string{"settings-input-group", "Bilanz seit Start", "KI-Vorschläge sind in dieser Umgebung nicht eingerichtet", "Beispielvorschläge", "Leer lassen = Standard der Plattform", "Name der Hausverwaltung", "name@verwaltung.at", "wird von Ihrer Verwaltung eingerichtet", `value="environment" checked`, "KI-Anbieter", "KI-Verbindung"} {
+	for _, want := range []string{"settings-input-group", "Bilanz seit Start", "KI-Vorschläge sind in dieser Umgebung nicht eingerichtet", "Beispielvorschläge", "https://…/v1", "Modellname", "Ohne Eintrag gilt der Standard der Plattform.", "Vorgabe des Servers", "Name der Hausverwaltung", "name@verwaltung.at", "wird von Ihrer Verwaltung eingerichtet", `value="environment" checked`, "KI-Anbieter", `id="ki-test"`, "Verbindung testen"} {
 		if !strings.Contains(settings, want) {
 			t.Fatalf("settings render missing %q", want)
 		}
@@ -83,7 +83,7 @@ func TestHausv615SettingsAndDemoFlowsAreStructured(t *testing.T) {
 	configured := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "cloud", AIConfigured: true, ProviderLabel: "Cloud (OpenRouter)", AIHost: "openrouter.ai", AIModel: "openai/gpt-test", AITimeout: "45s",
 	}))
-	if strings.Contains(settings, "INTAKE_MAIL_JSON") || strings.Contains(settings, "person@example.com") || strings.Contains(settings, "Leer = Name der Hausverwaltung") {
+	if strings.Contains(settings, "INTAKE_MAIL_JSON") || strings.Contains(settings, "person@example.com") || strings.Contains(settings, "Leer = Name der Hausverwaltung") || strings.Contains(settings, "Leer lassen") || strings.Contains(settings, "KI-Verbindung") || strings.Contains(settings, "> Umgebung<") {
 		t.Fatal("settings still show a server variable or an example.com placeholder")
 	}
 	if strings.Contains(configured, "openai/gpt-test") || strings.Contains(configured, "nicht eingerichtet") || strings.Contains(configured, "Beispielvorschläge") {
