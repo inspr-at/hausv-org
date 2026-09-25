@@ -20,7 +20,7 @@ async function checkWidth(name, locator=page.locator('main').first()) {
  await locator.screenshot({path:`${out}/${name}.png`});
 }
 async function submit(form) {
- await form.locator('button[type="submit"]').first().click();
+ await form.locator('button[type="submit"]:not([form])').first().click();
  await page.waitForLoadState('networkidle');
 
 }
