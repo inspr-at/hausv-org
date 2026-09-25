@@ -28,7 +28,7 @@ func TestAnnualInformationHandlersValidateAndPreserveOtherSettings(t *testing.T)
 	for i, u := range units {
 		share := 0
 		if i == 0 {
-			share = 1_000_000
+			share = 100
 		}
 		form.Set("share_"+u.ID, strconv.Itoa(share))
 	}
@@ -41,11 +41,11 @@ func TestAnnualInformationHandlersValidateAndPreserveOtherSettings(t *testing.T)
 	if got := post("manager@example.com", "agreed-shares", form); got != http.StatusSeeOther {
 		t.Fatal(got)
 	}
-	form.Set("share_"+units[0].ID, "999999")
+	form.Set("share_"+units[0].ID, "99,9999")
 	if got := post("manager@example.com", "agreed-shares", form); got != 400 {
 		t.Fatal(got)
 	}
-	energy := url.Values{"year": {"2025"}, "purchase_row": {"0"}, "purchase_0_cost": {"heizung"}, "purchase_0_supplier": {"Versorger"}, "purchase_0_carrier": {"Gas"}, "purchase_0_quantity": {"1000,25"}, "purchase_0_unit": {"kWh"}, "purchase_0_price": {"0,123456"}, "purchase_0_note": {"31.12.2025"}, "remote_meters": {"yes"}}
+	energy := url.Values{"year": {"2025"}, "purchase_row": {"0"}, "purchase_0_cost": {"heizung"}, "purchase_0_supplier": {"Versorger"}, "purchase_0_carrier": {"Gas"}, "purchase_0_quantity": {"1000,25"}, "purchase_0_unit": {"kWh"}, "purchase_0_price": {"0,123456"}, "purchase_0_note": {"31.12.2025"}, "remote_meters": {"yes"}, "climate_current_factor": {"1,05"}, "climate_previous_factor": {"0,95"}, "climate_source": {"Fachliche Ermittlung"}}
 	if got := post("resident@example.com", "heating-information", energy); got != 403 {
 		t.Fatal(got)
 	}
@@ -53,7 +53,7 @@ func TestAnnualInformationHandlersValidateAndPreserveOtherSettings(t *testing.T)
 		t.Fatal(got)
 	}
 	s, _ := repos.annualStatementPeriods.Structure(2025)
-	if s.Legal.AgreedShares["lift"][units[0].ID] != 1_000_000 || s.Legal.HeatingInformation.Purchases[0].PriceMicros != 123456 || s.Legal.HeatingInformation.Purchases[0].QuantityMicros != 1_000_250_000 {
+	if s.Legal.AgreedShares["lift"][units[0].ID] != 1_000_000 || s.Legal.HeatingInformation.Purchases[0].PriceMicros != 123456 || s.Legal.HeatingInformation.Purchases[0].QuantityMicros != 1_000_250_000 || s.Legal.HeatingInformation.ClimateCurrentPPM != 1_050_000 || s.Legal.HeatingInformation.ClimatePreviousPPM != 950_000 {
 		t.Fatal(s)
 	}
 	energy.Set("purchase_0_quantity", "-1")
@@ -78,6 +78,19 @@ func TestAnnualInformationDecimalParsing(t *testing.T) {
 	for raw, want := range map[string]int64{"0": 0, "0,000001": 1, "12.34": 12340000, "9223372036854.775807": 9223372036854775807} {
 		if got, ok := parseAnnualInformationMicros(raw); !ok || got != want {
 			t.Fatal(raw, got)
+		}
+	}
+}
+
+func TestAnnualSharePercentExactConversion(t *testing.T) {
+	for raw, want := range map[string]int{"0": 0, "100": 1_000_000, "12,3456": 123456, "0,0001": 1, "33.3333": 333333} {
+		if got, ok := parseAnnualSharePercent(raw); !ok || got != want {
+			t.Errorf("%q: %d, %v", raw, got, ok)
+		}
+	}
+	for _, raw := range []string{"", "-1", "100,0001", "1,00000", "1e2", "NaN", "1,2.3", "9223372036854775807"} {
+		if _, ok := parseAnnualSharePercent(raw); ok {
+			t.Errorf("accepted %q", raw)
 		}
 	}
 }

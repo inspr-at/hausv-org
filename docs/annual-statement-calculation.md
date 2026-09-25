@@ -416,6 +416,9 @@ Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.
 
 Der zusätzliche Schlüssel `vereinbart` speichert einen eigenen PPM-Vektor je
 Kostenart in `annual_statement_periods.legal_settings.agreed_shares_ppm`.
+Die Eingabetabelle zeigt Prozent mit bis zu vier Nachkommastellen (deutsches
+Komma); 0,0001 % entspricht einem Millionstel. Client und Server prüfen die
+Summe von genau 100 %, ohne Gleitkommarundung bei der Speicherung.
 Jede aktuelle Einheit muss ausdrücklich erfasst sein; 0 ist eine vereinbarte
 Ausnahme, etwa für Erdgeschoßwohnungen beim Lift. Negative Werte, fehlende oder
 zusätzliche Einheiten sowie eine Summe ungleich 1.000.000 sperren die Berechnung.
@@ -462,7 +465,8 @@ fehlende Vergleichbarkeit ausdrücklich genannt; es gibt keine Schätzung oder
 stillschweigende Einheitenumrechnung. Nachträgliche Vorjahresrevisionen verändern
 das bereits gespeicherte Vergleichsmaterial nicht. PostgreSQL liest es innerhalb
 der Transaktion des aktuellen Laufs. Der Vergleich zeigt tatsächliche Mengen;
-für Heizung können fachlich ermittelte Klimafaktoren beider Perioden in PPM samt
+für Heizung können fachlich ermittelte Klimafaktoren beider Perioden (Eingabe
+als Dezimalfaktor, intern weiterhin Millionstel) samt
 Quelle/Methode hinterlegt werden. Der korrigierte Verbrauch ist
 `Verbrauch × Klimafaktor / 1.000.000`. Ohne diese Eingabe kennzeichnet das PDF die
 fehlende Klimabereinigung ausdrücklich. HAUSV beschafft keine Wetterdaten.
