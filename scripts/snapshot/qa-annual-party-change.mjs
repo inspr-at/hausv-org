@@ -37,7 +37,7 @@ try {
   const results = [];
   for (const scenario of [
     { house: 'janusbergweg-123', unit: 'top-3', label: 'Top 3', previous: 'clara.berger', current: 'daniel.leitner', oldName: 'Clara Berger', newName: 'Daniel Leitner', count: 2, excluded: 'matthias.mieter' },
-    { house: 'musterstrasse-12', unit: 'top-2', label: 'Top 2', previous: 'theresa.aichner', current: 'lena.krainer', oldName: 'Theresa Aichner', newName: 'Lena Krainer', count: 3 },
+    { house: 'musterstrasse-12', unit: 'top-2', label: 'Top 2', previous: 'theresa.aichner', current: 'lena.krainer', oldName: 'Theresa Aichner', newName: 'Lena Krainer', count: 2 },
   ]) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     if (scenario.house === 'musterstrasse-12') {

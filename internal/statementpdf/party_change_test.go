@@ -43,7 +43,10 @@ func TestDatedPartyPDFShowsOnlyItsShare(t *testing.T) {
 					t.Fatal("outgoing/heating-only party received owner forecast", doc)
 				}
 				text := strings.Join(doc.PaymentTerms, " ")
-				if !strings.Contains(text, "05.07.2026") {
+				if party == "owner" && (text != "" || !doc.LandlordCopy) {
+					t.Fatal("landlord information copy must not request payment", doc)
+				}
+				if party != "owner" && !strings.Contains(text, "05.07.2026") {
 					t.Fatal(text)
 				}
 				for _, cost := range doc.Costs {

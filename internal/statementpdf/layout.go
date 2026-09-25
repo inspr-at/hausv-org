@@ -218,8 +218,11 @@ func (l *letterLayout) summary() {
 	}
 	entries := []entry{{"Kurzfassung", pdf.Strong, 11, 21}}
 	label := "Gesamtkosten Einheit: "
-	if l.d.PartySplit {
+	if l.d.PartySplit && !d.LandlordCopy {
 		label = "Ihr Kostenanteil: "
+	}
+	if d.LandlordCopy {
+		label = "Kostenanteil laut Abrechnung: "
 	}
 	if d.PartyID == "" {
 		label = "Gesamtkosten Liegenschaft: "
