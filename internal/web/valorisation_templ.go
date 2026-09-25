@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"sort"
+	"strings"
 )
 
 type ValorisationPageData struct {
@@ -191,7 +192,7 @@ func ValorisationBody(data ValorisationPageData) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.EffectiveOn)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 619, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 620, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -209,7 +210,7 @@ func ValorisationBody(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.ResolveAttributeValue(house.Slug)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 624, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 625, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 				if templ_7745c5c3_Err != nil {
@@ -232,7 +233,7 @@ func ValorisationBody(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(house.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 624, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 625, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -306,7 +307,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue("run-" + view.Run.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 648, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 649, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 		if templ_7745c5c3_Err != nil {
@@ -319,7 +320,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(view.Run.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 648, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 649, Col: 79}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 		if templ_7745c5c3_Err != nil {
@@ -332,7 +333,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(view.Run.Input.House)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 651, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 652, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -345,7 +346,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(view.Run.EffectiveOn))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 651, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 652, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -386,7 +387,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(valorisationStatus(view.Run.Status))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 657, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 658, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -404,7 +405,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Revision %d", view.Run.Revision))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 659, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 660, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -445,7 +446,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var15 templ.SafeURL
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 674, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 675, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -458,7 +459,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(view.Run.EffectiveOn)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 674, Col: 137}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 675, Col: 137}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 			if templ_7745c5c3_Err != nil {
@@ -477,7 +478,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(group.Key)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 677, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 678, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 			if templ_7745c5c3_Err != nil {
@@ -490,7 +491,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(group.Label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 679, Col: 18}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 680, Col: 18}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -503,7 +504,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(group.Items)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 681, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 682, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -526,7 +527,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue("item-" + item.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 685, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 686, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 				if templ_7745c5c3_Err != nil {
@@ -552,7 +553,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue(item.LeaseID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 685, Col: 127}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 686, Col: 127}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 				if templ_7745c5c3_Err != nil {
@@ -566,18 +567,25 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var24 string
-				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(item.Label())
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 689, Col: 22}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+				unitLabel, partyLabel, hasParty := strings.Cut(item.Label(), " · ")
+				templ_7745c5c3_Err = UnitLabel(unitLabel).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
+				}
+				if hasParty {
+					var templ_7745c5c3_Var24 string
+					templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + partyLabel)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 693, Col: 30}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
 				}
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</strong> <span>")
 				if templ_7745c5c3_Err != nil {
@@ -586,7 +594,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(item.Reason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 692, Col: 21}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 697, Col: 21}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -600,7 +608,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var26 string
 					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.OldCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 696, Col: 36}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 701, Col: 36}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 					if templ_7745c5c3_Err != nil {
@@ -613,7 +621,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var27 string
 					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.NewCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 696, Col: 70}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 701, Col: 70}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
@@ -637,7 +645,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var28 templ.SafeURL
 					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 703, Col: 119}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 708, Col: 119}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 					if templ_7745c5c3_Err != nil {
@@ -660,7 +668,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var29 string
 					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(item.ExcludeReason)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 709, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 714, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 					if templ_7745c5c3_Err != nil {
@@ -679,7 +687,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var30 string
 					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(store.ValorisationExceptionLabels[code])
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 714, Col: 49}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 719, Col: 49}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 					if templ_7745c5c3_Err != nil {
@@ -703,7 +711,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(item.Lease.Notes)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 721, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 726, Col: 25}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
@@ -721,7 +729,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var32 templ.SafeURL
 					templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/app/settings/building/units/" + item.UnitID + "/lease"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 724, Col: 107}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 729, Col: 107}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 					if templ_7745c5c3_Err != nil {
@@ -740,7 +748,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var33 string
 					templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(view.Run.EffectiveOn))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 733, Col: 45}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 738, Col: 45}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 					if templ_7745c5c3_Err != nil {
@@ -753,7 +761,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var34 string
 					templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.ContractCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 736, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 741, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 					if templ_7745c5c3_Err != nil {
@@ -767,7 +775,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var35 string
 						templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.CapCents))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 740, Col: 40}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 745, Col: 40}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 						if templ_7745c5c3_Err != nil {
@@ -786,7 +794,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var36 string
 					templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.NewCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 746, Col: 39}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 751, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 					if templ_7745c5c3_Err != nil {
@@ -805,7 +813,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var37 string
 					templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.OldCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 761, Col: 39}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 766, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 					if templ_7745c5c3_Err != nil {
@@ -818,7 +826,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var38 string
 					templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.OldVATCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 764, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 769, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 					if templ_7745c5c3_Err != nil {
@@ -831,7 +839,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var39 string
 					templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.OldGrossCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 767, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 772, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 					if templ_7745c5c3_Err != nil {
@@ -844,7 +852,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var40 string
 					templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.NewCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 773, Col: 39}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 778, Col: 39}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 					if templ_7745c5c3_Err != nil {
@@ -857,7 +865,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var41 string
 					templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.NewVATCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 776, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 781, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 					if templ_7745c5c3_Err != nil {
@@ -870,7 +878,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var42 string
 					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMoney(item.NewGrossCents))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 779, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 784, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 					if templ_7745c5c3_Err != nil {
@@ -894,7 +902,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var43 string
 						templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseMonthName(string(item.TimingInput.TriggerMonth)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 789, Col: 76}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 794, Col: 76}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 						if templ_7745c5c3_Err != nil {
@@ -907,7 +915,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var44 string
 						templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(item.TimingInput.FinalPublishedOn.Format("02.01.2006"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 790, Col: 96}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 795, Col: 96}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 						if templ_7745c5c3_Err != nil {
@@ -925,7 +933,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var45 string
 					templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(item.WirksamOn))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 792, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 797, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 					if templ_7745c5c3_Err != nil {
@@ -938,7 +946,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var46 string
 					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(store.ValorisationTimingLabel(string(item.Timing.Mode)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 792, Col: 126}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 797, Col: 126}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 					if templ_7745c5c3_Err != nil {
@@ -968,7 +976,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var47 string
 					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(item.CollectableFrom))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 800, Col: 101}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 805, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 					if templ_7745c5c3_Err != nil {
@@ -986,7 +994,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var48 string
 						templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(item.TimingInput.NoticeIssuedOn.Format("02.01.2006"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 802, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 807, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 						if templ_7745c5c3_Err != nil {
@@ -999,7 +1007,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var49 string
 						templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(item.TimingInput.NoticeReceivedOn.Format("02.01.2006"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 803, Col: 104}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 808, Col: 104}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 						if templ_7745c5c3_Err != nil {
@@ -1028,7 +1036,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var50 string
 					templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(step)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 813, Col: 15}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 818, Col: 15}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 					if templ_7745c5c3_Err != nil {
@@ -1067,7 +1075,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var51 string
 					templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(item.OverrideReason)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 824, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 829, Col: 52}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 					if templ_7745c5c3_Err != nil {
@@ -1080,7 +1088,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var52 string
 					templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(item.OverrideBy)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 824, Col: 75}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 829, Col: 75}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 					if templ_7745c5c3_Err != nil {
@@ -1100,7 +1108,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var53 templ.SafeURL
 						templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 829, Col: 115}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 834, Col: 115}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 						if templ_7745c5c3_Err != nil {
@@ -1123,7 +1131,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var54 templ.SafeURL
 						templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 834, Col: 108}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 839, Col: 108}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 						if templ_7745c5c3_Err != nil {
@@ -1141,7 +1149,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var55 templ.SafeURL
 							templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 839, Col: 109}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 844, Col: 109}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 							if templ_7745c5c3_Err != nil {
@@ -1164,7 +1172,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var56 templ.SafeURL
 							templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 847, Col: 108}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 852, Col: 108}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 							if templ_7745c5c3_Err != nil {
@@ -1201,7 +1209,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var57 string
 					templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(view.Run.DeliveryLabel(delivery.UnitID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 866, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 871, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 					if templ_7745c5c3_Err != nil {
@@ -1214,7 +1222,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var58 string
 					templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Recipient)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 866, Col: 81}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 871, Col: 81}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 					if templ_7745c5c3_Err != nil {
@@ -1227,7 +1235,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var59 string
 					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(delivery.Attempt))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 867, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 872, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 					if templ_7745c5c3_Err != nil {
@@ -1262,7 +1270,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var62 string
 					templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(valorisationDeliveryStatus(delivery.Status))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 869, Col: 106}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 874, Col: 106}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 					if templ_7745c5c3_Err != nil {
@@ -1280,7 +1288,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var63 string
 						templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.SentAt.Format("02.01.2006 15:04"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 871, Col: 67}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 876, Col: 67}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 						if templ_7745c5c3_Err != nil {
@@ -1298,7 +1306,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var64 string
 							templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(delivery.ReceivedOn))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 873, Col: 55}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 878, Col: 55}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 							if templ_7745c5c3_Err != nil {
@@ -1311,7 +1319,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var65 string
 							templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(delivery.ReceiptDueOn))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 873, Col: 124}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 878, Col: 124}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 							if templ_7745c5c3_Err != nil {
@@ -1339,7 +1347,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var66 templ.SafeURL
 							templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/deliveries/" + delivery.ID + "/receipt"))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 878, Col: 133}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 883, Col: 133}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 							if templ_7745c5c3_Err != nil {
@@ -1352,7 +1360,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 							var templ_7745c5c3_Var67 string
 							templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue(delivery.ReceivedOn)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 879, Col: 106}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 884, Col: 106}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 							if templ_7745c5c3_Err != nil {
@@ -1372,7 +1380,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var68 string
 						templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(delivery.Error)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 885, Col: 30}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 890, Col: 30}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 						if templ_7745c5c3_Err != nil {
@@ -1405,7 +1413,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var69 string
 				templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue("approval-issue-" + view.Run.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 895, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 900, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 				if templ_7745c5c3_Err != nil {
@@ -1418,7 +1426,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var70 string
 				templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(view.Notice)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 895, Col: 88}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 900, Col: 88}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 				if templ_7745c5c3_Err != nil {
@@ -1436,7 +1444,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var71 string
 				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue("approval-issue-" + view.Run.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 897, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 902, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 				if templ_7745c5c3_Err != nil {
@@ -1449,7 +1457,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var72 string
 				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(ValorisationExceptionNotice(view.OpenExceptions))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 898, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 903, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
@@ -1472,7 +1480,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var73 string
 				templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue("approval-date-" + view.Run.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 902, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 907, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 				if templ_7745c5c3_Err != nil {
@@ -1485,7 +1493,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var74 string
 				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(view.ApprovalDate))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 902, Col: 103}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 907, Col: 103}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 				if templ_7745c5c3_Err != nil {
@@ -1509,7 +1517,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var75 templ.SafeURL
 					templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 907, Col: 96}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 912, Col: 96}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 					if templ_7745c5c3_Err != nil {
@@ -1555,7 +1563,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var78 string
 						templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.ResolveAttributeValue("approval-issue-" + view.Run.ID)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 910, Col: 59}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 915, Col: 59}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 						if templ_7745c5c3_Err != nil {
@@ -1578,7 +1586,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 						var templ_7745c5c3_Var79 string
 						templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.ResolveAttributeValue("approval-date-" + view.Run.ID)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 912, Col: 58}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 917, Col: 58}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 						if templ_7745c5c3_Err != nil {
@@ -1601,7 +1609,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var80 templ.SafeURL
 				templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 917, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 922, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
 				if templ_7745c5c3_Err != nil {
@@ -1614,7 +1622,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var81 string
 				templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue(view.Run.EffectiveOn)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 917, Col: 139}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 922, Col: 139}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
 				if templ_7745c5c3_Err != nil {
@@ -1633,7 +1641,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var82 templ.SafeURL
 				templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/send"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 920, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 925, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 				if templ_7745c5c3_Err != nil {
@@ -1652,7 +1660,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var83 templ.SafeURL
 				templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/cancel"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 926, Col: 95}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 931, Col: 95}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 				if templ_7745c5c3_Err != nil {
@@ -1675,7 +1683,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var84 string
 				templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(view.Run.CancelReason)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 931, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 936, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 				if templ_7745c5c3_Err != nil {
@@ -1698,7 +1706,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 				var templ_7745c5c3_Var85 string
 				templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(view.CreatedByName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 934, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 939, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 				if templ_7745c5c3_Err != nil {
@@ -1726,7 +1734,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var86 string
 					templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(view.Run.IndexVersion)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 940, Col: 57}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 945, Col: 57}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 					if templ_7745c5c3_Err != nil {
@@ -1745,7 +1753,7 @@ func ValorisationRun(view ValorisationRunView, preview bool) templ.Component {
 					var templ_7745c5c3_Var87 string
 					templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(view.Run.InputsSHA256)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 943, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 948, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 					if templ_7745c5c3_Err != nil {
@@ -1845,7 +1853,7 @@ func ValorisationDeadline(item store.ValorisationItem) templ.Component {
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(item.NoticeDeadline))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 956, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 961, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 		if templ_7745c5c3_Err != nil {
@@ -1858,7 +1866,7 @@ func ValorisationDeadline(item store.ValorisationItem) templ.Component {
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(item.CollectableFrom))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 956, Col: 202}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 961, Col: 202}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 		if templ_7745c5c3_Err != nil {
@@ -1901,7 +1909,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 			var templ_7745c5c3_Var95 string
 			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(caption)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 963, Col: 22}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 968, Col: 22}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 			if templ_7745c5c3_Err != nil {
@@ -1919,7 +1927,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 				var templ_7745c5c3_Var96 templ.SafeURL
 				templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(index.Source))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 967, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 972, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 				if templ_7745c5c3_Err != nil {
@@ -1932,7 +1940,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 				var templ_7745c5c3_Var97 string
 				templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(index.SeriesLabel())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 967, Col: 105}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 972, Col: 105}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 				if templ_7745c5c3_Err != nil {
@@ -1945,7 +1953,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 				var templ_7745c5c3_Var98 string
 				templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(index.Period)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 967, Col: 125}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 972, Col: 125}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 				if templ_7745c5c3_Err != nil {
@@ -1958,7 +1966,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 				var templ_7745c5c3_Var99 string
 				templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(store.ValorisationNumber(index.Value, 1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 968, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 973, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 				if templ_7745c5c3_Err != nil {
@@ -1971,7 +1979,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 				var templ_7745c5c3_Var100 string
 				templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(index.StatusLabel())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 969, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 974, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 				if templ_7745c5c3_Err != nil {
@@ -1989,7 +1997,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 					var templ_7745c5c3_Var101 templ.SafeURL
 					templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(index.PublicationSource))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 972, Col: 57}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 977, Col: 57}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
 					if templ_7745c5c3_Err != nil {
@@ -2002,7 +2010,7 @@ func ValorisationIndexTable(indices []store.ValorisationIndex, caption string) t
 					var templ_7745c5c3_Var102 string
 					templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(LeaseDate(index.PublishedOn))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 972, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 977, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 					if templ_7745c5c3_Err != nil {
@@ -2065,7 +2073,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 			var templ_7745c5c3_Var104 templ.SafeURL
 			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(data.IndexRefreshURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 992, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 997, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 			if templ_7745c5c3_Err != nil {
@@ -2105,7 +2113,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 			var templ_7745c5c3_Var105 string
 			templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(data.IndexImports[0].SeriesLabel())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1004, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 			if templ_7745c5c3_Err != nil {
@@ -2118,7 +2126,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 			var templ_7745c5c3_Var106 string
 			templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(data.IndexImports[0].FetchedAt.UTC().Format("02.01.2006, 15:04"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1004, Col: 130}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 130}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 			if templ_7745c5c3_Err != nil {
@@ -2131,7 +2139,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 			var templ_7745c5c3_Var107 string
 			templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d neu · %d revidiert · %d zur Prüfung", data.IndexImports[0].RowsAdded, data.IndexImports[0].RowsRevised, data.IndexImports[0].RowsFlagged))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1004, Col: 295}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 295}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
 			if templ_7745c5c3_Err != nil {
@@ -2149,7 +2157,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var108 templ.SafeURL
 				templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(item.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1014, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
 				if templ_7745c5c3_Err != nil {
@@ -2162,7 +2170,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var109 string
 				templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.JoinStringErrs(item.SeriesLabel())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 98}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1014, Col: 98}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var109))
 				if templ_7745c5c3_Err != nil {
@@ -2175,7 +2183,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var110 string
 				templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(item.FetchedAt.UTC().Format("02.01.2006, 15:04"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 154}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1014, Col: 154}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var110))
 				if templ_7745c5c3_Err != nil {
@@ -2188,7 +2196,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 				var templ_7745c5c3_Var111 string
 				templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d neu · %d revidiert · %d zur Prüfung", item.RowsAdded, item.RowsRevised, item.RowsFlagged))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1009, Col: 275}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1014, Col: 275}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 				if templ_7745c5c3_Err != nil {
@@ -2211,7 +2219,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 						var templ_7745c5c3_Var112 string
 						templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(change.Series)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1013, Col: 28}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1018, Col: 28}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var112))
 						if templ_7745c5c3_Err != nil {
@@ -2224,7 +2232,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 						var templ_7745c5c3_Var113 string
 						templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.JoinStringErrs(change.Period)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1013, Col: 49}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1018, Col: 49}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var113))
 						if templ_7745c5c3_Err != nil {
@@ -2237,7 +2245,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 						var templ_7745c5c3_Var114 string
 						templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(store.ValorisationNumber(change.Before, 1))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1013, Col: 96}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1018, Col: 96}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
 						if templ_7745c5c3_Err != nil {
@@ -2250,7 +2258,7 @@ func ValorisationIndexRefresh(data ValorisationPageData) templ.Component {
 						var templ_7745c5c3_Var115 string
 						templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs(store.ValorisationNumber(change.After, 1))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1013, Col: 145}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/valorisation.templ`, Line: 1018, Col: 145}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
 						if templ_7745c5c3_Err != nil {

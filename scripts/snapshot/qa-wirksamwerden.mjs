@@ -85,6 +85,13 @@ try {
    }
    await checkWidth(`help-${anchor}-${width}`,topic);
   }
+  const reserve=page.locator('#recht-mindestruecklage');
+  await reserve.locator('details').evaluateAll(nodes=>nodes.forEach(n=>n.open=true));
+  const reserveText=await reserve.innerText();
+  for(const text of ['25.09.2026', '0,90 €', '1,06 €', '1,12 €', 'Noch nicht verlautbart', 'Keine Rechtsberatung', 'entscheidet keine Ausnahme']) {
+   if(!reserveText.includes(text)) throw new Error(`Reserve guidance missing: ${text}`);
+  }
+  await checkWidth(`help-recht-mindestruecklage-${width}`,reserve);
  }
  if(errors.length) throw new Error(errors.join('\n'));
  console.log('qa-wirksamwerden ok: settings save, override/inheritance, help links, disclosures, 390/1440');

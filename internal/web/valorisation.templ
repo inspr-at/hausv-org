@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"sort"
+	"strings"
 )
 
 type ValorisationPageData struct {
@@ -686,7 +687,11 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						<summary>
 							<strong>
 								<span class="vr-item-chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
-								{ item.Label() }
+								{{ unitLabel, partyLabel, hasParty := strings.Cut(item.Label(), " · ") }}
+								@UnitLabel(unitLabel)
+								if hasParty {
+									{ " · " + partyLabel }
+								}
 							</strong>
 							<span>
 								{ item.Reason }
