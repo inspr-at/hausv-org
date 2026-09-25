@@ -1,6 +1,9 @@
 package web
 
 templ LegalHelp() {
+	<style>
+		.help-legal-rates{width:100%;border-collapse:collapse;margin-top:var(--space-4);font-size:14px}.help-legal-rates th,.help-legal-rates td{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.help-legal-rates th{font-weight:650}.help-legal-rates th:first-child{width:36%}
+	</style>
 	<section class="panel help-card" id="rechtliche-grundlagen" aria-labelledby="help-legal-title">
 		<h2 id="help-legal-title">Rechtliche Grundlagen und Entscheidungen</h2>
 		<p>Hier erläutern wir die Annahmen hinter Wertsicherung und Jahresabrechnung. Stand und Quellenabruf: 24.09.2026. <strong>Keine Rechtsberatung.</strong> Die konkrete Vertragsklausel und besondere Vereinbarungen müssen gesondert geprüft werden.</p>
@@ -53,7 +56,7 @@ templ LegalHelp() {
 	<section class="panel help-card" id="recht-mindestruecklage" aria-labelledby="help-reserve-title">
 		<h2 id="help-reserve-title">Mindest-Rücklage (§ 31 WEG)</h2>
 		<p>Stand und Quellenabruf: 25.09.2026. <strong>Keine Rechtsberatung.</strong> Der Mindestbetrag gilt je m² Nutzfläche aller Wohnungseigentumsobjekte und Monat.</p>
-		<table>
+		<table class="help-legal-rates">
 			<thead><tr><th scope="col">Zeitraum</th><th scope="col">Mindestbetrag</th></tr></thead>
 			<tbody>
 				<tr><th scope="row">Vor Juli 2022</th><td>Kein gesetzlicher Euro-Mindestbetrag; angemessene Rücklage</td></tr>

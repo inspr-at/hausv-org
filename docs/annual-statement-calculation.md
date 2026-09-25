@@ -389,7 +389,9 @@ die Pflicht zur angemessenen Rücklage bleibt bestehen. Ab Jänner 2028 ist bis
 zur Aufnahme des nächsten veröffentlichten Satzes keine vollständige Prüfung
 möglich. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
 Neue Läufe mit Rücklage verwenden Berechnungsversion `6` und speichern die
-angewendeten Sätze für Portal und PDF. Replay von Version `1` bis `5` behält
+angewendeten Sätze für Portal und PDF. Version `6` umfasst auch die vereinbarten
+Anteile aus Version `5` und die datierten Parteien aus Version `4`.
+Replay von Version `1` bis `5` behält
 deren ursprüngliche Prüfung mit konstant 1,12 € bei; gespeicherte Abrechnungen
 bleiben unverändert.
 Eine spätere Erweiterung der Satztabelle braucht eine neue Berechnungsversion,
@@ -564,7 +566,7 @@ SQLite-Migration 0067 und PostgreSQL-Migration 0040 führen die Tabellen ein;
 PostgreSQL erzwingt RLS. `dbmove` übernimmt Tabellen und Freigaben gemeinsam.
 
 Die WEG-Empfängerliste bleibt auf Eigentümer beschränkt; Mietparteien kommen
-aus den gespeicherten Mietverträgen. Teilt ein v4-/v5-WEG-Lauf eine Einheit
+aus den gespeicherten Mietverträgen. Teilt ein WEG-Lauf ab Version `4` eine Einheit
 zwischen aufeinanderfolgenden Eigentümern auf, sperrt v1 die Mieterableitung
 mit einem Hinweis auf die gesondert zuzuordnenden Vermieterzeiträume und Akontos.
 Beide Eigentümer und ihre Zeiträume stehen bereits in der geschlossenen Zeile;
