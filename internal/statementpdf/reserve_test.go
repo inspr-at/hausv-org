@@ -48,3 +48,37 @@ func TestReserveRenderedInMeasuredLetter(t *testing.T) {
 		t.Fatal("MRG reserve", lines)
 	}
 }
+
+func TestReservePDFUsesSavedEffectiveRates(t *testing.T) {
+	for _, tc := range []struct {
+		name, start, end string
+		want             []string
+	}{
+		{"2025", "2025-01-01", "2025-12-31", []string{"1,06 €", "01.01.2025 bis 31.12.2025"}},
+		{"2026", "2026-01-01", "2026-12-31", []string{"1,12 €", "01.01.2026 bis 31.12.2026"}},
+		{"change", "2025-07-01", "2026-06-30", []string{"1,06 €", "01.07.2025 bis 31.12.2025", "1,12 €", "01.01.2026 bis 30.06.2026"}},
+		{"unpublished", "2028-01-01", "2028-12-31", []string{"nicht vollständig geprüft"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			run := fixture()
+			run.CalculationVersion = store.AnnualStatementCalculationVersionReserveRates
+			run.Input.Structure.Legal.Regime = "weg"
+			reserve, ok := store.AnnualStatementReserveBalance(nil, store.AnnualStatementPeriod{StartsOn: tc.start, EndsOn: tc.end}, []store.Unit{{UsableAreaM2Hundredths: 10000, UsableAreaRecorded: true}})
+			if !ok {
+				t.Fatal("reserve balance")
+			}
+			run.Result.Reserve = &reserve
+			// Rendering uses the saved result even when the input dates differ.
+			run.Input.Period.StartsOn = "2030-01-01"
+			text := strings.Join(ReserveLines(run, "a"), "\n")
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Errorf("missing %q in %q", want, text)
+				}
+			}
+			if tc.name == "2025" && strings.Contains(text, "1,12") {
+				t.Fatal("PDF used the 2026 rate")
+			}
+		})
+	}
+}

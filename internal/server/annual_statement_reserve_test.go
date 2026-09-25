@@ -52,3 +52,36 @@ func TestAnnualStatementReserveIsVisibleOnlyForWEG(t *testing.T) {
 		t.Fatal("missing reserve audit")
 	}
 }
+
+func TestAnnualStatementReserveHintsUseAppliedRates(t *testing.T) {
+	for _, tc := range []struct {
+		name, start, end, want string
+		contribution           int64
+	}{
+		{"2025 threshold", "2025-01-01", "2025-12-31", "Die Zuführungen erreichen die Mindest-Rücklage: 1,06 € je m² und Monat (01.01.2025 bis 31.12.2025).", 127200},
+		{"2026 threshold", "2026-01-01", "2026-12-31", "Die Zuführungen erreichen die Mindest-Rücklage: 1,12 € je m² und Monat (01.01.2026 bis 31.12.2026).", 134400},
+		{"change", "2025-07-01", "2026-06-30", "Die Zuführungen erreichen die Mindest-Rücklage: 1,06 € je m² und Monat (01.07.2025 bis 31.12.2025); 1,12 € je m² und Monat (01.01.2026 bis 30.06.2026).", 130800},
+		{"below threshold", "2025-01-01", "2025-12-31", "Die Zuführungen liegen unter der Mindest-Rücklage: 1,06 € je m² und Monat (01.01.2025 bis 31.12.2025) (WEG 2002 § 31).", 127199},
+		{"before statutory amount", "2021-01-01", "2021-12-31", "Vor 01.07.2022 gab es keinen gesetzlichen Mindestbetrag je m². Eine angemessene Rücklage war dennoch zu bilden.", 100},
+		{"unknown future rate", "2028-01-01", "2028-12-31", "Die Mindest-Rücklage konnte für diesen Zeitraum nicht vollständig geprüft werden.", 200000},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := newTestPortalApp(t, userProfile{Email: "manager@example.com", Role: roleManager, Tenants: []string{"demo"}, AuthMethods: defaultAuthMethods()})
+			repos := testRepositories(a, "demo")
+			period := store.AnnualStatementPeriod{Year: 2025, StartsOn: tc.start, EndsOn: tc.end, UpdatedBy: "manager@example.com"}
+			if _, err := repos.annualStatementPeriods.Save(period); err != nil {
+				t.Fatal(err)
+			}
+			if err := repos.annualStatementPeriods.SaveLegal(2025, store.AnnualStatementLegalSettings{Regime: "weg", HeatingConsumptionPercent: 70}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := repos.annualStatementReserve.Add(store.AnnualStatementReserveEntry{PeriodYear: 2025, Kind: store.ReserveKindContribution, EntryDate: tc.start, AmountCents: tc.contribution, CreatedBy: "manager@example.com"}); err != nil {
+				t.Fatal(err)
+			}
+			view, ok := annualStatementReserveView(repos.annualStatementReserve, 2025, period, []store.Unit{{UsableAreaRecorded: true, UsableAreaM2Hundredths: 10000}}, nil, nil)
+			if !ok || view.MinimumHint != tc.want {
+				t.Fatalf("hint=%q want=%q", view.MinimumHint, tc.want)
+			}
+		})
+	}
+}

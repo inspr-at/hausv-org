@@ -22,8 +22,8 @@ func TestTenantStatementRoutesArchiveDeliveryAndDenials(t *testing.T) {
 		t.Fatal(err)
 	}
 	run := createArchiveDemoRun(t, a, repos)
-	if run.CalculationVersion != 5 || run.Approval == nil {
-		t.Fatal("tenant statements must derive from the approved v5 WEG run")
+	if run.CalculationVersion != store.AnnualStatementCalculationVersionReserveRates || run.Approval == nil {
+		t.Fatal("tenant statements must derive from the approved WEG run with dated reserve rates")
 	}
 	for _, party := range run.Input.Parties {
 		if !party.Owner {
@@ -41,7 +41,7 @@ func TestTenantStatementRoutesArchiveDeliveryAndDenials(t *testing.T) {
 		t.Fatalf("creation %s: %v %+v", create.Header().Get("Location"), err, list)
 	}
 	s := list[0]
-	if s.Source.ID != run.ID || s.Source.CalculationVersion != 5 || s.Source.Approval == nil || len(s.Accounts) == 0 || len(s.Accounts[0].Parties) == 0 {
+	if s.Source.ID != run.ID || s.Source.CalculationVersion != run.CalculationVersion || s.Source.Approval == nil || len(s.Accounts) == 0 || len(s.Accounts[0].Parties) == 0 {
 		t.Fatal("tenant snapshot lost its approved owner-only source or lease parties")
 	}
 	route := "/app/settings/tenant-statements/" + s.ID

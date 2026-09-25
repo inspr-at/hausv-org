@@ -8,6 +8,7 @@ import (
 
 const AnnualStatementCalculationVersion = 2
 const AnnualStatementCalculationVersionAgreed = 5
+const AnnualStatementCalculationVersionReserveRates = 6
 
 // AnnualStatementRunInput is an immutable copy of the facts used by a run.
 // Documents contains only originals verified as readable by the repository.
@@ -121,13 +122,34 @@ func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatement
 // Replay dispatches by the stored algorithm version; version 1 retains its
 // original single-key heating allocation even when current settings differ.
 func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
+	result, issues := replayAnnualStatementRun(run)
+	if len(issues) == 0 && result.Reserve != nil && run.CalculationVersion < AnnualStatementCalculationVersionReserveRates {
+		// Preserve the original constant-rate check of stored v1–v5 runs.
+		// New runs use v6; viewing an approved result never rewrites history.
+		units := make([]Unit, 0, len(run.Input.Structure.UnitBases))
+		for _, basis := range run.Input.Structure.UnitBases {
+			units = append(units, Unit{UsableAreaM2Hundredths: basis.UsableAreaM2Hundredths, UsableAreaRecorded: basis.UsableAreaRecorded})
+		}
+		legacy := AnnualStatementReserveResult{ContributionCents: result.Reserve.ContributionCents}
+		applyReserveMinimumRates(&legacy, run.Input.Period, units, []AnnualStatementReserveMinimumRate{{StartsOn: run.Input.Period.StartsOn, EndsOn: run.Input.Period.EndsOn, CentsPerSquareMetreMonth: 112}})
+		result.Reserve.MinimumMonthlyCents = legacy.MinimumMonthlyCents
+		result.Reserve.MinimumPeriodCents = legacy.MinimumPeriodCents
+		result.Reserve.MinimumWarning = legacy.MinimumWarning
+		result.Reserve.AreaIncomplete = legacy.AreaIncomplete
+		result.Reserve.MinimumRates = nil
+		result.Reserve.MinimumUnavailable = false
+	}
+	return result, issues
+}
+
+func replayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
 	if run.CalculationVersion < AnnualStatementCalculationVersionAgreed && annualStatementHasAgreedShares(run.Input) {
 		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: "calculation-version"}}
 	}
 	switch run.CalculationVersion {
 	case AnnualStatementCalculationVersionParties:
 		return calculateAnnualStatementPartyRun(run.Input)
-	case AnnualStatementCalculationVersionAgreed:
+	case AnnualStatementCalculationVersionAgreed, AnnualStatementCalculationVersionReserveRates:
 		return CalculateAnnualStatementRun(run.Input)
 	case 1:
 		return calculateAnnualStatementRun(run.Input, false)

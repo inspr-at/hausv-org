@@ -371,12 +371,29 @@ bleibt ohne Umsatzsteuerausweis `2`, mit Umsatzsteuerausweis gilt `3`.
 Der Rücklageblock steht im Parteienbrief nach Kostentabelle und Einheitsbasis,
 vor den Hinweisen, auf demselben gemessenen Satzspiegel wie der übrige Brief.
 
-Die Mindestprüfung warnt nur. Ab 2026 gilt 1,12 €/m²/Monat Nutzfläche
-(WEG 2002 § 31; 0,90 × 128,1 / 102,6 = 1,1237, angesetzt mit 1,12; Quelle WKO/ÖVI).
+Die Mindestprüfung warnt nur. Die datierte Tabelle nach § 31 Abs. 1 und 5 WEG
+setzt ab 01.07.2022 0,90 €/m²/Monat, ab 01.01.2024 1,06 €/m²/Monat und
+ab 01.01.2026 1,12 €/m²/Monat Nutzfläche an. Quellenabruf: 25.09.2026;
+[RIS · WEG-Novelle 2022](https://www.ris.bka.gv.at/eli/bgbl/i/2021/222),
+[WKO · Veröffentlichung für 2026](https://www.wko.at/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-wohnungseigentumsgesetz).
+Die Anpassung erfolgt alle zwei Jahre anhand des Juni-VPI 2020 des Vorjahres
+gegenüber Juni 2021 (102,6), ausgehend von 0,90 €; 2026 ergibt das
+0,90 × 128,1 / 102,6 = 1,12368421, gerundet 1,12 €.
 Fläche ist die Summe der erfassten Nutzflächen der Periode in Hundertstel m².
-Ein Rest von 0,50 Cent wird abgerundet. Zuführungen unter
-`Monatsminimum × Monate der Periode` erzeugen den Hinweis, der Schwellenwert
-selbst nicht. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+Für jeden berührten Kalendermonat wird der damals gültige Satz verwendet und
+das Monatsminimum auf Cent gerundet; ein Rest von 0,50 Cent wird abgerundet.
+Zuführungen unter der Summe dieser Monatsminima erzeugen den Hinweis, der
+Schwellenwert selbst nicht. Die Anzeige nennt die tatsächlich verwendeten
+Sätze samt Teilzeiträumen. Vor Juli 2022 wird kein Euro-Mindestbetrag angesetzt;
+die Pflicht zur angemessenen Rücklage bleibt bestehen. Ab Jänner 2028 ist bis
+zur Aufnahme des nächsten veröffentlichten Satzes keine vollständige Prüfung
+möglich. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+Neue Läufe mit Rücklage verwenden Berechnungsversion `6` und speichern die
+angewendeten Sätze für Portal und PDF. Replay von Version `1` bis `5` behält
+deren ursprüngliche Prüfung mit konstant 1,12 € bei; gespeicherte Abrechnungen
+bleiben unverändert.
+Eine spätere Erweiterung der Satztabelle braucht eine neue Berechnungsversion,
+damit auch das Replay bisher nicht prüfbarer Zeiträume unverändert bleibt.
 
 Im Folgejahr füllt der jüngste freigegebene Vorjahreslauf die leeren Akontofelder
 mit zwölf Monatsbeträgen vor. Es bleibt ausdrücklich ein ungespeicherter
