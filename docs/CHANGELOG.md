@@ -2,6 +2,12 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260925055219.0.0] - 2026-09-25
+
+### Verbessert
+
+- Ladesteuerung per Telegram wirkt nur auf Liegenschaften, für die die verknüpfte Person berechtigt ist; bei mehreren fragt der Bot nach.
+
 ## [260925041115.0.0] - 2026-09-25
 
 ### Verbessert
