@@ -29,6 +29,7 @@ type ValorisationRunView struct {
 	Groups     []ValorisationGroupView
 	Deliveries []store.ValorisationDelivery
 	OpenExceptions int
+	ApprovalDate string
 	Notice string
 }
 type ValorisationGroupView struct {
@@ -886,13 +887,18 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					 Bitte zuerst prüfen oder mit Begründung ausschließen.
 				</p>
 			}
+			if view.Run.Status == "draft" && view.ApprovalDate != "" {
+				<p class="vr-note" id={ "approval-date-" + view.Run.ID }>Freigabe ab { LeaseDate(view.ApprovalDate) } möglich.</p>
+			}
 			<div class="vr-actions">
 				if view.Run.Status=="draft" {
 					if view.CanApprove {
 						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }>
-							<button class={ "button", templ.KV("primary", view.OpenExceptions == 0), templ.KV("ghost", view.OpenExceptions > 0) } type="submit" disabled?={ view.OpenExceptions > 0 }
+							<button class={ "button", templ.KV("primary", view.OpenExceptions == 0 && view.ApprovalDate == ""), templ.KV("ghost", view.OpenExceptions > 0 || view.ApprovalDate != "") } type="submit" disabled?={ view.OpenExceptions > 0 || view.ApprovalDate != "" }
 								if view.OpenExceptions > 0 {
 									aria-describedby={ "approval-issue-" + view.Run.ID }
+								} else if view.ApprovalDate != "" {
+									aria-describedby={ "approval-date-" + view.Run.ID }
 								}
 							>Freigeben und archivieren</button>
 						</form>

@@ -49,6 +49,10 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 	if strings.Contains(notice.Body.String(), "clause_unreviewed") {
 		t.Fatal("raw exception code in notice")
 	}
+	forgedNotice := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"?notice_run="+run.ID+"&notice=UntrustedNoticeText", nil)
+	if forgedNotice.Code != http.StatusOK || strings.Contains(forgedNotice.Body.String(), "UntrustedNoticeText") {
+		t.Fatal("untrusted notice text must not be reflected")
+	}
 	unchanged, _, err := repo.Get(run.ID)
 	if err != nil || unchanged.Status != "draft" {
 		t.Fatal("blocked approval changed the run", err)

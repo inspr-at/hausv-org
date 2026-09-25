@@ -105,14 +105,21 @@ func TestValorisationOpenExceptions(t *testing.T) {
 		{Exceptions: []string{"no_clause"}, Excluded: true},
 		{Exceptions: []string{"letter_too_early"}, WirksamOn: "2026-04-01"},
 	}}
-	if got := run.OpenExceptionCount(mustDate("2026-03-31")); got != 2 {
-		t.Fatalf("open items before effective date: %d", got)
+	if got := run.OpenExceptionCount(); got != 1 {
+		t.Fatalf("date locks must not be counted as reviewable exceptions: %d", got)
 	}
-	if got := run.OpenExceptionCount(mustDate("2026-04-01")); got != 1 {
-		t.Fatalf("elapsed letter exception must not block: %d", got)
+	if got := run.ApprovalNotBefore(mustDate("2026-03-31")); got != "2026-04-01" {
+		t.Fatalf("separate date lock: %s", got)
 	}
-	if got := run.Items[0].ApprovalException(mustDate("2026-04-01")); got != "Die Klausel muss geprüft werden." {
+	if got := run.ApprovalNotBefore(mustDate("2026-04-01")); got != "" {
+		t.Fatalf("elapsed date lock: %s", got)
+	}
+	if got := run.Items[0].ApprovalException(); got != "Die Klausel muss geprüft werden." {
 		t.Fatal(got)
+	}
+	run.Items[0].Outcome, run.Items[0].Group = "unchanged", "unchanged"
+	if run.OpenExceptionCount() != 0 {
+		t.Fatal("unchanged items skipped by approval must not block the UI")
 	}
 }
 

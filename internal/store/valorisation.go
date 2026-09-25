@@ -111,14 +111,18 @@ var ValorisationExceptionLabels = map[string]string{
 	"letter_too_early":       "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.",
 }
 
-// ApprovalException rechecks time-only exceptions in an otherwise frozen draft.
-// Excluded items and letters whose effective date has arrived no longer block.
-func (i ValorisationItem) ApprovalException(now time.Time) string {
-	if i.Excluded {
+func (i ValorisationItem) NeedsApproval() bool {
+	return !i.Excluded && (i.Outcome != "unchanged" || i.Group == "exception")
+}
+
+// ApprovalException names reviewable exceptions. Letter timing remains the
+// authority for date locks; waiting for a date is not a contractual review.
+func (i ValorisationItem) ApprovalException() string {
+	if !i.NeedsApproval() {
 		return ""
 	}
 	for _, code := range i.Exceptions {
-		if code == "letter_too_early" && i.WirksamOn != "" && now.Format(time.DateOnly) >= i.WirksamOn {
+		if code == "letter_too_early" {
 			continue
 		}
 		if label := ValorisationExceptionLabels[code]; label != "" {
@@ -132,14 +136,25 @@ func (i ValorisationItem) ApprovalException(now time.Time) string {
 	return ""
 }
 
-func (r ValorisationRun) OpenExceptionCount(now time.Time) int {
+func (r ValorisationRun) OpenExceptionCount() int {
 	count := 0
 	for _, item := range r.Items {
-		if item.ApprovalException(now) != "" {
+		if item.ApprovalException() != "" {
 			count++
 		}
 	}
 	return count
+}
+
+// ApprovalNotBefore is a separate UI hint for the existing letter timing gate.
+func (r ValorisationRun) ApprovalNotBefore(now time.Time) string {
+	date := ""
+	for _, item := range r.Items {
+		if item.NeedsApproval() && item.WirksamOn > now.Format(time.DateOnly) && item.WirksamOn > date {
+			date = item.WirksamOn
+		}
+	}
+	return date
 }
 
 func (i *ValorisationItem) exception(code string) {
@@ -166,7 +181,7 @@ func (i *ValorisationItem) missingIndex(series indexation.Series, period string,
 		problem = "Endgültiger Indexwert oder sein Veröffentlichungsnachweis fehlt zum Stichtag."
 	}
 	i.Reason = fmt.Sprintf("%s · %s: %s", (ValorisationIndex{Series: string(series)}).SeriesLabel(), label, problem)
-	i.Explanation[len(i.Explanation)-1] = i.Reason
+	i.Explanation = append(i.Explanation, i.Reason)
 }
 
 // PreviewValorisation is the I/O-free adapter. Every rent decision and both
@@ -342,7 +357,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			if errors.As(err, &missing) {
 				item.missingIndex(missing.Series, missing.Period, false)
 			} else if len(item.Exceptions) == 0 {
-				item.exception("clause_invalid")
+				item.exception("index_missing")
 			}
 			return finishValorisationItem(item)
 		}

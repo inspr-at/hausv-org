@@ -313,10 +313,10 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 	included := 0
 	run.ApprovedBy, run.ApprovedAt = actor.Email, now.UTC()
 	for idx, item := range run.Items {
-		if item.Excluded || item.Outcome == "unchanged" && item.Group != "exception" {
+		if !item.NeedsApproval() {
 			continue
 		}
-		if issue := item.ApprovalException(now); issue != "" {
+		if issue := item.ApprovalException(); issue != "" {
 			return run, fmt.Errorf("Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: %s", issue)
 		}
 		item, err = ValorisationLetterTiming(item, now)

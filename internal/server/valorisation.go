@@ -108,9 +108,9 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 				a.valorisationError(w, err)
 				return
 			}
-			view := web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run), Deliveries: deliveries, OpenExceptions: run.OpenExceptionCount(now)}
+			view := web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run), Deliveries: deliveries, OpenExceptions: run.OpenExceptionCount(), ApprovalDate: run.ApprovalNotBefore(now)}
 			if r.URL.Query().Get("notice_run") == run.ID {
-				view.Notice = r.URL.Query().Get("notice")
+				view.Notice = valorisationApprovalNotice(run, r.URL.Query().Get("notice"), now)
 			}
 			page.Runs = append(page.Runs, view)
 		}
@@ -167,9 +167,7 @@ func (a *app) approveValorisation(w http.ResponseWriter, r *http.Request, ac aut
 			return
 		}
 		logError("valorisation approval failed", err)
-		id := r.PathValue("runID")
-		query := url.Values{"notice_run": {id}, "notice": {valorisationErrorMessage(err)}}
-		http.Redirect(w, r, "/"+ac.tenant.Slug+"/app/settings/valorisation?"+query.Encode()+"#run-"+id, http.StatusSeeOther)
+		redirectValorisationNotice(w, r, r.PathValue("runID"), valorisationApprovalErrorCode(err))
 		return
 	}
 	a.auditValorisation(ac, run, "valorisation_run.approve", "Wertsicherung freigegeben", nil)
@@ -384,7 +382,60 @@ func (a *app) sendValorisation(w http.ResponseWriter, r *http.Request, ac authCt
 	redirectValorisation(w, r, run.ID)
 }
 func redirectValorisation(w http.ResponseWriter, r *http.Request, id string) {
-	http.Redirect(w, r, "/app/settings/valorisation#run-"+id, http.StatusSeeOther)
+	redirectValorisationNotice(w, r, id, "")
+}
+func redirectValorisationNotice(w http.ResponseWriter, r *http.Request, id, code string) {
+	target := "/app/settings/valorisation"
+	if code != "" {
+		target += "?" + (url.Values{"notice_run": {id}, "notice": {code}}).Encode()
+	}
+	http.Redirect(w, r, target+"#run-"+id, http.StatusSeeOther)
+}
+func valorisationApprovalErrorCode(err error) string {
+	switch {
+	case strings.HasPrefix(err.Error(), "Ausnahmen"):
+		return "exceptions"
+	case strings.HasPrefix(err.Error(), "Vier-Augen"):
+		return "four-eyes"
+	case err == store.ErrValorisationConflict:
+		return "changed"
+	case strings.HasPrefix(err.Error(), "Indexwerte wurden berichtigt"):
+		return "indices"
+	case strings.HasPrefix(err.Error(), "Schreiben"):
+		return "timing"
+	case strings.HasPrefix(err.Error(), "Keine freigabefähige"):
+		return "empty"
+	}
+	return "failed"
+}
+func valorisationApprovalNotice(run store.ValorisationRun, code string, now time.Time) string {
+	switch code {
+	case "exceptions":
+		for _, item := range run.Items {
+			if issue := item.ApprovalException(); issue != "" {
+				return "Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: " + issue
+			}
+		}
+	case "four-eyes":
+		return "Vier-Augen-Regel: eine andere Person muss freigeben."
+	case "changed":
+		return store.ErrValorisationConflict.Error()
+	case "indices":
+		return "Indexwerte wurden berichtigt. Bitte einen neuen Lauf berechnen."
+	case "timing":
+		for _, item := range run.Items {
+			if item.NeedsApproval() {
+				if _, err := store.ValorisationLetterTiming(item, now); err != nil {
+					return valorisationErrorMessage(err)
+				}
+			}
+		}
+	case "empty":
+		return "Keine freigabefähige Anpassung."
+	case "failed":
+		return "Wertsicherung konnte nicht abgeschlossen werden. Bitte Eingaben, Ausnahmen und Freigabestatus prüfen."
+	}
+	return ""
 }
 func (a *app) valorisationError(w http.ResponseWriter, err error) {
 	logError("valorisation action failed", err)
