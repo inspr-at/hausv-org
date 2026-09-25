@@ -56,7 +56,7 @@ try {
 
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
-  assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
+  assert.equal(await unitRows.first().locator('th').innerText(), 'Top\u00a01');
   assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
   assert.equal(await page.locator('.annual-unit-group[aria-label="Top 3"] .annual-unit-row').count(), 2, 'Owner change has one row per party');
   assert.match(await run.locator('.subhead').first().innerText(), /Vera Verwalter/);

@@ -45,7 +45,7 @@ try {
  await top.locator('input[name="statement_on"]').fill('2026-06-20');
  await top.getByRole('button',{name:'Mieterabrechnung erstellen',exact:true}).click();
  const statement=panel.locator('article').first();await statement.waitFor();
- assert((await statement.innerText()).includes('Top 2'));
+ assert.equal(await statement.locator('h3').innerText(), 'Top\u00a02');
  const pdfHref=await statement.getByRole('link',{name:'PDF-Vorschau'}).first().getAttribute('href');
  const draft=await context.request.get(new URL(pdfHref,baseURL).href);assert.equal(draft.status(),200);await writeFile(`${out}/tenant-draft.pdf`,await draft.body());
  await statement.getByRole('button',{name:'Mieterabrechnung freigeben',exact:true}).click();

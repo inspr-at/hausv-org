@@ -101,7 +101,7 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 				for _,unit := range data.Units {
 					<details class="ts-unit">
 						<summary>
-							<span class="ts-unit-name">{ unit.Label }</span>
+							<span class="ts-unit-name">@UnitLabel(unit.Label)</span>
 							if unit.Active {
 								<span class="ts-chip ok">Mietverwaltung aktiv</span>
 								if unit.OwnerName != "" {
@@ -184,7 +184,7 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 					for _,s := range data.Statements {
 						<article class="ts-statement">
 							<div class="ts-statement-head">
-								<h3>{ s.Label }</h3>
+								<h3>@UnitLabel(s.Label)</h3>
 								<time>{ s.Date }</time>
 								@tenantStatementChip(s)
 							</div>

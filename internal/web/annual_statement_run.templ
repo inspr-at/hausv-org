@@ -476,7 +476,7 @@ if data.SendIssue != "" {
                             for partyIndex, document := range annualStatementPartyRows(unit) {
                                 <tr class="annual-unit-row" role="row">
                                     if partyIndex == 0 {
-                                        <th scope="row" role="rowheader"><span class="annual-unit-value">{ unit.Label }</span></th>
+                                        <th scope="row" role="rowheader"><span class="annual-unit-value">@UnitLabel(unit.Label)</span></th>
                                     } else {
                                         <td role="cell" class="annual-unit-continuation"><span class="sr-only">{ unit.Label }</span></td>
                                     }
