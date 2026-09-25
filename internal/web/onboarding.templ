@@ -190,7 +190,7 @@ templ OnboardingStepIdentity(data OnboardingPageData) {
 			</select></label>
 		}
 		if data.HasHomeUnit {
-			<div class="home-identity-field"><span>Zugeordnete offizielle Einheit</span><input type="hidden" name="unit_id" value={ data.HomeUnitID }/><div class="home-identity-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Einheit; technische Freigaben bleiben separat.</small></div>
+			<div class="home-identity-field"><span>Zugeordnete offizielle Einheit</span><input type="hidden" name="unit_id" value={ data.HomeUnitID }/><div class="home-identity-readonly"><strong>@UnitLabel(data.HomeUnitLabel)</strong><small>Diesem Hausprofil zugeordnet</small></div><small class="home-identity-field-help">Die Sichtbarkeit folgt dieser Einheit; technische Freigaben bleiben separat.</small></div>
 		} else if data.HasUnitOptions {
 			<div class="home-identity-field" data-home-unit-field><label><span>Zugeordnete offizielle Einheit</span><select name="unit_id" required aria-describedby="home-onboarding-unit-help">
 				for _, option := range data.UnitOptions {
@@ -284,7 +284,7 @@ templ OnboardingStepMappings(data OnboardingPageData) {
 templ OnboardingStepFinish(data OnboardingPageData) {
 	<header class="onboarding-card-head" data-home-identity="onboarding-summary" { onboardingSummaryLabel(data)... }><span class="eyebrow">Ihr Zuhause ist startklar</span><h1 data-home-display-name>{ data.HouseholdName }</h1>
 		if data.HasHomeUnit {
-			<span class="onboarding-home-unit" data-home-unit-label>{ data.HomeUnitLabel }</span>
+			<span class="onboarding-home-unit" data-home-unit-label>@UnitLabel(data.HomeUnitLabel)</span>
 		}
 		<p>Alles bleibt im sicheren Beobachtungsmodus. Sie gehen in Ihrem Tempo weiter.</p>
 	</header>

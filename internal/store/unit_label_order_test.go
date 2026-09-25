@@ -5,6 +5,18 @@ import (
 	"testing"
 )
 
+func TestUnitLabelTextKeepsTheNumberWithItsName(t *testing.T) {
+	if got := UnitLabelText("Top 3"); got != "Top\u00a03" {
+		t.Fatalf("Top 3 = %q", got)
+	}
+	if got := UnitLabelText("Stellplatz 11"); got != "Stellplatz\u00a011" {
+		t.Fatalf("Stellplatz 11 = %q", got)
+	}
+	if got := UnitLabelText("Keller"); got != "Keller" {
+		t.Fatalf("Keller = %q", got)
+	}
+}
+
 func TestUnitLabelLessOrdersNumbersLikeAPersonReadsThem(t *testing.T) {
 	labels := []string{"Top 10", "Top 2", "Stellplatz 11", "Top 1", "Stellplatz 2", "Top 21", "Keller"}
 	sort.Slice(labels, func(i, j int) bool { return UnitLabelLess(labels[i], labels[j]) })

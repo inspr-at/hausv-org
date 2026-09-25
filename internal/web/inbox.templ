@@ -231,7 +231,7 @@ templ InboxQueueItem(item InboxItem, queueQuery string) {
 		<span class="queue-place">
 			{ item.House }
 			if item.Unit != "" {
-				{ " · " }{ item.Unit }
+				{ " · " }@UnitLabel(item.Unit)
 			}
 		</span><span class="queue-status"><span class={ "status-pill", item.StatusTone } title={ item.Proposal }>{ item.Status }</span></span>
 	</a>
@@ -361,7 +361,7 @@ templ InboxCaseWorkflowContent(item InboxCase) {
 							<strong>
 								{ item.HouseLabel }
 								if item.Unit != "" {
-									{ " · " }{ item.Unit }
+									{ " · " }@UnitLabel(item.Unit)
 								}
 							</strong>
 							if item.Occupancy != "" {

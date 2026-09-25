@@ -73,10 +73,10 @@ func TestTruncateIssueDescription(t *testing.T) {
 }
 
 func TestIssueLocationLabelForManagementDropsOwnUnitPrefix(t *testing.T) {
-	if got := IssueLocationLabel("own-unit", "Top 7"); got != "Eigene Einheit · Top 7" {
+	if got := IssueLocationLabel("own-unit", "Top 7"); got != "Eigene Einheit · Top\u00a07" {
 		t.Fatalf("resident label = %q", got)
 	}
-	if got := IssueLocationLabelForManagement("own-unit", "Top 7"); got != "Top 7" {
+	if got := IssueLocationLabelForManagement("own-unit", "Top 7"); got != "Top\u00a07" {
 		t.Fatalf("management label = %q", got)
 	}
 	if got := IssueLocationLabelForManagement("own-unit", ""); got != "Einheit" {

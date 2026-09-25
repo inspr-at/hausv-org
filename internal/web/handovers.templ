@@ -118,7 +118,7 @@ templ HandoverCard(item HandoverItem) {
 	<article class="panel handover-card" id={ "handover-" + item.ID }>
 		<header class="handover-head"><div><div class="handover-meta"><span class={ "pill", item.StatusClass }>{ item.Status }</span><span>{ item.Type }</span></div><h3>{ item.Title }</h3><p class="handover-place">
 			if item.HasUnit {
-				<span class="handover-unit">{ item.UnitLabel }</span>
+				<span class="handover-unit">@UnitLabel(item.UnitLabel)</span>
 			}
 			if item.HasScheduledAt {
 				<span class="handover-date">@PortalIcon("calendar"){ item.ScheduledAt }</span>

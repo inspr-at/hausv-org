@@ -1,0 +1,9 @@
+package web
+
+import "github.com/inspr-at/hausv-org/internal/store"
+
+// UnitLabel keeps the name and number of a unit on one line wherever a
+// unit label is shown. The stored value stays an ordinary space.
+templ UnitLabel(label string) {
+	<span class="unit-label" style="white-space:nowrap;hyphens:manual">{ store.UnitLabelText(label) }</span>
+}
