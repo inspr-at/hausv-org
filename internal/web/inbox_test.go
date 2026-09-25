@@ -30,7 +30,7 @@ func TestInboxPageRendersQueueCaseAndScopedControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Liegenschaft, Frist — bitte prüfen", "htmx.min.js", "/assets/inbox.js?v="} {
+	for _, want := range []string{"class=\"queue\"", "class=\"case\"", "class=\"conf\"", "class=\"bar\"", "2 von 37", "Telefonnotiz", "Übernehmen &amp; weiter", "J/K Wechseln", "Vorschlag liegt vor", "Heute automatisch erledigt · 1", "Zielbetrieb lokal im Büro", "Platzhalter ohne Wert: Liegenschaft, Frist — bitte prüfen", "htmx.min.js", "/assets/inbox.js?v="} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("render missing %q", want)
 		}
@@ -114,6 +114,9 @@ func TestInboxSuggestionStatesAndUnassignedCase(t *testing.T) {
 	body := out.String()
 	if !strings.Contains(body, "Liegenschaft zuordnen") || strings.Contains(body, "Vorschlag anfordern") || strings.Contains(body, "Einordnung") {
 		t.Fatalf("unexpected unassigned case controls: %s", body)
+	}
+	if strings.Contains(body, "von 0") || strings.Contains(body, "0 von") {
+		t.Fatalf("pager must stay hidden when the case is outside the queue: %s", body)
 	}
 }
 

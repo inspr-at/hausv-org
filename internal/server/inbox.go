@@ -187,9 +187,13 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 		selectedID = items[0].ID
 	}
 	queueQuery := inboxQueueQuery(query)
+	lede := fmt.Sprintf("%d offen · %d mit Vorschlag · %d nicht zugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto))
+	if suggester, _ := a.triageFor(ctx, orgKey); suggester == nil {
+		lede += ". Vorschläge und Sicherheitswerte sind Beispielvorschläge."
+	}
 	data := web.InboxData{
 		Eyebrow:          strings.ToUpper(a.inboxOrganisationName(ac)) + " · POSTEINGANG",
-		Lede:             fmt.Sprintf("%d offen · %d mit Vorschlag · %d nicht zugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto)),
+		Lede:             lede,
 		Houses:           houses,
 		Sort:             query.Get("sort"),
 		FullPage:         full,

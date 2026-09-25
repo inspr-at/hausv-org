@@ -239,7 +239,11 @@ templ InboxQueueItem(item InboxItem, queueQuery string) {
 
 templ InboxCaseDetail(item InboxCase) {
 	<article class="case" id="case-body">
-		<nav class="mobile-case-nav"><a href={ "/app/verwaltung/posteingang" + item.QueueQuery }>← Posteingang</a><span>{ fmt.Sprintf("%d von %d", item.Position, item.Total) }</span></nav>
+		<nav class="mobile-case-nav"><a href={ "/app/verwaltung/posteingang" + item.QueueQuery }>← Posteingang</a>
+			if item.Position > 0 && item.Total > 0 {
+				<span>{ fmt.Sprintf("%d von %d", item.Position, item.Total) }</span>
+			}
+		</nav>
 		if item.PrevURL != "" {
 			<a class="sr-only" data-nav="prev" href={ item.PrevURL }>Vorheriges Anliegen</a>
 		}
