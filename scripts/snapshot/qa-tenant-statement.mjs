@@ -33,6 +33,10 @@ try {
  const panel=page.locator('#mieterabrechnungen');await panel.waitFor();
  assert.equal(await panel.locator('input[name="active"]:checked').count(),3);
  assert((await panel.textContent()).includes('Matthias Dorn'));
+ const runID=await page.locator('[data-annual-statement-run]').getAttribute('data-annual-statement-run');
+ const ownerChange=await context.request.post(`${baseURL}/janusbergweg-123/app/settings/annual-statement/runs/${runID}/tenant-statements`,{form:{unit_id:'top-3',statement_on:'2026-06-20'},headers:{Origin:baseURL},maxRedirects:0});
+ assert.equal(ownerChange.status(),303);
+ assert.match(new URL(ownerChange.headers().location,baseURL).searchParams.get('tenant-message'),/Eigentümerwechsel/);
  const top=panel.locator('details').filter({has:page.locator('input[name="unit_id"][value="top-2"]')});
  await top.evaluate(n=>n.open=true);
  await top.locator('input[name="heating_monthly"]').check();
