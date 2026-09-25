@@ -143,7 +143,7 @@ func TestEarlyApprovalAndReceiptEvidence(t *testing.T) {
 		rendered++
 		return []byte("%PDF-1.4 fixture"), nil
 	}
-	if _, err = repo.Approve(run.ID, actor, settings, mustDate("2026-03-31"), render); err == nil || !strings.Contains(err.Error(), "gesperrt") {
+	if _, err = repo.Approve(run.ID, actor, settings, mustDate("2026-03-31"), render); err == nil || !strings.Contains(err.Error(), "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.") {
 		t.Fatalf("approval not blocked: %v", err)
 	}
 	if rendered != 0 {

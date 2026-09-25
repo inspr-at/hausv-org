@@ -291,7 +291,9 @@ Klausel- und Versandfreigaben sind keine Leistung dieser Rechenbibliothek.
 
 Der VPI-2020-Bestand enthält Jahresmittel ab 2021. Fehlt für einen älteren
 Anker ein benötigtes Vorjahresmittel, verweigert `CapCurve` die Berechnung;
-es wird kein Mittel einer anderen Basis stillschweigend eingesetzt. BK- und
+die Ausnahme nennt Reihe und fehlendes Jahresmittel. Fehlende Monatswerte
+oder Veröffentlichungsnachweise nennen ebenfalls den konkreten Monat.
+Es wird kein Mittel einer anderen Basis stillschweigend eingesetzt. BK- und
 Heizungsakonti gehören nicht in `AmountCents`.
 
 ## Persistierte Läufe (HAUSV-778)
@@ -362,13 +364,19 @@ Hausroute: `/app/settings/valorisation`; Organisationsroute:
 und `/items/{itemID}`. Das PDF liegt unter `/items/{itemID}/pdf`.
 Mietvertragsseiten zeigen die zugehörige Laufhistorie. Der Demoreset erzeugt
 für Janusbergweg 123 einen April-2026-Entwurf mit zwölf Verträgen, E1 1.040,28 €,
-E2 1.017,35 €, sechs bereiten Anpassungen (einschließlich Gewerbe außerhalb
-MieWeG), zwei unveränderten Verträgen und genau vier Ausnahmen: keine Klausel,
-ungeprüfte Klausel, einseitige Verbraucherklausel und nicht abbildbare Staffel.
+E2 1.017,35 €, sieben bereiten Anpassungen (einschließlich Gewerbe außerhalb
+MieWeG und der strukturierten Staffel), zwei unveränderten Verträgen und genau
+drei Ausnahmen: keine Klausel, ungeprüfte Klausel und einseitige Verbraucherklausel.
 Top 8 besitzt den geprüften Jänner-Referenzmonat und einen importierten
 Kurvenstand von 2025; Top 11 ebenfalls einen dokumentierten Deckelanker von
 2025. Eine Garage ohne HMZ bleibt mit ausdrücklichem Grund unverändert, statt
 fälschlich einen fehlenden Index zu melden.
+
+Im Zinshaus Musterstraße 12 verwendet Top 8 den dokumentierten Staffelstand
+vom April 2024 mit 910,00 € als Deckelanker. Die festen Schritte im April 2026
+und 2027 benötigen keinen monatlichen Index und keinen Veröffentlichungsnachweis;
+die gesetzliche Vergleichsrechnung verwendet weiterhin die Jahresmittel.
+Für April 2026 sind vertraglich und nach Vergleich 928,20 € berechnet.
 
 Die Zeilen und Briefe nennen die eingefrorene Einheitenbezeichnung und den
 Hauptmieter. Freigegebene Schreiben sind direkt aus der eingeklappten Zeile

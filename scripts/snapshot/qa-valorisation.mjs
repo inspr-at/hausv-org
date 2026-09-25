@@ -105,8 +105,21 @@ try {
     if (!body.includes(value)) fail(`Vorschau: ${value} fehlt`);
   }
   if (/\btop-\d|\d+\/\d+ %|\d+\.\d+ %|percent|Kurve exakt/.test(body)) fail('Technische Zahlen oder IDs in der Vorschau');
+  await page.goto(`${baseURL}/musterstrasse-12/app/settings/valorisation`, { waitUntil: 'networkidle' });
+  const mrgStaffel = page.locator('[data-group="ready"] > [data-lease-id="m12-lease-top-8"]').first();
+  if (await mrgStaffel.count() !== 1) fail('Musterstraße Top 8: feste Staffel ist nicht bereit');
+  await mrgStaffel.locator(':scope > summary').click();
+  for (const value of ['Julian Eder', '910,00', '928,20', 'Staffelmietzins laut Vertrag']) {
+    if (!(await mrgStaffel.innerText()).includes(value)) fail(`Musterstraße Staffel: ${value} fehlt`);
+  }
+  if ((await mrgStaffel.innerText()).includes('Veröffentlichungsnachweis fehlt')) fail('Feste Staffel verlangt einen monatlichen Index');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    if (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) > 1) fail(`Musterstraße Staffel: Überlauf bei ${width}px`);
+    if (artifactDir) await mrgStaffel.screenshot({ path: `${artifactDir}/mrg-staffel-top8-${width}.png` });
+  }
   // The seeded April draft is reviewable even when the system clock is later.
-  await page.goto(route, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/janusbergweg-123/app/settings/valorisation`, { waitUntil: 'networkidle' });
   const first = page.locator('article[data-run-id]').first();
   const runID = await first.getAttribute('data-run-id');
   if (!runID) fail('Demo-Lauf fehlt');

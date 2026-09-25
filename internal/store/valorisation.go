@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/mail"
@@ -121,6 +122,9 @@ func (i ValorisationItem) ApprovalException(now time.Time) string {
 			continue
 		}
 		if label := ValorisationExceptionLabels[code]; label != "" {
+			if code == "index_missing" && i.Reason != "" {
+				return i.Reason
+			}
 			return label
 		}
 		return "Die Ausnahme muss geprüft werden."
@@ -148,6 +152,21 @@ func (i *ValorisationItem) exception(code string) {
 	i.Group = "exception"
 	i.Reason = ValorisationExceptionLabels[code]
 	i.Explanation = append(i.Explanation, i.Reason)
+}
+
+func (i *ValorisationItem) missingIndex(series indexation.Series, period string, publication bool) {
+	i.exception("index_missing")
+	label := "Jahresmittel " + period
+	if month, err := time.Parse("2006-01", period); err == nil {
+		months := []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+		label = fmt.Sprintf("%s %d", months[int(month.Month())-1], month.Year())
+	}
+	problem := "Indexwert fehlt."
+	if publication {
+		problem = "Endgültiger Indexwert oder sein Veröffentlichungsnachweis fehlt zum Stichtag."
+	}
+	i.Reason = fmt.Sprintf("%s · %s: %s", (ValorisationIndex{Series: string(series)}).SeriesLabel(), label, problem)
+	i.Explanation[len(i.Explanation)-1] = i.Reason
 }
 
 // PreviewValorisation is the I/O-free adapter. Every rent decision and both
@@ -319,7 +338,12 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		var err error
 		item.Ceiling, err = indexation.CapCurve(anchor, start, snapshot.Annual, item.SpecialCap, effective.Year())
 		if err != nil {
-			item.exception("index_missing")
+			var missing indexation.MissingIndexError
+			if errors.As(err, &missing) {
+				item.missingIndex(missing.Series, missing.Period, false)
+			} else if len(item.Exceptions) == 0 {
+				item.exception("clause_invalid")
+			}
 			return finishValorisationItem(item)
 		}
 		item.CapCents = item.Ceiling.AmountCents
@@ -385,7 +409,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		}
 		base, found, err := snapshot.Data.Lookup(core.Series, core.BaseMonth)
 		if err != nil || !found {
-			item.exception("index_missing")
+			item.missingIndex(core.Series, string(core.BaseMonth), false)
 			return finishValorisationItem(item)
 		}
 		evidence := indexEvidence(base)
@@ -443,7 +467,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				}
 				pub, _, ok := snapshotIndexPublication(snapshot, core.Series, ref)
 				if !ok || pub.After(on) || pub.After(now) {
-					item.exception("index_missing")
+					item.missingIndex(core.Series, string(ref), true)
 					return finishValorisationItem(item)
 				}
 				references = append(references, periodicReference{ref, on})
@@ -471,6 +495,11 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				result, err = indexation.Evaluate(core, snapshot.Data, target)
 			}
 			if err != nil {
+				var missing indexation.MissingIndexError
+				if errors.As(err, &missing) {
+					item.missingIndex(missing.Series, missing.Period, false)
+					return finishValorisationItem(item)
+				}
 				code := "index_missing"
 				if strings.Contains(err.Error(), "index_derived") {
 					code = "index_derived"
@@ -494,7 +523,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				if ok && v.Preliminary {
 					item.exception("index_preliminary")
 				} else {
-					item.exception("index_missing")
+					item.missingIndex(core.Series, string(result.PendingMonth), true)
 				}
 				return finishValorisationItem(item)
 			}
@@ -513,7 +542,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			trigger = result.TriggerMonth
 			published, _, _ = snapshotIndexPublication(snapshot, indexation.Series(strings.ToUpper(clause.Series)), trigger)
 			if published.IsZero() {
-				item.exception("index_missing")
+				item.missingIndex(core.Series, string(trigger), true)
 				return finishValorisationItem(item)
 			}
 			contractualOn = time.Date(published.Year(), published.Month()+1, 1, 0, 0, 0, 0, time.UTC)

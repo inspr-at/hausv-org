@@ -162,7 +162,7 @@ func evaluateClause(clause Clause, data Dataset, asOf, reference Month) (Evaluat
 		}
 		if !found {
 			if month <= latest {
-				return Evaluation{}, fmt.Errorf("missing monthly observation: %s %s", clause.Series, month)
+				return Evaluation{}, MissingIndexError{Series: clause.Series, Period: string(month)}
 			}
 			result.PendingMonth = month
 			result.Explanation = append(result.Explanation, ExplanationStep{Code: "not_published", Month: month})

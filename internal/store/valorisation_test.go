@@ -115,6 +115,18 @@ func TestValorisationOpenExceptions(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestValorisationNamesMissingMonthlyIndex(t *testing.T) {
+	snapshot, err := indexation.LoadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot.Data = indexation.Dataset{}
+	run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01", Leases: []Lease{valorisationFixture()}}, snapshot, mustDate("2026-04-01"))
+	if err != nil || run.Items[0].Reason != "VPI 2020 · September 2024: Indexwert fehlt." {
+		t.Fatalf("missing base observation: %+v, %v", run.Items, err)
+	}
+}
 func containsValorisation(items []string, s string) bool {
 	for _, item := range items {
 		if item == s {
