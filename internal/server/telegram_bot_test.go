@@ -119,11 +119,17 @@ func TestTelegramLinkCodeFlow(t *testing.T) {
 	}
 }
 
-func TestTelegramUnknownChatsGetSilence(t *testing.T) {
+func TestTelegramUnknownChatsStayUnlinked(t *testing.T) {
 	a, _, _ := newTelegramTestApp(t)
 	for _, text := range []string{"/pp20status", "/pp20ein", "hello"} {
-		if reply := a.handleTelegramCommand(context.Background(), 555, "X", text); reply != "" {
-			t.Fatalf("unknown chat got a reply for %q: %q", text, reply)
+		reply := a.handleTelegramCommand(context.Background(), 555, "X", text)
+		if !strings.Contains(reply, "nicht verknüpft") {
+			t.Fatalf("unknown chat reply for %q = %q", text, reply)
+		}
+		for _, leak := range []string{"Parkplatz", "Steckdose", "Akku", "demo", "Test"} {
+			if strings.Contains(reply, leak) {
+				t.Fatalf("unknown chat reply for %q disclosed %q: %q", text, leak, reply)
+			}
 		}
 	}
 }
