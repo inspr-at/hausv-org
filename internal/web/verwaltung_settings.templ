@@ -77,6 +77,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 
 		.demo-init-dialog{width:min(560px,calc(100vw - 32px));padding:var(--space-5);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--panel);color:var(--ink);box-shadow:var(--shadow-dialog)}.demo-init-dialog::backdrop{background:var(--portal-backdrop);-webkit-backdrop-filter:var(--portal-backdrop-filter);backdrop-filter:var(--portal-backdrop-filter)}.demo-init-dialog form{display:grid;gap:var(--space-4)}.demo-init-dialog p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}@media(max-width:760px){.demo-init-dialog{padding:var(--space-4)}.demo-init-dialog .settings-actions{display:grid}}
 		.settings-card-head{min-width:0;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}.settings-card-head>div{min-width:0;display:grid;gap:var(--space-2)}.ai-fields select{min-width:0;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--panel);color:var(--ink);font:inherit;font-size:13px;font-weight:500}.ai-fields input{min-height:44px;color:var(--ink);font-size:13px;font-weight:500}.settings-check{min-height:44px;display:flex;align-items:center;gap:var(--space-2);color:var(--ink);font-size:13px;font-weight:600}.settings-check input{flex:0 0 auto;width:18px;height:18px;margin:0}
+		.settings-demo{display:block}.settings-demo>summary{min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-right:4px;cursor:pointer;list-style:none;font-family:var(--font-serif);font-size:24px;font-weight:550}.settings-demo>summary::-webkit-details-marker{display:none}.settings-demo>p,.settings-demo>.settings-actions{margin-top:var(--space-4)}
 		.automation-explanation{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}.automation-explanation .settings-options{margin-top:0;grid-template-columns:minmax(0,1fr);gap:16px}.automation-note{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);line-height:1.6}@media(max-width:760px){.automation-explanation{grid-template-columns:minmax(0,1fr);gap:16px}}
 	</style>
 	<section class="verwaltung-settings">
@@ -94,7 +95,8 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				<input type="hidden" name="valorisation_present" value="1"/>
 				<p>Für Hauptmieten in MRG-Vollanwendung außerhalb des MieWeG. Beim vertraglichen Stichtag gilt hier mindestens die WKO-Wartefrist. <a href="/app/hilfe#recht-wirksamwerden">Warum?</a></p>
 				<div class="ai-fields"><label>Wirksamwerden<select name="valorisation_mode"><option value="wko" selected?={ data.ValorisationMode == "wko" }>vorsichtig (WKO)</option><option value="oevi" selected?={ data.ValorisationMode == "oevi" }>ab endgültiger Verlautbarung (ÖVI)</option><option value="contract" selected?={ data.ValorisationMode == "contract" }>vertraglicher Stichtag</option></select></label><label>Ungeprüfte Klauseln<select name="valorisation_review"><option value="block" selected?={ data.ValorisationReviewPolicy != "warn" }>Freigabe sperren</option><option value="warn" selected?={ data.ValorisationReviewPolicy == "warn" }>Mit Warnung zulassen</option></select></label></div>
-				<div class="ai-fields"><label>Absenderzeile im Anpassungsschreiben<input type="text" name="valorisation_sender" value={ data.ValorisationSender } maxlength="240" placeholder="Leer = Name der Hausverwaltung"/></label></div>
+				<div class="ai-fields"><label>Absenderzeile im Anpassungsschreiben<input type="text" name="valorisation_sender" value={ data.ValorisationSender } maxlength="240" placeholder="Name der Hausverwaltung"/></label></div>
+				<p class="settings-hint">Ohne Eintrag erscheint der Name der Hausverwaltung.</p>
 				<label class="check settings-check"><input type="checkbox" name="valorisation_four_eyes" value="1" checked?={ data.ValorisationFourEyes }/> Vier-Augen-Freigabe: eine andere berechtigte Person muss freigeben</label>
 				<p class="settings-note">Geänderte Regeln gelten für neu berechnete Läufe. Gesetzliche Fristen bleiben verbindlich.</p>
 			</section>
@@ -111,6 +113,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 					<p class="active-provider"><strong>Aktiv:</strong> { data.ProviderLabel } · { data.AIHost } · Zeitlimit { data.AITimeout }</p>
 				} else {
 					<p class="active-provider" data-provider-state="nicht eingerichtet"><strong>KI-Vorschläge sind in dieser Umgebung nicht eingerichtet</strong></p>
+					<p class="settings-note">Vorschläge und Sicherheitswerte im Posteingang sind Beispielvorschläge.</p>
 				}
 				<div class="provider-choice"><label><input type="radio" name="ai_provider" value="environment" checked?={ data.AIProvider == "environment" }/> Umgebung</label><label><input type="radio" name="ai_provider" value="cloud" checked?={ data.AIProvider == "cloud" }/> Cloud (OpenRouter)</label><label><input type="radio" name="ai_provider" value="local" checked?={ data.AIProvider == "local" }/> Lokal (OpenAI-kompatibel)</label></div>
 				<div class="ai-fields"><label>Basis-URL<input type="url" name="ai_base_url" value={ data.AIBaseURLOverride } placeholder="Leer lassen = Standard der Plattform"/></label><label>Modell<input type="text" name="ai_model" value={ data.AIModelOverride } placeholder="Leer lassen = Standard der Plattform"/></label></div>
@@ -141,7 +144,7 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 					</tbody></table>
 				}
 				<form class="member-add" method="post" action="/app/verwaltung/einstellungen/mitarbeiter">
-					<div class="member-add-fields"><label>E-Mail<input type="email" name="member_email" required placeholder="person@example.com"/></label><label>Rolle<select name="member_role"><option value="sachbearbeiter">Sachbearbeiter</option><option value="admin">Verwaltungs-Admin</option></select></label></div>
+					<div class="member-add-fields"><label>E-Mail<input type="email" name="member_email" required placeholder="name@verwaltung.at"/></label><label>Rolle<select name="member_role"><option value="sachbearbeiter">Sachbearbeiter</option><option value="admin">Verwaltungs-Admin</option></select></label></div>
 					<small class="settings-hint">Die Person muss bereits in einer Liegenschaft angelegt sein. Ein Verwaltungs-Admin erhält die Adminrolle je Liegenschaft, ein Sachbearbeiter die Verwalterrolle.</small>
 					<div class="settings-actions"><button class="settings-secondary" type="submit">Mitarbeiter aufnehmen</button></div>
 				</form>
@@ -167,11 +170,13 @@ templ VerwaltungSettingsContent(data VerwaltungSettingsData) {
 				<p class="settings-note">Ungelesene Mails werden abgeholt, Liegenschaft und Person aus Absender, Betreff und Text vorgeschlagen, Anhänge übernommen. Antworten tragen die Anliegen-Nummer im Betreff, damit Rückantworten beim Anliegen landen.</p>
 			} else {
 				<p class="active-provider" data-provider-state="nicht konfiguriert"><strong>Kein Postfach konfiguriert</strong></p>
-				<p class="settings-note">Ein Postfach je Verwaltung wird über die Serverkonfiguration angebunden (INTAKE_MAIL_JSON, Zugangsdaten als Datei- oder Umgebungsreferenz). Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>
+				<p class="settings-note">Der Posteingang per E-Mail wird von Ihrer Verwaltung eingerichtet. Bis dahin nehmen Portal und Telefonnotiz Anliegen auf.</p>
 			}
 		</section>
 		if data.DemoResetAvailable {
-			<section class="settings-card" id="demodaten"><h2>{ demoInitTitle }</h2><p>Spielt die gebündelten Demodaten mit dem heutigen Datum neu ein: Anliegen, Organisationsdaten, Ankündigungen und Termine werden ersetzt, Ihre Anmeldung bleibt gültig.</p><div class="settings-actions"><a class="settings-secondary" href="/app/verwaltung/einstellungen/demo" data-demo-init-open aria-haspopup="dialog" aria-controls="demo-init-dialog">{ demoInitTitle + " …" }</a></div></section>
+			<details class="settings-card settings-demo" id="demodaten"><summary>Vorführung zurücksetzen
+				@DisclosureChevron()
+			</summary><p>Die Vorführung wird auf die gebündelten Demodaten mit dem heutigen Datum zurückgesetzt; die Anmeldung bleibt gültig.</p><div class="settings-actions"><a class="settings-secondary" href="/app/verwaltung/einstellungen/demo" data-demo-init-open aria-haspopup="dialog" aria-controls="demo-init-dialog">{ demoInitTitle + " …" }</a></div></details>
 			@VerwaltungDemoInitDialog()
 		}
 	</section>

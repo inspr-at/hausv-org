@@ -14,7 +14,8 @@ func TestSettingsDemoCardOpensOneDialog(t *testing.T) {
 		Threshold: 90, AIProvider: "environment", DemoResetAvailable: true,
 	}))
 	for _, want := range []string{
-		"<h2>Demodaten initialisieren</h2>",
+		`<details class="settings-card settings-demo" id="demodaten">`,
+		"<summary>Vorführung zurücksetzen",
 		`<a class="settings-secondary" href="/app/verwaltung/einstellungen/demo" data-demo-init-open aria-haspopup="dialog" aria-controls="demo-init-dialog">Demodaten initialisieren …</a>`,
 		`<dialog class="demo-init-dialog" id="demo-init-dialog" aria-labelledby="demo-init-dialog-title">`,
 		`<form method="post" action="/app/verwaltung/einstellungen/demo">`,
@@ -48,7 +49,7 @@ func TestSettingsWithoutDemoLoadsNoDemoScript(t *testing.T) {
 	html := renderComponent(t, VerwaltungSettingsPage(organisationPortalFixture(PortalPageData{Organisation: VerwaltungShell{OrganisationName: "Musterstadt"}}), VerwaltungSettingsData{
 		Threshold: 90, AIProvider: "environment",
 	}))
-	for _, gone := range []string{"demo-init.js", "<dialog", "Demodaten initialisieren", "data-demo-init-open"} {
+	for _, gone := range []string{"demo-init.js", "<dialog", "Demodaten initialisieren", "Vorführung zurücksetzen", "data-demo-init-open"} {
 		if strings.Contains(html, gone) {
 			t.Errorf("settings page without demo still renders %q", gone)
 		}
