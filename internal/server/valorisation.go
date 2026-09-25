@@ -82,7 +82,9 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 			contexts = append(contexts, ctx)
 		}
 	}
+	preservedTenantSlugs := make([]string, 0, len(contexts))
 	for _, ctx := range contexts {
+		preservedTenantSlugs = append(preservedTenantSlugs, ctx.tenant.Slug)
 		chosen := len(r.URL.Query()["house"]) == 0
 		for _, slug := range r.URL.Query()["house"] {
 			if slug == ctx.tenant.Slug {
@@ -128,7 +130,7 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 			page.Previews = append(page.Previews, web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run)})
 		}
 	}
-	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ValorisationPage(page))
+	a.renderSettingsComponent(w, r, ac.tenant.Slug, web.ValorisationPage(page), preservedTenantSlugs...)
 }
 func (a *app) createValorisation(w http.ResponseWriter, r *http.Request, ac authCtx) {
 	repo, ok := a.valorisationRepo(ac)

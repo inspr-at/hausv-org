@@ -5769,16 +5769,23 @@ func (a *app) executeTemplate(w http.ResponseWriter, name string, data map[strin
 	_, _ = io.WriteString(w, body)
 }
 
-func prefixTenantHTMLPaths(body string, tenantSlug string) string {
+func prefixTenantHTMLPaths(body string, tenantSlug string, preservedTenantSlugs ...string) string {
 	prefix := "/" + normalizeSlug(tenantSlug)
 	if prefix == "/" {
 		return body
 	}
 	for _, attribute := range []string{"href", "action", "formaction", "src", "data-src", "data-glass-src", "data-map-tile", "value", "hx-get", "hx-post", "hx-put", "hx-patch", "hx-delete"} {
 		needle := attribute + `="/`
-		body = strings.ReplaceAll(body, needle+tenantSlug+"/", "\x00HAUSV_TENANT_PATH\x00")
+		// Organisation pages may link to several authorised houses. Preserve
+		// those explicit prefixes while still scoping unqualified shell links.
+		for _, slug := range append([]string{tenantSlug}, preservedTenantSlugs...) {
+			slug = normalizeSlug(slug)
+			if slug != "" {
+				body = strings.ReplaceAll(body, needle+slug+"/", attribute+`="`+"\x00HAUSV_TENANT_PATH\x00"+slug+"/")
+			}
+		}
 		body = strings.ReplaceAll(body, needle, attribute+`="`+prefix+"/")
-		body = strings.ReplaceAll(body, "\x00HAUSV_TENANT_PATH\x00", needle+tenantSlug+"/")
+		body = strings.ReplaceAll(body, "\x00HAUSV_TENANT_PATH\x00", "/")
 	}
 	body = strings.ReplaceAll(body, "url(/", "url("+prefix+"/")
 	body = strings.ReplaceAll(body, "url('/", "url('"+prefix+"/")
