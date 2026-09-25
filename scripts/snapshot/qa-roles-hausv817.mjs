@@ -74,7 +74,7 @@ try{
  await capture(hedwig.page,'hedwig-anliegen','/app/anliegen');
  await capture(sophie.page,'sophie-anliegen','/app/anliegen');
  const labels=await sophie.page.locator('.issue-meta .pill').allTextContents();
- for(const label of ['Betriebskosten','Reparatur'])assert(labels.includes(label),`category ${label}`);
+ for(const label of ['Betriebskosten/Vorschreibung','Reparatur'])assert(labels.includes(label),`category ${label}`);
  for(const raw of ['versicherung','betriebskosten','reparatur'])assert(!labels.includes(raw),`raw category ${raw}`);
  await create(hedwig,{title:'QA817 Beirat meldet eigene Einheit',detail:'Badezimmer',unit:'top-2'});
  await create(hedwig,{title:'QA817 Beirat meldet Allgemeinfläche',location:'common',detail:'Keller'});
