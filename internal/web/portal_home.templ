@@ -36,15 +36,13 @@ templ PortalHeroGreeting(data PortalPageData) {
 		} else {
 			<h1>Hallo { data.GreetingName }.</h1>
 		}
-		<p>{ portalHomeDateLine(data) }</p>
+		<p>
+			if strings.TrimSpace(data.Address) != "" {
+				{ data.Address } ·
+			}
+			<span class="home-date">{ data.Today }</span>
+		</p>
 	</div>
-}
-
-func portalHomeDateLine(data PortalPageData) string {
-	if strings.TrimSpace(data.Address) == "" {
-		return data.Today
-	}
-	return data.Address + " · " + data.Today
 }
 
 templ PortalHomeHeaderAction(data PortalPageData) {
@@ -67,6 +65,7 @@ templ PortalHomeHeaderAction(data PortalPageData) {
 }
 
 templ PortalHomeBody(data PortalPageData) {
+	@PortalHomeStyles()
 	<div class="portal-home-desktop">
 		if data.Dense {
 			@PortalDense(data)
@@ -75,6 +74,27 @@ templ PortalHomeBody(data PortalPageData) {
 		}
 	</div>
 	@PortalMobile(data)
+}
+
+templ PortalHomeStyles() {
+	<style>
+		.portal-home-landing .home-date{white-space:nowrap}
+		.portal-home-landing .dense-home-body .side-stack{align-self:start;grid-template-rows:auto auto}
+		.portal-home-landing :is(.item-copy,.top-actions,.metrics,.metric,.home-strip>*){min-width:0}
+		.portal-home-landing .issues-card .subject{white-space:normal;overflow:visible;overflow-wrap:normal;line-height:1.4;min-height:44px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+		.portal-home-landing .issues-card .subject-place{white-space:normal;overflow-wrap:normal}
+		.portal-home-landing .issues-card .age{white-space:normal;line-height:1.5}
+		.portal-home-landing .item-copy strong{white-space:normal;overflow:visible;overflow-wrap:normal;line-height:1.4}
+		.portal-home-landing .item-copy span{overflow-wrap:normal;line-height:1.5}
+		.portal-home-landing :is(.agenda a,.board-list a,.mobile-event,.mobile-notice){grid-template-columns:44px minmax(0,1fr);padding-block:8px}
+		.portal-home-landing .board-list a{grid-template-columns:8px minmax(0,1fr)}
+		.portal-home-landing .mobile-event{grid-template-columns:42px minmax(0,1fr) 12px}
+		.portal-home-landing .mobile-notice{grid-template-columns:9px minmax(0,1fr) 12px}
+		.portal-home-landing :is(.utility-links a,.home-strip a,.all-link){display:inline-flex;align-items:center;min-height:44px}
+		.portal-home-landing .card-head{align-items:center;flex-wrap:wrap;gap:8px 12px}
+		body[data-authenticated-app] .portal-home-landing .button{min-height:44px}
+		@media(min-width:761px){.portal-home-landing .issues-card :is(th,td):nth-child(5){width:106px}.portal-home-landing .portal-section-content{padding-top:var(--space-5)}}
+	</style>
 }
 
 templ PortalDense(data PortalPageData) {
@@ -113,10 +133,10 @@ templ DenseIssues(data PortalPageData) {
 			<p class="empty">Nichts offen.</p>
 		}
 		if len(data.Issues) > 0 {
-			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Alter und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Alter</th><th>Zuständig</th></tr></thead><tbody>
+			<table><caption class="sr-only">Offene Anliegen mit Status, Betreff, Beschreibung, Ort, Erstellungsdatum und Zuständigkeit</caption><thead><tr><th>Status</th><th>Betreff</th><th>Beschreibung</th><th>Ort</th><th>Erstellt</th><th>Zuständig</th></tr></thead><tbody>
 				for index, issue := range data.Issues {
 					if index < denseIssueRows {
-					<tr data-href={ issue.DetailURL }><td><span class="status"><span class={ "dot", templ.KV("gold", issue.StatusLabel == "Neu"), templ.KV("green", issue.StatusLabel == "In Arbeit") }></span><span class="status-label">{ issue.StatusLabel }</span></span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }>{ issue.Title }</a><span class="subject-place">{ issue.Location }</span></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
+					<tr data-href={ issue.DetailURL }><td><span class="status"><span class={ "dot", templ.KV("gold", issue.StatusLabel == "Neu"), templ.KV("green", issue.StatusLabel == "In Arbeit") }></span><span class="status-label">{ issue.StatusLabel }</span></span></td><td><a class="subject" href={ templ.SafeURL(issue.DetailURL) }><span>{ issue.Title }</span><span class="subject-place">{ issue.Location }</span></a></td><td class="description"><span class="description-text" title={ issue.Body }>{ issue.Description }</span></td><td class="place"><span class="place-text" title={ issue.Location }>{ issue.Location }</span></td><td class="age">{ issue.CreatedAt }</td><td title={ issue.AssigneeEmail }>{ issue.AssigneeName }</td></tr>
 					}
 				}
 			</tbody></table>

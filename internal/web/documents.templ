@@ -102,6 +102,26 @@ templ DocumentsStyles() {
 		@media(max-width:760px){.documents-screen .document-library{padding:8px 12px 12px}.documents-screen .document-row,.documents-screen .document-archive-group>summary,.documents-screen .document-archive-list .document-row{grid-template-columns:24px minmax(0,1fr) 44px max-content;min-height:44px}.documents-screen .document-download{width:44px;height:44px}body[data-authenticated-app] .documents-screen .document-more>summary{min-height:44px}.documents-screen .document-icon{display:grid;width:24px;height:24px}.documents-screen .document-title{font-size:15px;line-height:1.3}}
 		@media(max-width:520px){.documents-screen .document-icon{display:grid}.documents-screen .document-row,.documents-screen .document-archive-group>summary,.documents-screen .document-archive-list .document-row{grid-template-columns:22px minmax(0,1fr) 44px max-content}}
 
+        /* Keep compact rows readable when titles and metadata wrap. */
+        .documents-screen .document-library{padding:16px}
+        .documents-screen :is(.document-row,.document-archive-list .document-row){grid-template-columns:28px minmax(0,1fr) 44px max-content;min-height:64px;padding:8px 0;row-gap:4px}
+        .documents-screen .document-title{min-height:44px;display:flex;align-items:center;overflow-wrap:normal;line-height:1.45}
+        .documents-screen .document-meta{gap:4px 6px;line-height:1.5}
+        .documents-screen .document-meta>span{min-width:0}
+        .documents-screen .document-download{width:44px;height:44px}
+        body[data-authenticated-app] .documents-screen .document-more>summary{min-height:44px}
+        body[data-authenticated-app] .documents-screen .button,.documents-screen .document-categories a{min-height:44px}
+        .documents-screen .document-more-panel .version-row a{display:inline-flex;align-items:center;min-height:44px}
+        @media(max-width:760px){
+            .documents-screen :is(.document-row,.document-archive-list .document-row){grid-template-columns:24px minmax(0,1fr) 44px max-content;align-items:start;padding:12px 0}
+            .documents-screen .document-row>.document-icon{margin-top:8px}
+            .documents-screen .document-row>.document-copy{grid-column:2/-1}
+            .documents-screen .document-download{grid-column:3}
+            .documents-screen .document-more{grid-column:4}
+            .documents-screen .document-archive-list{padding-left:8px}
+            .documents-screen .document-more[open]>.document-more-panel{max-width:calc(100vw - 72px)}
+        }
+
 	</style>
 }
 
