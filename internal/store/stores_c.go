@@ -81,6 +81,7 @@ type ResidentIssue struct {
 	Body                  string              `json:"body"`
 	LocationType          string              `json:"location_type"`
 	LocationDetail        string              `json:"location_detail"`
+	UnitID                string              `json:"unit_id,omitempty"`
 	PhotoPaths            []string            `json:"photo_paths"`
 	Status                string              `json:"status"`
 	Priority              string              `json:"priority"`
@@ -613,6 +614,9 @@ func (s *IssueStore) updateWorkflow(tenant TenantRef, id string, update IssueWor
 				updated.Body = body
 			}
 			if locationType != "" {
+				if locationType != updated.LocationType || locationDetail != updated.LocationDetail {
+					updated.UnitID = ""
+				}
 				updated.LocationType = locationType
 			}
 			if len([]rune(locationDetail)) <= 160 {

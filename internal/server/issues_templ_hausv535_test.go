@@ -48,7 +48,7 @@ func TestIssuesTemplUsesSharedPermissionGatedShellWithoutNewRoleDenials(t *testi
 			if strings.Contains(body, "ui-identitaet-1-0") {
 				t.Fatalf("templ issues for %s must not use a coloured identity edge", role)
 			}
-			canCreate := role != roleServiceProvider && role != roleBeirat
+			canCreate := role != roleServiceProvider
 			if strings.Contains(body, `id="issue-create-form"`) != canCreate {
 				t.Fatalf("issue creation gate for %s does not match the existing capability", role)
 			}

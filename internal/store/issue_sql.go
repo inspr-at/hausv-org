@@ -14,6 +14,7 @@ import (
 type IssueRepository interface {
 	Create(item ResidentIssue) (ResidentIssue, error)
 	List() []ResidentIssue
+	ListVisible(access IssueAccess) []ResidentIssue
 	ListAuthor(email string) []ResidentIssue
 	Get(id string) (ResidentIssue, bool)
 	UpdateWorkflow(id string, update IssueWorkflowUpdate) (ResidentIssue, bool, error)
@@ -64,6 +65,18 @@ func (r *boundIssueRepository) Create(item ResidentIssue) (ResidentIssue, error)
 	return r.storage.create(r.tenant, item)
 }
 func (r *boundIssueRepository) List() []ResidentIssue { return r.storage.listTenant(r.tenant) }
+
+// ListVisible applies the same policy used for direct issue and attachment access.
+func (r *boundIssueRepository) ListVisible(access IssueAccess) []ResidentIssue {
+	out := []ResidentIssue{}
+	for _, item := range r.List() {
+		if access.CanView(r.tenant, item) {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
 func (r *boundIssueRepository) ListAuthor(email string) []ResidentIssue {
 	return r.storage.listAuthor(r.tenant, email)
 }
@@ -330,6 +343,9 @@ func (s *SQLIssueStore) updateWorkflow(tenant TenantRef, id string, update Issue
 			updated.Body = body
 		}
 		if locationType != "" {
+			if locationType != updated.LocationType || locationDetail != updated.LocationDetail {
+				updated.UnitID = ""
+			}
 			updated.LocationType = locationType
 		}
 		if len([]rune(locationDetail)) <= 160 {

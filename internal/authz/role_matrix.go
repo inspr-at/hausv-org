@@ -140,7 +140,7 @@ var RoleMatrix = []MatrixCell{
 	{FamilyKey: "eigentuemer", AreaKey: "settings"},
 	{FamilyKey: "eigentuemer", AreaKey: "snippets"},
 	{FamilyKey: "eigentuemer", AreaKey: "overview", Grants: explicitGrants("Mandantschaft und Liegenschaftszuordnung", MatrixActionView)},
-	{FamilyKey: "eigentuemer", AreaKey: "issues", Grants: explicitGrants("Bewohnerregel der Liegenschaft", MatrixActionView, MatrixActionCreate)},
+	{FamilyKey: "eigentuemer", AreaKey: "issues", Grants: explicitGrants("Bewohnerregel der Liegenschaft", MatrixActionView, MatrixActionCreate), Note: "Eigentümer sehen eigene Anliegen und Allgemeinflächen. Beirat sieht zusätzlich Anliegen eigener bewohnter oder besessener Einheiten; private Anliegen anderer Einheiten bleiben bei Verfassern und Verwaltung. Anlegen für Allgemeinflächen und eigene Einheiten."},
 	{FamilyKey: "eigentuemer", AreaKey: "documents", Grants: []MatrixGrant{{Action: MatrixActionView, Capability: CapabilityOwnerDocuments, ActorRole: store.RoleOwner, Note: "Eigentümerdokumente"}}, Note: "Beirat sieht nur für ihn freigegebene Dokumente"},
 	{FamilyKey: "eigentuemer", AreaKey: "announcements", Grants: explicitGrants("veröffentlichte Inhalte der Liegenschaft", MatrixActionView)},
 	{FamilyKey: "eigentuemer", AreaKey: "events", Grants: explicitGrants("veröffentlichte Inhalte der Liegenschaft", MatrixActionView)},
