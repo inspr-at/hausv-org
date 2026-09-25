@@ -74,7 +74,9 @@ async function ensureJanusbergweg(page) {
   const slug = await houseSlug(page);
   if (slug === 'janusbergweg-123') return;
   if (!slug) fail(`Keine Liegenschaft auf ${page.url()}`);
-  await page.evaluate((current) => {
+  await Promise.all([
+    page.waitForURL(`${baseURL}/janusbergweg-123/app`, { waitUntil: 'networkidle' }),
+    page.evaluate((current) => {
     const form = document.createElement('form');
     form.method = 'post';
     form.action = `/${current}/app/context`;
@@ -87,8 +89,8 @@ async function ensureJanusbergweg(page) {
     }
     document.body.appendChild(form);
     form.submit();
-  }, slug);
-  await page.waitForLoadState('networkidle');
+    }, slug),
+  ]);
   if (await houseSlug(page) !== 'janusbergweg-123') fail(`Rückwechsel landete auf ${page.url()}`);
 }
 
