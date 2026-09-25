@@ -70,7 +70,8 @@ try {
     assert(notes.every(n=>n.scroll<=n.width+1&&n.white==='normal'),'reserve receipt must wrap inside its row');
     await page.screenshot({ path: `${out}/reserve-${width}.png`, fullPage: false });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-    await section.screenshot({ path: `${out}/reserve-section-${width}.png` });
+    // Keep sticky page chrome from covering rows in the full-section capture.
+    await section.screenshot({ path: `${out}/reserve-section-${width}.png`, style: '[data-context-bar], .skip-link { visibility: hidden !important; }' });
   }
   assert.deepEqual(pageErrors, []);
 } finally {
