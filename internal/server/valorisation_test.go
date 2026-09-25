@@ -16,13 +16,13 @@ import (
 func TestValorisationRoutesAndDenials(t *testing.T) {
 	a, _, _ := newArchiveDemoApp(t)
 	a.leaseStore = store.NewSQLLeaseStore(a.tenantDB)
-	a.profiles[archiveDemoManager] = userProfile{Email: archiveDemoManager, Role: roleAdmin, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
+	a.profiles[archiveDemoManager] = userProfile{Email: archiveDemoManager, FirstName: "Vera", LastName: "Verwalter", Role: roleAdmin, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
 	path := "/app/settings/valorisation"
 	page := archiveDemoRequest(t, a, archiveDemoManager, "GET", path, nil)
 	if page.Code != 200 {
 		t.Fatalf("page %d %s", page.Code, page.Body.String())
 	}
-	for _, want := range []string{`href="/` + archiveDemoTenant + `/app/hilfe#recht-wirksamwerden"`, "Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026"} {
+	for _, want := range []string{`href="/` + archiveDemoTenant + `/app/hilfe#recht-wirksamwerden"`, "Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026", "Erstellt von Vera Verwalter"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("missing %s", want)
 		}
@@ -41,10 +41,13 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 	location := strings.TrimPrefix(blocked.Header().Get("Location"), "/"+archiveDemoTenant)
 	location, _, _ = strings.Cut(location, "#") // Browsers never send fragments to the server.
 	notice := archiveDemoRequest(t, a, archiveDemoManager, "GET", location, nil)
-	for _, want := range []string{"Wertsicherung", "Ausnahmen zuerst bearbeiten", "Keine Wertsicherungsklausel vorhanden.", "3 Ausnahmen sind noch offen.", `class="button ghost"`, `disabled`, `role="status"`} {
+	for _, want := range []string{"Wertsicherung", "Keine Wertsicherungsklausel vorhanden.", "3 Ausnahmen sind noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen.", `class="button ghost"`, `disabled`, `role="status"`, "zugehen", "Postlaufzeit einplanen."} {
 		if notice.Code != http.StatusOK || !strings.Contains(notice.Body.String(), want) {
 			t.Errorf("blocked approval notice missing %q: HTTP %d", want, notice.Code)
 		}
+	}
+	if strings.Count(notice.Body.String(), "3 Ausnahmen sind noch offen.") != 1 {
+		t.Fatal("approval notice must appear once")
 	}
 	if strings.Contains(notice.Body.String(), "clause_unreviewed") {
 		t.Fatal("raw exception code in notice")

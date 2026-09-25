@@ -362,6 +362,11 @@ bleiben in den gespeicherten Berechnungsschritten und Kurven erhalten.
 Entwürfe und archivierte Anpassungsschreiben werden mit `Content-Disposition:
 inline` geöffnet. Lauf-ID, Referenz und Eingabe-Prüfsumme stehen ausschließlich
 im Lauf beziehungsweise in den Archivmetadaten, nicht im Mieterbrief.
+Monate werden im Brief ausgeschrieben, berechnete Prozentwerte auf zwei
+Nachkommastellen dargestellt. Anrede, kurze Erläuterung der Anpassung,
+Zugangsfrist, Rückfragekontakt und Grußformel ergänzen die Berechnung.
+Die Frist benennt in Lauf, Detailansicht, Brief und Hilfe ausdrücklich den
+Zugang beim Mieter, nicht das Absenden; die Verwaltung plant die Postlaufzeit ein.
 
 Hausroute: `/app/settings/valorisation`; Organisationsroute:
 `/app/verwaltung/wertsicherung`. Mutationen liegen unter
@@ -389,7 +394,9 @@ erreichbar. Die erste Indextabelle zeigt Basis, Auslöser und benötigte
 Jahresmittel; die vollständige geprüfte Monatsreihe liegt unter „Alle Indexwerte
 anzeigen“. Manuelle Entscheidungen und Storno verlangen weiterhin eine
 Begründung, ihre Formulare werden erst nach Öffnen des jeweiligen Bereichs
-sichtbar. Die technische Prüfsumme liegt in einem eigenen Detailbereich.
+sichtbar. Ein Freigabehinweis zählt alle offenen Ausnahmen und erscheint einmal
+direkt bei der Aktion. Im Fuß steht der Anzeigename der erstellenden Person;
+eine vorhandene technische Prüfsumme liegt im geschlossenen Bereich „Prüfdaten“.
 
 Browserprüfung gegen ein frisches Demo-Rig (verändert ausschließlich lokale
 Demodaten): `node scripts/snapshot/qa-valorisation.mjs http://localhost:8309

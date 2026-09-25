@@ -3,6 +3,7 @@ package valorisationpdf
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -123,10 +124,20 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	}
 	l.text(62, l.y, 20, pdf.Heading, title)
 	l.y -= 25
-	l.paragraph("Wertsicherung · "+run.Input.House+" · "+run.Input.Address, pdf.Body)
+	house := run.Input.House
+	if run.Input.Address != "" {
+		if house == "" || strings.Contains(run.Input.Address, house) {
+			house = run.Input.Address
+		} else {
+			house += " · " + run.Input.Address
+		}
+	}
+	l.paragraph("Wertsicherung · "+house, pdf.Body)
 	if run.Status == "draft" {
 		l.paragraph("Entwurf zur Prüfung", pdf.Strong)
 	}
+	l.paragraph("Sehr geehrte Damen und Herren,", pdf.Body)
+	l.paragraph("auf Grundlage Ihrer vertraglichen Wertsicherung passen wir Ihren monatlichen Hauptmietzins wie folgt an.", pdf.Body)
 	l.room(85)
 	page := &l.pages[len(l.pages)-1]
 	page.Shapes = append(page.Shapes, pdf.Shape{X: 62, Y: l.y - 67, Width: 471, Height: 76, Color: [3]uint8{242, 246, 243}})
@@ -151,21 +162,22 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	}
 	l.paragraph(item.Clause.ClauseText, pdf.Body)
 	if item.Clause.BasePeriod != "" {
-		l.paragraph(fmt.Sprintf("%s · Basis %s = %s · Schwelle %s %s", strings.ToUpper(item.Clause.Series), item.Clause.BasePeriod, strings.ReplaceAll(item.Clause.BaseValue, ".", ","), store.ValorisationNumber(item.Clause.ThresholdValue, 2), thresholdKind(item.Clause.ThresholdKind)), pdf.Body)
+		series := strings.Replace(strings.ToUpper(item.Clause.Series), "VPI", "VPI ", 1)
+		l.paragraph(fmt.Sprintf("%s, Basis %s: %s · Schwelle %s %s", series, monthName(item.Clause.BasePeriod), strings.ReplaceAll(item.Clause.BaseValue, ".", ","), store.ValorisationNumber(item.Clause.ThresholdValue, 2), thresholdKind(item.Clause.ThresholdKind)), pdf.Body)
 	}
 	if item.Contract.TriggerMonth != "" {
-		l.paragraph(fmt.Sprintf("Auslösemonat %s: endgültiger Index %s; Änderung %s %%. Vertraglicher Betrag: %s.", item.Contract.TriggerMonth, displayRatio(item.Contract.NewBase.String()), store.ValorisationNumber(item.Contract.ChangePercent.String(), 5), Money(item.ContractCents)), pdf.Body)
+		l.paragraph(fmt.Sprintf("Auslösemonat %s: endgültiger Index %s; Änderung %s. Vertraglicher Betrag: %s.", monthName(string(item.Contract.TriggerMonth)), displayRatio(item.Contract.NewBase.String()), displayPercent(item.Contract.ChangePercent.String(), false), Money(item.ContractCents)), pdf.Body)
 	}
 	if item.MieWeG {
 		l.heading("Gesetzliche Vergleichsrechnung (MieWeG)")
-		l.paragraph("Anker: "+string(item.CapAnchor)+". Über 3 % wird die weitere Jahresveränderung zur Hälfte berücksichtigt. Im ersten Teiljahr zählen nur volle Monate nach dem Ankermonat.", pdf.Body)
+		l.paragraph("Anker: "+monthName(string(item.CapAnchor))+". Über 3 % wird die weitere Jahresveränderung zur Hälfte berücksichtigt. Im ersten Teiljahr zählen nur volle Monate nach dem Ankermonat.", pdf.Body)
 		if item.SpecialCap {
 			l.paragraph("Sonderdeckel: höchstens 1 % für 2026 und 2 % für 2027, jeweils vor der Aliquotierung.", pdf.Body)
 		}
 		l.row("Jahr · Jahresmittel alt / neu", "Monate / 12", "Kurvenwert (gerundet)")
 		for _, step := range item.Ceiling.Years {
 			l.row(fmt.Sprintf("%d · %s / %s", step.Year, displayRatio(step.PreviousAverage.String()), displayRatio(step.CurrentAverage.String())), fmt.Sprintf("%d / 12", step.FullMonths), store.ValorisationExactMoney(step.ExactAmountCents))
-			l.paragraph("Änderung "+store.ValorisationPercent(step.RawRatePercent, 5)+"; begrenzt "+store.ValorisationPercent(step.LimitedRatePercent, 5)+".", pdf.Body)
+			l.paragraph("Änderung "+displayPercent(step.RawRatePercent, true)+"; begrenzt "+displayPercent(step.LimitedRatePercent, true)+".", pdf.Body)
 		}
 		l.row("Vertragskurve / gesetzliche Kurve", Money(item.ContractCents), Money(item.CapCents))
 		l.paragraph("Maßgeblich ist der niedrigere Betrag (§ 1 Abs 4 MieWeG). Ein halber Cent wird abgerundet; die Kurven werden ohne Zwischenrundung fortgeführt.", pdf.Body)
@@ -193,11 +205,11 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 		}
 	}
 	l.row("Monatlich gesamt brutto", "", Money(total))
-	l.paragraph("Änderung des Hauptmietzinses netto: "+Money(item.NewCents-item.OldCents)+" ("+displayRatio(fmt.Sprintf("%d/%d", (item.NewCents-item.OldCents)*100, item.OldCents))+" %).", pdf.Body)
+	l.paragraph("Änderung des Hauptmietzinses netto: "+Money(item.NewCents-item.OldCents)+" ("+displayPercent(fmt.Sprintf("%d/%d", (item.NewCents-item.OldCents)*100, item.OldCents), true)+").", pdf.Body)
 	l.room(170)
 	l.heading("Termine und Hinweise")
 	if item.RequiresMRGNotice {
-		l.paragraph("Der angepasste Hauptmietzins wird gemäß § 16 Abs 9 MRG ab dem Zinstermin "+Date(item.CollectableFrom)+" geltend gemacht. Die Berechnung setzt den Zugang dieses Schreibens am Ausstellungsdatum voraus; bei späterem Zugang verschiebt sich die Fälligkeit entsprechend.", pdf.Body)
+		l.paragraph("Der angepasste Hauptmietzins wird gemäß § 16 Abs 9 MRG erstmals am "+Date(item.CollectableFrom)+" fällig, sofern Ihnen dieses Schreiben spätestens am "+Date(item.NoticeDeadline)+" zugeht (mindestens 14 Tage vor dem Zinstermin). Bei späterem Zugang verschiebt sich die Fälligkeit auf den nächsten zulässigen Zinstermin.", pdf.Body)
 	} else {
 		l.paragraph("Die Anpassung ist ab "+Date(item.WirksamOn)+" wirksam. Erster Zinstermin: "+Date(item.CollectableFrom)+".", pdf.Body)
 	}
@@ -207,7 +219,11 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	l.paragraph("Betriebskosten- und Heizungsakonti werden durch diese Wertsicherung nicht erhöht.", pdf.Body)
 	if run.Input.Contact != "" {
 		l.paragraph("Für Rückfragen: "+run.Input.Contact, pdf.Body)
+	} else {
+		l.paragraph("Für Rückfragen wenden Sie sich bitte an Ihre Hausverwaltung.", pdf.Body)
 	}
+	l.paragraph("Mit freundlichen Grüßen", pdf.Body)
+	l.paragraph(run.Input.Organisation+" · im Auftrag des Vermieters", pdf.Body)
 	l.paragraph("Datenquelle: Statistik Austria · data.statistik.gv.at (CC BY 4.0). Berechnung: HAUSV. Datenstand "+run.IndexVersion+".", pdf.Body)
 	if len(overflow) > 0 {
 		l.heading("Ergänzende Adress- und Verwaltungsangaben")
@@ -221,6 +237,28 @@ func Render(run store.ValorisationRun, item store.ValorisationItem, letterDate t
 	return pdf.Pages(l.pages, pdf.Palette{Paper: [3]uint8{255, 255, 255}, Ink: [3]uint8{32, 43, 39}, Accent: [3]uint8{97, 118, 107}}), nil
 }
 func displayRatio(raw string) string { return store.ValorisationNumber(raw, 5) }
+
+// Letter formatting never changes the exact values saved with the run.
+func displayPercent(raw string, signed bool) string {
+	r, ok := new(big.Rat).SetString(raw)
+	if !ok {
+		return "–"
+	}
+	value := strings.ReplaceAll(r.FloatString(2), ".", ",")
+	if signed && r.Sign() > 0 {
+		value = "+" + value
+	}
+	return value + " %"
+}
+
+func monthName(raw string) string {
+	d, err := time.Parse("2006-01", raw)
+	if err != nil {
+		return raw
+	}
+	months := [...]string{"", "Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	return months[d.Month()] + " " + d.Format("2006")
+}
 func componentLabel(kind string) string {
 	switch kind {
 	case store.ComponentBKAkonto:

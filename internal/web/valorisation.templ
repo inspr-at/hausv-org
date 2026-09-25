@@ -31,6 +31,14 @@ type ValorisationRunView struct {
 	OpenExceptions int
 	ApprovalDate string
 	Notice string
+	CreatedByName string
+}
+
+func ValorisationExceptionNotice(count int) string {
+	if count == 1 {
+		return "1 Ausnahme ist noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen."
+	}
+	return fmt.Sprintf("%d Ausnahmen sind noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen.", count)
 }
 type ValorisationGroupView struct {
 	Key, Label string
@@ -375,22 +383,22 @@ templ ValorisationBody(data ValorisationPageData) {
 			.valorisation-page .vr-item > summary > strong {
 				grid-area: label;
 				display: flex;
-				align-items: baseline;
+				align-items: center;
 				gap: var(--space-2);
 				font-size: var(--text-md);
 			}
-			.valorisation-page .vr-item > summary > strong::before {
-				content: "";
+			.valorisation-page .vr-item-chevron {
+				display: flex;
 				flex: 0 0 auto;
-				width: 7px;
-				height: 7px;
-				border-right: 1.6px solid var(--muted);
-				border-bottom: 1.6px solid var(--muted);
-				transform: translateY(-2px) rotate(-45deg);
+				color: var(--muted);
 				transition: transform 0.15s;
 			}
-			.valorisation-page .vr-item[open] > summary > strong::before {
-				transform: translateY(-3px) rotate(45deg);
+			.valorisation-page .vr-item-chevron svg {
+				width: 16px;
+				height: 16px;
+			}
+			.valorisation-page .vr-item[open] > summary .vr-item-chevron {
+				transform: rotate(90deg);
 			}
 			.valorisation-page .vr-item > summary > span:nth-of-type(1) {
 				grid-area: reason;
@@ -647,9 +655,6 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 				<span class="vr-revision">{ fmt.Sprintf("Revision %d",view.Run.Revision) }</span>
 			</div>
 		</header>
-		if view.Notice != "" {
-			<p class="notice" role="status">{ view.Notice }</p>
-		}
 		if view.Run.IndexRevised {
 			<p class="vr-exception" data-index-status="index_revised"><strong>Neu berechnen empfohlen</strong> · Ein verwendeter Indexwert wurde revidiert. Freigegebene Beträge und Schreiben bleiben unverändert.</p>
 		}
@@ -674,6 +679,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					<details id={ "item-" + item.ID } class={ "vr-item", templ.KV("vr-excluded", item.Excluded) } data-lease-id={ item.LeaseID }>
 						<summary>
 							<strong>
+								<span class="vr-item-chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
 								{ item.Label() }
 							</strong>
 							<span>
@@ -877,14 +883,11 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					</table>
 				</div>
 			}
-			if view.Run.Status == "draft" && view.OpenExceptions > 0 {
+			if view.Notice != "" {
+				<p class="notice" role="status" id={ "approval-issue-" + view.Run.ID }>{ view.Notice }</p>
+			} else if view.Run.Status == "draft" && view.OpenExceptions > 0 {
 				<p class="vr-note" id={ "approval-issue-" + view.Run.ID }>
-					if view.OpenExceptions == 1 {
-						1 Ausnahme ist noch offen.
-					} else {
-						{ fmt.Sprint(view.OpenExceptions) } Ausnahmen sind noch offen.
-					}
-					 Bitte zuerst prüfen oder mit Begründung ausschließen.
+					{ ValorisationExceptionNotice(view.OpenExceptions) }
 				</p>
 			}
 			if view.Run.Status == "draft" && view.ApprovalDate != "" {
@@ -919,8 +922,12 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			if view.Run.Status=="cancelled" {
 				<p class="vr-note">Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
 			}
-			<p class="vr-meta">Erstellt von { view.Run.CreatedBy }</p>
-			<details class="vr-meta"><summary>Prüfsumme</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
+			if view.CreatedByName != "" {
+				<p class="vr-meta">Erstellt von { view.CreatedByName }</p>
+			}
+			if view.Run.InputsSHA256 != "" {
+				<details class="vr-meta"><summary>Prüfdaten</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
+			}
 		}
 	</article>
 }
@@ -930,7 +937,7 @@ templ ValorisationNewAction(primary bool) {
 }
 
 templ ValorisationDeadline(item store.ValorisationItem) {
-	<p class="vr-deadline">Schreiben bis <strong>{ LeaseDate(item.NoticeDeadline) }</strong> versenden, damit der erhöhte Mietzins ab <strong>{ LeaseDate(item.CollectableFrom) }</strong> fällig wird (§ 16 Abs 9 MRG).</p>
+	<p class="vr-deadline">Das Schreiben muss dem Mieter spätestens am <strong>{ LeaseDate(item.NoticeDeadline) }</strong> zugehen, damit der erhöhte Mietzins ab <strong>{ LeaseDate(item.CollectableFrom) }</strong> fällig wird (§ 16 Abs 9 MRG). Postlaufzeit einplanen.</p>
 }
 
 templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) {

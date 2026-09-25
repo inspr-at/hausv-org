@@ -109,6 +109,9 @@ func (a *app) valorisationPage(w http.ResponseWriter, r *http.Request, ac authCt
 				return
 			}
 			view := web.ValorisationRunView{Run: run, URL: target, CanApprove: canApprove, Groups: web.ValorisationGroups(run), Deliveries: deliveries, OpenExceptions: run.OpenExceptionCount(), ApprovalDate: run.ApprovalNotBefore(now)}
+			if profile, ok := a.directoryProfile(run.CreatedBy); ok {
+				view.CreatedByName = profile.DisplayName()
+			}
 			if r.URL.Query().Get("notice_run") == run.ID {
 				view.Notice = valorisationApprovalNotice(run, r.URL.Query().Get("notice"), now)
 			}
@@ -411,10 +414,8 @@ func valorisationApprovalErrorCode(err error) string {
 func valorisationApprovalNotice(run store.ValorisationRun, code string, now time.Time) string {
 	switch code {
 	case "exceptions":
-		for _, item := range run.Items {
-			if issue := item.ApprovalException(); issue != "" {
-				return "Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: " + issue
-			}
+		if count := run.OpenExceptionCount(); count > 0 {
+			return web.ValorisationExceptionNotice(count)
 		}
 	case "four-eyes":
 		return "Vier-Augen-Regel: eine andere Person muss freigeben."

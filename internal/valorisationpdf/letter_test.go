@@ -92,15 +92,25 @@ func TestLetterVariants(t *testing.T) {
 			if strings.HasPrefix(variant, "staffel-") && !strings.Contains(text, "Staffelmietzins laut Vertrag") {
 				t.Fatal("Staffel letter basis missing", text)
 			}
-			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1|[0-9]{4}-[0-9]{2}-[0-9]{2}`).MatchString(text) {
+			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|[0-9]+,[0-9]{3,} %|percent|Kurve exakt|top-1|[0-9]{4}-[0-9]{2}`).MatchString(text) {
 				t.Fatal("technical notation in letter", text)
 			}
 			if !strings.Contains(text, "Top 1 · Eva Huber") {
 				t.Fatal("unit and tenant label missing", text)
 			}
-			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Statistik Austria"} {
+			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Statistik Austria", "Sehr geehrte Damen und Herren,", "Für Rückfragen:", "Mit freundlichen Grüßen"} {
 				if !strings.Contains(text, want) {
 					t.Errorf("missing %q", want)
+				}
+			}
+			if strings.Contains(text, "Wertsicherung · Janusbergweg 123 · Janusbergweg 123") {
+				t.Fatal("house repeated in subtitle")
+			}
+			if !strings.HasPrefix(variant, "staffel-") {
+				for _, want := range []string{"VPI 2020, Basis September 2024: 123,6", "Auslösemonat Dezember 2025", "5,02 %"} {
+					if !strings.Contains(text, want) {
+						t.Errorf("letter formatting missing %q", want)
+					}
 				}
 			}
 			if strings.Contains(text, "Entwurf") {
@@ -108,6 +118,9 @@ func TestLetterVariants(t *testing.T) {
 			}
 			if item.RequiresMRGNotice && !strings.Contains(text, "§ 16 Abs 9 MRG") {
 				t.Fatal("MRG notice missing")
+			}
+			if item.RequiresMRGNotice && (!strings.Contains(text, Date(item.NoticeDeadline)) || !strings.Contains(text, "zugeht") || !strings.Contains(text, "14 Tage")) {
+				t.Fatal("receipt deadline missing")
 			}
 			if item.MieWeG && !strings.Contains(text, "niedrigere Betrag") {
 				t.Fatal("parallel decision missing")
