@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -273,8 +274,8 @@ func (a *app) chargingAdminView(tenant tenantConfig, query url.Values) parkingCh
 		ShadowMode:       cfg.ShadowMode,
 		StartSocValue:    strings.ReplaceAll(strconv.FormatFloat(cfg.StartSocPercent, 'f', -1, 64), ".", ","),
 		StopSocValue:     strings.ReplaceAll(strconv.FormatFloat(cfg.StopSocPercent, 'f', -1, 64), ".", ","),
-		StartFeedInValue: strconv.FormatFloat(cfg.StartFeedInW, 'f', 0, 64),
-		StopFeedInValue:  strconv.FormatFloat(cfg.StopFeedInW, 'f', 0, 64),
+		StartFeedInValue: formatChargingKW(cfg.StartFeedInW),
+		StopFeedInValue:  formatChargingKW(cfg.StopFeedInW),
 		StopDelayValue:   strconv.Itoa(cfg.StopDelayMinutes),
 		MinOnValue:       strconv.Itoa(cfg.MinOnMinutes),
 		MinOffValue:      strconv.Itoa(cfg.MinOffMinutes),
@@ -490,16 +491,18 @@ func chargingControlFromForm(values url.Values) (chargingControlSettings, error)
 	}{
 		{"start_soc_percent", &cfg.StartSocPercent, 1, 100},
 		{"stop_soc_percent", &cfg.StopSocPercent, 1, 100},
-		{"start_feed_in_w", &cfg.StartFeedInW, 100, 50000},
-		{"stop_feed_in_w", &cfg.StopFeedInW, 50, 50000},
+		{"start_feed_in_kw", &cfg.StartFeedInW, 0.1, 50},
+		{"stop_feed_in_kw", &cfg.StopFeedInW, 0.05, 50},
 	}
 	for _, number := range numbers {
 		value, err := parseDecimal(values.Get(number.field))
-		if err != nil || value < number.min || value > number.max {
+		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) || value < number.min || value > number.max {
 			return chargingControlSettings{}, errInvalidChargingForm
 		}
 		*number.dst = value
 	}
+	cfg.StartFeedInW *= 1000
+	cfg.StopFeedInW *= 1000
 	minutes := []struct {
 		field string
 		dst   *int
@@ -602,4 +605,9 @@ func formatWatt(value float64) string {
 		return formatEnergyValueUnit(strings.ReplaceAll(strconv.FormatFloat(value/1000, 'f', 1, 64), ".", ","), "kW")
 	}
 	return formatEnergyValueUnit(strconv.FormatFloat(value, 'f', 0, 64), "W")
+}
+
+// The form speaks kW; storage and the controller continue to use watts.
+func formatChargingKW(watts float64) string {
+	return strings.ReplaceAll(strconv.FormatFloat(watts/1000, 'f', -1, 64), ".", ",")
 }

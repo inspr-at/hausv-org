@@ -44,7 +44,7 @@ func TestLegacyRoutesUseSharedShellAndPreserveFormsHAUSV705(t *testing.T) {
 	}{
 		{"/app/anliegen/" + item.ID + "?created=1", "resident@example.com", map[string][]string{"/app/anliegen/comment": {"id", "redirect", "body", "attachments"}}},
 		{"/app/parking/settings", "admin@example.com", map[string][]string{"/app/parking/settings": {"effective_from", "grid_fee_eur_per_kwh", "base_fee_eur", "surplus_rate_eur_per_kwh"}, "/app/parking/reminders": {}}},
-		{"/app/parking/settings?section=charging", "admin@example.com", map[string][]string{"/app/parking/charging/settings": {"controller_enabled", "shadow_mode", "start_soc_percent", "start_feed_in_w", "stop_soc_percent", "stop_feed_in_w", "stop_delay_minutes", "min_on_minutes", "min_off_minutes"}}},
+		{"/app/parking/settings?section=charging", "admin@example.com", map[string][]string{"/app/parking/charging/settings": {"controller_enabled", "shadow_mode", "start_soc_percent", "start_feed_in_kw", "stop_soc_percent", "stop_feed_in_kw", "stop_delay_minutes", "min_on_minutes", "min_off_minutes"}}},
 		{"/app/parking/settings?section=telegram", "admin@example.com", map[string][]string{"/app/parking/charging/telegram/link": {"email"}}},
 		{"/app/parking/month/2026-06", "admin@example.com", map[string][]string{"/app/parking/month": {"month", "paid", "paid_at", "payment_method", "payment_reference"}}},
 		{"/app/settings/parking-access", "admin@example.com", map[string][]string{"/app/settings/parking-access": {"email", "parking"}}},

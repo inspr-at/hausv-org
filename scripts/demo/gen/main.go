@@ -269,7 +269,7 @@ func buildHousesAndPersons() ([]house, []person) {
 		houses = append(houses, house{Slug: spec.slug, Name: spec.name, Address: spec.address, Organisation: "musterstadt", Units: units})
 	}
 	houses[0].Contacts = buildDemoContacts()
-	houses[0].Ballots = buildDemoBallots()
+	houses[0].Ballots = buildDemoBallots(houses[0])
 	return houses, people
 }
 

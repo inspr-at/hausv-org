@@ -40,7 +40,24 @@ func buildDemoContacts() []map[string]any {
 			"updated_at": "2026-09-01T09:00:00+02:00"}}
 }
 
-func buildDemoBallots() []map[string]any {
+func buildDemoBallots(home house) []map[string]any {
+	// Same real unit shares as the annual-statement seed, summed per owner.
+	weights := map[string]int{}
+	for i, unit := range home.Units {
+		weights[unit.OwnerEmail] += demoUnitSharePPM(i, len(home.Units))
+	}
+	votes := map[string]any{}
+	for i, owner := range []string{"alina.eigentuemer", "hedwig.beirat", "jonas.meier", "anna.gruber", "nina.hofer", "felix.wagner", "laura.schmid", "sara.klein", "thomas.berger"} {
+		email := owner + "@musterstadt.example"
+		option := "Ja"
+		if i == 7 {
+			option = "Nein"
+		}
+		if i == 8 {
+			option = "Enthaltung"
+		}
+		votes[email] = map[string]any{"option": option, "weight": weights[email], "at": "2026-09-03T10:00:00+02:00"}
+	}
 	return []map[string]any{
 		{"id": "demo-ballot-fassade-2027",
 			"title":       "Sanierung Fassade 2027",
@@ -55,9 +72,7 @@ func buildDemoBallots() []map[string]any {
 			"created_at":  "2026-08-19T09:00:00+02:00",
 			"updated_at":  "2026-09-04T18:00:00+02:00",
 			"status":      "closed",
-			"votes": map[string]any{"alina.eigentuemer@musterstadt.example": map[string]any{"option": "Ja",
-				"weight": 1000000,
-				"at":     "2026-09-03T10:00:00+02:00"}}},
+			"votes":       votes},
 		{"id": "demo-ballot-ebikes",
 			"title":       "Fahrradraum: Ladepunkte für E-Bikes",
 			"description": "Soll die Verwaltung die technische Machbarkeit und Kosten von vier abschließbaren Ladepunkten prüfen lassen? Die Prüfung umfasst Stromversorgung, Brandschutz und eine getrennte Verbrauchserfassung. Über die Umsetzung wird anschließend gesondert entschieden.",
@@ -90,4 +105,12 @@ func buildDemoMembers() []map[string]any {
 		})
 	}
 	return members
+}
+
+func demoUnitSharePPM(index, count int) int {
+	ppm := 1_000_000 / count
+	if index < 1_000_000%count {
+		ppm++
+	}
+	return ppm
 }
