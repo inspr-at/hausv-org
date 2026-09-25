@@ -168,8 +168,10 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 	settlement, settlementReady := store.AnnualStatementSettlementPreviewWithAgreed(costTypes, selectedReceipts, units, consumption.Vectors, legal.AgreedShares)
+	previousHeatingMissing := false
 	if legal.HeizKGApplies && ac.repositories.annualStatementRuns != nil {
-		_, result, err := ac.repositories.annualStatementRuns.Preview(selectedYear, consumption.Vectors)
+		input, result, err := ac.repositories.annualStatementRuns.Preview(selectedYear, consumption.Vectors)
+		previousHeatingMissing = input.Period.Year != 0 && input.PreviousHeating == nil
 		settlement = nil
 		settlementReady = err == nil
 		if err == nil {
@@ -233,8 +235,9 @@ func (a *app) renderAnnualStatementPage(w http.ResponseWriter, r *http.Request, 
 	a.renderSettingsComponent(w, r, tenant.Slug, web.AnnualStatementPage(web.AnnualStatementPageData{
 		Portal:     a.settingsPortalContext(ac, "Jahresabrechnung", "settings"),
 		EstateName: tenant.Name, EstateAddress: tenant.Address,
-		Legal:   legal,
-		Periods: periodViews, HasPeriods: len(periodViews) > 0,
+		Legal:                  legal,
+		PreviousHeatingMissing: previousHeatingMissing,
+		Periods:                periodViews, HasPeriods: len(periodViews) > 0,
 		Year: formYear, StructureYear: structureYear, StartsOn: startsOn, EndsOn: endsOn,
 		PeriodMsg: periodMsg, PeriodOK: periodOK, Followup: followup, ImportMsg: importMsg, ImportOK: importOK,
 		CostTypes: costTypeViews, CostTypeCount: len(costTypeViews), AllocatableCostTypeCount: allocatableCount,

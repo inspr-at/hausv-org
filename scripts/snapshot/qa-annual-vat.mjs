@@ -36,7 +36,9 @@ try {
     for (let parent = node.parentElement; parent; parent = parent.parentElement) if (parent.tagName === 'DETAILS') parent.open = true;
   });
   const vatSwitch = page.locator('input[name="show_vat"]');
-  assert.equal(await vatSwitch.isChecked(), false);
+  assert.equal(await vatSwitch.isChecked(), true, 'Demo provides the VAT basis for tenant statements');
+  await vatSwitch.uncheck();
+  await page.getByRole('button', { name: 'Rechtsgrundlage speichern', exact: true }).click();
   const rate = (key) => page.locator(`form:has(input[name="key"][value="${key}"]) select[name="vat_rate"]`);
   assert.equal(await rate('heizung').inputValue(), '20');
   assert.equal(await rate('versicherung').inputValue(), '10');

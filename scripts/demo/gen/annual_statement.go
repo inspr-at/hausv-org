@@ -18,6 +18,7 @@ func buildAnnualStatement(home house) any {
 	bases := []map[string]any{}
 	legal := store.DefaultAnnualStatementLegalSettings()
 	legal.HeizKGApplies = true
+	legal.ShowVAT = true
 	legal.InspectionPlace = "Hausverwaltung Musterstadt, Janusbergweg 123, 8010 Graz"
 	legal.InspectionPeriod = "Nach Terminvereinbarung, Montag bis Freitag 9–12 Uhr"
 	legal.InspectionContact = "vera.verwalter@musterstadt.example"

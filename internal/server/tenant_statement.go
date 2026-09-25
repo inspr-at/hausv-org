@@ -301,6 +301,7 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 	}
 	out.Enabled = true
 	out.RunID = runID
+	out.VATSettingsURL = "?year=" + strconv.Itoa(run.PeriodYear) + "#rechtsgrundlage"
 	out.StatementOn = time.Now().Format(time.DateOnly)
 	history, err := ac.repositories.leases.List()
 	if err != nil {
@@ -323,13 +324,30 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 			return out
 		}
 		unit := web.TenantStatementUnitView{ID: u.UnitID, Label: u.Label, Active: m.Active, HeatingMonthlyConfirmed: m.HeatingMonthlyConfirmed, OwnerEmail: m.OwnerEmail}
+		unit.DeriveIssue = store.TenantStatementOwnerChangeIssue(run, u.UnitID, m.OwnerEmail)
+		var ownerPeriods []string
 		for _, p := range run.Input.Parties {
 			if p.UnitID == u.UnitID && p.Owner {
-				unit.Owners = append(unit.Owners, web.TenantStatementOption{Key: p.ID, Label: p.Name, Selected: p.ID == m.OwnerEmail})
+				label := p.Name
+				if unit.DeriveIssue != "" {
+					from, to := p.ValidFrom, p.ValidTo
+					if from == "" || from < run.Input.Period.StartsOn {
+						from = run.Input.Period.StartsOn
+					}
+					if to == "" || to > run.Input.Period.EndsOn {
+						to = run.Input.Period.EndsOn
+					}
+					label += " (" + partyDateLabel(from, to) + ")"
+					ownerPeriods = append(ownerPeriods, label)
+				}
+				unit.Owners = append(unit.Owners, web.TenantStatementOption{Key: p.ID, Label: label, Selected: p.ID == m.OwnerEmail})
 				if p.ID == m.OwnerEmail {
 					unit.OwnerName = p.Name
 				}
 			}
+		}
+		if len(ownerPeriods) > 0 {
+			unit.OwnerName = strings.Join(ownerPeriods, "; ")
 		}
 		for _, c := range run.Input.Structure.CostTypes {
 			if store.IsAnnualHeatingCost(c.Key) {
@@ -342,6 +360,9 @@ func (a *app) tenantStatementPanel(ac authCtx, runID, message string) web.Tenant
 			unit.Costs = append(unit.Costs, web.TenantStatementOption{Key: c.Key, Label: c.Name, Selected: pass})
 		}
 		for _, l := range leases {
+			if l.VATOpted && !run.Input.Structure.Legal.ShowVAT {
+				unit.VATIssue = store.TenantStatementVATIssue
+			}
 			names := []string{}
 			for _, p := range l.Parties {
 				names = append(names, p.Name)

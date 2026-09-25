@@ -629,7 +629,10 @@ document.querySelectorAll("[data-agreed-shares]").forEach((form) => {
     const valid = complete && total === 1000000;
     output.dataset.valid = String(valid);
     output.textContent = `${(total / 10000).toLocaleString("de-AT", {maximumFractionDigits: 4})} % / 100 % · ${valid ? "vollständig" : "Bitte alle Anteile prüfen"}`;
-    form.querySelector('button[type="submit"]').disabled = !valid;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = !valid;
+    button.classList.toggle("primary", valid);
+    button.classList.toggle("ghost", !valid);
   };
   form.addEventListener("input", update);
   update();

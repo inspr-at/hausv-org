@@ -23,7 +23,7 @@ type RentalManagement struct {
 
 func DefaultTenantPassable(key string) bool {
 	switch key {
-	case "grundsteuer", "muellabfuhr", "hausbetreuung", "wasser", "kaltwasser", "kanal", "abwasser", "rauchfangkehrer", "schaedlingsbekaempfung", "allgemeinstrom":
+	case "grundsteuer", "muellabfuhr", "abfall", "reinigung", "hausreinigung", "hausbetreuung", "wasser", "kaltwasser", "kanal", "abwasser", "wasser_abwasser", "rauchfangkehrer", "schaedlingsbekaempfung", "allgemeinstrom", "beleuchtung":
 		return true
 	}
 	// Combined insurance, administration and special facilities require review
@@ -34,6 +34,33 @@ func DefaultTenantPassable(key string) bool {
 func tenantReserveCost(key string) bool {
 	k := strings.ToLower(key)
 	return strings.Contains(k, "ruecklag") || strings.Contains(k, "rücklag") || strings.Contains(k, "reserve")
+}
+
+// TenantStatementOwnerChangeIssue is shared by the preview and the write gate.
+func TenantStatementOwnerChangeIssue(run AnnualStatementRun, unitID, ownerID string) string {
+	if _, split := AnnualStatementPartyAllocation(run, unitID, ownerID); split {
+		for _, party := range run.Input.Parties {
+			if party.UnitID == unitID && party.Owner && party.ID != ownerID {
+				return "Bei Eigentümerwechsel benötigt die Mieterabrechnung eine gesonderte Zuordnung der Vermieterzeiträume und Akontos."
+			}
+		}
+	}
+	return ""
+}
+
+const TenantStatementVATIssue = "Für USt-pflichtige Vermietung benötigt der WEG-Lauf eine ausgewiesene Netto-/USt-Basis."
+
+func tenantLeaseDescription(l Lease) string {
+	var names []string
+	for _, p := range l.Parties {
+		if name := strings.TrimSpace(p.Name); name != "" {
+			names = append(names, name)
+		}
+	}
+	if len(names) == 0 {
+		return "Mietvertrag dieser Einheit"
+	}
+	return "Mietvertrag von " + strings.Join(names, ", ")
 }
 
 type TenantStatementLine struct {
@@ -127,12 +154,8 @@ func DeriveTenantStatement(run AnnualStatementRun, management RentalManagement, 
 	// v4/v5 can split a unit between successive WEG owners. This v1 tenant
 	// workflow has no landlord periods for lease Akontos, so using the whole
 	// unit (or just scaling its costs) would settle against the wrong owner.
-	if _, split := AnnualStatementPartyAllocation(run, management.UnitID, management.OwnerEmail); split {
-		for _, party := range run.Input.Parties {
-			if party.UnitID == management.UnitID && party.Owner && party.ID != management.OwnerEmail {
-				return fail("Bei Eigentümerwechsel benötigt die Mieterabrechnung eine gesonderte Zuordnung der Vermieterzeiträume und Akontos.")
-			}
-		}
+	if issue := TenantStatementOwnerChangeIssue(run, management.UnitID, management.OwnerEmail); issue != "" {
+		return fail(issue)
 	}
 	legal := run.Input.Structure.Legal
 	if legal.InspectionPlace == "" || legal.InspectionPeriod == "" || legal.InspectionContact == "" {
@@ -237,7 +260,7 @@ func DeriveTenantStatement(run AnnualStatementRun, management RentalManagement, 
 			}
 			due = contractDueOn
 			if _, ok := management.ContractCosts[l.ID]; !ok {
-				return 0, fmt.Errorf("Vereinbarter Kostenkatalog fehlt für %s.", l.ID)
+				return 0, fmt.Errorf("Im %s fehlt der vereinbarte Kostenkatalog.", tenantLeaseDescription(l))
 			}
 		}
 		i := len(out.Accounts)
@@ -345,7 +368,7 @@ func DeriveTenantStatement(run AnnualStatementRun, management RentalManagement, 
 				continue
 			}
 			if l.VATOpted && !legal.ShowVAT {
-				return fail("Für USt-pflichtige Vermietung benötigt der WEG-Lauf eine ausgewiesene Netto-/USt-Basis.")
+				return fail(TenantStatementVATIssue)
 			}
 			line := TenantStatementLine{Key: c.CostTypeKey, Name: c.Name, Heating: heating, SourceGrossCents: share, NetCents: share, GrossCents: share}
 			if l.VATOpted {
@@ -439,7 +462,11 @@ func tenantPrepayments(l Lease, kind string, intervals []TenantStatementInterval
 				}
 			}
 			if chosen == nil {
-				return 0, fmt.Errorf("%s-Akonto fehlt im Mietvertrag %s; auch Nullbeträge ausdrücklich erfassen.", kind, l.ID)
+				label := "Betriebskosten-Akonto"
+				if kind == ComponentHeizAkonto {
+					label = "Heizkosten-Akonto"
+				}
+				return 0, fmt.Errorf("Im %s fehlt das %s. Auch 0,00 € ist einzutragen.", tenantLeaseDescription(l), label)
 			}
 			if chosen.NetCents < 0 || chosen.NetCents > 1_000_000_000_000 || chosen.VATRateBP < 0 || chosen.VATRateBP > 10000 {
 				return 0, fmt.Errorf("Ungültiges Mietakonto.")

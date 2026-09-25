@@ -620,46 +620,69 @@ func AnnualStatementHeatingInformation(data AnnualStatementPageData, info store.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</summary><p>Ein vorhandener Lauf des gleichen Vorjahreszeitraums wird automatisch übernommen. Der Hausvergleich verwendet versorgte Einheiten derselben Nutzerkategorie. Für Heizung die fachlich ermittelten Klimafaktoren beider Zeiträume samt Quelle erfassen; 1 entspricht dem unveränderten Verbrauch. Fehlende Faktoren werden im PDF ausgewiesen.</p><div class=\"form-grid\"><label>Klimafaktor aktuelle Periode<input inputmode=\"decimal\" name=\"climate_current_factor\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</summary><p>Ein vorhandener Lauf des gleichen Vorjahreszeitraums wird automatisch übernommen. Der Hausvergleich verwendet versorgte Einheiten derselben Nutzerkategorie. Für Heizung die fachlich ermittelten Klimafaktoren beider Zeiträume samt Quelle erfassen; 1 entspricht dem unveränderten Verbrauch. Fehlende Faktoren werden im PDF ausgewiesen.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var35 string
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualClimateNumber(info.ClimateCurrentPPM))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 109, Col: 170}
+		if data.PreviousHeatingMissing {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<p class=\"form-hint\">Für den gleichen Vorjahreszeitraum (")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var35 string
+			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.StructureYear - 1))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 110, Col: 99}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, ") ist noch kein Lauf gespeichert. Die Klimafaktoren wirken im Verbrauchsvergleich erst, sobald dieser Vorjahreslauf vorliegt und die aktuelle Abrechnung neu berechnet wird.</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"></label><label>Klimafaktor Vorperiode<input inputmode=\"decimal\" name=\"climate_previous_factor\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"form-grid\"><label>Klimafaktor aktuelle Periode<input inputmode=\"decimal\" name=\"climate_current_factor\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var36 string
-		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualClimateNumber(info.ClimatePreviousPPM))
+		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualClimateNumber(info.ClimateCurrentPPM))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 109, Col: 321}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 112, Col: 170}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\"></label></div><label>Quelle und Methode der Klimakorrektur<textarea name=\"climate_source\" maxlength=\"2000\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\"></label><label>Klimafaktor Vorperiode<input inputmode=\"decimal\" name=\"climate_previous_factor\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var37 string
-		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(info.ClimateSource)
+		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.ResolveAttributeValue(annualClimateNumber(info.ClimatePreviousPPM))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 110, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 112, Col: 321}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</textarea></label></details> <details><summary>Verbrauchsinformation und Beschwerden")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\"></label></div><label>Quelle und Methode der Klimakorrektur<textarea name=\"climate_source\" maxlength=\"2000\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var38 string
+		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(info.ClimateSource)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 113, Col: 117}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</textarea></label></details> <details><summary>Verbrauchsinformation und Beschwerden")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -667,63 +690,63 @@ func AnnualStatementHeatingInformation(data AnnualStatementPageData, info store.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</summary> <label>Fernablesbare Zähler<select name=\"remote_meters\"><option value=\"\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</summary> <label>Fernablesbare Zähler<select name=\"remote_meters\"><option value=\"\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if info.RemoteMeters == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, ">Noch zu prüfen</option><option value=\"yes\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, ">Noch zu prüfen</option><option value=\"yes\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if info.RemoteMeters == "yes" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, ">Ja</option><option value=\"no\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, ">Ja</option><option value=\"no\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if info.RemoteMeters == "no" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, " selected")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, ">Nein</option></select></label> <label>Monatliche Verbrauchsinformation: Zugang und Kontakt<textarea name=\"monthly_information\" maxlength=\"2000\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var38 string
-		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(info.MonthlyInformation)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 116, Col: 142}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</textarea></label><p>Bei Fernablesung sind während der Heiz- und Kühlperioden monatliche Informationen erforderlich (§ 17 Abs. 5 HeizKG). Diese Jahresabrechnung ersetzt deren Bereitstellung nicht.</p><label>Beschwerdekontakt / zuständige Schlichtungsstelle<textarea name=\"complaint_contact\" maxlength=\"2000\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, ">Nein</option></select></label> <label>Monatliche Verbrauchsinformation: Zugang und Kontakt<textarea name=\"monthly_information\" maxlength=\"2000\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var39 string
-		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(info.ComplaintContact)
+		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(info.MonthlyInformation)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 118, Col: 136}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 119, Col: 142}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</textarea></label></details><div class=\"form-actions\"><button type=\"submit\" class=\"button primary\">HeizKG-Informationen speichern</button></div></form></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</textarea></label><p>Bei Fernablesung sind während der Heiz- und Kühlperioden monatliche Informationen erforderlich (§ 17 Abs. 5 HeizKG). Diese Jahresabrechnung ersetzt deren Bereitstellung nicht.</p><label>Beschwerdekontakt / zuständige Schlichtungsstelle<textarea name=\"complaint_contact\" maxlength=\"2000\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var40 string
+		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(info.ComplaintContact)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/annual_statement_information.templ`, Line: 121, Col: 136}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</textarea></label></details><div class=\"form-actions\"><button type=\"submit\" class=\"button primary\">HeizKG-Informationen speichern</button></div></form></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -139,3 +139,70 @@ func TestTenantStatementRoutesArchiveDeliveryAndDenials(t *testing.T) {
 		}
 	}
 }
+
+func TestTenantDemoAkontoAmounts(t *testing.T) {
+	a, repos, _ := newArchiveDemoApp(t)
+	a.leaseStore = store.NewSQLLeaseStore(a.tenantDB)
+	run := createArchiveDemoRun(t, a, repos)
+	if !run.Input.Structure.Legal.ShowVAT {
+		t.Fatal("demo VAT basis missing")
+	}
+	leasesRepo, _ := store.BindLeaseRepository(a.leaseStore, a.tenantIdentities[archiveDemoTenant].Ref())
+	leases, err := leasesRepo.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, lease := range leases {
+		m := store.RentalManagement{UnitID: lease.UnitID, Active: true, HeatingMonthlyConfirmed: true, ContractCosts: map[string][]string{lease.ID: {"abfall", "reinigung", "versicherung", "lift"}}}
+		for _, p := range run.Input.Parties {
+			if p.UnitID == lease.UnitID && p.Owner {
+				m.OwnerEmail = p.ID
+				break
+			}
+		}
+		s, err := store.DeriveTenantStatement(run, m, []store.Lease{lease}, "2026-06-20", "2026-08-05")
+		if lease.UnitID == "top-3" {
+			if err == nil || !strings.Contains(err.Error(), "Eigentümerwechsel") {
+				t.Fatal("split owner must remain blocked", err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(lease.UnitID, err)
+		}
+		for _, account := range s.Accounts {
+			if account.Landlord {
+				continue
+			}
+			for _, component := range [][2]int64{{account.OperatingCents, account.OperatingPrepaidCents}, {account.HeatingCents, account.HeatingPrepaidCents}} {
+				if component[1]*100 < component[0]*85 || component[1]*100 > component[0]*115 {
+					t.Errorf("%s akonto %d is not within 15%% of %d", lease.UnitID, component[1], component[0])
+				}
+			}
+			if account.BalanceCents() == 0 {
+				t.Error("demo balance must be realistic and nonzero", lease.UnitID)
+			}
+			t.Logf("%s passed=%d retained=%d bk=%d heat=%d prepaid=%d saldo=%d", lease.UnitID, s.SourcePassedCents, s.SourceRetainedCents, account.OperatingCents, account.HeatingCents, account.OperatingPrepaidCents+account.HeatingPrepaidCents, account.BalanceCents())
+		}
+	}
+	// VAT is a breakdown of the same owner expense, never an added charge.
+	legal := run.Input.Structure.Legal
+	legal.ShowVAT = false
+	if err := repos.annualStatementPeriods.SaveLegal(2025, legal); err != nil {
+		t.Fatal(err)
+	}
+	_, withoutVAT, err := repos.annualStatementRuns.Preview(2025, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, unit := range run.Result.Units {
+		before := withoutVAT.Units[i]
+		if unit.UnitID != before.UnitID || unit.AllocatedCents != before.AllocatedCents || unit.PrepaidCents != before.PrepaidCents {
+			t.Fatalf("VAT changed owner result: %+v / %+v", unit, before)
+		}
+		t.Logf("owner %s costs=%d prepaid=%d", unit.UnitID, unit.AllocatedCents, unit.PrepaidCents)
+		if unit.UnitID == "top-1" && (unit.AllocatedCents != 87169 || unit.PrepaidCents != 60000) {
+			t.Fatal("Top 1 changed", unit)
+		}
+	}
+}

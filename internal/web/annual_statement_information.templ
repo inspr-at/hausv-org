@@ -106,6 +106,9 @@ templ AnnualStatementHeatingInformation(data AnnualStatementPageData, info store
                     @DisclosureChevron()
                 </summary>
 				<p>Ein vorhandener Lauf des gleichen Vorjahreszeitraums wird automatisch übernommen. Der Hausvergleich verwendet versorgte Einheiten derselben Nutzerkategorie. Für Heizung die fachlich ermittelten Klimafaktoren beider Zeiträume samt Quelle erfassen; 1 entspricht dem unveränderten Verbrauch. Fehlende Faktoren werden im PDF ausgewiesen.</p>
+				if data.PreviousHeatingMissing {
+					<p class="form-hint">Für den gleichen Vorjahreszeitraum ({ strconv.Itoa(data.StructureYear-1) }) ist noch kein Lauf gespeichert. Die Klimafaktoren wirken im Verbrauchsvergleich erst, sobald dieser Vorjahreslauf vorliegt und die aktuelle Abrechnung neu berechnet wird.</p>
+				}
 				<div class="form-grid"><label>Klimafaktor aktuelle Periode<input inputmode="decimal" name="climate_current_factor" value={ annualClimateNumber(info.ClimateCurrentPPM) }/></label><label>Klimafaktor Vorperiode<input inputmode="decimal" name="climate_previous_factor" value={ annualClimateNumber(info.ClimatePreviousPPM) }/></label></div>
 				<label>Quelle und Methode der Klimakorrektur<textarea name="climate_source" maxlength="2000">{ info.ClimateSource }</textarea></label>
 			</details>

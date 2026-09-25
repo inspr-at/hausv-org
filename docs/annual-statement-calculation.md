@@ -505,6 +505,9 @@ als Dezimalfaktor, intern weiterhin Millionstel) samt
 Quelle/Methode hinterlegt werden. Der korrigierte Verbrauch ist
 `Verbrauch × Klimafaktor / 1.000.000`. Ohne diese Eingabe kennzeichnet das PDF die
 fehlende Klimabereinigung ausdrücklich. HAUSV beschafft keine Wetterdaten.
+Fehlt noch der gespeicherte Lauf des gleichen Vorjahreszeitraums, erläutert
+ein Hinweis direkt bei den Klimafaktoren, dass sie erst nach dessen Erfassung
+und einer Neuberechnung der aktuellen Abrechnung im Vergleich wirken.
 
 Der Hausvergleich bildet das arithmetische Mittel der gemessenen Verbräuche
 versorgter Einheiten derselben gespeicherten Nutzerkategorie (`UnitType`),
@@ -547,6 +550,10 @@ und Gemeinschaftsanlagen müssen wegen zusätzlicher Voraussetzungen ausdrückli
 geprüft werden. Teilanwendung und Ausnahme verwenden einen eigenen vereinbarten
 Kostenkatalog je Mietvertrag und eine ausdrücklich eingegebene Vertragsfälligkeit.
 Die Rücklage wird auch bei eingeschaltetem Filter niemals überwälzt.
+Neue Mandate wählen vorhandene gewöhnliche Kostenarten wie Hausreinigung,
+Abfallentsorgung, Wasser/Abwasser, Rauchfangkehrer, Schädlingsbekämpfung,
+Beleuchtung und Hausbetreuung vor. Gespeicherte Abwahlen bleiben erhalten.
+Die geschlossene Einheitenzeile nennt Mietpartei und MRG-Anwendungsbereich.
 
 `rental_management` speichert das Mandat. `tenant_statements` speichert den
 WEG-Lauf, seine Freigabe, Mandat, Mietverträge, zeitlich gültige Parteien und
@@ -560,6 +567,9 @@ Die WEG-Empfängerliste bleibt auf Eigentümer beschränkt; Mietparteien kommen
 aus den gespeicherten Mietverträgen. Teilt ein v4-/v5-WEG-Lauf eine Einheit
 zwischen aufeinanderfolgenden Eigentümern auf, sperrt v1 die Mieterableitung
 mit einem Hinweis auf die gesondert zuzuordnenden Vermieterzeiträume und Akontos.
+Beide Eigentümer und ihre Zeiträume stehen bereits in der geschlossenen Zeile;
+der Hinweis ersetzt den Erstellen-Knopf. Eine fehlende USt-Basis wird ebenfalls
+vorab mit einem Link zur Rechtsgrundlage erklärt.
 Der gesamte Einheitsbetrag darf nicht nochmals jedem Eigentümer zugerechnet
 werden; die nötige zeitliche Vermieterzuordnung ist noch nicht modelliert.
 
@@ -577,6 +587,10 @@ Vertragsregel. Es werden Kalenderjahre unterstützt.
 BK- und Heiz-Akontos kommen aus den datierten Mietzinsbestandteilen, einschließlich
 deren hinterlegter Umsatzsteuer. Es handelt sich um vertragliche Akontos, nicht um
 einen Zahlungsabgleich mit dem Bankkonto. Fehlende Beträge gelten nicht als Null.
+Fehlende Akontos und Kostenkataloge nennen Mietpartei und deutsche
+Komponentenbezeichnung, keine internen Vertragsschlüssel. Die Janusbergweg-Demo
+weist 2025 Umsatzsteuer aus; ihre Mietakontos liegen nahe den tatsächlich
+überwälzten Kosten. WEG-Kosten und Eigentümer-Vorauszahlungen bleiben unverändert.
 Bei USt-Option muss der WEG-Lauf Netto und Steuer ausweisen. Aus dessen Nettoanteil
 entstehen 10 % für Wohnungs-BK bzw. 20 % für Geschäft, Garage und Heizkosten;
 ohne Option bleibt der Bruttoaufwand ohne gesonderten Steuerausweis. Der Abgleich
