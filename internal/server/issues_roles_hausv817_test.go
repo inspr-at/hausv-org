@@ -47,6 +47,16 @@ func TestHausv817BoardPrivacyAcrossRoutes(t *testing.T) {
 		if strings.Contains(body, "Private other unit report") {
 			t.Errorf("%s leaked private title", path)
 		}
+		if path == "/demo/app" {
+			for _, metric := range []string{
+				`class="metric" href="/demo/app/anliegen"><strong>2</strong>`,
+				`class="count-tile" href="/demo/app/anliegen"><strong>2</strong>`,
+			} {
+				if !strings.Contains(body, metric) {
+					t.Errorf("home count must exclude the other unit's private issue: missing %s", metric)
+				}
+			}
+		}
 	}
 	for _, id := range []string{"own", "common", "private"} {
 		want := http.StatusOK

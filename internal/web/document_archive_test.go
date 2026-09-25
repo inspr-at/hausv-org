@@ -61,7 +61,7 @@ func TestDocumentLibraryUsesCompactRows(t *testing.T) {
 			Documents: []view.DocumentView{
 				{ID: "a", Title: "Jahresabrechnung 2025 · Top 1", Archived: true, ArchiveRunID: "run", ArchiveYear: 2025, ArchiveRevision: 1, Visibility: "Nur Verwaltung", UploadedDate: "02.03.2026", VersionLabel: "Version 1", Size: "20 KB", Filename: "a.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/a/preview", DownloadURL: "/app/dokumente/a/download"},
 				{ID: "b", Title: "Jahresabrechnung 2025 · Top 2", Archived: true, ArchiveRunID: "run", ArchiveYear: 2025, ArchiveRevision: 1, Visibility: "Nur Verwaltung", UploadedDate: "02.03.2026", VersionLabel: "Version 1", Size: "20 KB", Filename: "b.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/b/preview", DownloadURL: "/app/dokumente/b/download"},
-				{ID: "rules", Title: "Hausordnung", Visibility: "Alle Bewohner", VersionLabel: "Version 1", UploadedDate: "01.09.2026", Size: "12 KB", Filename: "hausordnung.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/rules/preview", DownloadURL: "/app/dokumente/rules/download", ReplaceDialogID: "document-replace-rules"},
+				{ID: "rules", Title: "Hausordnung", Visibility: "Alle Bewohner", HasUnit: true, UnitLabel: "Top 2", VersionLabel: "Version 1", UploadedDate: "01.09.2026", Size: "12 KB", Filename: "hausordnung.pdf", FileKind: "PDF", CanPreview: true, PreviewURL: "/app/dokumente/rules/preview", DownloadURL: "/app/dokumente/rules/download", ReplaceDialogID: "document-replace-rules"},
 			},
 		}},
 	}
@@ -91,5 +91,8 @@ func TestDocumentLibraryUsesCompactRows(t *testing.T) {
 	}
 	if strings.Contains(html, ">Vorschau<") {
 		t.Fatal("preview is still a separate filled action")
+	}
+	if strings.Contains(html, "@UnitLabel") || strings.Count(html, ">Einheit Top\u00a02</span>") != 2 {
+		t.Fatal("document metadata and details must render the actual nonbreaking unit label")
 	}
 }
