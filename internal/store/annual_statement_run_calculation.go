@@ -7,6 +7,7 @@ import (
 )
 
 const AnnualStatementCalculationVersion = 2
+const AnnualStatementCalculationVersionAgreed = 5
 
 // AnnualStatementRunInput is an immutable copy of the facts used by a run.
 // Documents contains only originals verified as readable by the repository.
@@ -25,7 +26,8 @@ type AnnualStatementRunInput struct {
 	Evidence      []AnnualStatementConsumptionEvidence        `json:"evidence"`
 	// Reserve is the period's Rücklage bookings copied into the run.
 	// A nil slice means the run predates the snapshot and replays without it.
-	Reserve []AnnualStatementReserveEntry `json:"reserve,omitempty"`
+	Reserve         []AnnualStatementReserveEntry   `json:"reserve,omitempty"`
+	PreviousHeating *AnnualStatementPreviousHeating `json:"previous_heating,omitempty"`
 }
 
 type AnnualStatementRunUnitIdentity struct {
@@ -119,9 +121,14 @@ func CalculateAnnualStatementRun(input AnnualStatementRunInput) (AnnualStatement
 // Replay dispatches by the stored algorithm version; version 1 retains its
 // original single-key heating allocation even when current settings differ.
 func ReplayAnnualStatementRun(run AnnualStatementRun) (AnnualStatementRunResult, []AnnualStatementRunIssue) {
+	if run.CalculationVersion < AnnualStatementCalculationVersionAgreed && annualStatementHasAgreedShares(run.Input) {
+		return AnnualStatementRunResult{}, []AnnualStatementRunIssue{{Code: "calculation-version"}}
+	}
 	switch run.CalculationVersion {
 	case AnnualStatementCalculationVersionParties:
 		return calculateAnnualStatementPartyRun(run.Input)
+	case AnnualStatementCalculationVersionAgreed:
+		return CalculateAnnualStatementRun(run.Input)
 	case 1:
 		return calculateAnnualStatementRun(run.Input, false)
 	case 2:
@@ -255,7 +262,14 @@ func calculateAnnualStatementRun(input AnnualStatementRunInput, heatingSplit boo
 		if !ValidAllocationKey(cost.AllocationKey) {
 			continue
 		}
-		if cost.AllocationKey == AllocationKeyVerbrauch {
+		if cost.AllocationKey == AllocationKeyAgreed {
+			preview := AnnualStatementAgreedPreview(cost.Key, units, input.Structure.Legal.AgreedShares[cost.Key])
+			if preview.Blocked {
+				issue("agreed-shares", cost.Key, "")
+			} else {
+				sharesByCost[cost.Key] = preview.Shares
+			}
+		} else if cost.AllocationKey == AllocationKeyVerbrauch {
 			if cost.Key != "heizung" && cost.Key != "warmwasser" {
 				issue("measurement-rule", cost.Key, "")
 				continue

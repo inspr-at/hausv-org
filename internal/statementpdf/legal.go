@@ -12,7 +12,7 @@ import (
 )
 
 func statementDate(run store.AnnualStatementRun) time.Time {
-	if run.CalculationVersion == store.AnnualStatementCalculationVersionParties && run.Input.StatementOn != "" {
+	if run.CalculationVersion >= store.AnnualStatementCalculationVersionParties && run.Input.StatementOn != "" {
 		loc, _ := time.LoadLocation("Europe/Vienna")
 		at, err := time.ParseInLocation("2006-01-02", run.Input.StatementOn, loc)
 		if err == nil {
@@ -47,7 +47,7 @@ func paymentTerms(run store.AnnualStatementRun, unit store.AnnualStatementRunUni
 	case "weg":
 		terms = append(terms, "WEG: Ein Guthaben wird auf künftige Vorauszahlungen angerechnet. Eine Nachzahlung ist bis "+store.ShiftStatementDate(at, 2).Format("02.01.2006")+" fällig (§ 34 Abs. 4 WEG).")
 	default:
-		if run.Input.Structure.Legal.PartyDueOn != "" && run.CalculationVersion == store.AnnualStatementCalculationVersionParties {
+		if run.Input.Structure.Legal.PartyDueOn != "" && run.CalculationVersion >= store.AnnualStatementCalculationVersionParties {
 			terms = append(terms, "Betriebskosten: Fälligkeit laut Vertrag am "+date(run.Input.Structure.Legal.PartyDueOn)+".")
 		} else {
 			terms = append(terms, "Betriebskosten: Fälligkeit und Behandlung des Saldos laut Vertrag.")
@@ -156,7 +156,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 	if partySplit {
 		costLabel = "Ihr Kostenanteil: "
 	}
-	return []string{
+	lines := []string{
 		"Heizkostenabrechnung nach § 18 HeizKG",
 		"Energiekosten gesamt: " + money(energy) + "; sonstige Betriebskosten: " + money(other),
 		fmt.Sprintf("Energieaufteilung: %d %% Verbrauch / %d %% versorgbare Nutzfläche", legal.HeatingConsumptionPercent, 100-legal.HeatingConsumptionPercent),
@@ -167,6 +167,7 @@ func heatingDetails(run store.AnnualStatementRun, unit store.AnnualStatementRunU
 		"Geleistetes Akonto dieser Heizkostenart: " + money(prepaid) + "; Saldo (Nachzahlung positiv, Guthaben negativ): " + money(cost.AmountCents-prepaid),
 		"Einwendungen sind binnen sechs Monaten ab Rechnungslegung zu erheben; sonst gilt die Abrechnung als genehmigt (§ 24 HeizKG).",
 	}
+	return append(lines, heatingInformation(run, unit.UnitID, cost.CostTypeKey)...)
 }
 
 func proposalLines(run store.AnnualStatementRun, unitID string) []string {

@@ -1,6 +1,7 @@
 # Jahresabrechnung: implementierte Berechnung
 
-Technische Spezifikation zu HAUSV-767/794, Berechnungsversionen `2`, `3` und `4`. Sie beschreibt
+Technische Spezifikation der Jahresabrechnung (HAUSV-767/794/802), mit
+Berechnungsversionen `1` bis `5`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
@@ -38,6 +39,7 @@ Jede umlagefähige Kostenart hat genau einen dieser Schlüssel:
 
 | Schlüssel | Basis je Einheit | Vollständigkeitsregel |
 | --- | --- | --- |
+| `vereinbart` | Vereinbarte PPM je Kostenart und Einheit | Jede Einheit ausdrücklich ≥ 0; Kostensumme genau 1.000.000. |
 | `nutzwert` | Miteigentumsanteil in Millionsteln (PPM) | Jede Einheit > 0; Haussumme genau 1.000.000. Null bedeutet nicht erfasst. |
 | `flaeche` | Nutzfläche in ganzen Hundertstel m² | Explizit erfasst und ≥ 0; Haussumme > 0. |
 | `personen` | Ganze Personenzahl | Explizit erfasst und ≥ 0; Haussumme > 0. |
@@ -102,7 +104,7 @@ Neue WEG-Läufe übernehmen ausschließlich Eigentümer in ihre Empfängerliste;
 Mieter/Bewohner erhalten daraus weder Partei-PDF noch Archiv- oder Versandauftrag.
 Die Mieterabrechnung durch den jeweiligen Vermieter ist nicht Teil dieses WEG-Laufs.
 Dies gilt auch ohne Parteienwechsel. Bereits gespeicherte Empfängerlisten bleiben
-unverändert. Nur datierte abrechnungsberechtigte Parteien lösen **Version 4** aus;
+unverändert. Datierte abrechnungsberechtigte Parteien benötigen mindestens **Version 4**;
 Datumsgrenzen reiner WEG-Mieter beeinflussen weder Version noch Heizkostenanteile.
 Auf den betroffenen Einheiten verdrängt die Fälligkeitsregel den früheren Leerstands-
 Tagesanteil. MRG Vollanwendung ordnet sämtliche gewöhnlichen Kosten und Akontos
@@ -114,7 +116,7 @@ die ausdrücklich erfasste vertragliche Fälligkeit, ohne § 21 MRG zu unterstel
 Fehlende oder mehrdeutige Empfänger sperren den Lauf; überlappende gemeinsame
 Parteien werden nicht nach erfundenen Eigentumsquoten aufgeteilt.
 
-Das Abrechnungsdatum ist bei Version 4 im Snapshot als Wiener Erstellungsdatum
+Das Abrechnungsdatum ist bei datierten Parteien ab Version 4 im Snapshot als Wiener Erstellungsdatum
 festgehalten. Eine spätere Freigabe verändert weder Stichtag noch Empfänger.
 Bei einem anderen Rechnungsdatum muss ein neuer Lauf erstellt werden.
 Versionen 1–3 bleiben im Replay und in ihren PDF-Zuordnungen unverändert.
@@ -259,8 +261,8 @@ doppelte E-Mail technisch möglich; das Protokoll ist kein Zustellnachweis.
 
 ## Ausführbare Nachweise
 
-`annual_statement_invariants_hausv767_test.go` prüft 400 deterministisch erzeugte
-Fälle über alle vier Schlüssel: Cent-/Anteilsummen, Nullbasen, Saldo,
+`annual_statement_invariants_hausv767_test.go` prüft 500 deterministisch erzeugte
+Fälle über alle fünf Schlüssel: Cent-/Anteilsummen, Nullbasen, Saldo,
 Eingabereihenfolge und Arbeitsvorschau/Lauf-Parität. Tabellenfälle prüfen
 Restcent-Ties, `MaxInt64`, Leerstand, Schalttag und Sommerzeitgrenzen.
 `annual_statement_preview_hausv767_test.go`,
@@ -409,3 +411,148 @@ Gesperrte Aktionen zeigen den Grund direkt daneben.
 Das PDF übersetzt die gespeicherte Vorschlagsbasis in Eigentümersprache:
 „vereinbarte monatliche Vorauszahlung“ bzw. „Vorauszahlung auf Basis des Vorjahres“.
 Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.
+
+## Vereinbarte Anteile und HeizKG-Abrechnungsinformationen (HAUSV-802)
+
+Der zusätzliche Schlüssel `vereinbart` speichert einen eigenen PPM-Vektor je
+Kostenart in `annual_statement_periods.legal_settings.agreed_shares_ppm`.
+Jede aktuelle Einheit muss ausdrücklich erfasst sein; 0 ist eine vereinbarte
+Ausnahme, etwa für Erdgeschoßwohnungen beim Lift. Negative Werte, fehlende oder
+zusätzliche Einheiten sowie eine Summe ungleich 1.000.000 sperren die Berechnung.
+Die Verwaltung bearbeitet die Tabelle je Kostenart; die laufende Summenanzeige
+und die serverseitige Prüfung verlangen genau 1.000.000. Verschiedene
+Kostenarten mit diesem Schlüssel behalten unabhängige Anteile. Die bestehende
+Centverteilung nach größtem Rest gilt unverändert, einschließlich der
+lexikografischen Restcent-Reihenfolge und der Kostenfreiheit einer Nullbasis.
+
+Läufe mit diesem neuen Schlüssel speichern Berechnungsversion **5** (mit oder
+ohne Umsatzsteuerausweis oder datierte Parteien). Version 5 umfasst auch die
+Parteien- und Stichtagsregeln von Version 4. Historische Versionen 1–4 behalten
+ihren bisherigen Rechenweg und akzeptieren den neuen Schlüssel nicht. Neue
+Läufe wählen die niedrigste Version, die alle verwendeten Merkmale abdeckt:
+
+| Version | Rechenweg / Auswahl für neue Läufe |
+| --- | --- |
+| 1 | Historischer Rechenweg mit einem Heizkostenschlüssel; nur Replay. |
+| 2 | Basisberechnung mit HeizKG-Aufteilung, Leerstand und Rücklage. |
+| 3 | Zusätzlich Umsatzsteuerausweis. |
+| 4 | Datierte abrechnungsberechtigte Parteien, optional mit Umsatzsteuer. |
+| 5 | Vereinbarte Anteile, optional mit Umsatzsteuer und datierten Parteien. |
+
+Die Anteile werden als Vorlage ins Folgejahr kopiert. Die Daten
+liegen im vorhandenen mandantengeschützten Perioden-JSON und im unveränderlichen
+Lauf-JSON; es gibt keine zusätzliche Tabelle oder Datenbankmigration.
+
+`legal_settings.heating_information` enthält pro Periode mehrere Energiebezüge:
+Kostenart, Lieferant, Energieträger, Menge, Mengeneinheit, tatsächlicher Bruttopreis
+je Mengeneinheit und Preisstand/Zeitraum. Menge und Europreis verwenden ganze
+Mikroeinheiten (bis sechs Nachkommastellen), ohne Gleitkomma. Bei bevorrateten
+Energieträgern ist der tatsächlich bezahlte Preis einzutragen. Diese Angaben
+informieren; nur bestätigte Belege bestimmen die Kostenpools. Ergänzende Felder
+halten Steuern/Abgaben/Zolltarife, Mess-/Berechnungskosten, sonstige Betriebskosten,
+bei Fernwärmeanlagen über 20 MW Brennstoffmix und jährliche Treibhausgasemissionen,
+Beschwerdekontakt und den Zugang zur monatlichen Verbrauchsinformation fest.
+Die Energieinformationen werden beim Anlegen des Folgejahres geleert.
+
+Neue Läufe frieren die höchste gespeicherte Revision des gleichen
+Vorjahreszeitraums samt Einheitsverbrauch als `previous_heating` ein. Beginn und
+Ende müssen jeweils zwölf Kalendermonate zuvor liegen (Monatsenden werden
+begrenzt). Fehlt der Lauf, die Einheit oder eine identische Maßeinheit, wird die
+fehlende Vergleichbarkeit ausdrücklich genannt; es gibt keine Schätzung oder
+stillschweigende Einheitenumrechnung. Nachträgliche Vorjahresrevisionen verändern
+das bereits gespeicherte Vergleichsmaterial nicht. PostgreSQL liest es innerhalb
+der Transaktion des aktuellen Laufs. Der Vergleich zeigt tatsächliche Mengen;
+für Heizung können fachlich ermittelte Klimafaktoren beider Perioden in PPM samt
+Quelle/Methode hinterlegt werden. Der korrigierte Verbrauch ist
+`Verbrauch × Klimafaktor / 1.000.000`. Ohne diese Eingabe kennzeichnet das PDF die
+fehlende Klimabereinigung ausdrücklich. HAUSV beschafft keine Wetterdaten.
+
+Der Hausvergleich bildet das arithmetische Mittel der gemessenen Verbräuche
+versorgter Einheiten derselben gespeicherten Nutzerkategorie (`UnitType`),
+einschließlich der betrachteten Einheit. Nullverbrauch zählt mit; ausdrücklich
+nicht versorgte Einheiten (0 m²) und andere Kategorien zählen nicht mit. Das PDF
+nennt Vergleichsgruppe, Methode und Mengeneinheit. Größen-/Nutzungsunterschiede
+werden als Einschränkung genannt. Bei fehlender Kategorie erscheint kein
+vermeintlich passender Vergleich. Die Zuordnung der Registertypen zur für die
+konkrete Abrechnung geeigneten Nutzerkategorie bleibt fachlich zu prüfen.
+
+Der HeizKG-Anhang nennt außerdem Verbraucherberatung (Arbeiterkammer),
+Energieeffizienz und Gerätevergleich (Topprodukte/Österreichische Energieagentur),
+Beschwerdewege zur zuständigen kommunalen Schlichtungsstelle bzw. zum
+Bezirksgericht sowie Verbraucherschlichtung Austria mit Zuständigkeitsvorbehalt.
+Bei fernablesbaren Zählern erinnert er an die monatliche Information innerhalb
+der Heiz-/Kühlperiode; die Jahresabrechnung ersetzt deren tatsächliche
+Bereitstellung nicht. Ein monatlicher Versanddienst ist nicht Teil dieser
+Änderung. Fehlende Sachangaben werden sichtbar benannt; ein berechenbarer Lauf
+ist damit keine automatische Bestätigung einer vollständig erfüllten
+Informationspflicht. Historische Läufe ohne diese Angaben werden nicht ergänzt.
+
+Rechtsquellen, abgerufen am 24.09.2026:
+
+- [RIS HeizKG § 18, NOR40251314, Fassung BGBl. I Nr. 22/2023](https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40251314/NOR40251314.html): Abs. 1 Z 1a–1c Preise, bedingte Fernwärmeangaben und Mengen; Z 6/6a Messmethode/-kosten und klimabezogener Vorperiodenvergleich; Z 8 sonstige Betriebskosten; Z 12–15 Folgen, Verbraucherinformation, Beschwerdeverfahren und Durchschnittsabnehmer derselben Nutzerkategorie; Abs. 5 kostenfreie Information und Datenzugang.
+- [RIS HeizKG § 17, NOR40234276](https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40234276/NOR40234276.html): Abs. 3 Rechnungsabgrenzung bei Bevorratung; Abs. 5 monatliche Verbrauchsinformation bei Fernablesbarkeit ab 01.01.2022.
+- [Arbeiterkammer: Heizkostenabrechnung nach dem HeizKG](https://wien.arbeiterkammer.at/beratung/Wohnen/Heizkostenabrechnung/Heizkostenabrechnung_nach_dem_HeizKG.html), [Topprodukte und Kontakt der Energieagentur](https://www.klimaaktiv.at/private/topprodukte), [Verbraucherschlichtung: Antrag und Zuständigkeit](https://www.verbraucherschlichtung.at/antrag/).
+
+Die Janusbergweg-Demoperiode 2025 enthält Liftkosten von 1.800,00 EUR; Top 1–4
+(EG) und Stellplätze erhalten 0, die übrigen Wohnungen teilen 1.000.000 PPM.
+Der Fernwärmebezug beträgt 100.000 kWh zu 0,09 EUR/kWh brutto (9.000,00 EUR).
+Brennstoffmix und Emissionsmenge sind ausdrücklich synthetische Demodaten.
+
+## Optionale Mieterabrechnung aus WEG-Läufen (HAUSV-798)
+
+Ein freigegebener WEG-Lauf zeigt für Einheiten mit Hauptmietverträgen den
+Bereich „Mieterabrechnungen“. „Mietverwaltung aktiv“ bindet die Einheit an
+einen hinterlegten Eigentümer. Der Kostenartenfilter für MRG-Vollanwendung
+beginnt mit eindeutigen §-21-Positionen; Versicherungen, Verwaltungshonorar
+und Gemeinschaftsanlagen müssen wegen zusätzlicher Voraussetzungen ausdrücklich
+geprüft werden. Teilanwendung und Ausnahme verwenden einen eigenen vereinbarten
+Kostenkatalog je Mietvertrag und eine ausdrücklich eingegebene Vertragsfälligkeit.
+Die Rücklage wird auch bei eingeschaltetem Filter niemals überwälzt.
+
+`rental_management` speichert das Mandat. `tenant_statements` speichert den
+WEG-Lauf, seine Freigabe, Mandat, Mietverträge, zeitlich gültige Parteien und
+Rechenergebnis zusammen in einer unveränderlichen Momentaufnahme. Die Ableitung
+liest diese Grundlagen in einer mandantengebundenen serialisierbaren Transaktion.
+`tenant_statement_approvals` enthält die unveränderliche gesonderte Freigabe.
+SQLite-Migration 0067 und PostgreSQL-Migration 0040 führen die Tabellen ein;
+PostgreSQL erzwingt RLS. `dbmove` übernimmt Tabellen und Freigaben gemeinsam.
+
+Die WEG-Empfängerliste bleibt auf Eigentümer beschränkt; Mietparteien kommen
+aus den gespeicherten Mietverträgen. Teilt ein v4-/v5-WEG-Lauf eine Einheit
+zwischen aufeinanderfolgenden Eigentümern auf, sperrt v1 die Mieterableitung
+mit einem Hinweis auf die gesondert zuzuordnenden Vermieterzeiträume und Akontos.
+Der gesamte Einheitsbetrag darf nicht nochmals jedem Eigentümer zugerechnet
+werden; die nötige zeitliche Vermieterzuordnung ist noch nicht modelliert.
+
+MRG-Jahrespauschalen werden mit der Partei am übernächsten Zinstermin abgerechnet.
+Gültigkeitsintervalle der Verträge und Parteien sind am Ende exklusiv. Bei Leerstand
+am Fälligkeitstag verbleiben BK-Kosten und Jahresakonto beim Eigentümer.
+Heizkosten stammen aus dem freigegebenen HeizKG-Einheitsanteil und werden nach
+gleichen Monatsanteilen auf die gültigen Mietparteien verteilt; Teilmonate folgen
+den tatsächlichen Tagen des jeweiligen Monats. Größte Reste erhalten einzelne
+Cent. Dafür muss die Verwaltung bestätigen, dass keine Zwischenermittlung vorliegt.
+Vorhandene Zwischenablesungen sowie vertragliche Mieterwechsel außerhalb der
+MRG-Vollanwendung benötigen eine gesonderte Abrechnung; v1 erfindet dafür keine
+Vertragsregel. Es werden Kalenderjahre unterstützt.
+
+BK- und Heiz-Akontos kommen aus den datierten Mietzinsbestandteilen, einschließlich
+deren hinterlegter Umsatzsteuer. Es handelt sich um vertragliche Akontos, nicht um
+einen Zahlungsabgleich mit dem Bankkonto. Fehlende Beträge gelten nicht als Null.
+Bei USt-Option muss der WEG-Lauf Netto und Steuer ausweisen. Aus dessen Nettoanteil
+entstehen 10 % für Wohnungs-BK bzw. 20 % für Geschäft, Garage und Heizkosten;
+ohne Option bleibt der Bruttoaufwand ohne gesonderten Steuerausweis. Der Abgleich
+`SourcePassedCents + SourceRetainedCents = WEG-Einheitsanteil` bleibt unabhängig
+von einem abweichenden Steuersatz des Mietvertrags erhalten.
+
+Vorschau, gesonderte Freigabe, Archivierung und Versand laufen über die neuen
+mandantengebundenen `/app/settings/tenant-statements/{statementID}/…`-Routen.
+Archiv und Versand verwenden die bestehenden Dokumente, Prüfsummen und
+Versandreservierungen. Jede zeitlich abgegrenzte Mietpartei erhält nur ihren
+Abrechnungsteil; der Eigentümer bekommt eine Gesamtkopie. Erfolgreiche Empfänger
+werden bei Wiederholung übersprungen. Zugriff benötigt die Mietvertrags- und
+Gebäudeverwaltungsberechtigung. Für Vertrags- oder Filteränderungen wird ein neuer
+Entwurf erstellt; bereits freigegebene Dokumente ändern sich nicht.
+
+Rechtsgrundlagen: [§ 21 MRG](https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10002531&Paragraf=21),
+[§ 23 HeizKG](https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10007277&Paragraf=23),
+[BMF zur Umsatzsteuer bei Vermietung](https://www.bmf.gv.at/themen/steuern/immobilien-grundstuecke/vermietung-verpachtung/vermietung-und-verpachtung-in-der-umsatzsteuer.html).

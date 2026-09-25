@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260925000542.0.0] - 2026-09-25
+
+### Neu
+
+- Mieterabrechnung für vermietete Wohnungseigentumsobjekte: abgeleitet aus der freigegebenen Eigentümerabrechnung, mit eigener Freigabe, Archiv und Versand.
+- Vereinbarte Aufteilungsschlüssel je Zeitraum in der Jahresabrechnung.
+
+### Verbessert
+
+- Heizkostenabrechnung mit erweiterten Angaben und Vergleichswerten nach HeizKG.
+
 ## [260924192435.0.0] - 2026-09-24
 
 ### Verbessert

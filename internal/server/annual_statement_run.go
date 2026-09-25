@@ -274,6 +274,8 @@ func annualStatementArchiveDocuments(repository store.DocumentRepository, run st
 
 func annualStatementRunIssueTarget(code string) string {
 	switch code {
+	case "agreed-shares":
+		return "vereinbarte-anteile"
 	case "heating-area":
 		return "heizflaechen"
 	case "heating-prepayment":
@@ -326,6 +328,8 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 	case "party-reading":
 		return unit + ": Zwischenablesungen sind widersprüchlich. Quelle, Einheit und Zählerstand prüfen."
 
+	case "agreed-shares":
+		return cost + ": Vereinbarte Anteile für alle Einheiten erfassen; die Summe muss genau 1.000.000 PPM ergeben. Ausgenommene Einheiten ausdrücklich mit 0 erfassen."
 	case "heating-prepayment":
 		return "HeizKG: Geleistetes Akonto je Einheit und Heizkostenart ergänzen. Die Summe darf das Gesamtakonto nicht überschreiten."
 	case "heating-share":

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -322,6 +323,36 @@ func TestEveryStoreWriteRecordsATenantIdentity(t *testing.T) {
 		EntityID: "sensor.x", State: "1", LastUpdated: now,
 	}}, now); err != nil {
 		t.Fatalf("connector reading: %v", err)
+	}
+
+	// HAUSV-798: exercise all three new writers before the identity inventory.
+	rentalSource, mandate, rentalLeases := tenantStatementFixture()
+	if _, err := units.UpsertUnit("", Unit{ID: "top-1", Label: "Top 1", OwnerEmails: []string{mandate.OwnerEmail}}); err != nil {
+		t.Fatal(err)
+	}
+	rentalRepo, _ := BindTenantStatementRepository(lanes, tenant)
+	if err := rentalRepo.SaveManagement(mandate); err != nil {
+		t.Fatal(err)
+	}
+	rentalLeaseRepo, _ := BindLeaseRepository(NewSQLLeaseStore(lanes), tenant)
+	rentalLeases[0].ID = "tenant-statement-identity-lease"
+	if _, err := rentalLeaseRepo.Create(rentalLeases[0]); err != nil {
+		t.Fatal(err)
+	}
+	sourceRaw, _ := json.Marshal(rentalSource)
+	approvalRaw, _ := json.Marshal(rentalSource.Approval)
+	if _, err := database.Exec(`INSERT INTO annual_statement_runs(tenant_id,tenant_slug,id,period_year,revision,data) VALUES($1,$2,$3,2025,1,$4)`, tenant.ID, tenant.Slug, rentalSource.ID, string(sourceRaw)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES($1,$2,$3,$4)`, tenant.ID, tenant.Slug, rentalSource.ID, string(approvalRaw)); err != nil {
+		t.Fatal(err)
+	}
+	rentalStatement, err := rentalRepo.Create(rentalSource, "top-1", "2026-06-20", "", "a@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rentalRepo.Approve(rentalStatement.ID, "a@example.com", RoleManager); err != nil {
+		t.Fatal(err)
 	}
 
 	for _, table := range tenantIDTables {

@@ -332,6 +332,8 @@ func timestamp(at time.Time) string {
 }
 func allocationKey(key string) string {
 	switch key {
+	case store.AllocationKeyAgreed:
+		return "Vereinbart"
 	case store.AllocationKeyNutzwert:
 		return "Nutzwert"
 	case store.AllocationKeyFlaeche:

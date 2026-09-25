@@ -611,3 +611,19 @@
   enhanceAnnualRows();
   document.addEventListener("htmx:load", enhanceAnnualRows);
 })();
+
+// Each agreed cost type has an independent period share vector.
+document.querySelectorAll("[data-agreed-shares]").forEach((form) => {
+  const fields = [...form.querySelectorAll("[data-agreed-share]")];
+  const output = form.querySelector("[data-agreed-sum]");
+  const update = () => {
+    const complete = fields.length > 0 && fields.every((field) => /^\d+$/.test(field.value) && field.validity.valid);
+    const total = fields.reduce((sum, field) => sum + (Number(field.value) || 0), 0);
+    const valid = complete && total === 1000000;
+    output.dataset.valid = String(valid);
+    output.textContent = `Summe: ${total.toLocaleString("de-AT")} / 1.000.000 PPM · ${valid ? "vollständig" : "Bitte alle Anteile prüfen"}`;
+    form.querySelector('button[type="submit"]').disabled = !valid;
+  };
+  form.addEventListener("input", update);
+  update();
+});

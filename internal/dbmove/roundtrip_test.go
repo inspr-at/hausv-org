@@ -419,6 +419,17 @@ func seedFull(t *testing.T) *source {
 		if _, err := src.db.Exec(`INSERT INTO annual_statement_run_approvals(tenant_id,tenant_slug,run_id,data) VALUES(?,?,?,?)`, tenant.ID, slug, "run-2026-1", `{"approved_at":"2026-09-07T10:00:00Z","approved_by":"verwalter@example.com","role":"manager"}`); err != nil {
 			t.Fatal(err)
 		}
+		// Derived statements and their approvals must survive the same value-for-value
+		// move as the WEG source. Seed parents before the approval's foreign key.
+		if _, err := src.db.Exec(`INSERT INTO rental_management(tenant_id,tenant_slug,unit_id,data) VALUES(?,?,?,?)`, tenant.ID, slug, "top-1", `{"unit_id":"top-1","owner_email":"owner@example.com","active":true}`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := src.db.Exec(`INSERT INTO tenant_statements(tenant_id,tenant_slug,id,run_id,unit_id,data) VALUES(?,?,?,?,?,?)`, tenant.ID, slug, "tenant-statement-1", "run-2026-1", "top-1", `{"ID":"tenant-statement-1","RunID":"run-2026-1","UnitID":"top-1","SourcePassedCents":12550,"SourceRetainedCents":3128}`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := src.db.Exec(`INSERT INTO tenant_statement_approvals(tenant_id,tenant_slug,statement_id,data) VALUES(?,?,?,?)`, tenant.ID, slug, "tenant-statement-1", `{"approved_at":"2026-09-08T10:00:00Z","approved_by":"verwalter@example.com","role":"manager"}`); err != nil {
+			t.Fatal(err)
+		}
 		if _, err := src.db.Exec(`INSERT INTO annual_statement_deliveries(tenant_id,tenant_slug,id,run_id,revision,party_id,unit_id,document_id,sha256,recipient,sent_at,status,error,actor,attempt) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, tenant.ID, slug, "delivery-1", "run-2026-1", 1, "owner@example.com", "top-1", receiptDocument.ID, "seed-hash", "owner@example.com", now.UTC().Format(time.RFC3339Nano), "sent", "", "verwalter@example.com", 1); err != nil {
 			t.Fatalf("%s annual statement delivery: %v", slug, err)
 		}
