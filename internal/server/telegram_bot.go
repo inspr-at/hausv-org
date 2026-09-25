@@ -9,6 +9,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -103,60 +104,343 @@ func firstNameOf(message *telegram.Message) string {
 	return message.From.FirstName
 }
 
-// handleTelegramCommand routes one message and returns the reply text
-// (empty = stay silent, e.g. unknown chats).
+// handleTelegramCommand routes one message and returns the reply text.
+// A linked chat acts as its linked user. The target house is chosen from
+// that user's permissions at this moment; a remembered slug is only a
+// preference and is ignored once it is no longer allowed.
 func (a *app) handleTelegramCommand(ctx context.Context, chatID int64, senderName, text string) string {
 	command, arg := splitTelegramCommand(text)
 	link, linked := a.telegramStore.LinkByChat(chatID)
 
 	if command == "/start" {
 		if linked {
+			a.auditTelegramCommand(link.Email, "", command, "already_linked")
 			return "Dieser Chat ist bereits mit " + link.Email + " verknüpft.\n\n" + telegramHelpText()
 		}
 		if arg == "" {
-			// Unlinked /start without code: point at the onboarding flow but
-			// leak nothing about the platform's users.
-			return "Willkommen! Zum Verknüpfen brauchst du einen Code aus dem Portal: /start <CODE>"
+			a.auditTelegramCommand("", "", command, "unlinked")
+			return "Dieser Chat ist nicht verknüpft. Zum Verknüpfen brauchst du einen Code aus dem Portal: /start <CODE>"
 		}
 		consumed, err := a.telegramStore.ConsumeLinkCode(arg, chatID, senderName)
 		if err != nil {
+			a.auditTelegramCommand("", "", command, "link_rejected")
 			return "Dieser Code ist unbekannt oder abgelaufen. Bitte im Portal einen neuen erzeugen."
 		}
-		logInfo("Telegram chat linked", "actor", redactedEmail(consumed.Email))
+		// A previous person's house choice must not survive a new link.
+		a.forgetTelegramHouse(chatID)
+		a.auditTelegramCommand(consumed.Email, "", command, "linked")
 		return "Verknüpft! Du bekommst jetzt Lade-Benachrichtigungen.\n\n" + telegramHelpText()
 	}
 
 	if !linked {
-		// Unknown chats get no information at all.
-		return ""
+		a.forgetTelegramHouse(chatID)
+		a.auditTelegramCommand("", "", command, "unlinked")
+		return "Dieser Chat ist nicht verknüpft."
 	}
-	profile, ok := a.directoryProfile(link.Email)
-	if !ok {
-		return "Dein Portal-Zugang wurde nicht gefunden. Bitte an die Verwaltung wenden."
+	if command == "/haus" {
+		return a.telegramSelectHouse(chatID, link.Email, arg)
 	}
-	tenant, ok := a.tenants[a.defaultTenant]
-	if !ok {
-		return "Kein Gebäude konfiguriert."
+	if isTelegramChargingCommand(command) {
+		return a.telegramRunCharging(ctx, chatID, link.Email, command)
 	}
-	role := profile.ForTenant(tenant.Slug).Role
-	if !can(a.actorFor(link.Email, tenant.Slug, role), capabilityPlatformAdmin, resourceFor(tenant.Slug)) && !profile.HasPermission(permissionParking) {
-		return "Dir fehlt die Berechtigung für die Ladesteuerung."
-	}
+	a.auditTelegramCommand(link.Email, "", command, "help")
+	return telegramHelpText()
+}
 
+func isTelegramChargingCommand(command string) bool {
+	switch command {
+	case "/pp20ein", "/pp20aus", "/pp20auto", "/pp20status":
+		return true
+	default:
+		return false
+	}
+}
+
+// telegramChargingContext resolves the houses this user may control right
+// now. On failure it writes the audit line and the reply; callers must not
+// audit again.
+func (a *app) telegramChargingContext(email, command string) ([]tenantConfig, string, bool) {
+	profile, ok := a.directoryProfile(email)
+	if !ok {
+		a.auditTelegramCommand(email, "", command, "denied")
+		return nil, "Dein Portal-Zugang wurde nicht gefunden. Bitte an die Verwaltung wenden.", false
+	}
+	if profile.Deactivated && !a.telegramBreakGlass(email) {
+		a.auditTelegramCommand(email, "", command, "denied")
+		return nil, "Dir fehlt die Berechtigung für die Ladesteuerung.", false
+	}
+	if len(a.tenants) == 0 {
+		a.auditTelegramCommand(email, "", command, "unconfigured")
+		return nil, "Kein Gebäude konfiguriert.", false
+	}
+	houses := a.telegramAuthorisedHouses(email, profile)
+	if len(houses) == 0 {
+		a.auditTelegramCommand(email, "", command, "denied")
+		return nil, "Dir fehlt die Berechtigung für die Ladesteuerung.", false
+	}
+	return houses, "", true
+}
+
+func (a *app) telegramBreakGlass(email string) bool {
+	if a == nil || a.admins == nil {
+		return false
+	}
+	_, ok := a.admins[normalizeEmail(email)]
+	return ok
+}
+
+// telegramAuthorisedHouses returns the houses whose current membership
+// grants charging control. Profile-wide parking permission applies only
+// inside a house the user belongs to, and only when that house does not
+// replace the permission list.
+func (a *app) telegramAuthorisedHouses(email string, profile userProfile) []tenantConfig {
+	houses := make([]tenantConfig, 0, 1)
+	for slug, tenant := range a.tenants {
+		if tenant.Slug == "" {
+			tenant.Slug = slug
+		}
+		// The label follows a portal rename. The connector stays the one configured for this house.
+		connector := tenant.HA
+		if resolved, found := a.tenantBySlug(tenant.Slug); found {
+			tenant = resolved
+			if tenant.Slug == "" {
+				tenant.Slug = slug
+			}
+		}
+		tenant.HA = connector
+		if !profile.HasTenant(tenant.Slug) {
+			continue
+		}
+		scoped := profile.ForTenant(tenant.Slug)
+		actor := a.actorFor(email, tenant.Slug, scoped.Role)
+		if can(actor, capabilityPlatformAdmin, resourceFor(tenant.Slug)) || scoped.HasPermission(permissionParking) {
+			houses = append(houses, tenant)
+		}
+	}
+	sort.Slice(houses, func(i, j int) bool {
+		left, right := telegramHouseLabel(houses[i]), telegramHouseLabel(houses[j])
+		if left == right {
+			return houses[i].Slug < houses[j].Slug
+		}
+		return left < right
+	})
+	return houses
+}
+
+func (a *app) telegramRunCharging(ctx context.Context, chatID int64, email, command string) string {
+	houses, reply, ok := a.telegramChargingContext(email, command)
+	if !ok {
+		a.forgetTelegramHouse(chatID)
+		return reply
+	}
+	house, chosen := a.telegramResolveHouse(chatID, houses)
+	if !chosen {
+		a.auditTelegramCommand(email, "", command, "ambiguous")
+		return telegramHousePrompt(houses)
+	}
+	body := ""
+	outcome := "ok"
 	switch command {
 	case "/pp20ein":
-		result := a.requestManualCharging(ctx, tenant, true, link.Email, chargingTriggerTelegram)
-		return result.Message
+		result := a.requestManualCharging(ctx, house, true, email, chargingTriggerTelegram)
+		body, outcome = result.Message, telegramResultOutcome(result.OK)
 	case "/pp20aus":
-		result := a.requestManualCharging(ctx, tenant, false, link.Email, chargingTriggerTelegram)
-		return result.Message
+		result := a.requestManualCharging(ctx, house, false, email, chargingTriggerTelegram)
+		body, outcome = result.Message, telegramResultOutcome(result.OK)
 	case "/pp20auto":
-		result := a.requestAutomaticCharging(ctx, tenant, link.Email, chargingTriggerTelegram)
-		return result.Message
+		result := a.requestAutomaticCharging(ctx, house, email, chargingTriggerTelegram)
+		body, outcome = result.Message, telegramResultOutcome(result.OK)
 	case "/pp20status":
-		return a.chargingStatusText(ctx, tenant)
+		body = a.chargingStatusText(ctx, house)
 	default:
+		a.auditTelegramCommand(email, house.Slug, command, "help")
 		return telegramHelpText()
+	}
+	a.auditTelegramCommand(email, house.Slug, command, outcome)
+	return telegramReplyForHouse(body, house, houses)
+}
+
+func telegramResultOutcome(ok bool) string {
+	if ok {
+		return "ok"
+	}
+	return "refused"
+}
+
+func (a *app) telegramSelectHouse(chatID int64, email, name string) string {
+	houses, reply, ok := a.telegramChargingContext(email, "/haus")
+	if !ok {
+		a.forgetTelegramHouse(chatID)
+		return reply
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		if len(houses) == 1 {
+			a.auditTelegramCommand(email, houses[0].Slug, "/haus", "selected")
+			return "Für dich ist nur " + telegramHouseLabel(houses[0]) + " freigegeben. Die Ladesteuerung gilt für dieses Haus."
+		}
+		a.auditTelegramCommand(email, "", "/haus", "ambiguous")
+		return telegramHousePrompt(houses)
+	}
+	match, found := matchTelegramHouse(houses, name)
+	if !found {
+		a.auditTelegramCommand(email, "", "/haus", "denied")
+		return "Dieses Haus ist nicht freigegeben.\n\n" + telegramHouseChoices(houses)
+	}
+	if len(houses) == 1 {
+		a.forgetTelegramHouse(chatID)
+	} else {
+		a.rememberTelegramHouse(chatID, match.Slug)
+	}
+	a.auditTelegramCommand(email, match.Slug, "/haus", "selected")
+	return "Ausgewählt: " + telegramDistinctHouseLabel(match, houses) + ". Die Auswahl gilt nur für diese Sitzung und wird bei jedem Befehl neu geprüft."
+}
+
+// telegramResolveHouse uses the single authorised house, or the chat's
+// remembered slug when it is still in the freshly computed set.
+func (a *app) telegramResolveHouse(chatID int64, houses []tenantConfig) (tenantConfig, bool) {
+	if len(houses) == 1 {
+		a.forgetTelegramHouse(chatID)
+		return houses[0], true
+	}
+	slug := a.telegramHouseSlug(chatID)
+	if slug != "" {
+		for _, house := range houses {
+			if house.Slug == slug {
+				return house, true
+			}
+		}
+		a.forgetTelegramHouse(chatID)
+	}
+	return tenantConfig{}, false
+}
+
+func (a *app) telegramHouseSlug(chatID int64) string {
+	if a == nil {
+		return ""
+	}
+	a.telegramHouseMu.Lock()
+	defer a.telegramHouseMu.Unlock()
+	if a.telegramHouseChoice == nil {
+		return ""
+	}
+	return a.telegramHouseChoice[chatID]
+}
+
+func (a *app) rememberTelegramHouse(chatID int64, slug string) {
+	if a == nil || slug == "" {
+		return
+	}
+	a.telegramHouseMu.Lock()
+	defer a.telegramHouseMu.Unlock()
+	if a.telegramHouseChoice == nil {
+		a.telegramHouseChoice = map[int64]string{}
+	}
+	a.telegramHouseChoice[chatID] = slug
+}
+
+func (a *app) forgetTelegramHouse(chatID int64) {
+	if a == nil {
+		return
+	}
+	a.telegramHouseMu.Lock()
+	defer a.telegramHouseMu.Unlock()
+	delete(a.telegramHouseChoice, chatID)
+}
+
+func matchTelegramHouse(houses []tenantConfig, query string) (tenantConfig, bool) {
+	query = strings.Join(strings.Fields(query), " ")
+	if query == "" {
+		return tenantConfig{}, false
+	}
+	matches := make([]tenantConfig, 0, 1)
+	for _, house := range houses {
+		if strings.EqualFold(query, telegramHouseLabel(house)) || strings.EqualFold(query, house.Slug) {
+			matches = append(matches, house)
+		}
+	}
+	if len(matches) != 1 {
+		return tenantConfig{}, false
+	}
+	return matches[0], true
+}
+
+func telegramHouseLabel(tenant tenantConfig) string {
+	name := strings.TrimSpace(tenant.Name)
+	if name == "" {
+		return tenant.Slug
+	}
+	return name
+}
+
+// telegramDistinctHouseLabel adds the slug when two authorised houses share a name.
+func telegramDistinctHouseLabel(house tenantConfig, houses []tenantConfig) string {
+	label := telegramHouseLabel(house)
+	same := 0
+	for _, other := range houses {
+		if strings.EqualFold(telegramHouseLabel(other), label) {
+			same++
+		}
+	}
+	if same > 1 && house.Slug != "" && !strings.EqualFold(label, house.Slug) {
+		return label + " (" + house.Slug + ")"
+	}
+	return label
+}
+
+func telegramReplyForHouse(body string, house tenantConfig, houses []tenantConfig) string {
+	label := "Haus: " + telegramDistinctHouseLabel(house, houses)
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return label
+	}
+	return body + "\n" + label
+}
+
+func telegramHousePrompt(houses []tenantConfig) string {
+	labelCount := map[string]int{}
+	for _, house := range houses {
+		labelCount[strings.ToLower(telegramHouseLabel(house))]++
+	}
+	lines := []string{"Mehrere Häuser sind freigegeben. Welches soll die Ladesteuerung verwenden?"}
+	for _, house := range houses {
+		label := telegramHouseLabel(house)
+		// Identical names cannot be told apart. Offer the slug, which also matches.
+		if labelCount[strings.ToLower(label)] > 1 {
+			label = house.Slug
+		}
+		lines = append(lines, "/haus "+label)
+	}
+	lines = append(lines, "Die Auswahl gilt nur für diese Sitzung und wird bei jedem Befehl neu geprüft.")
+	return strings.Join(lines, "\n")
+}
+
+func telegramHouseChoices(houses []tenantConfig) string {
+	if len(houses) == 1 {
+		return "Für dich ist nur " + telegramHouseLabel(houses[0]) + " freigegeben."
+	}
+	return telegramHousePrompt(houses)
+}
+
+func (a *app) auditTelegramCommand(email, house, command, outcome string) {
+	user := ""
+	if strings.TrimSpace(email) != "" {
+		user = redactedEmail(email)
+	}
+	logInfo("Telegram command",
+		"user", user,
+		"house", house,
+		"command", telegramAuditCommand(command),
+		"outcome", outcome,
+	)
+}
+
+func telegramAuditCommand(command string) string {
+	switch command {
+	case "/start", "/haus", "/pp20ein", "/pp20aus", "/pp20auto", "/pp20status":
+		return command
+	default:
+		return "other"
 	}
 }
 
@@ -172,7 +456,8 @@ func splitTelegramCommand(text string) (string, string) {
 	}
 	arg := ""
 	if len(fields) > 1 {
-		arg = fields[1]
+		// House names may contain spaces. Link codes stay a single token.
+		arg = strings.Join(fields[1:], " ")
 	}
 	return command, arg
 }
@@ -184,6 +469,7 @@ func telegramHelpText() string {
 		"/pp20ein — Ladung einschalten (Normaltarif)",
 		"/pp20aus — Ladung ausschalten (pausiert die Automatik)",
 		"/pp20auto — Automatik (Überschussladen) aktivieren",
+		"/haus <Name> — Haus auswählen, wenn mehrere freigegeben sind",
 	}, "\n")
 }
 
