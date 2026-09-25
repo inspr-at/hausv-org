@@ -51,6 +51,29 @@ func TestStaffelPreviewCapAndContractTiming(t *testing.T) {
 	}
 }
 
+func TestStaffelDoesNotNeedMonthlyIndices(t *testing.T) {
+	snapshot, err := indexation.LoadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot.Data = indexation.Dataset{}
+	l := staffelFixture(t)
+	for _, scope := range []string{MRGAusnahme, MRGVoll} {
+		l.MRGScope = scope
+		run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01", Leases: []Lease{l}}, snapshot, mustDate("2026-04-01"))
+		if err != nil || run.Items[0].Group != "ready" || run.Items[0].ContractCents != 110000 {
+			t.Fatalf("fixed step with no monthly dataset (%s): %+v, %v", scope, run.Items, err)
+		}
+	}
+	// The statutory comparison still needs its annual averages. An older anchor
+	// must identify the missing observation, never bypass the legal ceiling.
+	l.ConcludedOn = "2021-04-01"
+	run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01", Leases: []Lease{l}}, snapshot, mustDate("2026-04-01"))
+	if err != nil || run.Items[0].Group != "exception" || run.Items[0].Reason != "VPI 2020 · Jahresmittel 2020: Indexwert fehlt." {
+		t.Fatalf("missing statutory observation: %+v, %v", run.Items, err)
+	}
+}
+
 func TestStaffelAprilCutoffAndLaterIndependentCurves(t *testing.T) {
 	l := staffelFixture(t)
 	snap, err := indexation.LoadSnapshot()

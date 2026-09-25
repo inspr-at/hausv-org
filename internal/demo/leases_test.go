@@ -111,8 +111,16 @@ func TestZinshausDemoLeasesAndValorisation(t *testing.T) {
 	groups := map[string]int{}
 	for _, item := range runs[0].Items {
 		groups[item.Group]++
+		if item.LeaseID == "m12-lease-top-8" {
+			if item.Group != "ready" || item.ContractCents != 92820 || item.NewCents != 92820 || item.CapAnchor != "2024-04" || item.CapStartCents != 91000 {
+				t.Fatalf("Top 8: fixed April step with saved 2024 anchor: %+v", item)
+			}
+			if item.TimingInput.TriggerMonth != "" || !item.TimingInput.FinalPublishedOn.IsZero() || !item.TimingInput.ContractSchedule {
+				t.Fatal("fixed step acquired an index publication prerequisite")
+			}
+		}
 	}
-	if groups["ready"] != 7 || groups["unchanged"] != 1 || groups["exception"] != 2 {
+	if groups["ready"] != 8 || groups["unchanged"] != 1 || groups["exception"] != 1 {
 		t.Fatalf("preview groups %+v", groups)
 	}
 	if _, err := Load(t.Context(), database, "../../scripts/demo/seed", options); err != nil {

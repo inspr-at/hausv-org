@@ -84,18 +84,33 @@ func TestLetterVariants(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(out)
+			for _, internal := range []string{"Lauf", "Referenz", "SHA-256", run.ID[:16], run.InputsSHA256[:16], run.IndexVersion} {
+				if strings.Contains(text, internal) {
+					t.Fatalf("internal audit data %q in tenant letter", internal)
+				}
+			}
 			if strings.HasPrefix(variant, "staffel-") && !strings.Contains(text, "Staffelmietzins laut Vertrag") {
 				t.Fatal("Staffel letter basis missing", text)
 			}
-			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|percent|Kurve exakt|top-1|[0-9]{4}-[0-9]{2}-[0-9]{2}`).MatchString(text) {
+			if regexp.MustCompile(`[0-9]+/[0-9]+ %|[0-9]+\.[0-9]+ %|[0-9]+,[0-9]{3,} %|percent|Kurve exakt|top-1|[0-9]{4}-[0-9]{2}`).MatchString(text) {
 				t.Fatal("technical notation in letter", text)
 			}
 			if !strings.Contains(text, "Top 1 · Eva Huber") {
 				t.Fatal("unit and tenant label missing", text)
 			}
-			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Statistik Austria"} {
+			for _, want := range []string{"Eva Huber", "8010 Graz", "1.000,00 €", Money(item.NewCents), "Hauptmietzins", "BK-Akonto", "unverändert", "01.04.2026", "Seite 1 von", "Indexwerte laut Statistik Austria, Stand 24.09.2026", "Guten Tag Eva Huber,", "Für Rückfragen:", "Mit freundlichen Grüßen"} {
 				if !strings.Contains(text, want) {
 					t.Errorf("missing %q", want)
+				}
+			}
+			if strings.Contains(text, "Wertsicherung · Janusbergweg 123 · Janusbergweg 123") {
+				t.Fatal("house repeated in subtitle")
+			}
+			if !strings.HasPrefix(variant, "staffel-") {
+				for _, want := range []string{"VPI 2020, Basis September 2024: 123,6", "Auslösemonat Dezember 2025", "5,02 %"} {
+					if !strings.Contains(text, want) {
+						t.Errorf("letter formatting missing %q", want)
+					}
 				}
 			}
 			if strings.Contains(text, "Entwurf") {
@@ -103,6 +118,14 @@ func TestLetterVariants(t *testing.T) {
 			}
 			if item.RequiresMRGNotice && !strings.Contains(text, "§ 16 Abs 9 MRG") {
 				t.Fatal("MRG notice missing")
+			}
+			if item.RequiresMRGNotice && (!strings.Contains(text, Date(item.NoticeDeadline)) || !strings.Contains(text, "zugeht") || !strings.Contains(text, "14 Tage")) {
+				t.Fatal("receipt deadline missing")
+			}
+			letterText := strings.Join(strings.Fields(text), " ")
+			noBackPayment := "Der höhere Hauptmietzins ist erst ab diesem Zinstermin zu bezahlen; für die davorliegenden Monate wird keine Nachzahlung verlangt."
+			if strings.Contains(letterText, noBackPayment) != (item.RequiresMRGNotice && item.NewCents > item.OldCents && item.CollectableFrom > item.WirksamOn) {
+				t.Fatal("no-back-payment notice does not match MRG timing")
 			}
 			if item.MieWeG && !strings.Contains(text, "niedrigere Betrag") {
 				t.Fatal("parallel decision missing")

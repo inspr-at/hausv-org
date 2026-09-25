@@ -77,6 +77,10 @@ func TestIndexRuntimeRevisionsConflictsAndPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01"}, snapshot, at)
+	if err != nil || !run.IndexRetrievedAt.Equal(at) {
+		t.Fatalf("runtime data date: %s, want %s (%v)", run.IndexRetrievedAt, at, err)
+	}
 	for month, want := range map[indexation.Month]string{"2026-09": "133.3", "2026-08": "133.0", "2024-09": "123.6"} {
 		v, ok, e := snapshot.Data.Lookup(indexation.VPI2020, month)
 		if e != nil || !ok || v.Value.String() != want || v.Preliminary {
@@ -272,7 +276,7 @@ func TestRuntimeValuesReachEngineAndFlagPersistedDraft(t *testing.T) {
 	if err != nil || !frozen.IndexRevised || frozen.InputsSHA256 != old.InputsSHA256 {
 		t.Fatal("stored draft revision warning", err)
 	}
-	if _, err = repo.Approve(old.ID, actor, input.Settings, mustDate("2026-12-01"), func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) { return []byte("%PDF"), nil }); err == nil || !strings.Contains(err.Error(), "index_revised") {
+	if _, err = repo.Approve(old.ID, actor, input.Settings, mustDate("2026-12-01"), func(ValorisationRun, ValorisationItem, time.Time) ([]byte, error) { return []byte("%PDF"), nil }); err == nil || !strings.Contains(err.Error(), "Indexwerte wurden berichtigt") {
 		t.Fatal("stale draft approval", err)
 	}
 	newRun, err := repo.Create(input, "org", actor, mustDate("2026-12-01"))

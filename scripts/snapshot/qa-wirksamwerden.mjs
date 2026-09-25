@@ -77,6 +77,12 @@ try {
    await topic.locator('details').evaluateAll(nodes=>nodes.forEach(n=>n.open=true));
    if(!(await page.locator('main').innerText()).includes('Keine Rechtsberatung')) throw new Error('Legal note missing');
    if(await topic.locator('a[href^="https://"]').count()<3) throw new Error('Legal sources missing');
+   if(anchor==='recht-wirksamwerden') {
+    const text=await topic.innerText();
+    for(const phrase of ['Zugang spätestens 14 Tage', 'spätestens am 21.04.2026 zugehen', 'Postlaufzeit einplanen.']) {
+     if(!text.includes(phrase)) throw new Error(`Receipt guidance missing: ${phrase}`);
+    }
+   }
    await checkWidth(`help-${anchor}-${width}`,topic);
   }
  }

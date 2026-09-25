@@ -220,7 +220,8 @@ func buildZinshausLeases() []map[string]any {
 		"use_kind": "wohnung", "mrg_scope": "voll", "rent_regime": "angemessen",
 		"hmz_cents": int64(91000), "bk_cents": int64(13000), "heat_cents": int64(7500), "vat_bp": 1000,
 		"clause_type": "staffel", "review_status": "ok",
-		"clause_text": "Der Hauptmietzins steigt jeweils am 1. April um 2 Prozent, unabhängig vom Index. Letzte Staffel April 2024.",
+		"last_month": "2024-04", "last_effective_on": "2024-04-01", "hmz_after": "910.00",
+		"clause_text": "Der Hauptmietzins beträgt seit der letzten Staffel am 1. April 2024 netto 910,00 Euro. Am 1. April 2026 und am 1. April 2027 steigt der Vertragsbetrag jeweils um 2 Prozent, unabhängig vom Index. Die gesetzlichen MieWeG-Begrenzungen bleiben anwendbar.",
 		"notes":       "Staffelmietzins, letzte Stufe 2024.",
 		"staffel_steps": []map[string]any{
 			{"effective_on": "2026-04-01", "percent": "2"},
