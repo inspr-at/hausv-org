@@ -79,6 +79,30 @@ templ ContactsStyles() {
 		@media(max-width:1050px){.contacts-layout{grid-template-columns:minmax(0,1fr)}.unit-occupancies{grid-column:1/-1}}
 		@media(max-width:760px){.contact-row{gap:8px 16px}.contacts-aside{grid-template-columns:minmax(0,1fr)}.contact-actions{display:flex}.contact-actions>.button,.contact-actions>form,.route-actions{width:auto}.contact-route{min-height:48px}.occupancy-row{grid-template-columns:minmax(64px,.8fr) repeat(2,minmax(0,1fr))}.occupancy-head{display:grid}.occupancy-row span{display:block}.occupancy-row span::before{display:none}.contact-form .actions{flex-wrap:wrap}}
 
+        /* Directory actions get their own line so contact details can breathe. */
+        .contacts-main .contact-row{grid-template-columns:40px minmax(0,1fr);gap:8px 16px}
+        .contacts-main .contact-actions{grid-column:2;justify-content:flex-start}
+        .contacts-main :is(.quick-card h3,.contact-title strong,.contact-description,.contact-note){overflow-wrap:normal;word-break:normal;line-height:1.5}
+        .contacts-main :is(.section-head>div,.contact-title,.contact-meta>span,.occupancy-row>*,.quick-label){min-width:0}
+        .contacts-main .contact-meta>span{overflow-wrap:normal;word-break:normal}
+        .contacts-main .contact-meta>span:has(a){max-width:100%}
+        body[data-authenticated-app] .contacts-main :is(.button,.button.small,.contact-route){min-height:44px}
+        .contacts-main .contact-route{padding-inline:12px}
+        .contacts-main .occupancy-row{overflow-wrap:normal;line-height:1.5}
+        .contacts-main .occupancy-scroll:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+        @media(max-width:760px){
+            .contacts-main .contact-row>.contact-copy{grid-column:1/-1}
+            .contacts-main .contact-row>.contact-avatar{display:none}
+            .contacts-main .contact-actions{grid-column:1/-1}
+            .contacts-main .quick-card{grid-template-columns:40px minmax(0,1fr);gap:12px}
+            .contacts-main .quick-card>.route-actions{grid-column:1/-1}
+            .contacts-main .contact-meta{display:grid;gap:4px}
+            .contacts-main .occupancy-row{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;font-size:12px}
+            .contacts-main .occupancy-row>strong{grid-column:1/-1}
+            .contacts-main .occupancy-head{display:none}
+            .contacts-main .occupancy-row span::before{display:block;content:attr(data-label);margin-bottom:4px;color:var(--muted);font-size:10px;font-weight:700}
+        }
+
 	</style>
 	<style>
 		.flash.ok{border-color:var(--leaf);background:rgba(47,107,74,.08);color:var(--leaf)}
@@ -129,7 +153,7 @@ templ ContactsBody(data ContactsPageData) {
 }
 
 templ UnitOccupancies(items []UnitOccupancy) {
-	<section class="panel contact-section unit-occupancies" aria-labelledby="unit-occupancies-title"><header class="section-head"><div><p class="kicker">Einheiten</p><h2 id="unit-occupancies-title">Bewohner je Einheit</h2><p>Zuordnung laut Einheitenstammdaten.</p></div></header><div class="occupancy-scroll" role="region" aria-label="Einheiten und Bewohner" tabindex="0"><div class="occupancy-table" role="table" aria-label="Bewohner je Einheit"><div class="occupancy-row occupancy-head" role="row"><strong role="columnheader">Einheit</strong><strong role="columnheader">Eigentümer</strong><strong role="columnheader">Mieter</strong></div>
+	<section class="panel contact-section unit-occupancies" aria-labelledby="unit-occupancies-title"><header class="section-head"><div><p class="kicker">Einheiten</p><h2 id="unit-occupancies-title">Bewohner je Einheit</h2><p>Zuordnung laut Einheitenstammdaten. Weitere Einheiten durch Scrollen anzeigen.</p></div></header><div class="occupancy-scroll" role="region" aria-label="Einheiten und Bewohner" tabindex="0"><div class="occupancy-table" role="table" aria-label="Bewohner je Einheit"><div class="occupancy-row occupancy-head" role="row"><strong role="columnheader">Einheit</strong><strong role="columnheader">Eigentümer</strong><strong role="columnheader">Mieter</strong></div>
 		for _, item := range items {
 			<div class="occupancy-row" role="row"><strong role="cell">{ item.UnitLabel }<small>{ item.UnitType }</small></strong><span role="cell" data-label="Eigentümer">{ occupancyPeopleText(item.Owners, "unbewohnt") }</span><span role="cell" data-label="Mieter">{ occupancyPeopleText(item.Renters, "frei") }</span></div>
 		}
