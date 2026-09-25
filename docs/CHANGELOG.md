@@ -2,6 +2,17 @@
 
 Alle sichtbaren Änderungen werden hier in kurzer, kundenorientierter Sprache gesammelt.
 
+## [260925020443.0.0] - 2026-09-25
+
+### Verbessert
+
+- Jahresabrechnung: eigene Zeile je Eigentümer oder Mieter bei Wechsel im Jahr, gegliederter Heizkostenanhang und gut lesbare Messwerte.
+- Mindest-Rücklage wird nach dem im jeweiligen Zeitraum gültigen Satz geprüft; Quellen in der Hilfe.
+- Wertsicherung: Freigabe erst nach geprüften Ausnahmen; Anpassungsschreiben mit Zugangsfrist, persönlicher Anrede und verständlichen Prozentwerten.
+- Mieterabrechnung mit klaren Voraussetzungen und Hinweisen.
+- Aus Organisationsansichten direkt in die richtige Liegenschaft wechseln.
+- Einstellungen und Posteingang übersichtlicher.
+
 ## [260925000542.0.0] - 2026-09-25
 
 ### Neu
