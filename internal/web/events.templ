@@ -161,6 +161,24 @@ templ EventsStyles() {
 		.event-segments a span{min-width:24px;padding:2px 4px;border-radius:var(--radius-pill);background:rgba(128,128,128,.12);font-variant-numeric:tabular-nums;text-align:center}
 		@media(max-width:1100px){.events-toolbar{grid-template-columns:minmax(0,1fr)}.event-segments a{flex:1}}
 		@media(max-width:480px){.events-toolbar{padding:8px;gap:8px}.event-segments a{gap:4px;padding:8px;font-size:11px}.event-search button{padding-inline:8px}}
+        /* Reset native heading margins within event content, not the shared shell. */
+        .events-main :is(.section-head,.event-copy,.aside-panel,.month-head) :is(h2,h3,p){margin:0}
+        .events-main .section-head{align-items:center;gap:12px;padding-bottom:0}
+        .events-main .section-head p{margin-top:8px}
+        .events-main .event-month{margin-top:24px}
+        .events-main .event-card-head h3{overflow-wrap:normal;word-break:normal}
+        .events-main .event-title-group{flex-basis:220px}
+        .events-main .event-category{max-width:100%;white-space:normal;line-height:1.4}
+        .events-main .event-meta>span{min-width:0;max-width:100%;white-space:normal;overflow-wrap:normal;line-height:1.5}
+        .events-main .event-actions{flex-wrap:wrap;margin-top:0}
+        .events-main .event-details>summary{padding-block:8px}
+        .events-main .event-details-body{padding:0 0 12px}
+        .events-main .history{margin-top:16px}
+        body[data-authenticated-app] .events-main :is(.button,.button.small){min-height:44px}
+        .events-main .event-segments a{min-height:44px}
+        .events-main .event-copy,.events-main .section-head>div,.events-main .aside-panel>*{min-width:0}
+        @media(max-width:760px){.events-main .section-head{display:flex;flex-wrap:wrap}.events-main .event-title-group{flex-basis:100%}.events-main .event-card{gap:12px}.events-main .aside-panel{gap:12px}}
+
 	</style>
 }
 
@@ -198,7 +216,7 @@ templ EventsBody(data EventsPageData) {
 		<div class="events-column">
 					if len(data.Upcoming) > 0 {
 						<section class="panel agenda-panel" aria-labelledby="events-upcoming-title">
-							<header class="section-head"><div><span class="kicker">Kommende Termine</span><h2 id="events-upcoming-title">Was als Nächstes ansteht</h2><p>Nach Monat geordnet, der nächste Termin steht zuerst.</p></div><span class="count">{ len(data.Upcoming) } geplant</span></header>
+							<header class="section-head"><div><h2 id="events-upcoming-title">Kommende Termine</h2><p>Der nächste Termin steht zuerst.</p></div><span class="count">{ len(data.Upcoming) } geplant</span></header>
 							for _, month := range data.Months {
 								<section class="event-month"><header class="month-head"><h3>{ month.Label }</h3><span>{ len(month.Events) } { eventCountWord(len(month.Events)) }</span></header><div class="agenda-list">
 									for _, event := range month.Events {
