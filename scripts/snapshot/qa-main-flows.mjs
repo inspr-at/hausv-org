@@ -122,8 +122,8 @@ async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label
     const primaryRect = primary?.getBoundingClientRect();
     const secondaryRect = secondary?.getBoundingClientRect();
     return {
-      primary: primary?.textContent?.trim() || '',
-      secondary: secondary?.textContent?.trim() || '',
+      primary: primary?.textContent?.replace(/\u00a0/g, ' ').trim() || '',
+      secondary: secondary?.textContent?.replace(/\u00a0/g, ' ').trim() || '',
       inOrder: Boolean(primary && secondary && (primary.compareDocumentPosition(secondary) & Node.DOCUMENT_POSITION_FOLLOWING)),
       primaryFont: Number.parseFloat(primaryStyle?.fontSize || '0'),
       secondaryFont: Number.parseFloat(secondaryStyle?.fontSize || '0'),
@@ -133,7 +133,7 @@ async function assertHomeIdentityPair(page, scope, displayName, unitLabel, label
       // baseline; the sidebar keeps the stacked arrangement.
       beside: Boolean(primaryRect && secondaryRect && secondaryRect.left >= primaryRect.right - 1 &&
         secondaryRect.top < primaryRect.bottom && secondaryRect.bottom > primaryRect.top),
-      aria: root.getAttribute('aria-label') || '',
+      aria: (root.getAttribute('aria-label') || '').replace(/\u00a0/g, ' '),
       expected,
     };
   }, { displayName, unitLabel });
