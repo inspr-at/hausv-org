@@ -73,6 +73,30 @@ func (l *letterLayout) section(title string) {
 	l.y -= 5
 }
 
+// Short facts share a value column; prose keeps the full line width. This
+// operates only on display text, leaving the stored calculation untouched.
+func (l *letterLayout) annexLine(text string) {
+	if strings.HasPrefix(text, "Energiebezüge und Preise (") || text == "Verbrauchsvergleich" || strings.HasPrefix(text, "Verbraucherinformation (") {
+		l.ensure(44)
+		l.y -= 7
+		l.paragraph(text, pdf.Strong, 9.5, 13)
+		l.y -= 5
+		return
+	}
+	const valueOffset = 180.0
+	label, value, paired := strings.Cut(text, ": ")
+	label += ":"
+	if paired && pdf.TextWidth(label, pdf.Strong, 9.5) <= valueOffset-12 && pdf.TextWidth(value, pdf.Body, 9.5) <= measure-valueOffset {
+		l.ensure(17)
+		l.text(label, pdf.Strong, 9.5, left, l.y)
+		l.text(value, pdf.Body, 9.5, left+valueOffset, l.y)
+		l.y -= 17
+		return
+	}
+	l.paragraph(text, pdf.Body, 9.5, 13)
+	l.y -= 4
+}
+
 func (d Document) Pages() []pdf.Page {
 	l := &letterLayout{d: d}
 	l.d.Sender, l.d.Address = nonempty(d.Sender...), nonempty(d.Address...)
@@ -133,8 +157,7 @@ func (d Document) Pages() []pdf.Page {
 			if strings.HasPrefix(text, "Einwendungen sind") {
 				continue
 			} // Already in Hinweise.
-			l.paragraph(text, pdf.Body, 9.5, 13)
-			l.y -= 4
+			l.annexLine(text)
 		}
 	}
 	if len(d.Excluded) > 0 {

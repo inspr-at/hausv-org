@@ -308,7 +308,11 @@ func measurement(micros int64, unit string) string {
 // A vector's total can exceed int64 even though every stored counter fits.
 // Round only the presentation to at most two decimals using exact arithmetic.
 func measurementTotal(micros *big.Int, unit string) string {
-	raw := new(big.Rat).SetFrac(micros, big.NewInt(1_000_000)).FloatString(2)
+	return measurementRatio(new(big.Rat).SetFrac(micros, big.NewInt(1_000_000)), unit)
+}
+
+func measurementRatio(value *big.Rat, unit string) string {
+	raw := value.FloatString(2)
 	parts := strings.SplitN(raw, ".", 2)
 	digits := parts[0]
 	for i := len(digits) - 3; i > 0; i -= 3 {

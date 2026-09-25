@@ -103,7 +103,7 @@ try {
   const pdfURL=new URL(href,baseURL).href;
   const response=await context.request.get(pdfURL);assert.equal(response.status(),200);
   const pdf=await response.body();
-  for(const text of ['0,09 EUR/kWh','100.000 kWh','Vorperiodenvergleich','www.topprodukte.at','www.verbraucherschlichtung.at/antrag/','Monatliche Verbrauchsinformation']) assert(pdf.toString('latin1').includes(text),`PDF missing ${text}`);
+  for(const text of ['0,09 \\200/kWh','100.000 kWh','Vorperiodenvergleich','www.topprodukte.at','www.verbraucherschlichtung.at/antrag/','Monatliche Verbrauchsinformation']) assert(pdf.toString('latin1').includes(text),`PDF missing ${text}`);
   await writeFile(`${out}/heizkg18-top1.pdf`,pdf);
   await openSection('heizinformationen');
   await energy.locator('input[name=purchase_0_price]').fill('0,123456');
