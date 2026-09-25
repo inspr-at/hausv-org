@@ -334,6 +334,9 @@ func newAnnualStatementRun(input AnnualStatementRunInput, result AnnualStatement
 	if annualStatementHasAgreedShares(input) {
 		version = AnnualStatementCalculationVersionAgreed
 	}
+	if result.Reserve != nil {
+		version = AnnualStatementCalculationVersionReserveRates
+	}
 	return AnnualStatementRun{ID: id, PeriodYear: input.Period.Year, Revision: revision, CalculationVersion: version, CreatedAt: now.UTC(), CreatedBy: actor, InputHash: hex.EncodeToString(hash[:]), Input: input, Result: result}, nil
 }
 func copyAnnualStatementRun(run AnnualStatementRun) AnnualStatementRun {

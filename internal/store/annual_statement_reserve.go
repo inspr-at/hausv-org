@@ -19,12 +19,34 @@ const (
 	ReserveKindClosingCheck = "closing_check"
 )
 
-// WEGMinimumReserveCentsPerSquareMetreMonth is the statutory floor from
-// 1 January 2026: 1,12 € per m² of usable area per month.
-// WEG 2002 § 31 Abs 5 valorises 0,90 € by VPI 2020:
-// 0,90 × 128,1 (June 2025) / 102,6 = 1,1237, stated as 1,12.
-// Source: WKO/ÖVI, law-report example E6.
-const WEGMinimumReserveCentsPerSquareMetreMonth = 112
+// WEGMinimumReserveRate records a published rate and its effective date.
+type WEGMinimumReserveRate struct {
+	ValidFrom                string
+	CentsPerSquareMetreMonth int64
+}
+
+// Sources checked 2026-09-25. § 31 Abs 1, 5 WEG uses the original
+// 0,90 × VPI 2020 (June of the preceding year) / 102,6, half-cent down.
+var wegMinimumReserveRates = [...]WEGMinimumReserveRate{
+	// BGBl I 222/2021, § 31 and § 58g Abs 2 (effective 1 July 2022):
+	// https://www.ris.bka.gv.at/eli/bgbl/i/2021/222
+	{ValidFrom: "2022-07-01", CentsPerSquareMetreMonth: 90},
+	// WKO publication for 2024: June 2023 = 120,4 → 1,06.
+	// https://www.wko.at/oe/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-weg-2024-1.pdf
+	{ValidFrom: "2024-01-01", CentsPerSquareMetreMonth: 106},
+	// WKO publication 10 September 2025: June 2025 = 128,1 → 1,12.
+	// https://www.wko.at/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-wohnungseigentumsgesetz
+	{ValidFrom: "2026-01-01", CentsPerSquareMetreMonth: 112},
+}
+
+// The next biennial amount must be published before applying it to 2028.
+const wegMinimumReserveNextAdjustment = "2028-01-01"
+
+type AnnualStatementReserveMinimumRate struct {
+	StartsOn                 string `json:"starts_on"`
+	EndsOn                   string `json:"ends_on"`
+	CentsPerSquareMetreMonth int64  `json:"cents_per_square_metre_month"`
+}
 
 // AnnualStatementReserveEntry is an insert-only booking on the WEG Rücklage.
 // A correction is a later entry; stored rows are not updated.
@@ -48,14 +70,17 @@ type AnnualStatementReserveShare struct {
 
 // AnnualStatementReserveResult is the cent-exact Rücklage snapshot of one run.
 type AnnualStatementReserveResult struct {
-	OpeningCents        int64                         `json:"opening_cents"`
-	ContributionCents   int64                         `json:"contribution_cents"`
-	WithdrawalCents     int64                         `json:"withdrawal_cents"`
-	InterestCents       int64                         `json:"interest_cents"`
-	ClosingCents        int64                         `json:"closing_cents"`
-	Shares              []AnnualStatementReserveShare `json:"shares,omitempty"`
-	MinimumMonthlyCents int64                         `json:"minimum_monthly_cents,omitempty"`
-	MinimumPeriodCents  int64                         `json:"minimum_period_cents,omitempty"`
+	OpeningCents      int64                         `json:"opening_cents"`
+	ContributionCents int64                         `json:"contribution_cents"`
+	WithdrawalCents   int64                         `json:"withdrawal_cents"`
+	InterestCents     int64                         `json:"interest_cents"`
+	ClosingCents      int64                         `json:"closing_cents"`
+	Shares            []AnnualStatementReserveShare `json:"shares,omitempty"`
+	// MinimumMonthlyCents is present only when one rate covers the entire period.
+	MinimumMonthlyCents int64                               `json:"minimum_monthly_cents,omitempty"`
+	MinimumPeriodCents  int64                               `json:"minimum_period_cents,omitempty"`
+	MinimumRates        []AnnualStatementReserveMinimumRate `json:"minimum_rates,omitempty"`
+	MinimumUnavailable  bool                                `json:"minimum_unavailable,omitempty"`
 	// MinimumWarning is set when recorded contributions are below the statutory floor.
 	// AreaIncomplete means the floor could not be computed.
 	MinimumWarning bool `json:"minimum_warning,omitempty"`
@@ -372,6 +397,41 @@ func AnnualStatementReserveBalance(entries []AnnualStatementReserveEntry, period
 }
 
 func applyReserveMinimum(result *AnnualStatementReserveResult, period AnnualStatementPeriod, units []Unit) {
+	rates, ok := reserveMinimumRates(period)
+	if !ok {
+		result.MinimumUnavailable = true
+		result.MinimumWarning = true
+		return
+	}
+	applyReserveMinimumRates(result, period, units, rates)
+}
+
+// Clip published rates to this period. Before July 2022 there was an adequacy
+// requirement, but no statutory euro floor. Do not extrapolate unpublished rates.
+func reserveMinimumRates(period AnnualStatementPeriod) ([]AnnualStatementReserveMinimumRate, bool) {
+	if _, ok := reservePeriodMonths(period.StartsOn, period.EndsOn); !ok || period.EndsOn >= wegMinimumReserveNextAdjustment {
+		return nil, false
+	}
+	var rates []AnnualStatementReserveMinimumRate
+	for i, rate := range wegMinimumReserveRates {
+		start := max(period.StartsOn, rate.ValidFrom)
+		end := period.EndsOn
+		if i+1 < len(wegMinimumReserveRates) {
+			next, _ := time.Parse("2006-01-02", wegMinimumReserveRates[i+1].ValidFrom)
+			end = min(end, next.AddDate(0, 0, -1).Format("2006-01-02"))
+		}
+		if start <= end {
+			rates = append(rates, AnnualStatementReserveMinimumRate{StartsOn: start, EndsOn: end, CentsPerSquareMetreMonth: rate.CentsPerSquareMetreMonth})
+		}
+	}
+	return rates, true
+}
+
+func applyReserveMinimumRates(result *AnnualStatementReserveResult, period AnnualStatementPeriod, units []Unit, rates []AnnualStatementReserveMinimumRate) {
+	result.MinimumRates = rates
+	if len(rates) == 0 {
+		return
+	}
 	area, complete := 0, len(units) > 0
 	for _, unit := range units {
 		if !unit.UsableAreaRecorded || unit.UsableAreaM2Hundredths < 0 {
@@ -384,23 +444,37 @@ func applyReserveMinimum(result *AnnualStatementReserveResult, period AnnualStat
 		}
 		area += unit.UsableAreaM2Hundredths
 	}
-	months, monthsOK := reservePeriodMonths(period.StartsOn, period.EndsOn)
-	if !complete || !monthsOK {
+	if !complete {
 		result.AreaIncomplete = true
 		result.MinimumWarning = true
 		return
 	}
-	monthly := reserveMinimumMonthlyCents(area)
-	result.MinimumMonthlyCents = monthly
-	periodMinimum := monthly * int64(months)
+	var periodMinimum int64
+	for _, rate := range rates {
+		months, monthsOK := reservePeriodMonths(rate.StartsOn, rate.EndsOn)
+		if !monthsOK || int64(area) > math.MaxInt64/rate.CentsPerSquareMetreMonth {
+			result.MinimumUnavailable = true
+			result.MinimumWarning = true
+			return
+		}
+		monthly := reserveMinimumMonthlyCents(area, rate.CentsPerSquareMetreMonth)
+		if monthly > math.MaxInt64/int64(months) || !reserveAdd(&periodMinimum, monthly*int64(months)) {
+			result.MinimumUnavailable = true
+			result.MinimumWarning = true
+			return
+		}
+	}
+	if len(rates) == 1 && rates[0].StartsOn == period.StartsOn {
+		result.MinimumMonthlyCents = reserveMinimumMonthlyCents(area, rates[0].CentsPerSquareMetreMonth)
+	}
 	result.MinimumPeriodCents = periodMinimum
 	result.MinimumWarning = result.ContributionCents < periodMinimum
 }
 
-// reserveMinimumMonthlyCents applies 1,12 €/m² to an area stored in hundredths of a square metre.
+// reserveMinimumMonthlyCents applies the month's rate to hundredths of a square metre.
 // A remainder of 0,50 cent rounds down, matching the statement's half-down money rule.
-func reserveMinimumMonthlyCents(areaHundredths int) int64 {
-	product := int64(WEGMinimumReserveCentsPerSquareMetreMonth) * int64(areaHundredths)
+func reserveMinimumMonthlyCents(areaHundredths int, rateCents int64) int64 {
+	product := rateCents * int64(areaHundredths)
 	cents := product / 100
 	if product%100 > 50 {
 		cents++

@@ -29,6 +29,8 @@ try {
   await page.locator('details.annual-preparation').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
   const section = page.locator('#ruecklage');
   await section.scrollIntoViewIfNeeded();
+  assert.match(await section.innerText(), /1,06 € je m² und Monat \(01\.01\.2025 bis 31\.12\.2025\)/);
+  assert.doesNotMatch(await section.innerText(), /1,12 € je m²/);
   const before = await section.locator('[data-reserve-closing]').getAttribute('data-reserve-closing');
   await section.locator('[name="kind"]').selectOption('contribution');
   await section.locator('[name="entry_date"]').fill('2025-03-15');
@@ -40,6 +42,7 @@ try {
   assert.notEqual(after, before);
   assert.match(await section.innerText(), /Prüfbuchung/);
   assert.match(await section.innerText(), /Endstand/);
+  assert.match(await section.innerText(), /1,06 € je m² und Monat/);
   const existingRun = page.locator('[data-annual-statement-run]');
   const previousRun = await existingRun.count() ? await existingRun.getAttribute('data-annual-statement-run') : null;
   await Promise.all([
@@ -56,10 +59,11 @@ try {
   for (const text of ['R\\374cklage', 'Anfangsstand', 'Entnahmen', 'Zinsen', 'Endstand', 'Anteil dieser Einheit']) {
     assert(pdf.includes(Buffer.from(text)), `PDF misses ${text}`);
   }
+  assert(pdf.includes(Buffer.from('1,06')), 'PDF misses the 2025 minimum rate');
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.locator('details.annual-preparation').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
-    await section.scrollIntoViewIfNeeded();
+    await section.evaluate(node => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - 128, behavior: 'instant' }));
     await page.screenshot({ path: `${out}/reserve-${width}.png`, fullPage: false });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   }
