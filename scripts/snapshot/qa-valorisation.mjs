@@ -63,6 +63,14 @@ async function shot(page, name) {
   process.stdout.write(`  screenshot ${artifactDir}/${name}.png\n`);
 }
 
+async function switchHouse(page, name) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.locator('#context-property > summary').click();
+  await page.locator('#context-property-search').fill(name);
+  await page.getByRole('option').filter({ hasText: name }).first().click();
+  await page.waitForLoadState('networkidle');
+}
+
 async function checkLetter(context, href, runID, name) {
   const response = await context.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
   const raw = await response.body();
@@ -124,6 +132,7 @@ try {
     if (!body.includes(value)) fail(`Vorschau: ${value} fehlt`);
   }
   if (/\btop-\d|\d+\/\d+ %|\d+\.\d+ %|percent|Kurve exakt/.test(body)) fail('Technische Zahlen oder IDs in der Vorschau');
+  await switchHouse(page, 'Musterstraße 12');
   await page.goto(`${baseURL}/musterstrasse-12/app/settings/valorisation`, { waitUntil: 'networkidle' });
   const mrgStaffel = page.locator('[data-group="ready"] > [data-lease-id="m12-lease-top-8"]').first();
   if (await mrgStaffel.count() !== 1) fail('Musterstraße Top 8: feste Staffel ist nicht bereit');
@@ -138,6 +147,7 @@ try {
     if (artifactDir) await mrgStaffel.screenshot({ path: `${artifactDir}/mrg-staffel-top8-${width}.png` });
   }
   // The seeded April draft is reviewable even when the system clock is later.
+  await switchHouse(page, 'Janusbergweg 123');
   await page.goto(`${baseURL}/janusbergweg-123/app/settings/valorisation`, { waitUntil: 'networkidle' });
   const first = page.locator('article[data-run-id]').first();
   const runID = await first.getAttribute('data-run-id');
