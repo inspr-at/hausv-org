@@ -137,7 +137,9 @@ try {
   await top1.locator('summary').filter({ hasText: 'Alle Indexwerte anzeigen' }).click();
   if (await top1.getByRole('table', { name: 'Geprüfte Monatsreihe und Jahresmittel' }).locator('tbody tr').count() <= 5) fail('Volle Indexreihe fehlt');
   const body = await preview.innerText();
-  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026', 'Top\u00a01 · Eva Huber', 'Schwelle 5 % überschritten: +5,02 %', '+3,55412 %']) {
+  if (await top1.locator(':scope > summary .unit-label').innerText() !== 'Top\u00a01') fail('Top 1: Einheitenlabel nicht zusammengehalten');
+  if (!(await top1.locator(':scope > summary strong').textContent()).includes(' · Eva Huber')) fail('Top 1: Mietpartei fehlt');
+  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026', 'Schwelle 5 % überschritten: +5,02 %', '+3,55412 %']) {
     if (!body.includes(value)) fail(`Vorschau: ${value} fehlt`);
   }
   if (/\btop-\d|\d+\/\d+ %|\d+\.\d+ %|percent|Kurve exakt/.test(body)) fail('Technische Zahlen oder IDs in der Vorschau');
