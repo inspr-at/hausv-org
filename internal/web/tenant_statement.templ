@@ -3,6 +3,7 @@ package web
 type TenantStatementPanelData struct {
 	Enabled                     bool
 	RunID, Message, StatementOn string
+	VATSettingsURL              string
 	Units                       []TenantStatementUnitView
 	Statements                  []TenantStatementView
 }
@@ -17,6 +18,7 @@ type TenantStatementLeaseView struct {
 }
 type TenantStatementUnitView struct {
 	ID, Label, OwnerEmail, OwnerName string
+	DeriveIssue, VATIssue            string
 	Active, HeatingMonthlyConfirmed  bool
 	Owners, Costs                    []TenantStatementOption
 	Leases                           []TenantStatementLeaseView
@@ -101,7 +103,7 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 				for _,unit := range data.Units {
 					<details class="ts-unit">
 						<summary>
-							<span class="ts-unit-name">{ unit.Label }</span>
+							<span class="ts-unit-name">@UnitLabel(unit.Label)</span>
 							if unit.Active {
 								<span class="ts-chip ok">Mietverwaltung aktiv</span>
 								if unit.OwnerName != "" {
@@ -109,6 +111,9 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 								}
 							} else {
 								<span class="ts-chip">Nicht eingerichtet</span>
+							}
+							for _, lease := range unit.Leases {
+								<span class="ts-unit-owner">{ lease.Label } · { lease.Scope }</span>
 							}
 							@DisclosureChevron()
 						</summary>
@@ -163,7 +168,11 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 									}
 								</div>
 							</form>
-							if unit.Active {
+							if unit.DeriveIssue != "" {
+								<p class="ts-notice">{ unit.DeriveIssue }</p>
+							} else if unit.VATIssue != "" {
+								<p class="ts-notice">{ unit.VATIssue } <a href={ templ.SafeURL(data.VATSettingsURL) }>Umsatzsteuer in der Rechtsgrundlage ausweisen</a> und einen neuen WEG-Lauf berechnen und freigeben.</p>
+							} else if unit.Active {
 								<form method="post" action={ templ.SafeURL("/app/settings/annual-statement/runs/" + data.RunID + "/tenant-statements") } class="ts-derive">
 									<input type="hidden" name="unit_id" value={ unit.ID }/>
 									<div class="ts-grid">
@@ -184,7 +193,7 @@ templ TenantStatementPanel(data TenantStatementPanelData) {
 					for _,s := range data.Statements {
 						<article class="ts-statement">
 							<div class="ts-statement-head">
-								<h3>{ s.Label }</h3>
+								<h3>@UnitLabel(s.Label)</h3>
 								<time>{ s.Date }</time>
 								@tenantStatementChip(s)
 							</div>

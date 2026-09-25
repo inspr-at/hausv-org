@@ -186,7 +186,7 @@ templ SettingsHubBody(data SettingsHubPageData) {
 					if data.HomeIdentity.HasDisplayName {
 						<a href={ templ.SafeURL(data.SettingsHomeURL) } data-home-identity="settings" aria-label={ data.HomeIdentity.AriaLabel + " bearbeiten" }><span class="link-icon">@PortalIcon("home")</span><span><strong data-home-display-name>{ data.HomeIdentity.DisplayName }</strong>
 							if data.HomeIdentity.HasUnit {
-								<small class="settings-home-unit" data-home-unit-label>{ data.HomeIdentity.UnitLabel }</small>
+								<small class="settings-home-unit" data-home-unit-label>@UnitLabel(data.HomeIdentity.UnitLabel)</small>
 							}
 							<small>Anzeigename und Zuordnung bearbeiten</small></span><b>›</b></a>
 					} else {
@@ -543,7 +543,7 @@ templ BuildingUnits(data BuildingSettingsPageData) {
 func homeProfileScope(kind string) string { if kind == "apartment" { return "noch keiner offiziellen Einheit zugeordnet" }; return "als gesamte Liegenschaft angelegt" }
 
 templ BuildingUnitRow(unit view.BuildingUnitView) {
-	<article class="unit-card"><span class="unit-kind">@PortalIcon("home")</span><div class="unit-title"><strong>{ unit.Label }</strong><small>{ unit.UnitTypeLabel } · { unit.BillableLabel }</small>
+	<article class="unit-card"><span class="unit-kind">@PortalIcon("home")</span><div class="unit-title"><strong>@UnitLabel(unit.Label)</strong><small>{ unit.UnitTypeLabel } · { unit.BillableLabel }</small>
 		if unit.HasHomeDisplayName {
 			<em>Mein Zuhause · { unit.HomeDisplayName }</em>
 		}

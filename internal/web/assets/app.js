@@ -617,12 +617,22 @@ document.querySelectorAll("[data-agreed-shares]").forEach((form) => {
   const fields = [...form.querySelectorAll("[data-agreed-share]")];
   const output = form.querySelector("[data-agreed-sum]");
   const update = () => {
-    const complete = fields.length > 0 && fields.every((field) => /^\d+$/.test(field.value) && field.validity.valid);
-    const total = fields.reduce((sum, field) => sum + (Number(field.value) || 0), 0);
+    const shares = fields.map((field) => {
+      const value = field.value.trim();
+      if (!/^\d+([,.]\d{1,4})?$/.test(value)) return null;
+      const [whole, fraction = ""] = value.split(/[,.]/);
+      const ppm = Number(whole) * 10000 + Number(fraction.padEnd(4, "0"));
+      return Number.isSafeInteger(ppm) && ppm <= 1000000 ? ppm : null;
+    });
+    const complete = shares.length > 0 && shares.every((share) => share !== null);
+    const total = shares.reduce((sum, share) => sum + (share ?? 0), 0);
     const valid = complete && total === 1000000;
     output.dataset.valid = String(valid);
-    output.textContent = `Summe: ${total.toLocaleString("de-AT")} / 1.000.000 PPM · ${valid ? "vollständig" : "Bitte alle Anteile prüfen"}`;
-    form.querySelector('button[type="submit"]').disabled = !valid;
+    output.textContent = `${(total / 10000).toLocaleString("de-AT", {maximumFractionDigits: 4})} % / 100 % · ${valid ? "vollständig" : "Bitte alle Anteile prüfen"}`;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = !valid;
+    button.classList.toggle("primary", valid);
+    button.classList.toggle("ghost", !valid);
   };
   form.addEventListener("input", update);
   update();

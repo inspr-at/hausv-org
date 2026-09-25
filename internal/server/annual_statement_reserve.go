@@ -2,11 +2,13 @@ package server
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/inspr-at/hausv-org/internal/store"
+	display "github.com/inspr-at/hausv-org/internal/view"
 	"github.com/inspr-at/hausv-org/internal/web"
 )
 
@@ -63,6 +65,14 @@ func annualStatementReserveView(repo store.AnnualStatementReserveRepository, yea
 		return web.AnnualStatementReserveView{}, false
 	}
 	entries := repo.ListByPeriod(year)
+	// Presentation order only: preserve the repository/snapshot ordering used
+	// by historical runs, but show opening balances before same-day bookings.
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].EntryDate != entries[j].EntryDate {
+			return entries[i].EntryDate < entries[j].EntryDate
+		}
+		return entries[i].Kind == store.ReserveKindOpening && entries[j].Kind != store.ReserveKindOpening
+	})
 	balance, ok := store.AnnualStatementReserveBalance(entries, period, units)
 	if !ok {
 		balance = store.AnnualStatementReserveResult{}
@@ -72,12 +82,16 @@ func annualStatementReserveView(repo store.AnnualStatementReserveRepository, yea
 		Withdrawals: formatAnnualStatementMoney(balance.WithdrawalCents), Interest: formatAnnualStatementMoney(balance.InterestCents),
 		Closing: formatAnnualStatementMoney(balance.ClosingCents), Documents: documents,
 	}
-	if balance.AreaIncomplete {
+	if !ok || balance.MinimumUnavailable {
+		view.MinimumHint = "Die Mindest-Rücklage konnte für diesen Zeitraum nicht vollständig geprüft werden."
+	} else if balance.AreaIncomplete {
 		view.MinimumHint = "Die Mindest-Rücklage konnte nicht geprüft werden, weil die Nutzfläche unvollständig ist."
+	} else if len(balance.MinimumRates) == 0 {
+		view.MinimumHint = "Vor 01.07.2022 gab es keinen gesetzlichen Mindestbetrag je m². Eine angemessene Rücklage war dennoch zu bilden."
 	} else if balance.MinimumWarning {
-		view.MinimumHint = "Die Zuführungen liegen unter der Mindest-Rücklage von 1,12 € je m² und Monat (WEG 2002 § 31)."
+		view.MinimumHint = "Die Zuführungen liegen unter der Mindest-Rücklage: " + display.AnnualStatementReserveRateLabel(balance.MinimumRates) + " (WEG 2002 § 31)."
 	} else if len(entries) > 0 {
-		view.MinimumHint = "Die Zuführungen erreichen die Mindest-Rücklage von 1,12 € je m² und Monat."
+		view.MinimumHint = "Die Zuführungen erreichen die Mindest-Rücklage: " + display.AnnualStatementReserveRateLabel(balance.MinimumRates) + "."
 	}
 	if balance.ClosingMismatch {
 		view.MinimumHint = "Eine Endstand-Kontrolle weicht vom errechneten Endstand ab. " + view.MinimumHint

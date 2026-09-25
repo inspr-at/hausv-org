@@ -180,21 +180,28 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 	}
 	houses := a.inboxHouses(ac)
 	houseNames := map[string]string{}
+	houseRoles := map[string]string{}
 	for _, house := range houses {
 		houseNames[house.Slug] = house.Name
+		houseRoles[house.Slug] = house.Role
 	}
 	if selectedID == "" && len(items) > 0 {
 		selectedID = items[0].ID
 	}
 	queueQuery := inboxQueueQuery(query)
+	lede := fmt.Sprintf("%d offen · %d mit Vorschlag · %d nicht zugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto))
+	if suggester, _ := a.triageFor(ctx, orgKey); suggester == nil {
+		lede += ". Vorschläge und Sicherheitswerte sind Beispielvorschläge."
+	}
 	data := web.InboxData{
 		Eyebrow:          strings.ToUpper(a.inboxOrganisationName(ac)) + " · POSTEINGANG",
-		Lede:             fmt.Sprintf("%d offen · %d mit Vorschlag · %d nicht zugeordnet · %d heute automatisch erledigt", openCount, proposedCount, unassignedCount, len(auto)),
+		Lede:             lede,
 		Houses:           houses,
 		Sort:             query.Get("sort"),
 		FullPage:         full,
 		Flash:            query.Get("flash"),
 		ProviderFootline: a.inboxProviderFootlineFor(ctx, orgKey),
+		SessionSlug:      ac.tenant.Slug,
 		QueueQuery:       queueQuery,
 		OpenCount:        openCount,
 		UnassignedCount:  unassignedCount,
@@ -213,10 +220,10 @@ func (a *app) inboxData(ctx context.Context, orgKey string, ac *authCtx, query u
 		data.AssigneeFilter = append(data.AssigneeFilter, web.InboxOption{Value: assignee.Key, Label: assignee.Name, Selected: filter.Assignee == assignee.Key})
 	}
 	for _, item := range items {
-		data.Items = append(data.Items, inboxQueueView(item, houseNames, selectedID, now))
+		data.Items = append(data.Items, inboxQueueView(item, houseNames, houseRoles, ac.tenant.Slug, selectedID, now))
 	}
 	for _, item := range auto {
-		data.AutoItems = append(data.AutoItems, inboxQueueView(item, houseNames, selectedID, now))
+		data.AutoItems = append(data.AutoItems, inboxQueueView(item, houseNames, houseRoles, ac.tenant.Slug, selectedID, now))
 	}
 	if selectedID != "" {
 		selected, getErr := repo.Get(ctx, selectedID)
@@ -307,13 +314,18 @@ func intakeHandledToday(item store.IntakeItem, now time.Time) bool {
 	return sameLocalDate(handledAt.In(time.Local), now.In(time.Local))
 }
 
-func inboxQueueView(item store.IntakeItem, names map[string]string, selectedID string, now time.Time) web.InboxItem {
+func inboxQueueView(item store.IntakeItem, names, roles map[string]string, sessionSlug, selectedID string, now time.Time) web.InboxItem {
 	house := names[item.TenantSlug]
 	if house == "" {
 		house = "Nicht zugeordnet"
 	}
 	statusLabel, statusTone := inboxStatus(item)
-	view := web.InboxItem{ID: item.ID, Source: inboxSourceLabel(item.Source), Subject: item.Subject, House: house, Unit: item.Unit, Age: relativeAge(now, item.ReceivedAt), Time: item.ReceivedAt.In(time.Local).Format("15:04"), Status: statusLabel, StatusTone: statusTone, Selected: item.ID == selectedID, Unassigned: item.TenantSlug == ""}
+	slug := normalizeSlug(item.TenantSlug)
+	nextPath, foreign := OrganisationHousePath(sessionSlug, slug, "/app/verwaltung/posteingang/"+item.ID)
+	if slug == "" || nextPath == "/app" {
+		foreign = false
+	}
+	view := web.InboxItem{ID: item.ID, Source: inboxSourceLabel(item.Source), Subject: item.Subject, House: house, TenantSlug: slug, Role: roles[slug], Foreign: foreign, Unit: item.Unit, Age: relativeAge(now, item.ReceivedAt), Time: item.ReceivedAt.In(time.Local).Format("15:04"), Status: statusLabel, StatusTone: statusTone, Selected: item.ID == selectedID, Unassigned: item.TenantSlug == ""}
 	if item.Suggestion != nil {
 		view.Priority = store.NormalizeIssuePriority(item.Suggestion.Priority)
 		view.Proposal = "Vorschlag: " + viewutil.BreakAfterSlashes(intakeCategoryShort(item.Suggestion.Category)) + " · " + view.Priority
@@ -847,7 +859,7 @@ func (a *app) inboxOrganisationName(ac *authCtx) string {
 func (a *app) inboxHouses(ac *authCtx) []web.InboxHouse {
 	out := []web.InboxHouse{}
 	for _, managed := range a.organisationAccessFor(ac).Houses {
-		house := web.InboxHouse{Slug: managed.Config.Slug, Name: houseDisplayName(managed.Config), Address: managed.Config.Address}
+		house := web.InboxHouse{Slug: managed.Config.Slug, Name: houseDisplayName(managed.Config), Address: managed.Config.Address, Role: managed.Role}
 		if units := a.repositoriesFor(managed.Ref).units; units != nil {
 			for _, unit := range units.List() {
 				house.Units = append(house.Units, unit.Label)

@@ -25,7 +25,7 @@ func TestVerwaltungDemoResetIsHiddenWithoutDemoReset(t *testing.T) {
 		t.Fatalf("post status = %d, want 404", post.Code)
 	}
 	settings := authedRequest(t, a, "vera@example.com", "/demo/app/verwaltung/einstellungen")
-	for _, leaked := range []string{"Demodaten initialisieren", `id="demo-init-dialog"`, "data-demo-init-open", "/assets/demo-init.js"} {
+	for _, leaked := range []string{"Demodaten initialisieren", "Vorführung zurücksetzen", `id="demo-init-dialog"`, "data-demo-init-open", "/assets/demo-init.js"} {
 		if strings.Contains(settings.Body.String(), leaked) {
 			t.Fatalf("settings exposed %q without configured reset closure", leaked)
 		}
@@ -161,7 +161,8 @@ func TestVerwaltungSettingsOffersDemoInitDialogAndScript(t *testing.T) {
 	}
 	body := response.Body.String()
 	for _, want := range []string{
-		"<h2>Demodaten initialisieren</h2>",
+		"<summary>Vorführung zurücksetzen",
+		"Demodaten initialisieren …",
 		`href="/demo/app/verwaltung/einstellungen/demo" data-demo-init-open`,
 		`<dialog class="demo-init-dialog" id="demo-init-dialog"`,
 		`action="/demo/app/verwaltung/einstellungen/demo"`,

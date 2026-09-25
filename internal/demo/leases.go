@@ -44,6 +44,7 @@ type seedLease struct {
 	Review               string                   `json:"review_status"`
 	ClauseText           string                   `json:"clause_text"`
 	LastMonth            string                   `json:"last_month"`
+	LastEffectiveOn      string                   `json:"last_effective_on"`
 	LastValue            string                   `json:"last_value"`
 	HMZAfter             string                   `json:"hmz_after"`
 	Consumer             *bool                    `json:"tenant_is_consumer"`
@@ -197,6 +198,11 @@ func (item seedLease) lease() store.Lease {
 		clause.State = &store.ValorisationState{
 			ContractValue: item.HMZAfter, ContractBasePeriod: item.LastMonth, ContractBaseValue: item.LastValue,
 			CapValue: item.HMZAfter, CapAnchorPeriod: item.LastMonth,
+			LastEffectiveOn: item.LastEffectiveOn,
+		}
+		if item.ClauseType == store.ClauseStaffel {
+			// A fixed schedule has a cap anchor, but no contractual index base.
+			clause.State.ContractBasePeriod, clause.State.ContractBaseValue = "", ""
 		}
 	}
 	lease.Clauses = []store.IndexClause{clause}

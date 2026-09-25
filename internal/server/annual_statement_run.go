@@ -188,7 +188,7 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 		out.Approved = run.Approval != nil
 		out.ManagementAddressMissing = strings.TrimSpace(run.Input.Presentation.ContactAddress) == ""
 		if run.Approval != nil {
-			out.ApprovedAt = run.Approval.ApprovedAt.Format("02.01.2006")
+			out.ApprovedAt = annualStatementViennaDate(run.Approval.ApprovedAt)
 		} else {
 			out.ApproveAction = "/app/settings/annual-statement/runs/" + url.PathEscape(run.ID) + "/approve"
 		}
@@ -233,18 +233,27 @@ func annualStatementRunView(repository store.AnnualStatementRunRepository, docum
 				row.Costs = append(row.Costs, costView)
 			}
 			for _, party := range run.Input.Parties {
-				if party.UnitID == unit.UnitID {
-					label := firstNonEmpty(party.Name, party.ID)
-					if party.ValidFrom != "" || party.ValidTo != "" {
-						label += " · " + partyDateLabel(party.ValidFrom, party.ValidTo)
-					}
-					if share, ok := store.AnnualStatementPartyAllocation(run, unit.UnitID, party.ID); ok {
-						label += " · " + formatAnnualStatementBalance(-share.Unit.BalanceCents)
-					}
-					row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{Label: label, URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID)})
-					if document, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
-						row.PDFs[len(row.PDFs)-1].ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(document.ID)
-					}
+				if party.UnitID != unit.UnitID {
+					continue
+				}
+				// Reuse the PDF's saved party projection, including legacy vacancy
+				// treatment. No unit totals or new calculations enter party rows.
+				docs, err := statementpdf.Documents(run, unit.UnitID, party.ID)
+				if err != nil {
+					continue
+				}
+				document := docs[0]
+				period := partyDateLabel(party.ValidFrom, party.ValidTo)
+				if party.ValidFrom == "" && party.ValidTo == "" {
+					period = partyDateLabel(run.Input.Period.StartsOn, run.Input.Period.EndsOn)
+				}
+				row.PDFs = append(row.PDFs, web.AnnualStatementRunPDFView{
+					Label: firstNonEmpty(party.Name, party.ID), Period: period,
+					Allocated: document.Total, Prepaid: document.Prepaid, Balance: document.Balance,
+					URL: annualStatementPDFURL(run.ID, unit.UnitID, party.ID),
+				})
+				if archivedDocument, ok := archived[store.AnnualStatementArchiveID(run.ID, run.Revision, unit.UnitID, party.ID)]; ok {
+					row.PDFs[len(row.PDFs)-1].ArchiveURL = "/app/dokumente?q=" + url.QueryEscape(store.DocumentCategoryBilling) + "#document-" + url.PathEscape(archivedDocument.ID)
 				}
 			}
 			out.Units = append(out.Units, row)
@@ -329,7 +338,7 @@ func annualStatementRunIssueMessage(issue store.AnnualStatementRunIssue, input s
 		return unit + ": Zwischenablesungen sind widersprüchlich. Quelle, Einheit und Zählerstand prüfen."
 
 	case "agreed-shares":
-		return cost + ": Vereinbarte Anteile für alle Einheiten erfassen; die Summe muss genau 1.000.000 PPM ergeben. Ausgenommene Einheiten ausdrücklich mit 0 erfassen."
+		return cost + ": Vereinbarte Anteile für alle Einheiten erfassen; die Summe muss genau 100 % ergeben. Ausgenommene Einheiten ausdrücklich mit 0 erfassen."
 	case "heating-prepayment":
 		return "HeizKG: Geleistetes Akonto je Einheit und Heizkostenart ergänzen. Die Summe darf das Gesamtakonto nicht überschreiten."
 	case "heating-share":
@@ -407,7 +416,7 @@ func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "Bitte zuerst alle Parteien zuordnen und einen neuen Lauf berechnen.", 409)
 		return
 	}
-	run, changed, err := ac.repositories.annualStatementRuns.Approve(run.ID, actor, role, time.Now())
+	run, changed, err := ac.repositories.annualStatementRuns.Approve(run.ID, actor, role, time.Now(), a.profileForTenant(actor, tenant.Slug).DisplayName())
 	if err != nil {
 		if errors.Is(err, store.ErrAnnualStatementArchivedDraft) {
 			http.Error(w, "Bereits archivierte Entwürfe benötigen einen neuen Lauf.", http.StatusConflict)
@@ -420,4 +429,12 @@ func (a *app) approveAnnualStatementRun(w http.ResponseWriter, r *http.Request, 
 		a.recordAudit(auditEvent{TenantSlug: tenant.Slug, ActorEmail: actor, ActorRole: role, Action: store.AuditActionAnnualRunApprove, TargetType: "annual_statement_run", TargetID: run.ID, Summary: "Abrechnungslauf freigegeben", Details: map[string]string{"revision": strconv.Itoa(run.Revision), "input_hash": run.InputHash}})
 	}
 	http.Redirect(w, r, "/app/settings/annual-statement?year="+strconv.Itoa(run.PeriodYear)+"&run="+url.QueryEscape(run.ID)+"&run-status=approved#abrechnungsergebnis", http.StatusSeeOther)
+}
+
+func annualStatementViennaDate(at time.Time) string {
+	location, err := time.LoadLocation("Europe/Vienna")
+	if err != nil {
+		location = time.UTC
+	}
+	return at.In(location).Format("02.01.2006")
 }

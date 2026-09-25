@@ -17,10 +17,10 @@ async function go(path) {
 }
 async function checkWidth(name, locator=page.locator('main').first()) {
  if(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)>1) throw new Error(`${name}: horizontal overflow`);
- await locator.screenshot({path:`${out}/${name}.png`});
+ await locator.screenshot({path:`${out}/${name}.png`,style:'[data-context-bar], .skip-link { visibility: hidden !important; }'});
 }
 async function submit(form) {
- await form.locator('button[type="submit"]').first().click();
+ await form.locator('button[type="submit"]:not([form])').first().click();
  await page.waitForLoadState('networkidle');
 
 }
@@ -77,8 +77,21 @@ try {
    await topic.locator('details').evaluateAll(nodes=>nodes.forEach(n=>n.open=true));
    if(!(await page.locator('main').innerText()).includes('Keine Rechtsberatung')) throw new Error('Legal note missing');
    if(await topic.locator('a[href^="https://"]').count()<3) throw new Error('Legal sources missing');
+   if(anchor==='recht-wirksamwerden') {
+    const text=await topic.innerText();
+    for(const phrase of ['Zugang spätestens 14 Tage', 'spätestens am 21.04.2026 zugehen', 'Postlaufzeit einplanen.']) {
+     if(!text.includes(phrase)) throw new Error(`Receipt guidance missing: ${phrase}`);
+    }
+   }
    await checkWidth(`help-${anchor}-${width}`,topic);
   }
+  const reserve=page.locator('#recht-mindestruecklage');
+  await reserve.locator('details').evaluateAll(nodes=>nodes.forEach(n=>n.open=true));
+  const reserveText=await reserve.innerText();
+  for(const text of ['25.09.2026', '0,90 €', '1,06 €', '1,12 €', 'Noch nicht verlautbart', 'Keine Rechtsberatung', 'entscheidet keine Ausnahme']) {
+   if(!reserveText.includes(text)) throw new Error(`Reserve guidance missing: ${text}`);
+  }
+  await checkWidth(`help-recht-mindestruecklage-${width}`,reserve);
  }
  if(errors.length) throw new Error(errors.join('\n'));
  console.log('qa-wirksamwerden ok: settings save, override/inheritance, help links, disclosures, 390/1440');

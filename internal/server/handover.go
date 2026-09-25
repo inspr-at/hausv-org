@@ -1002,7 +1002,7 @@ func handoverPartyLabel(name string, email string) string {
 
 func handoverPDF(tenant tenantConfig, item handoverRecord, attachments []attachmentRecord, generatedAt time.Time) []byte {
 	lines := []string{
-		"Uebergabeprotokoll",
+		"Übergabeprotokoll",
 		tenant.Name + " - " + tenant.Address,
 		"",
 		"Titel: " + item.Title,
@@ -1016,42 +1016,42 @@ func handoverPDF(tenant tenantConfig, item handoverRecord, attachments []attachm
 		"Generiert: " + formatLocalDateTime(generatedAt),
 		"Hinweis: Zustandsdokumentation; keine Kautions-, Schaden- oder sonstige Abrechnung.",
 		"",
-		"Raeume / Zustand / Maengel",
+		"Räume / Zustand / Mängel",
 	}
 	if len(item.Rooms) == 0 {
-		lines = append(lines, "- Keine Raeume erfasst")
+		lines = append(lines, "- Keine Räume erfasst")
 	}
 	for _, room := range item.Rooms {
 		lines = append(lines, "- "+strings.Join(nonEmptyParts(room.Name, room.Condition, room.Defects), " | "))
 	}
-	lines = append(lines, "", "Zaehlerstaende")
+	lines = append(lines, "", "Zählerstände")
 	if len(item.Meters) == 0 {
-		lines = append(lines, "- Keine Zaehlerstaende erfasst")
+		lines = append(lines, "- Keine Zählerstände erfasst")
 	}
 	for _, meter := range item.Meters {
 		lines = append(lines, "- "+strings.Join(nonEmptyParts(meter.Label, meter.Value, meter.Unit), " | "))
 	}
-	lines = append(lines, "", "Schluessel")
+	lines = append(lines, "", "Schlüssel")
 	if len(item.Keys) == 0 {
-		lines = append(lines, "- Keine Schluessel erfasst")
+		lines = append(lines, "- Keine Schlüssel erfasst")
 	}
 	for _, key := range item.Keys {
 		lines = append(lines, "- "+key.Label+": "+strconv.Itoa(key.Count))
 	}
-	lines = append(lines, "", "Bestaetigungen")
+	lines = append(lines, "", "Bestätigungen")
 	if len(item.Confirmations) == 0 {
-		lines = append(lines, "- Keine externen Bestaetigungen vorgesehen")
+		lines = append(lines, "- Keine externen Bestätigungen vorgesehen")
 	}
 	for _, confirmation := range item.Confirmations {
 		status := "offen"
 		if !confirmation.ConfirmedAt.IsZero() {
-			status = "bestaetigt am " + formatLocalDateTime(confirmation.ConfirmedAt)
+			status = "bestätigt am " + formatLocalDateTime(confirmation.ConfirmedAt)
 		}
 		lines = append(lines, "- "+confirmation.Role+": "+handoverPartyLabel(confirmation.Name, confirmation.Email)+" - "+status)
 	}
-	lines = append(lines, "", "Fotos / Anhaenge")
+	lines = append(lines, "", "Fotos / Anhänge")
 	if len(attachments) == 0 {
-		lines = append(lines, "- Keine Anhaenge")
+		lines = append(lines, "- Keine Anhänge")
 	}
 	for _, attachment := range attachments {
 		lines = append(lines, "- "+attachment.Filename+" ("+formatBytes(attachment.Size)+")")

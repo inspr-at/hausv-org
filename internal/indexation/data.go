@@ -8,6 +8,17 @@ import (
 
 type Series string
 
+// MissingIndexError identifies a required observation without losing its period
+// when the caller translates the calculation failure for the user.
+type MissingIndexError struct {
+	Series Series
+	Period string // YYYY-MM for a month, YYYY for an annual average.
+}
+
+func (e MissingIndexError) Error() string {
+	return fmt.Sprintf("missing index observation: %s %s", e.Series, e.Period)
+}
+
 const (
 	VPI2025 Series = "VPI2025"
 	VPI2020 Series = "VPI2020"

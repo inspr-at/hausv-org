@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/inspr-at/hausv-org/internal/store"
 	"sort"
+	"strings"
 )
 
 type ValorisationPageData struct {
@@ -28,6 +29,21 @@ type ValorisationRunView struct {
 	CanApprove bool
 	Groups     []ValorisationGroupView
 	Deliveries []store.ValorisationDelivery
+	OpenExceptions int
+	ApprovalDate string
+	Notice string
+	CreatedByName string
+	Foreign bool
+	SwitchTenant string
+	SwitchRole string
+	OpenPath string
+}
+
+func ValorisationExceptionNotice(count int) string {
+	if count == 1 {
+		return "1 Ausnahme ist noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen."
+	}
+	return fmt.Sprintf("%d Ausnahmen sind noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen.", count)
 }
 type ValorisationGroupView struct {
 	Key, Label string
@@ -372,22 +388,22 @@ templ ValorisationBody(data ValorisationPageData) {
 			.valorisation-page .vr-item > summary > strong {
 				grid-area: label;
 				display: flex;
-				align-items: baseline;
+				align-items: center;
 				gap: var(--space-2);
 				font-size: var(--text-md);
 			}
-			.valorisation-page .vr-item > summary > strong::before {
-				content: "";
+			.valorisation-page .vr-item-chevron {
+				display: flex;
 				flex: 0 0 auto;
-				width: 7px;
-				height: 7px;
-				border-right: 1.6px solid var(--muted);
-				border-bottom: 1.6px solid var(--muted);
-				transform: translateY(-2px) rotate(-45deg);
+				color: var(--muted);
 				transition: transform 0.15s;
 			}
-			.valorisation-page .vr-item[open] > summary > strong::before {
-				transform: translateY(-3px) rotate(45deg);
+			.valorisation-page .vr-item-chevron svg {
+				width: 16px;
+				height: 16px;
+			}
+			.valorisation-page .vr-item[open] > summary .vr-item-chevron {
+				transform: rotate(90deg);
 			}
 			.valorisation-page .vr-item > summary > span:nth-of-type(1) {
 				grid-area: reason;
@@ -653,7 +669,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 		for _,deadline := range view.Run.NoticeDeadlines() {
 			@ValorisationDeadline(deadline)
 		}
-		if preview {
+		if view.Foreign {
+			@HouseOpenForm(view.SwitchTenant, view.SwitchRole, view.OpenPath, "In Liegenschaft öffnen")
+		} else if preview {
 			<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button primary" type="submit">Lauf anlegen</button></form>
 		}
 		for _,group:=range view.Groups {
@@ -668,7 +686,12 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					<details id={ "item-" + item.ID } class={ "vr-item", templ.KV("vr-excluded", item.Excluded) } data-lease-id={ item.LeaseID }>
 						<summary>
 							<strong>
-								{ item.Label() }
+								<span class="vr-item-chevron" aria-hidden="true">@PortalAssetIcon("chevron-right")</span>
+								{{ unitLabel, partyLabel, hasParty := strings.Cut(item.Label(), " · ") }}
+								@UnitLabel(unitLabel)
+								if hasParty {
+									{ " · " + partyLabel }
+								}
 							</strong>
 							<span>
 								{ item.Reason }
@@ -681,7 +704,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								}
 							</span>
 							<span class="vr-letter">
-								if !preview && item.LetterDocumentID != "" {
+								if !preview && !view.Foreign && item.LetterDocumentID != "" {
 									<a class="button small" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Schreiben (PDF)</a>
 								}
 							</span>
@@ -702,7 +725,9 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 						<p class="vr-note">
 							{ item.Lease.Notes }
 						</p>
-						<p class="vr-note"><a href={ templ.SafeURL("/" + view.Run.TenantSlug + "/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						if !view.Foreign {
+							<p class="vr-note"><a href={ templ.SafeURL("/app/settings/building/units/" + item.UnitID + "/lease") }>Mietvertrag bearbeiten</a></p>
+						}
 						if item.ContractCents > 0 {
 							<div class="vr-table">
 								<table>
@@ -804,7 +829,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 								Manuelle Entscheidung: { item.OverrideReason } · { item.OverrideBy }
 							</p>
 						}
-						if !preview {
+						if !preview && !view.Foreign {
 							if item.LetterDocumentID!="" || item.Group=="ready" {
 								<p><a class="button" href={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/items/" + item.ID + "/pdf") }>Anpassungsschreiben PDF</a></p>
 							}
@@ -835,7 +860,7 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 				}
 			</section>
 		}
-		if !preview {
+		if !preview && !view.Foreign {
 			if len(view.Deliveries)>0 {
 				<div class="vr-table">
 					<table>
@@ -871,10 +896,28 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 					</table>
 				</div>
 			}
+			if view.Notice != "" {
+				<p class="notice" role="status" id={ "approval-issue-" + view.Run.ID }>{ view.Notice }</p>
+			} else if view.Run.Status == "draft" && view.OpenExceptions > 0 {
+				<p class="vr-note" id={ "approval-issue-" + view.Run.ID }>
+					{ ValorisationExceptionNotice(view.OpenExceptions) }
+				</p>
+			}
+			if view.Run.Status == "draft" && view.ApprovalDate != "" {
+				<p class="vr-note" id={ "approval-date-" + view.Run.ID }>Freigabe ab { LeaseDate(view.ApprovalDate) } möglich.</p>
+			}
 			<div class="vr-actions">
 				if view.Run.Status=="draft" {
 					if view.CanApprove {
-						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }><button class="button primary" type="submit">Freigeben und archivieren</button></form>
+						<form method="post" action={ templ.SafeURL(view.URL + "/runs/" + view.Run.ID + "/approve") }>
+							<button class={ "button", templ.KV("primary", view.OpenExceptions == 0 && view.ApprovalDate == ""), templ.KV("ghost", view.OpenExceptions > 0 || view.ApprovalDate != "") } type="submit" disabled?={ view.OpenExceptions > 0 || view.ApprovalDate != "" }
+								if view.OpenExceptions > 0 {
+									aria-describedby={ "approval-issue-" + view.Run.ID }
+								} else if view.ApprovalDate != "" {
+									aria-describedby={ "approval-date-" + view.Run.ID }
+								}
+							>Freigeben und archivieren</button>
+						</form>
 					}
 					<form method="post" action={ templ.SafeURL(view.URL + "/runs") }><input type="hidden" name="effective_on" value={ view.Run.EffectiveOn }/><button class="button" type="submit">Neu berechnen</button></form>
 				}
@@ -892,8 +935,20 @@ templ ValorisationRun(view ValorisationRunView, preview bool) {
 			if view.Run.Status=="cancelled" {
 				<p class="vr-note">Storniert: { view.Run.CancelReason }. Bereits gebuchte Mietzinse und versandte Schreiben bleiben bestehen. Korrekturen sind gesondert vorzunehmen.</p>
 			}
-			<p class="vr-meta">Erstellt von { view.Run.CreatedBy }</p>
-			<details class="vr-meta"><summary>Prüfsumme</summary><p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p></details>
+			if view.CreatedByName != "" {
+				<p class="vr-meta">Erstellt von { view.CreatedByName }</p>
+			}
+			if view.Run.InputsSHA256 != "" || view.Run.IndexVersion != "" {
+				<details class="vr-meta">
+					<summary>Prüfdaten</summary>
+					if view.Run.IndexVersion != "" {
+						<p>Index-Datenversion <code>{ view.Run.IndexVersion }</code></p>
+					}
+					if view.Run.InputsSHA256 != "" {
+						<p>Eingaben SHA-256 <code>{ view.Run.InputsSHA256 }</code></p>
+					}
+				</details>
+			}
 		}
 	</article>
 }
@@ -903,7 +958,7 @@ templ ValorisationNewAction(primary bool) {
 }
 
 templ ValorisationDeadline(item store.ValorisationItem) {
-	<p class="vr-deadline">Schreiben bis <strong>{ LeaseDate(item.NoticeDeadline) }</strong> versenden, damit der erhöhte Mietzins ab <strong>{ LeaseDate(item.CollectableFrom) }</strong> fällig wird (§ 16 Abs 9 MRG).</p>
+	<p class="vr-deadline">Das Schreiben muss dem Mieter spätestens am <strong>{ LeaseDate(item.NoticeDeadline) }</strong> zugehen, damit der erhöhte Mietzins ab <strong>{ LeaseDate(item.CollectableFrom) }</strong> fällig wird (§ 16 Abs 9 MRG). Postlaufzeit einplanen.</p>
 }
 
 templ ValorisationIndexTable(indices []store.ValorisationIndex, caption string) {

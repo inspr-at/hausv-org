@@ -119,7 +119,7 @@ func TestPartialOnboardingUsesChosenHomeIdentityInSidebar(t *testing.T) {
 		for _, want := range []string{
 			`data-home-identity="nav" aria-label="Dachwohnung, offizielle Einheit Einheit 12"`,
 			`<strong data-home-display-name>Dachwohnung</strong>`,
-			`<small data-home-unit-label>Einheit 12</small>`,
+			"<small data-home-unit-label><span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">Einheit\u00a012</span></small>",
 		} {
 			if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), want) {
 				t.Fatalf("partial onboarding sidebar at %s missing %q: status=%d", path, want, page.Code)
@@ -280,7 +280,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		`<title>Dachwohnung · Mein Zuhause · Musterweg 1 · Eigentümer</title>`,
 		`data-home-identity="editor-heading" aria-label="Dachwohnung, offizielle Einheit Einheit 12"`,
 		`<h1 data-home-display-name>Dachwohnung</h1>`,
-		`<p class="home-unit" data-home-unit-label>Einheit 12</p>`,
+		"<p class=\"home-unit\" data-home-unit-label><span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">Einheit\u00a012</span></p>",
 		`value="Dachwohnung"`,
 		`Einheit 12`,
 		`name="unit_id" value="einheit-12"`,
@@ -299,7 +299,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		`href="/demo/app/settings/home"`,
 		`data-home-identity="settings" aria-label="Dachwohnung, offizielle Einheit Einheit 12 bearbeiten"`,
 		`<strong data-home-display-name>Dachwohnung</strong>`,
-		`data-home-unit-label>Einheit 12</small>`,
+		"<span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">Einheit\u00a012</span></small>",
 	} {
 		if !strings.Contains(hub.Body.String(), want) {
 			t.Fatalf("owner settings hub does not expose home identity marker %q", want)
@@ -329,7 +329,7 @@ func TestHomeIdentityIsDiscoverableEditableAndSeparateFromOfficialUnit(t *testin
 		`data-home-identity="nav" aria-label="Sonnendeck, offizielle Einheit Einheit 12"`,
 		`data-home-identity="energy-heading" aria-label="Sonnendeck, offizielle Einheit Einheit 12"`,
 		`<h1 data-home-display-name>Sonnendeck</h1>`,
-		`<p class="energy-heading-unit" data-home-unit-label>Einheit 12</p>`,
+		"<p class=\"energy-heading-unit\" data-home-unit-label><span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">Einheit\u00a012</span></p>",
 		`<p class="energy-heading-context">Wohnung ·`,
 		`href="/demo/app/settings/home?from=energy"`,
 		`Der Anzeigename von „Mein Zuhause“ wurde gespeichert.`,

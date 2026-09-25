@@ -85,7 +85,11 @@ func TestAnnualStatementCombinedFeatures(t *testing.T) {
 				t.Fatalf("house VAT: %+v", result.VATGroups)
 			}
 			run, err := newAnnualStatementRun(in, result, 1, "manager@example.com", time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC))
-			if err != nil || run.CalculationVersion != 3 {
+			wantVersion := AnnualStatementCalculationVersionVAT
+			if regime == "weg" {
+				wantVersion = AnnualStatementCalculationVersionReserveRates
+			}
+			if err != nil || run.CalculationVersion != wantVersion {
 				t.Fatalf("new VAT run: %d %v", run.CalculationVersion, err)
 			}
 			raw, err := json.Marshal(run)

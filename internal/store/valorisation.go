@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/mail"
@@ -59,6 +60,7 @@ type ValorisationRun struct {
 	CreatedAt, ApprovedAt                                     time.Time
 	Input                                                     ValorisationInput
 	IndexVersion, IndexSHA256                                 string
+	IndexRetrievedAt                                          time.Time
 	IndexSnapshot                                             []ValorisationIndex
 	Items                                                     []ValorisationItem
 }
@@ -110,6 +112,52 @@ var ValorisationExceptionLabels = map[string]string{
 	"letter_too_early":       "Ein Schreiben darf erst ab Wirksamkeit ausgestellt werden.",
 }
 
+func (i ValorisationItem) NeedsApproval() bool {
+	return !i.Excluded && (i.Outcome != "unchanged" || i.Group == "exception")
+}
+
+// ApprovalException names reviewable exceptions. Letter timing remains the
+// authority for date locks; waiting for a date is not a contractual review.
+func (i ValorisationItem) ApprovalException() string {
+	if !i.NeedsApproval() {
+		return ""
+	}
+	for _, code := range i.Exceptions {
+		if code == "letter_too_early" {
+			continue
+		}
+		if label := ValorisationExceptionLabels[code]; label != "" {
+			if code == "index_missing" && i.Reason != "" {
+				return i.Reason
+			}
+			return label
+		}
+		return "Die Ausnahme muss geprüft werden."
+	}
+	return ""
+}
+
+func (r ValorisationRun) OpenExceptionCount() int {
+	count := 0
+	for _, item := range r.Items {
+		if item.ApprovalException() != "" {
+			count++
+		}
+	}
+	return count
+}
+
+// ApprovalNotBefore is a separate UI hint for the existing letter timing gate.
+func (r ValorisationRun) ApprovalNotBefore(now time.Time) string {
+	date := ""
+	for _, item := range r.Items {
+		if item.NeedsApproval() && item.WirksamOn > now.Format(time.DateOnly) && item.WirksamOn > date {
+			date = item.WirksamOn
+		}
+	}
+	return date
+}
+
 func (i *ValorisationItem) exception(code string) {
 	for _, c := range i.Exceptions {
 		if c == code {
@@ -119,6 +167,21 @@ func (i *ValorisationItem) exception(code string) {
 	i.Exceptions = append(i.Exceptions, code)
 	i.Group = "exception"
 	i.Reason = ValorisationExceptionLabels[code]
+	i.Explanation = append(i.Explanation, i.Reason)
+}
+
+func (i *ValorisationItem) missingIndex(series indexation.Series, period string, publication bool) {
+	i.exception("index_missing")
+	label := "Jahresmittel " + period
+	if month, err := time.Parse("2006-01", period); err == nil {
+		months := []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+		label = fmt.Sprintf("%s %d", months[int(month.Month())-1], month.Year())
+	}
+	problem := "Indexwert fehlt."
+	if publication {
+		problem = "Endgültiger Indexwert oder sein Veröffentlichungsnachweis fehlt zum Stichtag."
+	}
+	i.Reason = fmt.Sprintf("%s · %s: %s", (ValorisationIndex{Series: string(series)}).SeriesLabel(), label, problem)
 	i.Explanation = append(i.Explanation, i.Reason)
 }
 
@@ -133,7 +196,18 @@ func PreviewValorisation(input ValorisationInput, snapshot indexation.Snapshot, 
 	input.Settings = input.Settings.Normalized()
 	input.Leases = append([]Lease(nil), input.Leases...)
 	sort.Slice(input.Leases, func(i, j int) bool { return input.Leases[i].ID < input.Leases[j].ID })
-	run := ValorisationRun{EffectiveOn: input.EffectiveOn, Status: "draft", Input: input, IndexVersion: snapshot.Manifest.Version, IndexSHA256: snapshot.Manifest.DataSHA256}
+	run := ValorisationRun{EffectiveOn: input.EffectiveOn, Status: "draft", Input: input, IndexVersion: snapshot.Manifest.Version, IndexSHA256: snapshot.Manifest.DataSHA256, IndexRetrievedAt: snapshot.Manifest.RetrievedAt}
+	// Runtime observations can be newer than the embedded base snapshot.
+	for _, value := range snapshot.Data.Values() {
+		if value.FetchedAt.After(run.IndexRetrievedAt) {
+			run.IndexRetrievedAt = value.FetchedAt
+		}
+	}
+	for _, value := range snapshot.Annual {
+		if value.FetchedAt.After(run.IndexRetrievedAt) {
+			run.IndexRetrievedAt = value.FetchedAt
+		}
+	}
 	evidence := map[string]ValorisationIndex{}
 	for _, lease := range input.Leases {
 		item := evaluateValorisationLease(lease, input, snapshot, effective, now)
@@ -291,7 +365,12 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		var err error
 		item.Ceiling, err = indexation.CapCurve(anchor, start, snapshot.Annual, item.SpecialCap, effective.Year())
 		if err != nil {
-			item.exception("index_missing")
+			var missing indexation.MissingIndexError
+			if errors.As(err, &missing) {
+				item.missingIndex(missing.Series, missing.Period, false)
+			} else if len(item.Exceptions) == 0 {
+				item.exception("index_missing")
+			}
 			return finishValorisationItem(item)
 		}
 		item.CapCents = item.Ceiling.AmountCents
@@ -357,7 +436,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 		}
 		base, found, err := snapshot.Data.Lookup(core.Series, core.BaseMonth)
 		if err != nil || !found {
-			item.exception("index_missing")
+			item.missingIndex(core.Series, string(core.BaseMonth), false)
 			return finishValorisationItem(item)
 		}
 		evidence := indexEvidence(base)
@@ -415,7 +494,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				}
 				pub, _, ok := snapshotIndexPublication(snapshot, core.Series, ref)
 				if !ok || pub.After(on) || pub.After(now) {
-					item.exception("index_missing")
+					item.missingIndex(core.Series, string(ref), true)
 					return finishValorisationItem(item)
 				}
 				references = append(references, periodicReference{ref, on})
@@ -443,6 +522,11 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				result, err = indexation.Evaluate(core, snapshot.Data, target)
 			}
 			if err != nil {
+				var missing indexation.MissingIndexError
+				if errors.As(err, &missing) {
+					item.missingIndex(missing.Series, missing.Period, false)
+					return finishValorisationItem(item)
+				}
 				code := "index_missing"
 				if strings.Contains(err.Error(), "index_derived") {
 					code = "index_derived"
@@ -466,7 +550,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 				if ok && v.Preliminary {
 					item.exception("index_preliminary")
 				} else {
-					item.exception("index_missing")
+					item.missingIndex(core.Series, string(result.PendingMonth), true)
 				}
 				return finishValorisationItem(item)
 			}
@@ -485,7 +569,7 @@ func evaluateValorisationLease(lease Lease, input ValorisationInput, snapshot in
 			trigger = result.TriggerMonth
 			published, _, _ = snapshotIndexPublication(snapshot, indexation.Series(strings.ToUpper(clause.Series)), trigger)
 			if published.IsZero() {
-				item.exception("index_missing")
+				item.missingIndex(core.Series, string(trigger), true)
 				return finishValorisationItem(item)
 			}
 			contractualOn = time.Date(published.Year(), published.Month()+1, 1, 0, 0, 0, 0, time.UTC)

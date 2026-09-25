@@ -7,42 +7,60 @@ import "github.com/inspr-at/hausv-org/internal/store"
 
 func annualAgreedValue(legal store.AnnualStatementLegalSettings, cost, unit string) string {
 	ppm, ok := legal.AgreedShares[cost][unit]
-	if !ok { return "" }; return strconv.Itoa(ppm)
+	if !ok { return "" }; return annualPercentValue(ppm)
+}
+func annualPercentValue(ppm int) string {
+    return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%d,%04d", ppm/10_000, ppm%10_000), "0"), ",")
 }
 func annualHeatingInfo(legal store.AnnualStatementLegalSettings) store.AnnualStatementHeatingInformation {
 	if legal.HeatingInformation == nil { return store.AnnualStatementHeatingInformation{} }; return *legal.HeatingInformation
 }
 func annualInfoDecimal(n int64) string {
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%d.%06d", n/1_000_000,n%1_000_000),"0"),".")
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%d,%06d", n/1_000_000,n%1_000_000),"0"),",")
 }
 func annualEnergyRows(info store.AnnualStatementHeatingInformation) []store.AnnualStatementEnergyPurchase {
 	return append(append([]store.AnnualStatementEnergyPurchase(nil), info.Purchases...), store.AnnualStatementEnergyPurchase{CostTypeKey:"heizung",Unit:"kWh"})
 }
 func annualEnergyNumber(n int64, saved bool) string { if !saved { return "" }; return annualInfoDecimal(n) }
-func annualClimateNumber(n int) string { if n==0 { return "" };return strconv.Itoa(n) }
+func annualClimateNumber(n int) string { if n==0 { return "" };return annualInfoDecimal(int64(n)) }
 
 templ AnnualStatementAgreedShares(data AnnualStatementPageData) {
 	<section class="panel workspace" id="vereinbarte-anteile">
-		<header class="workspace-head"><div><h2>Vereinbarte Anteile</h2><p>Je Kostenart und Abrechnungsjahr. 1.000.000 Millionstel (PPM) entsprechen 100 %. Ausgenommene Einheiten erhalten ausdrücklich 0. Die zugrunde liegende Vereinbarung muss vorliegen.</p></div></header>
+		<header class="workspace-head"><div><h2>Vereinbarte Anteile</h2><p>Je Kostenart und Abrechnungsjahr. Anteile in Prozent mit bis zu vier Nachkommastellen eingeben. Die Summe muss 100 % ergeben. Ausgenommene Einheiten erhalten ausdrücklich 0. Die zugrunde liegende Vereinbarung muss vorliegen.</p></div></header>
 		for _, cost := range data.CostTypes {
 			if cost.Allocatable && cost.AllocationKey == store.AllocationKeyAgreed {
 				<form method="post" action="/app/settings/annual-statement/agreed-shares" data-agreed-shares>
 					<input type="hidden" name="year" value={ strconv.Itoa(data.StructureYear) }/>
 					<input type="hidden" name="cost_type" value={ cost.Key }/>
 					<fieldset><legend>{ cost.Name }</legend>
-						<div class="annual-share-table">
-							for _, unit := range data.Units {
-								<label>{ unit.Label } · Anteil (PPM)<input type="number" name={ "share_"+unit.ID } value={ annualAgreedValue(data.Legal,cost.Key,unit.ID) } min="0" max="1000000" step="1" required data-agreed-share/></label>
-							}
-						</div>
-						<p role="status" aria-live="polite" data-agreed-sum>Erforderliche Summe: 1.000.000 PPM. Die Summe wird beim Speichern geprüft.</p>
+                        <table class="annual-share-table">
+                            <thead><tr><th scope="col">Einheit</th><th scope="col">Anteil <span class="mini">%</span></th></tr></thead>
+                            <tbody>
+                                for _, unit := range data.Units {
+                                    <tr><th scope="row"><label for={ "share-"+cost.Key+"-"+unit.ID }>{ unit.Label }</label></th><td><input id={ "share-"+cost.Key+"-"+unit.ID } aria-label={ unit.Label+" · Anteil in Prozent" } name={ "share_"+unit.ID } value={ annualAgreedValue(data.Legal,cost.Key,unit.ID) } inputmode="decimal" pattern="[0-9]+([,.][0-9]{1,4})?" required data-agreed-share/></td></tr>
+                                }
+                            </tbody>
+                            <tfoot><tr><th scope="row">Summe</th><td><output aria-live="polite" data-agreed-sum>Erforderlich: 100 %</output></td></tr></tfoot>
+                        </table>
 						<button type="submit" class="button primary">Anteile speichern</button>
 					</fieldset>
 				</form>
 			}
 		}
 		<p>Für eine weitere Kostenart zuerst den Verteilerschlüssel „Vereinbarte Anteile“ wählen und speichern.</p>
-		<style>.annual-share-table{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:var(--space-3)}[data-agreed-sum][data-valid="false"]{color:var(--text);font-weight:700}</style>
+		<style>
+            .annual-share-table{width:100%;max-width:34rem;border-collapse:collapse;margin-bottom:var(--space-4);table-layout:fixed}
+            .annual-share-table th,.annual-share-table td{padding:var(--space-2);text-align:left;border-bottom:1px solid var(--line)}
+            .annual-share-table th{width:48%;font-weight:500}.annual-share-table label{margin:0}
+            .annual-share-table input{width:100%;min-width:0;text-align:right;font-variant-numeric:tabular-nums}
+            .annual-share-table thead,.annual-share-table tfoot{background:var(--panel-soft)}
+            .annual-share-table output{font-variant-numeric:tabular-nums;font-size:13px}
+            [data-agreed-sum][data-valid="false"]{font-weight:700}
+            #heizinformationen details{margin-block:var(--space-3)}
+            #heizinformationen summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);min-height:44px;padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-soft);cursor:pointer;list-style:none;font-weight:600}
+            #heizinformationen summary::-webkit-details-marker{display:none}
+            body[data-authenticated-app] #heizinformationen summary .disclosure-chevron{position:static;transform:none;flex:none}
+        </style>
 	</section>
 }
 
@@ -51,7 +69,9 @@ templ AnnualStatementHeatingInformation(data AnnualStatementPageData, info store
 		<header class="workspace-head"><div><h2>HeizKG-Abrechnungsinformationen</h2><p>Energiebezüge und Angaben nach § 18 HeizKG für { strconv.Itoa(data.StructureYear) }. Nach Änderungen einen neuen Lauf berechnen.</p></div></header>
 		<form method="post" action="/app/settings/annual-statement/heating-information">
 			<input type="hidden" name="year" value={ strconv.Itoa(data.StructureYear) }/>
-			<details open><summary>Energiebezüge: Mengen und tatsächliche Preise</summary>
+			<details open><summary>Energiebezüge: Mengen und tatsächliche Preise
+                    @DisclosureChevron()
+                </summary>
 				<p>Je Energieträger und Preisstand eine Zeile. Preis pro Mengeneinheit einschließlich Steuern; bei Bevorratung den tatsächlich gezahlten Preis angeben. Eine leere Zeile wird ausgelassen. Nach dem Speichern steht eine weitere Zeile bereit.</p>
 				for i, purchase := range annualEnergyRows(info) {
 					<fieldset><legend>{ fmt.Sprintf("Energiebezug %d",i+1) }</legend>
@@ -72,7 +92,9 @@ templ AnnualStatementHeatingInformation(data AnnualStatementPageData, info store
 					</fieldset>
 				}
 			</details>
-			<details><summary>Steuern, Betriebskosten und Fernwärme</summary>
+			<details><summary>Steuern, Betriebskosten und Fernwärme
+                    @DisclosureChevron()
+                </summary>
 				<label>Erläuterung der Steuern, Abgaben und Zolltarife<textarea name="taxes_note" maxlength="2000">{ info.TaxesNote }</textarea></label>
 				<label>Mess- und Berechnungskosten<textarea name="metering_costs_note" maxlength="2000">{ info.MeteringCostsNote }</textarea></label>
 				<label>Aufschlüsselung der sonstigen Betriebskosten<textarea name="operating_costs_note" maxlength="2000">{ info.OperatingCostsNote }</textarea></label>
@@ -80,12 +102,19 @@ templ AnnualStatementHeatingInformation(data AnnualStatementPageData, info store
 				<label>Brennstoffmix laut Lieferant<textarea name="fuel_mix" maxlength="2000">{ info.FuelMix }</textarea></label>
 				<label>Jährliche Treibhausgasemissionen (Menge, Einheit und Quelle)<textarea name="emissions" maxlength="2000">{ info.Emissions }</textarea></label>
 			</details>
-			<details><summary>Verbrauchsvergleich und Klimakorrektur</summary>
-				<p>Ein vorhandener Lauf des gleichen Vorjahreszeitraums wird automatisch übernommen. Der Hausvergleich verwendet versorgte Einheiten derselben Nutzerkategorie. Für Heizung die fachlich ermittelten Klimafaktoren beider Zeiträume samt Quelle erfassen; 1.000.000 entspricht Faktor 1. Fehlende Faktoren werden im PDF ausgewiesen.</p>
-				<div class="form-grid"><label>Klimafaktor aktuelle Periode (PPM)<input type="number" name="climate_current_ppm" min="1" max="10000000" value={ annualClimateNumber(info.ClimateCurrentPPM) }/></label><label>Klimafaktor Vorperiode (PPM)<input type="number" name="climate_previous_ppm" min="1" max="10000000" value={ annualClimateNumber(info.ClimatePreviousPPM) }/></label></div>
+			<details><summary>Verbrauchsvergleich und Klimakorrektur
+                    @DisclosureChevron()
+                </summary>
+				<p>Ein vorhandener Lauf des gleichen Vorjahreszeitraums wird automatisch übernommen. Der Hausvergleich verwendet versorgte Einheiten derselben Nutzerkategorie. Für Heizung die fachlich ermittelten Klimafaktoren beider Zeiträume samt Quelle erfassen; 1 entspricht dem unveränderten Verbrauch. Fehlende Faktoren werden im PDF ausgewiesen.</p>
+				if data.PreviousHeatingMissing {
+					<p class="form-hint">Für den gleichen Vorjahreszeitraum ({ strconv.Itoa(data.StructureYear-1) }) ist noch kein Lauf gespeichert. Die Klimafaktoren wirken im Verbrauchsvergleich erst, sobald dieser Vorjahreslauf vorliegt und die aktuelle Abrechnung neu berechnet wird.</p>
+				}
+				<div class="form-grid"><label>Klimafaktor aktuelle Periode<input inputmode="decimal" name="climate_current_factor" value={ annualClimateNumber(info.ClimateCurrentPPM) }/></label><label>Klimafaktor Vorperiode<input inputmode="decimal" name="climate_previous_factor" value={ annualClimateNumber(info.ClimatePreviousPPM) }/></label></div>
 				<label>Quelle und Methode der Klimakorrektur<textarea name="climate_source" maxlength="2000">{ info.ClimateSource }</textarea></label>
 			</details>
-			<details><summary>Verbrauchsinformation und Beschwerden</summary>
+			<details><summary>Verbrauchsinformation und Beschwerden
+                    @DisclosureChevron()
+                </summary>
 				<label>Fernablesbare Zähler<select name="remote_meters"><option value="" selected?={ info.RemoteMeters=="" }>Noch zu prüfen</option><option value="yes" selected?={ info.RemoteMeters=="yes" }>Ja</option><option value="no" selected?={ info.RemoteMeters=="no" }>Nein</option></select></label>
 				<label>Monatliche Verbrauchsinformation: Zugang und Kontakt<textarea name="monthly_information" maxlength="2000">{ info.MonthlyInformation }</textarea></label>
 				<p>Bei Fernablesung sind während der Heiz- und Kühlperioden monatliche Informationen erforderlich (§ 17 Abs. 5 HeizKG). Diese Jahresabrechnung ersetzt deren Bereitstellung nicht.</p>

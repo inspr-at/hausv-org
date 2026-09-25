@@ -294,7 +294,7 @@ templ EnergySectionTitle(data EnergyPageData) {
 	<div data-home-identity="energy-heading" aria-label={ data.HomeIdentity.AriaLabel }>
 		<h1 data-home-display-name>{ data.HouseholdName }</h1>
 		if data.HasHomeUnit {
-			<p class="energy-heading-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
+			<p class="energy-heading-unit" data-home-unit-label>@UnitLabel(data.HomeUnitLabel)</p>
 		}
 	</div>
 }

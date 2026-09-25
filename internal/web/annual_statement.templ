@@ -162,6 +162,7 @@ type AnnualStatementReserveView struct {
 
 type AnnualStatementPageData struct {
  Legal store.AnnualStatementLegalSettings
+ PreviousHeatingMissing bool
 	Portal        PortalPageData
 	EstateName    string
 	EstateAddress string
@@ -319,7 +320,7 @@ templ AnnualStatementPreparation(data AnnualStatementPageData) {
  [data-annual-reserve] .reserve-entry>*{min-width:0;overflow-wrap:anywhere}
  [data-annual-reserve] .reserve-entry>span:first-child{color:var(--muted);font-variant-numeric:tabular-nums}
  [data-annual-reserve] .reserve-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
- [data-annual-reserve] .reserve-note{color:var(--muted)}
+ [data-annual-reserve] .reserve-note{color:var(--muted);min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:normal}
  [data-annual-reserve] .reserve-entry>strong{font-weight:600}
  [data-annual-reserve]{container-type:inline-size}
  [data-annual-reserve] .form-grid :is(input,select){font-size:14px;font-weight:500}

@@ -5,8 +5,11 @@ Berechnungsversionen `1` bis `5`. Sie beschreibt
 das Verhalten im Code, keine rechtliche Freigabe für eine konkrete Abrechnung.
 Unfreigegebene PDFs tragen den Hinweis „Entwurf zur Prüfung — keine Rechtsauskunft
 nach WEG/MRG“. Die einmalige Freigabe speichert Datum, Person und Rolle separat
-vom unveränderlichen Lauf. Freigegebene PDFs tragen Datum und Rolle statt
-„Entwurf“. Archiv und Versand verlangen die Freigabe. Bereits archivierte
+vom unveränderlichen Lauf. Neue Freigaben speichern zusätzlich den Anzeigenamen
+in `approved_name` im bestehenden Freigabe-JSON. Freigegebene PDFs tragen Datum
+in Europe/Vienna und diesen Namen statt „Entwurf“; ältere Freigaben ohne Namen
+verwenden die gespeicherte Personenkennung. Spätere Profiländerungen verändern
+diesen Freigabetext nicht. Archiv und Versand verlangen die Freigabe. Bereits archivierte
 Altentwürfe benötigen einen neuen Lauf; ihre Dateien bleiben unverändert.
 Die Freigabe wird als `annual-statement.run.approve` protokolliert.
 
@@ -239,15 +242,23 @@ Die Kurzfassung steht vor der proportional gesetzten Kostentabelle: Kosten,
 geleistete Vorauszahlungen, Ergebnis mit Frist und neue monatliche Vorschläge.
 Zahlungsbedingungen, Belegeinsicht und HeizKG-Einwendungen stehen unter
 „Hinweise“. Messnachweise und Belegverzeichnis nutzen dieselben Seitenränder;
-Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufkennung und Revision
-stehen nur als kleine Fußreferenz, Partei-E-Mail-Adressen nicht im Briefkopf.
+Tabellenköpfe wiederholen sich beim Seitenwechsel. Laufnummer und Erstellzeit
+stehen als kleine Fußreferenz; die technische Laufkennung erscheint dort nicht.
+Messwerte verwenden deutsche Zahlformatierung mit höchstens zwei Nachkommastellen,
+Messquellen heißen „Zähler“. Die gespeicherten Mikroeinheiten bleiben unverändert.
 Standard-PDF-Schriftmetriken bestimmen Zeilenumbrüche und rechtsbündige Beträge
 in Punkten; installierte Systemschriften beeinflussen die Ausgabe nicht.
 
 Im Lauf bleiben einzeilige Einheiten bei Desktopbreite rund 56 px hoch. „Details“
 öffnet die Kostenarten unter der Zeile und meldet den Zustand per `aria-expanded`.
 Ohne JavaScript bleibt die native, tastaturbedienbare Aufklappansicht verfügbar.
-Mehrere Parteien behalten je eine zugeordnete PDF-Zeile und 44-px-Bedienflächen.
+Jede Partei erhält eine eigene Ergebniszeile mit Zeitraum, Kostenanteil, Akonto,
+Saldo und PDF-/Downloadlinks, auf schmalen Bildschirmen eine eigene Karte.
+Die Einheit gruppiert diese Zeilen; die aufklappbaren Kostenarten zeigen weiterhin
+die Einheitsbeträge. Parteibeträge verwenden dieselbe gespeicherte Projektion wie
+das jeweilige PDF, einschließlich der historischen Leerstandsbehandlung.
+Bedienflächen bleiben mindestens 44 px hoch. Der Lauf nennt den Anzeigenamen der
+erstellenden Person; das Freigabedatum verwendet den Wiener Kalendertag.
 
 Das Archiv legt je Partei ein PDF sowie zuletzt das Gesamtpaket ab. IDs sind
 aus Lauf/Revision/Einheit/Partei abgeleitet; Wiederholungen ergänzen ein partielles
@@ -343,6 +354,8 @@ der Freigabe (im Entwurf nach Erstellung).
 Nur bei Regime `weg`. Buchungen liegen in `annual_statement_reserve_entries`
 und sind nur einfügbar; eine Korrektur ist eine weitere Buchung. Arten:
 `opening`, `contribution`, `withdrawal`, `interest`, `closing_check`.
+Die Liste zeigt am selben Datum zuerst den Anfangsstand. Entnahmen zeigen
+Notiz und Dokumenttitel; nur ohne Titel erscheint der Dateiname.
 Entnahmen verweisen auf ein Dokument. Der Endstand ist
 
 `Anfangsstand + Zuführungen − Entnahmen + Zinsen`
@@ -358,12 +371,31 @@ bleibt ohne Umsatzsteuerausweis `2`, mit Umsatzsteuerausweis gilt `3`.
 Der Rücklageblock steht im Parteienbrief nach Kostentabelle und Einheitsbasis,
 vor den Hinweisen, auf demselben gemessenen Satzspiegel wie der übrige Brief.
 
-Die Mindestprüfung warnt nur. Ab 2026 gilt 1,12 €/m²/Monat Nutzfläche
-(WEG 2002 § 31; 0,90 × 128,1 / 102,6 = 1,1237, angesetzt mit 1,12; Quelle WKO/ÖVI).
+Die Mindestprüfung warnt nur. Die datierte Tabelle nach § 31 Abs. 1 und 5 WEG
+setzt ab 01.07.2022 0,90 €/m²/Monat, ab 01.01.2024 1,06 €/m²/Monat und
+ab 01.01.2026 1,12 €/m²/Monat Nutzfläche an. Quellenabruf: 25.09.2026;
+[RIS · WEG-Novelle 2022](https://www.ris.bka.gv.at/eli/bgbl/i/2021/222),
+[WKO · Veröffentlichung für 2026](https://www.wko.at/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-wohnungseigentumsgesetz).
+Die Anpassung erfolgt alle zwei Jahre anhand des Juni-VPI 2020 des Vorjahres
+gegenüber Juni 2021 (102,6), ausgehend von 0,90 €; 2026 ergibt das
+0,90 × 128,1 / 102,6 = 1,12368421, gerundet 1,12 €.
 Fläche ist die Summe der erfassten Nutzflächen der Periode in Hundertstel m².
-Ein Rest von 0,50 Cent wird abgerundet. Zuführungen unter
-`Monatsminimum × Monate der Periode` erzeugen den Hinweis, der Schwellenwert
-selbst nicht. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+Für jeden berührten Kalendermonat wird der damals gültige Satz verwendet und
+das Monatsminimum auf Cent gerundet; ein Rest von 0,50 Cent wird abgerundet.
+Zuführungen unter der Summe dieser Monatsminima erzeugen den Hinweis, der
+Schwellenwert selbst nicht. Die Anzeige nennt die tatsächlich verwendeten
+Sätze samt Teilzeiträumen. Vor Juli 2022 wird kein Euro-Mindestbetrag angesetzt;
+die Pflicht zur angemessenen Rücklage bleibt bestehen. Ab Jänner 2028 ist bis
+zur Aufnahme des nächsten veröffentlichten Satzes keine vollständige Prüfung
+möglich. Fehlende Nutzfläche warnt ebenfalls, sperrt den Lauf aber nicht.
+Neue Läufe mit Rücklage verwenden Berechnungsversion `6` und speichern die
+angewendeten Sätze für Portal und PDF. Version `6` umfasst auch die vereinbarten
+Anteile aus Version `5` und die datierten Parteien aus Version `4`.
+Replay von Version `1` bis `5` behält
+deren ursprüngliche Prüfung mit konstant 1,12 € bei; gespeicherte Abrechnungen
+bleiben unverändert.
+Eine spätere Erweiterung der Satztabelle braucht eine neue Berechnungsversion,
+damit auch das Replay bisher nicht prüfbarer Zeiträume unverändert bleibt.
 
 Im Folgejahr füllt der jüngste freigegebene Vorjahreslauf die leeren Akontofelder
 mit zwölf Monatsbeträgen vor. Es bleibt ausdrücklich ein ungespeicherter
@@ -416,6 +448,9 @@ Die gespeicherten Basiskennungen und Rechenregeln bleiben unverändert.
 
 Der zusätzliche Schlüssel `vereinbart` speichert einen eigenen PPM-Vektor je
 Kostenart in `annual_statement_periods.legal_settings.agreed_shares_ppm`.
+Die Eingabetabelle zeigt Prozent mit bis zu vier Nachkommastellen (deutsches
+Komma); 0,0001 % entspricht einem Millionstel. Client und Server prüfen die
+Summe von genau 100 %, ohne Gleitkommarundung bei der Speicherung.
 Jede aktuelle Einheit muss ausdrücklich erfasst sein; 0 ist eine vereinbarte
 Ausnahme, etwa für Erdgeschoßwohnungen beim Lift. Negative Werte, fehlende oder
 zusätzliche Einheiten sowie eine Summe ungleich 1.000.000 sperren die Berechnung.
@@ -453,6 +488,11 @@ halten Steuern/Abgaben/Zolltarife, Mess-/Berechnungskosten, sonstige Betriebskos
 bei Fernwärmeanlagen über 20 MW Brennstoffmix und jährliche Treibhausgasemissionen,
 Beschwerdekontakt und den Zugang zur monatlichen Verbrauchsinformation fest.
 Die Energieinformationen werden beim Anlegen des Folgejahres geleert.
+Der PDF-Anhang gliedert Messnachweis, Energiebezüge/Preise, Verbrauchsvergleich
+und Verbraucherinformation mit eigenen Überschriften; kurze Fakten erscheinen
+als Beschriftung/Wert. Mess- und Vergleichswerte verwenden Tausenderpunkte und
+höchstens zwei Dezimalstellen, Energiepreise das Eurozeichen bei unveränderter
+Preispräzision. Die gespeicherten Rechenwerte bleiben unverändert.
 
 Neue Läufe frieren die höchste gespeicherte Revision des gleichen
 Vorjahreszeitraums samt Einheitsverbrauch als `previous_heating` ein. Beginn und
@@ -462,10 +502,14 @@ fehlende Vergleichbarkeit ausdrücklich genannt; es gibt keine Schätzung oder
 stillschweigende Einheitenumrechnung. Nachträgliche Vorjahresrevisionen verändern
 das bereits gespeicherte Vergleichsmaterial nicht. PostgreSQL liest es innerhalb
 der Transaktion des aktuellen Laufs. Der Vergleich zeigt tatsächliche Mengen;
-für Heizung können fachlich ermittelte Klimafaktoren beider Perioden in PPM samt
+für Heizung können fachlich ermittelte Klimafaktoren beider Perioden (Eingabe
+als Dezimalfaktor, intern weiterhin Millionstel) samt
 Quelle/Methode hinterlegt werden. Der korrigierte Verbrauch ist
 `Verbrauch × Klimafaktor / 1.000.000`. Ohne diese Eingabe kennzeichnet das PDF die
 fehlende Klimabereinigung ausdrücklich. HAUSV beschafft keine Wetterdaten.
+Fehlt noch der gespeicherte Lauf des gleichen Vorjahreszeitraums, erläutert
+ein Hinweis direkt bei den Klimafaktoren, dass sie erst nach dessen Erfassung
+und einer Neuberechnung der aktuellen Abrechnung im Vergleich wirken.
 
 Der Hausvergleich bildet das arithmetische Mittel der gemessenen Verbräuche
 versorgter Einheiten derselben gespeicherten Nutzerkategorie (`UnitType`),
@@ -508,6 +552,10 @@ und Gemeinschaftsanlagen müssen wegen zusätzlicher Voraussetzungen ausdrückli
 geprüft werden. Teilanwendung und Ausnahme verwenden einen eigenen vereinbarten
 Kostenkatalog je Mietvertrag und eine ausdrücklich eingegebene Vertragsfälligkeit.
 Die Rücklage wird auch bei eingeschaltetem Filter niemals überwälzt.
+Neue Mandate wählen vorhandene gewöhnliche Kostenarten wie Hausreinigung,
+Abfallentsorgung, Wasser/Abwasser, Rauchfangkehrer, Schädlingsbekämpfung,
+Beleuchtung und Hausbetreuung vor. Gespeicherte Abwahlen bleiben erhalten.
+Die geschlossene Einheitenzeile nennt Mietpartei und MRG-Anwendungsbereich.
 
 `rental_management` speichert das Mandat. `tenant_statements` speichert den
 WEG-Lauf, seine Freigabe, Mandat, Mietverträge, zeitlich gültige Parteien und
@@ -518,9 +566,12 @@ SQLite-Migration 0067 und PostgreSQL-Migration 0040 führen die Tabellen ein;
 PostgreSQL erzwingt RLS. `dbmove` übernimmt Tabellen und Freigaben gemeinsam.
 
 Die WEG-Empfängerliste bleibt auf Eigentümer beschränkt; Mietparteien kommen
-aus den gespeicherten Mietverträgen. Teilt ein v4-/v5-WEG-Lauf eine Einheit
+aus den gespeicherten Mietverträgen. Teilt ein WEG-Lauf ab Version `4` eine Einheit
 zwischen aufeinanderfolgenden Eigentümern auf, sperrt v1 die Mieterableitung
 mit einem Hinweis auf die gesondert zuzuordnenden Vermieterzeiträume und Akontos.
+Beide Eigentümer und ihre Zeiträume stehen bereits in der geschlossenen Zeile;
+der Hinweis ersetzt den Erstellen-Knopf. Eine fehlende USt-Basis wird ebenfalls
+vorab mit einem Link zur Rechtsgrundlage erklärt.
 Der gesamte Einheitsbetrag darf nicht nochmals jedem Eigentümer zugerechnet
 werden; die nötige zeitliche Vermieterzuordnung ist noch nicht modelliert.
 
@@ -538,6 +589,10 @@ Vertragsregel. Es werden Kalenderjahre unterstützt.
 BK- und Heiz-Akontos kommen aus den datierten Mietzinsbestandteilen, einschließlich
 deren hinterlegter Umsatzsteuer. Es handelt sich um vertragliche Akontos, nicht um
 einen Zahlungsabgleich mit dem Bankkonto. Fehlende Beträge gelten nicht als Null.
+Fehlende Akontos und Kostenkataloge nennen Mietpartei und deutsche
+Komponentenbezeichnung, keine internen Vertragsschlüssel. Die Janusbergweg-Demo
+weist 2025 Umsatzsteuer aus; ihre Mietakontos liegen nahe den tatsächlich
+überwälzten Kosten. WEG-Kosten und Eigentümer-Vorauszahlungen bleiben unverändert.
 Bei USt-Option muss der WEG-Lauf Netto und Steuer ausweisen. Aus dessen Nettoanteil
 entstehen 10 % für Wohnungs-BK bzw. 20 % für Geschäft, Garage und Heizkosten;
 ohne Option bleibt der Bruttoaufwand ohne gesonderten Steuerausweis. Der Abgleich

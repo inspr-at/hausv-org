@@ -183,15 +183,15 @@ func (a *app) annualStatementDeliveryView(view web.AnnualStatementRunView, repos
 		}
 	}
 	view.SendAction = "/app/settings/annual-statement/runs/" + url.PathEscape(view.ID) + "/send"
-	view.MailMode = "Versand per E-Mail an die hinterlegten Adressen"
+	view.MailMode = "Jede Partei erhält ihr archiviertes PDF je Einheit per E-Mail an die hinterlegte Adresse."
 	if mode, ok := a.mailer.(interface{ Mode() string }); ok {
-		view.MailMode = mode.Mode()
+		view.MailMode = strings.TrimSuffix(mode.Mode(), ".") + "."
 	}
 	switch {
 	case !view.Approved:
-		view.SendIssue = "Zuerst den Abrechnungslauf freigeben"
+		view.SendIssue = "Zuerst den Abrechnungslauf freigeben."
 	case view.ArchivedAt == "":
-		view.SendIssue = "Zuerst im Archiv ablegen"
+		view.SendIssue = "Zuerst im Archiv ablegen."
 	case a.mailer == nil || !a.mailer.Configured():
 		view.SendIssue = "E-Mail-Versand ist nicht eingerichtet."
 	case repository == nil:

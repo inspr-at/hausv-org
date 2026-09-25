@@ -136,7 +136,8 @@ func (r *ValorisationRepository) createTx(tx *sql.Tx, input ValorisationInput, o
 	snapshot, _ := json.Marshal(struct {
 		Version, SHA256 string
 		Values          []ValorisationIndex
-	}{run.IndexVersion, run.IndexSHA256, run.IndexSnapshot})
+		RetrievedAt     time.Time
+	}{run.IndexVersion, run.IndexSHA256, run.IndexSnapshot, run.IndexRetrievedAt})
 	_, err = tx.Exec(`INSERT INTO valorisation_runs(tenant_id,tenant_slug,id,org_key,effective_on,revision,status,inputs_sha256,index_snapshot,data,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,'draft',$7,$8,$9,$10,$11)`, r.tenant.ID, r.tenant.Slug, run.ID, org, run.EffectiveOn, run.Revision, run.InputsSHA256, string(snapshot), string(raw), run.CreatedBy, stamp(now))
 	if err != nil {
 		return run, err
@@ -181,11 +182,20 @@ func (r *ValorisationRepository) getTx(tx *sql.Tx, id string) (ValorisationRun, 
 	var snap struct {
 		Version, SHA256 string
 		Values          []ValorisationIndex
+		RetrievedAt     time.Time
 	}
 	if err = json.Unmarshal([]byte(snapshot), &snap); err != nil {
 		return run, err
 	}
 	run.IndexVersion, run.IndexSHA256, run.IndexSnapshot = snap.Version, snap.SHA256, snap.Values
+	run.IndexRetrievedAt = snap.RetrievedAt
+	// Older runs did not persist the date. Recover it only for the exact known
+	// offline snapshot; never guess a date from a release identifier or today.
+	if run.IndexRetrievedAt.IsZero() {
+		if embedded, err := indexation.LoadSnapshot(); err == nil && embedded.Manifest.Version == run.IndexVersion && embedded.Manifest.DataSHA256 == run.IndexSHA256 {
+			run.IndexRetrievedAt = embedded.Manifest.RetrievedAt
+		}
+	}
 	rows, err := tx.Query(`SELECT data,letter_document_id,letter_sha256,collectable_from FROM valorisation_items WHERE tenant_id=$1 AND run_id=$2 ORDER BY lease_id`, r.tenant.ID, id)
 	if err != nil {
 		return run, err
@@ -308,18 +318,16 @@ func (r *ValorisationRepository) Approve(id string, actor ValorisationActor, set
 		}
 	}
 	if run.IndexRevised {
-		return run, fmt.Errorf("index_revised: neuen Lauf berechnen")
+		return run, fmt.Errorf("Indexwerte wurden berichtigt. Bitte einen neuen Lauf berechnen.")
 	}
 	included := 0
 	run.ApprovedBy, run.ApprovedAt = actor.Email, now.UTC()
 	for idx, item := range run.Items {
-		if item.Excluded || item.Outcome == "unchanged" && item.Group != "exception" {
+		if !item.NeedsApproval() {
 			continue
 		}
-		for _, code := range item.Exceptions {
-			if code != "letter_too_early" {
-				return run, fmt.Errorf("Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: %s", code)
-			}
+		if issue := item.ApprovalException(); issue != "" {
+			return run, fmt.Errorf("Ausnahmen zuerst bearbeiten oder mit Begründung ausschließen: %s", issue)
 		}
 		item, err = ValorisationLetterTiming(item, now)
 		if err != nil {

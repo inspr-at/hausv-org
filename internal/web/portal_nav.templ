@@ -109,7 +109,7 @@ templ PortalEnergyNavItem(data PortalPageData, icons bool, scope string) {
 		<span class="nav-label"><span class="nav-home-identity">
 			<strong data-home-display-name>{ portalHomeDisplayName(data) }</strong>
 			if data.HomeIdentity.HasUnit {
-				<small data-home-unit-label>{ data.HomeIdentity.UnitLabel }</small>
+				<small data-home-unit-label>@UnitLabel(data.HomeIdentity.UnitLabel)</small>
 			}
 		</span></span>
 	</a>

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/inspr-at/hausv-org/internal/store"
 	"github.com/inspr-at/hausv-org/internal/view"
 )
 
@@ -699,6 +700,11 @@ func issueCategoryLabel(category string) string {
 	for _, known := range view.IssueCategories() {
 		if strings.EqualFold(known, category) {
 			return known
+		}
+	}
+	for _, known := range store.IntakeCategories() {
+		if strings.EqualFold(known.Key, category) || strings.EqualFold(known.Label, category) {
+			return known.Label
 		}
 	}
 	words := strings.Fields(strings.NewReplacer("_", " ", "-", " ").Replace(category))

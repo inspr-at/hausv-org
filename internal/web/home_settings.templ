@@ -49,7 +49,7 @@ templ HomeSettingsTitle(data HomeSettingsPageData) {
 	<div data-home-identity="editor-heading" aria-label={ data.HomeIdentity.AriaLabel }>
 		<h1 data-home-display-name>{ data.HouseholdName }</h1>
 		if data.HasHomeUnit {
-			<p class="home-unit" data-home-unit-label>{ data.HomeUnitLabel }</p>
+			<p class="home-unit" data-home-unit-label>@UnitLabel(data.HomeUnitLabel)</p>
 		}
 	</div>
 }
@@ -87,7 +87,7 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 							</select></label>
 						}
 						if data.HasHomeUnit {
-							<div><label>Zugeordnete offizielle Einheit<input type="hidden" name="unit_id" value={ data.HomeUnitID }/><span class="readonly home-readonly"><strong>{ data.HomeUnitLabel }</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class="home-field-help">Die Sichtbarkeit folgt dieser Einheit; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>
+							<div><label>Zugeordnete offizielle Einheit<input type="hidden" name="unit_id" value={ data.HomeUnitID }/><span class="readonly home-readonly"><strong>@UnitLabel(data.HomeUnitLabel)</strong><small>Diesem Hausprofil zugeordnet</small></span></label><small class="home-field-help">Die Sichtbarkeit folgt dieser Einheit; ausdrücklich freigeschaltete technische Betreuung bleibt möglich.</small></div>
 						} else if data.HasUnitOptions {
 							<div data-home-unit-field><label>Zugeordnete offizielle Einheit<select name="unit_id" required aria-describedby="home-settings-unit-help">
 								for _, option := range data.UnitOptions {
@@ -108,7 +108,7 @@ templ HomeSettingsBody(data HomeSettingsPageData) {
 			<div class="home-scope"><span>Liegenschaft</span><strong>{ data.Portal.HouseName }</strong><small>{ homeScopeAddress(data) }</small></div>
 			<div class="home-scope current" data-home-identity="editor-summary" aria-label={ data.HomeIdentity.AriaLabel }><span>Mein Zuhause</span><strong data-home-display-name>{ data.HouseholdName }</strong>
 				if data.HasHomeUnit {
-					<small class="home-scope-unit" data-home-unit-label>{ data.HomeUnitLabel }</small>
+					<small class="home-scope-unit" data-home-unit-label>@UnitLabel(data.HomeUnitLabel)</small>
 				}
 			<small class="home-scope-meta">{ homeScopeMeta(data) }</small></div>
 			<div class="home-scope"><span>{ data.OfficialUnitTitle }</span><strong>{ data.OfficialUnitSummary }</strong><small>{ homeScopeUnitHint(data.HasHomeUnit) }</small></div>

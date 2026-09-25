@@ -1,9 +1,8 @@
 package statementpdf
 
 import (
-	"fmt"
-
 	"github.com/inspr-at/hausv-org/internal/store"
+	"github.com/inspr-at/hausv-org/internal/view"
 )
 
 // ReserveLines is the party-statement Rücklage block for one unit.
@@ -29,10 +28,21 @@ func ReserveLines(run store.AnnualStatementRun, unitID string) []string {
 	if reserve.ClosingMismatch {
 		lines = append(lines, "Hinweis: Eine gebuchte Endstand-Kontrolle weicht vom errechneten Endstand ab.")
 	}
-	if reserve.AreaIncomplete {
+	if reserve.MinimumUnavailable {
+		lines = append(lines, "Hinweis: Die Mindest-Rücklage konnte für diesen Zeitraum nicht vollständig geprüft werden.")
+	} else if reserve.AreaIncomplete {
 		lines = append(lines, "Hinweis: Die Mindest-Rücklage konnte nicht geprüft werden, weil die Nutzfläche unvollständig ist.")
+	} else if run.CalculationVersion < store.AnnualStatementCalculationVersionReserveRates {
+		// Preserve the text of historical PDFs alongside their v1–v5 calculation.
+		if reserve.MinimumWarning {
+			lines = append(lines, "Hinweis: Die Zuführungen liegen unter der Mindest-Rücklage von 1,12 € je m² und Monat (WEG 2002 § 31).")
+		}
+	} else if len(reserve.MinimumRates) == 0 {
+		lines = append(lines, "Vor 01.07.2022 gab es keinen gesetzlichen Mindestbetrag je m². Eine angemessene Rücklage war dennoch zu bilden.")
 	} else if reserve.MinimumWarning {
-		lines = append(lines, fmt.Sprintf("Hinweis: Die Zuführungen liegen unter der Mindest-Rücklage von %s je m² und Monat (WEG 2002 § 31).", money(store.WEGMinimumReserveCentsPerSquareMetreMonth)))
+		lines = append(lines, "Hinweis: Die Zuführungen liegen unter der Mindest-Rücklage: "+view.AnnualStatementReserveRateLabel(reserve.MinimumRates)+" (WEG 2002 § 31).")
+	} else {
+		lines = append(lines, "Mindest-Rücklage: "+view.AnnualStatementReserveRateLabel(reserve.MinimumRates)+".")
 	}
 	return lines
 }

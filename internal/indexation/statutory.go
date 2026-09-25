@@ -127,7 +127,13 @@ func CapCurve(anchor Month, startCents int64, averages []AnnualValue, restricted
 		}
 		previous, pok := byYear[year-1]
 		current, cok := byYear[year]
-		if !pok || !cok || previous.Preliminary || current.Preliminary {
+		if !pok {
+			return Ceiling{}, MissingIndexError{Series: VPI2020, Period: fmt.Sprint(year - 1)}
+		}
+		if !cok {
+			return Ceiling{}, MissingIndexError{Series: VPI2020, Period: fmt.Sprint(year)}
+		}
+		if previous.Preliminary || current.Preliminary {
 			return Ceiling{}, fmt.Errorf("final VPI2020 annual averages for %d and %d required", year-1, year)
 		}
 		factor, step, err := annualFactor(year, previous.Value, current.Value, restricted, months)

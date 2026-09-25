@@ -68,12 +68,23 @@ try {
     const calculate = page.getByRole('button', { name: 'Für alle Einheiten berechnen', exact: true });
     assert(await calculate.isEnabled());
     await Promise.all([page.waitForURL(url => url.searchParams.get('run-status') === 'created'), calculate.click()]);
-    const row = page.locator('.annual-unit-row').filter({ has: page.getByRole('rowheader', { name: scenario.label, exact: true }) });
+    const row = page.locator(`.annual-unit-group[aria-label="${scenario.label}"]`);
     assert.equal(await row.locator('.annual-party').count(), scenario.count);
-    const names = await row.locator('.annual-party-name').allTextContents();
+    const names = await row.locator('.annual-party').allTextContents();
+    assert.equal(await row.locator('.annual-unit-row').count(), scenario.count);
+    for (const partyRow of await row.locator('.annual-unit-row').all()) {
+      assert.equal(await partyRow.locator('.annual-party-name').count(), 1);
+      assert.equal(await partyRow.locator('.annual-money').count(), 3);
+      assert.equal(await partyRow.locator('.annual-pdf a:not([download])').count(), 1);
+      assert.match(await partyRow.locator('[data-label=Saldo]').innerText(), /Nachzahlung|Guthaben|Ausgeglichen/);
+    }
     assert(names.some(n => n.includes(scenario.oldName) && n.includes('bis 30.06.2025')));
     assert(names.some(n => n.includes(scenario.newName) && n.includes('ab 01.07.2025')));
-    assert(names.every(n => /Nachzahlung|Guthaben|Ausgeglichen/.test(n) && !n.includes('Beginn offen')));
+    assert(names.every(n => !/Nachzahlung|Guthaben|Ausgeglichen|Beginn offen/.test(n)));
+    const oldRow = row.locator('.annual-unit-row', {hasText: scenario.oldName});
+    const newRow = row.locator('.annual-unit-row', {hasText: scenario.newName});
+    assert.match(await oldRow.locator('[data-label=Saldo]').innerText(), scenario.house === 'janusbergweg-123' ? /143,52/ : /193,36/);
+    assert.match(await newRow.locator('[data-label=Saldo]').innerText(), scenario.house === 'janusbergweg-123' ? /384,23/ : /456,58/);
     const links = await row.locator('.annual-pdf a').evaluateAll(nodes => nodes.map(n => n.href));
     for (const local of [scenario.previous, scenario.current]) {
       const link = links.find(href => new URL(href).searchParams.get('party') === `${local}@musterstadt.example`);
@@ -100,6 +111,15 @@ try {
       await row.scrollIntoViewIfNeeded();
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${width}px horizontal overflow`);
       await page.screenshot({ path: `${out}/${scenario.house}-party-run-${width}.png` });
+    }
+    if (scenario.house === 'musterstrasse-12') {
+      const shop = page.locator('.annual-unit-group[aria-label="Geschäft"]');
+      assert(await shop.locator('.annual-unit-row').count() >= 1);
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({width, height:1000});
+        await shop.scrollIntoViewIfNeeded();
+        await page.screenshot({path:`${out}/geschaeft-${width}.png`});
+      }
     }
     results.push({ house: scenario.house, names });
   }

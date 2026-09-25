@@ -94,7 +94,7 @@ func TestLetterLayoutSummaryGridAndPrivateReferences(t *testing.T) {
 	if summaryY <= tableY || len(columns) != 2 || columns[0] != columns[1] {
 		t.Fatalf("summary/table grid: %v %v %v", summaryY, tableY, columns)
 	}
-	if !strings.Contains(strings.Join(pages[0].Footer, " "), "Ref. "+run.ID) {
+	if strings.Contains(strings.Join(pages[0].Footer, " "), "Ref. ") || !strings.Contains(strings.Join(pages[0].Footer, " "), "Lauf 2") {
 		t.Fatal("missing footer reference")
 	}
 	if docs[0].Title != "Jahresabrechnung 2025 — Top 1" {

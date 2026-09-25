@@ -11,7 +11,7 @@ import (
 const Scheme = "inspr-calendar-v2"
 const FirstCalendarVersion = "260914170935.0.0"
 const LastLegacyVersion = "1.11.0"
-const ReleaseSequence = 15
+const ReleaseSequence = 16
 const FirstCalendarReleaseSequence = 1
 
 // Channel is a separate artifact dimension, never a canonical version suffix.

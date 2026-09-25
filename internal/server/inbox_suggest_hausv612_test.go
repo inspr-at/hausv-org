@@ -164,7 +164,8 @@ func TestInboxSuggestionTimeoutIsEnforcedAndShown(t *testing.T) {
 	if response.Code != http.StatusSeeOther {
 		t.Fatalf("start=%d", response.Code)
 	}
-	<-suggester.started
+	// The deadline also covers database preparation, so PostgreSQL may time
+	// out before the provider starts. Wait for the bounded job, not the provider.
 	waitInboxSuggestJob(t, a, "timeout")
 	partial := authedRequest(t, a, "vera@example.com", "/demo/app/verwaltung/posteingang/timeout/vorschlag")
 	if !strings.Contains(partial.Body.String(), "Zeitüberschreitung") || strings.Contains(partial.Body.String(), "dummy-secret-never-render") {

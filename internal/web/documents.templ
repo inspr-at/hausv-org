@@ -248,7 +248,7 @@ templ DocumentRow(document view.DocumentView, canManage bool) {
 							}
 						}
 						if document.HasUnit {
-							<span class="pill">Einheit { document.UnitLabel }</span>
+							<span class="pill">Einheit @UnitLabel(document.UnitLabel)</span>
 						}
 					</div>
 				}
@@ -283,7 +283,7 @@ templ DocumentTitleLink(document view.DocumentView) {
 templ DocumentReplaceDialog(document view.DocumentView) {
 	<dialog id={ document.ReplaceDialogID } class="dialog" aria-labelledby={ document.ReplaceDialogID + "-title" }><form method="post" action="/app/dokumente/replace" enctype="multipart/form-data"><input type="hidden" name="id" value={ document.ID }/><div class="dialog-head"><h2 id={ document.ReplaceDialogID + "-title" }>Neue Version speichern</h2><button class="dialog-close" type="button" data-close-dialog aria-label="Schließen">×</button></div><div class="dialog-body"><div class="replace-context"><strong>{ document.Title }</strong><span class="mini">Aktuell { document.VersionLabel } · { document.Visibility }
 		if document.HasUnit {
-			<span> · Einheit { document.UnitLabel }</span>
+			<span> · Einheit @UnitLabel(document.UnitLabel)</span>
 		}
 	</span></div><div class="dialog-grid"><label class="full" for={ document.ReplaceDialogID + "-file" }>Neue Datei<span class="file-control"><input id={ document.ReplaceDialogID + "-file" } type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" required/><span>PDF oder Bild auswählen</span></span></label></div></div><footer class="dialog-footer"><button class="button primary" type="submit">Neue Version speichern</button></footer></form></dialog>
 }

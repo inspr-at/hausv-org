@@ -1087,7 +1087,7 @@ func IssueLocationLabel(locationType string, detail string) string {
 	if store.NormalizeIssueLocation(locationType) == store.IssueLocationUnit {
 		label = "Eigene Einheit"
 	}
-	detail = strings.TrimSpace(detail)
+	detail = store.UnitLabelText(strings.TrimSpace(detail))
 	if detail == "" {
 		return label
 	}
@@ -1098,7 +1098,7 @@ func IssueLocationLabel(locationType string, detail string) string {
 // view. "Eigene Einheit" is the reporter's framing and is misleading in that
 // column; the unit detail itself ("Top 7") is the place.
 func IssueLocationLabelForManagement(locationType string, detail string) string {
-	detail = strings.TrimSpace(detail)
+	detail = store.UnitLabelText(strings.TrimSpace(detail))
 	if store.NormalizeIssueLocation(locationType) == store.IssueLocationUnit {
 		if detail == "" {
 			return "Einheit"

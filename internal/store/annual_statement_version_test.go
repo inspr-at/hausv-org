@@ -65,30 +65,66 @@ func TestAnnualStatementLowestFeatureVersionAndReplay(t *testing.T) {
 	}
 }
 
-func TestAnnualStatementV4AndV5HeatingPartyReplay(t *testing.T) {
-	for _, version := range []int{4, 5} {
+func TestAnnualStatementV4V5V6HeatingPartyReplay(t *testing.T) {
+	for _, version := range []int{4, 5, 6} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
 			in := datedInput(true)
 			in.Structure.Legal.ShowVAT = true
 			in.Structure.CostTypes[0].VATRatePercent = 20
-			if version == 5 {
+			if version >= 5 {
 				in.Structure.CostTypes = append(in.Structure.CostTypes, AnnualStatementCostType{Key: "lift", Name: "Lift", Allocatable: true, AllocationKey: AllocationKeyAgreed})
 				in.Structure.Legal.AgreedShares = map[string]map[string]int{"lift": {"a": 0, "b": 1_000_000}}
 				in.Receipts = append(in.Receipts, AnnualStatementReceipt{ID: "r3", DocumentID: "d3", PeriodYear: 2025, CostTypeKey: "lift", AmountCents: 10001, InvoiceDate: "2025-02-01"})
 			}
+			if version == 6 {
+				in.Structure.Legal.Regime = "weg"
+				in.Parties = in.Parties[:2]
+				for i := range in.Parties {
+					in.Parties[i].Owner, in.Parties[i].Renter = true, false
+				}
+				for i := range in.Structure.UnitBases {
+					in.Structure.UnitBases[i].UsableAreaRecorded = true
+					in.Structure.UnitBases[i].UsableAreaM2Hundredths = 5000
+				}
+				in.Reserve = []AnnualStatementReserveEntry{{Kind: ReserveKindContribution, AmountCents: 127200, EntryDate: "2025-01-01"}}
+			}
 			run := AnnualStatementRun{CalculationVersion: version, Input: in}
+			if version == 6 {
+				result, issues := CalculateAnnualStatementRun(in)
+				if len(issues) != 0 {
+					t.Fatal(issues)
+				}
+				created, err := newAnnualStatementRun(in, result, 1, "manager@example.com", time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC))
+				if err != nil || created.CalculationVersion != AnnualStatementCalculationVersionReserveRates {
+					t.Fatal(created.CalculationVersion, err)
+				}
+				raw, err := json.Marshal(created)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := json.Unmarshal(raw, &run); err != nil {
+					t.Fatal(err)
+				}
+			}
 			result, issues := ReplayAnnualStatementRun(run)
 			if len(issues) > 0 {
 				t.Fatal(issues)
 			}
 			old, next := partyResult(t, result, "a-old@example.com"), partyResult(t, result, "b-new@example.com")
-			if old.Unit.AllocatedCents != 21250 || next.Unit.AllocatedCents != 21250 || old.Unit.PrepaidCents != 500 || next.Unit.PrepaidCents != 2500 || next.DueOn != "2026-07-05" {
+			wantDue := "2026-07-05"
+			if version == 6 {
+				wantDue = "2026-08-01"
+				if !reflect.DeepEqual(result, run.Result) || result.Reserve == nil || result.Reserve.MinimumPeriodCents != 127200 || result.Reserve.MinimumWarning {
+					t.Fatal("v6 replay lost agreed shares, dated parties or reserve rates", result)
+				}
+			}
+			if old.Unit.AllocatedCents != 21250 || next.Unit.AllocatedCents != 21250 || old.Unit.PrepaidCents != 500 || next.Unit.PrepaidCents != 2500 || next.DueOn != wantDue {
 				t.Fatal(old, next)
 			}
 			if result.Units[0].AllocatedCents != 42500 || result.Units[0].Costs[0].VATCents != 7083 {
 				t.Fatal(result.Units[0])
 			}
-			if version == 5 && result.Units[1].AllocatedCents != 87501 {
+			if version >= 5 && result.Units[1].AllocatedCents != 87501 {
 				t.Fatal(result.Units[1])
 			}
 		})

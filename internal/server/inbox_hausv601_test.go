@@ -51,7 +51,7 @@ func TestInboxListRendersItemsCountsAndApproveCreatesIssueCommentAudit(t *testin
 	if page.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", page.Code, page.Body.String())
 	}
-	for _, want := range []string{"Wasser im Keller", "1 offen", "1 mit Vorschlag", "Telefonnotiz", "Vorschlag: Reparatur · Hoch"} {
+	for _, want := range []string{"Wasser im Keller", "1 offen", "1 mit Vorschlag", "Beispielvorschläge", "Telefonnotiz", "Vorschlag: Reparatur · Hoch"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Fatalf("page missing %q", want)
 		}

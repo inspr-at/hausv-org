@@ -132,7 +132,7 @@ func TestCommittedDemo2025CreatesRunAndEveryPartyPDF(t *testing.T) {
 	if len(renderedUnits) != 24 || len(pdfs) != 25 {
 		t.Fatalf("units=%d documents=%d", len(renderedUnits), len(pdfs))
 	}
-	if loaded.CalculationVersion != 5 || len(loaded.Result.PartyShares) != 2 {
+	if loaded.CalculationVersion != store.AnnualStatementCalculationVersionReserveRates || len(loaded.Result.PartyShares) != 2 {
 		t.Fatal("WEG owner change missing", loaded.Result.PartyShares)
 	}
 	if _, err := statementpdf.Render(loaded, "top-3", "matthias.mieter@musterstadt.example"); err != statementpdf.ErrNotFound {

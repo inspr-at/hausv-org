@@ -1,6 +1,8 @@
 package store
 
 import (
+	"encoding/json"
+	"math"
 	"os"
 	"reflect"
 	"strings"
@@ -41,21 +43,103 @@ func TestReserveBalanceConservesClosingAcrossMEAShares(t *testing.T) {
 }
 
 func TestReserveMinimumWarningAtTheThreshold(t *testing.T) {
-	// 100,00 m² × 1,12 € = 112,00 € per month, 1.344,00 € for twelve months.
 	units := []Unit{{ID: "a", MiteigentumsanteilPPM: 1_000_000, UsableAreaM2Hundredths: 10000, UsableAreaRecorded: true}}
-	period := AnnualStatementPeriod{Year: 2026, StartsOn: "2026-01-01", EndsOn: "2026-12-31"}
-	at := func(cents int64) AnnualStatementReserveResult {
-		result, ok := AnnualStatementReserveBalance([]AnnualStatementReserveEntry{{Kind: ReserveKindContribution, AmountCents: cents}}, period, units)
-		if !ok {
-			t.Fatal("balance")
+	for _, tc := range []struct {
+		name, start, end string
+		minimum, monthly int64
+		rates            []int64
+	}{
+		{"2025", "2025-01-01", "2025-12-31", 127200, 10600, []int64{106}},
+		{"2026", "2026-01-01", "2026-12-31", 134400, 11200, []int64{112}},
+		{"2027", "2027-01-01", "2027-12-31", 134400, 11200, []int64{112}},
+		{"2024 change", "2023-07-01", "2024-06-30", 117600, 0, []int64{90, 106}},
+		{"2026 change", "2025-07-01", "2026-06-30", 130800, 0, []int64{106, 112}},
+		{"introduced mid-year", "2022-01-01", "2022-12-31", 54000, 0, []int64{90}},
+		{"first month", "2022-07-01", "2022-07-31", 9000, 9000, []int64{90}},
+		{"partial months retain calendar-month rule", "2025-12-15", "2026-01-14", 21800, 0, []int64{106, 112}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Year deliberately differs: effective dates, not the year label, govern.
+			period := AnnualStatementPeriod{Year: 2026, StartsOn: tc.start, EndsOn: tc.end}
+			for _, contribution := range []int64{tc.minimum - 1, tc.minimum, tc.minimum + 1} {
+				result, ok := AnnualStatementReserveBalance([]AnnualStatementReserveEntry{{Kind: ReserveKindContribution, AmountCents: contribution}}, period, units)
+				if !ok || result.MinimumUnavailable || result.AreaIncomplete || result.MinimumPeriodCents != tc.minimum || result.MinimumMonthlyCents != tc.monthly || result.MinimumWarning != (contribution < tc.minimum) {
+					t.Fatalf("contribution=%d: %+v, ok=%t", contribution, result, ok)
+				}
+				var rates []int64
+				for _, rate := range result.MinimumRates {
+					rates = append(rates, rate.CentsPerSquareMetreMonth)
+				}
+				if !reflect.DeepEqual(rates, tc.rates) {
+					t.Fatalf("rates=%v want=%v", rates, tc.rates)
+				}
+			}
+		})
+	}
+}
+
+func TestReserveMinimumMonthlyRoundingAndUnavailablePeriods(t *testing.T) {
+	for _, tc := range []struct {
+		name, start, end        string
+		area                    int
+		recorded                bool
+		minimum                 int64
+		incomplete, unavailable bool
+	}{
+		{"half cent down each month", "2025-01-01", "2025-12-31", 25, true, 312, false, false},
+		{"above half cent up", "2025-01-01", "2025-12-31", 26, true, 336, false, false},
+		{"round each rate separately", "2025-07-01", "2026-06-30", 25, true, 324, false, false},
+		{"no numeric floor yet", "2022-01-01", "2022-06-30", 10000, true, 0, false, false},
+		{"area missing", "2025-01-01", "2025-12-31", 10000, false, 0, true, false},
+		{"invalid date", "invalid", "2025-12-31", 10000, true, 0, false, true},
+		{"reversed", "2026-01-01", "2025-12-31", 10000, true, 0, false, true},
+		{"next rate unpublished", "2027-07-01", "2028-06-30", 10000, true, 0, false, true},
+		{"overflow", "2026-01-01", "2026-12-31", math.MaxInt, true, 0, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, ok := AnnualStatementReserveBalance(nil, AnnualStatementPeriod{StartsOn: tc.start, EndsOn: tc.end}, []Unit{{UsableAreaM2Hundredths: tc.area, UsableAreaRecorded: tc.recorded}})
+			if !ok || result.MinimumPeriodCents != tc.minimum || result.AreaIncomplete != tc.incomplete || result.MinimumUnavailable != tc.unavailable || result.MinimumWarning != (tc.minimum > 0 || tc.incomplete || tc.unavailable) {
+				t.Fatalf("%+v, ok=%t", result, ok)
+			}
+		})
+	}
+}
+
+func TestReserveDatedRateRunAndLegacyReplay(t *testing.T) {
+	in := annualRunFixture()
+	in.Structure.Legal.Regime = "weg"
+	in.StatementOn = "2026-01-20"
+	for i := range in.Structure.UnitBases {
+		in.Structure.UnitBases[i].UsableAreaRecorded = true
+		in.Structure.UnitBases[i].UsableAreaM2Hundredths = 5000
+	}
+	in.Reserve = []AnnualStatementReserveEntry{{Kind: ReserveKindContribution, AmountCents: 127200, EntryDate: "2025-01-01"}}
+	result, issues := CalculateAnnualStatementRun(in)
+	if len(issues) != 0 || result.Reserve == nil || result.Reserve.MinimumPeriodCents != 127200 || result.Reserve.MinimumWarning {
+		t.Fatal(result.Reserve, issues)
+	}
+	run, err := newAnnualStatementRun(in, result, 1, "manager@example.com", time.Now())
+	if err != nil || run.CalculationVersion != AnnualStatementCalculationVersionReserveRates {
+		t.Fatal(run, err)
+	}
+	raw, err := json.Marshal(run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved AnnualStatementRun
+	if err := json.Unmarshal(raw, &saved); err != nil {
+		t.Fatal(err)
+	}
+	replay, issues := ReplayAnnualStatementRun(saved)
+	if len(issues) != 0 || !reflect.DeepEqual(replay, saved.Result) {
+		t.Fatal(replay, issues)
+	}
+	for _, version := range []int{1, 2, 3, 4, 5} {
+		saved.CalculationVersion = version
+		replay, issues := ReplayAnnualStatementRun(saved)
+		if len(issues) != 0 || replay.Reserve == nil || replay.Reserve.MinimumPeriodCents != 134400 || !replay.Reserve.MinimumWarning || replay.Reserve.MinimumRates != nil {
+			t.Fatalf("v%d: %+v %v", version, replay.Reserve, issues)
 		}
-		return result
-	}
-	if at(134400).MinimumWarning || at(134400).MinimumPeriodCents != 134400 {
-		t.Fatalf("threshold must hold: %+v", at(134400))
-	}
-	if !at(134399).MinimumWarning {
-		t.Fatal("one cent below the floor must warn")
 	}
 }
 

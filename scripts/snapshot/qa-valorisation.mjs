@@ -2,7 +2,8 @@
 // Valorisation demo: preview, approval, archived PDF and owner denial. Headless, against one local rig.
 //   node qa-valorisation.mjs http://localhost:8309 /path/to/artifacts
 
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
 const baseURL = process.argv[2];
@@ -58,8 +59,43 @@ async function login(email) {
 async function shot(page, name) {
   if (!artifactDir) return;
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: `${artifactDir}/${name}.png`, fullPage: true });
+  await page.screenshot({ path: `${artifactDir}/${name}.png`, fullPage: true, animations: 'disabled' });
   process.stdout.write(`  screenshot ${artifactDir}/${name}.png\n`);
+}
+
+async function switchHouse(page, name) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.locator('#context-property > summary').click();
+  await page.locator('#context-property-search').fill(name);
+  await page.getByRole('option').filter({ hasText: name }).first().click();
+  await page.waitForLoadState('networkidle');
+}
+
+async function checkLetter(context, href, runID, name, requiresMRGNotice = false) {
+  const response = await context.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
+  const raw = await response.body();
+  if (response.status() !== 200 || !raw.subarray(0, 5).equals(Buffer.from('%PDF-'))) fail(`${name}: PDF fehlt`);
+  if (!/^inline;/.test(response.headers()['content-disposition'] || '')) fail(`${name}: Schreiben öffnet nicht inline`);
+  // Requires Poppler; check extracted text, including every page footer.
+  const text = execFileSync('pdftotext', ['-layout', '-', '-'], { input: raw, encoding: 'utf8' });
+  for (const forbidden of ['Lauf', 'Referenz', 'SHA-256', runID.slice(0, 16), '260924101853.0.0', 'Sehr geehrte Damen und Herren,']) {
+    if (text.includes(forbidden)) fail(`${name}: interne Prüfdaten im Schreiben (${forbidden})`);
+  }
+  if (!text.includes('Anpassung des Hauptmietzinses')) fail(`${name}: Brieftext fehlt`);
+  const letterText = text.replace(/\s+/g, ' ');
+  const noBackPayment = 'Der höhere Hauptmietzins ist erst ab diesem Zinstermin zu bezahlen; für die davorliegenden Monate wird keine Nachzahlung verlangt.';
+  for (const expected of ['VPI 2020, Basis September 2024: 123,6', 'Auslösemonat Dezember 2025', 'Anker: September 2024', '5,02 %', '+2,91 %', 'Indexwerte laut Statistik Austria, Stand 24.09.2026', `Guten Tag ${requiresMRGNotice ? 'Lukas Steiner' : 'Eva Huber'},`, 'Für Rückfragen:', 'Mit freundlichen Grüßen', ...(requiresMRGNotice ? ['§ 16 Abs 9 MRG', 'zugeht', '14 Tage', noBackPayment] : ['+3,28 %'])]) {
+    if (!letterText.includes(expected)) fail(`${name}: ${expected} fehlt`);
+  }
+  if (!requiresMRGNotice && letterText.includes(noBackPayment)) fail(`${name}: MRG-Nachzahlungshinweis in Teilanwendung`);
+  if (requiresMRGNotice && !text.split('\f')[1]?.replace(/\s+/g, ' ').includes(noBackPayment)) fail(`${name}: Nachzahlungshinweis fehlt auf Seite 2`);
+  if (/\d{4}-\d{2}|\d+,\d{3,} %|Wertsicherung · Janusbergweg 123 · Janusbergweg 123/.test(text)) fail(`${name}: technische oder doppelte Briefangaben`);
+  if (text.split('\f').filter(page => page.trim()).length !== 2) fail(`${name}: erwartet zwei Briefseiten`);
+  if (artifactDir) {
+    writeFileSync(`${artifactDir}/${name}.pdf`, raw);
+    writeFileSync(`${artifactDir}/${name}.txt`, text);
+    writeFileSync(`${artifactDir}/${name}-headers.json`, JSON.stringify({ status: response.status(), contentDisposition: response.headers()['content-disposition'], contentType: response.headers()['content-type'] }, null, 2));
+  }
 }
 
 try {
@@ -101,21 +137,66 @@ try {
   await top1.locator('summary').filter({ hasText: 'Alle Indexwerte anzeigen' }).click();
   if (await top1.getByRole('table', { name: 'Geprüfte Monatsreihe und Jahresmittel' }).locator('tbody tr').count() <= 5) fail('Volle Indexreihe fehlt');
   const body = await preview.innerText();
-  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026', 'Top 1 · Eva Huber', 'Schwelle 5 % überschritten: +5,02 %', '+3,55412 %']) {
+  if (await top1.locator(':scope > summary .unit-label').innerText() !== 'Top\u00a01') fail('Top 1: Einheitenlabel nicht zusammengehalten');
+  if (!(await top1.locator(':scope > summary strong').textContent()).includes(' · Eva Huber')) fail('Top 1: Mietpartei fehlt');
+  for (const value of ['1.040,28', '1.017,35', '21.04.2026', '05.05.2026', 'Schwelle 5 % überschritten: +5,02 %', '+3,55412 %']) {
     if (!body.includes(value)) fail(`Vorschau: ${value} fehlt`);
   }
   if (/\btop-\d|\d+\/\d+ %|\d+\.\d+ %|percent|Kurve exakt/.test(body)) fail('Technische Zahlen oder IDs in der Vorschau');
+  await switchHouse(page, 'Musterstraße 12');
+  await page.goto(`${baseURL}/musterstrasse-12/app/settings/valorisation`, { waitUntil: 'networkidle' });
+  const mrgStaffel = page.locator('[data-group="ready"] > [data-lease-id="m12-lease-top-8"]').first();
+  if (await mrgStaffel.count() !== 1) fail('Musterstraße Top 8: feste Staffel ist nicht bereit');
+  await mrgStaffel.locator(':scope > summary').click();
+  for (const value of ['Julian Eder', '910,00', '928,20', 'Staffelmietzins laut Vertrag']) {
+    if (!(await mrgStaffel.innerText()).includes(value)) fail(`Musterstraße Staffel: ${value} fehlt`);
+  }
+  if ((await mrgStaffel.innerText()).includes('Veröffentlichungsnachweis fehlt')) fail('Feste Staffel verlangt einen monatlichen Index');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    if (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) > 1) fail(`Musterstraße Staffel: Überlauf bei ${width}px`);
+    if (artifactDir) await mrgStaffel.screenshot({ path: `${artifactDir}/mrg-staffel-top8-${width}.png` });
+  }
   // The seeded April draft is reviewable even when the system clock is later.
-  await page.goto(route, { waitUntil: 'networkidle' });
+  await switchHouse(page, 'Janusbergweg 123');
+  await page.goto(`${baseURL}/janusbergweg-123/app/settings/valorisation`, { waitUntil: 'networkidle' });
   const first = page.locator('article[data-run-id]').first();
   const runID = await first.getAttribute('data-run-id');
   if (!runID) fail('Demo-Lauf fehlt');
+  const draftPDF = first.locator('[data-group="ready"] a[href$="/pdf"]').first();
+  await checkLetter(manager, await draftPDF.getAttribute('href'), runID, 'valorisation-letter-draft');
+  await checkLetter(manager, await first.locator('[data-lease-id="lease-top-2"] a[href$="/pdf"]').first().getAttribute('href'), runID, 'valorisation-letter-draft-mrg', true);
+  const approveButton = first.getByRole('button', { name: 'Freigeben und archivieren' });
+  if (!(await approveButton.isDisabled()) || !(await approveButton.getAttribute('class')).includes('ghost')) fail('Freigabe bei offenen Ausnahmen nicht deaktiviert');
+  const issueID = await approveButton.getAttribute('aria-describedby');
+  if (!issueID || !(await page.locator(`#${issueID}`).innerText()).includes('3 Ausnahmen sind noch offen.')) fail('Anzahl offener Ausnahmen fehlt');
+  const approveAction = await approveButton.locator('..').getAttribute('action');
+  const blocked = await manager.request.post(new URL(approveAction, baseURL).href, { headers: { Origin: baseURL }, maxRedirects: 0 });
+  if (blocked.status() !== 303) fail(`Freigabe mit offenen Ausnahmen: HTTP ${blocked.status()}`);
+  await page.goto(new URL(blocked.headers().location, baseURL).href, { waitUntil: 'networkidle' });
+  const notice = await page.locator(`#run-${runID} [role="status"]`).innerText();
+  if (notice !== '3 Ausnahmen sind noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen.') fail(`Freigabehinweis: ${notice}`);
+  if ((await first.innerText()).split('3 Ausnahmen sind noch offen.').length !== 2) fail('Freigabehinweis doppelt');
+  if (!(await first.locator('.vr-actions').evaluate(node => node.previousElementSibling?.getAttribute('role') === 'status'))) fail('Freigabehinweis nicht bei der Aktion');
+  if (!(await first.innerText()).includes('Erstellt von Vera Verwalter')) fail('Anzeigename im Fuß fehlt');
+  if (await first.getByText('Prüfsumme', { exact: true }).count()) fail('Leere Prüfsummenbeschriftung');
+  const audit = first.locator('details.vr-meta');
+  if (await audit.count() !== 1 || await audit.evaluate(node => node.open)) fail('Prüfdaten fehlen oder sind offen');
+  if (!(await audit.textContent()).includes('Index-Datenversion 260924101853.0.0')) fail('Exakte Index-Datenversion fehlt in Prüfdaten');
+  const deadline = await first.locator(':scope > .vr-deadline').first().innerText();
+  if (!deadline.includes('spätestens am 21.04.2026 zugehen') || !deadline.includes('Postlaufzeit einplanen.')) fail(`Zugangsfrist: ${deadline}`);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await first.locator('.vr-item').first().evaluate(node => { node.open = true; });
+    const chevron = first.locator('.vr-item').first().locator(':scope > summary .vr-item-chevron');
+    if (await chevron.locator('svg').count() !== 1) fail('Produktchevron fehlt');
+    await page.waitForTimeout(200);
+    if (await chevron.evaluate(node => getComputedStyle(node).transform) !== 'matrix(0, 1, -1, 0, 0, 0)') fail('Offener Chevron nicht gedreht');
     await shot(page, `valorisation-${width}`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) fail(`${width}px: Überlauf ${overflow}px`);
+    await first.locator('[data-group="exception"] > .vr-item').evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
+    await shot(page, `valorisation-open-exceptions-${width}`);
   }
   const itemIDs = await first.locator('[data-group="exception"] > .vr-item').evaluateAll(nodes => nodes.map(node => node.id.slice(5)));
   for (const itemID of itemIDs) {
@@ -126,6 +207,7 @@ try {
     await detail.getByRole('button', { name: 'Ausschließen', exact: true }).click();
     await page.waitForLoadState('networkidle');
   }
+  if (!(await approveButton.isEnabled())) fail('Freigabe nach begründetem Ausschluss noch gesperrt');
   await page.locator(`#run-${runID}`).getByRole('button', { name: 'Freigeben und archivieren' }).click();
   await page.waitForLoadState('networkidle');
   const approved = page.locator(`#run-${runID}`);
@@ -140,9 +222,12 @@ try {
   await approved.locator('.vr-cancel > summary').click();
   const href = await pdfLink.getAttribute('href');
   if (!href) fail('PDF-Link fehlt');
-  const pdf = await manager.request.get(new URL(href, baseURL).href, { headers: { Connection: 'close' } });
-  if (pdf.status() !== 200 || !(await pdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-'))) fail('Archiv-PDF fehlt');
-  await shot(page, 'valorisation-approved-390');
+  await checkLetter(manager, href, runID, 'valorisation-letter-approved');
+  await checkLetter(manager, await approved.locator('[data-lease-id="lease-top-2"] a[href$="/pdf"]').first().getAttribute('href'), runID, 'valorisation-letter-approved-mrg', true);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await shot(page, `valorisation-approved-${width}`);
+  }
   // Structured schedule editing must survive a save, without interpreting prose.
   await page.goto(`${baseURL}/app/settings/building/units/top-9/lease?bearbeiten=1`, { waitUntil: 'networkidle' });
   const editor = page.locator('[data-staffel-editor]');

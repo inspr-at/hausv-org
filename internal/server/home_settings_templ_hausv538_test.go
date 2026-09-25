@@ -68,7 +68,7 @@ func TestHomeIdentityTemplKeepsLockedUnitContract(t *testing.T) {
 		`data-home-identity="editor-summary"`,
 		`aria-label="Dachwohnung, offizielle Einheit Einheit 12"`,
 		`data-home-display-name>Dachwohnung<`,
-		`data-home-unit-label>Einheit 12<`,
+		"<span class=\"unit-label\" style=\"white-space:nowrap;hyphens:manual\">Einheit\u00a012</span>",
 		// Every action of the legacy page.
 		`action="/demo/app/settings/home"`,
 		`name="from" value="energy"`,

@@ -16,13 +16,13 @@ import (
 func TestValorisationRoutesAndDenials(t *testing.T) {
 	a, _, _ := newArchiveDemoApp(t)
 	a.leaseStore = store.NewSQLLeaseStore(a.tenantDB)
-	a.profiles[archiveDemoManager] = userProfile{Email: archiveDemoManager, Role: roleAdmin, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
+	a.profiles[archiveDemoManager] = userProfile{Email: archiveDemoManager, FirstName: "Vera", LastName: "Verwalter", Role: roleAdmin, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
 	path := "/app/settings/valorisation"
 	page := archiveDemoRequest(t, a, archiveDemoManager, "GET", path, nil)
 	if page.Code != 200 {
 		t.Fatalf("page %d %s", page.Code, page.Body.String())
 	}
-	for _, want := range []string{`href="/` + archiveDemoTenant + `/app/hilfe#recht-wirksamwerden"`, "Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026"} {
+	for _, want := range []string{`href="/` + archiveDemoTenant + `/app/hilfe#recht-wirksamwerden"`, "Wertsicherung", "Bereit", "Unverändert", "Ausnahmen", "1.040,28", "1.017,35", "21.04.2026", "05.05.2026", "Erstellt von Vera Verwalter"} {
 		if !strings.Contains(page.Body.String(), want) {
 			t.Errorf("missing %s", want)
 		}
@@ -34,6 +34,42 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		t.Fatal(err)
 	}
 	run := runs[0]
+	blocked := archiveDemoRequest(t, a, archiveDemoManager, "POST", path+"/runs/"+run.ID+"/approve", nil)
+	if blocked.Code != http.StatusSeeOther {
+		t.Fatalf("blocked approval must redirect: %d", blocked.Code)
+	}
+	location := strings.TrimPrefix(blocked.Header().Get("Location"), "/"+archiveDemoTenant)
+	location, _, _ = strings.Cut(location, "#") // Browsers never send fragments to the server.
+	notice := archiveDemoRequest(t, a, archiveDemoManager, "GET", location, nil)
+	for _, want := range []string{"Wertsicherung", "Keine Wertsicherungsklausel vorhanden.", "3 Ausnahmen sind noch offen. Bitte zuerst prüfen oder mit Begründung ausschließen.", `class="button ghost"`, `disabled`, `role="status"`, "zugehen", "Postlaufzeit einplanen."} {
+		if notice.Code != http.StatusOK || !strings.Contains(notice.Body.String(), want) {
+			t.Errorf("blocked approval notice missing %q: HTTP %d", want, notice.Code)
+		}
+	}
+	if strings.Count(notice.Body.String(), "3 Ausnahmen sind noch offen.") != 1 {
+		t.Fatal("approval notice must appear once")
+	}
+	if strings.Contains(notice.Body.String(), "clause_unreviewed") {
+		t.Fatal("raw exception code in notice")
+	}
+	forgedNotice := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"?notice_run="+run.ID+"&notice=UntrustedNoticeText", nil)
+	if forgedNotice.Code != http.StatusOK || strings.Contains(forgedNotice.Body.String(), "UntrustedNoticeText") {
+		t.Fatal("untrusted notice text must not be reflected")
+	}
+	unchanged, _, err := repo.Get(run.ID)
+	if err != nil || unchanged.Status != "draft" {
+		t.Fatal("blocked approval changed the run", err)
+	}
+	for _, item := range run.Items {
+		if item.Group != "ready" {
+			continue
+		}
+		preview := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"/runs/"+run.ID+"/items/"+item.ID+"/pdf", nil)
+		if preview.Code != http.StatusOK || preview.Header().Get("Content-Disposition") != `inline; filename="wertsicherung.pdf"` {
+			t.Fatal("draft PDF must open inline", preview.Code)
+		}
+		break
+	}
 	for _, role := range []string{roleOwner, roleResident, roleServiceProvider, roleBeirat} {
 		actor := strings.ToLower(role) + "@example.com"
 		a.profiles[actor] = userProfile{Email: actor, Role: role, Tenants: []string{archiveDemoTenant}, AuthMethods: defaultAuthMethods()}
@@ -63,8 +99,8 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		t.Fatal("approve", approved.Code, approved.Body.String())
 	}
 	run, _, err = repo.Get(run.ID)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || run.Status != "approved" {
+		t.Fatal("run not approved", err)
 	}
 	for _, item := range run.Items {
 		if item.LetterDocumentID == "" {
@@ -73,6 +109,9 @@ func TestValorisationRoutesAndDenials(t *testing.T) {
 		response := archiveDemoRequest(t, a, archiveDemoManager, "GET", path+"/runs/"+run.ID+"/items/"+item.ID+"/pdf", nil)
 		if response.Code != http.StatusOK || !strings.HasPrefix(response.Body.String(), "%PDF-") || strings.Contains(response.Body.String(), "Entwurf") {
 			t.Fatal("final PDF", response.Code)
+		}
+		if response.Header().Get("Content-Disposition") != `inline; filename="wertsicherung.pdf"` {
+			t.Fatal("archived PDF must open inline")
 		}
 	}
 	lease := archiveDemoRequest(t, a, archiveDemoManager, "GET", "/app/settings/building/units/top-1/lease", nil)

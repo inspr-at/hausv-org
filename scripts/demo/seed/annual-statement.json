@@ -86,12 +86,12 @@
           "price_note": "01.01.–31.12.2025; tatsächlicher Bruttopreis zum Ablesestichtag 31.12.2025"
         }
       ],
-      "taxes_note": "Bruttopreis inklusive 20 % Umsatzsteuer; netto 0,075 EUR/kWh. Keine weiteren Abgaben oder Zolltarife verrechnet.",
+      "taxes_note": "Bruttopreis inklusive 20 % Umsatzsteuer; netto 0,075 €/kWh. Keine weiteren Abgaben oder Zolltarife verrechnet.",
       "district_heating_over_20mw": true,
-      "fuel_mix": "Demodaten: 80 % Biomasse, 20 % Erdgas laut Jahresinformation 2025 der Stadtwerke Musterstadt.",
-      "emissions": "Demodaten: 12.000 t CO2-Äquivalente/Jahr für die Versorgungsanlage, Lieferanteninformation 2025.",
-      "metering_costs_note": "Ablesung und Abrechnung 300,00 EUR, im Beleg über sonstige Betriebskosten enthalten.",
-      "operating_costs_note": "Wartung 600,00 EUR; Ablesung und Abrechnung 300,00 EUR; insgesamt 900,00 EUR.",
+      "fuel_mix": "80 % Biomasse, 20 % Erdgas laut Jahresinformation 2025 der Stadtwerke Musterstadt.",
+      "emissions": "12.000 t CO2-Äquivalente/Jahr für die Versorgungsanlage, Lieferanteninformation 2025.",
+      "metering_costs_note": "Ablesung und Abrechnung 300,00 €, im Beleg über sonstige Betriebskosten enthalten.",
+      "operating_costs_note": "Wartung 600,00 €; Ablesung und Abrechnung 300,00 €; insgesamt 900,00 €.",
       "remote_meters": "yes",
       "monthly_information": "Monatliche Bereitstellung während der Heizperiode durch die Stadtwerke Musterstadt; Kontakt über Hausverwaltung Musterstadt, +43 316 555 100.",
       "climate_current_ppm": 0,
@@ -351,7 +351,8 @@
     "inspection_period": "Nach Terminvereinbarung, Montag bis Freitag 9–12 Uhr",
     "inspection_contact": "vera.verwalter@musterstadt.example",
     "regime": "weg",
-    "heizkg_applies": true
+    "heizkg_applies": true,
+    "show_vat": true
   },
   "party_changes": [
     {

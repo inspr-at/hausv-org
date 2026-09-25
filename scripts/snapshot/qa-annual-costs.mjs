@@ -56,9 +56,11 @@ try {
 
   const runDetails = run.locator('.annual-run-details');
   const unitRows = page.locator('.annual-unit-row');
-  assert.equal(await unitRows.first().locator('th').innerText(), 'Top 1');
+  assert.equal(await unitRows.first().locator('th').innerText(), 'Top\u00a01');
   assert.deepEqual(await unitRows.first().locator('.annual-money').allTextContents(), ['871,69 €', '600,00 €', 'Nachzahlung 271,69 €']);
-  assert.equal(await unitRows.nth(2).locator('.annual-party').count(), 2, 'WEG fixture covers an owner change without tenant statements');
+  assert.equal(await page.locator('.annual-unit-group[aria-label="Top 3"] .annual-unit-row').count(), 2, 'Owner change has one row per party');
+  assert.match(await run.locator('.subhead').first().innerText(), /Vera Verwalter/);
+  assert(!await run.locator('.subhead').first().innerText().then(text => text.includes('@')));
   const originalRows = await unitRows.evaluateAll(rows => rows.map(row => ({
     text: row.textContent, links: [...row.querySelectorAll('a')].map(a => a.getAttribute('href')),
   })));
@@ -85,45 +87,26 @@ try {
     assert.equal(await runDetails.locator('code').isVisible(), false, 'Keyboard closes run details');
     const alignment = await unitRows.evaluateAll((rows, width) => {
       const issues = [];
-      const textCenter = node => {
-        // A Range includes hidden lines beyond the two-line party clamp.
-        // Compare the visible label box with the visible amount text instead.
-        if (getComputedStyle(node).webkitLineClamp !== 'none') {
-          const rect = node.getBoundingClientRect();
-          return rect.top + rect.height / 2;
-        }
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        const rect = range.getBoundingClientRect();
-        return rect.top + rect.height / 2;
-      };
       for (const row of rows) {
-        const names = [...row.querySelectorAll('.annual-party')];
-        const documents = [...row.querySelectorAll('.annual-pdf')];
-        if (names.length !== documents.length) issues.push('Party/document count differs');
-        names.forEach((name, i) => {
-          if (Math.abs(name.getBoundingClientRect().top - documents[i].getBoundingClientRect().top) > 1) issues.push('Party/document rows differ');
-          if (documents[i].querySelector('a').getBoundingClientRect().height < 44) issues.push('PDF touch target shrunk');
-        });
-        const toggle = row.querySelector('.annual-details-toggle').getBoundingClientRect();
-        if (toggle.height < 44 || toggle.width < 44) issues.push('Details touch target shrunk');
-        if (width === 1440 && names.length === 1) {
-          const height = row.getBoundingClientRect().height;
-          if (height < 54 || height > 60) issues.push(`Collapsed unit row is ${height}px; expected about 56px`);
-          if (Math.abs(toggle.top - documents[0].getBoundingClientRect().top) > 1) issues.push('Details not inline with PDF');
+        if (row.querySelectorAll('.annual-party').length !== 1) issues.push('Expected one party per row');
+        if (row.querySelectorAll('.annual-money').length !== 3) issues.push('Party amounts missing');
+        for (const link of row.querySelectorAll('.annual-pdf a')) {
+          if (link.getBoundingClientRect().height < 44) issues.push('PDF touch target shrunk');
         }
-        if (row.nextElementSibling.getBoundingClientRect().height !== 0) issues.push('Collapsed costs leave a separate row');
-        if (row.querySelectorAll('.annual-money').length !== 3) issues.push('Unit totals duplicated');
-        if (width > 1050 && names.length) {
-          const center = textCenter(names[0].querySelector('.annual-party-name'));
-          for (const value of row.querySelectorAll('.annual-unit-value')) {
-            if (Math.abs(textCenter(value) - center) > 1) issues.push('Unit/name/amount text misaligned');
-          }
+        const toggle = row.querySelector('.annual-details-toggle');
+        if (toggle) {
+          const box = toggle.getBoundingClientRect();
+          if (box.height < 44 || box.width < 44) issues.push('Details touch target shrunk');
+          if (getComputedStyle(toggle).whiteSpace !== 'nowrap') issues.push('Details can split mid-word');
         }
-        if (width <= 1050) for (const cell of row.querySelectorAll('td')) {
-          if (getComputedStyle(cell, '::before').content !== JSON.stringify(cell.dataset.label)) issues.push('Unit field label missing');
+        if (row.parentElement.querySelector('.annual-cost-row').getBoundingClientRect().height !== 0) issues.push('Collapsed costs leave a separate row');
+        if (width <= 1050) for (const cell of row.querySelectorAll('td[data-label]')) {
+          if (getComputedStyle(cell, '::before').content !== JSON.stringify(cell.dataset.label)) issues.push('Party field label missing');
         }
-        if (row.scrollWidth > row.clientWidth + 1) issues.push('Unit row overflows');
+        if (row.scrollWidth > row.clientWidth + 1) issues.push('Party row overflows');
+        for (const cell of row.querySelectorAll('td')) {
+          if (cell.scrollWidth > cell.clientWidth + 1) issues.push(`Party cell overflows: ${cell.dataset.label} ${cell.scrollWidth}/${cell.clientWidth}`);
+        }
       }
       return issues;
     }, width);

@@ -30,7 +30,7 @@ func heatingInformation(run store.AnnualStatementRun, unitID, costKey string) []
 		decimal := func(value int64) string {
 			return strings.ReplaceAll(strings.TrimRight(strings.TrimRight(new(big.Rat).SetFrac(big.NewInt(value), big.NewInt(1_000_000)).FloatString(6), "0"), "."), ".", ",")
 		}
-		lines = append(lines, p.Supplier+" · "+p.Carrier+": "+decimal(p.QuantityMicros)+" "+p.Unit+"; Preis: "+decimal(p.PriceMicros)+" EUR/"+p.Unit, "Preisstand: "+p.PriceNote)
+		lines = append(lines, "Lieferant: "+p.Supplier+" · "+p.Carrier, "Energiebezug: "+measurement(p.QuantityMicros, p.Unit), "Preis: "+decimal(p.PriceMicros)+" €/"+p.Unit, "Preisstand: "+p.PriceNote)
 	}
 	if n == 0 {
 		lines = append(lines, "Energiebezugsmenge und tatsächliche Preise: Noch nicht hinterlegt")
@@ -39,6 +39,7 @@ func heatingInformation(run store.AnnualStatementRun, unitID, costKey string) []
 	if info.DistrictHeatingOver20MW {
 		lines = append(lines, "Fernwärmeanlage über 20 MW · Brennstoffmix: "+fallback(info.FuelMix), "Jährliche Treibhausgasemissionen: "+fallback(info.Emissions))
 	}
+	lines = append(lines, "Verbrauchsvergleich")
 	lines = append(lines, heatingComparisons(run, unitID, costKey, info)...)
 	lines = append(lines,
 		"Verbraucherinformation (§ 18 Abs. 1 Z 13–15 HeizKG)",
@@ -71,9 +72,9 @@ func heatingComparisons(run store.AnnualStatementRun, unitID, key string, info *
 		}
 	}
 	if !found {
-		return []string{"Verbrauchsvergleich: Verbrauch der Einheit fehlt."}
+		return []string{"Verbrauch der Einheit fehlt."}
 	}
-	lines := []string{"Verbrauchsvergleich · aktuelle Periode: " + measurement(current.ValueMicros, current.MeasurementUnit)}
+	lines := []string{"Aktuelle Periode: " + measurement(current.ValueMicros, current.MeasurementUnit)}
 	previous := run.Input.PreviousHeating
 	comparable := false
 	if previous != nil {
@@ -90,7 +91,7 @@ func heatingComparisons(run store.AnnualStatementRun, unitID, key string, info *
 				if info.ClimateCurrentPPM > 0 && info.ClimatePreviousPPM > 0 && strings.TrimSpace(info.ClimateSource) != "" {
 					corrected := func(value int64, factor int) string {
 						r := new(big.Rat).SetFrac(new(big.Int).Mul(big.NewInt(value), big.NewInt(int64(factor))), big.NewInt(1_000_000_000_000))
-						return strings.ReplaceAll(r.FloatString(2), ".", ",") + " " + current.MeasurementUnit
+						return measurementRatio(r, current.MeasurementUnit)
 					}
 					lines = append(lines, "Klimabereinigt: aktuell "+corrected(current.ValueMicros, info.ClimateCurrentPPM)+"; Vorperiode "+corrected(value.ValueMicros, info.ClimatePreviousPPM), "Klimakorrektur – Quelle/Methode: "+info.ClimateSource)
 				} else {
@@ -134,6 +135,6 @@ func heatingComparisons(run store.AnnualStatementRun, unitID, key string, info *
 		return append(lines, "Hausvergleich nicht verfügbar: Vergleichswerte derselben Nutzerkategorie fehlen.")
 	}
 	average := new(big.Rat).SetFrac(total, big.NewInt(int64(count)*1_000_000))
-	lines = append(lines, fmt.Sprintf("Durchschnittsabnehmer derselben Nutzerkategorie (%s): %s %s je Einheit; Vergleichsgruppe: %d versorgte Einheiten dieser Liegenschaft einschließlich Ihrer Einheit.", view.UnitTypeLabel(category), strings.ReplaceAll(average.FloatString(2), ".", ","), current.MeasurementUnit, count))
+	lines = append(lines, fmt.Sprintf("Durchschnittsabnehmer derselben Nutzerkategorie (%s): %s je Einheit; Vergleichsgruppe: %d versorgte Einheiten dieser Liegenschaft einschließlich Ihrer Einheit.", view.UnitTypeLabel(category), measurementRatio(average, current.MeasurementUnit), count))
 	return append(lines, "Vergleichsmethode: arithmetischer Mittelwert der gemessenen Periodenverbräuche derselben Nutzerkategorie. Wohnungsgröße, Nutzung und Lage können den Verbrauch beeinflussen.")
 }

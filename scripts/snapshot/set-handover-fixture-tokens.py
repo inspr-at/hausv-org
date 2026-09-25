@@ -10,10 +10,12 @@ are reached with docker exec; CI uses the pinned client image on host network.
 
 from __future__ import annotations
 
+import atexit
 import base64
 import hashlib
 import json
 import os
+import signal
 import subprocess
 import sys
 from urllib.parse import unquote, urlparse
@@ -65,10 +67,31 @@ def run_psql(sql: str) -> str:
             raise SystemExit(2)
         parsed = urlparse(dsn)
         password = unquote(parsed.password or "")
+        client_name = f"hausv-pg-psql-{os.getpid()}"
+
+        def stop_client() -> None:
+            subprocess.run(
+                ["docker", "rm", "-f", client_name],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
+        def stop_on_signal(signum: int, _frame: object) -> None:
+            stop_client()
+            raise SystemExit(128 + signum)
+
+        atexit.register(stop_client)
+        signal.signal(signal.SIGINT, stop_on_signal)
+        signal.signal(signal.SIGTERM, stop_on_signal)
         command = [
             "docker",
             "run",
             "--rm",
+            "--name",
+            client_name,
+            "--tmpfs",
+            "/var/lib/postgresql/data:rw,noexec,nosuid,size=64m",
             "--network",
             "host",
             "--env",

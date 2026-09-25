@@ -1,6 +1,9 @@
 package web
 
 templ LegalHelp() {
+	<style>
+		.help-legal-rates{width:100%;border-collapse:collapse;margin-top:var(--space-4);font-size:14px}.help-legal-rates th,.help-legal-rates td{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.help-legal-rates th{font-weight:650}.help-legal-rates th:first-child{width:36%}
+	</style>
 	<section class="panel help-card" id="rechtliche-grundlagen" aria-labelledby="help-legal-title">
 		<h2 id="help-legal-title">Rechtliche Grundlagen und Entscheidungen</h2>
 		<p>Hier erläutern wir die Annahmen hinter Wertsicherung und Jahresabrechnung. Stand und Quellenabruf: 24.09.2026. <strong>Keine Rechtsberatung.</strong> Die konkrete Vertragsklausel und besondere Vereinbarungen müssen gesondert geprüft werden.</p>
@@ -19,6 +22,7 @@ templ LegalHelp() {
 			@DisclosureChevron()
 		</summary>
 			<p>§ 16 Abs. 9 MRG verlangt ein Schreiben nach Wirksamwerden und Zugang spätestens 14 Tage vor dem Zinstermin. Ein verfrühtes Begehren entfaltet keine Wirkung; ein späterer Zahlungstermin im Brief oder eine Mahnung behebt das nicht. Ein neues, rechtzeitiges Begehren ist nötig. Eine erstmalige rückwirkende Nachforderung ist in dieser Fallgruppe unzulässig.</p>
+			<p>Für einen Zinstermin am 05.05.2026 muss das Schreiben dem Mieter spätestens am 21.04.2026 zugehen. Entscheidend ist der Zugang, nicht das Absenden. Postlaufzeit einplanen.</p>
 			<p>OGH 5 Ob 127/25z und 1 Ob 2/26i bestätigen die Folgen verfrühter Begehren, entscheiden aber nicht die Geschäftsraum-Lücke seit dem 3. MILG. Zu frühes Vorgehen kann Erhöhungen und Rückzahlungen betreffen; vorsichtiges Warten kostet möglicherweise frühere Erhöhungsmonate. Deshalb wählt HAUSV den WKO-Standard.</p>
 		</details>
 		<details><summary>Wie ändere ich die Annahme?
@@ -47,6 +51,30 @@ templ LegalHelp() {
 		<ul class="help-list" aria-label="Quellen zur WEG-Abrechnung">
 			<li>Quellen · abgerufen 24.09.2026: <a href="https://www.ris.bka.gv.at/eli/bgbl/i/2002/70/P34/NOR40240621">RIS · § 34 WEG</a> · <a href="https://www.ris.bka.gv.at/eli/bgbl/1992/827/P2/NOR40234261">RIS · § 2 HeizKG</a> · <a href="https://www.jusline.at/gesetz/heizkg/paragraf/23">§ 23 HeizKG</a> · <a href="https://ris.bka.gv.at/Dokument.wxe?Abfrage=Justiz&amp;Dokumentnummer=JJT_20250923_OGH0002_0050OB00062_25S0000_000&amp;ShowPrintPreview=True">OGH 5 Ob 62/25s · § 24b HeizKG</a></li>
 			<li><a href="https://ooe.arbeiterkammer.at/beratung/wohnen/wohnungseigentum/Hausverwaltung-_Vermoegen-_Ruecklagen-_Abrechnung_.html">AK Oberösterreich · Hausverwaltung und Abrechnung</a> · <a href="https://noe.arbeiterkammer.at/beratung/konsumentenschutz/wohnen/eigentum/Betriebskosten-Eigentum.html">AK Niederösterreich · Betriebskosten im Eigentum</a></li>
+		</ul>
+	</section>
+	<section class="panel help-card" id="recht-mindestruecklage" aria-labelledby="help-reserve-title">
+		<h2 id="help-reserve-title">Mindest-Rücklage (§ 31 WEG)</h2>
+		<p>Stand und Quellenabruf: 25.09.2026. <strong>Keine Rechtsberatung.</strong> Der Mindestbetrag gilt je m² Nutzfläche aller Wohnungseigentumsobjekte und Monat.</p>
+		<table class="help-legal-rates">
+			<thead><tr><th scope="col">Zeitraum</th><th scope="col">Mindestbetrag</th></tr></thead>
+			<tbody>
+				<tr><th scope="row">Vor Juli 2022</th><td>Kein gesetzlicher Euro-Mindestbetrag; angemessene Rücklage</td></tr>
+				<tr><th scope="row">07/2022–12/2023</th><td>0,90 €</td></tr>
+				<tr><th scope="row">01/2024–12/2025</th><td>1,06 €</td></tr>
+				<tr><th scope="row">01/2026–12/2027</th><td>1,12 €</td></tr>
+				<tr><th scope="row">Ab 01/2028</th><td>Noch nicht verlautbart; VPI 2020 Juni 2027</td></tr>
+			</tbody>
+		</table>
+		<details><summary>Wie wird der Betrag angepasst?
+			@DisclosureChevron()
+		</summary>
+			<p>Ab 1.1.2024 erfolgt die Anpassung alle zwei Jahre: ursprüngliche 0,90 € × VPI 2020 Juni des Vorjahres / 102,6 (Juni 2021). Für 2024: 0,90 × 120,4 / 102,6 = 1,0561 → 1,06 €; für 2026: 0,90 × 128,1 / 102,6 = 1,1237 → 1,12 €. Auf ganze Cent runden, einen halben Cent abwärts. Die WKO verlautbart den Betrag bis Ende November des Vorjahres.</p>
+			<p>Ausnahmen betreffen etwa eine außergewöhnlich hohe vorhandene Rücklage, einen Neubau oder eine umfassende Sanierung in jüngerer Zeit sowie bestimmte Reihen- und Einzelhausanlagen. Eine angemessene Rücklage kann mehr verlangen. HAUSV prüft den Mindestbetrag monatsgenau als Hinweis und entscheidet keine Ausnahme. Die Demo-Abrechnung 2025 verwendet 1,06 €; frühere Läufe bleiben unverändert.</p>
+		</details>
+		<ul class="help-list" aria-label="Quellen zur Mindest-Rücklage">
+			<li><a href="https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Bundesnormen&amp;Dokumentnummer=NOR40240619">RIS · § 31 WEG</a> · <a href="https://www.ris.bka.gv.at/Dokumente/Bundesnormen/NOR40240626/NOR40240626.html">§ 58g WEG</a> · <a href="https://www.ris.bka.gv.at/eli/bgbl/I/2021/222">WEG-Novelle 2022</a></li>
+			<li><a href="https://www.wko.at/oe/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-weg-2024-1.pdf">WKO · Verlautbarung 2024</a> · <a href="https://www.wko.at/information-consulting/immobilien-vermoegenstreuhaender/mindestruecklage-wohnungseigentumsgesetz">WKO · Verlautbarung 2026</a> · <a href="https://www.ovi.at/aktuelles/detailansicht/anhebung-der-mindestruecklage-1-1-2026">ÖVI · Anhebung 2026</a> · <a href="https://ooe.arbeiterkammer.at/beratung/wohnen/wohnungseigentum/Hausverwaltung-_Vermoegen-_Ruecklagen-_Abrechnung_.html">AK Oberösterreich · Rücklage</a></li>
 		</ul>
 	</section>
 	<section class="panel help-card" id="recht-mieweg" aria-labelledby="help-mieweg-title">

@@ -170,6 +170,58 @@ func TestTenantStatementContractAndFailClosed(t *testing.T) {
 	}
 }
 
+func TestTenantStatementNamesMissingLeaseInputs(t *testing.T) {
+	for _, kind := range []string{ComponentBKAkonto, ComponentHeizAkonto} {
+		run, management, leases := tenantStatementFixture()
+		leases[0].Parties[0].Name = "Clara Novak"
+		var components []RentComponent
+		for _, c := range leases[0].Components {
+			if c.Kind != kind {
+				components = append(components, c)
+			}
+		}
+		leases[0].Components = components
+		_, err := DeriveTenantStatement(run, management, leases, "2026-06-20", "")
+		label := "Betriebskosten-Akonto"
+		if kind == ComponentHeizAkonto {
+			label = "Heizkosten-Akonto"
+		}
+		want := "Im Mietvertrag von Clara Novak fehlt das " + label + ". Auch 0,00 € ist einzutragen."
+		if err == nil || err.Error() != want {
+			t.Fatalf("got %v, want %s", err, want)
+		}
+	}
+	run, management, leases := tenantStatementFixture()
+	leases[0].MRGScope = MRGTeil
+	_, err := DeriveTenantStatement(run, management, leases, "2026-06-20", "2026-08-05")
+	if err == nil || err.Error() != "Im Mietvertrag von Erste Mietpartei fehlt der vereinbarte Kostenkatalog." {
+		t.Fatal(err)
+	}
+}
+
+func TestTenantStatementOrdinaryCostDefaultsAndExplicitExclusions(t *testing.T) {
+	run, management, leases := tenantStatementFixture()
+	management.Passable["abfall"] = false
+	run.Result.Units[0].Costs[0].CostTypeKey = "abfall"
+	s, err := DeriveTenantStatement(run, management, leases, "2026-06-20", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.SourcePassedCents != 12001 {
+		t.Fatal("explicitly unchecked ordinary cost was passed on", s.SourcePassedCents)
+	}
+	for _, key := range []string{"abfall", "reinigung", "wasser", "abwasser", "rauchfangkehrer", "schaedlingsbekaempfung", "beleuchtung", "hausbetreuung"} {
+		if !DefaultTenantPassable(key) {
+			t.Error("ordinary cost not selected", key)
+		}
+	}
+	for _, key := range []string{"versicherung", "lift", "verwaltung", "gemeinschaftsanlagen", "ruecklage"} {
+		if DefaultTenantPassable(key) {
+			t.Error("cost requires conscious choice", key)
+		}
+	}
+}
+
 func TestTenantStatementRepositoryIsolationAndImmutableSnapshots(t *testing.T) {
 	database, lanes := testLanes(t)
 	tenant := testTenantRef("demo")

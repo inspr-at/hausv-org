@@ -98,6 +98,42 @@ func TestValorisationExceptions(t *testing.T) {
 		t.Fatalf("early %+v", early)
 	}
 }
+
+func TestValorisationOpenExceptions(t *testing.T) {
+	run := ValorisationRun{Items: []ValorisationItem{
+		{Exceptions: []string{"clause_unreviewed", "one_way_clause_risk"}},
+		{Exceptions: []string{"no_clause"}, Excluded: true},
+		{Exceptions: []string{"letter_too_early"}, WirksamOn: "2026-04-01"},
+	}}
+	if got := run.OpenExceptionCount(); got != 1 {
+		t.Fatalf("date locks must not be counted as reviewable exceptions: %d", got)
+	}
+	if got := run.ApprovalNotBefore(mustDate("2026-03-31")); got != "2026-04-01" {
+		t.Fatalf("separate date lock: %s", got)
+	}
+	if got := run.ApprovalNotBefore(mustDate("2026-04-01")); got != "" {
+		t.Fatalf("elapsed date lock: %s", got)
+	}
+	if got := run.Items[0].ApprovalException(); got != "Die Klausel muss geprüft werden." {
+		t.Fatal(got)
+	}
+	run.Items[0].Outcome, run.Items[0].Group = "unchanged", "unchanged"
+	if run.OpenExceptionCount() != 0 {
+		t.Fatal("unchanged items skipped by approval must not block the UI")
+	}
+}
+
+func TestValorisationNamesMissingMonthlyIndex(t *testing.T) {
+	snapshot, err := indexation.LoadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot.Data = indexation.Dataset{}
+	run, err := PreviewValorisation(ValorisationInput{EffectiveOn: "2026-04-01", Leases: []Lease{valorisationFixture()}}, snapshot, mustDate("2026-04-01"))
+	if err != nil || run.Items[0].Reason != "VPI 2020 · September 2024: Indexwert fehlt." {
+		t.Fatalf("missing base observation: %+v, %v", run.Items, err)
+	}
+}
 func containsValorisation(items []string, s string) bool {
 	for _, item := range items {
 		if item == s {
@@ -176,6 +212,10 @@ func TestValorisationLifecycle(t *testing.T) {
 	}
 	if len(run.InputsSHA256) != 64 || len(run.IndexSnapshot) == 0 {
 		t.Fatal("missing snapshot")
+	}
+	loaded, found, err := repo.Get(run.ID)
+	if err != nil || !found || run.IndexRetrievedAt.IsZero() || !loaded.IndexRetrievedAt.Equal(run.IndexRetrievedAt) {
+		t.Fatalf("snapshot retrieval date not persisted: %s / %s, %v", run.IndexRetrievedAt, loaded.IndexRetrievedAt, err)
 	}
 	render := func(run ValorisationRun, item ValorisationItem, at time.Time) ([]byte, error) {
 		if run.Status != "approved" {

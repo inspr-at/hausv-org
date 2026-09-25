@@ -291,7 +291,9 @@ Klausel- und Versandfreigaben sind keine Leistung dieser Rechenbibliothek.
 
 Der VPI-2020-Bestand enthält Jahresmittel ab 2021. Fehlt für einen älteren
 Anker ein benötigtes Vorjahresmittel, verweigert `CapCurve` die Berechnung;
-es wird kein Mittel einer anderen Basis stillschweigend eingesetzt. BK- und
+die Ausnahme nennt Reihe und fehlendes Jahresmittel. Fehlende Monatswerte
+oder Veröffentlichungsnachweise nennen ebenfalls den konkreten Monat.
+Es wird kein Mittel einer anderen Basis stillschweigend eingesetzt. BK- und
 Heizungsakonti gehören nicht in `AmountCents`.
 
 ## Persistierte Läufe (HAUSV-778)
@@ -326,6 +328,12 @@ unveränderliche PDF-Dateien mit SHA-256, ergänzt den HMZ-Bestandteil ab
 fort. Die exakte Vertragskurve und der ursprüngliche Deckelanker bleiben im
 vorherigen Lauf erhalten; der niedrigere vorgeschriebene Betrag setzt sie nicht
 zurück. Ausnahmen müssen bearbeitet oder begründet ausgeschlossen sein.
+Solange Ausnahmen offen sind, ist „Freigeben und archivieren“ deaktiviert;
+der Hinweis nennt die Anzahl betroffener Verträge. Ein trotzdem gesendeter
+Freigabe-POST führt mit deutscher Fehlermeldung zum Lauf in der Anwendung
+zurück. Eine reine Datumssperre zeigt separat „Freigabe ab … möglich“ und
+entfällt, sobald die Wirksamkeit erreicht ist; sie zählt nicht als zu prüfende
+Ausnahme. Der POST prüft das Datum weiterhin mit `ValorisationLetterTiming`.
 
 Organisationsadministratoren konfigurieren unter Verwaltung → Einstellungen
 `wirksamwerden_mode` (Standard `cautious`), die Behandlung ungeprüfter Klauseln,
@@ -351,6 +359,24 @@ Beide Brieftypen verwenden `pdf.Letterhead` für Absender, Fensteranschrift und
 Infoblock. Überlange Angaben laufen in einen gesonderten Abschnitt weiter.
 Deutsche Dezimalzahlen und Geldbeträge sind reine Darstellung; exakte Brüche
 bleiben in den gespeicherten Berechnungsschritten und Kurven erhalten.
+Entwürfe und archivierte Anpassungsschreiben werden mit `Content-Disposition:
+inline` geöffnet. Lauf-ID, Referenz und Eingabe-Prüfsumme stehen ausschließlich
+im Lauf beziehungsweise in den Archivmetadaten, nicht im Mieterbrief.
+Monate werden im Brief ausgeschrieben, berechnete Prozentwerte auf zwei
+Nachkommastellen dargestellt. Anrede, kurze Erläuterung der Anpassung,
+Zugangsfrist, Rückfragekontakt und Grußformel ergänzen die Berechnung.
+Ohne gespeicherte Anrede wird die Vertragspartei mit „Guten Tag Vorname Nachname,“
+angesprochen (gemeinsamer HAUSV-616-Textbausteinhelfer). Der Brief nennt den
+eingefrorenen Abrufstand der Indexdaten als Datum; die genaue Datenversion bleibt
+in den Prüfdaten des Laufs. Der Abrufstand wird im vorhandenen Snapshot-JSON
+gespeichert. Bei älteren Läufen wird das Datum nur für den exakt übereinstimmenden
+eingebetteten Datenbestand ergänzt; andernfalls bleibt die Quellenangabe ohne
+unbelegtes Datum. Archivierte Briefe werden nicht nachträglich verändert.
+Liegt der erste Zinstermin einer Erhöhung wegen § 16 Abs 9 MRG nach der Wirksamkeit,
+erklärt „Termine und Hinweise“, dass erst ab diesem Zinstermin der höhere Betrag
+zu bezahlen ist und für davorliegende Monate keine Nachzahlung verlangt wird.
+Die Frist benennt in Lauf, Detailansicht, Brief und Hilfe ausdrücklich den
+Zugang beim Mieter, nicht das Absenden; die Verwaltung plant die Postlaufzeit ein.
 
 Hausroute: `/app/settings/valorisation`; Organisationsroute:
 `/app/verwaltung/wertsicherung`. Mutationen liegen unter
@@ -358,13 +384,19 @@ Hausroute: `/app/settings/valorisation`; Organisationsroute:
 und `/items/{itemID}`. Das PDF liegt unter `/items/{itemID}/pdf`.
 Mietvertragsseiten zeigen die zugehörige Laufhistorie. Der Demoreset erzeugt
 für Janusbergweg 123 einen April-2026-Entwurf mit zwölf Verträgen, E1 1.040,28 €,
-E2 1.017,35 €, sechs bereiten Anpassungen (einschließlich Gewerbe außerhalb
-MieWeG), zwei unveränderten Verträgen und genau vier Ausnahmen: keine Klausel,
-ungeprüfte Klausel, einseitige Verbraucherklausel und nicht abbildbare Staffel.
+E2 1.017,35 €, sieben bereiten Anpassungen (einschließlich Gewerbe außerhalb
+MieWeG und der strukturierten Staffel), zwei unveränderten Verträgen und genau
+drei Ausnahmen: keine Klausel, ungeprüfte Klausel und einseitige Verbraucherklausel.
 Top 8 besitzt den geprüften Jänner-Referenzmonat und einen importierten
 Kurvenstand von 2025; Top 11 ebenfalls einen dokumentierten Deckelanker von
 2025. Eine Garage ohne HMZ bleibt mit ausdrücklichem Grund unverändert, statt
 fälschlich einen fehlenden Index zu melden.
+
+Im Zinshaus Musterstraße 12 verwendet Top 8 den dokumentierten Staffelstand
+vom April 2024 mit 910,00 € als Deckelanker. Die festen Schritte im April 2026
+und 2027 benötigen keinen monatlichen Index und keinen Veröffentlichungsnachweis;
+die gesetzliche Vergleichsrechnung verwendet weiterhin die Jahresmittel.
+Für April 2026 sind vertraglich und nach Vergleich 928,20 € berechnet.
 
 Die Zeilen und Briefe nennen die eingefrorene Einheitenbezeichnung und den
 Hauptmieter. Freigegebene Schreiben sind direkt aus der eingeklappten Zeile
@@ -372,10 +404,12 @@ erreichbar. Die erste Indextabelle zeigt Basis, Auslöser und benötigte
 Jahresmittel; die vollständige geprüfte Monatsreihe liegt unter „Alle Indexwerte
 anzeigen“. Manuelle Entscheidungen und Storno verlangen weiterhin eine
 Begründung, ihre Formulare werden erst nach Öffnen des jeweiligen Bereichs
-sichtbar. Die technische Prüfsumme liegt in einem eigenen Detailbereich.
+sichtbar. Ein Freigabehinweis zählt alle offenen Ausnahmen und erscheint einmal
+direkt bei der Aktion. Im Fuß steht der Anzeigename der erstellenden Person;
+eine vorhandene technische Prüfsumme liegt im geschlossenen Bereich „Prüfdaten“.
 
 Browserprüfung gegen ein frisches Demo-Rig (verändert ausschließlich lokale
 Demodaten): `node scripts/snapshot/qa-valorisation.mjs http://localhost:8309
 /absoluter/artefaktpfad`. Sie prüft Vorschau, Beträge, Freigabe, PDF, Rollenabsage
-und 390/1440 Pixel. Die PDF-Inhaltstests benötigen `pdftotext`; mit
+und 390/1440 Pixel. Browseroracle und PDF-Inhaltstests benötigen `pdftotext`; mit
 `HAUSV_VALORISATION_PDF_DIR` werden die fünf Testbriefe zusätzlich exportiert.

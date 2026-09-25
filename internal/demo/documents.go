@@ -48,7 +48,7 @@ func loadDocumentFixture(dir, documentDir string, houses []seedHouse) ([]seedDoc
 	seen := map[string]bool{}
 	for _, item := range documents {
 		key := item.House + "/" + item.ID
-		if !knownHouses[item.House] || item.House != textutil.Slug(item.House) || seen[key] || !strings.HasPrefix(item.ID, "demo-document-") || item.ID != textutil.Slug(item.ID) || item.Filename != item.ID+".pdf" || strings.TrimSpace(item.Title) == "" || item.UploadedAt.IsZero() || store.NormalizeDocumentCategory(item.Category) != item.Category || store.NormalizeDocumentVisibility(item.Visibility) == "" {
+		if !knownHouses[item.House] || item.House != textutil.Slug(item.House) || seen[key] || !strings.HasPrefix(item.ID, "demo-document-") || item.ID != textutil.Slug(item.ID) || (item.Filename != item.ID+".pdf" && item.Filename != strings.TrimPrefix(item.ID, "demo-document-")+".pdf") || strings.TrimSpace(item.Title) == "" || item.UploadedAt.IsZero() || store.NormalizeDocumentCategory(item.Category) != item.Category || store.NormalizeDocumentVisibility(item.Visibility) == "" {
 			return nil, fmt.Errorf("invalid demo document %s", key)
 		}
 		if len(item.PDF) > int(store.MaxDocumentBytes) || !bytes.HasPrefix(item.PDF, []byte("%PDF-")) || !bytes.HasSuffix(bytes.TrimSpace(item.PDF), []byte("%%EOF")) || fmt.Sprintf("%x", sha256.Sum256(item.PDF)) != item.SHA256 {
@@ -81,13 +81,13 @@ func seedDocuments(ctx context.Context, database *sql.DB, documents []seedDocume
 		}
 		// Fixed fixture-owned IDs and paths restore missing files on reseed,
 		// without adding another upload/version or touching user documents.
-		if err := os.WriteFile(filepath.Join(dir, item.Filename), item.PDF, 0600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, item.ID+".pdf"), item.PDF, 0600); err != nil {
 			return err
 		}
 		record := store.NormalizeDocumentRecord(store.DocumentRecord{
 			ID: item.ID, SeriesID: item.ID, Version: 1, Current: true,
 			TenantSlug: identity.Slug, Title: item.Title, Category: item.Category,
-			Visibility: item.Visibility, Filename: item.Filename, StoredFilename: item.Filename,
+			Visibility: item.Visibility, Filename: item.Filename, StoredFilename: item.ID + ".pdf",
 			Size: int64(len(item.PDF)), ContentType: "application/pdf",
 			UploadedBy: "verwaltung@musterstadt.example", UploadedAt: item.UploadedAt,
 		})

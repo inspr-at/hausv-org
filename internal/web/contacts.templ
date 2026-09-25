@@ -131,7 +131,7 @@ templ ContactsBody(data ContactsPageData) {
 templ UnitOccupancies(items []UnitOccupancy) {
 	<section class="panel contact-section unit-occupancies" aria-labelledby="unit-occupancies-title"><header class="section-head"><div><p class="kicker">Einheiten</p><h2 id="unit-occupancies-title">Bewohner je Einheit</h2><p>Zuordnung laut Einheitenstammdaten.</p></div></header><div class="occupancy-scroll" role="region" aria-label="Einheiten und Bewohner" tabindex="0"><div class="occupancy-table" role="table" aria-label="Bewohner je Einheit"><div class="occupancy-row occupancy-head" role="row"><strong role="columnheader">Einheit</strong><strong role="columnheader">Eigentümer</strong><strong role="columnheader">Mieter</strong></div>
 		for _, item := range items {
-			<div class="occupancy-row" role="row"><strong role="cell">{ item.UnitLabel }<small>{ item.UnitType }</small></strong><span role="cell" data-label="Eigentümer">{ occupancyPeopleText(item.Owners, "unbewohnt") }</span><span role="cell" data-label="Mieter">{ occupancyPeopleText(item.Renters, "frei") }</span></div>
+			<div class="occupancy-row" role="row"><strong role="cell">@UnitLabel(item.UnitLabel)<small>{ item.UnitType }</small></strong><span role="cell" data-label="Eigentümer">{ occupancyPeopleText(item.Owners, "unbewohnt") }</span><span role="cell" data-label="Mieter">{ occupancyPeopleText(item.Renters, "frei") }</span></div>
 		}
 	</div></div></section>
 }

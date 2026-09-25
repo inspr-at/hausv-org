@@ -1,0 +1,13 @@
+package web
+
+// HouseOpenForm switches to the destination house and returns to a validated
+// same-house path. Organisation pages use it instead of posting a form for a
+// house other than the session.
+templ HouseOpenForm(tenant, role, next, label string) {
+	<form method="post" action="/app/context" class="house-open">
+		<input type="hidden" name="tenant" value={ tenant }/>
+		<input type="hidden" name="role" value={ role }/>
+		<input type="hidden" name="next" value={ next }/>
+		<button class="button" type="submit">{ label }</button>
+	</form>
+}

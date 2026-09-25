@@ -63,7 +63,7 @@ func effectiveAIConfig(getenv func(string) string, settings store.OrgSettings) a
 		case "local":
 			label = "Lokal (OpenAI-kompatibel)"
 		default:
-			label = "Umgebung"
+			label = "Vorgabe des Servers"
 		}
 	}
 	host := ""
