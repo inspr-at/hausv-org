@@ -56,10 +56,7 @@ func buildAnnualStatement(home house) any {
 	}
 	legal.AgreedShares = map[string]map[string]int{"lift": lift}
 	for i, unit := range home.Units {
-		ppm := 1_000_000 / len(home.Units)
-		if i < 1_000_000%len(home.Units) {
-			ppm++
-		}
+		ppm := demoUnitSharePPM(i, len(home.Units))
 		area, persons, prepaid := 5500+(i%5)*500, 1+i%3, 60000
 		if unit.UnitType == "Stellplatz" {
 			area, persons, prepaid = 1200, 0, 20000

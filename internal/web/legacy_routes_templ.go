@@ -1517,9 +1517,9 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var95 string
-			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs("Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " W Einspeisung.")
+			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs("Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " kW Einspeisung.")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 253}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 254}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 			if templ_7745c5c3_Err != nil {
@@ -1532,7 +1532,7 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 			var templ_7745c5c3_Var96 string
 			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs("Stopp & Schutz")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 325}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 326}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 			if templ_7745c5c3_Err != nil {
@@ -1543,9 +1543,9 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var97 string
-			templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs("Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " W; Schaltpausen bleiben aktiv.")
+			templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs("Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " kW; Schaltpausen bleiben aktiv.")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 467}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 167, Col: 469}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 			if templ_7745c5c3_Err != nil {
@@ -1650,7 +1650,7 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</span></span></label> <label for=\"start_feed_in_w\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</span></span></label> <label for=\"start_feed_in_kw\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1663,14 +1663,14 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, " <span class=\"pk-unit\"><input id=\"start_feed_in_w\" type=\"text\" inputmode=\"numeric\" name=\"start_feed_in_w\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, " <span class=\"pk-unit\"><input id=\"start_feed_in_kw\" type=\"text\" inputmode=\"decimal\" name=\"start_feed_in_kw\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var106 string
 			templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Charging.StartFeedInValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 182, Col: 154}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 182, Col: 156}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var106)
 			if templ_7745c5c3_Err != nil {
@@ -1681,9 +1681,9 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var107 string
-			templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs("W")
+			templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs("kW")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 182, Col: 201}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 182, Col: 204}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
 			if templ_7745c5c3_Err != nil {
@@ -1754,7 +1754,7 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</span></span></label> <label for=\"stop_feed_in_w\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</span></span></label> <label for=\"stop_feed_in_kw\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1767,14 +1767,14 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, " <span class=\"pk-unit\"><input id=\"stop_feed_in_w\" type=\"text\" inputmode=\"numeric\" name=\"stop_feed_in_w\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, " <span class=\"pk-unit\"><input id=\"stop_feed_in_kw\" type=\"text\" inputmode=\"decimal\" name=\"stop_feed_in_kw\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var114 string
 			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.ResolveAttributeValue(data.Charging.StopFeedInValue)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 195, Col: 151}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 195, Col: 153}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var114)
 			if templ_7745c5c3_Err != nil {
@@ -1785,9 +1785,9 @@ func ParkingSettingsContent(data ParkingSettingsPageData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var115 string
-			templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs("W")
+			templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs("kW")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 195, Col: 198}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/legacy_routes.templ`, Line: 195, Col: 201}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
 			if templ_7745c5c3_Err != nil {

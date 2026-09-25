@@ -165,7 +165,7 @@ func (a *app) renderIssuesPage(w http.ResponseWriter, r *http.Request, ac authCt
 	}
 	filters := issueBoardFiltersFromQuery(r.URL.Query())
 	if ac.repositories.issues != nil {
-		allTenantIssues := ac.repositories.issues.List()
+		allTenantIssues := ac.repositories.issues.ListVisible(a.issueAccessForActor(ac.tenantRef, email, role))
 		totalIssueCount = len(allTenantIssues)
 		for _, item := range allTenantIssues {
 			if normalizeIssueStatus(item.Status) == issueStatusNew {
@@ -366,6 +366,41 @@ func (a *app) createIssue(w http.ResponseWriter, r *http.Request, ac authCtx) {
 		http.Redirect(w, r, "/app/anliegen?issue=invalid", http.StatusSeeOther)
 		return
 	}
+	if item.LocationType == issueLocationUnit && ac.role == roleBeirat {
+		// Resolve from trusted assignments, never from a submitted foreign unit.
+		memberships := ac.repositories.units.UnitsForEmail(email)
+		requested := normalizeUnitID(r.FormValue("unit_id"))
+		for _, membership := range memberships {
+			if requested != "" && normalizeUnitID(membership.Unit.ID) != requested {
+				continue
+			}
+			if requested == "" && membership.Unit.UnitType == store.UnitTypeParking {
+				continue
+			}
+			if item.UnitID == "" {
+				item.UnitID = membership.Unit.ID
+			}
+			if requested != "" || store.IssueLocationMatchesUnit(item.LocationDetail, membership.Unit) {
+				item.UnitID = membership.Unit.ID
+				break
+			}
+		}
+		for _, unit := range ac.repositories.units.List() {
+			if store.IssueLocationMatchesUnit(item.LocationDetail, unit) {
+				item.UnitID = ""
+				for _, membership := range memberships {
+					if membership.Unit.ID == unit.ID && (requested == "" || requested == normalizeUnitID(unit.ID)) {
+						item.UnitID = unit.ID
+					}
+				}
+				break
+			}
+		}
+		if item.UnitID == "" {
+			http.Error(w, "Anliegen sind nur für eigene Einheiten oder Allgemeinflächen möglich.", http.StatusForbidden)
+			return
+		}
+	}
 	attachmentHeaders, err := issueAttachmentHeaders(r)
 	if err != nil {
 		http.Redirect(w, r, "/app/anliegen?issue=photo", http.StatusSeeOther)
@@ -421,7 +456,7 @@ func (a *app) addIssueComment(w http.ResponseWriter, r *http.Request, ac authCtx
 	actor := a.actorFor(email, tenant.Slug, role)
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
-	readOnly := can(actor, capabilityOversight, resource) && !canManage
+	readOnly := can(actor, capabilityOversight, resource) && !canManage && normalizeEmail(existing.AuthorEmail) != normalizeEmail(email)
 	if !a.canViewIssueForActor(ac.tenantRef, existing, email, role) {
 		http.Error(w, "Dieser Kommentar ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -651,7 +686,7 @@ func (a *app) updateIssueWorkflow(w http.ResponseWriter, r *http.Request, ac aut
 	actor := a.actorFor(email, tenant.Slug, role)
 	resource := resourceFor(existing.TenantSlug)
 	canManage := can(actor, capabilityManageIssues, resource)
-	readOnly := can(actor, capabilityOversight, resource) && !canManage
+	readOnly := can(actor, capabilityOversight, resource) && !canManage && normalizeEmail(existing.AuthorEmail) != normalizeEmail(email)
 	if !a.canViewIssueForActor(ac.tenantRef, existing, email, role) {
 		http.Error(w, "Dieser Statuswechsel ist der Verwaltung vorbehalten.", http.StatusForbidden)
 		return
@@ -1178,35 +1213,25 @@ func (a *app) visibleIssuesForActor(tenant store.TenantRef, email string, role s
 	if !ok {
 		return nil
 	}
-	all := issues.List()
-	out := make([]residentIssue, 0, len(all))
-	for _, item := range all {
-		if a.canViewIssueForActor(tenant, item, email, role) {
-			out = append(out, item)
-		}
+	return issues.ListVisible(a.issueAccessForActor(tenant, email, role))
+}
+
+func (a *app) issueAccessForActor(tenant store.TenantRef, email, role string) store.IssueAccess {
+	actor, resource := a.actorFor(email, tenant.Slug, role), resourceFor(tenant.Slug)
+	access := store.IssueAccess{
+		Email: email, Manage: can(actor, capabilityManageIssues, resource),
+		Board:           can(actor, capabilityOversight, resource),
+		Common:          a.actorCanSeeCommonIssues(tenant, email, role),
+		ServiceProvider: isServiceProviderRole(role),
 	}
-	sortIssues(out)
-	return out
+	if units, ok := store.BindUnitRepository(a.unitStore, tenant); ok {
+		access.Units = units.UnitsForEmail(email)
+	}
+	return access
 }
 
 func (a *app) canViewIssueForActor(tenant store.TenantRef, item residentIssue, email string, role string) bool {
-	tenantSlug := normalizeSlug(tenant.Slug)
-	email = normalizeEmail(email)
-	if tenantSlug == "" || normalizeSlug(item.TenantSlug) != tenantSlug || email == "" {
-		return false
-	}
-	actor := a.actorFor(email, tenantSlug, role)
-	resource := resourceFor(item.TenantSlug)
-	if can(actor, capabilityManageIssues, resource) || can(actor, capabilityOversight, resource) {
-		return true
-	}
-	if isServiceProviderRole(role) {
-		return issueIsOpen(item) && issueAssignedToActor(item, email)
-	}
-	if normalizeEmail(item.AuthorEmail) == email {
-		return true
-	}
-	return normalizeIssueLocation(item.LocationType) == issueLocationCommon && a.actorCanSeeCommonIssues(tenant, email, role)
+	return a.issueAccessForActor(tenant, email, role).CanView(tenant, item)
 }
 
 func issueAssignedToActor(item residentIssue, email string) bool {
@@ -1329,7 +1354,7 @@ func issueViewsForActor(tenantSlug string, items []residentIssue, role string, a
 		}
 		resource := resourceFor(item.TenantSlug)
 		canManage := can(actor, capabilityManageIssues, resource)
-		readOnly := can(actor, capabilityOversight, resource) && !canManage
+		readOnly := can(actor, capabilityOversight, resource) && !canManage && normalizeEmail(item.AuthorEmail) != actorEmail
 		photoCount := 0
 		comments := issueCommentViews(item.Comments)
 		status := normalizeIssueStatus(item.Status)

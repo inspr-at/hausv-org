@@ -104,7 +104,7 @@ func CanCreateResidentIssue(actor Actor, resource Resource) bool {
 	if !sameTenant(actor, resource) {
 		return false
 	}
-	return RoleCanUseResidentAreas(actor.Role) && (!Can(actor, CapabilityOversight, resource) || Can(actor, CapabilityManageIssues, resource))
+	return RoleCanUseResidentAreas(actor.Role)
 }
 
 func CanResidentTransition(from string, to string) bool {

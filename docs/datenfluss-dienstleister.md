@@ -84,6 +84,15 @@ Speicherort.
   **offen** und **ihr zugewiesen** ist. Andere Anliegen desselben Hauses,
   Gemeinschaftsanliegen und geschlossene Anliegen sind nicht sichtbar. Der Entzug
   der Zuweisung wirkt sofort.
+- **Beirat:** Allgemeinflächen, selbst verfasste Anliegen und Anliegen der
+  eigenen bewohnten oder besessenen Einheiten. Private Anliegen anderer
+  Einheiten bleiben für den Beirat gesperrt. Listen, Hauskarte, Zähler,
+  Detailseiten und Anhänge verwenden dieselbe Store-Regel (`IssueAccess`).
+  Neue eigene Einheiten werden im JSON-Datensatz mit `unit_id` gebunden;
+  Altdaten werden nur bei exakter Übereinstimmung mit Einheiten-ID oder
+  -Bezeichnung zugeordnet. Eine leere private Ortsangabe erweitert keinen Zugriff.
+  Der Beirat kann für Allgemeinflächen und eigene Einheiten melden und eigene
+  Anliegen kommentieren sowie deren Lösung bestätigen.
 - **Daten im Zugriff:** Titel, Beschreibung, Kategorie, Ort (Einheit oder
   Gemeinschaftsbereich), Status, Priorität, Zeitstempel, Name/E-Mail der
   meldenden Person.

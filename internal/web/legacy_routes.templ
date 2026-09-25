@@ -164,7 +164,7 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 					}
 					<form class="pk-form" method="post" action="/app/parking/charging/settings">
 						<div class="pk-toggles"><label class="pk-toggle" for="controller_enabled"><input id="controller_enabled" type="checkbox" name="controller_enabled" value="1" checked?={ data.Charging.Enabled }/><strong>{ "Regler aktiv" }</strong><small>{ "Überwacht Akku und Einspeisung und startet Ladevorgänge." }</small></label><label class="pk-toggle" for="shadow_mode"><input id="shadow_mode" type="checkbox" name="shadow_mode" value="1" checked?={ (data.Charging.ShadowMode || !(data.Charging.Enabled)) }/><strong>{ "Testbetrieb" }</strong><small>{ "Nur beobachten und protokollieren — die Steckdose bleibt unberührt." }</small></label></div>
-						<div class="pk-rule-summary" aria-label="Zusammenfassung der Laderegeln"><div class="pk-rule"><strong>{ "Start" }</strong><span>{ "Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " W Einspeisung." }</span></div><div class="pk-rule pk-safety"><strong>{ "Stopp & Schutz" }</strong><span>{ "Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " W; Schaltpausen bleiben aktiv." }</span></div></div>
+						<div class="pk-rule-summary" aria-label="Zusammenfassung der Laderegeln"><div class="pk-rule"><strong>{ "Start" }</strong><span>{ "Bei mindestens " + data.Charging.StartSocValue + " % Akku und " + data.Charging.StartFeedInValue + " kW Einspeisung." }</span></div><div class="pk-rule pk-safety"><strong>{ "Stopp & Schutz" }</strong><span>{ "Unter " + data.Charging.StopSocValue + " % Akku oder " + data.Charging.StopFeedInValue + " kW; Schaltpausen bleiben aktiv." }</span></div></div>
 						<details class="pk-disclosure">
 							<summary><span>{ "Erweiterte Grenzwerte" }</span><span class="pk-disclosure-note">{ "7 Werte" }</span>
 								@DisclosureChevron()
@@ -177,9 +177,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 											{ "Akkustand mindestens " }
 											<span class="pk-unit"><input id="start_soc_percent" type="text" inputmode="decimal" name="start_soc_percent" value={ data.Charging.StartSocValue } autocomplete="off"/><span class="unit">{ "%" }</span></span>
 										</label>
-										<label for="start_feed_in_w">
+										<label for="start_feed_in_kw">
 											{ "Einspeisung mindestens " }
-											<span class="pk-unit"><input id="start_feed_in_w" type="text" inputmode="numeric" name="start_feed_in_w" value={ data.Charging.StartFeedInValue } autocomplete="off"/><span class="unit">{ "W" }</span></span>
+											<span class="pk-unit"><input id="start_feed_in_kw" type="text" inputmode="decimal" name="start_feed_in_kw" value={ data.Charging.StartFeedInValue } autocomplete="off"/><span class="unit">{ "kW" }</span></span>
 										</label>
 									</div>
 								</div>
@@ -190,9 +190,9 @@ templ ParkingSettingsContent(data ParkingSettingsPageData) {
 											{ "Akkustand unter " }
 											<span class="pk-unit"><input id="stop_soc_percent" type="text" inputmode="decimal" name="stop_soc_percent" value={ data.Charging.StopSocValue } autocomplete="off"/><span class="unit">{ "%" }</span></span>
 										</label>
-										<label for="stop_feed_in_w">
+										<label for="stop_feed_in_kw">
 											{ "Einspeisung unter " }
-											<span class="pk-unit"><input id="stop_feed_in_w" type="text" inputmode="numeric" name="stop_feed_in_w" value={ data.Charging.StopFeedInValue } autocomplete="off"/><span class="unit">{ "W" }</span></span>
+											<span class="pk-unit"><input id="stop_feed_in_kw" type="text" inputmode="decimal" name="stop_feed_in_kw" value={ data.Charging.StopFeedInValue } autocomplete="off"/><span class="unit">{ "kW" }</span></span>
 										</label>
 										<label for="stop_delay_minutes">
 											{ "… und zwar durchgehend für " }

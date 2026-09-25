@@ -4699,9 +4699,14 @@ func TestIssueVisibilityByPersona(t *testing.T) {
 		t.Fatalf("owner visibility wrong:\n%s", owner)
 	}
 	board := authedRequest(t, a, "board@example.com", "/demo/app/anliegen").Body.String()
-	for _, want := range []string{"Renter private", "Owner private", "Common roof", "Other private"} {
+	for _, want := range []string{"Common roof"} {
 		if !strings.Contains(board, want) {
 			t.Fatalf("beirat view missing %q:\n%s", want, board)
+		}
+	}
+	for _, hidden := range []string{"Renter private", "Owner private", "Other private"} {
+		if strings.Contains(board, hidden) {
+			t.Fatalf("Beirat leaked %q", hidden)
 		}
 	}
 	if strings.Contains(board, "Kommentar senden") || strings.Contains(board, "Anliegen senden") {

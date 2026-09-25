@@ -695,9 +695,9 @@ func IssueCard(issue view.IssueView) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var35 string
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Category)
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(issueCategoryLabel(issue.Category))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 141}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 161}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -710,7 +710,7 @@ func IssueCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(issue.Priority)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 185}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 205}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -723,7 +723,7 @@ func IssueCard(issue view.IssueView) templ.Component {
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(issue.CreatedAt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 217}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/issues.templ`, Line: 141, Col: 237}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
