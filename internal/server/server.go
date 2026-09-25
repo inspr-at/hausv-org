@@ -781,6 +781,12 @@ type app struct {
 	chargingTelegramMu        sync.Mutex
 	chargingTelegramTimes     []time.Time
 	chargingTelegramThrottled bool
+	// telegramHouseChoice remembers which house a chat named during this
+	// process. It is not authority: every command recomputes the user's
+	// houses and ignores a slug that is no longer allowed. A restart clears
+	// it. There is no persisted field for a selected house (HAUSV-813).
+	telegramHouseMu     sync.Mutex
+	telegramHouseChoice map[int64]string
 
 	paymentImportMu       sync.Mutex
 	paymentImportPreviews map[string]camtImportPreview
