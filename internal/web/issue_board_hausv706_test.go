@@ -75,3 +75,17 @@ func TestIssueBoardKeepsDisplayLabelsSeparateFromStoredStatus(t *testing.T) {
 		t.Error("lane must show the full process name and submit the stored status")
 	}
 }
+
+func TestIssueCategoryLabelKeepsKeysAndShowsUmlauts(t *testing.T) {
+	for _, test := range []struct{ in, want string }{
+		{"schluessel", "Schlüssel/Zutritt"},
+		{"uebergabe", "Übergabe"},
+		{"betriebskosten", "Betriebskosten/Vorschreibung"},
+		{"Reparatur", "Reparatur"},
+		{"", "Sonstiges"},
+	} {
+		if got := issueCategoryLabel(test.in); got != test.want {
+			t.Errorf("issueCategoryLabel(%q) = %q, want %q", test.in, got, test.want)
+		}
+	}
+}
